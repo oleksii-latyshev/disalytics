@@ -1,0 +1,9 @@
+[package]
+name = "schema-extraction-probe"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+ahash = "0.8"
+parser = { git = "https://github.com/LaihoE/demoparser", rev = "ba39cc44cd5abfd7f34df2b3c0a7dd3630048311" }
