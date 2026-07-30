@@ -153,9 +153,22 @@ The intermediate JSON step allocated ~1.2 GB on a 300 MB demo and blocked the wo
 
 ---
 
-## 5. Repository Settings
+## 5. Repository Setup
 
-Applied once, then left alone:
+Created once:
+
+```bash
+gh repo create disalytics --public \
+  --description "Client-side Counter-Strike demo analyzer. Parses .dem files in your browser with Rust/WASM — nothing is uploaded." \
+  --homepage "https://disalytics.gg"
+
+gh repo edit --add-topic counter-strike,cs2,demo-parser,webassembly,rust,react,typescript,esports,replay-analysis,pwa
+```
+
+Topics carry the discoverability, not the name — someone searching "cs2 demo parser" finds the
+repository through the topics and description, which is why the name is free to be game-agnostic.
+
+Then the merge policy:
 
 ```bash
 gh repo edit \

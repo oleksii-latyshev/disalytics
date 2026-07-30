@@ -1,4 +1,4 @@
-# AGENTS.md — CS2 Client-Side Demo Analyzer
+# AGENTS.md — disalytics
 
 > Operating contract for AI agents working in this repository. Read fully before writing code.
 > If a request conflicts with **Hard Rules** (§2), stop and ask the human instead of improvising.
@@ -13,10 +13,14 @@
 
 ## 1. Mission
 
-A fully client-side web application for analyzing Counter-Strike 2 match replays (`.dem`),
-installable as a PWA, available in English and Russian. The product goal: compress a 40-minute
-match into a ~10-minute review through smart filtering, an interactive timeline, and spatial
-insight on a 2D radar.
+**disalytics** — a fully client-side web application for analyzing Counter-Strike 2 match replays
+(`.dem`), installable as a PWA, available in English and Russian. The product goal: compress a
+40-minute match into a ~10-minute review through smart filtering, an interactive timeline, and
+spatial insight on a 2D radar.
+
+The name is deliberately game-agnostic. A future Counter-Strike release will mean a new demo format
+and a new parser crate, but the product — timeline, radar, filters, audibility — survives that.
+Nothing outside `crates/demo-parser` should encode "CS2" as an assumption.
 
 **Product principle:** this is a tool for *review*, not frame-perfect replay. Where accuracy and
 interaction smoothness conflict, favour smoothness and label the approximation in the UI.
@@ -35,12 +39,19 @@ Violating any of these is a bug, not a trade-off.
 5. **No `localStorage` / `sessionStorage` for parsed data.** OPFS first, IndexedDB as fallback.
    (Small UI preferences — locale, theme — are fine there.)
 6. **No `any`.** No `@ts-expect-error` without a comment explaining why and a linked issue.
-7. **No user-facing string is hardcoded.** Every one goes through i18n. See §11.
-8. **No animation runs on the main thread during playback.** See §17.
-9. **New runtime dependencies require human approval.** Bundle size is a product constraint.
-10. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no browser-only APIs.
-11. **`crates/demo-parser` contains no `wasm-bindgen`.** Platform wrappers are thin and separate.
+7. **No user-facing string is hardcoded.** Every one goes through i18n. See §11. `demo-core` and
+   the parser produce no display text at all — generated descriptions are emitted as
+   `{ key, params }` data and rendered by the client.
+8. **Parsing is deterministic.** Same demo bytes + same `SCHEMA_VERSION` → byte-identical output.
+   The OPFS cache key and the golden snapshots both depend on it.
+9. **No animation runs on the main thread during playback.** See §17.
+10. **New runtime dependencies require human approval.** Bundle size is a product constraint.
+11. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no browser-only APIs,
+    no `@/` alias, no I/O.
+12. **`crates/demo-parser` contains no `wasm-bindgen`.** Platform wrappers are thin and separate.
     This is what makes a native Tauri build possible later. See §4.
+13. **Dependency direction is one-way** — `features → core → shared`, and `apps → packages`.
+    Never sideways between features, never upward. See `CODE_REQUIREMENTS.md` §2.
 
 ---
 
@@ -128,6 +139,10 @@ docs/                   # DESIGN.md, PARSER.md, TOOLING.md
 
 **Dependency direction is one-way:** `apps/*` → `packages/*`. Packages never import from apps.
 `demo-core` imports nothing from the other packages.
+
+**The inside of `apps/web/src` is layered `features → core → shared`** with its own rules about
+barrels, slice ordering and what belongs in a package versus the app. That is specified in
+`CODE_REQUIREMENTS.md` §1–§2 — read it before adding a folder.
 
 **The crate split is load-bearing.** `crates/demo-parser` must compile and test on the host with
 `cargo test`, with no WASM toolchain involved. Everything platform-specific lives in the wrapper
@@ -449,7 +464,7 @@ live in one deployment, so adding `apps/api` later needs no migration.
 ```jsonc
 // wrangler.jsonc
 {
-  "name": "cs2-demo-analyzer",
+  "name": "disalytics",
   "compatibility_date": "2026-07-01",
   "assets": {
     "directory": "./apps/web/dist",

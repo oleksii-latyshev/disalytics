@@ -1,6 +1,6 @@
 # DESIGN.md
 
-Visual system for the CS2 Demo Analyzer. This is a **starting direction to approve or reject**, not
+Visual system for disalytics. This is a **starting direction to approve or reject**, not
 a settled fact — but once approved, every colour and type decision derives from it.
 
 Engineering constraints that outrank aesthetics are in `AGENTS.md` §16.
