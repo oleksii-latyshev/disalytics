@@ -1,0 +1,55 @@
+name: Task
+description: A unit of work with a stated boundary
+title: "type(scope): imperative subject"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The title becomes the squash-commit subject. Write it as a conventional commit now:
+        lower case, imperative, no trailing period, under 72 characters. Scope is the `area:`
+        label without its prefix.
+
+        Apply exactly one `type:`, one `area:` and one `phase:` label, and the matching milestone.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One sentence, in user terms rather than implementation terms.
+      placeholder: A user can cancel a running parse and the memory is actually released.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: A checklist someone else could verify without asking a question.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints touched
+      description: >
+        Which hard rules (AGENTS.md §2) or performance budgets (AGENTS.md §16) this work is
+        near. Write "none" only after checking, not by default.
+      placeholder: |
+        Hard rule 2 — parsing stays in the worker.
+        Budget §16 — peak tab memory during parse < 1.5 GB.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: >
+        What this issue deliberately does not do. Scope creep is the common failure mode for
+        agent-assigned work, and naming the boundary up front is what prevents it.
+    validations:
+      required: true

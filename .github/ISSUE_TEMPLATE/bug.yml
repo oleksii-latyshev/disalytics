@@ -1,0 +1,67 @@
+name: Bug
+description: Something behaves differently from what the documentation or the UI promises
+title: "fix(scope): imperative subject"
+labels: ["type:fix"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never attach a `.dem` file to an issue.** Demo files stay on your machine — that is a
+        hard rule (AGENTS.md §2.1), not a repository size concern. Describe the demo instead.
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Numbered, starting from a fresh load of the app.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Include the exact error copy or console output if there is any.
+    validations:
+      required: true
+
+  - type: textarea
+    id: demo-characteristics
+    attributes:
+      label: Demo characteristics
+      description: Everything that identifies the demo without shipping it.
+      value: |
+        - Map:
+        - Tick rate:
+        - File size:
+        - Source (FACEIT / Valve matchmaking / other):
+        - Container (.dem / .dem.zst / .dem.bz2):
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 141, macOS 15.2
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Does it reproduce on a second demo? On a second browser? After clearing the cache?
+    validations:
+      required: false

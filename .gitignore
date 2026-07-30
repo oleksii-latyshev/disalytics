@@ -33,6 +33,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Agent tooling — shared config is committed, local overrides are not
+.claude/settings.local.json
+
 # Misc
 .DS_Store
 *.pem

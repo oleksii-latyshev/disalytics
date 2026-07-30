@@ -26,12 +26,18 @@ Four rules:
 ### Create an issue
 
 ```bash
+# humans — renders the issue form in $EDITOR
+gh issue create --template task.yml
+
+# agents — write the four required sections to a file first
 gh issue create \
   --title "feat(parser): stream columnar tick output from Rust" \
-  --body-file .github/ISSUE_TEMPLATE/task.md \
+  --body-file <path> \
   --label "type:feat,area:parser,phase:2" \
   --milestone "Phase 2"
 ```
+
+Blank issues are disabled. The four sections in `task.yml` (§6) are required either way.
 
 The title is the future squash-commit subject. Write it as a conventional commit from the start
 (§4) — it saves rewriting it at merge time.
@@ -103,15 +109,15 @@ Created once with `gh label create`. Three orthogonal axes plus status — every
 
 **Status** — used sparingly: `blocked`, `needs-decision`, `good-first-issue`.
 
+The taxonomy is code rather than clicks — `tools/scripts/labels.ts` and
+`tools/scripts/milestones.ts` create the full set idempotently and are safe to re-run:
+
 ```bash
-gh label create "type:feat"   --color 1D76DB --description "New capability"
-gh label create "area:parser" --color BFD4F2 --description "Demo parsing, Rust crates, WASM"
-gh label create "phase:2"     --color EDEDED --description "Roadmap phase 2"
-# ...
+bun run repo:labels
+bun run repo:milestones
 ```
 
-Keep a `tools/scripts/labels.ts` that creates the full set idempotently, so the taxonomy is code
-rather than clicks.
+Add or rename a label by editing the script and re-running it, never through the web UI.
 
 ---
 
@@ -185,7 +191,10 @@ Settings → General → Pull Requests (also available via `gh repo edit` flags 
 Otherwise GitHub concatenates every branch commit into the message and the conventional-commit
 subject is lost.
 
-Branch protection on `main`:
+Branch protection on `main` — **not yet applied.** GitHub does not offer it on a private
+repository outside the paid plans, and the required status checks do not exist until Phase 1 ships
+the workflows. Until then the rules below are held by discipline, not by the platform. Apply them
+when the repository goes public:
 
 - Required status checks: `typecheck`, `check`, `i18n:check`, `test`, `build`, `size`
 - Require branches to be up to date before merging
