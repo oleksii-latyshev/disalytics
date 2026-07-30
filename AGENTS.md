@@ -240,8 +240,29 @@ mismatched cache entries are discarded, not migrated.
 
 ### 7.1 Input
 
-Handle all of: `.dem` (raw), `.dem.gz` (FACEIT — native `DecompressionStream('gzip')`),
-`.dem.bz2` (Valve MM — needs a JS/WASM bzip2 decoder, no native support).
+| Container | Source | Decoder |
+|---|---|---|
+| `.dem` | already extracted | none |
+| `.dem.zst` | FACEIT — the only container it serves | `ruzstd` |
+| `.dem.bz2` | Valve matchmaking | `bzip2-rs` |
+
+`DecompressionStream` covers only `gzip`, `deflate` and `deflate-raw`, so neither compressed
+container has a platform path in the browser. **Decompression lives in `crates/demo-parser` behind
+pure-Rust decoders**, and the container is identified from magic bytes, not the file extension — a
+renamed file still parses.
+
+That placement is the whole point:
+
+- no new frontend runtime dependency (hard rule 10), nothing spent from the JS bundle budget (§16)
+- the decompressed bytes appear where the parser already needs them, so the file never crosses the
+  JS→WASM boundary twice — directly relevant to the peak-memory question in §7.2
+- the same code path serves a native Tauri build
+- pure Rust keeps `#![forbid(unsafe_code)]` intact. The C-binding crates (`zstd`, `bzip2`) decode
+  faster but forfeit that and add a C toolchain to the wasm build. Revisit only if Phase 0 shows
+  decompression is a material share of the parse budget.
+
+`.dem.gz` is not a supported input — FACEIT no longer serves it (verified 2026-07-30 on Windows and
+macOS). Add it back only if a real source for it appears.
 
 Handle gracefully with a clear message, never a crash: POV demos, truncated/corrupt files,
 CS:GO-era demos, and files that are not demos at all.
@@ -426,7 +447,7 @@ The app is installable and offline-capable. This produces the best interaction i
   "display_override": ["window-controls-overlay", "standalone"],
   "launch_handler": { "client_mode": "focus-existing" },
   "file_handlers": [
-    { "action": "/open", "accept": { "application/octet-stream": [".dem", ".dem.gz", ".dem.bz2"] } }
+    { "action": "/open", "accept": { "application/octet-stream": [".dem", ".dem.zst", ".dem.bz2"] } }
   ]
 }
 ```
@@ -623,6 +644,7 @@ proves worth it.
 
 - Rust parser (`demoparser2`) as the default; Phase 0 confirms rather than explores
 - Core parser crate free of `wasm-bindgen`, so a native Tauri build stays possible
+- Decompression lives in the parser crate behind pure-Rust decoders, not on the JS side (§7.1)
 - Bun as package manager; text lockfile committed
 - Cloudflare Workers static assets, not Pages
 - Canvas 2D, not react-three-fiber
