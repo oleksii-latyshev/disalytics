@@ -21,14 +21,34 @@ const TYPE_LABELS: Label[] = [
 
 const AREA_LABELS: Label[] = [
   { name: 'area:parser', color: AREA_COLOR, description: 'Demo parsing, Rust crates, WASM' },
-  { name: 'area:radar', color: AREA_COLOR, description: 'Map rendering, coordinate transforms, map data' },
-  { name: 'area:timeline', color: AREA_COLOR, description: 'The match spine: round bands, event density, scrubber' },
-  { name: 'area:analytics', color: AREA_COLOR, description: 'Filters, highlight extraction, derived statistics' },
+  {
+    name: 'area:radar',
+    color: AREA_COLOR,
+    description: 'Map rendering, coordinate transforms, map data',
+  },
+  {
+    name: 'area:timeline',
+    color: AREA_COLOR,
+    description: 'The match spine: round bands, event density, scrubber',
+  },
+  {
+    name: 'area:analytics',
+    color: AREA_COLOR,
+    description: 'Filters, highlight extraction, derived statistics',
+  },
   { name: 'area:ui', color: AREA_COLOR, description: 'Design tokens, shared primitives, layout' },
   { name: 'area:i18n', color: AREA_COLOR, description: 'Locale resources, typed keys, formatting' },
-  { name: 'area:pwa', color: AREA_COLOR, description: 'Service worker, manifest, file handlers, offline' },
+  {
+    name: 'area:pwa',
+    color: AREA_COLOR,
+    description: 'Service worker, manifest, file handlers, offline',
+  },
   { name: 'area:storage', color: AREA_COLOR, description: 'OPFS, IndexedDB, schema versioning' },
-  { name: 'area:ci', color: AREA_COLOR, description: 'Workflows, gates, deployment, repository config' },
+  {
+    name: 'area:ci',
+    color: AREA_COLOR,
+    description: 'Workflows, gates, deployment, repository config',
+  },
   { name: 'area:docs', color: AREA_COLOR, description: 'Documentation only' },
 ];
 
@@ -43,9 +63,21 @@ const PHASE_LABELS: Label[] = [
 ];
 
 const STATUS_LABELS: Label[] = [
-  { name: 'blocked', color: 'B60205', description: 'Waiting on another issue or an external dependency' },
-  { name: 'needs-decision', color: 'FBCA04', description: 'Requires a human decision — see AGENTS.md §21' },
-  { name: 'good-first-issue', color: '7057FF', description: 'Self-contained, good for a first contribution' },
+  {
+    name: 'blocked',
+    color: 'B60205',
+    description: 'Waiting on another issue or an external dependency',
+  },
+  {
+    name: 'needs-decision',
+    color: 'FBCA04',
+    description: 'Requires a human decision — see AGENTS.md §21',
+  },
+  {
+    name: 'good-first-issue',
+    color: '7057FF',
+    description: 'Self-contained, good for a first contribution',
+  },
 ];
 
 const SUPERSEDED_DEFAULT_LABELS = [
