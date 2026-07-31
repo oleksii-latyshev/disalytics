@@ -28,15 +28,18 @@ smoothness conflict, favour smoothness and label the approximation in the UI.
 
 ---
 
-## Repository state — read this before trusting the file tree
+## Repository state
 
-The documentation describes the **target** architecture. The repository is currently an untouched
-`create-turbo` starter and contradicts it on almost every point: Next.js instead of Vite,
-ESLint + Prettier instead of Biome, `@repo/*` instead of `@disa/*`, no `crates/`, no `packages/i18n`,
-no `packages/demo-core`, and an `apps/docs` that the documentation does not mention at all.
+Phase 0 is complete — the parser is validated and the findings are in `docs/PARSER.md`. The
+`create-turbo` starter has been replaced: `apps/web` is a Vite SPA, Biome has replaced
+ESLint + Prettier, and every package is `@disa/*`.
 
-Phase 1 replaces the starter. Until it lands, **`AGENTS.md` outranks anything you observe in the
-file tree.** If existing code contradicts the docs, the code is the thing that is wrong.
+Phase 1 is in progress, so `AGENTS.md` §4 still describes packages that do not exist yet —
+`demo-core`, `demo-parser`, `demo-store`, `map-data`, `i18n`, and everything under `crates/`. Their
+absence is a schedule fact, not a contradiction.
+
+**`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
+docs, the code is the thing that is wrong.
 
 ---
 
@@ -101,17 +104,14 @@ before opening a PR.
 
 ```bash
 bun install
-bun run dev
-bun run build
-bun run check          # biome — lint + format (check:fix to apply)
+bun run dev            # vite dev server for apps/web
+bun run build          # tsc --noEmit && vite build -> apps/web/dist
 bun run typecheck
-bun run test
-bun run i18n:check     # key parity + regenerate the typed key union
-bun run size           # bundle + wasm sizes against AGENTS.md §16 budgets
-cargo test -p demo-parser
+bun run check          # biome — lint + format (check:fix to apply)
 ```
 
-Most of these do not exist yet — they arrive with Phase 1.
+Still to arrive: `test` (Vitest), `i18n:check`, `size`, `wasm:build`, `mapdata:generate`,
+`preview`, and `cargo test -p demo-parser`. See `AGENTS.md` §5 for the full intended set.
 
 ---
 

@@ -1,10 +1,10 @@
 import init, {
-  probe,
-  ping,
-  grow,
-  env_check,
   clock_check,
+  env_check,
+  grow,
   linear_memory_bytes,
+  ping,
+  probe,
 } from './pkg/wasm_build_probe.js';
 
 const post = (message) => self.postMessage(message);
@@ -64,6 +64,6 @@ self.onmessage = async () => {
 
     post({ type: 'done' });
   } catch (error) {
-    post({ type: 'error', message: String(error && error.stack ? error.stack : error) });
+    post({ type: 'error', message: String(error?.stack ?? error) });
   }
 };
