@@ -1,0 +1,33 @@
+[package]
+name = "wasm-build-probe"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+diagnostic = ["console_error_panic_hook"]
+
+[dependencies]
+ahash = "0.8"
+console_error_panic_hook = { version = "0.1", optional = true }
+wasm-bindgen = "0.2"
+
+# Path, not git: this crate needs the lazy-instant.patch applied to the checkout.
+# See README.md — the unpatched revision traps on wasm32 before reaching any parsing.
+parser = { path = "../../../../demoparser/src/parser" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-Os']
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

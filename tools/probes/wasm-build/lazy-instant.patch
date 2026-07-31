@@ -1,0 +1,28 @@
+68c68
+<         let _t = std::time::Instant::now();
+---
+>         let _t = _prof.then(std::time::Instant::now);
+72c72
+<             eprintln!("[prof] first_pass: {:.3}s", _t.elapsed().as_secs_f64());
+---
+>             eprintln!("[prof] first_pass: {:.3}s", _t.unwrap().elapsed().as_secs_f64());
+135c135
+<         let mut t = std::time::Instant::now();
+---
+>         let mut t = prof.then(std::time::Instant::now);
+138c138
+<         if prof { eprintln!("[prof] second_pass start(): {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
+---
+>         if prof { eprintln!("[prof] second_pass start(): {:.3}s", t.unwrap().elapsed().as_secs_f64()); t = prof.then(std::time::Instant::now); }
+140c140
+<         if prof { eprintln!("[prof] create_output: {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
+---
+>         if prof { eprintln!("[prof] create_output: {:.3}s", t.unwrap().elapsed().as_secs_f64()); t = prof.then(std::time::Instant::now); }
+142c142
+<         if prof { eprintln!("[prof] combine_outputs: {:.3}s", t.elapsed().as_secs_f64()); t = std::time::Instant::now(); }
+---
+>         if prof { eprintln!("[prof] combine_outputs: {:.3}s", t.unwrap().elapsed().as_secs_f64()); t = prof.then(std::time::Instant::now); }
+148c148
+<         if prof { eprintln!("[prof] post-proc: {:.3}s", t.elapsed().as_secs_f64()); }
+---
+>         if prof { eprintln!("[prof] post-proc: {:.3}s", t.unwrap().elapsed().as_secs_f64()); }
