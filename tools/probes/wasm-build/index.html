@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>wasm32 parser probe</title>
+    <style>
+      body { font: 13px ui-monospace, monospace; padding: 24px; background: #0e1216; color: #e4e9ee; }
+      pre { background: #161b21; padding: 12px; border: 1px solid #2b333c; border-radius: 4px; white-space: pre-wrap; margin: 0 0 12px; }
+      h2 { font-size: 13px; color: #8a96a3; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+      #status { color: #8a96a3; }
+    </style>
+  </head>
+  <body>
+    <h1>wasm32 parser probe</h1>
+    <p id="status">starting…</p>
+    <div id="out"></div>
+    <script type="module">
+      const status = document.getElementById('status');
+      const out = document.getElementById('out');
+      const worker = new Worker('./worker.js', { type: 'module' });
+
+      worker.onmessage = (event) => {
+        const data = event.data;
+        if (data.type === 'progress') {
+          status.textContent = data.text;
+          return;
+        }
+        if (data.type === 'stage') {
+          const heading = document.createElement('h2');
+          heading.textContent = `${data.label} — ${data.ms.toFixed(0)} ms`;
+          const pre = document.createElement('pre');
+          pre.textContent = data.report.trim();
+          out.append(heading, pre);
+          return;
+        }
+        if (data.type === 'error') {
+          status.textContent = 'FAILED';
+          const pre = document.createElement('pre');
+          pre.textContent = data.message;
+          out.append(pre);
+          document.title = 'probe failed';
+          return;
+        }
+        status.textContent = 'all stages finished';
+        document.title = 'probe done';
+      };
+
+      worker.postMessage('go');
+    </script>
+  </body>
+</html>

@@ -153,11 +153,9 @@ it must be vendored or pre-generated before Phase 2.
   produced a column**.
 - Treat `*_grenade_type` on events as absent.
 - Run the projectile pass with `parse_grenades: false`.
-- Upstream pulls in `rayon`, `memmap2` and `libc`. None of those fit `wasm32-unknown-unknown` with
-  `SharedArrayBuffer` rejected (§3) and COOP/COEP forbidden (§13). The WASM path must force
-  `ParsingMode::ForceSingleThreaded` and avoid the memory-mapped entry points. Upstream ships a
-  `src/wasm` binding, so this is known to be solvable — confirming it is the next Phase 0 question,
-  not this one.
+- Force `ParsingMode::ForceSingleThreaded` on the WASM path — `SharedArrayBuffer` is rejected (§3)
+  and COOP/COEP are forbidden (§13), so there are no threads to use. See §8 for what actually
+  blocks the browser build, which is not what was expected.
 
 ---
 
@@ -195,8 +193,152 @@ upstream for free.
 
 ---
 
-## 8. Open after this check
+## 8. The browser build
 
-- Does the crate build and run under `wasm32-unknown-unknown` single-threaded, and at what size
-- Parse time and peak tab memory in the browser
+Verified by building the parser for `wasm32-unknown-unknown` and running all three passes in a Web
+Worker against the same fixture, served over `http://127.0.0.1`.
+
+### Verdict
+
+**It builds, it runs, and it fits the budget** — but only after a patch to upstream. The blockers
+were not the ones expected.
+
+### `rayon`, `memmap2` and `libc` are not blockers
+
+All three compile for `wasm32-unknown-unknown` without complaint. The concern recorded before this
+check was wrong, and is corrected in §6. They are still a reason to pin
+`ForceSingleThreaded`, because rayon's threads cannot run in the browser — but they do not stop the
+build.
+
+### What actually blocks it: `std::time::Instant::now()`
+
+`wasm32-unknown-unknown` has no clock, and `Instant::now()` compiles to an `unreachable` trap.
+`Parser::parse_demo` calls it unconditionally on its second line, and
+`second_pass_single_threaded` — the path we are forced onto — calls it again:
+
+```rust
+let _prof = std::env::var("CS2_PROF").is_ok();
+let _t = std::time::Instant::now();   // traps in the browser
+```
+
+Both are leftovers from upstream's profiling work. Every other `Instant::now()` in the parser is
+already lazy (`prof_on().then(std::time::Instant::now)`) and therefore harmless. Making these two
+lazy in the same style is the whole fix — a two-line change, carried as a patch on the pinned
+revision.
+
+### The trap that hid the trap
+
+**A binary whose entry point traps early gets its unreachable code eliminated, and then measures
+tiny.** Before the patch, the optimiser saw `unreachable` at the top of `parse_demo`, concluded
+everything downstream was dead, and produced a 293 KB artifact that gzipped to 16 KB. That number
+looked like a spectacular result against the 4 MB budget. It was a binary with no parser in it.
+
+A size measurement taken from an artifact that has never successfully run is worthless. Measure
+after a green run, never before.
+
+### Size, measured after `wasm-opt` on a build that works
+
+| | bytes | |
+|---|---|---|
+| raw | 2,285,183 | 2.18 MB |
+| gzip -9 | 654,603 | 0.62 MB |
+| brotli -q 11 | 478,028 | 0.46 MB |
+
+Against `AGENTS.md` §16 — under the 4 MB target at **54% of budget**, far under the 24 MB CI gate.
+The §19 pass condition is met.
+
+### Output parity with native
+
+The three passes produce byte-identical counts to a native `ForceSingleThreaded` run:
+
+| | native ST | browser |
+|---|---|---|
+| events total | 32,435 | 32,435 |
+| `player_first_connect` | 67 | 67 |
+| pass B columns × rows | 16 × 1,945,210 | 16 × 1,945,210 |
+| pass C columns × rows | 8 × 301,488 | 8 × 301,488 |
+
+This also **confirms the prediction in §7**: the browser sees 67 `player_first_connect` events, not
+the 10 a native `Normal` run produces. The threading discrepancy is real and reaches the product.
+
+### Observed timings — out of scope, but they contradict a budget
+
+Parse time belongs to the next Phase 0 question, and these numbers come from one run on one machine
+in one browser. They are recorded because measuring them was unavoidable and the result is not
+comfortable:
+
+| pass | browser, single-threaded | native, multi-threaded |
+|---|---|---|
+| A events | 11.3 s | 0.5 s |
+| B per-tick props | 16.9 s | 0.7 s |
+| C projectiles | 15.8 s | 0.5 s |
+| **three passes** | **44.0 s** | 1.7 s |
+
+`AGENTS.md` §16 budgets a 300 MB demo at **under 30 s**. A 337 MB demo currently takes ~44 s in the
+browser, and that is before decompression, before writing our columnar output, and before any
+transfer to the main thread. Copying the 353 MB fixture across the WASM boundary costs 82 ms and is
+not the problem; the parse itself is.
+
+### Optimisation level is not the explanation
+
+The obvious suspicion — that the number is an artifact of building for size (`opt-level = "s"`,
+`wasm-opt -Os`) to answer the size question — was tested and **does not hold**. Rebuilding with
+`opt-level = 3` and `wasm-opt -O3`, in a fresh instance with no prior allocation:
+
+| pass | `-Os` build | `-O3` build |
+|---|---|---|
+| A events | 11.3 s | 15.9 s |
+| B per-tick props | 16.9 s | 22.5 s |
+| C projectiles | 15.8 s | 5.5 s |
+| **total** | **44.0 s** | **43.9 s** |
+
+The totals are the same to within 0.1 s, while individual passes swing by 3×, so per-pass figures
+are dominated by measurement noise and only the total is meaningful. Optimising for speed also cost
+0.5 MB of binary (2.18 MB → 2.68 MB) for nothing.
+
+**~44 s is a stable number, not a tuning artifact.** The 25× gap against a 1.7 s native
+multi-threaded run has to come from somewhere else: losing threads, the WASM backend itself, or the
+single-threaded path. Separating those requires a native `ForceSingleThreaded` baseline for all
+three passes, which is the first thing the next issue should measure — it is the comparison that
+isolates "no threads" from "WASM is slower".
+
+**Do not treat the §16 parse-time budget as met.** Note also that §16 marks that budget provisional
+and expects Phase 0 to replace it with a real figure.
+
+### `only_header` does not short-circuit
+
+`only_header: true` took 14.6 s and still produced three prop columns with 1,945,210 rows. It does
+not stop after the header. Reading a demo's map and tick rate cheaply — which the library screen
+needs — requires something other than this flag.
+
+### An aborted instance is poisoned
+
+Once any call traps, **every subsequent call into the same instance traps too**, including calls
+that had worked moments earlier. There is no recovering an instance after an abort. This is why the
+first attempt appeared to fail in all four passes when only the first one had really failed.
+
+For §7.3 this means an abort is not a catchable error: the worker must be terminated and recreated,
+which is the same lifecycle cancellation already requires.
+
+### Build requirements
+
+Two `getrandom` majors coexist in the tree and each needs its own opt-in:
+
+```toml
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+```
+
+plus `RUSTFLAGS=--cfg getrandom_backend="wasm_js"`. The 0.3 copy arrives through `ahash`, not
+directly.
+
+---
+
+## 9. Open after this check
+
+- **Parse time in the browser is over budget** — 44 s against a 30 s target (§8). Establishing why,
+  and whether it can be closed, is the last Phase 0 question and the one that now carries risk.
+- Peak tab memory during a browser parse
+- A cheap way to read a demo's header, since `only_header` does not provide one
 - Whether `bomb_abortdefuse` behaves as expected — needs a demo containing one
+- Whether the profiling timestamps can be fixed upstream rather than carried as a patch
