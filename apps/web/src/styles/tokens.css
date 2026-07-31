@@ -1,0 +1,59 @@
+/* `static` because Tailwind otherwise emits only the theme variables it sees used, and the token
+   layer has to exist in full before the components that consume it do. */
+@theme static {
+  --color-surface-0: #0e1216;
+  --color-surface-1: #161b21;
+  --color-surface-2: #1f262e;
+  --color-line: #2b333c;
+  --color-line-soft: #202830;
+  --color-ink: #e4e9ee;
+  --color-ink-dim: #8a96a3;
+  --color-ink-faint: #5a646f;
+
+  --color-ct: #4a90d9;
+  --color-t: #e0a33e;
+  --color-damage: #e5484d;
+  --color-kill: #f04b50;
+  --color-nade-he: #f5a524;
+  --color-nade-flash: #edf2f7;
+  --color-nade-smoke: #7c8794;
+  --color-nade-molotov: #ff6b35;
+  --color-objective: #c13b8f;
+
+  --color-focus: #ffffff;
+  --color-selected: rgb(255 255 255 / 0.1);
+  --color-hover: rgb(255 255 255 / 0.05);
+  --color-playhead: #ffffff;
+
+  --font-ui: "Wix Madefor Display", system-ui, sans-serif;
+  --font-narrow: "Roboto Condensed", "Wix Madefor Display", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-11: 0.6875rem;
+  --text-12: 0.75rem;
+  --text-13: 0.8125rem;
+  --text-14: 0.875rem;
+  --text-16: 1rem;
+  --text-20: 1.25rem;
+  --text-28: 1.75rem;
+
+  --leading-dense: 1.3;
+  --leading-prose: 1.5;
+
+  --radius-instrument: 4px;
+
+  --spacing: 4px;
+
+  --duration-micro: 120ms;
+  --duration-base: 200ms;
+  --duration-panel: 320ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  --height-control: 28px;
+}
+
+:root {
+  /* Elevation is a hairline plus an inner top highlight, never a drop shadow — DESIGN.md §4. */
+  --edge-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+}

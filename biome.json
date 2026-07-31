@@ -44,12 +44,27 @@
       "arrowParentheses": "always"
     }
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "json": {
     "formatter": {
       "enabled": true
     }
   },
   "overrides": [
+    {
+      "includes": ["apps/web/src/styles/motion.css"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["tools/**"],
       "linter": {

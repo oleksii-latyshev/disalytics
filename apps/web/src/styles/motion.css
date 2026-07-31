@@ -1,0 +1,20 @@
+/* The reduced-motion reset, kept in its own file because it is the one place `!important` is
+   correct: it exists to override author transitions wherever they are declared, and a reset that
+   loses to specificity is not a reset. DESIGN.md §6 requires this be implemented once, globally,
+   rather than per component.
+
+   Opacity keeps its transition so fades still read as intentional rather than as a flicker. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  *:not([data-motion="opacity"]) {
+    transition-property: opacity !important;
+  }
+}

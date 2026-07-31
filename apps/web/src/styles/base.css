@@ -1,0 +1,47 @@
+:root {
+  color-scheme: dark;
+}
+
+html {
+  font-family: var(--font-ui);
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-surface-0);
+  color: var(--color-ink);
+  font-size: var(--text-13);
+  line-height: var(--leading-dense);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every number in the product uses tabular figures — AGENTS.md §17.3, DESIGN.md §3. */
+.numeric,
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.label-dense {
+  font-family: var(--font-narrow);
+  font-size: var(--text-11);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-dim);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.app-shell {
+  min-height: 100dvh;
+}
