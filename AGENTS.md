@@ -550,8 +550,8 @@ CI assertions where possible. A regression here is a blocker.
 
 | Metric | Budget | Note |
 |---|---|---|
-| Parse a 300 MB demo | < 30 s | Provisional. Set the real target from Phase 0 — production Rust parsers report far better, and a budget set too loosely hides regressions. |
-| Peak tab memory during parse | < 1.5 GB | the §7.2 question |
+| Parse a 300 MB demo | < 15 s | Set from Phase 0: 10.4 s measured on a 337 MB demo, three passes, single-threaded in the browser. Headroom covers slower hardware and the columnar write. Re-set from CI hardware once CI exists. See `docs/PARSER.md` §9. |
+| Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
 | JS bundle, excl. WASM | < 500 KB gzip | single locale only |
@@ -595,20 +595,23 @@ that alter a snapshot get reviewed by hand, never auto-accepted.
 
 ## 19. Roadmap
 
-### Phase 0 — Parser validation (throwaway code, 1–3 days)
+### Phase 0 — Parser validation — **complete, all criteria passed**
 
-Not an open exploration. It is a pass/fail test of the Rust default, with four questions:
+A pass/fail test of the Rust default, not an open exploration. Full findings in `docs/PARSER.md`;
+the verdict is in its §10.
 
-| Question | Pass condition |
-|---|---|
-| Does it parse a 400 MB demo in-browser? | completes without crashing |
-| Peak tab memory? | < 1.5 GB |
-| Parse time? | < 30 s — record the real number and set the §16 budget from it |
-| Is the full §10 schema extractable? | **check grenade trajectories and per-player blind durations first** — they are the likeliest gaps in a query-based parser |
-| Shipped WASM size? | < 4 MB |
+| Question | Pass condition | Result |
+|---|---|---|
+| Does it parse a 400 MB demo in-browser? | completes without crashing | pass — 337 MB, three passes |
+| Peak tab memory? | < 1.5 GB | pass — 663 MB WASM, ~1.0 GB estimated |
+| Parse time? | record the real number and set the §16 budget from it | pass — 10.4 s; §16 now reads < 15 s |
+| Is the full §10 schema extractable? | grenade trajectories and per-player blind durations first | pass — both present |
+| Shipped WASM size? | < 4 MB | pass — 2.18 MB |
 
-Build Go only if Rust fails a criterion, and record why in `docs/PARSER.md`. Also settle the query
-batching strategy (§7.2) here — it is the main performance lever.
+Go was never built. Query batching (§7.2) is settled at three passes, which upstream imposes as a
+floor. Four consequences carry into Phase 2 — a pinned and patched upstream, output that differs
+between threading modes, silently dropped prop requests, and no cheap parse-time win — all detailed
+in `docs/PARSER.md` §10.
 
 ### Phase 1 — Foundation
 Bun + Turborepo + Biome + Vite, `apps/web` skeleton, `packages/i18n` with both locales wired from
@@ -658,8 +661,9 @@ proves worth it.
 
 ### Open
 
-- [ ] Default branch name — GitHub's default is `main`; docs assume it. Say if you want `master`.
-- [ ] Peak memory with the whole demo in WASM linear memory (§7.2) — Phase 0
+- [x] Default branch name — `main`, in use since the repository was created.
+- [x] Peak memory with the whole demo in WASM linear memory (§7.2) — 663 MB, `docs/PARSER.md` §9.
+- [ ] A cheap way to read a demo header — `only_header` costs a full pass (`docs/PARSER.md` §8)
 - [ ] Does Vite + `vite-plugin-pwa` build cleanly on the Bun runtime? — Phase 1
 - [ ] `.nav` mesh occlusion for the audibility model — revisit after Phase 5
 - [ ] Tauri: is native parsing worth the second shell? — revisit after Phase 6

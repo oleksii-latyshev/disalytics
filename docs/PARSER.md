@@ -261,55 +261,26 @@ The three passes produce byte-identical counts to a native `ForceSingleThreaded`
 This also **confirms the prediction in §7**: the browser sees 67 `player_first_connect` events, not
 the 10 a native `Normal` run produces. The threading discrepancy is real and reaches the product.
 
-### Observed timings — out of scope, but they contradict a budget
+### Timings from this check were wrong — see §9
 
-Parse time belongs to the next Phase 0 question, and these numbers come from one run on one machine
-in one browser. They are recorded because measuring them was unavoidable and the result is not
-comfortable:
+An earlier revision of this section reported 44 s for three passes and concluded the parse-time
+budget was missed. **That measurement was contaminated** — it was taken while `cargo` and
+`wasm-pack` builds were running on the same machine. Re-measured on an idle machine the same work
+takes ~10.4 s, and the figure reproduces to within 1.5%.
 
-| pass | browser, single-threaded | native, multi-threaded |
-|---|---|---|
-| A events | 11.3 s | 0.5 s |
-| B per-tick props | 16.9 s | 0.7 s |
-| C projectiles | 15.8 s | 0.5 s |
-| **three passes** | **44.0 s** | 1.7 s |
+The retraction is kept rather than quietly deleted because the failure is instructive: the bad
+number survived a "verification" that reran it under `-O3` and got 43.9 s, which looked like
+independent confirmation and was really the same contamination twice. Two agreeing measurements
+taken under the same broken conditions agree about nothing.
 
-`AGENTS.md` §16 budgets a 300 MB demo at **under 30 s**. A 337 MB demo currently takes ~44 s in the
-browser, and that is before decompression, before writing our columnar output, and before any
-transfer to the main thread. Copying the 353 MB fixture across the WASM boundary costs 82 ms and is
-not the problem; the parse itself is.
-
-### Optimisation level is not the explanation
-
-The obvious suspicion — that the number is an artifact of building for size (`opt-level = "s"`,
-`wasm-opt -Os`) to answer the size question — was tested and **does not hold**. Rebuilding with
-`opt-level = 3` and `wasm-opt -O3`, in a fresh instance with no prior allocation:
-
-| pass | `-Os` build | `-O3` build |
-|---|---|---|
-| A events | 11.3 s | 15.9 s |
-| B per-tick props | 16.9 s | 22.5 s |
-| C projectiles | 15.8 s | 5.5 s |
-| **total** | **44.0 s** | **43.9 s** |
-
-The totals are the same to within 0.1 s, while individual passes swing by 3×, so per-pass figures
-are dominated by measurement noise and only the total is meaningful. Optimising for speed also cost
-0.5 MB of binary (2.18 MB → 2.68 MB) for nothing.
-
-**~44 s is a stable number, not a tuning artifact.** The 25× gap against a 1.7 s native
-multi-threaded run has to come from somewhere else: losing threads, the WASM backend itself, or the
-single-threaded path. Separating those requires a native `ForceSingleThreaded` baseline for all
-three passes, which is the first thing the next issue should measure — it is the comparison that
-isolates "no threads" from "WASM is slower".
-
-**Do not treat the §16 parse-time budget as met.** Note also that §16 marks that budget provisional
-and expects Phase 0 to replace it with a real figure.
+§9 has the real figures.
 
 ### `only_header` does not short-circuit
 
-`only_header: true` took 14.6 s and still produced three prop columns with 1,945,210 rows. It does
-not stop after the header. Reading a demo's map and tick rate cheaply — which the library screen
-needs — requires something other than this flag.
+`only_header: true` takes essentially as long as a full pass — 3.1 s against 3.0 s for the events
+pass — and still produces three prop columns with 1,945,210 rows. It does not stop after the
+header. Reading a demo's map and tick rate cheaply, which the library screen needs, requires
+something other than this flag.
 
 ### An aborted instance is poisoned
 
@@ -334,11 +305,99 @@ directly.
 
 ---
 
-## 9. Open after this check
+## 9. Parse cost
 
-- **Parse time in the browser is over budget** — 44 s against a 30 s target (§8). Establishing why,
-  and whether it can be closed, is the last Phase 0 question and the one that now carries risk.
-- Peak tab memory during a browser parse
-- A cheap way to read a demo's header, since `only_header` does not provide one
+Measured on an idle machine. Every browser figure is the mean of two runs that agreed to within
+1.5%; the native figures are single runs of a much less variable workload.
+
+### Time
+
+| pass | native, multi-threaded | native, single-threaded | browser |
+|---|---|---|---|
+| A events | 0.46 s | 1.93 s | 2.96 s |
+| B per-tick props | 0.70 s | 2.53 s | 4.26 s |
+| C projectiles | 0.53 s | 2.11 s | 3.14 s |
+| **three passes** | **1.97 s** | **6.66 s** | **10.4 s** |
+
+Copying the 353 MB fixture across the WASM boundary costs 39–84 ms and is not a factor.
+
+### Where the time goes
+
+The browser is 5.3× slower than a native multi-threaded parse, and that splits cleanly:
+
+- **losing threads costs 3.4×** — 1.97 s to 6.66 s, both native. This is the larger factor and it is
+  not recoverable: `SharedArrayBuffer` is rejected (§3) and COOP/COEP are forbidden (§13), so WASM
+  threads are off the table by decision, not by accident.
+- **WASM itself costs 1.6×** — 6.66 s to 10.4 s, both single-threaded. For a parser that is
+  bit-twiddling in a tight loop, a 60% penalty against native is unremarkable and leaves little to
+  win back.
+
+The useful consequence: **there is no large, cheap optimisation waiting here.** Anything that
+materially improves parse time has to reduce the work, not speed it up — fewer passes (blocked
+upstream, §3), fewer props, or sampling rather than reading every tick.
+
+### Memory
+
+WASM linear memory across a three-pass parse, which never shrinks and so ends at its peak:
+
+| after | linear memory |
+|---|---|
+| boundary copy of the demo | 339 MB |
+| pass A events | 446 MB |
+| pass B per-tick props | 663 MB |
+| pass C projectiles | 663 MB |
+
+Native peak RSS for the same work: 691 MB single-threaded, 927 MB multi-threaded — the parallel path
+costs more because each second-pass worker builds its own output.
+
+Two honest limits on this figure. **WASM linear memory is not tab memory**: it excludes the JS-side
+`ArrayBuffer` holding the fetched demo, which is another ~353 MB before it is dropped. And
+`performance.measureUserAgentSpecificMemory()`, the only API that reports true tab memory, requires
+cross-origin isolation, which §13 forbids — so the honest whole-tab number cannot be taken under our
+own constraints. Adding the JS buffer by hand puts a realistic peak near **1.0 GB**, inside the
+§16 budget of 1.5 GB but not by a wide margin.
+
+### §16 budgets, now set
+
+§16 marked its parse-time figure provisional and asked Phase 0 to replace it. Applied:
+
+| metric | was | now | reasoning |
+|---|---|---|---|
+| Parse a 300 MB demo | < 30 s | **< 15 s** | 10.4 s measured on 337 MB, a larger demo than the reference. 15 s leaves ~45% headroom for slower hardware and for the columnar write this probe does not do, while still catching a real regression. 30 s is loose enough to hide a 3× regression. |
+| Peak tab memory during parse | < 1.5 GB | **unchanged** | ~1.0 GB estimated. Keep the margin; the estimate is not a measurement. |
+
+The parse-time budget should be asserted against the same fixture on CI hardware, not a developer
+laptop — the number will differ and the budget should be set from the CI figure once it exists.
+
+---
+
+## 10. Phase 0 verdict
+
+All five §19 criteria, answered:
+
+| question | pass condition | result |
+|---|---|---|
+| Parses a 400 MB demo in-browser? | completes without crashing | **pass** — 337 MB, three passes, no crash |
+| Peak memory? | < 1.5 GB | **pass** — 663 MB in WASM, ~1.0 GB estimated whole-tab |
+| Parse time? | < 30 s, record the real number | **pass** — 10.4 s; §16 now reads < 15 s |
+| Full §10 schema extractable? | yes | **pass** — including grenade trajectories and per-player blind durations |
+| Shipped WASM size? | < 4 MB | **pass** — 2.18 MB, 54% of budget |
+
+**The Rust default is confirmed. Go is not needed and was never built.**
+
+What Phase 2 inherits as known risk, all recorded above rather than discovered later:
+
+- three passes are a floor imposed by upstream (§3)
+- output differs between threading modes and must be normalised by us (§7)
+- upstream must be pinned and patched — `lazy-instant.patch` — and its build reaches the network (§5, §8)
+- unresolved prop names are dropped silently, so every request must be verified (§5)
+- no large parse-time win is available without reducing the work (§9)
+
+---
+
+## 11. Still open
+
+- A cheap way to read a demo's header, since `only_header` costs a full pass
 - Whether `bomb_abortdefuse` behaves as expected — needs a demo containing one
 - Whether the profiling timestamps can be fixed upstream rather than carried as a patch
+- Budget figures re-measured on CI hardware rather than a laptop

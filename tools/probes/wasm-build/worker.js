@@ -1,8 +1,27 @@
-import init, { probe, ping, grow, env_check, clock_check } from './pkg/wasm_build_probe.js';
+import init, {
+  probe,
+  ping,
+  grow,
+  env_check,
+  clock_check,
+  linear_memory_bytes,
+} from './pkg/wasm_build_probe.js';
 
 const post = (message) => self.postMessage(message);
 
+const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(0)} MB`;
+
+// Reading memory is itself a call into the instance, so it throws once the instance has trapped.
+const memory = () => {
+  try {
+    return mb(linear_memory_bytes());
+  } catch {
+    return 'unreadable';
+  }
+};
+
 const attempt = (label, fn) => {
+  const before = memory();
   const started = performance.now();
   let report;
   try {
@@ -10,7 +29,8 @@ const attempt = (label, fn) => {
   } catch (error) {
     report = `THREW: ${error}`;
   }
-  post({ type: 'stage', label, ms: performance.now() - started, report });
+  const ms = performance.now() - started;
+  post({ type: 'stage', label, ms, report: `${report}\nlinear memory ${before} -> ${memory()}` });
 };
 
 const STAGES = ['header only', 'events', 'per-tick props', 'projectiles'];

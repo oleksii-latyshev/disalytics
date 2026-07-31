@@ -161,3 +161,15 @@ pub fn clock_check() -> String {
     let started = std::time::Instant::now();
     format!("Instant::now() ok, elapsed {:?}", started.elapsed())
 }
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn linear_memory_bytes() -> usize {
+    core::arch::wasm32::memory_size(0) * 65536
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[wasm_bindgen]
+pub fn linear_memory_bytes() -> usize {
+    0
+}
