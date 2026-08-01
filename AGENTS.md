@@ -600,11 +600,40 @@ URL on the pull request. Both rebuild from the run's `head_sha` and then run the
 against the URL they just produced. `cloudflare/wrangler-action` uses the `wrangler` already in the
 lockfile, so the version is pinned in exactly one place.
 
-Two things about `workflow_run` that are easy to get wrong. It hands repository secrets to the
+Three things about `workflow_run` that are easy to get wrong. It hands repository secrets to the
 triggering run's code, so the preview job checks `head_repository` and refuses forks — a fork's pull
-request has been linted, not vetted, and `CLOUDFLARE_API_TOKEN` is not something to hand it. And it
-is only ever read from the default branch, which means a change to `deploy.yml` cannot be exercised
-on the branch that makes it; the first real run is always the one after the merge.
+request has been linted, not vetted, and `CLOUDFLARE_API_TOKEN` is not something to hand it. It is
+only ever read from the default branch, which means a change to `deploy.yml` cannot be exercised on
+the branch that makes it; the first real run is always the one after the merge. And **the job does
+not run at the commit that triggered it** — it runs at the default branch's head. This is why both
+jobs check out `github.event.workflow_run.head_sha` explicitly, and it is what forces the shape of
+the section below.
+
+### Deployment records — why the two jobs use different mechanisms
+
+**Exists since #30.** Every deploy is recorded under the repository's Deployments, so what is live,
+from which commit, and whether it passed §13 is answerable from GitHub rather than from a workflow
+log. `cloudflare/wrangler-action` does not do this for Workers: it creates GitHub deployments only
+on the Pages code path, so both mechanisms below are asked for explicitly.
+
+**Production uses a job-level `environment:`.** A `push` run on `main` is the one case where the
+job's own commit *is* the deployed commit, so GitHub attaching the deployment to the running SHA is
+correct. It opens the deployment when the job starts and closes it with the job's conclusion, which
+is what makes a failed smoke test land as a failed deployment instead of a healthy one — no extra
+step reports it. `url:` reads `steps.deploy.outputs.deployment-url`. The side benefit is that
+`production` becomes a real GitHub environment, which protection rules can later be attached to.
+
+**Preview uses the Deployments API against `github.event.workflow_run.head_sha`.** A job-level
+`environment:` here would attach the deployment to `main` — invisible on the pull request, and a
+false claim about what `main` is running. So the preview job opens a deployment on the pull
+request's own head SHA (`deployments: write`, `transient_environment: true`,
+`production_environment: false`), marks it `in_progress`, and closes it in an `always()` step with
+`success`, `failure`, or — when concurrency cancelled a superseded upload — `inactive`. Every status
+carries `log_url` back to the run. Creating the deployment needs `auto_merge: false` and
+`required_contexts: []`, or the API answers 202/409 and creates nothing.
+
+**Do not "simplify" the preview job into an `environment:` block.** It looks like duplication of
+the production job and is not; the SHA behaviour above is the whole reason.
 
 Also in use: **Renovate** (handles monorepos better than Dependabot), **GitHub Releases** for test
 fixture demos. Never Git LFS — 1 GB free quota, easy to exhaust, painful to undo. Never commit
