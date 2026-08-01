@@ -1,0 +1,3 @@
+# Workers static assets, unlike Pages, uploads everything under assets.directory verbatim.
+node_modules
+.git
