@@ -421,9 +421,20 @@ bun run build       # tsc -b && vite build
 cargo test -p demo-parser
 ```
 
-All of these must pass before a push. **Lefthook** runs Biome + typecheck on staged files
-pre-commit and the test suite pre-push, so CI is the second line of defence rather than the first.
-CI runs the same set and blocks deploys otherwise.
+All of these must pass before a push. **Lefthook** (`lefthook.yml`) enforces part of that locally,
+so CI is the second line of defence rather than the first:
+
+- **pre-commit** — Biome over the staged files only, and `bun run typecheck` when the commit touches
+  `*.ts`/`*.tsx`. `tsc` is a whole-project check by nature: the staged files decide *whether* it
+  runs, never *what* it checks. Skipped during a `rebase`, which only replays commits that were
+  already checked; not skipped during a `merge`, where the conflict resolution is new code.
+- **pre-push** — `bun run test`.
+
+Hooks install themselves on `bun install` (`trustedDependencies` in the root `package.json`); there
+is no manual setup step. Skipping a hook deliberately is documented in `CONTRIBUTING.md` §5 — say so
+in the PR when you do.
+
+CI runs the full set and blocks deploys otherwise.
 
 Commits and PR titles follow `CONTRIBUTING.md` §4.
 

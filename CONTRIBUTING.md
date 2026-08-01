@@ -200,6 +200,51 @@ when the repository goes public:
 - Require branches to be up to date before merging
 - No direct pushes, no force pushes
 
+### Git hooks
+
+Lefthook installs `pre-commit` and `pre-push` on `bun install` — `lefthook` is listed in
+`trustedDependencies`, so its install step runs and writes `.git/hooks`. There is no manual setup
+step, and no `postinstall` script of our own. If the hooks ever go missing, `bun lefthook install`
+restores them.
+
+What runs, and against what (`lefthook.yml`, and `CODE_REQUIREMENTS.md` §13):
+
+| Hook | Job | Scope |
+|---|---|---|
+| pre-commit | `biome check` | the staged files, passed as arguments |
+| pre-commit | `bun run typecheck` | the whole project, and only when the commit stages a `*.ts`/`*.tsx` file |
+| pre-push | `bun run test` | the whole test suite |
+
+`tsc` has no staged-file mode — it type-checks a project, not a file list, and a file list would
+report errors that are artefacts of the missing context. So the staged files decide *whether* the
+typecheck runs, not *what* it covers. It is a full `turbo run typecheck`, cached, ~1.4 s cold.
+
+Biome does not rewrite files here. A failure prints what to run (`bun run check:fix`); it never
+stages fixes on your behalf, because writing a file that is only partially staged would commit
+hunks you did not stage.
+
+Pre-commit is skipped during a `rebase`: those commits were checked when they were written, and
+re-checking every replayed commit is what makes people turn hooks off for good. It is **not**
+skipped during a `merge` — a conflict resolution is new code that nothing has looked at yet, and
+that is exactly when a check earns its keep.
+
+### Skipping a hook on purpose
+
+Sometimes you need the commit anyway — a WIP commit before a bisect, a rebase that has to land
+before it can pass, a push whose failure is the point. Skip deliberately and narrowly:
+
+```bash
+LEFTHOOK_EXCLUDE=typecheck git commit -m "..."   # one job
+LEFTHOOK=0 git commit -m "..."                   # all hooks, this command
+LEFTHOOK=0 git push                              # skip the pre-push tests
+```
+
+`git commit --no-verify` works too, and skips everything for that command.
+
+Two rules around this: a skipped hook is temporary, and a PR that reached `main` with a skipped
+check says so in its body. Turning hooks off permanently (`bun lefthook uninstall`) is not a
+supported state — if a hook is wrong often enough to want that, fix the hook.
+
 ---
 
 ## 6. Issue Templates
