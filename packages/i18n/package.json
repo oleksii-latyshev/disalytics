@@ -1,0 +1,24 @@
+{
+  "name": "@disa/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-intl": "^10.1.19"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "@types/react": "19.2.2",
+    "typescript": "5.9.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}
