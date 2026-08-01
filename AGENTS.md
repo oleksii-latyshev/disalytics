@@ -485,6 +485,9 @@ is running `build` on Node — but do not assume that in advance.
 Cloudflare recommends Workers with static assets over Pages for new projects; static and dynamic
 live in one deployment, so adding `apps/api` later needs no migration.
 
+Production is **https://disalytics.disa-67b.workers.dev**. `disalytics.gg` is the eventual home
+(`CONTRIBUTING.md` §5) but pointing it here is an account-level step that has not been taken.
+
 `wrangler.jsonc` sits at the repository root and declares no `main`: this is an assets-only Worker,
 and hard rule 1 is the reason it is going to stay that way.
 
@@ -548,6 +551,12 @@ than a hardcoded path list.
 `deploy.yml` runs it after every production deploy and every preview upload. Locally,
 `bun run preview` then `bun run smoke http://127.0.0.1:8787` runs the same assertions against
 workerd, which is the same asset server production uses.
+
+It waits for the URL to route before asserting anything. A newly created `workers.dev` route 404s
+at the edge for up to a minute after `wrangler deploy` has already printed it — the first
+production run of `deploy.yml` failed exactly this way, on a deployment that was in fact correct.
+A 404 that means "not routed yet" and a 404 that means "broken" are indistinguishable from a single
+request, so the wait is what makes the difference legible.
 
 Until `crates/` ships a binary there is no `.wasm` in `dist`, so that one assertion reports `skip`
 with its reason instead of passing quietly. Dropping a `.wasm` into `dist/assets` turns it green —
