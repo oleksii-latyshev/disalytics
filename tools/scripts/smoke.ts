@@ -14,6 +14,11 @@ const ISOLATION_HEADERS = ['cross-origin-opener-policy', 'cross-origin-embedder-
 // Any path the SPA never emits as a file, so a 200 here can only come from not_found_handling.
 const CLIENT_ROUTE = '/round/12/kill/3';
 
+// A freshly created workers.dev route 404s at the edge for a while after `wrangler deploy` returns
+// its URL. Measured at ~60 s on the first deploy of the Worker; later deploys serve immediately.
+const READY_TIMEOUT_MS = 180_000;
+const READY_POLL_MS = 5_000;
+
 type Status = 'pass' | 'fail' | 'skip';
 type Check = { name: string; status: Status; detail: string };
 
@@ -154,6 +159,28 @@ async function checkWasmMimeType(baseUrl: string): Promise<Check> {
   };
 }
 
+async function waitUntilRouted(url: string): Promise<void> {
+  const startedAt = Date.now();
+  const deadline = startedAt + READY_TIMEOUT_MS;
+  let attempts = 0;
+
+  while (Date.now() < deadline) {
+    const response = await fetchPath(url, '/').catch(() => undefined);
+    if (response?.status === 200) {
+      const waitedMs = Date.now() - startedAt;
+      if (attempts > 0) console.log(`  route became live after ${Math.round(waitedMs / 1000)}s\n`);
+      return;
+    }
+    attempts += 1;
+    await Bun.sleep(READY_POLL_MS);
+  }
+
+  console.error(
+    `  ${url} did not return 200 within ${READY_TIMEOUT_MS / 1000}s — it is not being routed.`,
+  );
+  process.exit(1);
+}
+
 async function runChecks(url: string): Promise<Check[]> {
   return [
     ...(await checkDocument(url)),
@@ -176,6 +203,8 @@ if (!existsSync(DIST_DIR)) {
 }
 
 console.log(`Deploy smoke test — ${baseUrl} (AGENTS.md §13)\n`);
+
+await waitUntilRouted(baseUrl);
 
 const checks = await runChecks(baseUrl).catch((reason: unknown) => {
   const message = reason instanceof Error ? reason.message : String(reason);
