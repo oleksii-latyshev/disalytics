@@ -56,7 +56,7 @@
   },
   "overrides": [
     {
-      "includes": ["apps/web/src/styles/motion.css"],
+      "includes": ["packages/ui/src/styles/motion.css"],
       "linter": {
         "rules": {
           "complexity": {

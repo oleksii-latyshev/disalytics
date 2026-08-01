@@ -1,0 +1,15 @@
+/* Overrides applied to vendored shadcn primitives from outside, so the vendored files stay
+   byte-identical to upstream and `shadcn add --overwrite` remains safe — CODE_REQUIREMENTS.md §8.
+
+   shadcn's default control is 36px (`h-9`). DESIGN.md §4 specifies 28px, and calls the taller
+   default generic. Only the default size is rewritten; the `sm`, `lg` and `icon` variants keep
+   their own heights, which is why this targets the utility class rather than the element.
+
+   This binds to shadcn's current default height class. If upstream changes it, these rules stop
+   applying silently rather than breaking loudly, so control height is worth asserting whenever the
+   primitives are upgraded. */
+
+[data-slot="button"].h-9,
+[data-slot="input"].h-9 {
+  height: var(--height-control);
+}
