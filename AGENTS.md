@@ -664,6 +664,10 @@ proves worth it.
 - [x] Default branch name — `main`, in use since the repository was created.
 - [x] Peak memory with the whole demo in WASM linear memory (§7.2) — 663 MB, `docs/PARSER.md` §9.
 - [ ] A cheap way to read a demo header — `only_header` costs a full pass (`docs/PARSER.md` §8)
+- [ ] **Is there a light theme?** `CODE_REQUIREMENTS.md` §1 promises a `core/theme/` light/dark
+      provider and §6.4 stores `theme` in localStorage, but `docs/DESIGN.md` designs only the dark
+      instrument palette and §1 argues for it at length. The app currently ships dark as its only
+      theme. Either design a light palette or drop the provider from the docs.
 - [ ] Does Vite + `vite-plugin-pwa` build cleanly on the Bun runtime? — Phase 1
 - [ ] `.nav` mesh occlusion for the audibility model — revisit after Phase 5
 - [ ] Tauri: is native parsing worth the second shell? — revisit after Phase 6

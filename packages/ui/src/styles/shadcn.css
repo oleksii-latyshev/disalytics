@@ -1,0 +1,83 @@
+/* The bridge between the design system and shadcn's vocabulary.
+
+   shadcn primitives read a fixed set of variable names. Rather than rename our tokens to match
+   them — which would lose the meaning DESIGN.md §2 gives to surfaces and ink — every shadcn
+   variable is defined here in terms of ours. Our tokens stay the source of truth, the vendored
+   primitives stay untouched and upgradeable, and `shadcn add` is safe to run at any time.
+
+   CODE_REQUIREMENTS.md §8 requires exactly this: restyle through the token layer, never by editing
+   a vendored file. */
+
+:root {
+  --background: var(--color-surface-0);
+  --foreground: var(--color-ink);
+
+  --card: var(--color-surface-1);
+  --card-foreground: var(--color-ink);
+
+  --popover: var(--color-surface-2);
+  --popover-foreground: var(--color-ink);
+
+  /* Not a hue. DESIGN.md §1 reserves saturation for data, so a branded primary would collide with
+     --color-ct on the same screen: blue chrome against blue Counter-Terrorists. Interaction is
+     luminance, so the primary action is ink on graphite. */
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-surface-0);
+
+  --secondary: var(--color-surface-2);
+  --secondary-foreground: var(--color-ink);
+
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-ink-dim);
+
+  --accent: var(--color-surface-2);
+  --accent-foreground: var(--color-ink);
+
+  --destructive: var(--color-damage);
+  --destructive-foreground: var(--color-ink);
+
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-focus);
+
+  --chart-1: var(--color-ct);
+  --chart-2: var(--color-t);
+  --chart-3: var(--color-damage);
+  --chart-4: var(--color-nade-he);
+  --chart-5: var(--color-objective);
+
+  /* 4px, not shadcn's 0.5rem — DESIGN.md §4 reads soft-cornered defaults as generic. */
+  --radius: var(--radius-instrument);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+}

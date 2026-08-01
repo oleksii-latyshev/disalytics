@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "@disa/ui/styles";
+
+@source "../../../packages/ui/src";
+@source "./";
+
+/* The app is dark, full stop — DESIGN.md §1 argues the instrument is dark and no light palette
+   exists. shadcn writes its dark appearance behind `dark:`, which assumes a light default with a
+   `.dark` override, so those rules would never fire here. Making the variant unconditional is what
+   matches reality; it becomes a real selector again on the day a light theme is designed. */
+@custom-variant dark (&);
