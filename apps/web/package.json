@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@disa/i18n": "*",
     "@disa/ui": "*",
     "class-variance-authority": "^0.7.1",
     "radix-ui": "^1.6.7",

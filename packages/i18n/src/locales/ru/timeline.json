@@ -1,0 +1,3 @@
+{
+  "roundsRemaining": "{count, plural, one {Остался # раунд} few {Осталось # раунда} many {Осталось # раундов} other {Осталось # раунда}}"
+}

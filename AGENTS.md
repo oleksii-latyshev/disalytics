@@ -66,7 +66,7 @@ Violating any of these is a bug, not a trade-off.
 | Bundler | Vite | decided |
 | Lint + format | Biome | decided |
 | Styling | Tailwind CSS + shadcn/ui | decided |
-| i18n | i18next + react-i18next, typed keys | decided, see §11 |
+| i18n | **react-intl (FormatJS)**, typed keys | decided, see §11 |
 | UI state | Zustand (discrete state only) | decided |
 | Playback clock | plain mutable object + rAF — not a state library | decided |
 | Radar rendering | Canvas 2D (PixiJS only if measurably needed) | decided, see §9 |
@@ -399,8 +399,10 @@ locales are dynamic imports, never bundled together.
 ### Keys are typed
 
 The key union is generated from the `en` resources by `bun run i18n:check` and consumed via
-i18next module augmentation. **A typo in a key is a compile error, not a runtime fallback.** An
-untyped key path is the difference between real i18n and stringly-typed guessing.
+module augmentation of the `FormatjsIntl.Message` interface. **A typo in a key is a compile error,
+not a runtime fallback.** An untyped key path is the difference between real i18n and stringly-typed
+guessing. The same augmentation makes the message record react-intl is given a
+`Record<TranslationKey, string>`, so an incomplete locale is a type error as well as a test failure.
 
 ### Game vocabulary is not translated
 
@@ -554,7 +556,7 @@ CI assertions where possible. A regression here is a blocker.
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
-| JS bundle, excl. WASM | < 500 KB gzip | single locale only |
+| JS bundle, excl. WASM | < 500 KB gzip | single locale only. 75.6 KB at the end of #16 — app shell, React and react-intl, plus the one locale chunk. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard |
 
 ---
@@ -652,7 +654,10 @@ proves worth it.
 - Cloudflare Workers static assets, not Pages
 - Canvas 2D, not react-three-fiber
 - Zustand for discrete state; clock outside React; signals rejected for now
-- i18next with generated typed keys; game vocabulary stays in English
+- react-intl with generated typed keys; game vocabulary stays in English. i18next was the original
+  choice, but it cannot read the ICU message syntax `CODE_REQUIREMENTS.md` §10 is written in without
+  `i18next-icu` + `intl-messageformat` on top — three packages to react-intl's one, for the same
+  formatter underneath
 - Public repository; issue-driven flow; squash-only merges
 - Positional sampling starts at **16 Hz**. If duel analysis proves it insufficient in Phase 5, add
   full-tick-rate *detail windows* (±3 s) around kills — ~90 KB per kill, ~7 MB per match — rather

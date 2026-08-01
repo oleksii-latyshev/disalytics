@@ -35,7 +35,7 @@ Phase 0 is complete — the parser is validated and the findings are in `docs/PA
 ESLint + Prettier, and every package is `@disa/*`.
 
 Phase 1 is in progress, so `AGENTS.md` §4 still describes packages that do not exist yet —
-`demo-core`, `demo-parser`, `demo-store`, `map-data`, `i18n`, and everything under `crates/`. Their
+`demo-core`, `demo-parser`, `demo-store`, `map-data`, and everything under `crates/`. Their
 absence is a schedule fact, not a contradiction.
 
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
@@ -108,10 +108,12 @@ bun run dev            # vite dev server for apps/web
 bun run build          # tsc --noEmit && vite build -> apps/web/dist
 bun run typecheck
 bun run check          # biome — lint + format (check:fix to apply)
+bun run test           # vitest, node environment
+bun run i18n:check     # en/ru parity + regenerates the typed key union
 ```
 
-Still to arrive: `test` (Vitest), `i18n:check`, `size`, `wasm:build`, `mapdata:generate`,
-`preview`, and `cargo test -p demo-parser`. See `AGENTS.md` §5 for the full intended set.
+Still to arrive: `size`, `wasm:build`, `mapdata:generate`, `preview`, and
+`cargo test -p demo-parser`. See `AGENTS.md` §5 for the full intended set.
 
 ---
 

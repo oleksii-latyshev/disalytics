@@ -1,3 +1,4 @@
+import { I18nProvider, loadInitialLocale } from '@disa/i18n';
 import { StrictMode } from 'react';
 import './styles.css';
 import { createRoot } from 'react-dom/client';
@@ -8,8 +9,16 @@ if (!container) {
   throw new Error('Root container #root is missing from index.html');
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const start = async () => {
+  const { locale, messages } = await loadInitialLocale();
+
+  createRoot(container).render(
+    <StrictMode>
+      <I18nProvider locale={locale} messages={messages}>
+        <App />
+      </I18nProvider>
+    </StrictMode>,
+  );
+};
+
+void start();
