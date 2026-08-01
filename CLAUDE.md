@@ -98,6 +98,12 @@ commit titles, scope = the `area:` label without its prefix.
 Use the `task` skill for the full loop, `i18n-key` when adding a user-facing string, and `dod`
 before opening a PR.
 
+Lefthook installs itself on `bun install` and runs Biome over the **staged files** plus a
+whole-project `bun run typecheck` pre-commit, and `bun run test` pre-push. `tsc` has no staged-file
+mode, so the staged files decide whether it runs, not what it checks. `LEFTHOOK=0` or
+`LEFTHOOK_EXCLUDE=<job>` skips deliberately — say so in the PR when you do. Details in
+`CONTRIBUTING.md` §5.
+
 ---
 
 ## Commands
