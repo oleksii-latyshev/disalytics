@@ -143,3 +143,5 @@ user-facing strings. Violating one of them is a bug, not a trade-off.
 The loop is `issue → branch (gh issue develop) → commits → PR (Closes #N) → CI green → squash
 merge`. No issue, no branch; one PR per issue; conventional commit titles. Details, labels and the
 exact `gh` commands are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+<!-- throwaway: verifying the preview deployment job for #30; this branch is not merged -->
