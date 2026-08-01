@@ -116,10 +116,11 @@ bun run typecheck
 bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity + regenerates the typed key union
+bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
 ```
 
-Still to arrive: `size`, `wasm:build`, `mapdata:generate`, `preview`, and
-`cargo test -p demo-parser`. See `AGENTS.md` §5 for the full intended set.
+Still to arrive: `wasm:build`, `mapdata:generate`, `preview`, and `cargo test -p demo-parser`.
+See `AGENTS.md` §5 for the full intended set.
 
 ---
 

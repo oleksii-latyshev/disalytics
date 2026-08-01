@@ -191,14 +191,22 @@ Settings → General → Pull Requests (also available via `gh repo edit` flags 
 Otherwise GitHub concatenates every branch commit into the message and the conventional-commit
 subject is lost.
 
-Branch protection on `main` — **not yet applied.** GitHub does not offer it on a private
-repository outside the paid plans, and the required status checks do not exist until Phase 1 ships
-the workflows. Until then the rules below are held by discipline, not by the platform. Apply them
-when the repository goes public:
+Branch protection on `main` — **ready to switch on.** `.github/workflows/ci.yml` exists since #20
+and runs `typecheck` → `check` → `i18n:check` → `test` → `build` → `size` on every pull request and
+every push to `main`. Once it has run green once, apply:
 
-- Required status checks: `typecheck`, `check`, `i18n:check`, `test`, `build`, `size`
+- Required status check: **`ci`** — one job, so one check. The six commands are steps inside it, not
+  separate checks; a red step fails `ci` and names itself in the log.
 - Require branches to be up to date before merging
 - No direct pushes, no force pushes
+
+One caveat to know before turning the check on: `ci.yml` carries `paths-ignore: ['crates/**']`, so a
+pull request that touches **only** `crates/**` never starts it, and a required check that never
+starts stays pending forever. That is deliberate — a frontend workflow has no business rebuilding
+the parser (`AGENTS.md` §15) — but it means parser-only pull requests wait on `wasm.yml` and need
+`ci` marked required-but-not-blocking, or an admin merge, until that workflow exists.
+
+Until protection is applied the rules above are held by discipline, not by the platform.
 
 ### Git hooks
 
