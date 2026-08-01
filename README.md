@@ -29,8 +29,9 @@ Pre-release. Nothing is deployed and there is no build to try yet.
   trajectories and per-player blind durations both extractable. Full findings in
   [`docs/PARSER.md`](docs/PARSER.md).
 - **Phase 1 — foundation: in progress.** Bun + Turborepo + Vite + Biome, the `apps/web` skeleton,
-  `packages/i18n` with both locales wired from day one, and the design tokens are in. CI workflows,
-  size gates and the Cloudflare Workers deploy are not.
+  `packages/i18n` with both locales wired from day one, the design tokens, and the `ci.yml` gate
+  with its bundle-size budget are in. The Cloudflare Workers deploy and the parser workflow are
+  not.
 
 Phases 2–6 — parsing pipeline, radar, playback, analytics, PWA polish — are described in
 [`AGENTS.md`](AGENTS.md) §19.
@@ -110,11 +111,12 @@ bun run typecheck      # tsc --noEmit across the workspace
 bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest
 bun run i18n:check     # en/ru parity + regenerates the typed key union
+bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
 bun run repo:labels    # sync the GitHub label taxonomy (idempotent)
 bun run repo:milestones
 ```
 
-Planned, once the phases that need them land: `wasm:build`, `mapdata:generate`, `size`, `preview`,
+Planned, once the phases that need them land: `wasm:build`, `mapdata:generate`, `preview`,
 `e2e`, and `cargo test -p demo-parser`. The full intended set is in [`AGENTS.md`](AGENTS.md) §5.
 
 ---

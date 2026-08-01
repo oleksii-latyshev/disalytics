@@ -532,9 +532,12 @@ The repository is **public**: standard-runner minutes are free, as is CodeQL.
 `wasm-opt`, size check, upload as a release asset. Caches the cargo registry and target dir.
 *Never rebuild the parser on a frontend-only commit.*
 
-**`ci.yml`** — every PR and push: `setup-bun` (pinned) → `bun install --frozen-lockfile` →
-`typecheck` → `check` (Biome) → `i18n:check` → `test` → `build` → `size` gate. Required status
-checks on the default branch.
+**`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
+`devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
+`test` → `build` → `size` gate, in one job, in that order. Bun's install cache is keyed on
+`bun.lock`. `paths-ignore: crates/**`, so a parser-only commit does not run the frontend pipeline —
+the mirror of the rule above. Required status checks on the default branch: see `CONTRIBUTING.md`
+§5, including what `paths-ignore` costs a parser-only pull request.
 
 **`deploy.yml`** — on push to the default branch after CI passes: build, then
 `cloudflare/wrangler-action` with `CLOUDFLARE_API_TOKEN` from repository secrets.
@@ -556,7 +559,7 @@ CI assertions where possible. A regression here is a blocker.
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
-| JS bundle, excl. WASM | < 500 KB gzip | single locale only. 75.6 KB at the end of #16 — app shell, React and react-intl, plus the one locale chunk. |
+| JS bundle, excl. WASM | < 500 kB gzip | single locale only. 75.6 kB at the end of #16 — app shell, React and react-intl, plus the one locale chunk. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard |
 
 ---

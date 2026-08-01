@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['crates/**']
+  pull_request:
+    paths-ignore: ['crates/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # Keep in step with devEngines.packageManager.version in package.json.
+          bun-version: 1.3.13
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: typecheck
+        run: bun run typecheck
+
+      - name: check
+        run: bun run check
+
+      - name: i18n:check
+        run: bun run i18n:check
+
+      - name: test
+        run: bun run test
+
+      - name: build
+        run: bun run build
+
+      - name: size
+        run: bun run size
