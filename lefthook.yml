@@ -1,0 +1,23 @@
+assert_lefthook_installed: true
+
+pre-commit:
+  parallel: true
+  skip:
+    - merge
+    - rebase
+  jobs:
+    - name: biome
+      glob: '*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css}'
+      run: bun biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      fail_text: 'Biome failed. Run `bun run check:fix`, restage, and commit again.'
+
+    - name: typecheck
+      glob: '*.{ts,tsx}'
+      run: bun run typecheck
+      fail_text: 'tsc failed. This is a whole-project check, so the error may sit outside the staged files.'
+
+pre-push:
+  jobs:
+    - name: test
+      run: bun run test
+      fail_text: 'Tests failed. Fix them, or push with LEFTHOOK=0 and say so in the pull request.'
