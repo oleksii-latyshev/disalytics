@@ -38,6 +38,10 @@ Phase 1 is in progress, so `AGENTS.md` §4 still describes packages that do not 
 `demo-core`, `demo-parser`, `demo-store`, `map-data`, and everything under `crates/`. Their
 absence is a schedule fact, not a contradiction.
 
+Hosting has existed since #23: an assets-only Cloudflare Worker, `wrangler.jsonc` at the root,
+`deploy.yml` running downstream of a green `ci`. Every deploy and every pull-request preview is
+checked by `bun run smoke` against the contract in `AGENTS.md` §13.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
@@ -117,9 +121,11 @@ bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity + regenerates the typed key union
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
+bun run preview        # build, then serve apps/web/dist through wrangler dev on :8787
+bun run smoke <url>    # assert the AGENTS.md §13 deploy contract against a running URL
 ```
 
-Still to arrive: `wasm:build`, `mapdata:generate`, `preview`, and `cargo test -p demo-parser`.
+Still to arrive: `wasm:build`, `mapdata:generate`, and `cargo test -p demo-parser`.
 See `AGENTS.md` §5 for the full intended set.
 
 ---

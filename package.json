@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "preview": "turbo run build && wrangler dev",
+    "smoke": "bun tools/scripts/smoke.ts",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "check": "biome check .",
@@ -20,7 +22,8 @@
     "lefthook": "^2.1.10",
     "turbo": "^2.10.7",
     "typescript": "5.9.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "4.118.0"
   },
   "trustedDependencies": [
     "lefthook"

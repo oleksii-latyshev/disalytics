@@ -166,7 +166,8 @@ bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
 bun run mapdata:generate     # regenerate map constants from Valve overview files
 bun run i18n:check           # fail on missing/orphaned keys, regenerate the key union
 bun run size                 # bundle + wasm sizes against budgets (§16)
-bun run preview              # local preview via wrangler dev
+bun run preview              # build, then serve apps/web/dist through wrangler dev
+bun run smoke <url>          # assert the §13 deploy contract against a running URL
 
 cargo test -p demo-parser    # core parser tests, no WASM toolchain needed
 ```
@@ -484,17 +485,45 @@ is running `build` on Node — but do not assume that in advance.
 Cloudflare recommends Workers with static assets over Pages for new projects; static and dynamic
 live in one deployment, so adding `apps/api` later needs no migration.
 
+`wrangler.jsonc` sits at the repository root and declares no `main`: this is an assets-only Worker,
+and hard rule 1 is the reason it is going to stay that way.
+
 ```jsonc
 // wrangler.jsonc
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "disalytics",
   "compatibility_date": "2026-07-01",
+  "workers_dev": true,
+  "preview_urls": true,
   "assets": {
     "directory": "./apps/web/dist",
     "not_found_handling": "single-page-application"
   }
 }
 ```
+
+`workers_dev` publishes production on `workers.dev`. `preview_urls` is what makes
+`wrangler versions upload` return a per-version URL, which is how pull requests get a preview
+(§15) — it defaults to whatever `workers_dev` is, and is written out because the pull-request flow
+depends on it.
+
+### Caching
+
+Workers serves static assets as `Cache-Control: public, max-age=0, must-revalidate` by default.
+Immutable caching is **not** automatic and has to be asked for, in `apps/web/public/_headers`:
+
+```
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+```
+
+Vite content-hashes everything it writes into `assets/` — JS, CSS, fonts, and the WASM binary when
+it arrives — so the one rule covers all of it. `index.html` keeps the revalidating default on
+purpose: it is the one file whose name never changes.
+
+`_headers` and `.assetsignore` live in `apps/web/public/`, not in the assets directory, because
+`apps/web/dist` is generated. Vite copies `public/` verbatim, dotfiles included.
 
 Constraints:
 
@@ -507,6 +536,22 @@ Constraints:
   smoke test.
 - **Do not set COOP/COEP headers.**
 - Unlike Pages, Workers does not auto-exclude `node_modules`/`.git` — add `.assetsignore`.
+
+### The smoke test
+
+`bun run smoke <url>` (`tools/scripts/smoke.ts`) asserts the list above against a running
+deployment: the shell loads, an unknown path still returns the shell, hashed assets come back
+`immutable`, neither COOP nor COEP is set, and `.wasm` is `application/wasm`. It reads
+`apps/web/dist` to decide what to request, so it always tests the build that was shipped rather
+than a hardcoded path list.
+
+`deploy.yml` runs it after every production deploy and every preview upload. Locally,
+`bun run preview` then `bun run smoke http://127.0.0.1:8787` runs the same assertions against
+workerd, which is the same asset server production uses.
+
+Until `crates/` ships a binary there is no `.wasm` in `dist`, so that one assertion reports `skip`
+with its reason instead of passing quietly. Dropping a `.wasm` into `dist/assets` turns it green —
+Phase 2 inherits the check rather than having to remember it.
 
 ---
 
@@ -539,9 +584,18 @@ The repository is **public**: standard-runner minutes are free, as is CodeQL.
 the mirror of the rule above. Required status checks on the default branch: see `CONTRIBUTING.md`
 §5, including what `paths-ignore` costs a parser-only pull request.
 
-**`deploy.yml`** — on push to the default branch after CI passes: build, then
-`cloudflare/wrangler-action` with `CLOUDFLARE_API_TOKEN` from repository secrets.
-`wrangler versions upload` gives PR preview URLs.
+**`deploy.yml`** — **exists since #23.** Triggered by `workflow_run` on `ci`, so it is strictly
+downstream of a green pipeline instead of racing one. A successful `push` run on `main` deploys
+production; a successful `pull_request` run does `wrangler versions upload` and comments the preview
+URL on the pull request. Both rebuild from the run's `head_sha` and then run the §13 smoke test
+against the URL they just produced. `cloudflare/wrangler-action` uses the `wrangler` already in the
+lockfile, so the version is pinned in exactly one place.
+
+Two things about `workflow_run` that are easy to get wrong. It hands repository secrets to the
+triggering run's code, so the preview job checks `head_repository` and refuses forks — a fork's pull
+request has been linted, not vetted, and `CLOUDFLARE_API_TOKEN` is not something to hand it. And it
+is only ever read from the default branch, which means a change to `deploy.yml` cannot be exercised
+on the branch that makes it; the first real run is always the one after the merge.
 
 Also in use: **Renovate** (handles monorepos better than Dependabot), **GitHub Releases** for test
 fixture demos. Never Git LFS — 1 GB free quota, easy to exhaust, painful to undo. Never commit
