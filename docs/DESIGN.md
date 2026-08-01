@@ -84,13 +84,22 @@ Deliberately not Inter + JetBrains Mono — that pairing is the current default 
 
 | Role | Face | Use |
 |---|---|---|
-| UI / display | **Archivo** (600, 500) | headings, buttons, section labels |
-| Dense labels | **Archivo Narrow** (500) | table headers, timeline labels, compact chips |
+| UI / display | **Wix Madefor Display** (600, 500) | headings, buttons, section labels |
+| Dense labels | **Roboto Condensed** (500) | table headers, timeline labels, compact chips |
 | Data / numerals | **IBM Plex Mono** (400, 500) | every number, tick, coordinate, timestamp |
 
-Archivo is a grotesque with enough width variation to stay legible when compressed; IBM Plex Mono
-is technical without the "code editor" association of the usual choices. Both are free and
-self-hosted — no external font requests, since the app must work offline.
+Wix Madefor Display is a grotesque with enough width variation to stay legible when compressed; IBM
+Plex Mono is technical without the "code editor" association of the usual choices. All three are
+free and self-hosted — no external font requests, since the app must work offline.
+
+**This is not the original selection.** The first version of this document chose Archivo and Archivo
+Narrow. Both were dropped because **Archivo contains no Cyrillic glyphs at all** — inspection of the
+variable font found 653 codepoints and zero in `U+0400-04FF` — which would have left the entire
+Russian interface in a system fallback. IBM Plex Sans Condensed was considered for the dense-label
+role and also rejected: it ships `cyrillic-ext` but not the basic `U+0400-045F` block.
+
+The lesson generalises: **a typeface is not a candidate for this product until its Cyrillic coverage
+has been checked in the font file**, not in its marketing copy.
 
 ### Rules
 
@@ -99,7 +108,7 @@ self-hosted — no external font requests, since the app must work offline.
 - Type scale (px): `11 · 12 · 13 · 14 · 16 · 20 · 28`. Nothing larger appears in the tool itself;
   large type belongs on the landing page, not the instrument.
 - Line height 1.3 in dense tables, 1.5 in prose.
-- Labels are `Archivo Narrow` 11px, uppercase, `letter-spacing: 0.06em`, `--ink-dim`.
+- Labels are `Roboto Condensed` 11px, uppercase, `letter-spacing: 0.06em`, `--ink-dim`.
 - Sentence case for everything else. No title case, no all-caps body text.
 
 ---
@@ -209,8 +218,10 @@ retrofit.
   with a minimum, never a maximum.
 - Truncation is a last resort and always carries a title/tooltip with the full text. Never truncate
   a button label — shorten the copy in both locales instead.
-- Archivo Narrow handles dense Cyrillic well; verify the specific weights render correctly in
-  Cyrillic before shipping — not every Latin-designed grotesque does.
+- All three faces are self-hosted with `latin`, `latin-ext`, `cyrillic` and `cyrillic-ext` subsets,
+  and their Cyrillic rendering is verified in the browser rather than assumed — the check is that
+  the Cyrillic face actually loads and that the text does not measure the same as the system
+  fallback. Not every Latin-designed grotesque carries Cyrillic at all; see §3.
 - Numbers stay in IBM Plex Mono in both locales. Only the separators change, via `Intl`.
 - Game vocabulary stays in Latin script in the Russian UI (`AK-47`, `Mirage`, `Mid`). Mixed-script
   lines are normal here and correct — that is how the audience speaks. Do not add visual treatment
