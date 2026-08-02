@@ -39,8 +39,10 @@ Phase 1 is in progress, so `AGENTS.md` §4 still describes packages that do not 
 absence is a schedule fact, not a contradiction.
 
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
-`wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy and
-every pull-request preview is checked by `bun run smoke` against the contract in `AGENTS.md` §13.
+`wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
+checked by `bun run smoke` against the contract in `AGENTS.md` §13 and recorded as a GitHub
+deployment. Pull requests get no preview deployment: previews are off since #33, and `AGENTS.md`
+§15 has the one-command way to turn them back on.
 
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.

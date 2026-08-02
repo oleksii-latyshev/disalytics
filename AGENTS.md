@@ -498,7 +498,7 @@ and hard rule 1 is the reason it is going to stay that way.
   "name": "disalytics",
   "compatibility_date": "2026-07-01",
   "workers_dev": true,
-  "preview_urls": true,
+  "preview_urls": false,
   "assets": {
     "directory": "./apps/web/dist",
     "not_found_handling": "single-page-application"
@@ -506,10 +506,19 @@ and hard rule 1 is the reason it is going to stay that way.
 }
 ```
 
-`workers_dev` publishes production on `workers.dev`. `preview_urls` is what makes
-`wrangler versions upload` return a per-version URL, which is how pull requests get a preview
-(§15) — it defaults to whatever `workers_dev` is, and is written out because the pull-request flow
-depends on it.
+`workers_dev` publishes production on `workers.dev`.
+
+`preview_urls` is what makes `wrangler versions upload` return a per-version URL. **It is off
+since #33, and pull requests get no preview deployment** — see §15 for how to turn it back on. It is
+written out rather than omitted because left unset it defaults to whatever `workers_dev` is, which
+would silently turn previews back on.
+
+Turning it off is also the only way to retire a preview URL that has already been published.
+A versioned preview URL has no documented expiry — Cloudflare states a retention limit only for
+*aliased* preview URLs, at the 1000 most recent — and `wrangler versions` offers `view`, `list`,
+`upload` and `deploy` but no `delete`. Disabling the setting disables routing to both versioned and
+aliased preview URLs, retroactively, on the next `wrangler deploy`. That is wholesale or nothing;
+there is no per-version revocation.
 
 ### Caching
 
@@ -548,9 +557,10 @@ deployment: the shell loads, an unknown path still returns the shell, hashed ass
 `apps/web/dist` to decide what to request, so it always tests the build that was shipped rather
 than a hardcoded path list.
 
-`deploy.yml` runs it after every production deploy and every preview upload. Locally,
-`bun run preview` then `bun run smoke http://127.0.0.1:8787` runs the same assertions against
-workerd, which is the same asset server production uses.
+`deploy.yml` runs it after every production deploy. Locally, `bun run preview` then
+`bun run smoke http://127.0.0.1:8787` runs the same assertions against workerd, which is the same
+asset server production uses. `bun run preview` is `wrangler dev` on `:8787` and is unrelated to
+Cloudflare preview URLs despite the shared word — it is local, and #33 did not touch it.
 
 It waits for the URL to route before asserting anything. A newly created `workers.dev` route 404s
 at the edge for up to a minute after `wrangler deploy` has already printed it — the first
@@ -594,46 +604,58 @@ the mirror of the rule above. Required status checks on the default branch: see 
 §5, including what `paths-ignore` costs a parser-only pull request.
 
 **`deploy.yml`** — **exists since #23.** Triggered by `workflow_run` on `ci`, so it is strictly
-downstream of a green pipeline instead of racing one. A successful `push` run on `main` deploys
-production; a successful `pull_request` run does `wrangler versions upload` and comments the preview
-URL on the pull request. Both rebuild from the run's `head_sha` and then run the §13 smoke test
-against the URL they just produced. `cloudflare/wrangler-action` uses the `wrangler` already in the
-lockfile, so the version is pinned in exactly one place.
+downstream of a green pipeline instead of racing one. It holds **one job**: a successful `push` run
+on `main` rebuilds from the run's `head_sha`, deploys production, and runs the §13 smoke test
+against the URL it just produced. `cloudflare/wrangler-action` uses the `wrangler` already in the
+lockfile, so the version is pinned in exactly one place. Pull requests get no deployment of any
+kind — see *Previews are off* below.
 
 Three things about `workflow_run` that are easy to get wrong. It hands repository secrets to the
-triggering run's code, so the preview job checks `head_repository` and refuses forks — a fork's pull
-request has been linted, not vetted, and `CLOUDFLARE_API_TOKEN` is not something to hand it. It is
-only ever read from the default branch, which means a change to `deploy.yml` cannot be exercised on
-the branch that makes it; the first real run is always the one after the merge. And **the job does
-not run at the commit that triggered it** — it runs at the default branch's head. This is why both
-jobs check out `github.event.workflow_run.head_sha` explicitly, and it is what forces the shape of
-the section below.
+triggering run's code, so any job added here must refuse forks by checking `head_repository` — a
+fork's pull request has been linted, not vetted, and `CLOUDFLARE_API_TOKEN` is not something to
+hand it. It is only ever read from the default branch, which means a change to `deploy.yml` cannot
+be exercised on the branch that makes it; the first real run is always the one after the merge. And
+**the job does not run at the commit that triggered it** — it runs at the default branch's head.
+That is why the job checks out `github.event.workflow_run.head_sha` explicitly, and it is load
+bearing for everything below.
 
-### Deployment records — why the two jobs use different mechanisms
+### Deployment records
 
-**Exists since #30.** Every deploy is recorded under the repository's Deployments, so what is live,
-from which commit, and whether it passed §13 is answerable from GitHub rather than from a workflow
-log. `cloudflare/wrangler-action` does not do this for Workers: it creates GitHub deployments only
-on the Pages code path, so both mechanisms below are asked for explicitly.
+**Exists since #30.** Every production deploy is recorded under the repository's Deployments, so
+what is live, from which commit, and whether it passed §13 is answerable from GitHub rather than
+from a workflow log. `cloudflare/wrangler-action` does not do this for Workers: it creates GitHub
+deployments only on the Pages code path, so it is asked for explicitly.
 
-**Production uses a job-level `environment:`.** A `push` run on `main` is the one case where the
+Production uses a **job-level `environment:`**. A `push` run on `main` is the one case where the
 job's own commit *is* the deployed commit, so GitHub attaching the deployment to the running SHA is
 correct. It opens the deployment when the job starts and closes it with the job's conclusion, which
 is what makes a failed smoke test land as a failed deployment instead of a healthy one — no extra
-step reports it. `url:` reads `steps.deploy.outputs.deployment-url`. The side benefit is that
-`production` becomes a real GitHub environment, which protection rules can later be attached to.
+step reports it. `url:` reads `steps.deploy.outputs.deployment-url`; GitHub's allowed-contexts list
+for `environment.url` omits `steps`, but the example on the same page uses it and it does work,
+verified on the first run. The side benefit is that `production` is a real GitHub environment, which
+protection rules can later be attached to.
 
-**Preview uses the Deployments API against `github.event.workflow_run.head_sha`.** A job-level
-`environment:` here would attach the deployment to `main` — invisible on the pull request, and a
-false claim about what `main` is running. So the preview job opens a deployment on the pull
-request's own head SHA (`deployments: write`, `transient_environment: true`,
-`production_environment: false`), marks it `in_progress`, and closes it in an `always()` step with
-`success`, `failure`, or — when concurrency cancelled a superseded upload — `inactive`. Every status
-carries `log_url` back to the run. Creating the deployment needs `auto_merge: false` and
-`required_contexts: []`, or the API answers 202/409 and creates nothing.
+### Previews are off
 
-**Do not "simplify" the preview job into an `environment:` block.** It looks like duplication of
-the production job and is not; the SHA behaviour above is the whole reason.
+**Since #33.** `preview_urls` is `false` (§13) and `deploy.yml` has no preview job. The reason is
+retention, not cost: static asset requests are free and unlimited, but a versioned preview URL has
+no expiry and `wrangler versions` has no `delete`, so every pull request used to leave a public URL
+that could not be retired individually.
+
+**To turn previews back on, revert the single squash commit that closed #33** — it carries the
+`wrangler.jsonc` flag and the whole preview job together. Do not hand-rebuild it, and pick up #34 in
+the same breath: the revert restores previews *without* the inactive-on-close cleanup, which is the
+gap that made them worth turning off.
+
+Two things that revert brings back and that must not be "simplified" afterwards:
+
+- The preview job records its deployment through the **Deployments API against
+  `github.event.workflow_run.head_sha`**, not through a job-level `environment:`. Given the SHA
+  behaviour above, an `environment:` block would attach the deployment to `main` — invisible on the
+  pull request, and a false claim about what `main` is running. It looks like pointless duplication
+  of the production job. It is not.
+- Creating that deployment needs `auto_merge: false` and `required_contexts: []`, or the API answers
+  202/409 and creates nothing.
 
 Also in use: **Renovate** (handles monorepos better than Dependabot), **GitHub Releases** for test
 fixture demos. Never Git LFS — 1 GB free quota, easy to exhaust, painful to undo. Never commit
