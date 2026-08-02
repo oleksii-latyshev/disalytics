@@ -44,6 +44,9 @@ jobs:
       - name: i18n:check
         run: bun run i18n:check
 
+      - name: errors:check
+        run: bun run errors:check
+
       - name: test
         run: bun run test
 

@@ -165,6 +165,7 @@ bun run e2e                  # playwright
 bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
 bun run mapdata:generate     # regenerate map constants from Valve overview files
 bun run i18n:check           # fail on missing/orphaned keys, regenerate the key union
+bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
 bun run size                 # bundle + wasm sizes against budgets (§16)
 bun run preview              # build, then serve apps/web/dist through wrangler dev
 bun run smoke <url>          # assert the §13 deploy contract against a running URL
@@ -602,10 +603,10 @@ Never push to the default branch. Never open a PR that closes more than one issu
 
 The repository is **public**: standard-runner minutes are free, as is CodeQL.
 
-**`wasm.yml`** — **exists since #44.** `cargo fmt --check` → `clippy -D warnings` → `cargo test` →
-`bun run wasm:build` (which is `wasm-pack build --target web`, release by default, `wasm-opt`
-inside) → `bun run size --wasm`. Caches the cargo registry, `target/` and the compiled `wasm-pack`.
-*Never rebuild the parser on a frontend-only commit.*
+**`wasm.yml`** — **exists since #44.** `bun run errors:check` → `cargo fmt --check` →
+`clippy -D warnings` → `cargo test` → `bun run wasm:build` (which is `wasm-pack build --target web`,
+release by default, `wasm-opt` inside) → `bun run size --wasm`. Caches the cargo registry, `target/`
+and the compiled `wasm-pack`. *Never rebuild the parser on a frontend-only commit.*
 
 It triggers on `crates/**` **and** on `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` and the
 workflow file. A lockfile bump or a toolchain change alters the binary without touching a crate, so
@@ -613,13 +614,15 @@ workflow file. A lockfile bump or a toolchain change alters the binary without t
 
 It asserts the §16 binary budget itself rather than leaving it to `ci.yml`. `ci.yml` carries the
 mirrored `paths-ignore: crates/**`, so on a parser-only pull request it does not run at all — the
-`--wasm` flag exists so the budget can be checked without building the SPA to reach it.
+`--wasm` flag exists so the budget can be checked without building the SPA to reach it. The same
+mirror is why `errors:check` runs in both workflows: the two halves of the `ErrorCode` vocabulary
+live on opposite sides of that `paths-ignore`, so neither workflow alone sees every change to it.
 
 No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
-`test` → `build` → `size` gate, in one job, in that order. Bun's install cache is keyed on
+`errors:check` → `test` → `build` → `size` gate, in one job, in that order. Bun's install cache is keyed on
 `bun.lock`. `paths-ignore: crates/**`, so a parser-only commit does not run the frontend pipeline —
 the mirror of the rule above. Required status checks on the default branch: see `CONTRIBUTING.md`
 §5, including what `paths-ignore` costs a parser-only pull request.
