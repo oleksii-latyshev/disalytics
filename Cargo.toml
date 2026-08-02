@@ -1,5 +1,10 @@
 [workspace]
 members = ["crates/demo-parser", "crates/demo-parser-wasm"]
+# `vendor/parser` declares its own `[workspace]`, which is what actually keeps upstream code out of
+# `cargo fmt --all` and `cargo clippy --workspace` — `exclude` alone does not, because a path
+# dependency is a member whatever `exclude` says. This line is what makes the nested root legal:
+# without it cargo refuses with "multiple workspace roots found in the same workspace".
+exclude = ["vendor"]
 resolver = "3"
 
 [workspace.package]
@@ -9,7 +14,9 @@ rust-version = "1.97"
 publish = false
 
 [workspace.dependencies]
+ahash = "0.8"
 demo-parser = { path = "crates/demo-parser" }
+parser = { path = "vendor/parser" }
 thiserror = "2.0.18"
 wasm-bindgen = "0.2.106"
 

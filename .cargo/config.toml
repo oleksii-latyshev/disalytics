@@ -1,0 +1,6 @@
+# `getrandom` 0.3 refuses to build for `wasm32-unknown-unknown` until a backend is named, and it
+# reads the choice from a cfg rather than from a feature. It arrives through `ahash`, so nothing in
+# this repository asks for it directly — `docs/PARSER.md` §8. Setting it here rather than in the
+# `wasm:build` script is what keeps a bare `cargo build --target wasm32-unknown-unknown` working.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

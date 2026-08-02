@@ -14,6 +14,7 @@
     "i18n:check": "bun tools/scripts/i18n-check.ts",
     "errors:check": "bun tools/scripts/errors-check.ts",
     "wasm:build": "wasm-pack build crates/demo-parser-wasm --target web",
+    "wasm:smoke": "bun tools/scripts/wasm-smoke.ts",
     "size": "bun tools/scripts/size.ts",
     "repo:labels": "bun tools/scripts/labels.ts",
     "repo:milestones": "bun tools/scripts/milestones.ts"
