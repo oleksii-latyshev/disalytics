@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./packages/tsconfig/node.json",
+  "compilerOptions": {
+    // Without this, TypeScript walks past the repo into ancestor node_modules/@types
+    // directories and can load a different @types/node than the lockfile pins.
+    "typeRoots": ["./node_modules/@types"]
+  },
+  "include": ["tools/scripts"]
+}

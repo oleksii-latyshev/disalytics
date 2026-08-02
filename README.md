@@ -107,7 +107,7 @@ setup step.
 ```bash
 bun run dev            # vite dev server for apps/web
 bun run build          # tsc --noEmit && vite build -> apps/web/dist
-bun run typecheck      # tsc --noEmit across the workspace
+bun run typecheck      # tsc --noEmit across the workspace, then tools/scripts
 bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest
 bun run i18n:check     # en/ru parity + regenerates the typed key union
