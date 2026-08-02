@@ -102,7 +102,7 @@ Full text in `AGENTS.md` §2. Condensed:
 commit titles, scope = the `area:` label without its prefix.
 
 Use the `task` skill for the full loop, `i18n-key` when adding a user-facing string, and `dod`
-before opening a PR.
+before opening a PR. Use `handoff` when work has to continue in a new chat.
 
 Lefthook installs itself on `bun install` and runs Biome over the **staged files** plus a
 whole-project `bun run typecheck` pre-commit, and `bun run test` pre-push. `tsc` has no staged-file
