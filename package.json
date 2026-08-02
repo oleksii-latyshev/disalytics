@@ -12,6 +12,7 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "i18n:check": "bun tools/scripts/i18n-check.ts",
+    "wasm:build": "wasm-pack build crates/demo-parser-wasm --target web",
     "size": "bun tools/scripts/size.ts",
     "repo:labels": "bun tools/scripts/labels.ts",
     "repo:milestones": "bun tools/scripts/milestones.ts"

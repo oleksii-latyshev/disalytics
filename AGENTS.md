@@ -602,9 +602,20 @@ Never push to the default branch. Never open a PR that closes more than one issu
 
 The repository is **public**: standard-runner minutes are free, as is CodeQL.
 
-**`wasm.yml`** — triggers only on `crates/**`. `cargo test`, `wasm-pack build --release`,
-`wasm-opt`, size check, upload as a release asset. Caches the cargo registry and target dir.
+**`wasm.yml`** — **exists since #44.** `cargo fmt --check` → `clippy -D warnings` → `cargo test` →
+`bun run wasm:build` (which is `wasm-pack build --target web`, release by default, `wasm-opt`
+inside) → `bun run size --wasm`. Caches the cargo registry, `target/` and the compiled `wasm-pack`.
 *Never rebuild the parser on a frontend-only commit.*
+
+It triggers on `crates/**` **and** on `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` and the
+workflow file. A lockfile bump or a toolchain change alters the binary without touching a crate, so
+`crates/**` alone would let exactly the riskiest changes through ungated.
+
+It asserts the §16 binary budget itself rather than leaving it to `ci.yml`. `ci.yml` carries the
+mirrored `paths-ignore: crates/**`, so on a parser-only pull request it does not run at all — the
+`--wasm` flag exists so the budget can be checked without building the SPA to reach it.
+
+No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
@@ -684,7 +695,7 @@ CI assertions where possible. A regression here is a blocker.
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
 | JS bundle, excl. WASM | < 500 kB gzip | single locale only. 81.2 kB at the end of #22 — app shell, React and react-intl, the one locale chunk, and the 5.6 kB service worker. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
-| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard |
+| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Live since #44 and asserted by `wasm.yml`; 14.0 kB for the scaffold, which is the floor a `wasm-bindgen` boundary costs before any parsing exists. `docs/PARSER.md` §8 measured 2.18 MB with the real parser inside. |
 
 ---
 

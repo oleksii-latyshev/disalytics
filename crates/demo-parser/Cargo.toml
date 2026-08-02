@@ -1,0 +1,13 @@
+[package]
+name = "demo-parser"
+description = "Demo parsing core. Host-testable, no WASM toolchain, no JS bindings."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[lints]
+workspace = true
