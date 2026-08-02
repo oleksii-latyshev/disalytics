@@ -66,6 +66,14 @@
       }
     },
     {
+      "includes": ["packages/tsconfig/*.json"],
+      "json": {
+        "parser": {
+          "allowComments": true
+        }
+      }
+    },
+    {
       "includes": ["tools/**"],
       "linter": {
         "rules": {

@@ -21,6 +21,13 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2023",
+    // Resolved against this file, so the repository root. Both lines together keep type
+    // resolution inside the repository: without them TypeScript auto-loads every ancestor
+    // node_modules/@types, so CI resolves a smaller set of types than a laptop does.
+    // Custom typeRoots also disable the node_modules fallback for `types` entries, so a
+    // non-@types package such as vite/client has to arrive by /// <reference> instead.
+    "types": [],
+    "typeRoots": ["../../node_modules/@types"],
     "verbatimModuleSyntax": true
   }
 }

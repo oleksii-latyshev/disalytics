@@ -1,7 +1,4 @@
 {
   "extends": "@disa/tsconfig/react-app.json",
-  "compilerOptions": {
-    "types": ["vite/client"]
-  },
   "include": ["src", "vitest.config.ts"]
 }
