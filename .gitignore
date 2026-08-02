@@ -34,6 +34,9 @@ yarn-error.log*
 # Rust
 target/
 
+# wasm-pack output — regenerate with `bun run wasm:build`
+pkg/
+
 # Agent tooling — shared config is committed, local overrides are not
 .claude/settings.local.json
 

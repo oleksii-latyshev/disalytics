@@ -29,6 +29,8 @@ function mb(bytes: number): string {
 }
 
 async function walk(dir: string): Promise<string[]> {
+  if (!existsSync(dir)) return [];
+
   const entries = await readdir(dir, { withFileTypes: true, recursive: true });
   return entries
     .filter((entry) => entry.isFile())
@@ -144,12 +146,16 @@ async function checkWasm(): Promise<boolean> {
   return true;
 }
 
-if (!existsSync(DIST_DIR)) {
+// ci.yml skips crate-only changes, so wasm.yml is the only place the §16 binary budget is asserted
+// on a Rust pull request — and it has no reason to build the SPA to get there.
+const wasmOnly = Bun.argv.includes('--wasm');
+
+if (!wasmOnly && !existsSync(DIST_DIR)) {
   console.error(`${DIST_DIR} does not exist. Run \`bun run build\` first.`);
   process.exit(1);
 }
 
-const jsOk = await checkJsBundle();
+const jsOk = wasmOnly || (await checkJsBundle());
 const wasmOk = await checkWasm();
 
 if (!(jsOk && wasmOk)) process.exit(1);

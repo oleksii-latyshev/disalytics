@@ -34,9 +34,12 @@ Phase 0 is complete — the parser is validated and the findings are in `docs/PA
 `create-turbo` starter has been replaced: `apps/web` is a Vite SPA, Biome has replaced
 ESLint + Prettier, and every package is `@disa/*`.
 
-Phase 1 is in progress, so `AGENTS.md` §4 still describes packages that do not exist yet —
-`demo-core`, `demo-parser`, `demo-store`, `map-data`, and everything under `crates/`. Their
-absence is a schedule fact, not a contradiction.
+Phase 1 is complete. Phase 2 has started with the parser scaffold (#44): `crates/demo-parser` and
+`crates/demo-parser-wasm` exist and build, and `wasm.yml` gates them. The crates carry no parsing
+yet — adopting `demoparser2` is the next issue, and `docs/PARSER.md` §5–§8 is what it has to survive.
+
+`AGENTS.md` §4 still describes packages that do not exist yet — `demo-core`, `demo-parser` (the TS
+side), `demo-store` and `map-data`. Their absence is a schedule fact, not a contradiction.
 
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
 `wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
@@ -123,12 +126,15 @@ bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity + regenerates the typed key union
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
+bun run size --wasm    # the binary half only, without needing a built dist
+bun run wasm:build     # wasm-pack build crates/demo-parser-wasm -> pkg/
 bun run preview        # build, then serve apps/web/dist through wrangler dev on :8787
 bun run smoke <url>    # assert the AGENTS.md §13 deploy contract against a running URL
+
+cargo test -p demo-parser   # parser core, no WASM toolchain involved
 ```
 
-Still to arrive: `wasm:build`, `mapdata:generate`, and `cargo test -p demo-parser`.
-See `AGENTS.md` §5 for the full intended set.
+Still to arrive: `mapdata:generate` and `e2e`. See `AGENTS.md` §5 for the full intended set.
 
 ---
 
