@@ -473,10 +473,20 @@ a layer of build-time magic:
   confusing cache bugs.
 - The app must be genuinely usable offline, and say so rather than failing.
 
-Because Workbox is plain JS, this is expected to work under the Bun runtime. Phase 1 includes one
-explicit verification task: build once with the PWA plugin enabled and confirm the generated
-manifest, precache list and service worker are correct. If it misbehaves, the documented fallback
-is running `build` on Node — but do not assume that in advance.
+It works under Bun — verified in #22, no Node fallback needed (§20). What is wired today:
+`vite-plugin-pwa` in `injectManifest` mode, `apps/web/src/sw.ts` calling `precacheAndRoute` over a
+nine-entry shell, and the manifest above emitted from `apps/web/vite.config.ts`.
+
+Two deliberate gaps, both Phase 6:
+
+- **The worker is built but never registered** (`injectRegister: false`). Registering it before the
+  update prompt exists makes the shell cache-sticky with no way to ask for the reload — the exact
+  bug the bullet above warns about. Phase 6 turns the option on and adds the prompt together.
+- **Fonts are outside the precache.** 240 kB of woff2 that the shell renders without, so they stay a
+  runtime concern alongside the WASM binary.
+
+The precache glob is `**/*.{html,css,js}` and stops there on purpose. The manifest and its icons are
+added by the plugin itself; globbing them as well puts every one of them in the list twice.
 
 ---
 
@@ -673,7 +683,7 @@ CI assertions where possible. A regression here is a blocker.
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
-| JS bundle, excl. WASM | < 500 kB gzip | single locale only. 75.6 kB at the end of #16 — app shell, React and react-intl, plus the one locale chunk. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
+| JS bundle, excl. WASM | < 500 kB gzip | single locale only. 81.2 kB at the end of #22 — app shell, React and react-intl, the one locale chunk, and the 5.6 kB service worker. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard |
 
 ---
@@ -790,7 +800,11 @@ proves worth it.
       provider and §6.4 stores `theme` in localStorage, but `docs/DESIGN.md` designs only the dark
       instrument palette and §1 argues for it at length. The app currently ships dark as its only
       theme. Either design a light palette or drop the provider from the docs.
-- [ ] Does Vite + `vite-plugin-pwa` build cleanly on the Bun runtime? — Phase 1
+- [x] Does Vite + `vite-plugin-pwa` build cleanly on the Bun runtime? — yes, #22. Plugin 1.3.0,
+      `injectManifest`, Vite 8.2.0, Bun 1.3.13: manifest, `sw.js` and a nine-entry precache list all
+      emitted correctly, and the Node fallback stayed unused. The plugin's own worker build prints
+      `inlineDynamicImports option is deprecated` on Vite 8 — cosmetic, upstream, and the only
+      friction found.
 - [ ] `.nav` mesh occlusion for the audibility model — revisit after Phase 5
 - [ ] Tauri: is native parsing worth the second shell? — revisit after Phase 6
 
