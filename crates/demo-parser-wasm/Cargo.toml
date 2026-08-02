@@ -18,12 +18,14 @@ workspace = true
 
 # wasm-opt starts from the MVP feature set, while rustc 1.97 emits the 2024 `wasm32-unknown-unknown`
 # baseline — validation fails on `memory.copy` alone unless the producer's features are named back.
+# Every flag must exist in the *older* binaryen wasm-pack downloads when none is on PATH, not only
+# in a current local one: `--enable-bulk-memory-opt` is rejected there, and is redundant anyway
+# because `--enable-bulk-memory` already covers `memory.copy` and `memory.fill`.
 # `-Oz` rather than wasm-pack's default `-O` because the 4 MB cap in AGENTS.md §16 is a budget.
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [
   "-Oz",
   "--enable-bulk-memory",
-  "--enable-bulk-memory-opt",
   "--enable-mutable-globals",
   "--enable-multivalue",
   "--enable-nontrapping-float-to-int",
