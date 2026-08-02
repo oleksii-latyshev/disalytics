@@ -118,7 +118,7 @@ mode, so the staged files decide whether it runs, not what it checks. `LEFTHOOK=
 bun install
 bun run dev            # vite dev server for apps/web
 bun run build          # tsc --noEmit && vite build -> apps/web/dist
-bun run typecheck
+bun run typecheck      # workspaces via turbo, then tools/scripts via tsconfig.tools.json
 bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity + regenerates the typed key union

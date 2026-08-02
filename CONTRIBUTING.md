@@ -225,7 +225,9 @@ What runs, and against what (`lefthook.yml`, and `CODE_REQUIREMENTS.md` §13):
 
 `tsc` has no staged-file mode — it type-checks a project, not a file list, and a file list would
 report errors that are artefacts of the missing context. So the staged files decide *whether* the
-typecheck runs, not *what* it covers. It is a full `turbo run typecheck`, cached, ~1.4 s cold.
+typecheck runs, not *what* it covers. It is a full `turbo run typecheck`, cached, ~1.4 s cold,
+followed by `tsc -p tsconfig.tools.json` over `tools/scripts` — those files are not in a workspace,
+so turbo cannot see them, and they are not cached.
 
 Biome does not rewrite files here. A failure prints what to run (`bun run check:fix`); it never
 stages fixes on your behalf, because writing a file that is only partially staged would commit

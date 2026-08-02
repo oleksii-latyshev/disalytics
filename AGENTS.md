@@ -159,7 +159,7 @@ bun run dev                  # dev server for apps/web
 bun run build                # build all (turbo)
 bun run check                # biome check — fails on lint/format issues
 bun run check:fix            # biome check --write
-bun run typecheck            # tsc --noEmit across workspace
+bun run typecheck            # tsc --noEmit across workspace, then tools/scripts
 bun run test                 # vitest run
 bun run e2e                  # playwright
 bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
