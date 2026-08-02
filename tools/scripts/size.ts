@@ -29,6 +29,8 @@ function mb(bytes: number): string {
 }
 
 async function walk(dir: string): Promise<string[]> {
+  if (!existsSync(dir)) return [];
+
   const entries = await readdir(dir, { withFileTypes: true, recursive: true });
   return entries
     .filter((entry) => entry.isFile())
