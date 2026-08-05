@@ -38,8 +38,13 @@ Phase 1 is complete. Phase 2 has started with the parser scaffold (#44): `crates
 `crates/demo-parser-wasm` exist and build, and `wasm.yml` gates them. The crates carry no parsing
 yet — adopting `demoparser2` is the next issue, and `docs/PARSER.md` §5–§8 is what it has to survive.
 
-`AGENTS.md` §4 still describes packages that do not exist yet — `demo-core`, `demo-parser` (the TS
-side), `demo-store` and `map-data`. Their absence is a schedule fact, not a contradiction.
+`packages/demo-core` exists since #47 and holds the contract both sides write against: the `AGENTS.md`
+§10 event schema, `TickTrack`, `SCHEMA_VERSION`, the game vocabulary and the `ErrorCode` union.
+`bun run errors:check` fails when that union drifts from `crates/demo-parser/src/error.rs`, and it
+runs in **both** `ci.yml` and `wasm.yml` because neither workflow sees both files on its own.
+
+`AGENTS.md` §4 still describes packages that do not exist yet — `demo-parser` (the TS side),
+`demo-store` and `map-data`. Their absence is a schedule fact, not a contradiction.
 
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
 `wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
@@ -125,6 +130,7 @@ bun run typecheck      # workspaces via turbo, then tools/scripts via tsconfig.t
 bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity + regenerates the typed key union
+bun run errors:check   # ErrorCode parity between demo-core and crates/demo-parser
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
 bun run size --wasm    # the binary half only, without needing a built dist
 bun run wasm:build     # wasm-pack build crates/demo-parser-wasm -> pkg/

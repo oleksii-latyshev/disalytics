@@ -49,6 +49,11 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # ci.yml carries paths-ignore: crates/**, so a change to the Rust error vocabulary alone
+      # never reaches the copy of this check that runs there.
+      - name: errors:check
+        run: bun run errors:check
+
       # rustup reads rust-toolchain.toml, so the channel, components and wasm target all come from
       # the pinned file rather than from whatever the runner image ships.
       - name: Install the pinned Rust toolchain
