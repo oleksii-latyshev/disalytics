@@ -399,5 +399,45 @@ What Phase 2 inherits as known risk, all recorded above rather than discovered l
 
 - A cheap way to read a demo's header, since `only_header` costs a full pass
 - Whether `bomb_abortdefuse` behaves as expected — needs a demo containing one
-- Whether the profiling timestamps can be fixed upstream rather than carried as a patch
+- Whether the profiling timestamps can be fixed upstream rather than carried in `vendor/`
 - Budget figures re-measured on CI hardware rather than a laptop
+
+---
+
+## 12. Found while adopting it (#46)
+
+### A file shorter than the header panics
+
+`first_pass/parser.rs` slices `demo_bytes[..HEADER_ENDS_AT_BYTE]` on the first line of
+`parse_demo`, one line before `handle_short_header`'s own `bytes.len() < 16` check can fire. Any
+file under 16 bytes panics rather than erroring, and that check is unreachable.
+
+This is not cosmetic. §8 above records that an aborted instance is poisoned permanently, and the
+release profile builds with `panic = "abort"` — so a 12-byte file would kill the worker instead of
+producing an error screen. `crates/demo-parser` guards the length before handing bytes over rather
+than patching the vendored copy: never crashing on a malformed file is our contract, and keeping
+the guard on our side keeps it in front of the tests that own it.
+
+### No demo fixture can be committed, so the tests drive the parser without one
+
+`AGENTS.md` §18 forbids committing a `.dem` and §15 rules out Git LFS, which leaves the question of
+how small a real one could be. Upstream's own fixture is 60 MB. There is no such thing as a
+kilobyte-scale CS2 demo: a GOTV recording carries the send tables, the string tables and the game
+event list before a single tick, so even a few seconds of play is megabytes.
+
+`crates/demo-parser` therefore tests against synthetic byte sequences — a wrong magic, the Source 1
+magic, a file shorter than the header, and Source 2 magic over noise. These are not mocks: every one
+of them runs `Parser::parse_demo` for real and asserts the `ErrorCode` it produces. They cover the
+whole of `AGENTS.md` §7.1's "handle gracefully, never a crash" list except the POV case, which needs
+a real POV recording to tell apart.
+
+A real demo arrives the way §18 prescribes — fetched from a GitHub Release, never committed — with
+the golden snapshots that the three-pass extraction will need.
+
+### The generated protobuf code did not need generating
+
+§5 recorded that the build clones `GameTracking-CS2` and needs `protoc`, and treated pre-generating
+that code as work Phase 2 would have to do. It does not: upstream commits `csgoproto/src/protobuf.rs`,
+`csgoproto/src/maps.rs` and `csgoproto/src/message_type.rs` at the pinned revision, and only the
+`GameTracking-CS2` checkout is gitignored. Deleting both build scripts is the whole fix, and it
+keeps `prost-build` and its 18 further packages out of the graph. `vendor/README.md` has the detail.

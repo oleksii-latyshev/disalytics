@@ -70,7 +70,7 @@ Violating any of these is a bug, not a trade-off.
 | UI state | Zustand (discrete state only) | decided |
 | Playback clock | plain mutable object + rAF — not a state library | decided |
 | Radar rendering | Canvas 2D (PixiJS only if measurably needed) | decided, see §9 |
-| Parser | **Rust — `demoparser2` (LaihoE) compiled with wasm-pack** | strong default, confirm in Phase 0 |
+| Parser | **Rust — `demoparser2` (LaihoE) compiled with wasm-pack** | decided; adopted in #46, vendored and patched — see `vendor/README.md` |
 | Persistence | OPFS, IndexedDB fallback | decided |
 | Testing | Vitest + happy-dom | decided |
 | PWA | `vite-plugin-pwa` in `injectManifest` mode | decided, see §12 |
@@ -129,6 +129,7 @@ crates/
   demo-parser/          # core Rust. NO wasm-bindgen. Emits our columnar schema.
   demo-parser-wasm/     # thin wasm-bindgen wrapper -> pkg/, consumed by packages/demo-parser
   demo-parser-native/   # (future) thin wrapper for Tauri
+vendor/                 # upstream demoparser, copied and patched. Read vendor/README.md first.
 tools/
   scripts/              # codegen: overview files -> map-data; i18n key extraction (run with bun)
 .github/
@@ -163,6 +164,7 @@ bun run typecheck            # tsc --noEmit across workspace, then tools/scripts
 bun run test                 # vitest run
 bun run e2e                  # playwright
 bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
+bun run wasm:smoke           # call into the built binary — proves it runs, not that it compiled
 bun run mapdata:generate     # regenerate map constants from Valve overview files
 bun run i18n:check           # fail on missing/orphaned keys, regenerate the key union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
@@ -605,8 +607,17 @@ The repository is **public**: standard-runner minutes are free, as is CodeQL.
 
 **`wasm.yml`** — **exists since #44.** `bun run errors:check` → `cargo fmt --check` →
 `clippy -D warnings` → `cargo test` → `bun run wasm:build` (which is `wasm-pack build --target web`,
-release by default, `wasm-opt` inside) → `bun run size --wasm`. Caches the cargo registry, `target/`
-and the compiled `wasm-pack`. *Never rebuild the parser on a frontend-only commit.*
+release by default, `wasm-opt` inside) → `bun run wasm:smoke` → `bun run size --wasm`. Caches the
+cargo registry, `target/` and the compiled `wasm-pack`. *Never rebuild the parser on a frontend-only
+commit.*
+
+The smoke step runs **before** the size gate and is not optional: `docs/PARSER.md` §8 records an
+artifact that measured 293 KB because its entry point trapped and the optimiser deleted the parser
+behind it. Only a call into the binary tells that apart from a real build.
+
+`fmt` names its packages rather than using `--all`, because cargo-fmt's `--all` reaches into local
+path dependencies and `vendor/` is upstream code (`vendor/README.md`). A new crate under `crates/`
+has to be added to that command by hand.
 
 It triggers on `crates/**` **and** on `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` and the
 workflow file. A lockfile bump or a toolchain change alters the binary without touching a crate, so
@@ -698,7 +709,7 @@ CI assertions where possible. A regression here is a blocker.
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
 | JS bundle, excl. WASM | < 500 kB gzip | single locale only. 81.2 kB at the end of #22 — app shell, React and react-intl, the one locale chunk, and the 5.6 kB service worker. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
-| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Live since #44 and asserted by `wasm.yml`; 14.0 kB for the scaffold, which is the floor a `wasm-bindgen` boundary costs before any parsing exists. `docs/PARSER.md` §8 measured 2.18 MB with the real parser inside. |
+| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.00 MB, 50% of budget** with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). Phase 0 measured 2.18 MB at `-O`; the difference is this repository's `-Oz` and `panic = "abort"`. |
 
 ---
 

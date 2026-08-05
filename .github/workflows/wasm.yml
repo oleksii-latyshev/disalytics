@@ -76,8 +76,11 @@ jobs:
           path: ~/.cargo/bin/wasm-pack
           key: wasm-pack-${{ runner.os }}-${{ env.WASM_PACK_VERSION }}
 
+      # Named packages, not `--all`: cargo-fmt's `--all` reaches into local path dependencies, and
+      # `vendor/` is upstream code this repository does not format. Add a crate here when one
+      # arrives under `crates/`.
       - name: fmt
-        run: cargo fmt --all --check
+        run: cargo fmt --package demo-parser --package demo-parser-wasm --check
 
       - name: clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
@@ -93,6 +96,12 @@ jobs:
 
       - name: wasm:build
         run: bun run wasm:build
+
+      # Weighing the artifact cannot tell a working binary from one whose entry point traps and
+      # whose parser the optimiser then deleted — docs/PARSER.md §8. So the size gate runs after a
+      # call into the binary has succeeded, never instead of one.
+      - name: wasm:smoke
+        run: bun run wasm:smoke
 
       - name: size
         run: bun run size --wasm

@@ -1,0 +1,7 @@
+# A workspace root of its own, so upstream code is not a member of ours and `cargo fmt --all` and
+# `cargo clippy --workspace` answer only for code this repository wrote. `exclude` in the root
+# manifest cannot do this alone — a path dependency is a member whatever `exclude` lists — but it is
+# required alongside, or cargo refuses with "multiple workspace roots found in the same workspace".
+[workspace]
+members = ["parser", "csgoproto"]
+resolver = "2"

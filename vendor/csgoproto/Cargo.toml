@@ -1,0 +1,19 @@
+[package]
+name = "csgoproto"
+version = "0.1.5"
+authors = ["Laiho"]
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+prost = "0.13.3"
+phf = { version = "0.11", features = ["macros"] }
+strum = { version = "0.26", features = ["derive"] }
+winnow = { version = "0.7.2", features = ["simd"] }
+
+# Upstream code we do not maintain. Its warnings are not actionable here, and letting them
+# print on every build is how a real warning from our own crates goes unnoticed.
+[lints.rust]
+warnings = "allow"

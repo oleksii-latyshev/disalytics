@@ -10,15 +10,17 @@ pub enum ErrorCode {
     UnsupportedDemoVersion,
     UnsupportedContainer,
     PovDemoUnsupported,
+    MalformedDemo,
 }
 
 impl ErrorCode {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::NotADemo,
         Self::TruncatedDemo,
         Self::UnsupportedDemoVersion,
         Self::UnsupportedContainer,
         Self::PovDemoUnsupported,
+        Self::MalformedDemo,
     ];
 
     #[must_use]
@@ -29,6 +31,7 @@ impl ErrorCode {
             Self::UnsupportedDemoVersion => "UNSUPPORTED_DEMO_VERSION",
             Self::UnsupportedContainer => "UNSUPPORTED_CONTAINER",
             Self::PovDemoUnsupported => "POV_DEMO_UNSUPPORTED",
+            Self::MalformedDemo => "MALFORMED_DEMO",
         }
     }
 }
@@ -50,6 +53,11 @@ pub enum ParseError {
 
     #[error("the demo was recorded from a player's point of view, not by the game server")]
     PovDemoUnsupported,
+
+    /// Upstream distinguishes three dozen ways a demo can be broken. A user can act on none of
+    /// them, so they arrive here as one code and keep their upstream wording for the log.
+    #[error("the demo is a Source 2 demo but could not be read: {detail}")]
+    MalformedDemo { detail: String },
 }
 
 impl ParseError {
@@ -61,6 +69,7 @@ impl ParseError {
             Self::UnsupportedDemoVersion { .. } => ErrorCode::UnsupportedDemoVersion,
             Self::UnsupportedContainer => ErrorCode::UnsupportedContainer,
             Self::PovDemoUnsupported => ErrorCode::PovDemoUnsupported,
+            Self::MalformedDemo { .. } => ErrorCode::MalformedDemo,
         }
     }
 }
@@ -111,6 +120,12 @@ mod tests {
             (
                 ParseError::PovDemoUnsupported,
                 ErrorCode::PovDemoUnsupported,
+            ),
+            (
+                ParseError::MalformedDemo {
+                    detail: "OutOfBytesError".to_owned(),
+                },
+                ErrorCode::MalformedDemo,
             ),
         ];
 

@@ -12,6 +12,11 @@ export const ERROR_CODES = [
   'UNSUPPORTED_DEMO_VERSION',
   'UNSUPPORTED_CONTAINER',
   'POV_DEMO_UNSUPPORTED',
+  /**
+   * The file is a Source 2 demo and could not be read anyway. Upstream distinguishes three dozen
+   * ways that happens and a reader can act on none of them, so they arrive as one code.
+   */
+  'MALFORMED_DEMO',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
