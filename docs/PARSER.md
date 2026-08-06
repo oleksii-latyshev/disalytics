@@ -435,8 +435,11 @@ of them runs `Parser::parse_demo` for real and asserts the `ErrorCode` it produc
 whole of `AGENTS.md` §7.1's "handle gracefully, never a crash" list except the POV case, which needs
 a real POV recording to tell apart.
 
-A real demo arrives the way §18 prescribes — fetched from a GitHub Release, never committed — with
-the golden snapshots that the three-pass extraction will need.
+A real demo arrives the way §18 prescribes, with the golden snapshot that the three-pass extraction
+will need. This section originally read "fetched from a GitHub Release"; #49 settled it the other
+way. Publishing a GOTV recording means publishing ten players' names and SteamIDs, and a project
+whose first hard rule is that no server touches a demo should not keep one on a release page. The
+fixture is named by `DISALYTICS_FIXTURE_DEMO` instead — see §13.
 
 ### The generated protobuf code did not need generating
 
