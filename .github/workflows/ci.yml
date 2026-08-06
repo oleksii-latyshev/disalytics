@@ -59,6 +59,11 @@ jobs:
       # the .wasm the §13 smoke test asserts — without pkg/. The key is the parser's own inputs, so
       # a frontend-only commit restores it in seconds and installs no Rust at all. wasm.yml writes
       # the entry on main; the build below is what covers a key nothing has written yet.
+      #
+      # The key names sources rather than `crates/**` because pkg/ lives under crates/ and is the
+      # thing being cached: wasm.yml hashes after building it and this job hashes before, so a
+      # `crates/**` key never agrees between the two and every restore misses. A new input outside
+      # `crates/*/src` — a build.rs, a non-Rust asset — has to be added here by hand.
       - name: Restore the built parser
         id: parser
         uses: actions/cache@v6
@@ -66,7 +71,7 @@ jobs:
           path: crates/demo-parser-wasm/pkg
           key: >-
             wasm-pkg-${{ runner.os }}-${{ env.WASM_PACK_VERSION }}-${{
-            hashFiles('crates/**', 'vendor/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+            hashFiles('crates/*/src/**', 'crates/*/Cargo.toml', 'vendor/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
 
       - name: Install the pinned Rust toolchain
         if: steps.parser.outputs.cache-hit != 'true'

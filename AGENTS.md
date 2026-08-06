@@ -626,10 +626,15 @@ cargo registry, `target/` and the compiled `wasm-pack`.
 *Never rebuild the parser on a frontend-only commit.* Since #52 that promise is kept by a cache
 rather than by a path filter, because the SPA now imports the worker and `vite build` cannot emit
 the binary without `crates/demo-parser-wasm/pkg`. This workflow **writes** that directory to a cache
-keyed on the parser's own inputs — `crates/**`, `vendor/**`, `Cargo.toml`, `Cargo.lock`,
-`rust-toolchain.toml`, and the pinned `wasm-pack` version. `ci.yml` and `deploy.yml` restore it, and
-install a Rust toolchain only when the key misses. The key is pinned in three files and they have to
-agree; a `WASM_PACK_VERSION` that drifts silently turns every restore into a rebuild.
+keyed on the parser's own inputs — `crates/*/src/**`, `crates/*/Cargo.toml`, `vendor/**`,
+`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, and the pinned `wasm-pack` version. `ci.yml` and
+`deploy.yml` restore it, and install a Rust toolchain only when the key misses.
+
+The key is written out in three files and they have to agree exactly. Two ways they stop agreeing:
+a `WASM_PACK_VERSION` that drifts, and — the one that already happened once — hashing `crates/**`.
+`pkg/` lives under `crates/` and *is* what is being cached, so this workflow would hash it after
+building it while the other two hash before, and no restore would ever hit. Name sources, never the
+directory that contains the output.
 
 The smoke step runs **before** the size gate and is not optional: `docs/PARSER.md` §8 records an
 artifact that measured 293 KB because its entry point trapped and the optimiser deleted the parser
