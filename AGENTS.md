@@ -720,7 +720,7 @@ CI assertions where possible. A regression here is a blocker.
 
 | Metric | Budget | Note |
 |---|---|---|
-| Parse a 300 MB demo | < 15 s | Set from Phase 0: 10.4 s measured on a 337 MB demo, three passes, single-threaded in the browser. Headroom covers slower hardware and the columnar write, which #49 measured at ~0.2 s. **That 10.4 s was measured at `-O` and this repository ships `-Oz`, which costs 1.8× natively** — the budget and the profile were set from different builds. Re-measure in the browser once the worker exists. See `docs/PARSER.md` §9 and §13. |
+| Parse a 300 MB demo | < 15 s | Set from Phase 0: 10.4 s measured on a 337 MB demo, three passes, single-threaded in the browser. Headroom covers slower hardware and the columnar write, which #49 measured at ~0.2 s. **That 10.4 s was measured at `-O` and this repository ships `-Oz`, which costs 1.8× natively** — the budget and the profile were set from different builds. The shipped `-Oz` binary parses the 353 MB fixture in **13.89 s** driven from Bun (#50), which retires the 19 s that multiplier predicted, but Bun is not a browser and nothing has yet run inside a `Worker`. #59 is the measurement that settles it. See `docs/PARSER.md` §9, §13 and §14. |
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |

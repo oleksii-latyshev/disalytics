@@ -600,8 +600,16 @@ worker turns that into 33 / 67 / 100. The header is reported separately because 
 the second pass while the third is still running; `crates/demo-parser/tests/fixture.rs` asserts that
 ordering, since a header that arrives with `done` is a header not worth a message.
 
-### Not measured here
+### Parse cost of the binary that ships — 13.89 s, and what that is not
 
-Parse time in the browser. #50 ships no consumer, so nothing has run the binary through a real
-`Worker` yet — that is #59, and until it does the 19 s extrapolation in §9 stands unconfirmed
-against the 15 s budget.
+`DISALYTICS_FIXTURE_DEMO=… bun run wasm:smoke` drove the shipped `-Oz` binary over the 353 MB
+fixture: **13.89 s**, three passes, columnar write, marshalling and all, `de_dust2`, 486,350 track
+cells and 519 grenade flights — the same 519 the `weapon_fire` cross-check in §13 counted.
+
+This is the first number taken from WASM rather than from native, and it retires the 19 s figure
+§9 arrived at by multiplying 10.4 s by the 1.8× that `-Oz` costs *natively*. WASM does not pay that
+multiplier the way native does.
+
+It is **not** the §16 budget met. Bun's engine is not a browser's, nothing here ran inside a
+`Worker`, and the machine is a developer laptop rather than the slow hardware the 15 s has to cover.
+#59 is still the honest measurement, and it needs the consumer #52 wires.
