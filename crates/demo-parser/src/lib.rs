@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod columns;
+mod container;
 mod error;
 mod events;
 mod fields;
@@ -12,6 +13,7 @@ mod ticks;
 mod upstream;
 mod vocabulary;
 
+pub use container::is_compressed;
 pub use error::{ErrorCode, ParseError};
 pub use schema::{
     ANGLE_SCALE, Blind, BombDefuse, BombPlant, BuyType, DEFAULT_SAMPLE_HZ, Damage, DefuseOutcome,
@@ -39,12 +41,30 @@ impl ParseObserver for () {}
 
 /// Parses a demo into the shape `packages/demo-core` describes.
 ///
+/// `file_bytes` may be a raw `.dem` or a `.dem.zst` / `.dem.bz2` container, told apart by magic
+/// bytes rather than by any name the file arrived under.
+///
 /// # Errors
 ///
-/// Returns the [`ParseError`] the file earned. A file that is not a demo, is truncated, or is a
-/// Source 1 recording is an expected outcome here, not a programmer error.
-pub fn parse(demo_bytes: &[u8]) -> Result<ParsedDemo, ParseError> {
-    parse_observed(demo_bytes, &mut ())
+/// Returns the [`ParseError`] the file earned. A file that is not a demo, is truncated, is a
+/// Source 1 recording, or sits in a container that cannot be opened is an expected outcome here,
+/// not a programmer error.
+pub fn parse(file_bytes: &[u8]) -> Result<ParsedDemo, ParseError> {
+    parse_observed(file_bytes, &mut ())
+}
+
+/// The demo's bytes, expanding the container if there is one and releasing the compressed file as
+/// it returns.
+///
+/// A caller that owns the file — the WASM wrapper does — gets a lower peak this way than by
+/// letting [`parse`] expand it, because the compressed copy is freed before the passes begin
+/// rather than after them.
+///
+/// # Errors
+///
+/// Returns the [`ParseError`] the container earned.
+pub fn decompressed(file_bytes: Vec<u8>) -> Result<Vec<u8>, ParseError> {
+    container::decompressed_owned(file_bytes)
 }
 
 /// [`parse`], plus the passes it made over the demo. `docs/PARSER.md` §3 measured three as a floor
@@ -54,12 +74,12 @@ pub fn parse(demo_bytes: &[u8]) -> Result<ParsedDemo, ParseError> {
 ///
 /// The same errors as [`parse`].
 pub fn parse_recording_passes(
-    demo_bytes: &[u8],
+    file_bytes: &[u8],
 ) -> Result<(ParsedDemo, Vec<&'static str>), ParseError> {
     let mut recorder = PassRecorder {
         labels: Vec::with_capacity(PASS_COUNT),
     };
-    let demo = parse_observed(demo_bytes, &mut recorder)?;
+    let demo = parse_observed(file_bytes, &mut recorder)?;
 
     Ok((demo, recorder.labels))
 }
@@ -80,6 +100,13 @@ impl ParseObserver for PassRecorder {
 ///
 /// The same errors as [`parse`].
 pub fn parse_observed(
+    file_bytes: &[u8],
+    observer: &mut dyn ParseObserver,
+) -> Result<ParsedDemo, ParseError> {
+    parse_expanded(&container::decompressed(file_bytes)?, observer)
+}
+
+fn parse_expanded(
     demo_bytes: &[u8],
     observer: &mut dyn ParseObserver,
 ) -> Result<ParsedDemo, ParseError> {

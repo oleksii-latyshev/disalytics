@@ -13,6 +13,10 @@ const EXPECTED_PASSES = 3;
 const NOT_A_DEMO = new Uint8Array(64);
 NOT_A_DEMO.set(new TextEncoder().encode('NOTADEM\0'));
 
+// The zstd frame magic. A container is recognised by these four bytes and never by a file name, so
+// this is all it takes to make the buffer answer that it needs expanding.
+const ZSTD_MAGIC = new Uint8Array([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00, 0x00, 0x00]);
+
 // The glue is generated into a gitignored `pkg/`, so it cannot be a typed static import: a fresh
 // clone has to typecheck before any binary exists. Every value read from it is `unknown` and
 // checked before use. This is also what keeps packages/demo-parser/src/wasm-glue.d.ts honest —
@@ -20,6 +24,7 @@ NOT_A_DEMO.set(new TextEncoder().encode('NOTADEM\0'));
 type DemoBuffer = {
   push(chunk: Uint8Array): void;
   readonly byteLength: number;
+  readonly isCompressed: boolean;
 };
 
 type WasmExports = {
@@ -156,6 +161,21 @@ for (const [name, call] of [
 }
 
 function noop(): void {}
+
+function bufferOf(bytes: Uint8Array): DemoBuffer {
+  const buffer = new glue.DemoBuffer(bytes.length);
+  buffer.push(bytes);
+
+  return buffer;
+}
+
+if (bufferOf(NOT_A_DEMO).isCompressed) {
+  fail('isCompressed called an uncompressed file a container.');
+}
+
+if (!bufferOf(ZSTD_MAGIC).isCompressed) {
+  fail('isCompressed did not recognise the zstd magic, so the worker would name the wrong phase.');
+}
 
 console.log(`parserVersion() -> ${version}, passCount() -> ${passes}, a non-demo -> NOT_A_DEMO.`);
 

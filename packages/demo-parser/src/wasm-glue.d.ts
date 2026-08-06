@@ -29,6 +29,8 @@ declare module 'demo-parser-wasm' {
     constructor(sizeBytes: number);
     push(chunk: Uint8Array): void;
     readonly byteLength: number;
+    /** Whether a `.zst` or `.bz2` container has to be expanded before the passes can begin. */
+    readonly isCompressed: boolean;
     free(): void;
   }
 

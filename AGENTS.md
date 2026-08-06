@@ -249,7 +249,7 @@ mismatched cache entries are discarded, not migrated.
 |---|---|---|
 | `.dem` | already extracted | none |
 | `.dem.zst` | FACEIT — the only container it serves | `ruzstd` |
-| `.dem.bz2` | Valve matchmaking | `bzip2-rs` |
+| `.dem.bz2` | Valve matchmaking | `bzip2` (Rust backend) |
 
 `DecompressionStream` covers only `gzip`, `deflate` and `deflate-raw`, so neither compressed
 container has a platform path in the browser. **Decompression lives in `crates/demo-parser` behind
@@ -262,9 +262,11 @@ That placement is the whole point:
 - the decompressed bytes appear where the parser already needs them, so the file never crosses the
   JS→WASM boundary twice — directly relevant to the peak-memory question in §7.2
 - the same code path serves a native Tauri build
-- pure Rust keeps `#![forbid(unsafe_code)]` intact. The C-binding crates (`zstd`, `bzip2`) decode
-  faster but forfeit that and add a C toolchain to the wasm build. Revisit only if Phase 0 shows
-  decompression is a material share of the parse budget.
+- pure Rust keeps a C toolchain out of the wasm build. `zstd` is C bindings and stays rejected;
+  **`bzip2` is not, since 0.6** — its default backend is `libbz2-rs-sys`, a Rust rewrite, which is
+  why the table names it rather than the `bzip2-rs` crate this section named until #48. That
+  decision and its numbers are in `docs/PARSER.md` §15. `#![forbid(unsafe_code)]` on
+  `crates/demo-parser` is unaffected by either: it covers this crate, never its dependencies.
 
 `.dem.gz` is not a supported input — FACEIT no longer serves it (verified 2026-07-30 on Windows and
 macOS). Add it back only if a real source for it appears.
@@ -742,11 +744,11 @@ CI assertions where possible. A regression here is a blocker.
 | Metric | Budget | Note |
 |---|---|---|
 | Parse a 300 MB demo | < 15 s | Set from Phase 0: 10.4 s measured on a 337 MB demo, three passes, single-threaded in the browser. Headroom covers slower hardware and the columnar write, which #49 measured at ~0.2 s. **That 10.4 s was measured at `-O` and this repository ships `-Oz`, which costs 1.8× natively** — the budget and the profile were set from different builds. The shipped `-Oz` binary parses the 353 MB fixture in **13.89 s** driven from Bun (#50), which retires the 19 s that multiplier predicted, but Bun is not a browser and nothing has yet run inside a `Worker`. #59 is the measurement that settles it. See `docs/PARSER.md` §9, §13 and §14. |
-| Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
+| Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. A container adds a second copy while it is expanded — 264 MB compressed beside 353 MB expanded, **617 MB**, under what the parse itself reaches. It stays a transient because the compressed file is freed before the passes rather than after them (`docs/PARSER.md` §15). |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
 | JS bundle, excl. WASM | < 500 kB gzip | single locale only. **97.66 kB, 19.5% of budget** since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
-| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.13 MB, 53% of budget** with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
+| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.22 MB, 55.5% of budget** with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. 2.13 MB before #48; the 0.09 MB is the two container decoders (`docs/PARSER.md` §15). Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
 
 ---
 

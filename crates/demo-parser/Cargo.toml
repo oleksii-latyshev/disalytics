@@ -8,7 +8,9 @@ publish.workspace = true
 
 [dependencies]
 ahash.workspace = true
+bzip2.workspace = true
 parser.workspace = true
+ruzstd.workspace = true
 thiserror.workspace = true
 
 # Test-only, and never linked into the wasm binary: the golden snapshots AGENTS.md section 18 asks

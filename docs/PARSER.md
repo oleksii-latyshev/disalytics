@@ -634,3 +634,73 @@ argues for and `crates/demo-parser/tests/fixture.rs` asserts — observed here r
 still not the measurement: the demo was fetched over HTTP into a `Blob` rather than picked off disk,
 the tab was driven by automation, and nothing was controlled for. #59 remains what settles the
 budget — this is the first evidence that it is worth doing carefully rather than a formality.
+
+---
+
+## 15. Containers (#48)
+
+`.dem.zst` from FACEIT and `.dem.bz2` from Valve matchmaking are expanded inside
+`crates/demo-parser`, before upstream sees a byte. `AGENTS.md` §7.1 settled the placement; what
+follows is what building it found.
+
+### The decoder is `bzip2`, not `bzip2-rs`
+
+§7.1 named `ruzstd` and `bzip2-rs`, and the reasoning behind the second one has expired.
+`bzip2-rs` was the pure-Rust decoder because the `bzip2` crate meant C bindings. Since `bzip2` 0.6
+its default backend is **`libbz2-rs-sys`**, a Rust rewrite, so the C toolchain the rule was
+protecting against is no longer what that crate implies. The measured difference:
+
+| | packages added | wasm-opt `-Oz` | last release |
+|---|---|---|---|
+| `ruzstd` + `bzip2-rs` | 5 | 124.5 kB | Feb 2021 |
+| `ruzstd` + `bzip2` 0.6 | 4 | 119.6 kB | May 2026 |
+
+Five and a half years without a release, on the code that reads a hostile file first, is what
+decided it. Neither route pulls `wasm-bindgen`, `js-sys`, `web-sys`, a build script or a
+proc-macro, and `#![forbid(unsafe_code)]` on `crates/demo-parser` is untouched either way — it
+covers this crate, never its dependencies.
+
+The shipped binary went **2.13 MB → 2.22 MB**, below the 119.6 kB the isolated probe predicted
+because `std`'s machinery was already linked.
+
+### `ruzstd` decodes one frame, and an archive may hold several
+
+`StreamingDecoder::read` returns `Ok(0)` at the end of the *first* frame rather than continuing to
+the next, and the format allows any number of them. Left alone that hands back a prefix of the
+demo, which reads downstream as a recording that stops early — a wrong error about a file that is
+perfectly good. `expand_zstd` therefore loops, building a new decoder per frame until the source is
+consumed. Skippable frames are not handled; they do not occur in a demo download and would need
+byte accounting the crate cannot check against a real file.
+
+### The frame's declared size is what keeps the peak flat
+
+`FrameDecoder::content_size()` reports the frame's uncompressed length, and reserving it up front
+is worth more than it looks. Growing a 353 MB buffer by doubling holds the old and the new
+allocation at once — 792 MB, on top of the 264 MB compressed file still in memory. Reserving once
+makes the same work peak at **617 MB**, under the 663 MB the parse itself reaches. A frame that
+declares nothing falls back to growth; a frame that declares more than the ceiling is refused
+before anything is allocated.
+
+That ceiling is 1.5 GiB, and it is a guard rather than a policy: `wasm32` aborts the instance on a
+failed allocation instead of returning, so a stream claiming to expand forever has to be refused
+rather than attempted.
+
+### The compressed copy is freed before the passes, not after
+
+`demo_parser::decompressed` takes the file **by value** and the WASM wrapper hands it `DemoBuffer`'s
+own `Vec`. The compressed quarter-gigabyte is released as that call returns, so the two copies
+overlap only while the container is being expanded — they do not ride along through all three
+passes. `parse`/`parse_observed` keep a borrowing path for callers who do not own their bytes, and
+a raw `.dem` is passed through untouched by both.
+
+### A failed decompression is `TRUNCATED_DEMO`, deliberately
+
+A decoder cannot tell a download that stopped early from a corrupted one, and the first is much the
+commoner. The alternative code, `MALFORMED_DEMO`, renders as *"The file is a Counter-Strike 2 demo,
+but the recording is damaged"* — a claim nothing has earned while the container is still shut. Both
+messages send the reader to re-download; only one of them avoids asserting something unknown. #56
+owns the vocabulary this is working around.
+
+`UNSUPPORTED_CONTAINER` is now reachable, and gzip is what reaches it: `.dem.gz` is identified and
+named rather than parsed. Before this, a `.dem.zst` failed as `NOT_A_DEMO` — upstream rejected the
+zstd magic as `UnknownFile` — so a good FACEIT download was told it was not a demo.

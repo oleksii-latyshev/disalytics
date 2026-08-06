@@ -15,9 +15,13 @@ publish = false
 
 [workspace.dependencies]
 ahash = "0.8"
+# `bzip2` defaults to `libbz2-rs-sys`, a Rust rewrite rather than the C bindings the crate is named
+# for, so `AGENTS.md` §7.1 gets its pure-Rust decoder without a C toolchain in the wasm build.
+bzip2 = "0.6.1"
 demo-parser = { path = "crates/demo-parser" }
 js-sys = "0.3.103"
 parser = { path = "vendor/parser" }
+ruzstd = "0.9.0"
 thiserror = "2.0.18"
 wasm-bindgen = "0.2.106"
 

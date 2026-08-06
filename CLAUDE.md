@@ -46,6 +46,13 @@ That test is skipped unless `DISALYTICS_FIXTURE_DEMO` names a `.dem`. Read `docs
 before touching the extraction — it records what the demo does *not* carry (a tick rate, a bombsite
 name) and which upstream fields are dead.
 
+Since #48 the crate also opens the containers demos arrive in — `.dem.zst` and `.dem.bz2`,
+identified by magic bytes and expanded before upstream sees a byte, with `.dem.gz` named as
+`UNSUPPORTED_CONTAINER` rather than parsed. The decoders are `ruzstd` and `bzip2` **0.6**, whose
+default backend is a Rust rewrite rather than the C bindings the crate is named for; that is a
+deliberate departure from the `bzip2-rs` `AGENTS.md` §7.1 used to name, and `docs/PARSER.md` §15 is
+the only place the reasoning and the numbers live.
+
 `packages/demo-core` exists since #47 and holds the contract both sides write against: the `AGENTS.md`
 §10 event schema, `TickTrack`, `SCHEMA_VERSION`, the game vocabulary and the `ErrorCode` union.
 `bun run errors:check` fails when that union drifts from `crates/demo-parser/src/error.rs`, and it
