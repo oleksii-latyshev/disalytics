@@ -1,1 +1,26 @@
-{}
+{
+  "notADemo": {
+    "title": "That file is not a demo.",
+    "hint": "A match demo ends in .dem and comes from your match history. Check the file and try again."
+  },
+  "truncated": {
+    "title": "This demo is incomplete.",
+    "hint": "The recording stops part-way through. Download it again and open the new copy."
+  },
+  "unsupportedVersion": {
+    "title": "This demo is from an older game.",
+    "hint": "Only Counter-Strike 2 demos can be read. A CS:GO recording uses a format this tool does not open."
+  },
+  "unsupportedContainer": {
+    "title": "This file is compressed in a format that cannot be opened.",
+    "hint": "Extract the archive first, then open the .dem inside it."
+  },
+  "povDemo": {
+    "title": "This is a POV demo.",
+    "hint": "Only match demos (GOTV) carry data for all ten players. Download the match demo from your match history and try again."
+  },
+  "malformed": {
+    "title": "This demo could not be read.",
+    "hint": "The file is a Counter-Strike 2 demo, but the recording is damaged. Try another copy of it."
+  }
+}

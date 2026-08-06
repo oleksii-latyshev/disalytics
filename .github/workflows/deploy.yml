@@ -1,14 +1,24 @@
 name: deploy
 
-# workflow_run is what keeps this strictly downstream of a green `ci`. It is also read only from
-# the default branch, so this file cannot be exercised on a feature branch — only after it merges.
+# workflow_run is what keeps this strictly downstream of a green pipeline. It is also read only
+# from the default branch, so this file cannot be exercised on a feature branch — only after it
+# merges.
+#
+# `wasm` is here as well as `ci` because ci.yml carries paths-ignore: crates/**. Without it a
+# parser-only commit would green `wasm`, never run `ci`, and never reach production — the parser
+# would ship only on the next unrelated frontend commit. A commit that touches both runs both and
+# deploys the same SHA twice; the concurrency group below serialises that rather than racing it.
 on:
   workflow_run:
-    workflows: [ci]
+    workflows: [ci, wasm]
     types: [completed]
 
 permissions:
   contents: read
+
+env:
+  # Keep in step with wasm.yml and ci.yml — it is part of the cache key below.
+  WASM_PACK_VERSION: 0.15.0
 
 jobs:
   production:
@@ -46,6 +56,44 @@ jobs:
           restore-keys: bun-${{ runner.os }}-
 
       - run: bun install --frozen-lockfile
+
+      # Same restore-or-build as ci.yml: the SPA does not emit the .wasm without pkg/, and this
+      # rebuilds from the deployed commit rather than trusting whatever ci.yml happened to hold.
+      - name: Restore the built parser
+        id: parser
+        uses: actions/cache@v6
+        with:
+          path: crates/demo-parser-wasm/pkg
+          key: >-
+            wasm-pkg-${{ runner.os }}-${{ env.WASM_PACK_VERSION }}-${{
+            hashFiles('crates/*/src/**', 'crates/*/Cargo.toml', 'vendor/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Install the pinned Rust toolchain
+        if: steps.parser.outputs.cache-hit != 'true'
+        run: rustup show active-toolchain
+
+      - name: Cache cargo
+        if: steps.parser.outputs.cache-hit != 'true'
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Install wasm-pack
+        if: steps.parser.outputs.cache-hit != 'true'
+        run: |
+          if ! command -v wasm-pack >/dev/null; then
+            cargo install wasm-pack --locked --version "$WASM_PACK_VERSION"
+          fi
+
+      - name: wasm:build
+        if: steps.parser.outputs.cache-hit != 'true'
+        run: bun run wasm:build
 
       - name: build
         run: bun run build

@@ -105,3 +105,18 @@ jobs:
 
       - name: size
         run: bun run size --wasm
+
+      # ci.yml and deploy.yml restore this rather than installing a Rust toolchain of their own.
+      # Written here because ci.yml carries paths-ignore: crates/**, so a parser-only push to main
+      # never reaches the copy of this key that a later frontend pull request wants to hit. Saving
+      # a key that already exists is a warning, not a failure.
+      #
+      # This step runs after pkg/ has been built, so the key must not hash anything under it — see
+      # the longer note in ci.yml. Keep all three copies of this expression identical.
+      - name: Save the built parser for the frontend workflows
+        uses: actions/cache/save@v6
+        with:
+          path: crates/demo-parser-wasm/pkg
+          key: >-
+            wasm-pkg-${{ runner.os }}-${{ env.WASM_PACK_VERSION }}-${{
+            hashFiles('crates/*/src/**', 'crates/*/Cargo.toml', 'vendor/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}

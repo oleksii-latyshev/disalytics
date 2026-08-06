@@ -6,7 +6,14 @@ export type Locale = (typeof LOCALES)[number];
 
 export const SOURCE_LOCALE: Locale = 'en';
 
-export type Namespace = 'common' | 'timeline' | 'filters' | 'radar' | 'settings' | 'errors';
+export type Namespace =
+  | 'common'
+  | 'library'
+  | 'timeline'
+  | 'filters'
+  | 'radar'
+  | 'settings'
+  | 'errors';
 
 export type MessageTree = { readonly [segment: string]: string | MessageTree };
 

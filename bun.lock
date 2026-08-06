@@ -19,6 +19,8 @@
       "name": "@disa/web",
       "version": "0.0.0",
       "dependencies": {
+        "@disa/demo-core": "*",
+        "@disa/demo-parser": "*",
         "@disa/i18n": "*",
         "@disa/ui": "*",
         "class-variance-authority": "^0.7.1",
@@ -37,6 +39,7 @@
         "typescript": "5.9.2",
         "vite": "^8.2.0",
         "vite-plugin-pwa": "^1.3.0",
+        "vitest": "^4.1.10",
       },
     },
     "packages/demo-core": {

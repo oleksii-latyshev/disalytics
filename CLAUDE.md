@@ -52,12 +52,18 @@ name) and which upstream fields are dead.
 runs in **both** `ci.yml` and `wasm.yml` because neither workflow sees both files on its own.
 
 `packages/demo-parser` exists since #50: the §7.3 protocol, the worker, and the client that
-terminates it. **Nothing imports it yet**, so no `.wasm` reaches `apps/web/dist` and the
-`wasm content-type` assertion in the deploy smoke test is still skipped — #52 wires the consumer and
-turns it green. The worker resolves the generated glue as `demo-parser-wasm`, which the consuming
-app has to alias to `crates/demo-parser-wasm/pkg/demo_parser_wasm.js`; `pkg/` is gitignored, so the
-types come from a hand-written `src/wasm-glue.d.ts` and `bun run wasm:smoke` is what proves it has
-not drifted. Read `docs/PARSER.md` §14 before touching the boundary.
+terminates it. The worker resolves the generated glue as `demo-parser-wasm`; `pkg/` is gitignored,
+so the types come from a hand-written `src/wasm-glue.d.ts` and `bun run wasm:smoke` is what proves
+it has not drifted. Read `docs/PARSER.md` §14 before touching the boundary.
+
+`apps/web` consumes it since #52 — `core/parsing` owns the lifecycle, `features/library` owns the
+screens, and `apps/web/vite.config.ts` aliases `demo-parser-wasm` to
+`crates/demo-parser-wasm/pkg/demo_parser_wasm.js`. **`bun run build` fails without a built `pkg/`**,
+so `wasm.yml` now writes that directory to a cache keyed on the parser's inputs and `ci.yml` and
+`deploy.yml` restore it rather than installing Rust. That is how §15's "never rebuild the parser on
+a frontend-only commit" survives the SPA depending on the binary. `deploy.yml` also triggers on
+`wasm`, or a parser-only commit would never reach production. The `wasm content-type` assertion in
+the deploy smoke test is green: 12 passed, 0 failed, 0 skipped.
 
 `AGENTS.md` §4 still describes packages that do not exist yet — `demo-store` and `map-data`. Their
 absence is a schedule fact, not a contradiction.

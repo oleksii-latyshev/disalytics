@@ -613,3 +613,24 @@ multiplier the way native does.
 It is **not** the §16 budget met. Bun's engine is not a browser's, nothing here ran inside a
 `Worker`, and the machine is a developer laptop rather than the slow hardware the 15 s has to cover.
 #59 is still the honest measurement, and it needs the consumer #52 wires.
+
+### First numbers from an actual browser (#52), and why they are not #59 either
+
+Driving the shipped build through workerd in Chrome over the same 353 MB fixture, from the drop to
+the summary, with the file already resident as a `Blob`:
+
+| | elapsed |
+|---|---|
+| first `progress` | 0.2 s |
+| pass 1 done — 33% | 4.6 s |
+| pass 2 done — 67% | 10.7 s |
+| `header` on screen | 11.1 s |
+| `done` | **15.3 s** |
+
+The header landing 0.4 s after the second pass, while the third still runs, is the ordering §14
+argues for and `crates/demo-parser/tests/fixture.rs` asserts — observed here rather than inferred.
+
+**15.3 s is at the budget, not inside it**, and it is 1.4 s above the 13.89 s Bun measured. It is
+still not the measurement: the demo was fetched over HTTP into a `Blob` rather than picked off disk,
+the tab was driven by automation, and nothing was controlled for. #59 remains what settles the
+budget — this is the first evidence that it is worth doing carefully rather than a formality.

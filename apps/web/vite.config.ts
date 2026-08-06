@@ -57,6 +57,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // The parse worker imports the generated glue by the name wasm-pack writes into
+      // pkg/package.json. pkg/ is a build output rather than a dependency and is gitignored, so
+      // `bun run wasm:build` has to have run before this resolves.
+      'demo-parser-wasm': fileURLToPath(
+        new URL('../../crates/demo-parser-wasm/pkg/demo_parser_wasm.js', import.meta.url),
+      ),
     },
   },
   build: {

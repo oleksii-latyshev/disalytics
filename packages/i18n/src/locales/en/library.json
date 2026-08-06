@@ -1,0 +1,29 @@
+{
+  "map": "Map",
+  "open": {
+    "title": "Open a demo",
+    "hint": "Drop a .dem file here, or choose one from your match history folder.",
+    "action": "Open demo",
+    "release": "Release to open it."
+  },
+  "progress": {
+    "title": "Opening demo",
+    "phase": {
+      "decompress": "Decompressing",
+      "parse": "Reading the demo"
+    },
+    "percent": "{percent, number, percent}",
+    "label": "Reading progress",
+    "cancel": "Cancel"
+  },
+  "summary": {
+    "title": "Demo opened",
+    "action": "Open another demo"
+  },
+  "counts": {
+    "players": "{count, plural, one {# player} other {# players}}",
+    "rounds": "{count, plural, one {# round} other {# rounds}}",
+    "kills": "{count, plural, one {# kill} other {# kills}}",
+    "grenades": "{count, plural, one {# grenade} other {# grenades}}"
+  }
+}
