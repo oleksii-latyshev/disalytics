@@ -6,7 +6,7 @@ mod header;
 mod js;
 mod track;
 
-use demo_parser::{MatchHeader, PASS_COUNT, ParseObserver};
+use demo_parser::{MatchHeader, PASS_COUNT, ParseError, ParseObserver};
 use js_sys::{Function, Object};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::{JsError, wasm_bindgen};
@@ -32,7 +32,11 @@ pub fn pass_count() -> usize {
 /// to put on a screen.
 #[wasm_bindgen(js_name = eventNames)]
 pub fn event_names(demo_bytes: &[u8]) -> Result<Vec<String>, JsError> {
-    demo_parser::event_names(demo_bytes).map_err(|error| JsError::new(error.code().as_str()))
+    demo_parser::event_names(demo_bytes).map_err(|error| coded(&error))
+}
+
+fn coded(error: &ParseError) -> JsError {
+    JsError::new(error.code().as_str())
 }
 
 /// The demo's bytes, filled one chunk at a time.
@@ -64,6 +68,14 @@ impl DemoBuffer {
     pub fn byte_length(&self) -> usize {
         self.bytes.len()
     }
+
+    /// Whether the file arrived in a `.zst` or `.bz2` container, so the caller can name the phase
+    /// it reports without reading magic bytes on its own side of the boundary.
+    #[wasm_bindgen(getter, js_name = isCompressed)]
+    #[must_use]
+    pub fn is_compressed(&self) -> bool {
+        demo_parser::is_compressed(&self.bytes)
+    }
 }
 
 /// Parses `demo` and returns `{ track, events }` as plain `JavaScript` values.
@@ -84,13 +96,17 @@ pub fn parse_demo(
     on_pass: &Function,
     on_header: &Function,
 ) -> Result<Object, JsError> {
+    // Expanding the container here rather than inside the parse is what frees the compressed file
+    // before the passes begin: the two copies of a `.dem.zst` then overlap only while it is being
+    // decompressed, which is the difference the §16 peak budget is measured against.
+    let demo_bytes = demo_parser::decompressed(demo.bytes).map_err(|error| coded(&error))?;
     let mut observer = JsObserver { on_pass, on_header };
-    let parsed = demo_parser::parse_observed(&demo.bytes, &mut observer)
-        .map_err(|error| JsError::new(error.code().as_str()))?;
+    let parsed =
+        demo_parser::parse_observed(&demo_bytes, &mut observer).map_err(|error| coded(&error))?;
 
     // The demo outweighs everything built from it by two orders of magnitude, so it goes before the
     // JavaScript copies are allocated rather than at the end of the scope.
-    drop(demo);
+    drop(demo_bytes);
 
     let out = Object::new();
     js::set(&out, "track", track::track(&parsed.track));

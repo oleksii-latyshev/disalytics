@@ -153,8 +153,8 @@ pub(crate) fn projectiles_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseErr
 ///
 /// Returns the [`ParseError`] the file earned: an unreadable file is an expected outcome here, not
 /// a programmer error.
-pub fn event_names(demo_bytes: &[u8]) -> Result<Vec<String>, ParseError> {
-    let output = events_pass(demo_bytes)?;
+pub fn event_names(file_bytes: &[u8]) -> Result<Vec<String>, ParseError> {
+    let output = events_pass(&crate::container::decompressed(file_bytes)?)?;
     let mut names: Vec<String> = output.game_events_counter.into_iter().collect();
     names.sort_unstable();
 
@@ -202,9 +202,30 @@ mod tests {
         bytes
     }
 
+    fn zstd(bytes: &[u8]) -> Vec<u8> {
+        ruzstd::encoding::compress_to_vec(bytes, ruzstd::encoding::CompressionLevel::Fastest)
+    }
+
     #[test]
     fn a_file_that_is_not_a_demo_is_named_as_one() {
         let error = event_names(&demo_with_magic(b"NOTADEM\0")).unwrap_err();
+
+        assert_eq!(error.code(), ErrorCode::NotADemo);
+    }
+
+    /// The demo inside the container is what the error has to be about. Reaching a verdict that
+    /// could only come from the bytes underneath is what proves the container was opened rather
+    /// than guessed at from a file name nothing here ever sees.
+    #[test]
+    fn a_compressed_demo_is_judged_by_what_is_inside_the_container() {
+        let error = event_names(&zstd(&demo_with_magic(b"HL2DEMO\0"))).unwrap_err();
+
+        assert_eq!(error, ParseError::UnsupportedDemoVersion { protocol: 4 });
+    }
+
+    #[test]
+    fn a_container_holding_something_that_is_not_a_demo_is_named_as_one() {
+        let error = event_names(&zstd(&demo_with_magic(b"NOTADEM\0"))).unwrap_err();
 
         assert_eq!(error.code(), ErrorCode::NotADemo);
     }
