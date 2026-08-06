@@ -40,6 +40,12 @@ not fetched — patched for the `wasm32` `Instant::now()` trap and stripped of t
 reached the network. **Read `vendor/README.md` before touching anything under `vendor/`**; every
 deviation from the pinned revision is listed there and nowhere else.
 
+Since #49 the crate produces the whole `AGENTS.md` §10 schema in the three passes upstream imposes,
+verified against a real demo whose golden snapshot lives in `crates/demo-parser/tests/snapshots/`.
+That test is skipped unless `DISALYTICS_FIXTURE_DEMO` names a `.dem`. Read `docs/PARSER.md` §13
+before touching the extraction — it records what the demo does *not* carry (a tick rate, a bombsite
+name) and which upstream fields are dead.
+
 `packages/demo-core` exists since #47 and holds the contract both sides write against: the `AGENTS.md`
 §10 event schema, `TickTrack`, `SCHEMA_VERSION`, the game vocabulary and the `ErrorCode` union.
 `bun run errors:check` fails when that union drifts from `crates/demo-parser/src/error.rs`, and it

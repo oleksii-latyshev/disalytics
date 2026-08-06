@@ -3,7 +3,7 @@
  * `${fileHash}:${SCHEMA_VERSION}`, so an entry written by an older shape is a miss rather than
  * something to migrate.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 declare const unit: unique symbol;
 
@@ -58,9 +58,6 @@ export const ROUND_WIN_REASONS = [
   'draw',
 ] as const;
 export type RoundWinReason = (typeof ROUND_WIN_REASONS)[number];
-
-export const BOMB_SITES = ['A', 'B'] as const;
-export type BombSite = (typeof BOMB_SITES)[number];
 
 export const BUY_TYPES = ['pistol', 'eco', 'semi-buy', 'force-buy', 'full-buy'] as const;
 export type BuyType = (typeof BUY_TYPES)[number];
@@ -176,7 +173,11 @@ export interface Blind {
 export interface BombPlant {
   tick: Tick;
   planter: PlayerSlot;
-  site: BombSite;
+  /**
+   * The bombsite trigger's entity index, as the demo reports it. Naming it A or B needs the site
+   * polygons in `map-data` — the demo carries no name, and `m_iBombSite` reads 0 on every plant.
+   */
+  siteEntityId: number;
 }
 
 /** `interrupted` is a defuse that neither finished nor was let go of — the defuser died. */

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   ANGLE_SCALE,
-  BOMB_SITES,
   BUY_TYPES,
   FLAG_ALIVE,
   FLAG_DEFUSING,
@@ -24,7 +23,6 @@ const VOCABULARIES = {
   GRENADE_TYPES,
   HIT_GROUPS,
   ROUND_WIN_REASONS,
-  BOMB_SITES,
   BUY_TYPES,
 };
 

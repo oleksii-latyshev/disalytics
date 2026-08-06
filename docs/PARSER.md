@@ -57,7 +57,7 @@ Measured on the fixture, requesting all three in one pass produced events only �
 |---|---|---|---|
 | A — events | `wanted_events: ["all"]` | 32,378 events across 54 distinct names | 0.52 s |
 | B — ticks | player props, no events | 16 columns × 1,945,210 values, zero nones | 0.72 s |
-| C — projectiles | `parse_projectiles: true`, `parse_grenades: false` | 301,488 trajectory samples | 0.49 s |
+| C — projectiles | `parse_projectiles: true`, `parse_grenades: false` | 301,488 trajectory samples, in `df` and **not** in `output.projectiles` — see §13 | 0.49 s |
 
 Total 1.72 s natively multi-threaded. §7.2 asks for "as few passes as possible" and asks for the
 number to be recorded — the number is **3**, and reducing it means patching upstream, not
@@ -71,7 +71,7 @@ configuring it.
 |---|---|---|
 | **Kills** | extractable | `player_death`: `attacker_*`, `user_*` (victim), `assister_*`, `weapon`, `headshot`, `penetrated` (wallbang), `thrusmoke`, `noscope`, `attackerblind`, `distance`, `dmg_health`, `dmg_armor`, `hitgroup`, `assistedflash`, `attackerinair`, `tick` |
 | **Damage** | extractable | `player_hurt`, 913 occurrences on the fixture |
-| **Grenade trajectories** | extractable | pass C, sampled **every tick**, with thrower steamid and name |
+| **Grenade trajectories** | extractable | pass C, sampled **every tick**, with thrower steamid and name. Read from `df`, not from `output.projectiles` — §13 |
 | **Grenade detonations** | extractable | `hegrenade_detonate`, `flashbang_detonate`, `smokegrenade_detonate`, `decoy_detonate`, each carrying `x`/`y` |
 | **Grenade expiry** | extractable | `smokegrenade_expired`, `inferno_expire` |
 | **Blinds** | extractable | `player_blind` carries `blind_duration: f32` **per affected player**, plus attacker identity. 237 occurrences |
@@ -401,6 +401,10 @@ What Phase 2 inherits as known risk, all recorded above rather than discovered l
 - Whether `bomb_abortdefuse` behaves as expected — needs a demo containing one
 - Whether the profiling timestamps can be fixed upstream rather than carried in `vendor/`
 - Budget figures re-measured on CI hardware rather than a laptop
+- The parse-time budget re-measured in the browser on an `-Oz` build, which is what ships — §13
+- Naming a bombsite A or B, which needs `packages/map-data` — §13
+- Whether `bomb_abortplant` occurs at all; like `bomb_abortdefuse` it is absent from this fixture,
+  so the plant window that reads it has never been exercised
 
 ---
 
@@ -431,8 +435,11 @@ of them runs `Parser::parse_demo` for real and asserts the `ErrorCode` it produc
 whole of `AGENTS.md` §7.1's "handle gracefully, never a crash" list except the POV case, which needs
 a real POV recording to tell apart.
 
-A real demo arrives the way §18 prescribes — fetched from a GitHub Release, never committed — with
-the golden snapshots that the three-pass extraction will need.
+A real demo arrives the way §18 prescribes, with the golden snapshot that the three-pass extraction
+will need. This section originally read "fetched from a GitHub Release"; #49 settled it the other
+way. Publishing a GOTV recording means publishing ten players' names and SteamIDs, and a project
+whose first hard rule is that no server touches a demo should not keep one on a release page. The
+fixture is named by `DISALYTICS_FIXTURE_DEMO` instead — see §13.
 
 ### The generated protobuf code did not need generating
 
@@ -441,3 +448,112 @@ that code as work Phase 2 would have to do. It does not: upstream commits `csgop
 `csgoproto/src/maps.rs` and `csgoproto/src/message_type.rs` at the pinned revision, and only the
 `GameTracking-CS2` checkout is gitignored. Deleting both build scripts is the whole fix, and it
 keeps `prost-build` and its 18 further packages out of the graph. `vendor/README.md` has the detail.
+
+---
+
+## 13. Found while extracting the schema (#49)
+
+Everything below was measured against the same fixture §2 describes, driving
+`crates/demo-parser` rather than a probe.
+
+### `DemoOutput.projectiles` is always empty — trajectories live in the table
+
+`projectile_records` is initialised to `vec![]` at the pinned revision and never pushed to.
+`collect_projectiles` writes into `self.output`, the same `df` the tick pass uses, under
+`GRENADE_X`/`GRENADE_Y`/`GRENADE_Z`, `GRENADE_TYPE_ID`, `ENTITY_ID_ID`, `STEAMID_ID`, `NAME_ID` and
+`TICK_ID` — the eight columns §8 counted.
+
+Both threading modes were re-run to be sure: `output.projectiles` is empty in each, and the `df` is
+identical in each — 301,488 rows, 385 distinct entities, entity 98 opening at tick 6,920 with
+`x = -490.78`, which is the sample §4 prints. The threading discrepancy §7 records is real for
+events and does **not** extend to projectiles.
+
+### Projectile entity indices are recycled inside a match
+
+385 distinct entity indices carry 519 flights. A flight is therefore keyed by index *and* by the
+tick its samples started, split wherever the gap between consecutive samples exceeds 8 ticks —
+upstream samples a projectile every tick it exists, so any real gap means a different object.
+
+519 is not an estimate. `weapon_fire` on the same demo counts 153 HE, 136 smoke, 112 flashbang,
+68 molotov, 49 incendiary and 1 decoy, and the extracted grenades match every one of those six
+numbers exactly.
+
+### A molotov and an incendiary are the same projectile class
+
+Both arrive as `CMolotovProjectile`; `m_bIsIncGrenade` lives on the entity but upstream does not
+expose it. The type is resolved from the thrower's most recent `weapon_fire` — `weapon_molotov`
+against `weapon_incgrenade` — which is what produces the 68/49 split above.
+
+Molotov detonations also cannot be joined by entity index: the flames are a separate `inferno_*`
+entity. They are matched by thrower and time instead, and `inferno_expire` then joins the inferno's
+own index.
+
+### `player_death.distance` is in metres
+
+A Source unit is one inch, so a metre is 39.3701 of them. Computing the distance between attacker
+and victim from the tick pass at each death tick and dividing gives a median of **39.366** over the
+219 kills that have both endpoints — the outliers are point-blank knife kills where the engine's own
+measurement and the sampled positions disagree by a few units. `distanceUnits` in the schema is the
+field multiplied by 39.37008.
+
+### The bombsite has no name in the demo
+
+`bomb_planted.site` is the bombsite trigger's entity index — 301 and 309 on this fixture, stable
+across the 22 plants. `CCSGameRulesProxy.CCSGameRules.m_iBombSite` reads **0 at every one of them**
+and is no help. Naming a site A or B needs the site polygons that `packages/map-data` will carry in
+Phase 3, so the parser emits `siteEntityId` and `demo-core` lost `BombSite`/`BOMB_SITES` until then.
+
+### The demo does not report its tick rate
+
+The header has no field for it, `sv_tickrate` is not among the convars a GOTV recording carries, and
+`m_fRoundStartTime` drifts against the tick counter badly enough to derive **59** from it. The rate
+is the constant 64, cross-checked against the one round that ended on the clock: 140,008 to 147,368
+is 7,360 ticks over a 115-second round, which is 64.0 exactly.
+
+### The fixture plays 30 rounds, not the 32 §2 records
+
+There are 32 `round_end` events, and §2 counted those. Two are warmup: one at tick 1 with no winner
+at all, one at 4,296 before `begin_new_match` at 4,951. Rounds are assembled from `round_end` after
+that boundary — 30 of them, MR12 plus one overtime, with side swaps at rounds 13 and 28.
+
+That second swap is why a pistol round is not simply the first round of a half: overtime halves swap
+sides too and open on $10,000, and every player at round 28 is holding 5,100 or more.
+
+### Parse cost is dominated by the release profile, not by the extraction
+
+| build | three passes + columnar write |
+|---|---|
+| `opt-level = 3` | **6.82 s** |
+| `opt-level = "z"` — what this repository ships | **11.5–12.3 s** |
+
+§9 measured 6.66 s for the three passes alone, natively single-threaded, on a normal release build.
+So the whole of the columnar write, the event mapping and the trajectory grouping costs roughly
+**0.2 s** — and `-Oz`, which `AGENTS.md` §16 chose for the 4 MB binary budget, costs **1.8×**.
+
+This matters because §9's browser figure of 10.4 s was taken at `-O`, not at `-Oz`. Scaling it by the
+same factor lands near 19 s against a 15 s budget. That is an extrapolation and not a measurement —
+the honest number needs the worker from #50 — but the budget and the profile were set from different
+builds and the gap is now on the record.
+
+### Running it
+
+The demo is named by an environment variable and never committed (`AGENTS.md` §18):
+
+```sh
+DISALYTICS_FIXTURE_DEMO=/path/to/demo.dem cargo test -p demo-parser --test fixture
+```
+
+Without it the test reports itself skipped. `DISALYTICS_UPDATE_SNAPSHOT=1` rewrites
+`crates/demo-parser/tests/snapshots/parsed-demo.json` instead of comparing against it; the diff is
+read by a human before it is committed, never accepted because a test asked for it.
+
+The snapshot carries every round and plant and defuse in full, the ends of the longer lists with an
+FNV-1a checksum over the whole of each, per-column checksums of `TickTrack` with every 6,000th frame
+written out, and the grenade counts per type that the `weapon_fire` cross-check above compares
+against.
+
+### `player_first_connect` deduplication is not needed
+
+§7 asks for it so output does not depend on which threading branch ran. Connect events are not part
+of the §10 schema and never reach parsed output, so there is nothing to deduplicate. The point stands
+if that schema ever grows a roster timeline.

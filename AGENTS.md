@@ -704,7 +704,7 @@ CI assertions where possible. A regression here is a blocker.
 
 | Metric | Budget | Note |
 |---|---|---|
-| Parse a 300 MB demo | < 15 s | Set from Phase 0: 10.4 s measured on a 337 MB demo, three passes, single-threaded in the browser. Headroom covers slower hardware and the columnar write. Re-set from CI hardware once CI exists. See `docs/PARSER.md` §9. |
+| Parse a 300 MB demo | < 15 s | Set from Phase 0: 10.4 s measured on a 337 MB demo, three passes, single-threaded in the browser. Headroom covers slower hardware and the columnar write, which #49 measured at ~0.2 s. **That 10.4 s was measured at `-O` and this repository ships `-Oz`, which costs 1.8× natively** — the budget and the profile were set from different builds. Re-measure in the browser once the worker exists. See `docs/PARSER.md` §9 and §13. |
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
@@ -741,9 +741,17 @@ Full system in **`docs/DESIGN.md`**. Rules that constrain engineering:
 6. No new runtime dependency without approval
 7. Behaviour changes reflected in this file or in `docs/`
 
-**Testing note:** never commit large `.dem` files. Use one small fixture fetched from a GitHub
-Release, plus **golden snapshots** of parsed output committed as compressed JSON. Parser changes
-that alter a snapshot get reviewed by hand, never auto-accepted.
+**Testing note:** never commit a `.dem`, and do not publish one either — a GOTV recording carries
+ten real players' names and SteamIDs, and the product's whole point is that demos stay with the
+person who has them. The fixture is **developer-supplied**: `DISALYTICS_FIXTURE_DEMO` names a demo
+on disk and the test reports itself skipped without it, which is what CI does.
+
+What is committed is the **golden snapshot** of parsed output. Parser changes that alter it get
+reviewed by hand, never auto-accepted. It is regenerated with `DISALYTICS_UPDATE_SNAPSHOT=1`.
+
+The trade this makes: the snapshot pins one demo that only its owner can reproduce. It catches
+drift, not correctness on demos nobody here has. Breadth is the unit tests' job, and §7.1's
+"handle gracefully, never a crash" list is what covers the demos the fixture is not.
 
 ---
 
