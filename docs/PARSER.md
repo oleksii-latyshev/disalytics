@@ -704,3 +704,27 @@ owns the vocabulary this is working around.
 `UNSUPPORTED_CONTAINER` is now reachable, and gzip is what reaches it: `.dem.gz` is identified and
 named rather than parsed. Before this, a `.dem.zst` failed as `NOT_A_DEMO` — upstream rejected the
 zstd magic as `UnknownFile` — so a good FACEIT download was told it was not a demo.
+
+### What it costs — 2.78 s, and the budget does not have it
+
+`DISALYTICS_FIXTURE_DEMO=… bun run wasm:smoke` over the same fixture, on the same binary, on the
+same machine, one run each:
+
+| input | elapsed |
+|---|---|
+| `demo.dem`, 353 MB raw | 13.92 s |
+| `demo.dem.zst`, 264 MB compressed | **16.70 s** |
+
+Both produced `de_dust2`, 486,350 track cells and 519 grenade flights — the container path is
+output-identical, not merely close. The 13.92 s also confirms the decoders cost nothing on a raw
+demo: §14 measured 13.89 s before they existed.
+
+**Decompression is therefore 2.78 s, and §16's 15 s budget has no room for it.** The browser number
+for the *raw* fixture is already 15.3 s, so a FACEIT `.dem.zst` lands around 18 s on the same
+hardware. That is not a regression this issue introduced — the file could not be opened at all
+before — but it is the budget failing for the input most users actually have, and #59 now has to
+measure both containers rather than one.
+
+The fixture test was also run against the `.dem.zst` directly and reproduced the committed golden
+snapshot for the raw demo byte for byte, twice over: identification, expansion and parsing produce
+the same output as the file that was expanded on the command line.
