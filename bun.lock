@@ -48,6 +48,18 @@
         "vitest": "^4.1.10",
       },
     },
+    "packages/demo-parser": {
+      "name": "@disa/demo-parser",
+      "version": "0.0.0",
+      "dependencies": {
+        "@disa/demo-core": "*",
+      },
+      "devDependencies": {
+        "@disa/tsconfig": "*",
+        "typescript": "5.9.2",
+        "vitest": "^4.1.10",
+      },
+    },
     "packages/i18n": {
       "name": "@disa/i18n",
       "version": "0.0.0",
@@ -305,6 +317,8 @@
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
 
     "@disa/demo-core": ["@disa/demo-core@workspace:packages/demo-core"],
+
+    "@disa/demo-parser": ["@disa/demo-parser@workspace:packages/demo-parser"],
 
     "@disa/i18n": ["@disa/i18n@workspace:packages/i18n"],
 

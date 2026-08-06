@@ -9,8 +9,12 @@ publish.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# `js-sys` adds no crate to the graph — the `getrandom` opt-ins below already link it. It is named
+# here because the parsed demo is handed over as plain JavaScript objects and typed arrays the
+# worker can transfer, which is a boundary concern and belongs on this side of it.
 [dependencies]
 demo-parser.workspace = true
+js-sys.workspace = true
 wasm-bindgen.workspace = true
 
 # Two `getrandom` majors coexist in the parser's tree — 0.2 through `rand`, 0.3 through `ahash` —
