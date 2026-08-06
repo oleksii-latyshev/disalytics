@@ -11,5 +11,11 @@ ahash.workspace = true
 parser.workspace = true
 thiserror.workspace = true
 
+# Test-only, and never linked into the wasm binary: the golden snapshots AGENTS.md section 18 asks
+# for are JSON. `serde` is already in the graph through `parser`.
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
 [lints]
 workspace = true

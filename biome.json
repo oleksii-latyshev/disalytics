@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/.turbo", "!**/target", "!**/pkg", "!bun.lock"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/.turbo",
+      "!**/target",
+      "!**/pkg",
+      "!bun.lock",
+      "!crates/*/tests/snapshots"
+    ]
   },
   "formatter": {
     "enabled": true,
