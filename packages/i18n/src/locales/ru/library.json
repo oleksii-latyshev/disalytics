@@ -1,0 +1,29 @@
+{
+  "map": "Карта",
+  "open": {
+    "title": "Открыть демо",
+    "hint": "Перетащите сюда файл .dem или выберите его в папке с историей матчей.",
+    "action": "Открыть демо",
+    "release": "Отпустите, чтобы открыть."
+  },
+  "progress": {
+    "title": "Открываем демо",
+    "phase": {
+      "decompress": "Распаковываем",
+      "parse": "Читаем демо"
+    },
+    "percent": "{percent, number, percent}",
+    "label": "Ход чтения",
+    "cancel": "Отменить"
+  },
+  "summary": {
+    "title": "Демо открыто",
+    "action": "Открыть другое демо"
+  },
+  "counts": {
+    "players": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}",
+    "rounds": "{count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}",
+    "kills": "{count, plural, one {# убийство} few {# убийства} many {# убийств} other {# убийства}}",
+    "grenades": "{count, plural, one {# граната} few {# гранаты} many {# гранат} other {# гранаты}}"
+  }
+}

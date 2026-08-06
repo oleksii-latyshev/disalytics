@@ -14,6 +14,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # Third of three places this is pinned — see wasm.yml and deploy.yml. They have to agree, because
+  # it is part of the cache key that decides whether the parser is rebuilt here.
+  WASM_PACK_VERSION: 0.15.0
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -49,6 +54,46 @@ jobs:
 
       - name: test
         run: bun run test
+
+      # The parse worker imports the generated glue, so `bun run build` cannot emit the SPA — or
+      # the .wasm the §13 smoke test asserts — without pkg/. The key is the parser's own inputs, so
+      # a frontend-only commit restores it in seconds and installs no Rust at all. wasm.yml writes
+      # the entry on main; the build below is what covers a key nothing has written yet.
+      - name: Restore the built parser
+        id: parser
+        uses: actions/cache@v6
+        with:
+          path: crates/demo-parser-wasm/pkg
+          key: >-
+            wasm-pkg-${{ runner.os }}-${{ env.WASM_PACK_VERSION }}-${{
+            hashFiles('crates/**', 'vendor/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Install the pinned Rust toolchain
+        if: steps.parser.outputs.cache-hit != 'true'
+        run: rustup show active-toolchain
+
+      - name: Cache cargo
+        if: steps.parser.outputs.cache-hit != 'true'
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Install wasm-pack
+        if: steps.parser.outputs.cache-hit != 'true'
+        run: |
+          if ! command -v wasm-pack >/dev/null; then
+            cargo install wasm-pack --locked --version "$WASM_PACK_VERSION"
+          fi
+
+      - name: wasm:build
+        if: steps.parser.outputs.cache-hit != 'true'
+        run: bun run wasm:build
 
       - name: build
         run: bun run build

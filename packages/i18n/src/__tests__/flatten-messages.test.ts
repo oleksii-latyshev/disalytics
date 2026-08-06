@@ -4,6 +4,7 @@ import { flattenResources } from '../helpers/flatten-messages';
 
 const resources = {
   common: { tagline: 'Tagline' },
+  library: {},
   timeline: { roundsRemaining: '{count} left' },
   filters: { blindDuration: { label: 'Blind duration', hint: 'Seconds' } },
   radar: {},

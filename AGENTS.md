@@ -408,7 +408,8 @@ Two locales: **English (`en`, source) and Russian (`ru`)**. Patterns and example
 ### Structure
 
 `packages/i18n` owns resources, the typed key union, and the `<Text>` / `useT` API. Namespaces:
-`common`, `timeline`, `filters`, `radar`, `settings`, `errors`. Only the active locale is loaded —
+`common`, `library`, `timeline`, `filters`, `radar`, `settings`, `errors`. Only the active locale is
+loaded —
 locales are dynamic imports, never bundled together.
 
 ### Keys are typed
@@ -592,9 +593,10 @@ production run of `deploy.yml` failed exactly this way, on a deployment that was
 A 404 that means "not routed yet" and a 404 that means "broken" are indistinguishable from a single
 request, so the wait is what makes the difference legible.
 
-Until `crates/` ships a binary there is no `.wasm` in `dist`, so that one assertion reports `skip`
-with its reason instead of passing quietly. Dropping a `.wasm` into `dist/assets` turns it green —
-Phase 2 inherits the check rather than having to remember it.
+The `.wasm` assertion reported `skip` with its reason from #23 until #52, first because no binary
+existed and then because nothing in `apps/web` imported the worker — Vite emits the binary only when
+the application's own graph reaches it. Wiring the consumer turned it green without the assertion
+changing: **12 passed, 0 failed, 0 skipped**.
 
 ---
 
@@ -619,8 +621,15 @@ The repository is **public**: standard-runner minutes are free, as is CodeQL.
 **`wasm.yml`** — **exists since #44.** `bun run errors:check` → `cargo fmt --check` →
 `clippy -D warnings` → `cargo test` → `bun run wasm:build` (which is `wasm-pack build --target web`,
 release by default, `wasm-opt` inside) → `bun run wasm:smoke` → `bun run size --wasm`. Caches the
-cargo registry, `target/` and the compiled `wasm-pack`. *Never rebuild the parser on a frontend-only
-commit.*
+cargo registry, `target/` and the compiled `wasm-pack`.
+
+*Never rebuild the parser on a frontend-only commit.* Since #52 that promise is kept by a cache
+rather than by a path filter, because the SPA now imports the worker and `vite build` cannot emit
+the binary without `crates/demo-parser-wasm/pkg`. This workflow **writes** that directory to a cache
+keyed on the parser's own inputs — `crates/**`, `vendor/**`, `Cargo.toml`, `Cargo.lock`,
+`rust-toolchain.toml`, and the pinned `wasm-pack` version. `ci.yml` and `deploy.yml` restore it, and
+install a Rust toolchain only when the key misses. The key is pinned in three files and they have to
+agree; a `WASM_PACK_VERSION` that drifts silently turns every restore into a rebuild.
 
 The smoke step runs **before** the size gate and is not optional: `docs/PARSER.md` §8 records an
 artifact that measured 293 KB because its entry point trapped and the optimiser deleted the parser
@@ -649,17 +658,24 @@ No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
-`errors:check` → `test` → `build` → `size` gate, in one job, in that order. Bun's install cache is keyed on
-`bun.lock`. `paths-ignore: crates/**`, so a parser-only commit does not run the frontend pipeline —
-the mirror of the rule above. Required status checks on the default branch: see `CONTRIBUTING.md`
-§5, including what `paths-ignore` costs a parser-only pull request.
+`errors:check` → `test` → restore-or-build the parser → `build` → `size` gate, in one job, in that
+order. Bun's install cache is keyed on `bun.lock`. `paths-ignore: crates/**`, so a parser-only
+commit does not run the frontend pipeline — the mirror of the rule above. Required status checks on
+the default branch: see `CONTRIBUTING.md` §5, including what `paths-ignore` costs a parser-only pull
+request.
 
-**`deploy.yml`** — **exists since #23.** Triggered by `workflow_run` on `ci`, so it is strictly
-downstream of a green pipeline instead of racing one. It holds **one job**: a successful `push` run
-on `main` rebuilds from the run's `head_sha`, deploys production, and runs the §13 smoke test
-against the URL it just produced. `cloudflare/wrangler-action` uses the `wrangler` already in the
-lockfile, so the version is pinned in exactly one place. Pull requests get no deployment of any
-kind — see *Previews are off* below.
+**`deploy.yml`** — **exists since #23.** Triggered by `workflow_run` on `ci` **and on `wasm`**, so
+it is strictly downstream of a green pipeline instead of racing one. It holds **one job**: a
+successful `push` run on `main` rebuilds from the run's `head_sha` — parser included, from the same
+cache `ci.yml` reads — deploys production, and runs the §13 smoke test against the URL it just
+produced. `cloudflare/wrangler-action` uses the `wrangler` already in the lockfile, so the version
+is pinned in exactly one place. Pull requests get no deployment of any kind — see *Previews are off*
+below.
+
+`wasm` is one of its triggers because of the `paths-ignore` mirror: a parser-only commit greens
+`wasm`, never runs `ci`, and would otherwise reach production only on the next unrelated frontend
+commit. A commit touching both halves runs both workflows and deploys the same SHA twice; the
+`deploy-production` concurrency group serialises that instead of racing it.
 
 Three things about `workflow_run` that are easy to get wrong. It hands repository secrets to the
 triggering run's code, so any job added here must refuse forks by checking `head_repository` — a
@@ -724,7 +740,7 @@ CI assertions where possible. A regression here is a blocker.
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. |
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
-| JS bundle, excl. WASM | < 500 kB gzip | single locale only. 81.2 kB at the end of #22 — app shell, React and react-intl, the one locale chunk, and the 5.6 kB service worker. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
+| JS bundle, excl. WASM | < 500 kB gzip | single locale only. **97.66 kB, 19.5% of budget** since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.13 MB, 53% of budget** with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
 
 ---
