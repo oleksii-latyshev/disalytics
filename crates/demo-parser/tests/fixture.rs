@@ -11,7 +11,8 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, Kill, MatchHeader, ParsedDemo, TickTrack, parse_recording_passes,
+    DefuseOutcome, Grenade, Kill, MatchHeader, ParseObserver, ParsedDemo, TickTrack,
+    parse_observed, parse_recording_passes,
 };
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -57,10 +58,23 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
     assert_track_is_rectangular(&first.track);
     assert_events_are_sorted_by_tick(&first);
 
-    let (second, _) = parse_recording_passes(&demo_bytes).expect("the fixture failed to reparse");
+    let mut observed = ObservedParse::default();
+    let second = parse_observed(&demo_bytes, &mut observed).expect("the fixture failed to reparse");
     assert!(
         first == second,
         "the same bytes produced different output on a second parse (hard rule 8)"
+    );
+
+    assert_eq!(
+        observed.reports,
+        vec![
+            "pass events 1/3".to_owned(),
+            "pass ticks 2/3".to_owned(),
+            format!("header {}", first.header.map),
+            "pass projectiles 3/3".to_owned(),
+        ],
+        "the header has to reach a worker while the last pass is still running, or reporting it \
+         separately buys nothing"
     );
 
     let snapshot = snapshot_of(&first, &passes);
@@ -78,6 +92,22 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
         "parsed output no longer matches the committed snapshot; \
          regenerate with {UPDATE_ENV}=1 and review the diff by hand"
     );
+}
+
+#[derive(Default)]
+struct ObservedParse {
+    reports: Vec<String>,
+}
+
+impl ParseObserver for ObservedParse {
+    fn pass_completed(&mut self, label: &'static str, completed_passes: usize) {
+        self.reports
+            .push(format!("pass {label} {completed_passes}/3"));
+    }
+
+    fn header_ready(&mut self, header: &MatchHeader) {
+        self.reports.push(format!("header {}", header.map));
+    }
 }
 
 fn assert_track_is_rectangular(track: &TickTrack) {

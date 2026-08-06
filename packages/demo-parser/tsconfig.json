@@ -1,0 +1,13 @@
+{
+  "extends": "@disa/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  // The worker is the one file that may reach the parser, and it needs the WebWorker lib rather
+  // than the DOM one — the two disagree about what `self` and `postMessage` are.
+  "include": ["src", "vitest.config.ts"],
+  "exclude": ["src/worker.ts"]
+}

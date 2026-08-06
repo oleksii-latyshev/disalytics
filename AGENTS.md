@@ -165,6 +165,7 @@ bun run test                 # vitest run
 bun run e2e                  # playwright
 bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
 bun run wasm:smoke           # call into the built binary — proves it runs, not that it compiled
+                             # DISALYTICS_FIXTURE_DEMO also checks the shape it hands to JavaScript
 bun run mapdata:generate     # regenerate map constants from Valve overview files
 bun run i18n:check           # fail on missing/orphaned keys, regenerate the key union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
@@ -291,27 +292,37 @@ build in Rust than the Go equivalent, but still real work.
 
 ### 7.3 Worker protocol
 
-The worker sends only lightweight messages. It never posts large JSON.
+The worker sends only lightweight messages. It never posts large JSON. Both sides of it live in
+`packages/demo-parser/src/protocol.ts` since #50, and that file is the copy that binds.
 
 ```ts
 type WorkerOut =
   | { type: 'progress'; phase: 'decompress' | 'parse'; percent: number }
-  | { type: 'header'; map: string; tickRate: number; players: PlayerInfo[] }
+  | { type: 'header'; header: MatchHeader }
   | { type: 'done'; track: TickTrack; events: MatchEvents }   // ArrayBuffers TRANSFERRED
-  | { type: 'error'; code: ErrorCode; message: string };      // code, not prose — see §11
+  | { type: 'error'; code: ErrorCode };                       // code, not prose — see §11
 
-type WorkerIn =
-  | { type: 'parse'; source: File | FileSystemFileHandle }
-  | { type: 'cancel' };
+type WorkerIn = { type: 'parse'; source: File | FileSystemFileHandle };
 ```
 
-Typed-array buffers move via the `transfer` list, never structured-cloned. Cancellation must
-actually free memory — terminate the worker.
+Typed-array buffers move via the `transfer` list, never structured-cloned. **Cancellation is
+`terminate()`, which is why `WorkerIn` carries no `cancel`:** a message could only ask the parse to
+stop between passes, and neither the demo in linear memory nor a trapped instance survives being
+asked politely (`docs/PARSER.md` §8). A worker never outlives one parse.
 
 `source` accepts a `FileSystemFileHandle` so PWA file-handler launches (§12) avoid an extra copy.
+The file is streamed into WASM a chunk at a time rather than read whole first, so the demo is never
+held in the JavaScript heap and in linear memory at once — that duplication is what the §16 peak
+budget is spent on.
+
+`percent` counts finished passes, because upstream offers no hook inside one. `header` gets its own
+message rather than riding on `done` for the same reason it is worth having: it is complete after
+the second pass, while the third is still running.
 
 `ErrorCode` is a machine-readable enum. The worker never produces user-facing prose — the UI maps
-codes to translated copy.
+codes to translated copy. Failures that are the *worker's* rather than the demo's — a binary that
+will not load, an allocation that will not fit — have no code of their own yet and collapse onto
+`MALFORMED_DEMO`. That is #56's to fix, and it is a lie in the meantime.
 
 ---
 
@@ -615,6 +626,11 @@ The smoke step runs **before** the size gate and is not optional: `docs/PARSER.m
 artifact that measured 293 KB because its entry point trapped and the optimiser deleted the parser
 behind it. Only a call into the binary tells that apart from a real build.
 
+Since #50 it is also the only check on `packages/demo-parser/src/wasm-glue.d.ts`. That declaration
+is written by hand — `pkg/` is gitignored, so a fresh clone has to typecheck before any binary
+exists — and the smoke test calls every export it claims. A rename on the Rust side fails there
+rather than in a browser.
+
 `fmt` names its packages rather than using `--all`, because cargo-fmt's `--all` reaches into local
 path dependencies and `vendor/` is upstream code (`vendor/README.md`). A new crate under `crates/`
 has to be added to that command by hand.
@@ -709,7 +725,7 @@ CI assertions where possible. A regression here is a blocker.
 | Timeline scrubbing | 60 fps sustained | |
 | Cached-demo load (second visit) | < 3 s to interactive | |
 | JS bundle, excl. WASM | < 500 kB gzip | single locale only. 81.2 kB at the end of #22 — app shell, React and react-intl, the one locale chunk, and the 5.6 kB service worker. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
-| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.00 MB, 50% of budget** with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). Phase 0 measured 2.18 MB at `-O`; the difference is this repository's `-Oz` and `panic = "abort"`. |
+| WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.13 MB, 53% of budget** with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
 
 ---
 

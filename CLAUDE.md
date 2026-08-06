@@ -51,8 +51,16 @@ name) and which upstream fields are dead.
 `bun run errors:check` fails when that union drifts from `crates/demo-parser/src/error.rs`, and it
 runs in **both** `ci.yml` and `wasm.yml` because neither workflow sees both files on its own.
 
-`AGENTS.md` §4 still describes packages that do not exist yet — `demo-parser` (the TS side),
-`demo-store` and `map-data`. Their absence is a schedule fact, not a contradiction.
+`packages/demo-parser` exists since #50: the §7.3 protocol, the worker, and the client that
+terminates it. **Nothing imports it yet**, so no `.wasm` reaches `apps/web/dist` and the
+`wasm content-type` assertion in the deploy smoke test is still skipped — #52 wires the consumer and
+turns it green. The worker resolves the generated glue as `demo-parser-wasm`, which the consuming
+app has to alias to `crates/demo-parser-wasm/pkg/demo_parser_wasm.js`; `pkg/` is gitignored, so the
+types come from a hand-written `src/wasm-glue.d.ts` and `bun run wasm:smoke` is what proves it has
+not drifted. Read `docs/PARSER.md` §14 before touching the boundary.
+
+`AGENTS.md` §4 still describes packages that do not exist yet — `demo-store` and `map-data`. Their
+absence is a schedule fact, not a contradiction.
 
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
 `wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
@@ -143,6 +151,7 @@ bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §1
 bun run size --wasm    # the binary half only, without needing a built dist
 bun run wasm:build     # wasm-pack build crates/demo-parser-wasm -> pkg/
 bun run wasm:smoke     # call into the built binary — proves it runs, not that it compiled
+                       # DISALYTICS_FIXTURE_DEMO=<path> also checks the shape it hands to JS
 bun run preview        # build, then serve apps/web/dist through wrangler dev on :8787
 bun run smoke <url>    # assert the AGENTS.md §13 deploy contract against a running URL
 

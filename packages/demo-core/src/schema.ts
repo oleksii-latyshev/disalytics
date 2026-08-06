@@ -86,22 +86,26 @@ export const ANGLE_SCALE = 100;
 /**
  * Per-tick player state, columnar. Every buffer is indexed `frame * slotCount + slot`, and nothing
  * here is ever read through a per-frame object.
+ *
+ * The buffers are `ArrayBuffer`-backed rather than `ArrayBufferLike`: they cross out of the parse
+ * worker on a `postMessage` transfer list, and a `SharedArrayBuffer` cannot be transferred — nor
+ * exist at all under the headers `AGENTS.md` §13 forbids.
  */
 export interface TickTrack {
   tickRate: number;
   sampleHz: number;
   frameCount: number;
   slotCount: number;
-  posX: Float32Array;
-  posY: Float32Array;
-  posZ: Float32Array;
-  yaw: Int16Array;
-  pitch: Int16Array;
-  health: Uint8Array;
+  posX: Float32Array<ArrayBuffer>;
+  posY: Float32Array<ArrayBuffer>;
+  posZ: Float32Array<ArrayBuffer>;
+  yaw: Int16Array<ArrayBuffer>;
+  pitch: Int16Array<ArrayBuffer>;
+  health: Uint8Array<ArrayBuffer>;
   /** Bitfield of the `FLAG_*` constants. */
-  flags: Uint8Array;
+  flags: Uint8Array<ArrayBuffer>;
   /** Units per second. Feeds the audibility model. */
-  speed: Uint16Array;
+  speed: Uint16Array<ArrayBuffer>;
 }
 
 export interface WorldPoint {
@@ -144,9 +148,9 @@ export interface GrenadeTrajectory {
   sampleHz: number;
   firstTick: Tick;
   sampleCount: number;
-  x: Float32Array;
-  y: Float32Array;
-  z: Float32Array;
+  x: Float32Array<ArrayBuffer>;
+  y: Float32Array<ArrayBuffer>;
+  z: Float32Array<ArrayBuffer>;
 }
 
 export interface Grenade {

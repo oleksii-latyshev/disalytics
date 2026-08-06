@@ -557,3 +557,51 @@ against.
 §7 asks for it so output does not depend on which threading branch ran. Connect events are not part
 of the §10 schema and never reach parsed output, so there is nothing to deduplicate. The point stands
 if that schema ever grows a roster timeline.
+
+---
+
+## 14. The WASM boundary (#50)
+
+`crates/demo-parser-wasm` hands the parsed demo to JavaScript as plain objects and typed arrays,
+built with `js-sys`. Three things about that were decided rather than fallen into.
+
+### Why not JSON
+
+`serde_json` would carry the event lists in a few lines. It cannot carry `TickTrack`: a 40-minute
+match at 16 Hz is ~384,000 cells per column, and eight columns of that as JSON text is tens of
+megabytes to serialise and then parse back into the wrong type — `number[]`, not `Float32Array`.
+Grenade trajectories have the same problem, 519 of them. A JSON route therefore needs a typed-array
+route beside it for the parts that matter, and once both exist the JSON half only adds a dependency.
+
+`js-sys` adds no crate to the graph: `getrandom`'s browser opt-ins already link it, which is why the
+`Cargo.toml` comment says so and hard rule 10 is not in play. It costs **0.13 MB** of binary —
+2.00 MB before #50, 2.13 MB after.
+
+### Every buffer is JavaScript's, not a view into linear memory
+
+`Float32Array::from(&vec[..])` copies out of WASM memory into a fresh, JavaScript-owned array. A
+view would be cheaper and wrong three times over: it cannot be transferred, it dangles the moment
+the worker is terminated, and it reports the module's whole heap as its `buffer`. `bun run
+wasm:smoke` asserts `buffer.byteLength === byteLength` on every column for exactly that reason.
+
+### The demo goes in a chunk at a time
+
+`parse(&[u8])` would have `wasm-bindgen` copy the file out of a JavaScript `ArrayBuffer` into linear
+memory, holding ~350 MB twice at the peak. `DemoBuffer` reserves the file's size up front and takes
+the chunks a `ReadableStream` yields, so only the chunk in flight is duplicated. The buffer is then
+consumed by value and dropped before any of the output is allocated.
+
+An allocation that will not fit still aborts the instance. There is no `ErrorCode` for it — see #56.
+
+### Progress is per pass, and that is the honest limit
+
+Upstream exposes no hook inside a pass, so `ParseObserver` reports at the three boundaries and the
+worker turns that into 33 / 67 / 100. The header is reported separately because it is complete after
+the second pass while the third is still running; `crates/demo-parser/tests/fixture.rs` asserts that
+ordering, since a header that arrives with `done` is a header not worth a message.
+
+### Not measured here
+
+Parse time in the browser. #50 ships no consumer, so nothing has run the binary through a real
+`Worker` yet — that is #59, and until it does the 19 s extrapolation in §9 stands unconfirmed
+against the 15 s budget.
