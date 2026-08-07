@@ -72,8 +72,14 @@ a frontend-only commit" survives the SPA depending on the binary. `deploy.yml` a
 `wasm`, or a parser-only commit would never reach production. The `wasm content-type` assertion in
 the deploy smoke test is green: 12 passed, 0 failed, 0 skipped.
 
-`AGENTS.md` §4 still describes packages that do not exist yet — `demo-store` and `map-data`. Their
-absence is a schedule fact, not a contradiction.
+`packages/map-data` exists since #70 and opens Phase 3: Valve's overview constants for the seven
+active duty maps, the §9 transform, and the radar images themselves — `vanilla` as extracted, plus
+a `blue` theme this repository generates from it. `bun run mapdata:generate` rebuilds both from the
+committed assets and must be byte-stable across runs. Read `AGENTS.md` §9 before touching the
+assets or adding a theme; the renderer is not written yet.
+
+`AGENTS.md` §4 still describes one package that does not exist yet — `demo-store`. Its absence is a
+schedule fact, not a contradiction.
 
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
 `wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
@@ -160,6 +166,7 @@ bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity + regenerates the typed key union
 bun run errors:check   # ErrorCode parity between demo-core and crates/demo-parser
+bun run mapdata:generate  # map constants + themed radar images; byte-stable across runs
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
 bun run size --wasm    # the binary half only, without needing a built dist
 bun run wasm:build     # wasm-pack build crates/demo-parser-wasm -> pkg/
@@ -171,7 +178,7 @@ bun run smoke <url>    # assert the AGENTS.md §13 deploy contract against a run
 cargo test -p demo-parser   # parser core, no WASM toolchain involved
 ```
 
-Still to arrive: `mapdata:generate` and `e2e`. See `AGENTS.md` §5 for the full intended set.
+Still to arrive: `e2e`. See `AGENTS.md` §5 for the full intended set.
 
 ---
 
