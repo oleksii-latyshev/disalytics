@@ -1,0 +1,19 @@
+{
+  "name": "@disa/map-data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./assets/*": "./assets/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.10"
+  }
+}

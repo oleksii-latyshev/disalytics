@@ -166,7 +166,7 @@ bun run e2e                  # playwright
 bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
 bun run wasm:smoke           # call into the built binary — proves it runs, not that it compiled
                              # DISALYTICS_FIXTURE_DEMO also checks the shape it hands to JavaScript
-bun run mapdata:generate     # regenerate map constants from Valve overview files
+bun run mapdata:generate     # map constants from Valve overview files, plus the themed radars
 bun run i18n:check           # fail on missing/orphaned keys, regenerate the key union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
 bun run size                 # bundle + wasm sizes against budgets (§16)
@@ -367,6 +367,31 @@ Multi-level maps (Nuke, Vertigo) also provide `AltitudeMax` / `AltitudeMin` for 
 
 `bun run mapdata:generate` turns these into typed constants in `packages/map-data`. The debug
 overlay with X/Y/scale sliders exists to **verify** a map entry, not to calibrate by hand.
+
+### Where the assets come from, and what a theme is
+
+The overview files and the vanilla radar images are committed under `packages/map-data/assets/`,
+taken from [`MurkyYT/cs2-map-icons`](https://github.com/MurkyYT/cs2-map-icons), which extracts them
+from the game depot — no CS2 install is needed to regenerate. They are Valve's assets; the README's
+Credits section says so, and the generator never reaches the network.
+
+Radar images ship **per theme**, keyed in the data rather than branched on in the renderer:
+
+- `vanilla` — the image exactly as Valve draws it.
+- `blue` — the same image flattened onto the blue-shifted graphite ramp in `docs/DESIGN.md`,
+  produced by `tools/scripts/mapdata/recolor.ts`. It is **ours**, generated from Valve's art, not
+  anyone else's radar pack. It stays desaturated deliberately: CT is `#4A90D9`, and a saturated
+  blue map would compete with the one colour that has to read as a side. Pixels above 0.75
+  saturation — Valve's orange and green bombsite outlines — survive the flattening, and partially
+  transparent pixels take a lighter ramp so Nuke's upper-floor ghost stays visible on a dark
+  background.
+
+Adding a third theme is a data change plus a ramp, never a change in the renderer. Because the
+generator is deterministic, running it twice must leave the tree untouched — that is what makes the
+committed images reviewable.
+
+Radar images are **static assets**, fetched on demand and never imported into the JS graph; §16's
+bundle budget counts JavaScript, and 8 radars at ~100 kB each would swamp it.
 
 ---
 
