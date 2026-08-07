@@ -401,7 +401,8 @@ What Phase 2 inherits as known risk, all recorded above rather than discovered l
 - Whether `bomb_abortdefuse` behaves as expected — needs a demo containing one
 - Whether the profiling timestamps can be fixed upstream rather than carried in `vendor/`
 - Budget figures re-measured on CI hardware rather than a laptop
-- The parse-time budget re-measured in the browser on an `-Oz` build, which is what ships — §13
+- What "slower hardware" is, concretely. §16 bounds it at 5× by confining the browser to efficiency
+  cores, but nothing has run on a machine that is actually slow
 - Naming a bombsite A or B, which needs `packages/map-data` — §13
 - Whether `bomb_abortplant` occurs at all; like `bomb_abortdefuse` it is absent from this fixture,
   so the plant window that reads it has never been exercised
@@ -728,3 +729,108 @@ measure both containers rather than one.
 The fixture test was also run against the `.dem.zst` directly and reproduced the committed golden
 snapshot for the raw demo byte for byte, twice over: identification, expansion and parsing produce
 the same output as the file that was expanded on the command line.
+
+---
+
+## 16. The parse budget, measured (#59)
+
+`AGENTS.md` §16 budgets a 300 MB demo at 15 s. Every earlier figure was taken somewhere other than
+where that claim lives — natively (§9), from Bun (§14), or through a tab whose state nobody checked
+(§14 again). This is the measurement the budget is now written from.
+
+### How it was taken
+
+Chrome 150, headed, one tab, `document.visibilityState` asserted `visible` inside every run. The app
+is the shipped build served by `wrangler dev` out of `apps/web/dist`, and its binary was hashed
+against `crates/demo-parser-wasm/pkg` before the first run — timing an artifact nobody confirmed is
+§8's mistake a second time.
+
+The demo is staged into **OPFS** and handed to the app as the `File` that
+`FileSystemFileHandle.getFile()` returns, so the worker's streaming read comes off disk instead of
+out of a `Blob` the page is already holding. §14 named that `Blob` as one of three reasons not to
+trust its number. It turned out to be worth nothing at all — 15.29 s off disk against the 15.3 s
+§14 measured out of memory — but it was worth removing to find that out.
+
+Timing is a `MutationObserver` over the app's own DOM: the progress bar's `aria-valuenow`, the phase
+label, the header block, the summary. The clock therefore reads the milestones a person watching the
+screen reads, and no polling loop runs against the tab. **The interval is the drop to the summary**,
+which is the whole of what a user waits through.
+
+### The numbers — three runs each, idle machine
+
+| input | runs | mean |
+|---|---|---|
+| `demo.dem`, 353 MB raw | 15.49, 15.16, 15.22 | **15.29 s** |
+| `demo.dem.zst`, 264 MB | 18.80, 18.85, 18.91 | **18.85 s** |
+
+Every run produced `de_dust2`, 10 players, 30 rounds, 225 kills and 519 grenades — the container
+path is output-identical in a browser too, not only under Bun (§15).
+
+Where the time goes, taken from the middle run of each:
+
+| milestone | raw | `.zst` |
+|---|---|---|
+| read into linear memory | — | 0.16 s |
+| pass 1 — 33% | 4.33 s | 8.01 s |
+| pass 2 — 67% | 10.44 s | 14.13 s |
+| header on screen | 10.67 s | 14.34 s |
+| pass 3 — 100% | 15.11 s | 18.80 s |
+| summary | 15.16 s | 18.85 s |
+
+**The container costs 3.56 s**, against the 2.78 s §15 measured under Bun. The read itself is 0.16 s
+for 264 MB, which is why the raw demo does not bother reporting one.
+
+### Two questions §14 left open, answered
+
+**Measure from the drop, not from the first `progress`.** Dropping a 1 KB file and waiting for the
+error screen times worker spawn, `init()` and the rejection together: **0.08 s** on a cold profile,
+0.03 s warm. §14 attributed 0.2 s to instantiating the binary; whatever the true split, it is under
+1% of the budget and cannot decide anything. The drop is what the user starts waiting at.
+
+**"Slower hardware" cannot be emulated with the tooling to hand.** `Emulation.setCPUThrottlingRate`
+at rate 4 leaves the figure at 15.64 s against 15.29 s unthrottled: CDP's throttle reaches the main
+thread and not a dedicated worker, so it cannot say anything about a parse. What *can* be said is
+what the same machine does at background QoS — `taskpolicy -b`, which on Apple silicon confines the
+process to efficiency cores:
+
+| input | efficiency cores | ratio |
+|---|---|---|
+| `demo.dem` | 76.4 s | 5.0× |
+| `demo.dem.zst` | 98.6 s | 5.2× |
+
+That is a lower bound on hardware, not a model of it, and no build in this repository covers a 5×
+machine inside 15 s. The budget's "headroom covers slower hardware" has never been true and is not
+made true here.
+
+### A backgrounded tab parses five times slower
+
+The first attempt at this measurement ran in an embedded browser pane and produced 87.0 s and
+82.7 s for the raw demo. Nothing was wrong with the machine — Bun parsed the same binary in 14.22 s
+the same afternoon, against the 13.92 s §15 recorded. The tab reported `document.hidden === true`,
+and Chrome drops a hidden tab's renderer to background priority, which lands it on the same
+efficiency cores as the table above.
+
+This is a product fact and not only a measurement trap: **a user who switches away mid-parse waits
+roughly five times longer.** Nothing in the app can prevent it, and nothing currently says it.
+
+### `-Oz` misses the budget on both inputs; `-O3` meets it on both
+
+`-Oz` was chosen for the 4 MB binary cap (§8, `Cargo.toml`), and the cap has 45% of itself unused
+while the time budget has none. Rebuilding at `opt-level = 3` and `wasm-opt -O3`, everything else
+held:
+
+| build | raw `.dem` | `.dem.zst` | binary | of the 4 MB cap |
+|---|---|---|---|---|
+| `-Oz` — what ships today | 15.29 s | 18.85 s | 2.22 MB | 55.5% |
+| `-O3` | **11.11 s** | **14.19 s** | 2.62 MB | 65.6% |
+
+`-O3` is 27% faster on the raw demo and 25% on the container, for 0.40 MB. It is the only
+configuration measured in which **both** §16 budgets hold at once.
+
+**Decision: switch the release profile to `-O3`**, taken by the repository owner on 7 August 2026
+against these numbers. The 15 s budget stands as written; the profile moves to meet it. The change is
+**#66** rather than part of this measurement, because a profile that decides both budgets deserves
+its own diff.
+
+Until #66 lands, the shipped `-Oz` build is over budget on the raw demo by 0.3 s and on the container
+by 3.9 s.
