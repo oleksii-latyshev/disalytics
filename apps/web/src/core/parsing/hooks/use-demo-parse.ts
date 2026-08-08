@@ -1,5 +1,7 @@
+import type { ParsedDemo } from '@disa/demo-core';
 import { errorCodeOf, parseDemo } from '@disa/demo-parser';
 import { type ActionDispatch, useCallback, useEffect, useReducer, useRef } from 'react';
+import { type DemoCache, openCacheFor } from '../helpers/demo-cache';
 import { IDLE_PARSE, type ParseEvent, type ParseState, reduceParse } from '../helpers/parse-state';
 
 export interface DemoParse {
@@ -10,11 +12,39 @@ export interface DemoParse {
   close: () => void;
 }
 
-async function report(
-  file: File,
+type Dispatch = ActionDispatch<[event: ParseEvent]>;
+
+async function keep(
+  cache: DemoCache,
+  demo: ParsedDemo,
   signal: AbortSignal,
-  dispatch: ActionDispatch<[event: ParseEvent]>,
+  dispatch: Dispatch,
 ): Promise<void> {
+  try {
+    const persistence = await cache.write(demo);
+
+    if (!signal.aborted) dispatch({ type: 'stored', persistence });
+  } catch {
+    // Storing is the only part of an open that may fail without costing the reader anything: the
+    // demo is already on screen, and the next visit pays for the parse again.
+    if (!signal.aborted) dispatch({ type: 'notStored' });
+  }
+}
+
+async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Promise<void> {
+  const cache = await openCacheFor(file);
+  if (signal.aborted) return;
+
+  const restored = cache === null ? null : await cache.read();
+  if (signal.aborted) return;
+
+  if (restored !== null) {
+    dispatch({ type: 'restored', demo: restored });
+    return;
+  }
+
+  dispatch({ type: 'parseStarted' });
+
   try {
     const demo = await parseDemo(file, {
       signal,
@@ -22,7 +52,10 @@ async function report(
       onHeader: (header) => dispatch({ type: 'headerRead', header }),
     });
 
-    if (!signal.aborted) dispatch({ type: 'succeeded', demo });
+    if (signal.aborted) return;
+
+    dispatch({ type: 'succeeded', demo, caching: cache !== null });
+    if (cache !== null) void keep(cache, demo, signal, dispatch);
   } catch (thrown) {
     // An abort rejects with its own reason, which is not something to name on an error screen.
     if (signal.aborted) return;

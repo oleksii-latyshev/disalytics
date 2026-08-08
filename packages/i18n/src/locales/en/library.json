@@ -16,6 +16,14 @@
     "label": "Reading progress",
     "cancel": "Cancel"
   },
+  "cache": {
+    "restoring": "Opening from cache",
+    "restored": "Opened from the cache on this device.",
+    "storing": "Saving it for the next visit.",
+    "stored": "Saved on this device. Opening it again will be immediate.",
+    "storedBestEffort": "Saved on this device. The browser may clear it when space runs low.",
+    "unavailable": "Not saved on this device. Opening it again will read the whole demo."
+  },
   "summary": {
     "title": "Demo opened",
     "action": "Open another demo"

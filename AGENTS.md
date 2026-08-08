@@ -239,6 +239,39 @@ cache and silently undo the whole benefit.
 `SCHEMA_VERSION` is a constant in `demo-core`. Bump it on any change to parsed output shape;
 mismatched cache entries are discarded, not migrated.
 
+### What `packages/demo-store` actually built — #51
+
+**The key is a fingerprint, not a content hash, and the table above says `fileHash` because that is
+what it is keyed on rather than what it covers.** `crypto.subtle.digest` has no streaming form, so
+hashing a 353 MB demo whole would put the file in the JavaScript heap — the exact allocation
+`packages/demo-parser` streams to avoid — and would spend a large part of the three-second budget
+below on every hit. The digest covers **the first and last mebibyte, the byte length and the
+modification time**. A collision needs two recordings of the same length, modified in the same
+millisecond, identical at both ends and different only in between; the trade is asserted by a test
+rather than described. The file's *name* is deliberately outside the digest: a renamed demo is not
+a different demo.
+
+**A cached demo is one container file.** A twelve-byte prefix — magic, format version, meta
+length — then a JSON meta block, then every typed array end to end, referenced from the meta by
+index. Encoding hands the parser's own buffers to the backend unchanged, so a demo is never copied
+into a second contiguous allocation on the way to disk. The format is versioned separately from
+`SCHEMA_VERSION`: that number moves when the data changes, this one when the bytes around it do.
+The encoder is byte-stable, which is what makes hard rule 8 load-bearing rather than decorative.
+
+**Eviction is written at the code**, in `packages/demo-store/src/catalog.ts`: 512 MB of demos, least
+recently used evicted first, never the entry being written, entries under another `SCHEMA_VERSION`
+and files no catalog entry claims both dropped on open. Recency lives in memory for the session and
+is flushed when a demo is stored — a read never writes, because eviction can only happen on a write.
+
+**A tier that is missing is not an error.** No OPFS, no IndexedDB, or no Web Crypto to key with, and
+`openDemoStore()` answers `null`; the app parses every time and the summary screen says so. The
+same is true of a container that will not decode: it is a miss, and the entry is dropped.
+
+`navigator.storage.persist()` is requested after the first successful store and its answer reaches
+the screen. **Chrome declines it on a site with no engagement and no installation, so `best-effort`
+is the ordinary answer rather than the exceptional one** — the copy says the demo is saved and the
+browser may still clear it, instead of promising something the browser did not grant.
+
 ---
 
 ## 7. Parsing Pipeline
@@ -771,8 +804,8 @@ CI assertions where possible. A regression here is a blocker.
 | Parse a 300 MB demo | < 15 s | Set from Phase 0 and **measured properly by #59**: in a foreground Chrome tab, off disk, drop to summary, three runs per input on an idle machine. The shipped `-Oz` binary takes **15.29 s** on the 353 MB raw fixture and **18.85 s** on the 264 MB `.dem.zst` — over budget on both, and the container is what most people have. `-O3` takes **11.11 s** and **14.19 s** for 0.40 MB more binary, which is the only configuration measured where this budget and the WASM one hold at once; **#66 makes that the shipped profile** and the 15 s stands as written. Measure from the drop: worker spawn plus `init()` is 0.08 s cold. Two things this number does *not* cover — a tab the user switches away from, which is 5× slower because Chrome backgrounds the renderer, and genuinely slow hardware, which `docs/PARSER.md` §11 keeps open. Full method and breakdown in `docs/PARSER.md` §16; the earlier native, Bun and blob-fed figures are §9, §14 and §15. |
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. A container adds a second copy while it is expanded — 264 MB compressed beside 353 MB expanded, **617 MB**, under what the parse itself reaches. It stays a transient because the compressed file is freed before the passes rather than after them (`docs/PARSER.md` §15). |
 | Timeline scrubbing | 60 fps sustained | |
-| Cached-demo load (second visit) | < 3 s to interactive | |
-| JS bundle, excl. WASM | < 500 kB gzip | single locale only. **97.66 kB, 19.5% of budget** since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
+| Cached-demo load (second visit) | < 3 s to interactive | **0.02 s, measured by #51** — the 264 MB `.dem.zst` fixture, foreground headed Chrome 151 over CDP, timed from the file landing on the input to the summary screen, three runs. The cache entry is **11.04 MB**, a 24× reduction on the container. With OPFS deleted before any application script runs, the IndexedDB fallback answers in **0.03 s** off the same key. The cold visit that fills the cache costs **18.60 s** (OPFS) and **18.48 s** (IndexedDB) against the 18.85 s #59 measured for the same input without a cache, so **storing a demo costs nothing measurable on top of parsing it**. `navigator.storage.persist()` returned `false` on this profile, which is the ordinary Chrome answer (§6.4). Storing runs **after** the demo is interactive and takes **0.39 s** for 11.04 MB, persistence request included — so a reader who leaves the moment the summary appears loses the entry and pays the parse again. That is the cost of not blocking the screen on a write, and it is the right way round. |
+| JS bundle, excl. WASM | < 500 kB gzip | single locale only. **101.22 kB, 20.2% of budget** since #51 — the 3.56 kB is `@disa/demo-store`, which adds no runtime dependency: the container codec, the fingerprint and the two tiers are all platform APIs. 97.66 kB since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.22 MB, 55.5% of budget** — rising to 2.62 MB, 65.6%, when #66 switches the profile to `-O3`, which is what buys the parse-time budget above with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. 2.13 MB before #48; the 0.09 MB is the two container decoders (`docs/PARSER.md` §15). Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
 
 ---

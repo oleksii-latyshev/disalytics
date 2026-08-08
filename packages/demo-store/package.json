@@ -1,0 +1,21 @@
+{
+  "name": "@disa/demo-store",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@disa/demo-core": "*"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.10"
+  }
+}

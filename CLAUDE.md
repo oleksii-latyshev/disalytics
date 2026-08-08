@@ -78,8 +78,13 @@ a `blue` theme this repository generates from it. `bun run mapdata:generate` reb
 committed assets and must be byte-stable across runs. Read `AGENTS.md` §9 before touching the
 assets or adding a theme; the renderer is not written yet.
 
-`AGENTS.md` §4 still describes one package that does not exist yet — `demo-store`. Its absence is a
-schedule fact, not a contradiction.
+`packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
+back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
+feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
+digests only the ends of the file, not all of it**, and **a missing tier or an unreadable container
+is a miss rather than an error**. Both are argued in `AGENTS.md` §6.4, which is also where the
+eviction policy and the `storage.persist()` answer live. Every package `AGENTS.md` §4 names now
+exists.
 
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
 `wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
