@@ -12,6 +12,7 @@
   "dependencies": {
     "@disa/demo-core": "*",
     "@disa/demo-parser": "*",
+    "@disa/demo-store": "*",
     "@disa/i18n": "*",
     "@disa/ui": "*",
     "class-variance-authority": "^0.7.1",

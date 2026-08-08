@@ -1,36 +1,28 @@
 import type { Grenade, MatchEvents, MatchHeader, ParsedDemo, TickTrack } from '@disa/demo-core';
-import { asPlayerSlot, asTick, DEFAULT_SAMPLE_HZ } from '@disa/demo-core';
+import { asFrame, asPlayerSlot, asTick, DEFAULT_SAMPLE_HZ } from '@disa/demo-core';
+import { atFrame, newTrack } from '@disa/demo-core/test-helpers';
 import type { StoreBackend } from '../backend';
 
 const FRAME_COUNT = 4;
 const SLOT_COUNT = 2;
 
-function newTrack(): TickTrack {
-  const size = FRAME_COUNT * SLOT_COUNT;
-  const track: TickTrack = {
-    tickRate: 64,
-    sampleHz: DEFAULT_SAMPLE_HZ,
-    frameCount: FRAME_COUNT,
-    slotCount: SLOT_COUNT,
-    posX: new Float32Array(size),
-    posY: new Float32Array(size),
-    posZ: new Float32Array(size),
-    yaw: new Int16Array(size),
-    pitch: new Int16Array(size),
-    health: new Uint8Array(size),
-    flags: new Uint8Array(size),
-    speed: new Uint16Array(size),
-  };
+/** Every buffer carries a different value, so a codec that crossed two of them fails rather than passes. */
+function newFilledTrack(): TickTrack {
+  const track = newTrack({ frameCount: FRAME_COUNT, slotCount: SLOT_COUNT });
 
-  for (let index = 0; index < size; index += 1) {
-    track.posX[index] = index * 1.5;
-    track.posY[index] = -index;
-    track.posZ[index] = 64;
-    track.yaw[index] = index * 100;
-    track.pitch[index] = -index;
-    track.health[index] = 100 - index;
-    track.flags[index] = index % 3;
-    track.speed[index] = index * 8;
+  for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
+    for (let slot = 0; slot < SLOT_COUNT; slot += 1) {
+      atFrame(track, asFrame(frame), asPlayerSlot(slot), {
+        posX: frame * 1.5,
+        posY: -slot,
+        posZ: 64,
+        yawDegrees: frame * 10,
+        pitchDegrees: -slot,
+        health: 100 - frame,
+        flags: slot + 1,
+        speed: frame * 8,
+      });
+    }
   }
 
   return track;
@@ -94,7 +86,7 @@ function newHeader(): MatchHeader {
 }
 
 export function newDemo(): ParsedDemo {
-  return { header: newHeader(), track: newTrack(), events: newEvents() };
+  return { header: newHeader(), track: newFilledTrack(), events: newEvents() };
 }
 
 export interface FakeBackend extends StoreBackend {

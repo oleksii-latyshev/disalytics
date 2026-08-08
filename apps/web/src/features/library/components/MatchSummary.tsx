@@ -1,15 +1,18 @@
 import type { ParsedDemo } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
+import type { CacheState } from '@/core/parsing';
 import { Button } from '@/shared/components/ui/button';
+import { cacheKey } from '../helpers/cache-copy';
 import { DemoFileName } from './DemoFileName';
 
 interface Props {
   demo: ParsedDemo;
   fileName: string;
+  cache: CacheState;
   onClose: () => void;
 }
 
-export function MatchSummary({ demo, fileName, onClose }: Props) {
+export function MatchSummary({ demo, fileName, cache, onClose }: Props) {
   const { header, events } = demo;
 
   return (
@@ -41,6 +44,10 @@ export function MatchSummary({ demo, fileName, onClose }: Props) {
           <Text path="library.counts.grenades" values={{ count: events.grenades.length }} />
         </li>
       </ul>
+
+      <p className="text-13 text-ink-dim">
+        <Text path={cacheKey(cache)} />
+      </p>
 
       <Button type="button" variant="outline" className="self-start" onClick={onClose}>
         <Text path="library.summary.action" />
