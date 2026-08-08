@@ -65,6 +65,18 @@
         "vitest": "^4.1.10",
       },
     },
+    "packages/demo-store": {
+      "name": "@disa/demo-store",
+      "version": "0.0.0",
+      "dependencies": {
+        "@disa/demo-core": "*",
+      },
+      "devDependencies": {
+        "@disa/tsconfig": "*",
+        "typescript": "5.9.2",
+        "vitest": "^4.1.10",
+      },
+    },
     "packages/i18n": {
       "name": "@disa/i18n",
       "version": "0.0.0",
@@ -333,6 +345,8 @@
     "@disa/demo-core": ["@disa/demo-core@workspace:packages/demo-core"],
 
     "@disa/demo-parser": ["@disa/demo-parser@workspace:packages/demo-parser"],
+
+    "@disa/demo-store": ["@disa/demo-store@workspace:packages/demo-store"],
 
     "@disa/i18n": ["@disa/i18n@workspace:packages/i18n"],
 
