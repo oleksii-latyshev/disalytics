@@ -2,5 +2,10 @@
   "roundsRemaining": "{count, plural, one {# round left} other {# rounds left}}",
   "position": "Position in the match",
   "round": "Round",
-  "warmup": "Warm-up"
+  "warmup": "Warm-up",
+  "overview": "Round outcomes and event density",
+  "kills": "Kills",
+  "kill": "{attacker} kills {victim}",
+  "killByWorld": "{victim} dies",
+  "unknownPlayer": "Unknown player"
 }

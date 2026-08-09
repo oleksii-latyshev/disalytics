@@ -63,9 +63,14 @@ export const TRANSLATION_KEYS = [
   'review.roundOfTotal',
   'review.score',
   'review.warmup',
+  'timeline.kill',
+  'timeline.killByWorld',
+  'timeline.kills',
+  'timeline.overview',
   'timeline.position',
   'timeline.round',
   'timeline.roundsRemaining',
+  'timeline.unknownPlayer',
   'timeline.warmup',
 ] as const;
 

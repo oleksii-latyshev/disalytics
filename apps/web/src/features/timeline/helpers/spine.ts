@@ -1,9 +1,35 @@
-import { frameForTick, lastFrame, type ParsedDemo } from '@disa/demo-core';
+import {
+  type Frame,
+  frameForTick,
+  lastFrame,
+  type ParsedDemo,
+  type PlayerInfo,
+  type PlayerSlot,
+  type Team,
+} from '@disa/demo-core';
 
-export interface RoundBoundary {
+/**
+ * The height the strip's axis sits at. `docs/DESIGN.md` §5 divides the spine along it — event
+ * density above, kill markers and the economy chart below — so the canvas and the markers over it
+ * have to agree on one number.
+ */
+export const SPINE_AXIS_FRACTION = 0.6;
+
+export interface RoundBand {
   readonly round: number;
-  /** Where the round starts, as a fraction of the match in [0, 1]. */
+  readonly winner: Team;
+  /** Where the round opens and closes, as fractions of the match in [0, 1]. */
+  readonly startFraction: number;
+  readonly endFraction: number;
+}
+
+export interface KillMarker {
+  /** The kill's position in `events.kills`, which is what identifies a marker across renders. */
+  readonly index: number;
+  readonly frame: Frame;
   readonly fraction: number;
+  readonly attacker: PlayerSlot | null;
+  readonly victim: PlayerSlot;
 }
 
 /** Where the playhead sits along a strip of `widthPx`, for a clock standing at `frame`. */
@@ -15,13 +41,42 @@ export function positionOnSpine(frame: number, end: number, widthPx: number): nu
   return (fraction < 0 ? 0 : fraction > 1 ? 1 : fraction) * widthPx;
 }
 
-/** One hairline per round start. A demo with no samples has nothing to place them against. */
-export function roundBoundaries(demo: ParsedDemo): readonly RoundBoundary[] {
+/** One band per round, carrying the side that won it. A demo with no samples has nothing to place. */
+export function roundBands(demo: ParsedDemo): readonly RoundBand[] {
   const end = lastFrame(demo.track);
   if (end === 0) return [];
 
   return demo.events.rounds.map((round) => ({
     round: round.number,
-    fraction: frameForTick(demo.track, round.startTick) / end,
+    winner: round.winner,
+    startFraction: frameForTick(demo.track, round.startTick) / end,
+    endFraction: frameForTick(demo.track, round.endTick) / end,
   }));
+}
+
+/** One marker per kill, at the sample the kill lands on. */
+export function killMarkers(demo: ParsedDemo): readonly KillMarker[] {
+  const end = lastFrame(demo.track);
+  if (end === 0) return [];
+
+  return demo.events.kills.map((kill, index) => {
+    const frame = frameForTick(demo.track, kill.tick);
+
+    return {
+      index,
+      frame,
+      fraction: frame / end,
+      attacker: kill.attacker,
+      victim: kill.victim,
+    };
+  });
+}
+
+/** Names indexed by the slot they occupy, so labelling a marker never searches the roster. */
+export function namesBySlot(players: readonly PlayerInfo[]): readonly (string | undefined)[] {
+  const names: (string | undefined)[] = [];
+
+  for (const player of players) names[player.slot] = player.name;
+
+  return names;
 }
