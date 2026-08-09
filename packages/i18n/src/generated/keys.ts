@@ -3,6 +3,11 @@
 export const TRANSLATION_KEYS = [
   'common.privacyNote',
   'common.tagline',
+  'controls.matchTime',
+  'controls.pause',
+  'controls.play',
+  'controls.speed',
+  'controls.speedValue',
   'errors.malformed.hint',
   'errors.malformed.title',
   'errors.notADemo.hint',

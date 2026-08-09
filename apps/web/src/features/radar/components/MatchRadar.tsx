@@ -1,14 +1,16 @@
 import type { ParsedDemo } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
+import type { Transport } from '@/core/playback';
 import { RadarView } from './RadarView';
 import { UnknownMap } from './UnknownMap';
 
 interface Props {
   demo: ParsedDemo;
+  transport: Transport;
 }
 
-export function MatchRadar({ demo }: Props) {
+export function MatchRadar({ demo, transport }: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return (
@@ -20,7 +22,7 @@ export function MatchRadar({ demo }: Props) {
       {overview === undefined ? (
         <UnknownMap map={demo.header.map} />
       ) : (
-        <RadarView demo={demo} overview={overview} />
+        <RadarView demo={demo} overview={overview} transport={transport} />
       )}
     </section>
   );

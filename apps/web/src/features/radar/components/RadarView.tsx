@@ -1,4 +1,4 @@
-import { openingFrame, type ParsedDemo } from '@disa/demo-core';
+import type { ParsedDemo } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import {
   DEFAULT_RADAR_THEME,
@@ -8,6 +8,7 @@ import {
   radarAssetPath,
 } from '@disa/map-data';
 import { type PointerEvent, useMemo, useState } from 'react';
+import { type Transport, useFramePaint, useFrameReadout } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { Button } from '@/shared/components/ui/button';
 import { readRadarColors } from '../helpers/colors';
@@ -20,15 +21,18 @@ import { RadarDebug } from './RadarDebug';
 interface Props {
   demo: ParsedDemo;
   overview: MapOverview;
+  transport: Transport;
 }
 
-export function RadarView({ demo, overview }: Props) {
+export function RadarView({ demo, overview, transport }: Props) {
   const t = useT();
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [pointer, setPointer] = useState<RadarPoint | null>(null);
 
-  const frame = openingFrame(demo);
+  // Which level is drawn follows the players, but off the 10 Hz readout rather than off the clock —
+  // re-deciding it 60 times a second would flicker between floors as players cross the split.
+  const frame = useFrameReadout(transport);
   const levelIndex = forcedLevelIndex ?? busiestLevelIndex(overview, demo.track, frame);
   const level = levelAt(overview, levelIndex);
   const image = useRadarImage(radarAssetPath(level, DEFAULT_RADAR_THEME));
@@ -36,11 +40,12 @@ export function RadarView({ demo, overview }: Props) {
   const teamBySlot = useMemo(() => teamsBySlot(demo.header.players), [demo.header.players]);
   const colors = useMemo(readRadarColors, []);
 
-  // The array is what `useCanvasLayers` repaints on, so it holds still until something drawn moves.
+  // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
+  // the clock moves. The clock itself is read inside the layer, once per animation frame.
   const layers = useMemo(() => {
     const tokens = playerTokens({
       track: demo.track,
-      frame,
+      clock: transport.clock,
       overview,
       levelIndex,
       teamBySlot,
@@ -48,9 +53,10 @@ export function RadarView({ demo, overview }: Props) {
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image), tokens] : [tokens];
-  }, [demo.track, frame, overview, levelIndex, teamBySlot, colors, image]);
+  }, [demo.track, transport, overview, levelIndex, teamBySlot, colors, image]);
 
-  const canvasRef = useCanvasLayers(layers);
+  const { canvasRef, repaint } = useCanvasLayers(layers);
+  useFramePaint(transport, repaint);
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
     if (!isDebugOpen) return;

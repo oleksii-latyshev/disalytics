@@ -10,15 +10,20 @@ export function getMapOverview(value: string): MapOverview | undefined {
   return isMapId(value) ? MAP_OVERVIEWS[value] : undefined;
 }
 
-/**
- * `AGENTS.md` §9. Y is inverted because the overview's `posY` is the *upper* edge in world space
- * while image rows count downward.
- */
+/** `AGENTS.md` §9, one axis at a time — the form the per-frame draw path uses, which cannot afford
+ * a `RadarPoint` per player per animation frame. */
+export function radarX(overview: MapOverview, worldX: number): number {
+  return (worldX - overview.posX) / overview.scale;
+}
+
+/** Y is inverted because the overview's `posY` is the *upper* edge in world space while image rows
+ * count downward. */
+export function radarY(overview: MapOverview, worldY: number): number {
+  return (overview.posY - worldY) / overview.scale;
+}
+
 export function worldToRadar(overview: MapOverview, point: WorldPlanePoint): RadarPoint {
-  return {
-    x: (point.x - overview.posX) / overview.scale,
-    y: (overview.posY - point.y) / overview.scale,
-  };
+  return { x: radarX(overview, point.x), y: radarY(overview, point.y) };
 }
 
 /** The inverse of `worldToRadar`, for reading a world position back off the image. */

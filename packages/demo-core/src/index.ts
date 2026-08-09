@@ -1,7 +1,15 @@
 export type { ErrorCode } from './errors';
 export { ERROR_CODES } from './errors';
-export { frameForTick, openingFrame, sampleAt } from './helpers/selectors';
+export {
+  frameForTick,
+  lastFrame,
+  openingFrame,
+  sampleAt,
+  secondsAtFrame,
+} from './helpers/selectors';
 export type { LocalizedMessage } from './message';
+export type { Clock } from './playback';
+export { advanceClock, createClock } from './playback';
 export type {
   Blind,
   BombDefuse,

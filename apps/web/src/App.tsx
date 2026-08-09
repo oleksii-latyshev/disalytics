@@ -1,7 +1,7 @@
 import { Text } from '@disa/i18n';
 import { useDemoParse } from '@/core/parsing';
 import { DemoLibrary } from '@/features/library';
-import { MatchRadar } from '@/features/radar';
+import { MatchReview } from '@/features/review';
 
 export function App() {
   const parse = useDemoParse();
@@ -18,7 +18,7 @@ export function App() {
 
         <DemoLibrary parse={parse} />
 
-        {parse.state.status === 'ready' && <MatchRadar demo={parse.state.demo} />}
+        {parse.state.status === 'ready' && <MatchReview demo={parse.state.demo} />}
 
         <p className="text-13 text-ink-dim leading-prose">
           <Text path="common.privacyNote" />

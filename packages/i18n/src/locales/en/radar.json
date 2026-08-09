@@ -1,6 +1,6 @@
 {
-  "title": "Opening positions",
-  "label": "Radar of {map}, opening positions",
+  "title": "Radar",
+  "label": "Radar of {map}",
   "imageUnavailable": "The radar image did not load. The players are drawn without it.",
   "unknownMap": {
     "title": "No radar for this map",

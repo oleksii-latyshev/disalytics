@@ -9,6 +9,7 @@ export const SOURCE_LOCALE: Locale = 'en';
 export type Namespace =
   | 'common'
   | 'library'
+  | 'controls'
   | 'timeline'
   | 'filters'
   | 'radar'

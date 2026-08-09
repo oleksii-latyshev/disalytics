@@ -1,5 +1,6 @@
-import { FLAG_ALIVE, type Frame, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, worldToRadar } from '@disa/map-data';
+import { type Clock, FLAG_ALIVE, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
+import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import { levelIndexAt } from './levels';
@@ -43,19 +44,25 @@ function traceToken(
 
 export interface PlayerTokensOptions {
   readonly track: TickTrack;
-  readonly frame: Frame;
+  readonly clock: Clock;
   readonly overview: MapOverview;
   readonly levelIndex: number;
   readonly teamBySlot: readonly (Team | undefined)[];
   readonly colors: RadarColors;
 }
 
+/**
+ * The clock is read at draw time rather than captured as a frame, which is what lets the rAF loop
+ * repaint without rebuilding the layer — and so without allocating — every animation frame.
+ */
 export function playerTokens(options: PlayerTokensOptions): Layer {
-  const { track, frame, overview, levelIndex, teamBySlot, colors } = options;
+  const { track, clock, overview, levelIndex, teamBySlot, colors } = options;
+  const positions = positionScratch(track);
 
   return (context, size) => {
     if (track.frameCount === 0) return;
 
+    const frame = readPositions(track, clock.frame, positions);
     const pixelsPerRadarPixel = size.width / RADAR_IMAGE_SIZE;
     const base = frame * track.slotCount;
 
@@ -63,29 +70,20 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     context.strokeStyle = colors.outline;
 
     for (let slot = 0; slot < track.slotCount; slot++) {
-      const sample = base + slot;
-      if ((sampleAt(track.flags, sample) & FLAG_ALIVE) === 0) continue;
+      if ((sampleAt(track.flags, base + slot) & FLAG_ALIVE) === 0) continue;
 
       const team = teamBySlot[slot];
       if (team === undefined) continue;
 
-      const position = worldToRadar(overview, {
-        x: sampleAt(track.posX, sample),
-        y: sampleAt(track.posY, sample),
-      });
-
-      const isOnShownLevel = levelIndexAt(overview, sampleAt(track.posZ, sample)) === levelIndex;
+      const offset = slot * POSITION_STRIDE;
+      const x = radarX(overview, sampleAt(positions, offset));
+      const y = radarY(overview, sampleAt(positions, offset + 1));
+      const isOnShownLevel = levelIndexAt(overview, sampleAt(positions, offset + 2)) === levelIndex;
 
       context.globalAlpha = isOnShownLevel ? 1 : OTHER_LEVEL_ALPHA;
       context.fillStyle = colors.team[team];
 
-      traceToken(
-        context,
-        position.x * pixelsPerRadarPixel,
-        position.y * pixelsPerRadarPixel,
-        team,
-        TOKEN_RADIUS_PX,
-      );
+      traceToken(context, x * pixelsPerRadarPixel, y * pixelsPerRadarPixel, team, TOKEN_RADIUS_PX);
       context.fill();
       context.stroke();
     }
