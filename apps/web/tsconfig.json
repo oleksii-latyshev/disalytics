@@ -1,10 +1,13 @@
 {
   "extends": "@disa/tsconfig/react-app.json",
   "compilerOptions": {
+    // The Vite config and its plugins import each other with a .ts extension, which is what Vite's
+    // native config loader needs. Nothing under src/ does.
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "plugins", "vite.config.ts", "vitest.config.ts"]
 }
