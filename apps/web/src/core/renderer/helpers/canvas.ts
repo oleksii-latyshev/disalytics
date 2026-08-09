@@ -10,9 +10,16 @@ export type Layer = (context: CanvasRenderingContext2D, size: CanvasSize) => voi
  * Draws the layers in order, bottom first, onto a backing store sized for the display. Each layer
  * gets the context back in the state it was handed, so one layer's stroke style cannot leak into
  * the next.
+ *
+ * The size is passed in rather than measured: this runs once per animation frame, and measuring the
+ * element there would force a layout and mint a `DOMRect` every frame.
  */
-export function paintLayers(canvas: HTMLCanvasElement, layers: readonly Layer[]): void {
-  const { width, height } = canvas.getBoundingClientRect();
+export function paintLayers(
+  canvas: HTMLCanvasElement,
+  layers: readonly Layer[],
+  size: CanvasSize,
+): void {
+  const { width, height } = size;
   if (width === 0 || height === 0) return;
 
   const context = canvas.getContext('2d');
@@ -30,9 +37,10 @@ export function paintLayers(canvas: HTMLCanvasElement, layers: readonly Layer[])
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   context.clearRect(0, 0, width, height);
 
-  const size: CanvasSize = { width, height };
+  for (let index = 0; index < layers.length; index++) {
+    const layer = layers[index];
+    if (layer === undefined) continue;
 
-  for (const layer of layers) {
     context.save();
     layer(context, size);
     context.restore();

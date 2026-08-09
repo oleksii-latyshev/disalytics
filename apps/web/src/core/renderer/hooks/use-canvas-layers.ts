@@ -17,12 +17,14 @@ export interface CanvasLayers {
 export function useCanvasLayers(layers: readonly Layer[]): CanvasLayers {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layersRef = useRef(layers);
+  // Written by the observer and read by every paint, so the per-frame path never measures the DOM.
+  const sizeRef = useRef({ width: 0, height: 0 });
 
   const repaint = useCallback(() => {
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
-    paintLayers(canvas, layersRef.current);
+    paintLayers(canvas, layersRef.current, sizeRef.current);
   }, []);
 
   useEffect(() => {
@@ -33,7 +35,14 @@ export function useCanvasLayers(layers: readonly Layer[]): CanvasLayers {
 
     repaint();
 
-    const observer = new ResizeObserver(repaint);
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries.at(0);
+      if (entry === undefined) return;
+
+      sizeRef.current.width = entry.contentRect.width;
+      sizeRef.current.height = entry.contentRect.height;
+      repaint();
+    });
     observer.observe(canvas);
 
     return () => observer.disconnect();
