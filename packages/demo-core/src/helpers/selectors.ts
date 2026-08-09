@@ -16,6 +16,16 @@ export function sampleAt(buffer: ArrayLike<number>, index: number): number {
   return value;
 }
 
+/** The last sample a track holds, which is the position playback stops on. */
+export function lastFrame(track: TickTrack): Frame {
+  return asFrame(Math.max(track.frameCount - 1, 0));
+}
+
+/** Match time at a sample position, which may sit between two samples. */
+export function secondsAtFrame(track: TickTrack, frame: number): number {
+  return track.sampleHz === 0 ? 0 : frame / track.sampleHz;
+}
+
 /** The sample covering `tick`, clamped into the track it is read from. */
 export function frameForTick(track: TickTrack, tick: Tick): Frame {
   if (track.frameCount === 0) return asFrame(0);

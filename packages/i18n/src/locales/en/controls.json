@@ -1,0 +1,7 @@
+{
+  "play": "Play",
+  "pause": "Pause",
+  "speed": "Playback speed",
+  "speedValue": "{speed, number}×",
+  "matchTime": "Match time"
+}

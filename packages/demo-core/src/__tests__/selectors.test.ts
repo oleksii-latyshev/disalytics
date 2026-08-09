@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { frameForTick, openingFrame, sampleAt } from '../helpers/selectors';
+import {
+  frameForTick,
+  lastFrame,
+  openingFrame,
+  sampleAt,
+  secondsAtFrame,
+} from '../helpers/selectors';
 import { asFrame, asPlayerSlot, asTick, type ParsedDemo, type Round } from '../schema';
 import { atFrame, newEvents, newTrack } from './helpers';
 
@@ -82,5 +88,29 @@ describe('openingFrame', () => {
     const demo: ParsedDemo = { header, track: newTrack(), events: newEvents() };
 
     expect(openingFrame(demo)).toBe(0);
+  });
+});
+
+describe('lastFrame', () => {
+  it('is one below the sample count', () => {
+    expect(lastFrame(newTrack({ frameCount: 2000 }))).toBe(1999);
+  });
+
+  it('is 0 for a track with no samples at all', () => {
+    expect(lastFrame(newTrack({ frameCount: 0 }))).toBe(0);
+  });
+});
+
+describe('secondsAtFrame', () => {
+  it('divides a sample position by the rate it was sampled at', () => {
+    expect(secondsAtFrame(newTrack({ sampleHz: 16 }), 160)).toBe(10);
+  });
+
+  it('reads a position between two samples', () => {
+    expect(secondsAtFrame(newTrack({ sampleHz: 16 }), 8.5)).toBeCloseTo(0.53125);
+  });
+
+  it('answers 0 for a track sampled at no rate', () => {
+    expect(secondsAtFrame(newTrack({ sampleHz: 0 }), 160)).toBe(0);
   });
 });

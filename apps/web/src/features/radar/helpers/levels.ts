@@ -13,8 +13,8 @@ export function levelAt(overview: MapOverview, index: number): RadarLevel {
 }
 
 /**
- * The level the map should open on — the one carrying most of the living players. Ties keep the
- * lower index, so a map whose players are evenly split opens on its default level.
+ * The level the map should show — the one carrying most of the living players at `frame`. Ties keep
+ * the lower index, so a map whose players are evenly split stays on its default level.
  */
 export function busiestLevelIndex(overview: MapOverview, track: TickTrack, frame: Frame): number {
   if (overview.levels.length === 1 || track.frameCount === 0) return 0;
