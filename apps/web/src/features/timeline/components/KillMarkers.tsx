@@ -33,7 +33,9 @@ export function KillMarkers({ markers, names, transport }: Props) {
     buttonsRef.current[wanted]?.focus();
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
+  // The index comes from the key's own marker rather than from state, so two keys arriving inside
+  // one React batch both step from where the focus actually is.
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, from: number): void {
     const step = STEPS[event.key];
 
     if (step === undefined) {
@@ -45,7 +47,7 @@ export function KillMarkers({ markers, names, transport }: Props) {
     }
 
     event.preventDefault();
-    focusAt(tabStop + step);
+    focusAt(from + step);
   }
 
   function labelFor(marker: KillMarker): string {
@@ -62,8 +64,7 @@ export function KillMarkers({ markers, names, transport }: Props) {
     // The band takes no pointer events of its own, so everything between two markers still scrubs.
     <ul
       aria-label={t('timeline.kills')}
-      onKeyDown={handleKeyDown}
-      className="pointer-events-none absolute inset-x-0 h-3"
+      className="pointer-events-none absolute inset-x-0 h-2.5"
       style={{ top: `${SPINE_AXIS_FRACTION * 100}%` }}
     >
       {markers.map((marker, index) => (
@@ -75,12 +76,15 @@ export function KillMarkers({ markers, names, transport }: Props) {
             }}
             tabIndex={index === tabStop ? 0 : -1}
             aria-label={labelFor(marker)}
+            onKeyDown={(event) => handleKeyDown(event, index)}
             onClick={() => {
               setActiveIndex(index);
               transport.seek(marker.frame);
             }}
             style={{ left: `${marker.fraction * 100}%` }}
-            className="pointer-events-auto absolute inset-y-0 w-1 -translate-x-1/2 bg-kill"
+            // A match holds a couple of hundred kills, so the tick is 2px and the target it
+            // carries is the `::before` — wide enough to hit, narrow enough not to read as a bar.
+            className="pointer-events-auto absolute inset-y-0 w-0.5 -translate-x-1/2 bg-kill before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10"
           />
         </li>
       ))}
