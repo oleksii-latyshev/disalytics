@@ -1,5 +1,5 @@
 import { useT } from '@disa/i18n';
-import { type KeyboardEvent, useRef, useState } from 'react';
+import { type KeyboardEvent, memo, useRef, useState } from 'react';
 import type { Transport } from '@/core/playback';
 import { type KillMarker, SPINE_AXIS_FRACTION } from '../helpers/spine';
 
@@ -14,8 +14,11 @@ interface Props {
 /**
  * The markers share one tab stop and are walked with the arrow keys, because a match holds well
  * over a hundred kills and tabbing through them to reach the controls below is not an interface.
+ *
+ * Memoised because the spine above it re-renders off the 10 Hz readout: reconciling two hundred
+ * buttons ten times a second cost 5 fps and pushed the worst scrub frame from 12 ms to 25 ms.
  */
-export function KillMarkers({ markers, names, transport }: Props) {
+export const KillMarkers = memo(function KillMarkers({ markers, names, transport }: Props) {
   const t = useT();
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -90,4 +93,4 @@ export function KillMarkers({ markers, names, transport }: Props) {
       ))}
     </ul>
   );
-}
+});
