@@ -34,9 +34,12 @@ export function MatchSpine({ demo, transport, frame }: Props) {
     playhead.style.transform = `translateX(${offsetPx}px)`;
 
     const input = inputRef.current;
-    if (input !== null && !isScrubbingRef.current) {
-      input.value = String(Math.round(transport.clock.frame));
-    }
+    if (input === null || isScrubbingRef.current) return;
+
+    // The range only carries whole samples, so it is written when one turns over rather than on
+    // every animation frame — at 16 Hz against a 120 Hz display that is most frames skipped.
+    const sample = Math.round(transport.clock.frame);
+    if (input.valueAsNumber !== sample) input.value = String(sample);
   }, [transport, end]);
 
   useFrameSink(transport, syncPlayhead);
