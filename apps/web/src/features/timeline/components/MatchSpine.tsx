@@ -2,7 +2,11 @@ import { type Frame, lastFrame, type ParsedDemo, secondsAtFrame } from '@disa/de
 import { useLocale, useT } from '@disa/i18n';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createClockFormat, formatClock, type Transport, useFrameSink } from '@/core/playback';
-import { positionOnSpine, roundBoundaries } from '../helpers/spine';
+import { useCanvasLayers } from '@/core/renderer';
+import { eventDensity } from '../helpers/density';
+import { densityTrace, outcomeBands, readSpineColors, roundHairlines } from '../helpers/layers';
+import { killMarkers, namesBySlot, positionOnSpine, roundBands } from '../helpers/spine';
+import { KillMarkers } from './KillMarkers';
 
 interface Props {
   demo: ParsedDemo;
@@ -22,8 +26,26 @@ export function MatchSpine({ demo, transport, frame }: Props) {
   const wasPlayingRef = useRef(false);
 
   const end = lastFrame(demo.track);
-  const boundaries = useMemo(() => roundBoundaries(demo), [demo]);
   const format = useMemo(() => createClockFormat(locale), [locale]);
+
+  const bands = useMemo(() => roundBands(demo), [demo]);
+  const markers = useMemo(() => killMarkers(demo), [demo]);
+  const names = useMemo(() => namesBySlot(demo.header.players), [demo.header.players]);
+  const density = useMemo(() => eventDensity(demo), [demo]);
+  const colors = useMemo(readSpineColors, []);
+
+  // What the strip says about the match changes only with the demo, so the array holds still and
+  // `useCanvasLayers` repaints on a resize rather than on a frame.
+  const layers = useMemo(
+    () => [
+      outcomeBands(bands, colors),
+      densityTrace(density, colors),
+      roundHairlines(bands, colors),
+    ],
+    [bands, density, colors],
+  );
+
+  const { canvasRef } = useCanvasLayers(layers);
 
   // Moves with `transform` only, which is what keeps playback off the main thread — DESIGN.md §6.
   const syncPlayhead = useCallback(() => {
@@ -90,15 +112,14 @@ export function MatchSpine({ demo, transport, frame }: Props) {
   return (
     <div
       ref={stripRef}
-      className="relative h-24 overflow-hidden rounded-instrument border border-line bg-surface-0 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus"
+      className="relative h-24 overflow-hidden rounded-instrument border border-line bg-surface-0 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus"
     >
-      {boundaries.map((boundary) => (
-        <div
-          key={boundary.round}
-          className="absolute inset-y-0 w-px bg-line"
-          style={{ left: `${boundary.fraction * 100}%` }}
-        />
-      ))}
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={t('timeline.overview')}
+        className="absolute inset-0 size-full"
+      />
 
       <div ref={playheadRef} className="absolute inset-y-0 left-0 w-px bg-playhead" />
 
@@ -115,6 +136,8 @@ export function MatchSpine({ demo, transport, frame }: Props) {
         onInput={handleInput}
         className="absolute inset-0 size-full cursor-pointer appearance-none bg-transparent outline-none [&::-moz-range-thumb]:h-24 [&::-moz-range-thumb]:w-px [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-transparent [&::-webkit-slider-thumb]:h-24 [&::-webkit-slider-thumb]:w-px [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-transparent"
       />
+
+      <KillMarkers markers={markers} names={names} transport={transport} />
     </div>
   );
 }

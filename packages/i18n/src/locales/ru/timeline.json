@@ -2,5 +2,10 @@
   "roundsRemaining": "{count, plural, one {Остался # раунд} few {Осталось # раунда} many {Осталось # раундов} other {Осталось # раунда}}",
   "position": "Позиция в матче",
   "round": "Раунд",
-  "warmup": "Разминка"
+  "warmup": "Разминка",
+  "overview": "Исходы раундов и плотность событий",
+  "kills": "Убийства",
+  "kill": "{attacker} убивает {victim}",
+  "killByWorld": "{victim} погибает",
+  "unknownPlayer": "Неизвестный игрок"
 }
