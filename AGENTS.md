@@ -426,6 +426,19 @@ committed images reviewable.
 Radar images are **static assets**, fetched on demand and never imported into the JS graph; §16's
 bundle budget counts JavaScript, and 8 radars at ~100 kB each would swamp it.
 
+`apps/web` gets them from a Vite plugin (`apps/web/plugins/radar-assets.ts`, #76), which mounts
+`packages/map-data/assets/radar/` at `/radar/` in dev and copies it into `dist/` on build — under
+the name `radarAssetPath()` returns, unhashed, because that name is computed from the map data at
+runtime and cannot carry a content hash. The plugin lists the directory rather than reading
+`MAP_OVERVIEWS`: Vite externalises workspace packages while loading the config, so importing
+`@disa/map-data` there leaves Node to resolve the package's own extensionless imports, and it
+cannot. `apps/web/plugins/__tests__/radar-assets.test.ts` is what holds the directory and the map
+data to each other — a level with no image, or an image no level names, fails it.
+
+`/radar/*` keeps the Workers default `max-age=0, must-revalidate`; the `_headers` rule in §13
+covers hashed names only, and unhashed plus `immutable` would pin a stale radar after a
+`mapdata:generate`.
+
 ---
 
 ## 10. Event Schema
