@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { staleFamilies } from './size/chunks';
 
 // Decimal kB/MB, the unit Vite's own build report and the §16 measurements are written in.
 const JS_BUDGET_BYTES = 500_000;
@@ -65,6 +66,17 @@ async function checkJsBundle(): Promise<boolean> {
 
   if (scripts.length === 0) {
     console.error(`No .js emitted under ${DIST_DIR}. Run \`bun run build\` first.`);
+    return false;
+  }
+
+  // A Turborepo cache hit restores dist/ without emptying it and never runs Vite, so `emptyOutDir`
+  // never fires and the chunks of whatever was built here before are still on disk. Summing them
+  // reports up to double the real bundle, which is worse than reporting nothing.
+  const stale = staleFamilies(scripts.map((path) => basename(path)));
+  if (stale.length > 0) {
+    console.error(`${DIST_DIR} holds more than one build's output, so no total is honest:\n`);
+    for (const { family, names } of stale) console.error(`  ${family}:  ${names.join('  ')}`);
+    console.error(`\nRun \`rm -rf ${DIST_DIR} && bun run build\`, then measure again.`);
     return false;
   }
 
