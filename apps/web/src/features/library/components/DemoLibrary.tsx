@@ -1,22 +1,22 @@
-import type { DemoParse } from '@/core/parsing';
-import { MatchSummary } from './MatchSummary';
+import type { ParseState } from '@/core/parsing';
 import { OpenDemo } from './OpenDemo';
 import { ParseFailure } from './ParseFailure';
 import { ParseProgress } from './ParseProgress';
 import { RestoreProgress } from './RestoreProgress';
 
 interface Props {
-  parse: DemoParse;
+  // An opened demo is the workspace's screen rather than the library's, so it never reaches here.
+  state: Exclude<ParseState, { status: 'ready' }>;
+  onFile: (file: File) => void;
+  onClose: () => void;
 }
 
-// The parse lives above this slice: the radar reads the same demo, and the composition root is
-// where two features meet until `features/review` exists to hold them.
-export function DemoLibrary({ parse: { state, open, close } }: Props) {
+export function DemoLibrary({ state, onFile, onClose }: Props) {
   switch (state.status) {
     case 'idle':
-      return <OpenDemo onFile={open} />;
+      return <OpenDemo onFile={onFile} />;
     case 'restoring':
-      return <RestoreProgress fileName={state.fileName} onCancel={close} />;
+      return <RestoreProgress fileName={state.fileName} onCancel={onClose} />;
     case 'parsing':
       return (
         <ParseProgress
@@ -24,23 +24,14 @@ export function DemoLibrary({ parse: { state, open, close } }: Props) {
           phase={state.phase}
           percent={state.percent}
           header={state.header}
-          onCancel={close}
-        />
-      );
-    case 'ready':
-      return (
-        <MatchSummary
-          demo={state.demo}
-          fileName={state.fileName}
-          cache={state.cache}
-          onClose={close}
+          onCancel={onClose}
         />
       );
     case 'failed':
       return (
         <div className="flex flex-col gap-4">
           <ParseFailure code={state.code} fileName={state.fileName} />
-          <OpenDemo onFile={open} />
+          <OpenDemo onFile={onFile} />
         </div>
       );
   }

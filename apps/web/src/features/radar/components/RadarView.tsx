@@ -78,31 +78,31 @@ export function RadarView({ demo, overview, transport }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label={t('radar.label', { map: overview.id })}
-        className="aspect-square w-full rounded-instrument bg-surface-0"
-        onPointerMove={handlePointerMove}
-        onPointerLeave={() => setPointer(null)}
-      />
+    <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-3">
+      {/* The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller
+          of the two axes the cell offers it, which is what the container units read. */}
+      <div className="grid min-h-0 min-w-0 place-items-center [container-type:size]">
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label={t('radar.label', { map: overview.id })}
+          className="aspect-square w-[min(100cqi,100cqb)] rounded-instrument bg-surface-0"
+          onPointerMove={handlePointerMove}
+          onPointerLeave={() => setPointer(null)}
+        />
+      </div>
 
-      {image.status === 'failed' && (
-        <p className="text-13 text-ink-dim leading-prose">
-          <Text path="radar.imageUnavailable" />
-        </p>
-      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" size="xs" onClick={handleDebugToggle}>
+          <Text path={isDebugOpen ? 'radar.debug.hide' : 'radar.debug.show'} />
+        </Button>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="xs"
-        className="self-start"
-        onClick={handleDebugToggle}
-      >
-        <Text path={isDebugOpen ? 'radar.debug.hide' : 'radar.debug.show'} />
-      </Button>
+        {image.status === 'failed' && (
+          <p className="text-13 text-ink-dim leading-prose">
+            <Text path="radar.imageUnavailable" />
+          </p>
+        )}
+      </div>
 
       {isDebugOpen && (
         <RadarDebug

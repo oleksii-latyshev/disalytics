@@ -51,9 +51,7 @@
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   --height-control: 28px;
-}
 
-:root {
   /* Elevation is a hairline plus an inner top highlight, never a drop shadow — DESIGN.md §4. */
-  --edge-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  --shadow-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
 }

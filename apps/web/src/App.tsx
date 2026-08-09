@@ -3,8 +3,22 @@ import { useDemoParse } from '@/core/parsing';
 import { DemoLibrary } from '@/features/library';
 import { MatchReview } from '@/features/review';
 
+// A demo on screen takes the whole viewport: the radar, the spine and the inspector are one
+// instrument rather than three blocks in a reading column — DESIGN.md §4.
 export function App() {
   const parse = useDemoParse();
+  const { state } = parse;
+
+  if (state.status === 'ready') {
+    return (
+      <MatchReview
+        demo={state.demo}
+        fileName={state.fileName}
+        cache={state.cache}
+        onClose={parse.close}
+      />
+    );
+  }
 
   return (
     <div className="app-shell grid place-items-center p-8">
@@ -16,9 +30,7 @@ export function App() {
           </p>
         </header>
 
-        <DemoLibrary parse={parse} />
-
-        {parse.state.status === 'ready' && <MatchReview demo={parse.state.demo} />}
+        <DemoLibrary state={state} onFile={parse.open} onClose={parse.close} />
 
         <p className="text-13 text-ink-dim leading-prose">
           <Text path="common.privacyNote" />

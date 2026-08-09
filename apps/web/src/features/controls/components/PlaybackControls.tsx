@@ -25,7 +25,7 @@ export function PlaybackControls({ track, transport }: Props) {
   const format = useMemo(() => createClockFormat(locale), [locale]);
 
   return (
-    <section className="flex flex-wrap items-center gap-4 rounded-instrument border border-line bg-surface-1 p-4">
+    <section className="flex flex-wrap items-center gap-4">
       <div className="flex items-center gap-1">
         <StepButton transport={transport} samples={-1} />
 
