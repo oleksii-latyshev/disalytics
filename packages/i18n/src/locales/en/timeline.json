@@ -4,6 +4,15 @@
   "round": "Round",
   "warmup": "Warm-up",
   "overview": "Round outcomes and event density",
+  "outcomes": "Round outcomes",
+  "outcome": {
+    "bombExploded": "Round {round, number}, {side} win, bomb exploded",
+    "bombDefused": "Round {round, number}, {side} win, bomb defused",
+    "allCtEliminated": "Round {round, number}, {side} win, all CT eliminated",
+    "allTEliminated": "Round {round, number}, {side} win, all T eliminated",
+    "timeExpired": "Round {round, number}, {side} win, time expired",
+    "draw": "Round {round, number}, draw"
+  },
   "kills": "Kills",
   "kill": "{attacker} kills {victim}",
   "killByWorld": "{victim} dies",

@@ -466,6 +466,18 @@ change to it has to be checked on both sides.
 The focus ring above is scoped to the input for the markers' sake: on a bare `has-[:focus-visible]`
 a kill marker taking focus lights a ring around the whole 96px strip on top of its own.
 
+**What it says — #92.** A canvas carrying data owes a reader more than `role="img"`, so `RoundOutcomes`
+puts the bands into words: an `sr-only` `<ol>` beside the canvas, one item per round, carrying the
+round's number, the side that won it and `Round.reason` — which reaches copy through the same
+exhaustive switch with no `default` that `ErrorCode` uses, so a reason the `timeline` namespace has
+no sentence for is a compile error. Each sentence is whole in both locales (§11); the side is game
+vocabulary and is interpolated, never translated. It is `memo`'d for the reason `KillMarkers` is.
+
+**The density trace is decorative and stays unvoiced.** It is a means of finding the loud stretches
+by eye, and what it is made of — the kills — is already spoken, one labelled button per kill in the
+markers' roving tab stop. Narrating the shape on top of that would add strings that tell a reader
+nothing the strip does not already tell them.
+
 ---
 
 ## 9. Radar Rendering
