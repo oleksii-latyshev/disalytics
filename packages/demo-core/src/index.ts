@@ -4,8 +4,11 @@ export {
   frameForTick,
   lastFrame,
   openingFrame,
+  roundIndexAtFrame,
+  roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
+  tickAtFrame,
 } from './helpers/selectors';
 export type { LocalizedMessage } from './message';
 export type { Clock } from './playback';

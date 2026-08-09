@@ -8,6 +8,8 @@ export const TRANSLATION_KEYS = [
   'controls.play',
   'controls.speed',
   'controls.speedValue',
+  'controls.stepBack',
+  'controls.stepForward',
   'errors.malformed.hint',
   'errors.malformed.title',
   'errors.notADemo.hint',
@@ -59,7 +61,10 @@ export const TRANSLATION_KEYS = [
   'radar.title',
   'radar.unknownMap.hint',
   'radar.unknownMap.title',
+  'timeline.position',
+  'timeline.round',
   'timeline.roundsRemaining',
+  'timeline.warmup',
 ] as const;
 
 export type TranslationKey = (typeof TRANSLATION_KEYS)[number];

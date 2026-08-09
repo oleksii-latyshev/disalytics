@@ -1,6 +1,8 @@
 {
   "play": "Воспроизвести",
   "pause": "Пауза",
+  "stepBack": "Шаг назад",
+  "stepForward": "Шаг вперёд",
   "speed": "Скорость воспроизведения",
   "speedValue": "{speed, number}×",
   "matchTime": "Время матча"

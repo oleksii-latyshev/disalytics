@@ -1,10 +1,16 @@
 import { lastFrame, secondsAtFrame, type TickTrack } from '@disa/demo-core';
 import { Text, useLocale } from '@disa/i18n';
 import { useMemo } from 'react';
-import { type Transport, useFrameReadout, useIsPlaying } from '@/core/playback';
+import {
+  createClockFormat,
+  formatElapsedOfTotal,
+  type Transport,
+  useFrameReadout,
+  useIsPlaying,
+} from '@/core/playback';
 import { Button } from '@/shared/components/ui/button';
-import { createClockFormat, formatElapsedOfTotal } from '../helpers/elapsed';
 import { SpeedControl } from './SpeedControl';
+import { StepButton } from './StepButton';
 
 interface Props {
   track: TickTrack;
@@ -20,9 +26,15 @@ export function PlaybackControls({ track, transport }: Props) {
 
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-instrument border border-line bg-surface-1 p-4">
-      <Button type="button" size="sm" onClick={transport.toggle}>
-        <Text path={isPlaying ? 'controls.pause' : 'controls.play'} />
-      </Button>
+      <div className="flex items-center gap-1">
+        <StepButton transport={transport} samples={-1} />
+
+        <Button type="button" size="sm" onClick={transport.toggle}>
+          <Text path={isPlaying ? 'controls.pause' : 'controls.play'} />
+        </Button>
+
+        <StepButton transport={transport} samples={1} />
+      </div>
 
       <p className="numeric text-14">
         <span className="sr-only">

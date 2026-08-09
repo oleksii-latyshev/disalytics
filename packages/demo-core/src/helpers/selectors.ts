@@ -1,4 +1,12 @@
-import { asFrame, type Frame, type ParsedDemo, type Tick, type TickTrack } from '../schema';
+import {
+  asFrame,
+  asTick,
+  type Frame,
+  type ParsedDemo,
+  type Round,
+  type Tick,
+  type TickTrack,
+} from '../schema';
 
 /**
  * One value out of a `TickTrack` buffer. `noUncheckedIndexedAccess` types every buffer read as
@@ -35,12 +43,65 @@ export function frameForTick(track: TickTrack, tick: Tick): Frame {
   return asFrame(Math.min(Math.max(frame, 0), track.frameCount - 1));
 }
 
-/**
- * The frame the match opens on — the end of the first round's freeze time, which is the first
- * moment the ten players stand where they chose to rather than where they spawned.
- */
-export function openingFrame(demo: ParsedDemo): Frame {
-  const opening = demo.events.rounds.at(0);
+/** The demo tick a sample position stands on — the inverse of `frameForTick`. */
+export function tickAtFrame(track: TickTrack, frame: number): Tick {
+  if (track.sampleHz === 0) return asTick(0);
 
-  return opening === undefined ? asFrame(0) : frameForTick(demo.track, opening.freezeTimeEndTick);
+  return asTick(Math.round((frame / track.sampleHz) * track.tickRate));
+}
+
+/**
+ * The frame a round opens on — the end of its freeze time, which is the first moment its players
+ * stand where they chose to rather than where they spawned.
+ */
+export function roundOpeningFrame(demo: ParsedDemo, roundIndex: number): Frame {
+  const round = demo.events.rounds.at(roundIndex);
+
+  return round === undefined ? asFrame(0) : frameForTick(demo.track, round.freezeTimeEndTick);
+}
+
+/** Where the match opens: the first round, or the first sample in a demo that carries no rounds. */
+export function openingFrame(demo: ParsedDemo): Frame {
+  return roundOpeningFrame(demo, 0);
+}
+
+/**
+ * The tick a round begins on. Rounds are plain objects in a sorted array, so an out-of-range index
+ * is a mis-stepped caller rather than a value to substitute for — the same reasoning as `sampleAt`.
+ */
+function startTickAt(rounds: readonly Round[], index: number): Tick {
+  const round = rounds[index];
+
+  if (round === undefined) {
+    throw new RangeError(`round ${index} is outside a match of ${rounds.length}`);
+  }
+
+  return round.startTick;
+}
+
+/**
+ * The round a sample position falls in — the last one to have started by then, by binary search
+ * over the sorted rounds. `undefined` before the first round starts: warmup is not a round.
+ */
+export function roundIndexAtFrame(demo: ParsedDemo, frame: number): number | undefined {
+  const { rounds } = demo.events;
+  const tick = tickAtFrame(demo.track, frame);
+
+  let low = 0;
+  let high = rounds.length - 1;
+  let started: number | undefined;
+
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+
+    if (startTickAt(rounds, middle) <= tick) {
+      started = middle;
+      low = middle + 1;
+      continue;
+    }
+
+    high = middle - 1;
+  }
+
+  return started;
 }
