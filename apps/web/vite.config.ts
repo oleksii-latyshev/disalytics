@@ -3,11 +3,19 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+// Extension included: Vite's `configLoader: 'native'` becomes the default in a future major and
+// warns about extensionless local imports today.
+import { radarAssets } from './plugins/radar-assets.ts';
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // Resolved here rather than inside the plugin: Vite bundles the config, and `import.meta.url`
+    // inside a file bundled into it points at this file regardless of where that file lives.
+    radarAssets({
+      assetsRoot: fileURLToPath(new URL('../../packages/map-data/assets', import.meta.url)),
+    }),
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -21,7 +29,8 @@ export default defineConfig({
         // Fonts stay out: 240 kB of woff2 the shell renders without, and §12 scopes the precache to
         // HTML/JS/CSS/icons. Sourcemaps and .wasm fall outside the extension list. The manifest and
         // its icons are absent on purpose — the plugin adds those itself, and globbing them too
-        // puts every one of them in the precache list twice.
+        // puts every one of them in the precache list twice. §12 also lists the radar images, but
+        // the worker is never registered until Phase 6, so precaching them now caches nothing.
         globPatterns: ['**/*.{html,css,js}'],
       },
       manifest: {
