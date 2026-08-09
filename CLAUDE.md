@@ -76,7 +76,13 @@ the deploy smoke test is green: 12 passed, 0 failed, 0 skipped.
 active duty maps, the §9 transform, and the radar images themselves — `vanilla` as extracted, plus
 a `blue` theme this repository generates from it. `bun run mapdata:generate` rebuilds both from the
 committed assets and must be byte-stable across runs. Read `AGENTS.md` §9 before touching the
-assets or adding a theme; the renderer is not written yet.
+assets or adding a theme.
+
+The renderer arrived in #79: `apps/web/src/core/renderer` is canvas plumbing that knows nothing
+about CS2, `apps/web/src/features/radar` is what knows about maps and sides. There is no clock yet,
+so it draws **one** frame — `openingFrame()` in `demo-core`, the end of round 1's freeze time — and
+the draw entry point takes that frame as an argument precisely so Phase 4 can drive the same code
+unchanged. `AGENTS.md` §9 holds the level rules and what the debug overlay is for.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by

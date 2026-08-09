@@ -1,5 +1,6 @@
 export type { ErrorCode } from './errors';
 export { ERROR_CODES } from './errors';
+export { frameForTick, openingFrame, sampleAt } from './helpers/selectors';
 export type { LocalizedMessage } from './message';
 export type {
   Blind,
