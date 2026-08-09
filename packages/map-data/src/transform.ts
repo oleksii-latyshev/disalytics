@@ -1,5 +1,5 @@
 import { MAP_OVERVIEWS, type MapId } from './generated/overviews';
-import type { MapOverview, RadarLevel, RadarPoint } from './types';
+import type { MapOverview, RadarLevel, RadarPoint, WorldPlanePoint } from './types';
 
 export function isMapId(value: string): value is MapId {
   return Object.hasOwn(MAP_OVERVIEWS, value);
@@ -14,13 +14,18 @@ export function getMapOverview(value: string): MapOverview | undefined {
  * `AGENTS.md` §9. Y is inverted because the overview's `posY` is the *upper* edge in world space
  * while image rows count downward.
  */
-export function worldToRadar(
-  overview: MapOverview,
-  point: { readonly x: number; readonly y: number },
-): RadarPoint {
+export function worldToRadar(overview: MapOverview, point: WorldPlanePoint): RadarPoint {
   return {
     x: (point.x - overview.posX) / overview.scale,
     y: (overview.posY - point.y) / overview.scale,
+  };
+}
+
+/** The inverse of `worldToRadar`, for reading a world position back off the image. */
+export function radarToWorld(overview: MapOverview, point: RadarPoint): WorldPlanePoint {
+  return {
+    x: overview.posX + point.x * overview.scale,
+    y: overview.posY - point.y * overview.scale,
   };
 }
 

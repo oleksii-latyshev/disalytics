@@ -1,1 +1,22 @@
-{}
+{
+  "title": "Стартовые позиции",
+  "label": "Радар карты {map}, стартовые позиции",
+  "imageUnavailable": "Картинка радара не загрузилась. Игроки нарисованы без неё.",
+  "unknownMap": {
+    "title": "Для этой карты нет радара",
+    "hint": "disalytics поставляется с радарами карт активного пула. {map} в него не входит, поэтому игроков не на чем рисовать."
+  },
+  "debug": {
+    "show": "Показать координаты",
+    "hide": "Скрыть координаты",
+    "map": "Карта",
+    "frame": "Кадр",
+    "level": "Уровень",
+    "altitudeBand": "от {min, number} до {max, number}",
+    "pointer": "Курсор",
+    "pointerHint": "Наведите курсор на радар.",
+    "pointerValue": "мир {worldX, number}, {worldY, number} · радар {radarX, number}, {radarY, number}",
+    "levelOverride": "Рисовать уровень",
+    "levelAuto": "Авто"
+  }
+}

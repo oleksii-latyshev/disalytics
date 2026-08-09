@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_IDS, MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from '../generated/overviews';
-import { getMapOverview, isMapId, radarLevelAt, worldToRadar } from '../transform';
+import { getMapOverview, isMapId, radarLevelAt, radarToWorld, worldToRadar } from '../transform';
 
 const dust2 = MAP_OVERVIEWS.de_dust2;
 const nuke = MAP_OVERVIEWS.de_nuke;
@@ -36,6 +36,22 @@ describe('worldToRadar', () => {
       expect(point.x).toBeLessThan(RADAR_IMAGE_SIZE);
       expect(point.y).toBeGreaterThan(0);
       expect(point.y).toBeLessThan(RADAR_IMAGE_SIZE);
+    }
+  });
+});
+
+describe('radarToWorld', () => {
+  it('puts the image corner back on the overview origin', () => {
+    expect(radarToWorld(dust2, { x: 0, y: 0 })).toEqual({ x: dust2.posX, y: dust2.posY });
+  });
+
+  it('returns whatever worldToRadar was given', () => {
+    for (const overview of [dust2, nuke]) {
+      const world = { x: overview.posX + 913, y: overview.posY - 1177 };
+      const round = radarToWorld(overview, worldToRadar(overview, world));
+
+      expect(round.x).toBeCloseTo(world.x);
+      expect(round.y).toBeCloseTo(world.y);
     }
   });
 });

@@ -25,6 +25,7 @@
         "@disa/demo-parser": "*",
         "@disa/demo-store": "*",
         "@disa/i18n": "*",
+        "@disa/map-data": "*",
         "@disa/ui": "*",
         "class-variance-authority": "^0.7.1",
         "radix-ui": "^1.6.7",
@@ -33,7 +34,6 @@
         "workbox-precaching": "^7.4.1",
       },
       "devDependencies": {
-        "@disa/map-data": "*",
         "@disa/tsconfig": "*",
         "@tailwindcss/vite": "^4.3.3",
         "@types/react": "19.2.2",

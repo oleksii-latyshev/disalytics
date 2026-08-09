@@ -4,6 +4,7 @@ import { extname, join } from 'node:path';
 
 const DIST_DIR = 'apps/web/dist';
 const HASHED_DIR = join(DIST_DIR, 'assets');
+const RADAR_DIR = join(DIST_DIR, 'radar');
 
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
@@ -159,6 +160,37 @@ async function checkWasmMimeType(baseUrl: string): Promise<Check> {
   };
 }
 
+/**
+ * `not_found_handling` answers anything the build did not write with the SPA shell, so a missing
+ * radar comes back 200 `text/html` rather than 404. The content type is the only part of the
+ * response that tells the two apart.
+ */
+async function checkRadarImage(baseUrl: string): Promise<Check> {
+  const radars = existsSync(RADAR_DIR)
+    ? (await walk(RADAR_DIR)).filter((path) => path.endsWith('.png')).sort()
+    : [];
+  const radar = radars.at(0);
+
+  if (radar === undefined) {
+    return {
+      name: 'radar content-type',
+      status: 'fail',
+      detail: `no radar image under ${RADAR_DIR} — the renderer draws nothing without one`,
+    };
+  }
+
+  const path = toRequestPath(radar);
+  const response = await fetchPath(baseUrl, path);
+  const contentType = (response.headers.get('content-type') ?? 'none').split(';')[0]?.trim();
+  const served = response.status === 200 && contentType === 'image/png';
+
+  return {
+    name: 'radar content-type',
+    status: served ? 'pass' : 'fail',
+    detail: `${path} → ${response.status}, ${contentType}`,
+  };
+}
+
 async function waitUntilRouted(url: string): Promise<void> {
   const startedAt = Date.now();
   const deadline = startedAt + READY_TIMEOUT_MS;
@@ -187,6 +219,7 @@ async function runChecks(url: string): Promise<Check[]> {
     await checkClientRoute(url),
     ...(await checkImmutableCaching(url, await representativeHashedAssets())),
     await checkWasmMimeType(url),
+    await checkRadarImage(url),
   ];
 }
 

@@ -1,1 +1,22 @@
-{}
+{
+  "title": "Opening positions",
+  "label": "Radar of {map}, opening positions",
+  "imageUnavailable": "The radar image did not load. The players are drawn without it.",
+  "unknownMap": {
+    "title": "No radar for this map",
+    "hint": "disalytics carries radars for the active duty maps. {map} is not one of them, so there is nothing to draw the players on."
+  },
+  "debug": {
+    "show": "Show coordinates",
+    "hide": "Hide coordinates",
+    "map": "Map",
+    "frame": "Frame",
+    "level": "Level",
+    "altitudeBand": "{min, number} to {max, number}",
+    "pointer": "Pointer",
+    "pointerHint": "Move the pointer over the radar.",
+    "pointerValue": "world {worldX, number}, {worldY, number} · radar {radarX, number}, {radarY, number}",
+    "levelOverride": "Draw level",
+    "levelAuto": "Auto"
+  }
+}

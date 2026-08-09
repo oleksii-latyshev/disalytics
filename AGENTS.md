@@ -439,6 +439,32 @@ data to each other — a level with no image, or an image no level names, fails 
 covers hashed names only, and unhashed plus `immutable` would pin a stale radar after a
 `mapdata:generate`.
 
+### What draws them — #79
+
+The split is `CODE_REQUIREMENTS.md` §1's: `apps/web/src/core/renderer` is canvas plumbing —
+device-pixel sizing, a `ResizeObserver` repaint, layers composited bottom-first — and knows nothing
+about CS2. `apps/web/src/features/radar` is what knows about maps, sides and players: it resolves
+the image through `radarAssetPath()`, reads positions out of `TickTrack` columnar, and places them
+with `worldToRadar()`.
+
+Drawing is demand-driven — data, level or size changed — never a loop. The entry point takes the
+frame as an argument and no frame is held in React state, which is what lets Phase 4's clock drive
+the same code unchanged.
+
+Until that clock exists the radar draws **one** frame: `openingFrame()` in `packages/demo-core`, the
+end of round 1's freeze time, which is the first moment the ten players stand where they chose to.
+
+Which level is drawn is discrete state, defaulting to the level holding most of the living players;
+a player on another level is drawn at low opacity rather than silently placed on this one. The
+debug overlay of §9 above **verifies** an entry — map, frame, altitude band, and the world and radar
+coordinates under the pointer, with a manual level override — and deliberately cannot edit `posX`,
+`posY` or `scale`.
+
+Side identity never rests on hue alone (`docs/DESIGN.md` §2): CT is a circle, T is a diamond, and
+the two colours are read out of the `--color-ct` / `--color-t` tokens at draw time rather than
+written into the renderer. A colour-blind *variant* of those tokens is still unbuilt — it is a
+settings concern, and no settings slice exists yet.
+
 ---
 
 ## 10. Event Schema
@@ -651,9 +677,14 @@ Constraints:
 
 `bun run smoke <url>` (`tools/scripts/smoke.ts`) asserts the list above against a running
 deployment: the shell loads, an unknown path still returns the shell, hashed assets come back
-`immutable`, neither COOP nor COEP is set, and `.wasm` is `application/wasm`. It reads
-`apps/web/dist` to decide what to request, so it always tests the build that was shipped rather
-than a hardcoded path list.
+`immutable`, neither COOP nor COEP is set, `.wasm` is `application/wasm`, and a radar image is
+`image/png`. It reads `apps/web/dist` to decide what to request, so it always tests the build that
+was shipped rather than a hardcoded path list.
+
+The radar assertion is about the content type and not the status, because `not_found_handling`
+answers a path the build never wrote with the SPA shell: a missing `/radar/blue/de_vertigo.png`
+comes back **200 `text/html`**, measured on production. Only the content type separates a radar
+that shipped from one that did not.
 
 `deploy.yml` runs it after every production deploy. Locally, `bun run preview` then
 `bun run smoke http://127.0.0.1:8787` runs the same assertions against workerd, which is the same

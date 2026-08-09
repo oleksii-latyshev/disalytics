@@ -31,3 +31,9 @@ export interface RadarPoint {
   readonly x: number;
   readonly y: number;
 }
+
+/** A position on the world's ground plane, in world units. Altitude is the caller's business. */
+export interface WorldPlanePoint {
+  readonly x: number;
+  readonly y: number;
+}

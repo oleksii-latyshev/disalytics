@@ -1,7 +1,11 @@
 import { Text } from '@disa/i18n';
+import { useDemoParse } from '@/core/parsing';
 import { DemoLibrary } from '@/features/library';
+import { MatchRadar } from '@/features/radar';
 
 export function App() {
+  const parse = useDemoParse();
+
   return (
     <div className="app-shell grid place-items-center p-8">
       <main className="flex w-full max-w-[64ch] flex-col gap-6">
@@ -12,7 +16,9 @@ export function App() {
           </p>
         </header>
 
-        <DemoLibrary />
+        <DemoLibrary parse={parse} />
+
+        {parse.state.status === 'ready' && <MatchRadar demo={parse.state.demo} />}
 
         <p className="text-13 text-ink-dim leading-prose">
           <Text path="common.privacyNote" />
