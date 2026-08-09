@@ -7,6 +7,7 @@ import {
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
+  sideScoreAtFrame,
   tickAtFrame,
 } from '../helpers/selectors';
 import { asFrame, asPlayerSlot, asTick, type ParsedDemo, type Round } from '../schema';
@@ -204,5 +205,46 @@ describe('roundIndexAtFrame', () => {
     };
 
     expect(roundIndexAtFrame(single, 2000)).toBe(0);
+  });
+});
+
+describe('sideScoreAtFrame', () => {
+  const demo: ParsedDemo = {
+    header,
+    track: newTrack({ tickRate: 64, sampleHz: 16, frameCount: 5000 }),
+    events: {
+      ...newEvents(),
+      rounds: [
+        newRound({ number: 1, startTick: asTick(640), endTick: asTick(6000), winner: 'CT' }),
+        newRound({ number: 2, startTick: asTick(6400), endTick: asTick(12000), winner: 'T' }),
+        newRound({ number: 3, startTick: asTick(12800), endTick: asTick(18000), winner: 'CT' }),
+      ],
+    },
+  };
+
+  it('starts the match at nil all', () => {
+    expect(sideScoreAtFrame(demo, 100)).toEqual({ CT: 0, T: 0 });
+  });
+
+  it('leaves a round in progress out of the score', () => {
+    expect(sideScoreAtFrame(demo, 1499)).toEqual({ CT: 0, T: 0 });
+  });
+
+  it('counts a round on the sample its last tick falls on', () => {
+    expect(sideScoreAtFrame(demo, 1500)).toEqual({ CT: 1, T: 0 });
+  });
+
+  it('counts each side separately', () => {
+    expect(sideScoreAtFrame(demo, 3000)).toEqual({ CT: 1, T: 1 });
+  });
+
+  it('reads the finished match at its last frame', () => {
+    expect(sideScoreAtFrame(demo, 4500)).toEqual({ CT: 2, T: 1 });
+  });
+
+  it('scores a match with no rounds nil all', () => {
+    const empty: ParsedDemo = { header, track: newTrack(), events: newEvents() };
+
+    expect(sideScoreAtFrame(empty, 4)).toEqual({ CT: 0, T: 0 });
   });
 });

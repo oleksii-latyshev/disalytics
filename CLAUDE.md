@@ -94,6 +94,15 @@ transport is the store.
 React never owns its value — and the playhead moves with `transform` only. The spine is still a bare
 strip: round hairlines and a playhead, no event density, no economy, no bands by outcome.
 
+#87 put those panels into the `docs/DESIGN.md` §4 layout. An opened demo is no longer a block in the
+reading column: `App` hands the whole viewport to `features/review`, which is a three-row grid —
+match strip, radar beside the inspector, spine along the bottom. `features/inspector` exists but is
+a column with an empty state; Phase 5 fills it. Two things there are load-bearing: **the radar sizes
+itself from container units** (`min(100cqi,100cqb)` inside a `container-type: size` cell) because it
+must never be cropped on either axis, and **the inspector column is `minmax(min-content, min(22rem,
+33%))`** — bounded so the radar stays dominant, floored on its own content so a Russian label widens
+it instead of being clipped.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
@@ -151,6 +160,10 @@ Full text in `AGENTS.md` §2. Condensed:
 - **Layouts are designed against the Russian string**, which runs 15–30% longer. No fixed-width
   labels.
 - **All numbers use tabular figures**, IBM Plex Mono, `font-variant-numeric: tabular-nums`.
+- **`border-t` does not draw a top border.** `--color-t` claims Tailwind's `t` utility namespace, so
+  `border-t` reads as the Terrorist gold and `border-t-*` is a colour utility with no width. A top
+  hairline is `[border-block-start:1px_solid_var(--color-line)]`. `border-b`, `border-l` and
+  `border-r` are unaffected — no token is named `b`, `l` or `r`.
 - **Aim for zero comments.** A comment is justified only for a constraint the code cannot express —
   engine constants, bit layouts, the WASM boundary, platform workarounds, deliberate perf choices.
 - **No `TODO` comments.** Open an issue instead.

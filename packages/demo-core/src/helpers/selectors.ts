@@ -4,9 +4,17 @@ import {
   type Frame,
   type ParsedDemo,
   type Round,
+  type Team,
   type Tick,
   type TickTrack,
 } from '../schema';
+
+/**
+ * Rounds won by each side. Sides, not teams: the demo carries a player's team number, and the
+ * halftime swap moves the same five players from one side to the other without recording that they
+ * are the same five.
+ */
+export type SideScore = Record<Team, number>;
 
 /**
  * One value out of a `TickTrack` buffer. `noUncheckedIndexedAccess` types every buffer read as
@@ -63,6 +71,20 @@ export function roundOpeningFrame(demo: ParsedDemo, roundIndex: number): Frame {
 /** Where the match opens: the first round, or the first sample in a demo that carries no rounds. */
 export function openingFrame(demo: ParsedDemo): Frame {
   return roundOpeningFrame(demo, 0);
+}
+
+/** The score at a sample position. A round still being played has been won by neither side. */
+export function sideScoreAtFrame(demo: ParsedDemo, frame: number): SideScore {
+  const tick = tickAtFrame(demo.track, frame);
+  const score: SideScore = { CT: 0, T: 0 };
+
+  for (const round of demo.events.rounds) {
+    if (round.endTick > tick) break;
+
+    score[round.winner] += 1;
+  }
+
+  return score;
 }
 
 /**

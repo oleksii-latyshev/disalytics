@@ -24,14 +24,7 @@
     "storedBestEffort": "Сохранено на этом устройстве. Браузер может удалить кэш, когда закончится место.",
     "unavailable": "Не сохранено на этом устройстве. В следующий раз демо будет прочитано целиком."
   },
-  "summary": {
-    "title": "Демо открыто",
-    "action": "Открыть другое демо"
-  },
   "counts": {
-    "players": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}",
-    "rounds": "{count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}",
-    "kills": "{count, plural, one {# убийство} few {# убийства} many {# убийств} other {# убийства}}",
-    "grenades": "{count, plural, one {# граната} few {# гранаты} many {# гранат} other {# гранаты}}"
+    "players": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}"
   }
 }

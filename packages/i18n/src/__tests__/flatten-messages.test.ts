@@ -5,8 +5,10 @@ import { flattenResources } from '../helpers/flatten-messages';
 const resources = {
   common: { tagline: 'Tagline' },
   library: {},
+  review: {},
   controls: {},
   timeline: { roundsRemaining: '{count} left' },
+  inspector: {},
   filters: { blindDuration: { label: 'Blind duration', hint: 'Seconds' } },
   radar: {},
   settings: {},

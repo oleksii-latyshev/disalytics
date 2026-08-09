@@ -14,7 +14,7 @@ export function MatchTimeline({ demo, transport }: Props) {
   const frame = useFrameReadout(transport);
 
   return (
-    <section className="flex flex-col gap-3 rounded-instrument border border-line bg-surface-1 p-4">
+    <section className="flex flex-col gap-3">
       <MatchSpine demo={demo} transport={transport} frame={frame} />
       <RoundPicker demo={demo} transport={transport} frame={frame} />
     </section>

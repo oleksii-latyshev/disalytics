@@ -1,0 +1,7 @@
+{
+  "map": "Карта",
+  "score": "Счёт",
+  "roundOfTotal": "Раунд {current, number} из {total, number}",
+  "warmup": "Разминка",
+  "close": "Открыть другое демо"
+}

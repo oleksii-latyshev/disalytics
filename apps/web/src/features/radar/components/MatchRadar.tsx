@@ -1,5 +1,5 @@
 import type { ParsedDemo } from '@disa/demo-core';
-import { Text } from '@disa/i18n';
+import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
 import type { Transport } from '@/core/playback';
 import { RadarView } from './RadarView';
@@ -11,14 +11,11 @@ interface Props {
 }
 
 export function MatchRadar({ demo, transport }: Props) {
+  const t = useT();
   const overview = getMapOverview(demo.header.map);
 
   return (
-    <section className="flex flex-col gap-4 rounded-instrument border border-line bg-surface-1 p-6">
-      <h2 className="font-ui text-20 leading-dense">
-        <Text path="radar.title" />
-      </h2>
-
+    <section aria-label={t('radar.title')} className="grid min-h-0 min-w-0 bg-surface-0 p-4">
       {overview === undefined ? (
         <UnknownMap map={demo.header.map} />
       ) : (

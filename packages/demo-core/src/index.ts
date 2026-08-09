@@ -1,5 +1,6 @@
 export type { ErrorCode } from './errors';
 export { ERROR_CODES } from './errors';
+export type { SideScore } from './helpers/selectors';
 export {
   frameForTick,
   lastFrame,
@@ -8,6 +9,7 @@ export {
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
+  sideScoreAtFrame,
   tickAtFrame,
 } from './helpers/selectors';
 export type { LocalizedMessage } from './message';
