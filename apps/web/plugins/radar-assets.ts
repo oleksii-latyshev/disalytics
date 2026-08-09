@@ -3,6 +3,9 @@ import { readFile } from 'node:fs/promises';
 import type { Plugin } from 'vite';
 import { type RadarAssetFile, radarAssetFiles } from './radar-asset-files.ts';
 
+/** Only ever used to split a request path off its query string. */
+const DEV_BASE = 'http://localhost';
+
 export interface RadarAssetsOptions {
   /** Absolute path to `packages/map-data/assets`. */
   readonly assetsRoot: string;
@@ -38,15 +41,18 @@ export function radarAssets({ assetsRoot }: RadarAssetsOptions): Plugin {
     },
 
     configureServer(server) {
-      const sourceByUrl = radarAssetFiles(assetsRoot).then(
-        (files) => new Map(files.map((file) => [`/${file.fileName}`, file.sourcePath])),
-      );
+      let sourceByUrl: Map<string, string> | undefined;
 
-      server.middlewares.use((request, response, next) => {
-        const requestPath = new URL(request.url ?? '/', 'file:').pathname;
+      server.middlewares.use(async (request, response, next) => {
+        try {
+          sourceByUrl ??= new Map(
+            (await radarAssetFiles(assetsRoot)).map((file) => [
+              `/${file.fileName}`,
+              file.sourcePath,
+            ]),
+          );
 
-        sourceByUrl.then((sources) => {
-          const sourcePath = sources.get(requestPath);
+          const sourcePath = sourceByUrl.get(new URL(request.url ?? '/', DEV_BASE).pathname);
           if (sourcePath === undefined) {
             next();
             return;
@@ -56,7 +62,9 @@ export function radarAssets({ assetsRoot }: RadarAssetsOptions): Plugin {
           const stream = createReadStream(sourcePath);
           stream.on('error', next);
           stream.pipe(response);
-        }, next);
+        } catch (error) {
+          next(error);
+        }
       });
     },
   };

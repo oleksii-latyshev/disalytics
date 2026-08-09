@@ -9,5 +9,5 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "plugins", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "plugins", "vite.config.ts"]
 }
