@@ -91,8 +91,8 @@ transport is the store.
 
 #83 added the spine: `features/timeline` is the scrubber and the round picker, and
 `core/shortcuts` binds `docs/DESIGN.md` §9's keys. The scrubber is an **uncontrolled** range input —
-React never owns its value — and the playhead moves with `transform` only. The spine is still a bare
-strip: round hairlines and a playhead, no event density, no economy, no bands by outcome.
+React never owns its value — and the playhead moves with `transform` only. What #83 left was a bare
+strip: hairlines and a playhead, nothing about the match itself.
 
 #87 put those panels into the `docs/DESIGN.md` §4 layout. An opened demo is no longer a block in the
 reading column: `App` hands the whole viewport to `features/review`, which is a three-row grid —
@@ -102,6 +102,19 @@ itself from container units** (`min(100cqi,100cqb)` inside a `container-type: si
 must never be cropped on either axis, and **the inspector column is `minmax(min-content, min(22rem,
 33%))`** — bounded so the radar stays dominant, floored on its own content so a Russian label widens
 it instead of being clipped.
+
+#91 drew the match onto that strip: a band per round tinted by its winner, an event-density trace,
+the round hairlines moved off the DOM onto the same canvas, and a 2px `KillMarkers` tick per kill
+over it. Economy is still missing — that is #90. Four things are load-bearing. **The spine canvas is
+demand-driven**: `useCanvasLayers` repaints it on a resize or a new demo, and `repaint` is
+deliberately *not* handed to `useFrameSink` the way `RadarView` hands it — wiring it up "for
+consistency with the radar" puts a seismogram in the frame path. **`KillMarkers` is `memo`'d**, and
+that is not reflex memoisation: `MatchSpine` re-renders off the 10 Hz readout, and reconciling 225
+buttons ten times a second cost 5 fps and took the worst scrub frame from 13 ms to 25 ms on a 264 MB
+demo. **The density series is derived once per demo** — nothing walks an event array inside a draw,
+which is also why `layers` and everything feeding it are `useMemo`'d on `[demo]`. And
+**`SPINE_AXIS_FRACTION`** in `features/timeline/helpers/spine.ts` is one number with two readers, the
+canvas and the DOM markers above it. Read `AGENTS.md` §8 before changing any of it.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
