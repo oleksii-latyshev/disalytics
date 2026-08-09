@@ -79,10 +79,15 @@ committed assets and must be byte-stable across runs. Read `AGENTS.md` §9 befor
 assets or adding a theme.
 
 The renderer arrived in #79: `apps/web/src/core/renderer` is canvas plumbing that knows nothing
-about CS2, `apps/web/src/features/radar` is what knows about maps and sides. There is no clock yet,
-so it draws **one** frame — `openingFrame()` in `demo-core`, the end of round 1's freeze time — and
-the draw entry point takes that frame as an argument precisely so Phase 4 can drive the same code
-unchanged. `AGENTS.md` §9 holds the level rules and what the debug overlay is for.
+about CS2, `apps/web/src/features/radar` is what knows about maps and sides. `AGENTS.md` §9 holds
+the level rules and what the debug overlay is for.
+
+Phase 4 opened with #82 — the clock. `packages/demo-core` owns it, `apps/web/src/core/playback` binds
+it to one rAF loop, and `features/controls` is play/pause and speed. Two things there are load-bearing
+and easy to undo: **the transport publishes frames and transport state on separate channels**, and
+**nothing on the frame channel may touch React** — that is how hard rule 4 survives contact with a
+60 Hz loop. Read `AGENTS.md` §8 before changing any of it. Zustand is still not installed; the
+transport is the store.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by

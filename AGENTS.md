@@ -365,7 +365,7 @@ will not load, an allocation that will not fit — have no code of their own yet
 
 ```ts
 // packages/demo-core — plain mutable object, no reactivity
-export const clock = { frame: 0, playing: false, speed: 1 };
+export interface Clock { frame: number; isPlaying: boolean; speed: number }
 ```
 
 - A single `requestAnimationFrame` loop advances `clock.frame` and drives the renderer directly,
@@ -376,6 +376,36 @@ export const clock = { frame: 0, playing: false, speed: 1 };
 
 Zustand holds only **discrete** state: active filters, selected player, play/pause, playback speed,
 visible radar layer, panel state.
+
+### What runs it — #82
+
+`packages/demo-core` owns the clock and `advanceClock`, which is the whole of the motion: elapsed
+real time times `sampleHz` times `speed`, stopping *on* the last sample rather than past it.
+`clock.frame` is a position on the sample axis and is deliberately **not** a `Frame` — a `Frame`
+indexes one sample, the clock sits between two.
+
+`apps/web/src/core/playback` is the binding. A transport wraps the clock and publishes on two
+separate channels, and the split is the point: **frames** are for drawing and nothing subscribed to
+them may touch React, **transport** carries play, pause and speed only and is what
+`useSyncExternalStore` renders from. The rAF loop runs only while the clock plays, and it is started
+and stopped by the transport channel rather than by a re-render.
+
+Zustand is still not installed. Discrete state is small enough that the transport *is* the store,
+which is why play/pause and speed are read through `useSyncExternalStore` rather than mirrored into
+`useState` — a mirror of a mutable object is a cache no one wrote invalidation for.
+
+Nothing allocates per frame on the way to the canvas. `useCanvasLayers` hands back a `repaint` whose
+identity holds across renders, the token layer is built once and reads the clock at draw time, the
+interpolated positions land in a scratch `Float32Array`, and `radarX`/`radarY` in `map-data` exist so
+the draw path does not mint a `RadarPoint` per player per frame.
+
+Positions interpolate between samples because 16 Hz stepped across a 60 Hz display is visible; a
+sample pair further apart than 2000 units per second, or with a player dead at either end, snaps
+instead. That is a round restart or a respawn, and sliding a player across the map to meet it would
+be a smoother lie.
+
+Which level the radar draws follows the players off the 10 Hz readout, not off the clock — deciding
+it per frame flickers between floors as a player crosses Nuke's split.
 
 ---
 
@@ -451,10 +481,11 @@ Drawing is demand-driven — data, level or size changed — never a loop. The e
 frame as an argument and no frame is held in React state, which is what lets Phase 4's clock drive
 the same code unchanged.
 
-Until that clock exists the radar draws **one** frame: `openingFrame()` in `packages/demo-core`, the
-end of round 1's freeze time, which is the first moment the ten players stand where they chose to.
+Since #82 that clock exists and the same code runs unchanged under it. `openingFrame()` in
+`packages/demo-core` — the end of round 1's freeze time, the first moment the ten players stand where
+they chose to — is now where the clock *starts* rather than the only frame there is.
 
-Which level is drawn is discrete state, defaulting to the level holding most of the living players;
+Which level is drawn is discrete state, following the level holding most of the living players;
 a player on another level is drawn at low opacity rather than silently placed on this one. The
 debug overlay of §9 above **verifies** an entry — map, frame, altitude band, and the world and radar
 coordinates under the pointer, with a manual level override — and deliberately cannot edit `posX`,
