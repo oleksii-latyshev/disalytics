@@ -417,7 +417,7 @@ The spine is an **uncontrolled** `input[type="range"]`: React never owns its val
 writes `.value` on it, and the visible playhead is a separate 1px element moved with `translateX`.
 Two consequences worth keeping — the range's own thumb is 1px and transparent so its value maps to
 the pointer without the usual thumb-width inset, and the focus ring lives on the wrapper through
-`has-[:focus-visible]`, because the input itself is invisible.
+`has-[input:focus-visible]`, because the input itself is invisible.
 
 A drag pauses on `pointerdown` and resumes on `pointerup` if it was playing. Letting the clock run
 during a drag is what "fighting the scrubber" is: between two pointer moves the loop would carry the
@@ -431,6 +431,40 @@ re-deriving the conversion.
 `docs/DESIGN.md` §9's keys are bound in `apps/web/src/core/shortcuts`: space toggles, `,` and `.`
 step, `[` and `]` jump rounds. A binding never fires when the event target consumes the key itself —
 text entry for any key, and buttons and links for space and Enter.
+
+### What it shows — #91
+
+Under the playhead the strip carries one canvas with three layers: a band per round tinted `--ct` or
+`--t` by its winner at 0.1 alpha, an event-density trace of kills and damage bucketed per second and
+scaled against the loudest second, and the round hairlines. The hairlines are on that canvas rather
+than in the DOM because they have to land over the bands, and one compositing layer guarantees it.
+`KillMarkers` is the DOM above it: one 2px tick per kill just below the axis, the whole band a single
+tab stop walked with the arrow keys, `Home` and `End`. Its `ul` takes no pointer events, so the strip
+still scrubs everywhere between two markers.
+
+The canvas is **demand-driven**. `MatchSpine` hands `useCanvasLayers` a `layers` array held still by
+`useMemo` on `[demo]`, and the repaint runs on a resize or a new demo — nothing else. `repaint` is
+deliberately not given to `useFrameSink`; `RadarView` does that because it draws players, the spine
+draws the match, and the match does not change between frames. The frame sink `MatchSpine` does own
+writes the playhead transform and the range's value, and nothing more.
+
+`KillMarkers` is `memo`'d, which is the "when profiling shows a need" half of `CODE_REQUIREMENTS.md`
+§8 rather than a reflex. `MatchTimeline` reads the 10 Hz readout and passes `frame` down, so anything
+under the spine reconciles ten times a second whether or not it wants the frame. Without it, walking
+225 buttons at that rate cost 5 fps and took the worst scrub frame from 13 ms to 25 ms on a 264 MB
+demo. That number is measured, and it is why removing the `memo` is a regression rather than a
+simplification.
+
+Nothing walks an event array inside a draw. `eventDensity` buckets the whole match once per demo, and
+`roundBands`, `killMarkers` and `namesBySlot` are each derived once beside it.
+
+`SPINE_AXIS_FRACTION` in `features/timeline/helpers/spine.ts` is one number with two readers: the
+canvas puts the density trace's baseline on it, the marker band puts its `top` on it. `docs/DESIGN.md`
+§5 divides the spine along that axis — density above, markers and the economy chart below — so a
+change to it has to be checked on both sides.
+
+The focus ring above is scoped to the input for the markers' sake: on a bare `has-[:focus-visible]`
+a kill marker taking focus lights a ring around the whole 96px strip on top of its own.
 
 ---
 
