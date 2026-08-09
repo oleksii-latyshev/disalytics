@@ -407,6 +407,31 @@ be a smoother lie.
 Which level the radar draws follows the players off the 10 Hz readout, not off the clock — deciding
 it per frame flickers between floors as a player crosses Nuke's split.
 
+### What moves it — #83
+
+`seek` writes `clock.frame` and repaints without touching play state; `step` moves whole samples and
+stops; `resume` plays on from where the clock stands. `resume` exists because `play` rewinds when the
+clock is parked at the end, and coming out of a scrub has to keep the position the scrub just chose.
+
+The spine is an **uncontrolled** `input[type="range"]`: React never owns its value, the frame sink
+writes `.value` on it, and the visible playhead is a separate 1px element moved with `translateX`.
+Two consequences worth keeping — the range's own thumb is 1px and transparent so its value maps to
+the pointer without the usual thumb-width inset, and the focus ring lives on the wrapper through
+`has-[:focus-visible]`, because the input itself is invisible.
+
+A drag pauses on `pointerdown` and resumes on `pointerup` if it was playing. Letting the clock run
+during a drag is what "fighting the scrubber" is: between two pointer moves the loop would carry the
+playhead away from the pointer.
+
+Rounds are found by binary search over the sorted `events.rounds` — `roundIndexAtFrame` in
+`demo-core`, answering `undefined` during warmup, which is not a round. `tickAtFrame` is the inverse
+of `frameForTick` and is what lets a frame be compared against a round's ticks without the caller
+re-deriving the conversion.
+
+`docs/DESIGN.md` §9's keys are bound in `apps/web/src/core/shortcuts`: space toggles, `,` and `.`
+step, `[` and `]` jump rounds. A binding never fires when the event target consumes the key itself —
+text entry for any key, and buttons and links for space and Enter.
+
 ---
 
 ## 9. Radar Rendering

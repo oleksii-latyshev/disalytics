@@ -89,6 +89,11 @@ and easy to undo: **the transport publishes frames and transport state on separa
 60 Hz loop. Read `AGENTS.md` §8 before changing any of it. Zustand is still not installed; the
 transport is the store.
 
+#83 added the spine: `features/timeline` is the scrubber and the round picker, and
+`core/shortcuts` binds `docs/DESIGN.md` §9's keys. The scrubber is an **uncontrolled** range input —
+React never owns its value — and the playhead moves with `transform` only. The spine is still a bare
+strip: round hairlines and a playhead, no event density, no economy, no bands by outcome.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
