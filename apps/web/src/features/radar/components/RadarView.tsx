@@ -8,7 +8,7 @@ import {
   radarAssetPath,
 } from '@disa/map-data';
 import { type PointerEvent, useMemo, useState } from 'react';
-import { type Transport, useFramePaint, useFrameReadout } from '@/core/playback';
+import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { Button } from '@/shared/components/ui/button';
 import { readRadarColors } from '../helpers/colors';
@@ -56,7 +56,7 @@ export function RadarView({ demo, overview, transport }: Props) {
   }, [demo.track, transport, overview, levelIndex, teamBySlot, colors, image]);
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
-  useFramePaint(transport, repaint);
+  useFrameSink(transport, repaint);
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
     if (!isDebugOpen) return;

@@ -1,6 +1,8 @@
 {
   "play": "Play",
   "pause": "Pause",
+  "stepBack": "Step back",
+  "stepForward": "Step forward",
   "speed": "Playback speed",
   "speedValue": "{speed, number}×",
   "matchTime": "Match time"

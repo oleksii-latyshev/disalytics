@@ -3,8 +3,11 @@ import {
   frameForTick,
   lastFrame,
   openingFrame,
+  roundIndexAtFrame,
+  roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
+  tickAtFrame,
 } from '../helpers/selectors';
 import { asFrame, asPlayerSlot, asTick, type ParsedDemo, type Round } from '../schema';
 import { atFrame, newEvents, newTrack } from './helpers';
@@ -112,5 +115,94 @@ describe('secondsAtFrame', () => {
 
   it('answers 0 for a track sampled at no rate', () => {
     expect(secondsAtFrame(newTrack({ sampleHz: 0 }), 160)).toBe(0);
+  });
+});
+
+describe('tickAtFrame', () => {
+  it('is the inverse of frameForTick', () => {
+    const track = newTrack({ tickRate: 64, sampleHz: 16, frameCount: 2000 });
+
+    expect(tickAtFrame(track, frameForTick(track, asTick(640)))).toBe(640);
+  });
+
+  it('rounds a position between two samples onto a tick', () => {
+    const track = newTrack({ tickRate: 64, sampleHz: 16 });
+
+    expect(tickAtFrame(track, 0.5)).toBe(2);
+  });
+
+  it('answers 0 for a track sampled at no rate', () => {
+    expect(tickAtFrame(newTrack({ sampleHz: 0 }), 160)).toBe(0);
+  });
+});
+
+describe('roundOpeningFrame', () => {
+  it('lands on the end of that round’s freeze time', () => {
+    const demo: ParsedDemo = {
+      header,
+      track: newTrack({ tickRate: 64, sampleHz: 16, frameCount: 2000 }),
+      events: {
+        ...newEvents(),
+        rounds: [
+          newRound({ number: 1, freezeTimeEndTick: asTick(640) }),
+          newRound({ number: 2, freezeTimeEndTick: asTick(6400) }),
+        ],
+      },
+    };
+
+    expect(roundOpeningFrame(demo, 1)).toBe(1600);
+  });
+
+  it('falls back to the first sample for a round the match does not have', () => {
+    const demo: ParsedDemo = { header, track: newTrack(), events: newEvents() };
+
+    expect(roundOpeningFrame(demo, 7)).toBe(0);
+  });
+});
+
+describe('roundIndexAtFrame', () => {
+  const demo: ParsedDemo = {
+    header,
+    track: newTrack({ tickRate: 64, sampleHz: 16, frameCount: 4000 }),
+    events: {
+      ...newEvents(),
+      rounds: [
+        newRound({ number: 1, startTick: asTick(640) }),
+        newRound({ number: 2, startTick: asTick(6400) }),
+        newRound({ number: 3, startTick: asTick(12800) }),
+      ],
+    },
+  };
+
+  it('finds the round a position falls inside', () => {
+    expect(roundIndexAtFrame(demo, 1700)).toBe(1);
+  });
+
+  it('finds the round that has just started', () => {
+    expect(roundIndexAtFrame(demo, 1600)).toBe(1);
+  });
+
+  it('stays on the last round that started', () => {
+    expect(roundIndexAtFrame(demo, 3999)).toBe(2);
+  });
+
+  it('answers nothing during warmup, which is not a round', () => {
+    expect(roundIndexAtFrame(demo, 100)).toBeUndefined();
+  });
+
+  it('answers nothing for a match with no rounds', () => {
+    const empty: ParsedDemo = { header, track: newTrack(), events: newEvents() };
+
+    expect(roundIndexAtFrame(empty, 4)).toBeUndefined();
+  });
+
+  it('finds the only round of a single-round match', () => {
+    const single: ParsedDemo = {
+      header,
+      track: newTrack({ tickRate: 64, sampleHz: 16, frameCount: 4000 }),
+      events: { ...newEvents(), rounds: [newRound({ number: 1, startTick: asTick(0) })] },
+    };
+
+    expect(roundIndexAtFrame(single, 2000)).toBe(0);
   });
 });

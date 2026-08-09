@@ -114,3 +114,90 @@ describe('createTransport', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('seek', () => {
+  it('moves the clock without changing whether it plays', () => {
+    const transport = createTransport(newTrack(64), 0);
+    transport.play();
+
+    transport.seek(20);
+
+    expect(transport.clock.frame).toBe(20);
+    expect(transport.clock.isPlaying).toBe(true);
+  });
+
+  it('clamps into the track at both ends', () => {
+    const transport = createTransport(newTrack(64), 0);
+
+    transport.seek(-40);
+    expect(transport.clock.frame).toBe(0);
+
+    transport.seek(4000);
+    expect(transport.clock.frame).toBe(63);
+  });
+
+  it('keeps a position between two samples', () => {
+    const transport = createTransport(newTrack(64), 0);
+
+    transport.seek(20.5);
+
+    expect(transport.clock.frame).toBe(20.5);
+  });
+
+  it('repaints, because the picture just changed', () => {
+    const transport = createTransport(newTrack(64), 0);
+    const paint = vi.fn();
+    transport.subscribeToFrames(paint);
+
+    transport.seek(20);
+
+    expect(paint).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('step', () => {
+  it('moves one sample and stops playback', () => {
+    const transport = createTransport(newTrack(64), 10);
+    transport.play();
+
+    transport.step(1);
+
+    expect(transport.clock.frame).toBe(11);
+    expect(transport.clock.isPlaying).toBe(false);
+  });
+
+  it('steps off the nearest sample when the clock sits between two', () => {
+    const transport = createTransport(newTrack(64), 12.7);
+
+    transport.step(-1);
+
+    expect(transport.clock.frame).toBe(12);
+  });
+
+  it('has nowhere to go back from the first sample', () => {
+    const transport = createTransport(newTrack(64), 0);
+
+    transport.step(-1);
+
+    expect(transport.clock.frame).toBe(0);
+  });
+
+  it('has nowhere to go forward from the last sample', () => {
+    const transport = createTransport(newTrack(64), 63);
+
+    transport.step(1);
+
+    expect(transport.clock.frame).toBe(63);
+  });
+});
+
+describe('resume', () => {
+  it('plays on from the end instead of rewinding to the start', () => {
+    const transport = createTransport(newTrack(64), 63);
+
+    transport.resume();
+
+    expect(transport.clock.frame).toBe(63);
+    expect(transport.clock.isPlaying).toBe(true);
+  });
+});
