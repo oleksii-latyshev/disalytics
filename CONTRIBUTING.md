@@ -236,7 +236,8 @@ stages fixes on your behalf, because writing a file that is only partially stage
 hunks you did not stage.
 
 The two Rust jobs are the same two lines `.github/workflows/wasm.yml` runs, so a commit that passes
-them is a commit `wasm` will not bounce. Clippy is `--workspace --all-targets -- -D warnings`, and
+them is one `wasm` will not bounce for formatting or a lint — the rest of that workflow, from
+`cargo test` to the size gate, still runs only there. Clippy is `--workspace --all-targets -- -D warnings`, and
 the level that matters lives in `Cargo.toml` under `[workspace.lints.clippy]`: `all` is denied and
 `pedantic` is warned, so `-D warnings` is what turns a pedantic lint into a failed commit. Keep the
 hook and the workflow in step — a hook that lints more loosely than CI is a hook that stops
