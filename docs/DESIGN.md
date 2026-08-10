@@ -109,7 +109,9 @@ able to find ten tokens on it without searching.
 
 This is a theme decision, not a per-component one. `packages/map-data` already ships Valve's
 overviews as extracted, and they are coloured; the desaturated plate in the current build is the
-generated `blue` theme, selected by `DEFAULT_RADAR_THEME`. Which plate ships is settled by looking at
+generated `blue` theme, selected by `DEFAULT_RADAR_THEME`. **`blue` stays the default and `vanilla`
+becomes selectable in settings** — the quiet plate is the better ground for ten tokens, and the
+reader who wants the game's own colours can have them. Which plate is better is settled by looking at
 tokens on top of both, never by looking at the plate alone.
 
 Every semantic colour needs a colour-blind-safe variant, selectable in settings — this absorbs #81.
@@ -125,6 +127,33 @@ on the map. Hue alone is never sufficient.
 --hover:     rgb(255 255 255 / 0.05);
 --playhead:  #FFFFFF;                      /* the one pure-white element in motion */
 ```
+
+### The accent — one hue, and a fence around it
+
+```css
+--accent: #65A1F8;   /* the product's own blue: identity and the primary action */
+```
+
+The accent is what makes a screen look like a product rather than a demo, and it is also the single
+easiest way to break principle 1. It sits **within a few degrees of `--ct`** — `#65A1F8` against
+`#4A90D9` — which is not an accident of taste but a genuine hazard: a blue control beside a blue
+player token invites the reader to think the control means *Counter-Terrorist*.
+
+So the accent is fenced, and the fence is the whole of the rule:
+
+- **Never on the plate, never in the rails, never in the spine.** Those three surfaces are where side
+  colour lives, and the accent may not appear where a side token can be seen at the same time.
+- **Yes** on the library and parse screens, the top bar's actions, dialogs, menus, and the drawer's
+  own controls — the surfaces that carry no side data at all. The parse progress bar is the accent's
+  best use in the product: it is the first thing a new reader watches, and it carries no data.
+- **It is a fill, never a text colour on `--surface-0`.** At 4.5:1 it passes on graphite, but accent
+  text next to ink text reads as a link where none exists.
+- It replaces no interaction state. Focus stays white, selection stays white at 10%, hover stays
+  white at 5%. The accent says *this is the thing to press*, not *this is where you are*.
+
+If a screen ever shows an accent control and a CT token close enough to compare, the accent loses and
+the control goes monochrome. That test is worth running with a screenshot before either is called
+done.
 
 **The playhead is the brightest thing on screen, and nothing else is allowed to be.** This clause
 outranks any wish for a louder chart. It is the only element that says *where you are*, and an
@@ -322,8 +351,9 @@ Showing which T carries the bomb, the way the reference does, **is the one thing
 data cannot do today.** There is no `FLAG_` for it, no pickup or drop event, and `BombPlant` records
 `siteEntityId` without a position. Carrying it would mean a new per-sample column or flag and a bomb
 position, which is a parser change and a `SCHEMA_VERSION` bump — an `AGENTS.md` §21 decision with its
-own issue, not something this document may promise. Until then the plate says nothing about the
-bomb before the plant, and nothing on the plate may imply otherwise.
+own issue, not something this document may promise. **The owner's decision is to ship without it and
+to keep the gap on the record**: the plate says nothing about the bomb before the plant, and nothing
+on the plate may imply otherwise. Anyone who wants it back starts by opening the schema issue.
 
 The debug overlay ("show coordinates") is a development affordance and does not belong on the stage
 in the shipped layout. It moves behind the same settings surface as the radar theme.
