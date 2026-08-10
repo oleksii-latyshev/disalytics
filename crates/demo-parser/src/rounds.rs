@@ -97,6 +97,7 @@ pub(crate) fn build(
                     money: sample.money,
                     equipment_value: sample.equipment_value,
                     buy_type: buy_type_of(sample.equipment_value, is_half_start),
+                    team: sample.team,
                 }
             })
             .collect();

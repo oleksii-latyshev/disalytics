@@ -121,6 +121,14 @@ side, and `Round.reason` through an exhaustive switch — because `role="img"` a
 picture exists and nothing about what it shows. The density trace is deliberately left unvoiced;
 §8 says why.
 
+#90 filled the bottom band with the buy: one block per round leaving the band's centre line upward
+when the CT side was better equipped and downward when the T side was, voiced by an `EconomyGaps`
+list beside `RoundOutcomes`. It needed a schema change — **`PlayerEconomy` now carries the side the
+slot held that round, and `SCHEMA_VERSION` is 3**, because `PlayerInfo.team` is read at the end of
+the match and would have put the wrong side ahead in half the rounds. Every cached demo is a miss
+once. `MARKER_BAND_PX` in `features/timeline/helpers/spine.ts` is the second number with two
+readers, alongside `SPINE_AXIS_FRACTION`.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

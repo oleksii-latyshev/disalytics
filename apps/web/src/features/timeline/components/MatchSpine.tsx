@@ -4,8 +4,16 @@ import { type ChangeEvent, useCallback, useEffect, useMemo, useRef } from 'react
 import { createClockFormat, formatClock, type Transport, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { eventDensity } from '../helpers/density';
-import { densityTrace, outcomeBands, readSpineColors, roundHairlines } from '../helpers/layers';
+import { economySteps } from '../helpers/economy';
+import {
+  densityTrace,
+  economyGap,
+  outcomeBands,
+  readSpineColors,
+  roundHairlines,
+} from '../helpers/layers';
 import { killMarkers, namesBySlot, positionOnSpine, roundBands } from '../helpers/spine';
+import { EconomyGaps } from './EconomyGaps';
 import { KillMarkers } from './KillMarkers';
 import { RoundOutcomes } from './RoundOutcomes';
 
@@ -33,6 +41,7 @@ export function MatchSpine({ demo, transport, frame }: Props) {
   const markers = useMemo(() => killMarkers(demo), [demo]);
   const names = useMemo(() => namesBySlot(demo.header.players), [demo.header.players]);
   const density = useMemo(() => eventDensity(demo), [demo]);
+  const economy = useMemo(() => economySteps(demo), [demo]);
   const colors = useMemo(readSpineColors, []);
 
   // What the strip says about the match changes only with the demo, so the array holds still and
@@ -41,9 +50,10 @@ export function MatchSpine({ demo, transport, frame }: Props) {
     () => [
       outcomeBands(bands, colors),
       densityTrace(density, colors),
+      economyGap(economy, colors),
       roundHairlines(bands, colors),
     ],
-    [bands, density, colors],
+    [bands, density, economy, colors],
   );
 
   const { canvasRef } = useCanvasLayers(layers);
@@ -123,6 +133,8 @@ export function MatchSpine({ demo, transport, frame }: Props) {
       />
 
       <RoundOutcomes rounds={demo.events.rounds} />
+
+      <EconomyGaps steps={economy} />
 
       <div ref={playheadRef} className="absolute inset-y-0 left-0 w-px bg-playhead" />
 

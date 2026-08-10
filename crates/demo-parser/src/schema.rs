@@ -262,6 +262,10 @@ pub struct PlayerEconomy {
     pub money: i32,
     pub equipment_value: i32,
     pub buy_type: BuyType,
+    /// The side the slot held for this round, which `PlayerInfo::team` cannot answer — that one
+    /// reads the end of the match, and the halftime swap moves everyone. `None` for a slot with no
+    /// sample at freeze-time end.
+    pub team: Option<Team>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

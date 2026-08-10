@@ -304,6 +304,7 @@ fn round_json(round: &demo_parser::Round) -> Value {
             "money": entry.money,
             "equipmentValue": entry.equipment_value,
             "buyType": entry.buy_type.as_str(),
+            "team": entry.team.map(|team| team.as_str()),
         })).collect::<Vec<_>>(),
     })
 }

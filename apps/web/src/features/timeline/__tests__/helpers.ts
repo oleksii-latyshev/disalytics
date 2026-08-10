@@ -4,7 +4,10 @@ import {
   type Damage,
   type Kill,
   type ParsedDemo,
+  type PlayerEconomy,
   type Round,
+  TEAMS,
+  type Team,
   type TickTrack,
 } from '@disa/demo-core';
 
@@ -28,7 +31,12 @@ export function newTrack(frameCount: number): TickTrack {
   };
 }
 
-export function newRound(number: number, startTick: number, winner: Round['winner'] = 'CT'): Round {
+export function newRound(
+  number: number,
+  startTick: number,
+  winner: Round['winner'] = 'CT',
+  economy: readonly PlayerEconomy[] = [],
+): Round {
   return {
     number,
     startTick: asTick(startTick),
@@ -36,8 +44,29 @@ export function newRound(number: number, startTick: number, winner: Round['winne
     endTick: asTick(startTick + 6400),
     winner,
     reason: 'all-t-eliminated',
-    economy: [],
+    economy,
   };
+}
+
+/** One entry per equipment value, slotted CT side first, as a round reads at freeze-time end. */
+export function newBuy(
+  perSide: Readonly<Record<Team, readonly number[]>>,
+): readonly PlayerEconomy[] {
+  const entries: PlayerEconomy[] = [];
+
+  for (const team of TEAMS) {
+    for (const equipmentValue of perSide[team]) {
+      entries.push({
+        slot: asPlayerSlot(entries.length),
+        money: 0,
+        equipmentValue,
+        buyType: 'full-buy',
+        team,
+      });
+    }
+  }
+
+  return entries;
 }
 
 export function newKill(tick: number, overrides: Partial<Kill> = {}): Kill {

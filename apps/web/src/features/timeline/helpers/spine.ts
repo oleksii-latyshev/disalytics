@@ -15,6 +15,12 @@ import {
  */
 export const SPINE_AXIS_FRACTION = 0.6;
 
+/**
+ * The height of the kill markers' band, measured down from the axis. The economy chart begins where
+ * it ends, so the number belongs to both of them and to neither alone.
+ */
+export const MARKER_BAND_PX = 10;
+
 export interface RoundBand {
   readonly round: number;
   readonly winner: Team;

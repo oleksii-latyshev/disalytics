@@ -42,6 +42,7 @@ fn economy(economy: &PlayerEconomy) -> JsValue {
     set(&out, "money", economy.money);
     set(&out, "equipmentValue", economy.equipment_value);
     set(&out, "buyType", economy.buy_type.as_str());
+    set(&out, "team", optional(economy.team.map(|team| team.as_str())));
 
     out.into()
 }

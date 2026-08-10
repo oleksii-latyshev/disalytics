@@ -478,6 +478,24 @@ by eye, and what it is made of — the kills — is already spoken, one labelled
 markers' roving tab stop. Narrating the shape on top of that would add strings that tell a reader
 nothing the strip does not already tell them.
 
+**What it costs — #90.** The bottom band is the buy: one block per round, rising from the band's
+centre line for a round the CT side came out of freeze time better equipped, falling for one the T
+side did, as tall as that gap is against the widest gap the match holds. Which side leads is carried
+by the direction, not by the hue — §9's floor does not let side identity rest on colour. It is drawn
+at 0.32 alpha, under the density's 0.55 and in a band of its own: a CT block over a CT-tinted round
+band disappears below about 0.25, which was measured rather than guessed. Unlike the density this
+one *is* voiced — `EconomyGaps` is a second `sr-only` list beside `RoundOutcomes`, because nothing
+else in the interface says what a side bought.
+
+The side comes from `PlayerEconomy.team`, which the parser reads at freeze-time end. It exists
+because `PlayerInfo.team` is the side a player held at the *end* of the match: on the Phase 0
+fixture the halves swap at round 13, and reading the buy through the roster would have put the wrong
+side ahead in 15 of the 30 rounds. Carrying it took `SCHEMA_VERSION` to 3.
+
+`MARKER_BAND_PX` joins `SPINE_AXIS_FRACTION` as a number with two readers: the marker band is that
+tall, and the economy chart starts where it ends. Both live in `features/timeline/helpers/spine.ts`
+and a change to either has to be checked on the canvas and in the DOM.
+
 ---
 
 ## 9. Radar Rendering
@@ -582,7 +600,9 @@ Lives in `packages/demo-core/src/schema.ts` — single source of truth. Changes 
 - **Blinds:** per affected player, duration, teammate flag
 - **Objectives:** plant, defuse start/complete/abort, site
 - **Rounds:** start/end tick, winner, win reason, freeze-time end
-- **Economy:** per-round equipment value, buy type, money
+- **Economy:** per-round equipment value, buy type, money, and the side the slot held that round —
+  `PlayerInfo.team` is read at the end of the match and has the halves swapped, so it cannot answer
+  for a round
 
 **Phase 0 must confirm every one of these is extractable from `demoparser2`.** Grenade
 trajectories and per-player blind durations are the likeliest gaps in a query-based model — check

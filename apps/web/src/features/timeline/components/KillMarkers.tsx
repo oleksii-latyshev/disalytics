@@ -1,7 +1,7 @@
 import { useT } from '@disa/i18n';
 import { type KeyboardEvent, memo, useRef, useState } from 'react';
 import type { Transport } from '@/core/playback';
-import { type KillMarker, SPINE_AXIS_FRACTION } from '../helpers/spine';
+import { type KillMarker, MARKER_BAND_PX, SPINE_AXIS_FRACTION } from '../helpers/spine';
 
 const STEPS: Readonly<Record<string, number>> = { ArrowLeft: -1, ArrowRight: 1 };
 
@@ -67,8 +67,8 @@ export const KillMarkers = memo(function KillMarkers({ markers, names, transport
     // The band takes no pointer events of its own, so everything between two markers still scrubs.
     <ul
       aria-label={t('timeline.kills')}
-      className="pointer-events-none absolute inset-x-0 h-2.5"
-      style={{ top: `${SPINE_AXIS_FRACTION * 100}%` }}
+      className="pointer-events-none absolute inset-x-0"
+      style={{ top: `${SPINE_AXIS_FRACTION * 100}%`, height: `${MARKER_BAND_PX}px` }}
     >
       {markers.map((marker, index) => (
         <li key={marker.index}>
