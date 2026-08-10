@@ -87,7 +87,9 @@ it to one rAF loop, and `features/controls` is play/pause and speed. Two things 
 and easy to undo: **the transport publishes frames and transport state on separate channels**, and
 **nothing on the frame channel may touch React** — that is how hard rule 4 survives contact with a
 60 Hz loop. Read `AGENTS.md` §8 before changing any of it. Zustand is still not installed; the
-transport is the store.
+transport is the store. Since #98 the loop also refuses to spend more than `MAX_FRAME_MS` of real
+time on one frame and forgets its last timestamp on `visibilitychange` — a hidden tab suspends rAF,
+and 46 s away used to arrive as 46 s of match in a single step.
 
 #83 added the spine: `features/timeline` is the scrubber and the round picker, and
 `core/shortcuts` binds `docs/DESIGN.md` §9's keys. The scrubber is an **uncontrolled** range input —

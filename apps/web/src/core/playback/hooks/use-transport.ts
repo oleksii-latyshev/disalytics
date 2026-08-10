@@ -1,5 +1,6 @@
 import { openingFrame, type ParsedDemo } from '@disa/demo-core';
 import { useEffect, useMemo } from 'react';
+import { frameElapsedMs } from '../helpers/frame-step';
 import { createTransport, type Transport } from '../helpers/transport';
 
 /**
@@ -17,10 +18,17 @@ export function useTransport(demo: ParsedDemo): Transport {
     const step = (nowMs: number): void => {
       handle = requestAnimationFrame(step);
 
-      const elapsedMs = previousMs === 0 ? 0 : nowMs - previousMs;
+      const elapsedMs = frameElapsedMs(previousMs, nowMs);
       previousMs = nowMs;
 
       transport.advance(elapsedMs);
+    };
+
+    // Hiding the tab suspends the loop; showing it resumes one whose last timestamp is however long
+    // ago the reader left. Forgetting it makes the first frame back cost nothing, which the ceiling
+    // in `frameElapsedMs` alone cannot do — it can only make the jump small.
+    const forgetPreviousFrame = (): void => {
+      previousMs = 0;
     };
 
     const sync = (): void => {
@@ -36,10 +44,12 @@ export function useTransport(demo: ParsedDemo): Transport {
       handle = 0;
     };
 
+    document.addEventListener('visibilitychange', forgetPreviousFrame);
     const unsubscribe = transport.subscribeToTransport(sync);
     sync();
 
     return () => {
+      document.removeEventListener('visibilitychange', forgetPreviousFrame);
       unsubscribe();
       if (handle !== 0) cancelAnimationFrame(handle);
     };

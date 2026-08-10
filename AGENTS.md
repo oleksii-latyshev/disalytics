@@ -390,6 +390,14 @@ them may touch React, **transport** carries play, pause and speed only and is wh
 `useSyncExternalStore` renders from. The rAF loop runs only while the clock plays, and it is started
 and stopped by the transport channel rather than by a re-render.
 
+One frame may hand the clock at most `MAX_FRAME_MS` of real time, and a `visibilitychange` makes the
+next frame cost nothing at all — #98. `requestAnimationFrame` is suspended outright in a hidden tab,
+so without both, the first frame back spends the whole absence in one step: measured at 46 s hidden,
+which moved the playhead 46 s down the match, and near the end of a match would have parked it there
+and stopped playback. Losing the time a reader spent elsewhere is the right trade for a review tool —
+nothing here is synchronised to wall time — and the ceiling also covers a stalled main thread, which
+announces itself with no event at all.
+
 Zustand is still not installed. Discrete state is small enough that the transport *is* the store,
 which is why play/pause and speed are read through `useSyncExternalStore` rather than mirrored into
 `useState` — a mirror of a mutable object is a cache no one wrote invalidation for.
