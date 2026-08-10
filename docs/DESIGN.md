@@ -52,6 +52,11 @@ it never collides with a data colour.
 Token names below are the short form. In Tailwind v4 they are `--color-*`; the mapping lives once in
 `packages/ui/src/styles/tokens.css` and nowhere else.
 
+**There is no light theme, and this is a decision rather than a gap.** `@custom-variant dark (&)` in
+`apps/web/src/styles.css` makes the dark appearance unconditional on purpose. A second palette would
+double the token layer, re-open every contrast check, and need a third radar plate; the day one is
+designed, that variant becomes a real selector again.
+
 ### Surface and ink — blue-shifted graphite, never pure black
 
 Pure black plus neon is the genre cliché and creates halation against bright radar imagery. A
@@ -267,6 +272,31 @@ panel → 8, inside a row → 4.
 **Below 1100px wide the rails collapse** into a single strip above the spine. The tool targets a
 laptop and up; the phone is the landing page's problem, not this screen's.
 
+### The way in — opening a demo, and watching it parse
+
+These two screens are one screen in two states, and they are the whole first impression. Today the
+first is a ~450px reading column centred in a 1280px viewport with a dashed box in it: it reads as a
+form to fill in, not as a product to use.
+
+- **The drop target is the viewport**, not a box inside it. A file dragged anywhere is caught, and
+  the whole screen acknowledges it. A dashed border is the universal signal for *placeholder*, and it
+  goes.
+- **One card, centred, with room around it.** The card is `--surface-1`, `--radius-float`, and it is
+  the only object on the screen. Emptiness here is confidence; filling it with feature bullets would
+  be the opposite.
+- **Behind it, the product's own material** — a radar plate at very low alpha, bled off the edges,
+  the same plate the stage will draw. Not an illustration and not a gradient: the thing the reader
+  came for, dimmed. This is the one decorative gesture in the product, and it is decorative only in
+  placement.
+- **The primary action is the accent.** So is the parse progress bar — §2 fences the accent out of
+  every surface that carries side data, and this screen carries none, which is exactly why it is
+  where the accent earns its keep.
+- **The card transforms in place** when the parse starts; it does not navigate. The heading follows
+  §10's rule — "Open demo" leads to "Opening demo" — and the file name, the map and the player count
+  fill in as the parser learns them.
+- **Nothing here is a spinner.** The parse reports what it is doing in the reader's words, and the
+  hidden-tab explanation (#68) belongs on this screen and nowhere else.
+
 ---
 
 ## 6. The Match Spine
@@ -406,9 +436,8 @@ globally in `packages/ui/src/styles/motion.css`.
 When a parse completes, the interface assembles rather than appearing: the spine draws left to right
 as the data lands (~600ms), the round bands fade in behind it, the stage fades up, and the players
 take their opening positions. It runs exactly once per demo, while nothing is playing, so it costs
-nothing in the hot path — and it turns the end of a long wait into a payoff. This is currently
-described and **not built**; it is the one place the document is allowed to lead the code, and it
-needs an issue.
+nothing in the hot path — and it turns the end of a long wait into a payoff. It is described here and
+**not yet built** — the one place this document leads the code — and it is #104.
 
 No other orchestrated sequence exists. Everywhere else, motion is a 120ms state change.
 
