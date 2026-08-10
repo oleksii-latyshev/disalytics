@@ -15,6 +15,29 @@ pre-commit:
       run: bun run typecheck
       fail_text: 'tsc failed. This is a whole-project check, so the error may sit outside the staged files.'
 
+    # rustup installs into ~/.cargo/bin, which a login shell puts on PATH and a git hook launched
+    # outside one may not. Prepending it is a no-op wherever cargo is already reachable.
+    #
+    # Named packages, not `--all`, for the same reason .github/workflows/wasm.yml names them:
+    # cargo-fmt's `--all` reaches into local path dependencies, and `vendor/` is upstream code this
+    # repository does not format. Add a crate here when one arrives under `crates/`.
+    - name: cargo-fmt
+      glob: &rust-files
+        - 'crates/**'
+        - 'Cargo.toml'
+        - 'Cargo.lock'
+        - 'rust-toolchain.toml'
+      run: PATH="$HOME/.cargo/bin:$PATH" cargo fmt --package demo-parser --package demo-parser-wasm --check
+      fail_text: 'rustfmt failed. Run `cargo fmt --package demo-parser --package demo-parser-wasm`, restage, and commit again. If cargo was not found, install it with rustup — rust-toolchain.toml names the channel.'
+
+    # The lint level lives in Cargo.toml's [workspace.lints.clippy] — `all` denied, `pedantic`
+    # warned — so `-D warnings` is what turns a pedantic lint into a failure. wasm.yml runs this
+    # exact line; keep the two in step or the hook stops predicting CI.
+    - name: clippy
+      glob: *rust-files
+      run: PATH="$HOME/.cargo/bin:$PATH" cargo clippy --workspace --all-targets -- -D warnings
+      fail_text: 'clippy failed. Fix the warnings it names — `cargo clippy --fix` handles the mechanical ones — restage, and commit again.'
+
 pre-push:
   jobs:
     - name: test

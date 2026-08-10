@@ -221,6 +221,8 @@ What runs, and against what (`lefthook.yml`, and `CODE_REQUIREMENTS.md` §13):
 |---|---|---|
 | pre-commit | `biome check` | the staged files, passed as arguments |
 | pre-commit | `bun run typecheck` | the whole project, and only when the commit stages a `*.ts`/`*.tsx` file |
+| pre-commit | `cargo fmt --check` | `demo-parser` and `demo-parser-wasm`, and only when the commit stages `crates/**`, `Cargo.toml`, `Cargo.lock` or `rust-toolchain.toml` |
+| pre-commit | `cargo clippy` | the workspace, same trigger |
 | pre-push | `bun run test` | the whole test suite |
 
 `tsc` has no staged-file mode — it type-checks a project, not a file list, and a file list would
@@ -232,6 +234,21 @@ so turbo cannot see them, and they are not cached.
 Biome does not rewrite files here. A failure prints what to run (`bun run check:fix`); it never
 stages fixes on your behalf, because writing a file that is only partially staged would commit
 hunks you did not stage.
+
+The two Rust jobs are the same two lines `.github/workflows/wasm.yml` runs, so a commit that passes
+them is one `wasm` will not bounce for formatting or a lint — the rest of that workflow, from
+`cargo test` to the size gate, still runs only there. Clippy is `--workspace --all-targets -- -D warnings`, and
+the level that matters lives in `Cargo.toml` under `[workspace.lints.clippy]`: `all` is denied and
+`pedantic` is warned, so `-D warnings` is what turns a pedantic lint into a failed commit. Keep the
+hook and the workflow in step — a hook that lints more loosely than CI is a hook that stops
+predicting it. Like `tsc`, both read the working tree rather than the staged content, and neither
+rewrites a file: `cargo fmt --package demo-parser --package demo-parser-wasm` is yours to run.
+
+They cost about half a second on a warm `target/`, and ~17 s on a cold one — the first Rust commit
+after a `cargo clean` or a toolchain bump pays for a full check of the workspace. A commit that
+stages no Rust pays nothing: lefthook filters on the glob and never starts the process. `cargo`
+itself is looked up with `~/.cargo/bin` prepended to `PATH`, because a git hook is not always
+launched from a login shell that has it.
 
 Pre-commit is skipped during a `rebase`: those commits were checked when they were written, and
 re-checking every replayed commit is what makes people turn hooks off for good. It is **not**
