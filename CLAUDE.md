@@ -116,6 +116,11 @@ which is also why `layers` and everything feeding it are `useMemo`'d on `[demo]`
 **`SPINE_AXIS_FRACTION`** in `features/timeline/helpers/spine.ts` is one number with two readers, the
 canvas and the DOM markers above it. Read `AGENTS.md` §8 before changing any of it.
 
+#92 gave the canvas words: `RoundOutcomes` is an `sr-only` list of every round — number, winning
+side, and `Round.reason` through an exhaustive switch — because `role="img"` announces that a
+picture exists and nothing about what it shows. The density trace is deliberately left unvoiced;
+§8 says why.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

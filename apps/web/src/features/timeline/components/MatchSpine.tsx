@@ -7,6 +7,7 @@ import { eventDensity } from '../helpers/density';
 import { densityTrace, outcomeBands, readSpineColors, roundHairlines } from '../helpers/layers';
 import { killMarkers, namesBySlot, positionOnSpine, roundBands } from '../helpers/spine';
 import { KillMarkers } from './KillMarkers';
+import { RoundOutcomes } from './RoundOutcomes';
 
 interface Props {
   demo: ParsedDemo;
@@ -120,6 +121,8 @@ export function MatchSpine({ demo, transport, frame }: Props) {
         aria-label={t('timeline.overview')}
         className="absolute inset-0 size-full"
       />
+
+      <RoundOutcomes rounds={demo.events.rounds} />
 
       <div ref={playheadRef} className="absolute inset-y-0 left-0 w-px bg-playhead" />
 
