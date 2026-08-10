@@ -2,7 +2,7 @@ use crate::js::{array, optional, set};
 use crate::track::trajectory;
 use demo_parser::{
     Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Grenade, Kill, MatchEvents, PlayerEconomy,
-    Round, WorldPoint,
+    Round, Team, WorldPoint,
 };
 use js_sys::Object;
 use wasm_bindgen::JsValue;
@@ -42,7 +42,7 @@ fn economy(economy: &PlayerEconomy) -> JsValue {
     set(&out, "money", economy.money);
     set(&out, "equipmentValue", economy.equipment_value);
     set(&out, "buyType", economy.buy_type.as_str());
-    set(&out, "team", optional(economy.team.map(|team| team.as_str())));
+    set(&out, "team", optional(economy.team.map(Team::as_str)));
 
     out.into()
 }
