@@ -99,6 +99,19 @@ A semantic colour may only be used for the thing it names. An aggregate is not a
 happened in this minute" is not damage, so it is drawn in `--ink-dim`, not in `--damage`. This rule
 is what resolves the contradiction the first version of this document shipped with; see §6.
 
+### The map plate is neither chrome nor data
+
+"Chrome is monochrome" does not reach the map itself. The plate carries colour that encodes *space* —
+playable floor against void, one level against another, the bombsite outlines Valve draws — and that
+colour is information about the map, so it is allowed. What it may not do is compete: **the plate
+stays below every player token and every event mark in both saturation and value.** A reader must be
+able to find ten tokens on it without searching.
+
+This is a theme decision, not a per-component one. `packages/map-data` already ships Valve's
+overviews as extracted, and they are coloured; the desaturated plate in the current build is the
+generated `blue` theme, selected by `DEFAULT_RADAR_THEME`. Which plate ships is settled by looking at
+tokens on top of both, never by looking at the plate alone.
+
 Every semantic colour needs a colour-blind-safe variant, selectable in settings — this absorbs #81.
 CT blue against T gold is the critical pair, and after this revision side identity has **three**
 carriers, not one: hue, the side of the screen the player's rail is on, and the shape of the token
@@ -256,23 +269,61 @@ quiet by default and loud only where the reader has asked a question.
 
 ## 7. The Radar
 
-The stage carries more than dots. `TickTrack` already holds `yaw`, `pitch`, `speed` and `flags` —
-this section costs the parser nothing and `SCHEMA_VERSION` nothing.
+The stage carries more than dots. Everything in this section except the last item is drawable from
+data the parser already emits — `yaw`, `pitch`, `speed`, `health` and `flags` per sample, and
+`kills`, `damage`, `grenades`, `blinds`, `plants` and `defuses` as events. **No item here costs the
+parser a line or `SCHEMA_VERSION` a bump, and the one that would is called out as such.**
 
-- **Player token** — a shape, not only a colour: CT and T carry different silhouettes so side
-  survives a colour-blind reader and a screenshot. The token is `--ct`/`--t`; a dead player drops to
-  `--ink-faint` and loses its cone.
-- **View cone** — a wedge from the token in the player's side colour at α0.15, fading to transparent
-  by ~1000 units. It answers "was he even looking that way", which is the question a review is
-  usually about. Not drawn for a dead player, and not drawn while the reader is scrubbing faster
-  than 4× — at that speed it is strobing, not information.
-- **Audibility ring** — a 1px ring in `--ink-faint` α0.40 at the radius the player is currently
-  audible from, derived from `speed`. Drawn **only for players who are actually making noise**, plus
-  always for the selected player. Ten permanent rings is noise about noise.
-- **Levels** — a map with two levels draws one at a time, chosen from the 10 Hz readout rather than
-  from the clock, or the view flickers between floors as a player crosses the split.
-- **Utility** — smokes, molotovs and flashes are areas in their own tokens at low alpha, with the
-  same rule as everything else: they appear when they exist in the match and never as decoration.
+### The player
+
+- **Token** — a shape, not only a colour: CT and T carry different silhouettes, so side survives a
+  colour-blind reader and a screenshot. The fill is `--ct`/`--t`. A dead player drops to
+  `--ink-faint`, loses its facing and its ring, and stops carrying a name.
+- **Name** — every live player is labelled on the plate, in Roboto Condensed 11px on a
+  `--glass-raised` chip. Ten unlabelled dots is a puzzle, not a review; the label is what lets a
+  reader follow one person through a round. Labels never overlap: a collision moves the label, never
+  the token.
+- **Facing** — a 2px needle from the token in the side colour, `FLAG_SCOPED` lengthening it. A
+  needle, not a wedge, for all ten: ten translucent cones is a fog, and the question "where was he
+  looking" is answered by a direction, not by an area.
+- **Vision** — the **selected** player gets the wedge as well, at α0.15 fading out by ~1000 units.
+  One cone at a time is information; ten is decoration.
+- **Damage** — a token flashes `--damage` when its player takes a hit, decaying over ~250ms **of
+  match time**, so at 0.5× it is slow and at 4× it is a blink. It is driven by the `damage` events,
+  binary-searched by tick like everything else, and its opacity is a function of the clock rather
+  than of a timer — an animation keyed to wall time would break §8's rule about playback.
+- **Blind** — a blinded player's token loses its facing needle for the duration in the `blinds`
+  event, which is the honest picture: a flashed player is not looking anywhere.
+- **Planting and defusing** — `FLAG_PLANTING` and `FLAG_DEFUSING` put a progress arc around the
+  token. This is the moment a round is decided; it earns its own state.
+- **Audibility** — a 1px ring in `--ink-faint` α0.40 at the radius the player can currently be heard
+  from, derived from `speed` and suppressed by `FLAG_WALKING`. Drawn **only while the player is
+  actually making noise**, plus always for the selected player. Ten permanent rings is noise about
+  noise.
+
+### The world
+
+- **Utility** — smokes and fires are areas in their own tokens at low alpha, appearing at
+  `detonationTick` and clearing at `expiryTick`, which the schema already carries. Flashes are a
+  single expanding mark, not a lingering area.
+- **Trajectories** — a grenade's flight path is in `GrenadeTrajectory` as typed arrays, and it draws
+  as a 1px line in the utility's own colour from the throw to the detonation. It is the one line on
+  the plate that explains a decision rather than reporting a position. It is drawn for a grenade in
+  flight, and for a selected grenade in the feed; never for every grenade of the round at once.
+- **Levels** — a two-level map draws one at a time, chosen from the 10 Hz readout rather than from
+  the clock, or the view flickers between floors as a player crosses the split.
+- **Zoom and pan** — the stage supports both, with a `+`/`−` pair and the scroll wheel. A 656px
+  plate is enough to see a round and not enough to see a duel. Zoom is a view state, not playback
+  state: it survives scrubbing and never moves on its own.
+
+### The bomb — not free, and not to be faked
+
+Showing which T carries the bomb, the way the reference does, **is the one thing on this list the
+data cannot do today.** There is no `FLAG_` for it, no pickup or drop event, and `BombPlant` records
+`siteEntityId` without a position. Carrying it would mean a new per-sample column or flag and a bomb
+position, which is a parser change and a `SCHEMA_VERSION` bump — an `AGENTS.md` §21 decision with its
+own issue, not something this document may promise. Until then the plate says nothing about the
+bomb before the plant, and nothing on the plate may imply otherwise.
 
 The debug overlay ("show coordinates") is a development affordance and does not belong on the stage
 in the shipped layout. It moves behind the same settings surface as the radar theme.
@@ -306,7 +357,10 @@ interface is still while you watch, and it moves when you act.
 - Anything subscribed to the frame channel. Nothing on that channel may touch React, and nothing on
   it may start an animation either.
 - Inside the radar or the spine canvas. Both are drawn imperatively; a tween there is a repaint per
-  frame with a library on top of it.
+  frame with a library on top of it. This is not a ban on things that *change* on the plate — a
+  damage flash, a smoke clearing, a defuse arc filling. Those are **functions of `clock.frame`**,
+  computed in the draw the frame was already going to do, and they are the render path rather than
+  animation. The test is which clock it reads: match time is drawing, wall time is animating.
 - **Anywhere at all while `clock.isPlaying` is true.** This is enforced, not trusted: the transport
   writes `data-playing` on the document element, and a single global rule disables transitions and
   animations beneath it. A rule nobody can forget to follow is worth more than a paragraph asking
