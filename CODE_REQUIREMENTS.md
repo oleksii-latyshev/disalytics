@@ -427,7 +427,9 @@ so CI is the second line of defence rather than the first:
 - **pre-commit** — Biome over the staged files only, and `bun run typecheck` when the commit touches
   `*.ts`/`*.tsx`. `tsc` is a whole-project check by nature: the staged files decide *whether* it
   runs, never *what* it checks. Skipped during a `rebase`, which only replays commits that were
-  already checked; not skipped during a `merge`, where the conflict resolution is new code.
+  already checked; not skipped during a `merge`, where the conflict resolution is new code. A commit
+  that stages Rust also runs `cargo fmt --check` and `cargo clippy` — the same two lines `wasm.yml`
+  runs, so the workflow stops being the first thing to see an unformatted file.
 - **pre-push** — `bun run test`.
 
 Hooks install themselves on `bun install` (`trustedDependencies` in the root `package.json`); there

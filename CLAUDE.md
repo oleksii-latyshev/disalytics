@@ -209,7 +209,9 @@ before opening a PR. Use `handoff` when work has to continue in a new chat.
 
 Lefthook installs itself on `bun install` and runs Biome over the **staged files** plus a
 whole-project `bun run typecheck` pre-commit, and `bun run test` pre-push. `tsc` has no staged-file
-mode, so the staged files decide whether it runs, not what it checks. `LEFTHOOK=0` or
+mode, so the staged files decide whether it runs, not what it checks. Staging Rust adds
+`cargo fmt --check` and `cargo clippy` at the level `wasm.yml` uses, so an unformatted crate no
+longer reaches CI to be told so. `LEFTHOOK=0` or
 `LEFTHOOK_EXCLUDE=<job>` skips deliberately — say so in the PR when you do. Details in
 `CONTRIBUTING.md` §5.
 
