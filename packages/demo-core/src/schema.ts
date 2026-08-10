@@ -3,7 +3,7 @@
  * `${fileHash}:${SCHEMA_VERSION}`, so an entry written by an older shape is a miss rather than
  * something to migrate.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 declare const unit: unique symbol;
 
@@ -202,6 +202,12 @@ export interface PlayerEconomy {
   money: number;
   equipmentValue: number;
   buyType: BuyType;
+  /**
+   * The side the slot held for this round. `PlayerInfo.team` cannot answer it — that one is read at
+   * the end of the match, and the halftime swap moves every player across. `null` for a slot with
+   * no sample at freeze-time end.
+   */
+  team: Team | null;
 }
 
 export interface Round {

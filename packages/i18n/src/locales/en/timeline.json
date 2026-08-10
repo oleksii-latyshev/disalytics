@@ -3,8 +3,13 @@
   "position": "Position in the match",
   "round": "Round",
   "warmup": "Warm-up",
-  "overview": "Round outcomes and event density",
+  "overview": "Round outcomes, event density and the equipment gap",
   "outcomes": "Round outcomes",
+  "economy": {
+    "label": "Equipment gap by round",
+    "lead": "Round {round, number}, {side} carry ${value, number} more equipment",
+    "even": "Round {round, number}, both sides carry equal equipment"
+  },
   "outcome": {
     "bombExploded": "Round {round, number}, {side} win, bomb exploded",
     "bombDefused": "Round {round, number}, {side} win, bomb defused",

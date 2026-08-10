@@ -1066,61 +1066,71 @@
           "buyType": "pistol",
           "equipmentValue": 900,
           "money": 100,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 1250,
           "money": 150,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 800,
           "money": 200,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 900,
           "money": 100,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 400,
           "money": 0,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 8924,
@@ -1136,61 +1146,71 @@
           "buyType": "force-buy",
           "equipmentValue": 3450,
           "money": 400,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2700,
           "money": 1550,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 700,
           "money": 1400,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2750,
           "money": 1750,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 300,
           "money": 2100,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3700,
           "money": 250,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3450,
           "money": 1100,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 600,
           "money": 1450,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 700,
           "money": 1400,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 700,
           "money": 1250,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 12412,
@@ -1206,61 +1226,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5500,
           "money": 1050,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3100,
           "money": 3350,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3950,
           "money": 100,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3950,
           "money": 6100,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4700,
           "money": 50,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4200,
           "money": 1300,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3450,
           "money": 3150,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4100,
           "money": 0,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4300,
           "money": 50,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3900,
           "money": 0,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 19894,
@@ -1276,61 +1306,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5700,
           "money": 7000,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5300,
           "money": 5000,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3650,
           "money": 0,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2950,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3250,
           "money": 50,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2350,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1500,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3500,
           "money": 50,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2450,
           "money": 1150,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2900,
           "money": 350,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 25012,
@@ -1346,61 +1386,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 7050,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5300,
           "money": 6900,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 800,
           "money": 2650,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 6500,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1450,
           "money": 2050,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5200,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2550,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1000,
           "money": 2500,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2300,
           "money": 2900,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 500,
           "money": 3500,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 30296,
@@ -1416,61 +1466,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 10300,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5300,
           "money": 9150,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4100,
           "money": 2150,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 10050,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5200,
           "money": 450,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 8050,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5700,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5950,
           "money": 150,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 1000,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6950,
           "money": 150,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 40009,
@@ -1486,61 +1546,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5000,
           "money": 9050,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 8100,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4250,
           "money": 0,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7650,
           "money": 12500,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4400,
           "money": 150,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 6000,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 4050,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3850,
           "money": 200,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 200,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3950,
           "money": 100,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 44666,
@@ -1556,61 +1626,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5550,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 4900,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7450,
           "money": 0,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 7050,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4400,
           "money": 50,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2500,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 850,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5300,
           "money": 800,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 1000,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 900,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 51998,
@@ -1626,61 +1706,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3150,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2500,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 1050,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2650,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3950,
           "money": 50,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 400,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1450,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 2350,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 150,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7650,
           "money": 50,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 60130,
@@ -1696,61 +1786,71 @@
           "buyType": "semi-buy",
           "equipmentValue": 3900,
           "money": 1950,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 200,
           "money": 5200,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4950,
           "money": 100,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 150,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4300,
           "money": 50,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3500,
           "money": 100,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4200,
           "money": 150,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 250,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 400,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 1350,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 65861,
@@ -1766,61 +1866,71 @@
           "buyType": "eco",
           "equipmentValue": 200,
           "money": 4400,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2650,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 500,
           "money": 1800,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 700,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 600,
           "money": 1450,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1150,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2800,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1000,
           "money": 1850,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 700,
           "money": 1700,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 700,
           "money": 2650,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 70056,
@@ -1836,61 +1946,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5000,
           "money": 2850,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1300,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4550,
           "money": 300,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 1350,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4100,
           "money": 100,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 650,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1750,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4700,
           "money": 0,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4400,
           "money": 50,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 100,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 74837,
@@ -1906,61 +2026,71 @@
           "buyType": "pistol",
           "equipmentValue": 1000,
           "money": 0,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 900,
           "money": 100,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 950,
           "money": 150,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 1000,
           "money": 0,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 800,
           "money": 0,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 1000,
           "money": 0,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 900,
           "money": 300,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "pistol",
           "equipmentValue": 850,
           "money": 150,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 80384,
@@ -1976,61 +2106,71 @@
           "buyType": "eco",
           "equipmentValue": 200,
           "money": 2700,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 300,
           "money": 2200,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3450,
           "money": 450,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 700,
           "money": 1700,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3250,
           "money": 350,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 200,
           "money": 2100,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 500,
           "money": 1600,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3250,
           "money": 1100,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3600,
           "money": 300,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2550,
           "money": 1350,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 84038,
@@ -2046,61 +2186,71 @@
           "buyType": "semi-buy",
           "equipmentValue": 3750,
           "money": 1550,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4700,
           "money": 100,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3350,
           "money": 4700,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4250,
           "money": 50,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3250,
           "money": 4800,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4700,
           "money": 0,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3950,
           "money": 250,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3250,
           "money": 4650,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 3250,
           "money": 3150,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3700,
           "money": 4700,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 89797,
@@ -2116,61 +2266,71 @@
           "buyType": "eco",
           "equipmentValue": 200,
           "money": 3350,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 200,
           "money": 3500,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3050,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1150,
           "money": 2000,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 8250,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1350,
           "money": 1750,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2550,
           "money": 1900,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3600,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1500,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 1300,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 96404,
@@ -2186,61 +2346,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 900,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4800,
           "money": 50,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1700,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 100,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 11200,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5050,
           "money": 700,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 100,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 6150,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 150,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7450,
           "money": 3750,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 106421,
@@ -2256,61 +2426,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5500,
           "money": 3450,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 1400,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 1500,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6900,
           "money": 250,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 1350,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4850,
           "money": 100,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7650,
           "money": 2550,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 3750,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 150,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 950,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 113893,
@@ -2326,61 +2506,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 1300,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 1800,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 300,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7300,
           "money": 2150,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 150,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 850,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6550,
           "money": 150,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6950,
           "money": 800,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1550,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1050,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 121151,
@@ -2396,61 +2586,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5250,
           "money": 50,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 400,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2900,
           "money": 3550,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 400,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 300,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4850,
           "money": 0,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1500,
           "money": 2350,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7250,
           "money": 1150,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3900,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2100,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 129154,
@@ -2466,61 +2666,71 @@
           "buyType": "eco",
           "equipmentValue": 800,
           "money": 2750,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2400,
           "money": 2300,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 4500,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1150,
           "money": 2750,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 150,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1150,
           "money": 2350,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "eco",
           "equipmentValue": 1650,
           "money": 2000,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6950,
           "money": 2500,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2550,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3800,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 133129,
@@ -2536,61 +2746,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 1300,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4050,
           "money": 100,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 8050,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7300,
           "money": 1300,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 3100,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5050,
           "money": 700,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 300,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 5750,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 900,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2450,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 138280,
@@ -2606,61 +2826,71 @@
           "buyType": "full-buy",
           "equipmentValue": 4950,
           "money": 350,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 1300,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6950,
           "money": 0,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6900,
           "money": 250,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4500,
           "money": 200,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4350,
           "money": 50,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 900,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6950,
           "money": 600,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 400,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 50,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 147368,
@@ -2676,61 +2906,71 @@
           "buyType": "full-buy",
           "equipmentValue": 4950,
           "money": 50,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5900,
           "money": 100,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6650,
           "money": 200,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7300,
           "money": 2450,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2250,
           "money": 50,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6300,
           "money": 650,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 2000,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2500,
           "money": 0,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 200,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6750,
           "money": 150,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 154090,
@@ -2746,61 +2986,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5050,
           "money": 5150,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 4800,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5100,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7300,
           "money": 2900,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 5300,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 4750,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 4400,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 5300,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5100,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 3050,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 163252,
@@ -2816,61 +3066,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5450,
           "money": 1900,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 50,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 7750,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6900,
           "money": 250,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 8250,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5050,
           "money": 2400,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 1200,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 3850,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3250,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 4650,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 167411,
@@ -2886,61 +3146,71 @@
           "buyType": "semi-buy",
           "equipmentValue": 4550,
           "money": 550,
-          "slot": 0
+          "slot": 0,
+          "team": "CT"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2750,
           "money": 0,
-          "slot": 1
+          "slot": 1,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 6400,
-          "slot": 2
+          "slot": 2,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2900,
           "money": 150,
-          "slot": 3
+          "slot": 3,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 4900,
           "money": 11500,
-          "slot": 4
+          "slot": 4,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5050,
           "money": 50,
-          "slot": 5
+          "slot": 5,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 4150,
           "money": 50,
-          "slot": 6
+          "slot": 6,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7250,
           "money": 6900,
-          "slot": 7
+          "slot": 7,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 1600,
-          "slot": 8
+          "slot": 8,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 7550,
-          "slot": 9
+          "slot": 9,
+          "team": "T"
         }
       ],
       "endTick": 172249,
@@ -2956,61 +3226,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5100,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5100,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 4400,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 3050,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 4600,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5100,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 5100,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7350,
           "money": 2850,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 4400,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7250,
           "money": 2950,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 180266,
@@ -3026,61 +3306,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 7500,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3450,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 6400,
           "money": 200,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7150,
           "money": 5800,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 1200,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 7100,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 3450,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 50,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 1000,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5200,
           "money": 50,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 188263,
@@ -3096,61 +3386,71 @@
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 8850,
-          "slot": 0
+          "slot": 0,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5300,
           "money": 5600,
-          "slot": 1
+          "slot": 1,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2750,
           "money": 100,
-          "slot": 2
+          "slot": 2,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 7650,
           "money": 8200,
-          "slot": 3
+          "slot": 3,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5800,
           "money": 350,
-          "slot": 4
+          "slot": 4,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5400,
           "money": 9650,
-          "slot": 5
+          "slot": 5,
+          "team": "T"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5100,
           "money": 2350,
-          "slot": 6
+          "slot": 6,
+          "team": "T"
         },
         {
           "buyType": "force-buy",
           "equipmentValue": 2600,
           "money": 100,
-          "slot": 7
+          "slot": 7,
+          "team": "CT"
         },
         {
           "buyType": "semi-buy",
           "equipmentValue": 3650,
           "money": 0,
-          "slot": 8
+          "slot": 8,
+          "team": "CT"
         },
         {
           "buyType": "full-buy",
           "equipmentValue": 5600,
           "money": 0,
-          "slot": 9
+          "slot": 9,
+          "team": "CT"
         }
       ],
       "endTick": 194127,
