@@ -154,6 +154,18 @@ selected player is React state in `features/review`, set from a rail seat** — 
 be the one interaction on this screen a keyboard cannot reach. Read `AGENTS.md` §9 before changing
 any of it.
 
+#112 added what is happening to those people: a `--damage` flash on a token that was just hit, a
+facing needle dropped while its player is blinded, a progress arc for a plant or a defuse, and a 1px
+audibility ring from `speed`. **All four are functions of match time and none of wall time** — that
+is `docs/DESIGN.md` §8's test for what may move while playback runs, and it is why scrubbing
+backwards through a hit shows the flash again. **The rules live in `packages/demo-core`**:
+`helpers/audibility.ts` is the model, `helpers/player-state.ts` is `damageFlashBySlot`,
+`blindedBySlot` and `bombProgressAt`, and both are unit-tested there rather than eyeballed on a
+plate. The two per-slot lookups write into the caller's typed array because they run inside a draw,
+and every event lookup is `lastIndexAtOrBefore` plus a walk backwards bounded by the window rather
+than by the match. The audibility numbers are a named approximation of an unpublished falloff — read
+`AGENTS.md` §9 before changing them.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
