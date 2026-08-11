@@ -86,6 +86,24 @@ canvas repainting at display rate during playback, and a backdrop blur forces th
 re-blur every one of those frames. Translucency alone gives the layering; the blur would cost the
 frame budget in `AGENTS.md` §16 and buy an effect nobody asked for.
 
+**`--ink-dim` may not carry text on glass over the plate — #119.** §12 asks for this case to be
+measured separately, and measured it fails: composited over the eight `blue` plates, `--ink-dim` on
+`--glass-panel` reads **2.82:1** at its worst and is still under 4.5:1 at the 1st percentile on five
+of the eight. The worst ground is `rgb(255 202 61)`, the bombsite marking, which the `blue` generator
+keeps saturated on purpose because it encodes space. `--glass-raised` is no better: **3.64:1**.
+
+So text on a panel that floats over the plate is **`--ink`**, which reads **6.95:1** on that same
+worst pixel. Secondary text there is secondary by size and weight, not by ink level. `--ink-faint` is
+excluded by the same rule and was never eligible — it measures 2.88:1 even on opaque `--surface-1`,
+which is why §12 already confines it to non-body use.
+
+The alpha values above are unchanged, and that is the decision rather than an omission. Lifting
+`--glass-panel` to 0.89 and `--glass-raised` to 0.95 is what it would take for `--ink-dim` to clear
+the floor (4.52:1 and 4.55:1), and it would drop the plate showing through from 28% to 11% and from
+14% to 5% — two tokens that would no longer read as glass, to keep one ink level. Away from the
+plate nothing changes: `--ink-dim` on `--surface-1` measures **5.75:1** and on `--surface-0`
+**6.24:1**.
+
 ### Data colours — semantic only, never decorative
 
 ```css
@@ -506,9 +524,10 @@ Non-negotiable, and never announced in the UI:
 - Fully keyboard operable: the timeline scrubs with arrow keys, `,` / `.` step one tick, space
   toggles playback, `[` / `]` jump between rounds.
 - Visible focus ring on every interactive element — 2px `--focus`, never `outline: none`.
-- Body text meets 4.5:1 contrast. `--ink-dim` on `--surface-1` must be verified, not assumed, and
-  `--ink-dim` on `--glass-panel` over the map must be verified separately — translucency changes the
-  answer.
+- Body text meets 4.5:1 contrast. `--ink-dim` on `--surface-1` is verified at **5.75:1**. `--ink-dim`
+  on glass over the map was verified separately, because translucency changes the answer, and it
+  **fails** — §2 resolves that by ruling `--ink-dim` off glass over the plate rather than by making
+  the glass more opaque.
 - Side identity never relies on hue alone: rail side, token shape and hue, in that order of
   reliability.
 - Every canvas carries a text equivalent. The spine's round outcomes and economy already do; view
