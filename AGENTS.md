@@ -519,6 +519,32 @@ and CSS animations; a JavaScript-driven tween is stopped by not starting one, wh
 `strict` `LazyMotion` in `@disa/ui`'s `MotionProvider` is for — under it only the `m` component
 exists, and `motion.*` throws.
 
+**Where it all sits — #110.** `docs/DESIGN.md` §5's layout: a 56px top bar, two player rails beside a
+stage that takes the rest, and a 96px spine band. Measured at 1280×800 against the Phase 0 fixture,
+the radar goes from **471px to 648px** — the same `min(100cqi,100cqb)` rule, 37% more map, because
+the stage cell finally has the shape the rule assumes. The 205px the bottom slab used to spend on a
+spine canvas, a marker row and a transport row is now 96px of spine alone, and the transport floats
+over the stage instead of taking a row. **The stage cell carries no padding**, which is what makes
+the arithmetic come out: 16px of it on each axis would put the radar back under the 640px the issue
+asked for.
+
+Two things there are easy to undo. The grid areas in `MatchReview` are **written out** rather than
+left to auto-placement, and the rail wrapper is `display: contents` above the breakpoint — that pair
+is what lets one set of rails be two grid columns beside the stage and a single flex strip under it,
+from one piece of DOM. And `--breakpoint-wide` (1100px, in `tokens.css`) is the only breakpoint this
+screen has; §5 fixes the number, so it is a layout fact rather than a device size.
+
+**Which side a slot holds follows the round, not the roster.** `sidesBySlotAtRound` in `demo-core`
+reads it out of `Round.economy`, for the reason #90 put `PlayerEconomy.team` there in the first
+place: `PlayerInfo.team` is the end-of-match roster and names the wrong side for half a match. The
+rails and the radar's tokens both read that one selector, so they cannot disagree — before #110 the
+plate coloured tokens from the roster, and on the fixture that was wrong from round 13 on. It is
+memoised on the round index and read at the 10 Hz readout, never inside a draw.
+
+**Nothing new subscribes to the frame channel.** It is still `RadarView`'s repaint and `MatchSpine`'s
+playhead, the same two as before. What #110 adds is 10 Hz readouts, which are `setInterval` polls of
+`clock.frame` and not subscriptions.
+
 ---
 
 ## 9. Radar Rendering

@@ -15,7 +15,7 @@ interface Props {
 function PointerReadout({ overview, pointer }: Pick<Props, 'overview' | 'pointer'>) {
   if (pointer === null) {
     return (
-      <span className="text-ink-dim">
+      <span>
         <Text path="radar.debug.pointerHint" />
       </span>
     );
@@ -49,24 +49,24 @@ export function RadarDebug({
   const level = levelAt(overview, levelIndex);
 
   return (
-    <div className="flex flex-col gap-3 rounded-float border border-line bg-surface-2 p-4">
+    <div className="flex flex-col gap-3 rounded-float border border-line bg-glass-panel p-4 shadow-raised">
       <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-6 gap-y-1 text-13">
-        <dt className="label-dense">
+        <dt className="label-dense text-ink">
           <Text path="radar.debug.map" />
         </dt>
         <dd>{overview.id}</dd>
 
-        <dt className="label-dense">
+        <dt className="label-dense text-ink">
           <Text path="radar.debug.frame" />
         </dt>
         <dd className="numeric">{frame}</dd>
 
-        <dt className="label-dense">
+        <dt className="label-dense text-ink">
           <Text path="radar.debug.level" />
         </dt>
         <dd>
           {level.image}{' '}
-          <span className="numeric text-ink-dim">
+          <span className="numeric">
             <Text
               path="radar.debug.altitudeBand"
               values={{ min: level.altitudeMin, max: level.altitudeMax }}
@@ -74,7 +74,7 @@ export function RadarDebug({
           </span>
         </dd>
 
-        <dt className="label-dense">
+        <dt className="label-dense text-ink">
           <Text path="radar.debug.pointer" />
         </dt>
         <dd>
@@ -84,7 +84,7 @@ export function RadarDebug({
 
       {overview.levels.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="label-dense">
+          <span className="label-dense text-ink">
             <Text path="radar.debug.levelOverride" />
           </span>
 

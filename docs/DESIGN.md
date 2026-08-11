@@ -97,6 +97,11 @@ worst pixel. Secondary text there is secondary by size and weight, not by ink le
 excluded by the same rule and was never eligible — it measures 2.88:1 even on opaque `--surface-1`,
 which is why §12 already confines it to non-body use.
 
+**`.label-dense` carries no colour, and that is what makes the rule above enforceable — #110.** It
+used to set `--ink-dim` itself, and it is an unlayered class, so a `text-ink` utility beside it lost
+the cascade and the drawer could not have been given the ink level §2 requires. It is type only now;
+every caller names an ink level, and a caller on glass over the plate names `--ink`.
+
 The alpha values above are unchanged, and that is the decision rather than an omission. Lifting
 `--glass-panel` to 0.89 and `--glass-raised` to 0.95 is what it would take for `--ink-dim` to clear
 the floor (4.52:1 and 4.55:1), and it would drop the plate showing through from 28% to 11% and from
@@ -175,8 +180,21 @@ So the accent is fenced, and the fence is the whole of the rule:
   white at 5%. The accent says *this is the thing to press*, not *this is where you are*.
 
 If a screen ever shows an accent control and a CT token close enough to compare, the accent loses and
-the control goes monochrome. That test is worth running with a screenshot before either is called
-done.
+the control goes monochrome.
+
+**That test has been run, and on the review screen the accent loses — #110.** `--accent` against
+`--ct` measures **ΔE2000 6.59**, with **5.84°** of hue between them, against **ΔE2000 50.17** for the
+`--ct`/`--t` pair a reader is actually meant to tell apart. The review screen is the worst case there
+is: a CT glyph in the score, the CT rail's markers and the plate's own CT tokens are all visible at
+once, and the top bar's actions sit 621px from the first of them in the same 56px band. So the top
+bar's controls are `outline` there.
+
+The consequence is worth stating plainly, because it is not a defeat: **the review screen has no
+accent at all.** The accent's homes are the way in, dialogs, menus and the drawer's own controls —
+the surfaces that carry no side data — and §1's "interaction is luminance, not hue" is what carries
+prominence everywhere else. A screen that shows ten player tokens is not one of the accent's homes,
+and no future issue should re-open this by trying a different accent shade: the fence is about a blue
+control next to a blue side, not about this particular blue.
 
 **The playhead is the brightest thing on screen, and nothing else is allowed to be.** This clause
 outranks any wish for a louder chart. It is the only element that says *where you are*, and an
