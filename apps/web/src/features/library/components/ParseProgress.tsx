@@ -1,7 +1,7 @@
 import type { MatchHeader } from '@disa/demo-core';
 import type { ParsePhase } from '@disa/demo-parser';
 import { Text, useT } from '@disa/i18n';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@disa/ui';
 import { DemoFileName } from './DemoFileName';
 
 interface Props {

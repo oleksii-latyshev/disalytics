@@ -1,5 +1,5 @@
 import { Text } from '@disa/i18n';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@disa/ui';
 import { DemoFileName } from './DemoFileName';
 
 interface Props {

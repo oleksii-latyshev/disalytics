@@ -34,7 +34,6 @@ apps/web/src/
     controls/     Playback transport: play/pause, speed, tick stepping.
     settings/     Locale, colour-blind mode, debug/calibration overlay.
   shared/         App-agnostic code any layer may use — nothing here knows about CS2.
-    components/ui/  Vendored shadcn primitives — do not hand-edit style.
     hooks/          Generic React hooks (reduced motion, media query, resize observer).
     lib/            `cn()` and similar tiny utilities.
 ```
@@ -260,8 +259,11 @@ expected; a mis-indexed typed array is not.
 - Props typed inline or with a local `Props` type. No `React.FC`.
 - Component files hold the component. Logic testable without a DOM belongs in `helpers/` or
   `demo-core` and is imported.
-- `shared/components/ui` is vendored shadcn. **Do not hand-edit its styling** — restyle through the
-  token layer in `packages/ui` so the primitives stay upgradeable.
+- Components live in `packages/ui/src/components` and are imported from `@disa/ui` — never from a
+  deep path, `AGENTS.md` §2 rule 13. They started as shadcn copies and are **owned** now, so
+  edit them there; `DESIGN.md` §9 is why. **Colour and radius still come from the token layer**, and
+  a component that hardcodes either is a defect. Size is the exception the ownership buys: `Button`
+  and `Input` carry the two heights `DESIGN.md` §4 allows and no caller sets a height of its own.
 
 ---
 
