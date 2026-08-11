@@ -10,6 +10,13 @@
   --color-ink-dim: #8a96a3;
   --color-ink-faint: #5a646f;
 
+  /* Glass is translucency and nothing else — DESIGN.md §2 forbids `backdrop-filter` here, because
+     the stage under these panels is a canvas repainting at display rate and a backdrop blur would
+     re-blur every one of those frames. */
+  --color-glass-panel: rgb(22 27 33 / 0.72);
+  --color-glass-raised: rgb(31 38 46 / 0.86);
+  --color-glass-edge: rgb(255 255 255 / 0.06);
+
   --color-ct: #4a90d9;
   --color-t: #e0a33e;
   --color-damage: #e5484d;
@@ -24,6 +31,11 @@
   --color-selected: rgb(255 255 255 / 0.1);
   --color-hover: rgb(255 255 255 / 0.05);
   --color-playhead: #ffffff;
+
+  /* The product's own blue, and the one token in this layer that is fenced rather than free:
+     DESIGN.md §2 keeps it off the plate, the rails and the spine, because it sits a few degrees
+     from --color-ct and a blue control beside a blue player token reads as "Counter-Terrorist". */
+  --color-accent: #65a1f8;
 
   --font-ui: "Wix Madefor Display", system-ui, sans-serif;
   --font-narrow: "Roboto Condensed", "Wix Madefor Display", system-ui, sans-serif;
@@ -40,7 +52,11 @@
   --leading-dense: 1.3;
   --leading-prose: 1.5;
 
-  --radius-instrument: 4px;
+  /* Three steps, and a component picks by what it sits on — DESIGN.md §4: on the stage → float,
+     in a panel → card, inside a row → chip. */
+  --radius-chip: 4px;
+  --radius-card: 8px;
+  --radius-float: 12px;
 
   --spacing: 4px;
 

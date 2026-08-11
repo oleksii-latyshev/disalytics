@@ -123,7 +123,7 @@ export function MatchSpine({ demo, transport, frame }: Props) {
   return (
     <div
       ref={stripRef}
-      className="relative h-24 overflow-hidden rounded-instrument border border-line bg-surface-0 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus"
+      className="relative h-24 overflow-hidden rounded-float border border-line bg-surface-0 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus"
     >
       <canvas
         ref={canvasRef}

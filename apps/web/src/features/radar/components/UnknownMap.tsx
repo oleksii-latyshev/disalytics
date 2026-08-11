@@ -6,7 +6,7 @@ interface Props {
 
 export function UnknownMap({ map }: Props) {
   return (
-    <div className="flex flex-col gap-2 rounded-instrument border border-line border-dashed p-6">
+    <div className="flex flex-col gap-2 rounded-float border border-line border-dashed p-6">
       <p className="text-14">
         <Text path="radar.unknownMap.title" />
       </p>
