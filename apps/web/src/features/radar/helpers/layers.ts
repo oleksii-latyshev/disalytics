@@ -1,5 +1,4 @@
 import {
-  ANGLE_SCALE,
   type Clock,
   FLAG_ALIVE,
   FLAG_SCOPED,
@@ -19,14 +18,7 @@ import {
   labelPlacer,
 } from './labels';
 import { levelIndexAt } from './levels';
-
-const TOKEN_RADIUS_PX = 5;
-const TOKEN_OUTLINE_PX = 1.5;
-
-const NEEDLE_WIDTH_PX = 2;
-const NEEDLE_LENGTH_PX = 13;
-/** Scoped in, a player is looking much further than they are turning — DESIGN.md §7. */
-const NEEDLE_SCOPED_LENGTH_PX = 22;
+import { drawNeedle, drawToken, screenAngle, TOKEN_RADIUS_PX } from './tokens';
 
 const VISION_ALPHA = 0.15;
 const VISION_FADE_UNITS = 1000;
@@ -40,39 +32,6 @@ export function radarBackdrop(image: HTMLImageElement): Layer {
   return (context, size) => {
     context.drawImage(image, 0, 0, size.width, size.height);
   };
-}
-
-/**
- * Side identity carries in shape as well as colour — `DESIGN.md` §2 rules out relying on hue,
- * which a colour-blind reader may not have.
- */
-function traceToken(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  team: Team,
-  radius: number,
-): void {
-  context.beginPath();
-
-  if (team === 'CT') {
-    context.arc(x, y, radius, 0, 2 * Math.PI);
-    return;
-  }
-
-  context.moveTo(x, y - radius);
-  context.lineTo(x + radius, y);
-  context.lineTo(x, y + radius);
-  context.lineTo(x - radius, y);
-  context.closePath();
-}
-
-/**
- * Where a player is looking, on the plate. World yaw counts anticlockwise from +X while radar rows
- * count downward — the same inversion `radarY` carries — so the screen angle is its negative.
- */
-function screenAngle(track: TickTrack, sample: number): number {
-  return (-sampleAt(track.yaw, sample) / ANGLE_SCALE) * (Math.PI / 180);
 }
 
 export interface PlayerTokensOptions {
@@ -178,27 +137,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     context.restore();
   }
 
-  function drawNeedle(
-    context: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    angle: number,
-    isScoped: boolean,
-    color: string,
-  ): void {
-    const length = isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX;
-    const dx = Math.cos(angle);
-    const dy = Math.sin(angle);
-
-    context.lineWidth = NEEDLE_WIDTH_PX;
-    context.strokeStyle = color;
-
-    context.beginPath();
-    context.moveTo(x + dx * TOKEN_RADIUS_PX, y + dy * TOKEN_RADIUS_PX);
-    context.lineTo(x + dx * length, y + dy * length);
-    context.stroke();
-  }
-
   function drawLabels(
     context: CanvasRenderingContext2D,
     size: CanvasSize,
@@ -271,13 +209,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
         );
       }
 
-      context.lineWidth = TOKEN_OUTLINE_PX;
-      context.strokeStyle = colors.outline;
-      context.fillStyle = isAlive ? colors.team[team] : colors.dead;
-
-      traceToken(context, x, y, team, TOKEN_RADIUS_PX);
-      context.fill();
-      context.stroke();
+      drawToken(context, x, y, team, isAlive ? colors.team[team] : colors.dead, colors.outline);
     }
   }
 
