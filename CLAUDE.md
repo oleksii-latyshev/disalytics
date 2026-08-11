@@ -142,6 +142,18 @@ to animate. Animate UI's registry is configured in `packages/ui/components.json`
 impossible here and that is what makes the shadcn CLI resolve inside `packages/ui`. Read `AGENTS.md`
 §8 before changing any of it.
 
+#111 put people on the plate: a name chip per live player, a facing needle from `yaw` that
+`FLAG_SCOPED` lengthens, a vision wedge for the one selected player, and a dead player drawn at
+`--ink-faint` instead of vanishing. Four things are load-bearing. **Nothing on the way to the canvas
+allocates** — the layer owns its scratch, chip widths are measured once per demo, and the vision
+gradient is built once around the origin and painted under a `translate`. **`useFontReady` gates the
+labels on purpose**: a canvas never requests a webfont itself, and a width measured against the
+fallback face would be wrong for the whole match. **`labelPlacer` moves the label, never the token**,
+and resets per frame so placement is a function of the frame rather than of history. And **the
+selected player is React state in `features/review`, set from a rail seat** — a canvas hit test would
+be the one interaction on this screen a keyboard cannot reach. Read `AGENTS.md` §9 before changing
+any of it.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

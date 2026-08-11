@@ -1,4 +1,4 @@
-import type { ParsedDemo } from '@disa/demo-core';
+import type { ParsedDemo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
 import type { Transport } from '@/core/playback';
@@ -8,9 +8,10 @@ import { UnknownMap } from './UnknownMap';
 interface Props {
   demo: ParsedDemo;
   transport: Transport;
+  selectedSlot: PlayerSlot | null;
 }
 
-export function MatchRadar({ demo, transport }: Props) {
+export function MatchRadar({ demo, transport, selectedSlot }: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -21,7 +22,12 @@ export function MatchRadar({ demo, transport }: Props) {
       {overview === undefined ? (
         <UnknownMap map={demo.header.map} />
       ) : (
-        <RadarView demo={demo} overview={overview} transport={transport} />
+        <RadarView
+          demo={demo}
+          overview={overview}
+          transport={transport}
+          selectedSlot={selectedSlot}
+        />
       )}
     </section>
   );
