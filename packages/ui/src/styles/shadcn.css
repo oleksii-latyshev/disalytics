@@ -2,11 +2,11 @@
 
    shadcn primitives read a fixed set of variable names. Rather than rename our tokens to match
    them — which would lose the meaning DESIGN.md §2 gives to surfaces and ink — every shadcn
-   variable is defined here in terms of ours. Our tokens stay the source of truth, the vendored
-   primitives stay untouched and upgradeable, and `shadcn add` is safe to run at any time.
+   variable is defined here in terms of ours. Our tokens stay the source of truth, and a freshly
+   added shadcn component inherits the palette without being touched.
 
-   CODE_REQUIREMENTS.md §8 requires exactly this: restyle through the token layer, never by editing
-   a vendored file. */
+   CODE_REQUIREMENTS.md §8: colour and radius come from here. Size does not — the components are
+   owned rather than tracked upstream, so their heights live in the size variants themselves. */
 
 :root {
   --background: var(--color-surface-0);

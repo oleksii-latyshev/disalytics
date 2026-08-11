@@ -50,7 +50,10 @@
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
+  /* The only two control heights in the product — DESIGN.md §4. `--height-control-lg` is the
+     primary transport control and nothing else. */
   --height-control: 28px;
+  --height-control-lg: 36px;
 
   /* Elevation is a hairline plus an inner top highlight, never a drop shadow — DESIGN.md §4. */
   --shadow-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.04);

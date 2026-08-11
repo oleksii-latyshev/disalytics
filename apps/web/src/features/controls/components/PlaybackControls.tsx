@@ -1,5 +1,6 @@
 import { lastFrame, secondsAtFrame, type TickTrack } from '@disa/demo-core';
 import { Text, useLocale } from '@disa/i18n';
+import { Button } from '@disa/ui';
 import { useMemo } from 'react';
 import {
   createClockFormat,
@@ -8,7 +9,6 @@ import {
   useFrameReadout,
   useIsPlaying,
 } from '@/core/playback';
-import { Button } from '@/shared/components/ui/button';
 import { SpeedControl } from './SpeedControl';
 import { StepButton } from './StepButton';
 
@@ -29,7 +29,7 @@ export function PlaybackControls({ track, transport }: Props) {
       <div className="flex items-center gap-1">
         <StepButton transport={transport} samples={-1} />
 
-        <Button type="button" size="sm" onClick={transport.toggle}>
+        <Button type="button" size="lg" onClick={transport.toggle}>
           <Text path={isPlaying ? 'controls.pause' : 'controls.play'} />
         </Button>
 

@@ -1,6 +1,6 @@
 import { useT } from '@disa/i18n';
+import { Button } from '@disa/ui';
 import type { Transport } from '@/core/playback';
-import { Button } from '@/shared/components/ui/button';
 
 interface Props {
   transport: Transport;
@@ -15,7 +15,7 @@ export function StepButton({ transport, samples }: Props) {
     <Button
       type="button"
       variant="outline"
-      size="icon-sm"
+      size="icon"
       aria-label={t(isBack ? 'controls.stepBack' : 'controls.stepForward')}
       onClick={() => transport.step(samples)}
     >
