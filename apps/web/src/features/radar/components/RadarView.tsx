@@ -86,7 +86,7 @@ export function RadarView({ demo, overview, transport }: Props) {
           ref={canvasRef}
           role="img"
           aria-label={t('radar.label', { map: overview.id })}
-          className="aspect-square w-[min(100cqi,100cqb)] rounded-instrument bg-surface-0"
+          className="aspect-square w-[min(100cqi,100cqb)] rounded-float bg-surface-0"
           onPointerMove={handlePointerMove}
           onPointerLeave={() => setPointer(null)}
         />

@@ -36,7 +36,7 @@ export function RoundPicker({ demo, transport, frame }: Props) {
       <select
         value={roundIndex}
         onChange={handleChange}
-        className="numeric h-control rounded-instrument border border-line bg-surface-2 px-2 text-13"
+        className="numeric h-control rounded-card border border-line bg-surface-2 px-2 text-13"
       >
         {roundIndex === WARMUP && <option value={WARMUP}>{t('timeline.warmup')}</option>}
 

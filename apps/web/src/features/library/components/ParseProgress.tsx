@@ -16,7 +16,7 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
   const t = useT();
 
   return (
-    <section className="flex flex-col gap-4 rounded-instrument border border-line bg-surface-1 p-6">
+    <section className="flex flex-col gap-4 rounded-float border border-line bg-surface-1 p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h2 className="font-ui text-20 leading-dense">
           <Text path="library.progress.title" />
@@ -34,7 +34,7 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="h-1 overflow-hidden rounded-instrument bg-surface-2"
+        className="h-1 overflow-hidden rounded-chip bg-surface-2"
       >
         {/* A transform rather than a width: the bar advances while the worker holds the demo, and
             AGENTS.md §17.1 keeps everything but transform and opacity off the main thread. */}
