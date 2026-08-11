@@ -12,7 +12,13 @@
 
   /* Glass is translucency and nothing else — DESIGN.md §2 forbids `backdrop-filter` here, because
      the stage under these panels is a canvas repainting at display rate and a backdrop blur would
-     re-blur every one of those frames. */
+     re-blur every one of those frames.
+
+     These alphas are load-bearing in a way that is easy to undo: over the radar plate they carry
+     `--ink-dim` at 2.82:1 and 3.64:1, under the 4.5:1 floor. §2 answers that by keeping text on
+     glass over the plate at `--ink`, *not* by raising the alpha — raising it to the 0.89 and 0.95
+     the floor would need is what stops these reading as glass at all. Text colour on such a panel
+     is the thing to check, never these numbers. */
   --color-glass-panel: rgb(22 27 33 / 0.72);
   --color-glass-raised: rgb(31 38 46 / 0.86);
   --color-glass-edge: rgb(255 255 255 / 0.06);
