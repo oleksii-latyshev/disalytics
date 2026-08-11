@@ -504,6 +504,21 @@ side ahead in 15 of the 30 rounds. Carrying it took `SCHEMA_VERSION` to 3.
 tall, and the economy chart starts where it ends. Both live in `features/timeline/helpers/spine.ts`
 and a change to either has to be checked on the canvas and in the DOM.
 
+**What keeps it still — #108.** §2 rule 9 is enforced rather than trusted. `bindPlayingFlag` mirrors
+play and pause onto `data-playing` on the document element, and one rule in
+`packages/ui/src/styles/motion.css` takes every transition and animation beneath it to zero. It
+listens on the **transport** channel, so the attribute changes when the reader presses play and not
+once per animation frame, and it is bound inside `useTransport` rather than by a screen — a rule a
+screen has to remember to mount is a rule that gets forgotten. `PLAYING_ATTRIBUTE` is the third
+number-with-two-readers in the codebase, and its other reader is a stylesheet that cannot import it.
+
+The rule is written with `:where()` so it carries no specificity, which is what lets the
+`prefers-reduced-motion` reset below it still win: two zero-specificity `!important` declarations are
+decided by source order, and reduced motion is the one a reader asked for. It stops CSS transitions
+and CSS animations; a JavaScript-driven tween is stopped by not starting one, which is what the
+`strict` `LazyMotion` in `@disa/ui`'s `MotionProvider` is for — under it only the `m` component
+exists, and `motion.*` throws.
+
 ---
 
 ## 9. Radar Rendering
