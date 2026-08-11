@@ -18,7 +18,7 @@ export function OpenDemo({ onFile }: Props) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-4 rounded-instrument border border-dashed bg-surface-1 px-8 py-12 text-center',
+        'flex flex-col items-center gap-4 rounded-float border border-dashed bg-surface-1 px-8 py-12 text-center',
         isDraggedOver ? 'border-focus' : 'border-line',
       )}
     >
