@@ -8,12 +8,18 @@
     "./styles": "./src/styles/index.css",
     "./lib/utils": "./src/lib/utils.ts"
   },
+  "imports": {
+    "#components/*": "./src/components/*",
+    "#hooks/*": "./src/hooks/*",
+    "#lib/*": "./src/lib/*"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "motion": "^13.1.0",
     "radix-ui": "^1.6.7",
     "react": "^19.2.0",
     "tailwind-merge": "^3.6.0"

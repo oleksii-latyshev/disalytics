@@ -11,11 +11,14 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "./src/components",
-    "ui": "./src/components",
-    "utils": "./src/lib/utils",
-    "lib": "./src/lib",
-    "hooks": "./src/hooks"
+    "components": "#components",
+    "ui": "#components",
+    "utils": "#lib/utils",
+    "lib": "#lib",
+    "hooks": "#hooks"
   },
-  "iconLibrary": "lucide"
+  "iconLibrary": "lucide",
+  "registries": {
+    "@animate-ui": "https://animate-ui.com/r/{name}.json"
+  }
 }
