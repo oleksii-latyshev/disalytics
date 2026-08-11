@@ -1,4 +1,9 @@
-import { type ParsedDemo, roundIndexAtFrame, sidesBySlotAtRound } from '@disa/demo-core';
+import {
+  type ParsedDemo,
+  type PlayerSlot,
+  roundIndexAtFrame,
+  sidesBySlotAtRound,
+} from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import {
   DEFAULT_RADAR_THEME,
@@ -11,19 +16,25 @@ import { Button } from '@disa/ui';
 import { type PointerEvent, useMemo, useState } from 'react';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
+import { useFontReady } from '@/shared/hooks';
 import { readRadarColors } from '../helpers/colors';
+import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
 import { useRadarImage } from '../hooks/use-radar-image';
 import { RadarDebug } from './RadarDebug';
 
+/** Held outside the component so an unmeasurable font does not remount the layer every render. */
+const NO_LABELS: readonly string[] = [];
+
 interface Props {
   demo: ParsedDemo;
   overview: MapOverview;
   transport: Transport;
+  selectedSlot: PlayerSlot | null;
 }
 
-export function RadarView({ demo, overview, transport }: Props) {
+export function RadarView({ demo, overview, transport, selectedSlot }: Props) {
   const t = useT();
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -42,6 +53,16 @@ export function RadarView({ demo, overview, transport }: Props) {
   const roundIndex = roundIndexAtFrame(demo, frame);
   const teamBySlot = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
   const colors = useMemo(readRadarColors, []);
+  const labelStyle = useMemo(readLabelStyle, []);
+
+  // Chip widths are measured once per layer, so a label drawn before its webfont arrives would keep
+  // the fallback's width for the whole demo. Waiting costs nothing: by the time a match is open the
+  // rails have already asked for the same face.
+  const isLabelFontReady = useFontReady(labelStyle.font);
+  const labelBySlot = useMemo(
+    () => (isLabelFontReady ? labelsBySlot(demo.header.players, demo.track.slotCount) : NO_LABELS),
+    [demo.header.players, demo.track.slotCount, isLabelFontReady],
+  );
 
   // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
   // the clock moves. The clock itself is read inside the layer, once per animation frame.
@@ -52,11 +73,25 @@ export function RadarView({ demo, overview, transport }: Props) {
       overview,
       levelIndex,
       teamBySlot,
+      labelBySlot,
+      selectedSlot,
       colors,
+      labelStyle,
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image), tokens] : [tokens];
-  }, [demo.track, transport, overview, levelIndex, teamBySlot, colors, image]);
+  }, [
+    demo.track,
+    transport,
+    overview,
+    levelIndex,
+    teamBySlot,
+    labelBySlot,
+    selectedSlot,
+    colors,
+    labelStyle,
+    image,
+  ]);
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
   useFrameSink(transport, repaint);

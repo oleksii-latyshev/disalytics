@@ -1,4 +1,4 @@
-import type { PlayerInfo, Team } from '@disa/demo-core';
+import type { PlayerInfo, PlayerSlot, Team } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 
 /** DESIGN.md §5 — a side is five rows, and an absent player leaves the row rather than the rail. */
@@ -12,6 +12,19 @@ interface Seat {
 interface Props {
   side: Team;
   players: readonly PlayerInfo[];
+  selectedSlot: PlayerSlot | null;
+  onSelect: (slot: PlayerSlot) => void;
+}
+
+const SEAT_CLASS = 'flex min-w-0 flex-1 items-center gap-2 rounded-card px-2 py-1.5 text-left';
+
+function SideMark({ side }: { side: Team }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`h-4 w-0.5 shrink-0 rounded-chip ${side === 'CT' ? 'bg-ct' : 'bg-t'}`}
+    />
+  );
 }
 
 function seatsFor(side: Team, players: readonly PlayerInfo[]): readonly Seat[] {
@@ -35,8 +48,11 @@ function seatsFor(side: Team, players: readonly PlayerInfo[]): readonly Seat[] {
  *
  * Below the `wide` breakpoint both rails fold into one horizontal strip above the spine — §5 — so
  * every axis here flips rather than being written out twice.
+ *
+ * A seat is also how a player is picked out on the plate. Selection is luminance and never hue —
+ * DESIGN.md §2 — so a chosen seat is `--selected` over the same fill, not a tinted one.
  */
-export function PlayerRail({ side, players }: Props) {
+export function PlayerRail({ side, players, selectedSlot, onSelect }: Props) {
   const t = useT();
 
   return (
@@ -52,20 +68,27 @@ export function PlayerRail({ side, players }: Props) {
           <li
             key={key}
             aria-hidden={player === undefined}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-card bg-surface-2 px-2 py-1.5 wide:flex-none"
+            className="flex min-w-0 flex-1 wide:flex-none"
           >
-            <span
-              aria-hidden="true"
-              className={`h-4 w-0.5 shrink-0 rounded-chip ${side === 'CT' ? 'bg-ct' : 'bg-t'}`}
-            />
-
             {player === undefined ? (
-              <span className="text-13 text-ink-faint">—</span>
-            ) : (
-              // Truncation is the last resort §11 allows, and it carries the full name with it.
-              <span className="truncate text-13" title={player.name}>
-                {player.name}
+              <span className={`${SEAT_CLASS} bg-surface-2`}>
+                <SideMark side={side} />
+                <span className="text-13 text-ink-faint">—</span>
               </span>
+            ) : (
+              <button
+                type="button"
+                aria-pressed={selectedSlot === player.slot}
+                onClick={() => onSelect(player.slot)}
+                className={`${SEAT_CLASS} ${selectedSlot === player.slot ? 'bg-selected' : 'bg-surface-2 hover:bg-hover'}`}
+              >
+                <SideMark side={side} />
+
+                {/* Truncation is the last resort §11 allows, and it carries the full name with it. */}
+                <span className="truncate text-13" title={player.name}>
+                  {player.name}
+                </span>
+              </button>
             )}
           </li>
         ))}

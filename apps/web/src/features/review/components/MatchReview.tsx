@@ -1,5 +1,6 @@
 import {
   type ParsedDemo,
+  type PlayerSlot,
   playersOnSide,
   roundIndexAtFrame,
   roundOpeningFrame,
@@ -27,6 +28,15 @@ interface Props {
 export function MatchReview({ demo, fileName, cache, onClose }: Props) {
   const transport = useTransport(demo);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+
+  // Discrete state, so it lives in React rather than on the clock — AGENTS.md §8. The rails are
+  // where it is set: a canvas hit test would put the one interaction on the screen that a keyboard
+  // cannot reach, which DESIGN.md §12 rules out.
+  const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
+
+  const toggleSelected = useCallback((slot: PlayerSlot) => {
+    setSelectedSlot((current) => (current === slot ? null : slot));
+  }, []);
 
   // Which side a slot holds changes at halftime, so the rails follow the round rather than the
   // end-of-match roster — and off the 10 Hz readout, because a roster is text.
@@ -77,16 +87,21 @@ export function MatchReview({ demo, fileName, cache, onClose }: Props) {
 
       <div className="flex gap-px [grid-area:3/1/4/-1] wide:contents">
         <div className="flex min-w-0 flex-1 wide:[grid-area:2/1/3/2]">
-          <PlayerRail side="CT" players={ct} />
+          <PlayerRail
+            side="CT"
+            players={ct}
+            selectedSlot={selectedSlot}
+            onSelect={toggleSelected}
+          />
         </div>
 
         <div className="flex min-w-0 flex-1 wide:[grid-area:2/3/3/4]">
-          <PlayerRail side="T" players={t} />
+          <PlayerRail side="T" players={t} selectedSlot={selectedSlot} onSelect={toggleSelected} />
         </div>
       </div>
 
       <div className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/-1] wide:[grid-area:2/2/3/3]">
-        <MatchRadar demo={demo} transport={transport} />
+        <MatchRadar demo={demo} transport={transport} selectedSlot={selectedSlot} />
         <FloatingTransport demo={demo} transport={transport} />
       </div>
 
