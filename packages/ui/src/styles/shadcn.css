@@ -30,11 +30,9 @@
   --muted: var(--color-surface-2);
   --muted-foreground: var(--color-ink-dim);
 
-  /* shadcn's `--accent` is a subtle hover surface, and that name now belongs to the product's blue
-     in DESIGN.md §2. The bridge is dropped rather than renamed: §2 already says interaction is
-     luminance and not hue, so `--color-hover` is what a shadcn hover surface should have been
-     reading all along. A component copied in later that reaches for `bg-accent` is asking for the
-     accent, and §2's fence decides whether it may have it. */
+  /* There is deliberately no `--accent` bridge. shadcn's accent is a subtle hover surface, and
+     DESIGN.md §2 gives that name to the product's blue, so `bg-accent` now resolves to the accent
+     and §2's fence decides whether a component may have it. A hover surface is `--color-hover`. */
 
   --destructive: var(--color-damage);
   --destructive-foreground: var(--color-ink);
