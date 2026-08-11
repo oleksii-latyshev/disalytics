@@ -28,13 +28,15 @@ pre {
   font-feature-settings: "tnum" 1;
 }
 
+/* Type only, no colour: a panel floating over the radar plate has to carry its labels at `--ink`
+   rather than `--ink-dim` — DESIGN.md §2 — and this class is unlayered, so a `text-ink` utility
+   next to it would lose. The ink level is the caller's, and every caller states one. */
 .label-dense {
   font-family: var(--font-narrow);
   font-size: var(--text-11);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-dim);
 }
 
 :focus-visible {

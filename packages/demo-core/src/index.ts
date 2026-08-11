@@ -5,11 +5,13 @@ export {
   frameForTick,
   lastFrame,
   openingFrame,
+  playersOnSide,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
   sideScoreAtFrame,
+  sidesBySlotAtRound,
   tickAtFrame,
 } from './helpers/selectors';
 export type { LocalizedMessage } from './message';

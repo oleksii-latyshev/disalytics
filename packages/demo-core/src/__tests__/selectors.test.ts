@@ -3,14 +3,23 @@ import {
   frameForTick,
   lastFrame,
   openingFrame,
+  playersOnSide,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
   sideScoreAtFrame,
+  sidesBySlotAtRound,
   tickAtFrame,
 } from '../helpers/selectors';
-import { asFrame, asPlayerSlot, asTick, type ParsedDemo, type Round } from '../schema';
+import {
+  asFrame,
+  asPlayerSlot,
+  asTick,
+  type ParsedDemo,
+  type PlayerInfo,
+  type Round,
+} from '../schema';
 import { atFrame, newEvents, newTrack } from './helpers';
 
 const header = { map: 'de_dust2', tickRate: 64, players: [] };
@@ -246,5 +255,76 @@ describe('sideScoreAtFrame', () => {
     const empty: ParsedDemo = { header, track: newTrack(), events: newEvents() };
 
     expect(sideScoreAtFrame(empty, 4)).toEqual({ CT: 0, T: 0 });
+  });
+});
+
+describe('sidesBySlotAtRound', () => {
+  const players: PlayerInfo[] = [
+    { slot: asPlayerSlot(0), steamId: '1', name: 'one', team: 'T' },
+    { slot: asPlayerSlot(1), steamId: '2', name: 'two', team: 'CT' },
+  ];
+
+  function newDemo(rounds: readonly Round[]): ParsedDemo {
+    return {
+      header: { ...header, players },
+      track: newTrack(),
+      events: { ...newEvents(), rounds },
+    };
+  }
+
+  const firstHalf = newRound({
+    number: 1,
+    economy: [
+      { slot: asPlayerSlot(0), money: 800, equipmentValue: 200, buyType: 'pistol', team: 'CT' },
+      { slot: asPlayerSlot(1), money: 800, equipmentValue: 200, buyType: 'pistol', team: 'T' },
+    ],
+  });
+
+  it('reads the side out of the round rather than out of the end-of-match roster', () => {
+    const sides = sidesBySlotAtRound(newDemo([firstHalf]), 0);
+
+    expect(sides[0]).toBe('CT');
+    expect(sides[1]).toBe('T');
+  });
+
+  it('answers warmup with the opening round, which no round covers', () => {
+    const sides = sidesBySlotAtRound(newDemo([firstHalf]), undefined);
+
+    expect(sides[0]).toBe('CT');
+  });
+
+  it('falls back to the roster for a slot the round has no side for', () => {
+    const partial = newRound({
+      number: 2,
+      economy: [{ slot: asPlayerSlot(0), money: 0, equipmentValue: 0, buyType: 'eco', team: null }],
+    });
+
+    const sides = sidesBySlotAtRound(newDemo([partial]), 0);
+
+    expect(sides[0]).toBe('T');
+    expect(sides[1]).toBe('CT');
+  });
+
+  it('falls back to the roster for a match with no rounds at all', () => {
+    expect(sidesBySlotAtRound(newDemo([]), 0)).toEqual(['T', 'CT']);
+  });
+});
+
+describe('playersOnSide', () => {
+  const players: PlayerInfo[] = [
+    { slot: asPlayerSlot(2), steamId: '3', name: 'three', team: 'T' },
+    { slot: asPlayerSlot(0), steamId: '1', name: 'one', team: 'T' },
+    { slot: asPlayerSlot(1), steamId: '2', name: 'two', team: 'CT' },
+  ];
+
+  it('keeps only the side asked for, in slot order', () => {
+    const sides = ['T', 'CT', 'T'] as const;
+
+    expect(playersOnSide(players, sides, 'T').map((player) => player.slot)).toEqual([0, 2]);
+    expect(playersOnSide(players, sides, 'CT').map((player) => player.slot)).toEqual([1]);
+  });
+
+  it('leaves out a slot no source named a side for', () => {
+    expect(playersOnSide(players, [], 'T')).toEqual([]);
   });
 });

@@ -3,5 +3,6 @@
   "score": "Score",
   "roundOfTotal": "Round {current, number} of {total, number}",
   "warmup": "Warm-up",
-  "close": "Open another demo"
+  "close": "Open another demo",
+  "rail": "{side} players"
 }

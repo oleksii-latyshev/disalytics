@@ -3,6 +3,7 @@ import {
   asTick,
   type Frame,
   type ParsedDemo,
+  type PlayerInfo,
   type Round,
   type Team,
   type Tick,
@@ -85,6 +86,45 @@ export function sideScoreAtFrame(demo: ParsedDemo, frame: number): SideScore {
   }
 
   return score;
+}
+
+/**
+ * The side each slot held in a round, indexed by slot.
+ *
+ * `PlayerInfo.team` cannot answer this: it is read at the end of the match, and the halftime swap
+ * moves every player across, so it names the wrong side for half the rounds. The round's economy is
+ * read at freeze-time end and carries the side the slot held then — the same reasoning that put
+ * `PlayerEconomy.team` in the schema.
+ *
+ * `roundIndex` is `undefined` during warmup, which no round covers; the opening round's sides are
+ * the closest true answer there. A slot the round has no entry for falls back to `PlayerInfo.team`,
+ * and `undefined` means no source named a side at all.
+ */
+export function sidesBySlotAtRound(
+  demo: ParsedDemo,
+  roundIndex: number | undefined,
+): readonly (Team | undefined)[] {
+  const sides: (Team | undefined)[] = [];
+
+  for (const player of demo.header.players) sides[player.slot] = player.team;
+
+  const round = demo.events.rounds.at(roundIndex ?? 0);
+  if (round === undefined) return sides;
+
+  for (const slot of round.economy) {
+    if (slot.team !== null) sides[slot.slot] = slot.team;
+  }
+
+  return sides;
+}
+
+/** The roster of a side, in slot order, so a rail is not re-sorted on every readout. */
+export function playersOnSide(
+  players: readonly PlayerInfo[],
+  sides: readonly (Team | undefined)[],
+  side: Team,
+): readonly PlayerInfo[] {
+  return players.filter((player) => sides[player.slot] === side).sort((a, b) => a.slot - b.slot);
 }
 
 /**

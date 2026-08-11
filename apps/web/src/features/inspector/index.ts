@@ -1,1 +1,1 @@
-export { InspectorPanel } from './components/InspectorPanel';
+export { InspectorDrawer } from './components/InspectorDrawer';

@@ -66,6 +66,11 @@
 
   --spacing: 4px;
 
+  /* The width the two player rails fit beside the stage at — DESIGN.md §5. Below it they collapse
+     into one strip above the spine, so this is a layout fact rather than a device size, and it is
+     the only breakpoint the review screen has. */
+  --breakpoint-wide: 1100px;
+
   --duration-micro: 120ms;
   --duration-base: 200ms;
   --duration-panel: 320ms;
