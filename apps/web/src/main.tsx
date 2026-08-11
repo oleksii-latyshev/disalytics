@@ -1,4 +1,5 @@
 import { I18nProvider, loadInitialLocale } from '@disa/i18n';
+import { MotionProvider } from '@disa/ui';
 import { StrictMode } from 'react';
 import './styles.css';
 import { createRoot } from 'react-dom/client';
@@ -15,7 +16,9 @@ const start = async () => {
   createRoot(container).render(
     <StrictMode>
       <I18nProvider locale={locale} messages={messages}>
-        <App />
+        <MotionProvider>
+          <App />
+        </MotionProvider>
       </I18nProvider>
     </StrictMode>,
   );
