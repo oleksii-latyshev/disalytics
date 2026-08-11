@@ -30,8 +30,11 @@
   --muted: var(--color-surface-2);
   --muted-foreground: var(--color-ink-dim);
 
-  --accent: var(--color-surface-2);
-  --accent-foreground: var(--color-ink);
+  /* shadcn's `--accent` is a subtle hover surface, and that name now belongs to the product's blue
+     in DESIGN.md §2. The bridge is dropped rather than renamed: §2 already says interaction is
+     luminance and not hue, so `--color-hover` is what a shadcn hover surface should have been
+     reading all along. A component copied in later that reaches for `bg-accent` is asking for the
+     accent, and §2's fence decides whether it may have it. */
 
   --destructive: var(--color-damage);
   --destructive-foreground: var(--color-ink);
@@ -45,9 +48,6 @@
   --chart-3: var(--color-damage);
   --chart-4: var(--color-nade-he);
   --chart-5: var(--color-objective);
-
-  /* 4px, not shadcn's 0.5rem — DESIGN.md §4 reads soft-cornered defaults as generic. */
-  --radius: var(--radius-instrument);
 }
 
 @theme inline {
@@ -63,8 +63,6 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -76,8 +74,11 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --radius-sm: var(--radius);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
+  /* shadcn primitives select a radius by four names; DESIGN.md §4 has three steps and nothing
+     above 12px, so the largest two collapse. A component copied in later lands inside the scale
+     without being edited. */
+  --radius-sm: var(--radius-chip);
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-float);
+  --radius-xl: var(--radius-float);
 }
