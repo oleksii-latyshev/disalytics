@@ -1,3 +1,23 @@
+/* Stillness during playback — AGENTS.md §2 rule 9, DESIGN.md §8. The transport writes
+   `data-playing` on the document element (`PLAYING_ATTRIBUTE` in
+   `apps/web/src/core/playback/helpers/playing-flag.ts`, the other reader of this string), and this
+   rule takes the whole subtree still while the match runs. Enforcement, not a paragraph asking
+   people to remember.
+
+   `:where()` keeps the selector at zero specificity on purpose, so the reduced-motion reset below
+   still wins where both apply — source order decides between two zero-specificity `!important`
+   declarations, and reduced motion is the one a reader asked for. */
+:where([data-playing]),
+:where([data-playing]) *,
+:where([data-playing]) *::before,
+:where([data-playing]) *::after {
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-delay: 0s !important;
+  transition-duration: 0s !important;
+}
+
 /* The reduced-motion reset, kept in its own file because it is the one place `!important` is
    correct: it exists to override author transitions wherever they are declared, and a reset that
    loses to specificity is not a reset. DESIGN.md §6 requires this be implemented once, globally,
