@@ -20,6 +20,9 @@ const buttonVariants = cva(
       size: {
         default: 'h-control gap-1.5 px-3 has-[>svg]:px-2.5',
         lg: 'h-control-lg px-4 has-[>svg]:px-3',
+        // The square sizes read the height token rather than a --size-* of their own. Each of
+        // DESIGN.md §4's two heights is one number; a second token holding it would be a copy
+        // free to drift.
         icon: 'size-(--height-control) p-0',
         'icon-lg': 'size-(--height-control-lg) p-0',
       },
