@@ -1,6 +1,6 @@
 import { Text } from '@disa/i18n';
 import { type MapOverview, type RadarPoint, radarToWorld } from '@disa/map-data';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@disa/ui';
 import { levelAt } from '../helpers/levels';
 
 interface Props {
@@ -90,7 +90,6 @@ export function RadarDebug({
 
           <Button
             type="button"
-            size="xs"
             variant={isLevelForced ? 'outline' : 'secondary'}
             onClick={() => onLevelChange(null)}
           >
@@ -101,7 +100,6 @@ export function RadarDebug({
             <Button
               key={option.image}
               type="button"
-              size="xs"
               variant={isLevelForced && index === levelIndex ? 'secondary' : 'outline'}
               onClick={() => onLevelChange(index)}
             >

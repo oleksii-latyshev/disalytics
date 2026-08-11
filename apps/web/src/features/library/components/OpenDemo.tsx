@@ -1,7 +1,6 @@
 import { Text } from '@disa/i18n';
-import { cn } from '@disa/ui';
+import { Button, cn } from '@disa/ui';
 import { useRef } from 'react';
-import { Button } from '@/shared/components/ui/button';
 import { useFileDrop } from '../hooks/use-file-drop';
 
 // The container is identified from magic bytes, not from the name, so this only narrows the

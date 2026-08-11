@@ -7,10 +7,10 @@ import {
   type RadarPoint,
   radarAssetPath,
 } from '@disa/map-data';
+import { Button } from '@disa/ui';
 import { type PointerEvent, useMemo, useState } from 'react';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
-import { Button } from '@/shared/components/ui/button';
 import { readRadarColors } from '../helpers/colors';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
@@ -93,7 +93,7 @@ export function RadarView({ demo, overview, transport }: Props) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="xs" onClick={handleDebugToggle}>
+        <Button type="button" variant="outline" onClick={handleDebugToggle}>
           <Text path={isDebugOpen ? 'radar.debug.hide' : 'radar.debug.show'} />
         </Button>
 

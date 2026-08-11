@@ -1,7 +1,7 @@
 import { type ParsedDemo, roundIndexAtFrame, sideScoreAtFrame } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
+import { Button } from '@disa/ui';
 import { type Transport, useFrameReadout } from '@/core/playback';
-import { Button } from '@/shared/components/ui/button';
 
 interface Props {
   demo: ParsedDemo;
@@ -62,7 +62,7 @@ export function MatchStrip({ demo, transport, fileName, onClose }: Props) {
         {fileName}
       </p>
 
-      <Button type="button" variant="outline" size="xs" onClick={onClose}>
+      <Button type="button" variant="outline" onClick={onClose}>
         <Text path="review.close" />
       </Button>
     </header>
