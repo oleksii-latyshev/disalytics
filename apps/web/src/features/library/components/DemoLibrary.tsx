@@ -9,12 +9,14 @@ interface Props {
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
   onClose: () => void;
+  isDraggedOver: boolean;
 }
 
-export function DemoLibrary({ state, onFile, onClose }: Props) {
+/** The card's body. The card itself, and the screen around it, are `WayIn`'s. */
+export function DemoLibrary({ state, onFile, onClose, isDraggedOver }: Props) {
   switch (state.status) {
     case 'idle':
-      return <OpenDemo onFile={onFile} />;
+      return <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />;
     case 'restoring':
       return <RestoreProgress fileName={state.fileName} onCancel={onClose} />;
     case 'parsing':
@@ -29,9 +31,9 @@ export function DemoLibrary({ state, onFile, onClose }: Props) {
       );
     case 'failed':
       return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <ParseFailure code={state.code} fileName={state.fileName} />
-          <OpenDemo onFile={onFile} />
+          <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
         </div>
       );
   }

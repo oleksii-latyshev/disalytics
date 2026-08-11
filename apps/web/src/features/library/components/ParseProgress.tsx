@@ -16,7 +16,7 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
   const t = useT();
 
   return (
-    <section className="flex flex-col gap-4 rounded-float border border-line bg-surface-1 p-6">
+    <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h2 className="font-ui text-20 leading-dense">
           <Text path="library.progress.title" />
@@ -38,8 +38,10 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
       >
         {/* A transform rather than a width: the bar advances while the worker holds the demo, and
             AGENTS.md §17.1 keeps everything but transform and opacity off the main thread. */}
+        {/* Accent, per DESIGN.md §5 — this screen carries no side data, which is the whole reason
+            §2's fence lets the accent live here. It reads 5.82:1 against the `--surface-2` track. */}
         <div
-          className="h-full origin-left bg-ink transition-transform duration-(--duration-base) ease-out"
+          className="h-full origin-left bg-accent transition-transform duration-(--duration-base) ease-out"
           style={{ transform: `scaleX(${percent / 100})` }}
         />
       </div>
