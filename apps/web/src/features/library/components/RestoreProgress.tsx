@@ -9,7 +9,7 @@ interface Props {
 
 export function RestoreProgress({ fileName, onCancel }: Props) {
   return (
-    <section className="flex flex-col gap-4 rounded-float border border-line bg-surface-1 p-6">
+    <section className="flex flex-col gap-4">
       <h2 className="font-ui text-20 leading-dense">
         <Text path="library.cache.restoring" />
       </h2>

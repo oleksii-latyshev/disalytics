@@ -1,6 +1,5 @@
-import { Text } from '@disa/i18n';
 import { useDemoParse } from '@/core/parsing';
-import { DemoLibrary } from '@/features/library';
+import { WayIn } from '@/features/library';
 import { MatchReview } from '@/features/review';
 
 // A demo on screen takes the whole viewport: the radar, the spine and the inspector are one
@@ -20,22 +19,5 @@ export function App() {
     );
   }
 
-  return (
-    <div className="app-shell grid place-items-center p-8">
-      <main className="flex w-full max-w-[64ch] flex-col gap-6">
-        <header className="flex flex-col gap-3">
-          <h1 className="font-ui text-28 leading-dense">disalytics</h1>
-          <p className="text-16 leading-prose">
-            <Text path="common.tagline" />
-          </p>
-        </header>
-
-        <DemoLibrary state={state} onFile={parse.open} onClose={parse.close} />
-
-        <p className="text-13 text-ink-dim leading-prose">
-          <Text path="common.privacyNote" />
-        </p>
-      </main>
-    </div>
-  );
+  return <WayIn state={state} onFile={parse.open} onClose={parse.close} />;
 }
