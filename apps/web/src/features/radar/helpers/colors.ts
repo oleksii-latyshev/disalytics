@@ -10,6 +10,10 @@ export interface RadarColors {
   readonly labelChip: string;
   /** Text on glass over the plate is `--ink` and never `--ink-dim` — DESIGN.md §2. */
   readonly labelInk: string;
+  /** The flash a token carries for a moment of match time after its player is hit. */
+  readonly damage: string;
+  /** Planting and defusing: the one moment a round is decided, so it gets the objective colour. */
+  readonly objective: string;
 }
 
 export function readRadarColors(): RadarColors {
@@ -19,5 +23,7 @@ export function readRadarColors(): RadarColors {
     dead: readCssToken('--color-ink-faint'),
     labelChip: readCssToken('--color-glass-raised'),
     labelInk: readCssToken('--color-ink'),
+    damage: readCssToken('--color-damage'),
+    objective: readCssToken('--color-objective'),
   };
 }
