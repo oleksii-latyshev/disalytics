@@ -1,87 +1,132 @@
 /* `static` because Tailwind otherwise emits only the theme variables it sees used, and the token
-   layer has to exist in full before the components that consume it do. */
+   layer has to exist in full before the components that consume it do. DESIGN.md §15 builds the
+   product out of this file over nine issues, so most of what is here is unconsumed on the day it
+   lands and that is the intent, not an oversight. */
 @theme static {
-  --color-surface-0: #0e1216;
-  --color-surface-1: #161b21;
-  --color-surface-2: #1f262e;
-  --color-line: #2b333c;
-  --color-line-soft: #202830;
-  --color-ink: #e4e9ee;
-  --color-ink-dim: #8a96a3;
-  --color-ink-faint: #5a646f;
+  --color-surface-0: #08090b;
+  --color-surface-1: #0f1114;
+  --color-surface-2: #171a1e;
+  --color-line: #262a30;
+  --color-line-soft: #1c2025;
+  --color-ink: #f4f6f8;
+  --color-ink-dim: #98a1ac;
+  --color-ink-faint: #616a75;
 
-  /* Glass is translucency and nothing else — DESIGN.md §2 forbids `backdrop-filter` here, because
-     the stage under these panels is a canvas repainting at display rate and a backdrop blur would
-     re-blur every one of those frames.
+  /* A card picks its grade by what it must let through — DESIGN.md §2.2: the stage → panel,
+     another card → raised, the whole screen → sheet.
 
-     These alphas are load-bearing in a way that is easy to undo: over the radar plate they carry
-     `--ink-dim` at 2.82:1 and 3.64:1, under the 4.5:1 floor. §2 answers that by keeping text on
-     glass over the plate at `--ink`, *not* by raising the alpha — raising it to the 0.89 and 0.95
-     the floor would need is what stops these reading as glass at all. Text colour on such a panel
-     is the thing to check, never these numbers. */
-  --color-glass-panel: rgb(22 27 33 / 0.72);
-  --color-glass-raised: rgb(31 38 46 / 0.86);
-  --color-glass-edge: rgb(255 255 255 / 0.06);
+     One number here is load-bearing and easy to undo. `--color-glass-panel` over `--color-surface-0`
+     composites to #0C0E11, where `--color-ink-dim` reads 7.39:1 — but over the brightest pixel the
+     plate can put behind it (the bombsite yellow #FFCA3D the `blue` theme keeps saturated) it
+     composites to #6A5724 and `--color-ink-dim` collapses to 2.67:1. §5's layout answers that by
+     sizing the plate so no card overlaps it; anything that does end up over plate pixels carries
+     `--color-ink` and nothing else. Raising the alpha is not the answer — the 0.89 it would take is
+     what stops this reading as glass at all. */
+  --color-glass-panel: rgb(15 17 20 / 0.62);
+  --color-glass-raised: rgb(23 26 30 / 0.8);
+  --color-glass-sheet: rgb(8 9 11 / 0.88);
+  --color-glass-edge: rgb(255 255 255 / 0.08);
+  --color-glass-hair: rgb(255 255 255 / 0.05);
 
-  --color-ct: #4a90d9;
-  --color-t: #e0a33e;
-  --color-damage: #e5484d;
-  --color-kill: #f04b50;
-  --color-nade-he: #f5a524;
-  --color-nade-flash: #edf2f7;
-  --color-nade-smoke: #7c8794;
+  --color-ct: #4fa3ff;
+  --color-t: #ffb84d;
+  --color-damage: #f04248;
+  --color-nade-he: #ff9f1c;
+  --color-nade-flash: #f2f6ff;
+  --color-nade-smoke: #8b95a3;
   --color-nade-molotov: #ff6b35;
-  --color-objective: #c13b8f;
+  --color-objective: #d14fa0;
 
   --color-focus: #ffffff;
-  --color-selected: rgb(255 255 255 / 0.1);
-  --color-hover: rgb(255 255 255 / 0.05);
+  --color-selected: rgb(255 255 255 / 0.12);
+  --color-hover: rgb(255 255 255 / 0.06);
+  --color-press: rgb(255 255 255 / 0.03);
   --color-playhead: #ffffff;
 
-  /* The product's own blue, and the one token in this layer that is fenced rather than free:
-     DESIGN.md §2 keeps it off the plate, the rails and the spine, because it sits a few degrees
-     from --color-ct and a blue control beside a blue player token reads as "Counter-Terrorist". */
-  --color-accent: #65a1f8;
+  /* The product's own voice, and no longer fenced — DESIGN.md §2.5 moved it off blue precisely so
+     it could appear on a screen showing Counter-Terrorists: ΔE2000 24.93 from `--color-ct` against
+     the 6.59 the old #65A1F8 managed.
+
+     `--color-accent-ink` is the stage colour rather than `--color-ink` because ink on this fill
+     reads 2.70:1 and the stage reads 6.80:1. The bright option is the unreadable one. */
+  --color-accent: #b07cff;
+  --color-accent-ink: #08090b;
+
+  /* Not `--blur-*`: that namespace builds `blur-<name>` and `backdrop-blur-<name>` out of a bare
+     length, so a filter list here would emit `filter: blur(blur(24px) saturate(1.25))`. These are
+     read through `var()` — `[backdrop-filter:var(--backdrop-panel)]` — and a `backdrop-blur-panel`
+     utility does not exist.
+
+     DESIGN.md §2.3 allows these only where nothing behind the surface repaints per frame, which
+     §5.1's plate sizing is what guarantees. Every caller carries an opaque fallback for
+     `@supports not (backdrop-filter: blur(1px))`. */
+  --backdrop-panel: blur(24px) saturate(1.25);
+  --backdrop-sheet: blur(40px) saturate(1.1);
 
   --font-ui: "Wix Madefor Display", system-ui, sans-serif;
   --font-narrow: "Roboto Condensed", "Wix Madefor Display", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
+  /* Optical tracking is attached to the size rather than left to the caller — DESIGN.md §3. Display
+     sizes are set tight and small sizes loose, and a `text-44` that forgets it is what makes a
+     screen look typed rather than drawn, so it is not something a caller gets to forget. */
+  --text-10: 0.625rem;
+  --text-10--letter-spacing: 0.01em;
   --text-11: 0.6875rem;
+  --text-11--letter-spacing: 0.01em;
   --text-12: 0.75rem;
+  --text-12--letter-spacing: 0.01em;
   --text-13: 0.8125rem;
   --text-14: 0.875rem;
   --text-16: 1rem;
   --text-20: 1.25rem;
+  --text-20--letter-spacing: -0.01em;
   --text-28: 1.75rem;
+  --text-28--letter-spacing: -0.02em;
+  --text-44: 2.75rem;
+  --text-44--letter-spacing: -0.03em;
 
-  --leading-dense: 1.3;
+  --tracking-label: 0.06em;
+
+  --leading-dense: 1.25;
   --leading-prose: 1.5;
 
-  /* Three steps, and a component picks by what it sits on — DESIGN.md §4: on the stage → float,
-     in a panel → card, inside a row → chip. */
-  --radius-chip: 4px;
-  --radius-card: 8px;
-  --radius-float: 12px;
+  /* A component picks by what it sits on — DESIGN.md §4: on the stage → float, in a card → card,
+     inside a row → chip, and the two full-screen sheets → sheet. */
+  --radius-chip: 6px;
+  --radius-card: 10px;
+  --radius-float: 16px;
+  --radius-sheet: 20px;
 
   --spacing: 4px;
 
-  /* The width the two player rails fit beside the stage at — DESIGN.md §5. Below it they collapse
-     into one strip above the spine, so this is a layout fact rather than a device size, and it is
-     the only breakpoint the review screen has. */
+  /* The width the two player rails fit beside the stage at, and the only breakpoint the review
+     screen has — a layout fact rather than a device size. It stays as it is because the layout it
+     serves still exists: DESIGN.md §5.1 replaces it with two numbers, 1280px where the four cards
+     stop clearing the viewport edges and 1080px where the team cards merge, and that is the layout
+     issue's to land alongside the layout. */
   --breakpoint-wide: 1100px;
 
-  --duration-micro: 120ms;
-  --duration-base: 200ms;
-  --duration-panel: 320ms;
-  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --duration-instant: 90ms;
+  --duration-micro: 140ms;
+  --duration-base: 220ms;
+  --duration-panel: 340ms;
+
+  /* A strong decelerating curve on purpose — DESIGN.md §8 argues it is the cheapest thing in the
+     document: motion that arrives fast and settles slowly is what separates an interface that feels
+     expensive from one that feels linear. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: linear(0, 0.42, 0.86, 1.04, 1.02, 1);
 
   /* The only two control heights in the product — DESIGN.md §4. `--height-control-lg` is the
      primary transport control and nothing else. */
-  --height-control: 28px;
-  --height-control-lg: 36px;
+  --height-control: 32px;
+  --height-control-lg: 40px;
 
-  /* Elevation is a hairline plus an inner top highlight, never a drop shadow — DESIGN.md §4. */
-  --shadow-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  /* Elevation is a `--color-glass-hair` outer edge plus this inner top rim over a blurred ground —
+     DESIGN.md §4. `--shadow-float` is the exception it names: a surface that has to escape the
+     layout entirely, which is the dialog and the menu and nothing else. */
+  --shadow-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.08);
+  --shadow-float: 0 24px 64px rgb(0 0 0 / 0.55);
 }

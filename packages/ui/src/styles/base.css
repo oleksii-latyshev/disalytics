@@ -36,7 +36,7 @@ pre {
   font-size: var(--text-11);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-label);
 }
 
 :focus-visible {

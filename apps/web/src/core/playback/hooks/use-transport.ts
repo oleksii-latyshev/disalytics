@@ -1,7 +1,6 @@
 import { openingFrame, type ParsedDemo } from '@disa/demo-core';
 import { useEffect, useMemo } from 'react';
 import { frameElapsedMs } from '../helpers/frame-step';
-import { bindPlayingFlag } from '../helpers/playing-flag';
 import { createTransport, type Transport } from '../helpers/transport';
 
 /**
@@ -55,10 +54,6 @@ export function useTransport(demo: ParsedDemo): Transport {
       if (handle !== 0) cancelAnimationFrame(handle);
     };
   }, [transport]);
-
-  // Bound here rather than by the screen: a rule the interface cannot animate around is worth more
-  // than a hook someone has to remember to mount — DESIGN.md §8.
-  useEffect(() => bindPlayingFlag(transport, document.documentElement), [transport]);
 
   return transport;
 }

@@ -31,8 +31,9 @@
   --muted-foreground: var(--color-ink-dim);
 
   /* There is deliberately no `--accent` bridge. shadcn's accent is a subtle hover surface, and
-     DESIGN.md §2 gives that name to the product's blue, so `bg-accent` now resolves to the accent
-     and §2's fence decides whether a component may have it. A hover surface is `--color-hover`. */
+     DESIGN.md §2.5 gives that name to the product's violet, so `bg-accent` resolves to the accent
+     and §2.5's one remaining boundary — never a fill on a player, a side, a weapon or an event —
+     decides whether a component may have it. A hover surface is `--color-hover`. */
 
   --destructive: var(--color-damage);
   --destructive-foreground: var(--color-ink);
@@ -72,11 +73,11 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* shadcn primitives select a radius by four names; DESIGN.md §4 has three steps and nothing
-     above 12px, so the largest two collapse. A component copied in later lands inside the scale
-     without being edited. */
+  /* shadcn primitives select a radius by four names and DESIGN.md §4 now has four steps, so the
+     mapping is one-to-one. A component copied in later lands inside the scale without being
+     edited. */
   --radius-sm: var(--radius-chip);
   --radius-md: var(--radius-card);
   --radius-lg: var(--radius-float);
-  --radius-xl: var(--radius-float);
+  --radius-xl: var(--radius-sheet);
 }
