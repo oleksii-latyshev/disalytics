@@ -1,7 +1,7 @@
-import { type Frame, type ParsedDemo, roundIndexAtFrame, roundOpeningFrame } from '@disa/demo-core';
+import { type ParsedDemo, roundIndexAtFrame, roundOpeningFrame } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import type { ChangeEvent } from 'react';
-import type { Transport } from '@/core/playback';
+import { type Transport, useFrameReadout } from '@/core/playback';
 
 /** The stretch before round 1 starts, which no round covers. */
 const WARMUP = -1;
@@ -9,11 +9,11 @@ const WARMUP = -1;
 interface Props {
   demo: ParsedDemo;
   transport: Transport;
-  frame: Frame;
 }
 
-export function RoundPicker({ demo, transport, frame }: Props) {
+export function RoundPicker({ demo, transport }: Props) {
   const t = useT();
+  const frame = useFrameReadout(transport);
   const { rounds } = demo.events;
 
   if (rounds.length === 0) return null;
@@ -27,9 +27,11 @@ export function RoundPicker({ demo, transport, frame }: Props) {
     transport.seek(roundOpeningFrame(demo, index));
   }
 
+  // `--ink` rather than `--ink-dim`: this rides in the transport, which is glass over the radar
+  // plate, and DESIGN.md §2 rules the dim level off that ground entirely.
   return (
     <label className="flex items-center gap-2">
-      <span className="label-dense">
+      <span className="label-dense text-ink">
         <Text path="timeline.round" />
       </span>
 

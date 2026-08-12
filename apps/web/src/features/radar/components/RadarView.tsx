@@ -1,4 +1,4 @@
-import type { ParsedDemo } from '@disa/demo-core';
+import { type ParsedDemo, roundIndexAtFrame, sidesBySlotAtRound } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import {
   DEFAULT_RADAR_THEME,
@@ -14,7 +14,6 @@ import { useCanvasLayers } from '@/core/renderer';
 import { readRadarColors } from '../helpers/colors';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
-import { teamsBySlot } from '../helpers/teams';
 import { useRadarImage } from '../hooks/use-radar-image';
 import { RadarDebug } from './RadarDebug';
 
@@ -37,7 +36,11 @@ export function RadarView({ demo, overview, transport }: Props) {
   const level = levelAt(overview, levelIndex);
   const image = useRadarImage(radarAssetPath(level, DEFAULT_RADAR_THEME));
 
-  const teamBySlot = useMemo(() => teamsBySlot(demo.header.players), [demo.header.players]);
+  // The side a slot holds changes at halftime, so a token's colour follows the round rather than
+  // the end-of-match roster — the same reasoning that put `PlayerEconomy.team` in the schema. The
+  // rails read this too, and the two disagreeing for half a match is the failure this prevents.
+  const roundIndex = roundIndexAtFrame(demo, frame);
+  const teamBySlot = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
   const colors = useMemo(readRadarColors, []);
 
   // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
@@ -77,43 +80,43 @@ export function RadarView({ demo, overview, transport }: Props) {
     setPointer(null);
   }
 
+  // The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller of
+  // the two axes the cell offers it, which is what the container units read. Everything else on the
+  // stage floats over it: a row of its own would come straight out of the map's short axis, which
+  // is the whole thing #110 set out to stop.
   return (
-    <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-3">
-      {/* The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller
-          of the two axes the cell offers it, which is what the container units read. */}
-      <div className="grid min-h-0 min-w-0 place-items-center [container-type:size]">
-        <canvas
-          ref={canvasRef}
-          role="img"
-          aria-label={t('radar.label', { map: overview.id })}
-          className="aspect-square w-[min(100cqi,100cqb)] rounded-float bg-surface-0"
-          onPointerMove={handlePointerMove}
-          onPointerLeave={() => setPointer(null)}
-        />
-      </div>
+    <div className="relative grid min-h-0 min-w-0 place-items-center [container-type:size]">
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={t('radar.label', { map: overview.id })}
+        className="aspect-square w-[min(100cqi,100cqb)] bg-surface-0"
+        onPointerMove={handlePointerMove}
+        onPointerLeave={() => setPointer(null)}
+      />
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="absolute inset-x-0 top-0 flex flex-wrap items-start gap-3 p-4">
         <Button type="button" variant="outline" onClick={handleDebugToggle}>
           <Text path={isDebugOpen ? 'radar.debug.hide' : 'radar.debug.show'} />
         </Button>
 
         {image.status === 'failed' && (
-          <p className="text-13 text-ink-dim leading-prose">
+          <p className="rounded-float border border-line bg-glass-panel px-3 py-2 text-13 leading-prose shadow-raised">
             <Text path="radar.imageUnavailable" />
           </p>
         )}
-      </div>
 
-      {isDebugOpen && (
-        <RadarDebug
-          overview={overview}
-          frame={frame}
-          levelIndex={levelIndex}
-          isLevelForced={forcedLevelIndex !== null}
-          pointer={pointer}
-          onLevelChange={setForcedLevelIndex}
-        />
-      )}
+        {isDebugOpen && (
+          <RadarDebug
+            overview={overview}
+            frame={frame}
+            levelIndex={levelIndex}
+            isLevelForced={forcedLevelIndex !== null}
+            pointer={pointer}
+            onLevelChange={setForcedLevelIndex}
+          />
+        )}
+      </div>
     </div>
   );
 }

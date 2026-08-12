@@ -46,7 +46,7 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
         />
       </div>
 
-      <p className="label-dense">
+      <p className="label-dense text-ink-dim">
         <Text
           path={
             phase === 'decompress'
@@ -60,7 +60,7 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
           before the demo is. */}
       {header !== null && (
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-          <span className="label-dense">
+          <span className="label-dense text-ink-dim">
             <Text path="library.map" />
           </span>
           <span className="text-14">{header.map}</span>

@@ -1,7 +1,13 @@
-import { type Frame, lastFrame, type ParsedDemo, secondsAtFrame } from '@disa/demo-core';
+import { lastFrame, type ParsedDemo, secondsAtFrame } from '@disa/demo-core';
 import { useLocale, useT } from '@disa/i18n';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef } from 'react';
-import { createClockFormat, formatClock, type Transport, useFrameSink } from '@/core/playback';
+import {
+  createClockFormat,
+  formatClock,
+  type Transport,
+  useFrameReadout,
+  useFrameSink,
+} from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { eventDensity } from '../helpers/density';
 import { economySteps } from '../helpers/economy';
@@ -20,12 +26,15 @@ import { RoundOutcomes } from './RoundOutcomes';
 interface Props {
   demo: ParsedDemo;
   transport: Transport;
-  frame: Frame;
 }
 
-export function MatchSpine({ demo, transport, frame }: Props) {
+export function MatchSpine({ demo, transport }: Props) {
   const t = useT();
   const locale = useLocale();
+
+  // The only thing here read as text is the scrubber's `aria-valuetext`, so it moves at 10 Hz —
+  // AGENTS.md §8. The playhead itself moves through the DOM on the frame channel, below.
+  const frame = useFrameReadout(transport);
 
   const stripRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
@@ -120,10 +129,13 @@ export function MatchSpine({ demo, transport, frame }: Props) {
     transport.seek(Number(event.currentTarget.value));
   }
 
+  // The whole bottom band, edge to edge and 96px tall — DESIGN.md §5. It carries no radius, because
+  // a floating object has one and structure does not, and the focus ring is inset for the same
+  // reason: there is no room outside a band that touches three viewport edges.
   return (
     <div
       ref={stripRef}
-      className="relative h-24 overflow-hidden rounded-float border border-line bg-surface-0 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus"
+      className="relative h-24 overflow-hidden bg-surface-0 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus has-[input:focus-visible]:ring-inset [border-block-start:1px_solid_var(--color-line)]"
     >
       <canvas
         ref={canvasRef}
