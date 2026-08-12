@@ -21,6 +21,10 @@ function newFilledTrack(): TickTrack {
         health: 100 - frame,
         flags: slot + 1,
         speed: frame * 8,
+        armour: 100 - slot,
+        weapon: slot % 3,
+        grenades: frame + 1,
+        money: frame * 100 + slot,
       });
     }
   }
@@ -82,6 +86,7 @@ function newHeader(): MatchHeader {
       { slot: asPlayerSlot(0), steamId: '76561197960287930', name: 'one', team: 'CT' },
       { slot: asPlayerSlot(1), steamId: '76561197960287931', name: 'two', team: 'T' },
     ],
+    weapons: ['AK-47', 'AWP', 'Knife'],
   };
 }
 

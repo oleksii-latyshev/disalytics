@@ -1,4 +1,4 @@
-import { FLAG_ALIVE, type TickTrack } from '@disa/demo-core';
+import { FLAG_ALIVE, type TickTrack, WEAPON_NONE } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import { POSITION_STRIDE, positionScratch, readPositions } from '../helpers/interpolation';
 
@@ -21,6 +21,10 @@ function newTrack(xs: readonly number[]): TickTrack {
     health: new Uint8Array(frameCount),
     flags: new Uint8Array(frameCount).fill(FLAG_ALIVE),
     speed: new Uint16Array(frameCount),
+    armour: new Uint8Array(frameCount),
+    weapon: new Uint8Array(frameCount).fill(WEAPON_NONE),
+    grenades: new Uint8Array(frameCount),
+    money: new Uint16Array(frameCount),
   };
 
   return track;

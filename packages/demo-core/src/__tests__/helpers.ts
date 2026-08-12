@@ -11,7 +11,7 @@ import type {
   Tick,
   TickTrack,
 } from '../schema';
-import { ANGLE_SCALE, asPlayerSlot, asTick, DEFAULT_SAMPLE_HZ } from '../schema';
+import { ANGLE_SCALE, asPlayerSlot, asTick, DEFAULT_SAMPLE_HZ, WEAPON_NONE } from '../schema';
 
 const DEFAULT_TICK_RATE = 64;
 const DEFAULT_FRAME_COUNT = 8;
@@ -48,6 +48,10 @@ export function newTrack(options: NewTrackOptions = {}): TickTrack {
     health: new Uint8Array(size),
     flags: new Uint8Array(size),
     speed: new Uint16Array(size),
+    armour: new Uint8Array(size),
+    weapon: new Uint8Array(size).fill(WEAPON_NONE),
+    grenades: new Uint8Array(size),
+    money: new Uint16Array(size),
   };
 }
 
@@ -60,7 +64,17 @@ export interface PlayerSample {
   health: number;
   flags: number;
   speed: number;
+  armour: number;
+  weapon: number;
+  grenades: number;
+  money: number;
 }
+
+type TrackBuffer =
+  | Float32Array<ArrayBuffer>
+  | Int16Array<ArrayBuffer>
+  | Uint8Array<ArrayBuffer>
+  | Uint16Array<ArrayBuffer>;
 
 /**
  * Writes one player's sample into the track's buffers, taking angles in degrees so the test never
@@ -80,15 +94,27 @@ export function atFrame(
   }
 
   const index = frame * track.slotCount + slot;
+  const scaled = (degrees: number | undefined) =>
+    degrees === undefined ? undefined : degrees * ANGLE_SCALE;
 
-  if (sample.posX !== undefined) track.posX[index] = sample.posX;
-  if (sample.posY !== undefined) track.posY[index] = sample.posY;
-  if (sample.posZ !== undefined) track.posZ[index] = sample.posZ;
-  if (sample.yawDegrees !== undefined) track.yaw[index] = sample.yawDegrees * ANGLE_SCALE;
-  if (sample.pitchDegrees !== undefined) track.pitch[index] = sample.pitchDegrees * ANGLE_SCALE;
-  if (sample.health !== undefined) track.health[index] = sample.health;
-  if (sample.flags !== undefined) track.flags[index] = sample.flags;
-  if (sample.speed !== undefined) track.speed[index] = sample.speed;
+  const writes: readonly (readonly [number | undefined, TrackBuffer])[] = [
+    [sample.posX, track.posX],
+    [sample.posY, track.posY],
+    [sample.posZ, track.posZ],
+    [scaled(sample.yawDegrees), track.yaw],
+    [scaled(sample.pitchDegrees), track.pitch],
+    [sample.health, track.health],
+    [sample.flags, track.flags],
+    [sample.speed, track.speed],
+    [sample.armour, track.armour],
+    [sample.weapon, track.weapon],
+    [sample.grenades, track.grenades],
+    [sample.money, track.money],
+  ];
+
+  for (const [value, buffer] of writes) {
+    if (value !== undefined) buffer[index] = value;
+  }
 }
 
 export function newEvents(): MatchEvents {

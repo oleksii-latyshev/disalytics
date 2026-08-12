@@ -192,6 +192,20 @@ what lets the main screen have a voice at all. Optical tracking rides on the siz
 else on this list still follows the old document — **read §15 before assuming a component is
 wrong**, and expect every screen to look half-migrated until the layout issue lands.
 
+**#136 landed §15's third step — `SCHEMA_VERSION` is 4.** `TickTrack` gained `armour`, `weapon`,
+`grenades` and `money`, helmet became a seventh `flags` bit, and `MatchHeader` gained a **per-match
+weapon table** the `weapon` column indexes into. That table is the load-bearing decision: it is
+built from what one match carried, so it needs no global weapon vocabulary and an unenumerated
+weapon cannot fail a parse — which is why this did **not** wait for #53, now blocked on evidence a
+single demo cannot supply. Three traps are recorded in `docs/PARSER.md` §17 and cost real time to
+find: the active weapon is **`weapon_name`** and never `active_weapon_name`, which resolves to
+nothing and says nothing; `inventory_as_bitmask` is broken for every knife because upstream shifts
+by a definition index that reaches 526; and `item_equip.item` cannot tell an M4A4 from an M4A1-S.
+Knives collapse to one `Knife` entry, argued from data in #53. `MatchHeader.weapons` is upstream's
+display-name vocabulary and so **a different vocabulary from `Kill.weapon`** — #53 is what unifies
+them. The table also contains `C4 Explosive`; §6.4's claim that the data does not exist is wrong and
+#137 restates it as a rendering rule.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

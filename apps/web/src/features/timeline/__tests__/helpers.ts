@@ -9,6 +9,7 @@ import {
   TEAMS,
   type Team,
   type TickTrack,
+  WEAPON_NONE,
 } from '@disa/demo-core';
 
 export const SAMPLE_HZ = 16;
@@ -28,6 +29,10 @@ export function newTrack(frameCount: number): TickTrack {
     health: new Uint8Array(frameCount),
     flags: new Uint8Array(frameCount),
     speed: new Uint16Array(frameCount),
+    armour: new Uint8Array(frameCount),
+    weapon: new Uint8Array(frameCount).fill(WEAPON_NONE),
+    grenades: new Uint8Array(frameCount),
+    money: new Uint16Array(frameCount),
   };
 }
 
@@ -107,7 +112,7 @@ export interface NewDemoOptions {
 
 export function newDemo(frameCount: number, options: NewDemoOptions = {}): ParsedDemo {
   return {
-    header: { map: 'de_dust2', tickRate: TICK_RATE, players: [] },
+    header: { map: 'de_dust2', tickRate: TICK_RATE, players: [], weapons: [] },
     track: newTrack(frameCount),
     events: {
       rounds: options.rounds ?? [],

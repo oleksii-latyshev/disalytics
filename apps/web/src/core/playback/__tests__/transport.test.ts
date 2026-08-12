@@ -1,4 +1,4 @@
-import type { TickTrack } from '@disa/demo-core';
+import { type TickTrack, WEAPON_NONE } from '@disa/demo-core';
 import { describe, expect, it, vi } from 'vitest';
 import { createTransport } from '../helpers/transport';
 
@@ -19,6 +19,10 @@ function newTrack(frameCount: number): TickTrack {
     health: new Uint8Array(frameCount),
     flags: new Uint8Array(frameCount),
     speed: new Uint16Array(frameCount),
+    armour: new Uint8Array(frameCount),
+    weapon: new Uint8Array(frameCount).fill(WEAPON_NONE),
+    grenades: new Uint8Array(frameCount),
+    money: new Uint16Array(frameCount),
   };
 }
 

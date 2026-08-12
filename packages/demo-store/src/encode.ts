@@ -49,6 +49,10 @@ function encodeTrack(track: TickTrack, table: BufferTable): StoredTrack {
       health: append(table, track.health),
       flags: append(table, track.flags),
       speed: append(table, track.speed),
+      armour: append(table, track.armour),
+      weapon: append(table, track.weapon),
+      grenades: append(table, track.grenades),
+      money: append(table, track.money),
     },
   };
 }

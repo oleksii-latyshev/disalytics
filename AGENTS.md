@@ -188,9 +188,9 @@ cargo test -p demo-parser    # core parser tests, no WASM toolchain needed
 ### 6.1 The memory math
 
 A 40-minute match at 64 tick ≈ 154k ticks. Per player per tick: position (3×f32 = 12 B) + view
-angles (2×i16 = 4 B) + health/armour/flags/velocity (~8 B) ≈ 24 B. Ten players → ~240 B/tick →
-**~37 MB for the whole match**. Sampling positions at **16 Hz** with interpolation on playback →
-**~9 MB**.
+angles (2×i16 = 4 B) + health, flags, armour, weapon and grenades (5×u8 = 5 B) + speed and money
+(2×u16 = 4 B) = 25 B. Ten players → ~250 B/tick → **~39 MB for the whole match**. Sampling positions
+at **16 Hz** with interpolation on playback → **~10 MB**.
 
 **The whole match fits in RAM.** The OOM risk was never data volume — it is allocating 154k × 10
 JavaScript objects, whose per-object overhead would cost 1.5–2 GB.
@@ -209,8 +209,12 @@ interface TickTrack {
   yaw: Int16Array;         // degrees * 100
   pitch: Int16Array;
   health: Uint8Array;
-  flags: Uint8Array;       // bitfield: alive, ducking, scoped, defusing, planting, walking
+  flags: Uint8Array;       // bitfield: alive, ducking, scoped, defusing, planting, walking, helmet
   speed: Uint16Array;      // units/sec, feeds the audibility model
+  armour: Uint8Array;
+  weapon: Uint8Array;      // index into MatchHeader.weapons, 255 for none
+  grenades: Uint8Array;    // bitfield: HE, two flash slots, smoke, fire, decoy, defuse kit
+  money: Uint16Array;
 }
 ```
 
