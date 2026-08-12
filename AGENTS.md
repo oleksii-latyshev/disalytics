@@ -634,6 +634,32 @@ the two colours are read out of the `--color-ct` / `--color-t` tokens at draw ti
 written into the renderer. A colour-blind *variant* of those tokens is still unbuilt — it is a
 settings concern, and no settings slice exists yet.
 
+### Who is on the plate — #111
+
+Every live player carries a name chip, a facing needle from `yaw`, and — for the one selected player
+— the vision wedge. A dead player is now **drawn** rather than skipped: `--ink-faint`, no needle, no
+name. Four things there are load-bearing and easy to undo.
+
+**Nothing on the way to the canvas allocates.** The layer closure owns every buffer it needs — the
+position scratch, the placer's rectangles, the measured chip widths — and the draw reads them. Chip
+widths come from `measureText` **once per demo**, which is why `useFontReady` gates the labels: a
+width measured against the fallback face would be wrong for the whole match, and a canvas never
+requests a webfont itself. The vision gradient is built once around the origin and painted under a
+`translate`, because a gradient positioned at the player would be a new object every frame.
+
+**Labels move, tokens never do.** `labelPlacer` tries four positions around the token and takes the
+first that clears every chip already placed this frame; if all four collide it keeps the first. It is
+reset per frame, so placement is a function of the frame and not of history.
+
+**The needle is a direction and the wedge is an area, and only one wedge is ever drawn.** Ten cones
+is a fog — `docs/DESIGN.md` §7 — so the wedge follows the selection and the needles carry everyone
+else. The wedge is drawn before the tokens, so it tints the plate rather than the players in it.
+
+**The selected player is React state in `features/review`**, not clock state — `§8`'s split, and the
+rails are what set it. A canvas hit test would have made the one interaction on this screen that a
+keyboard cannot reach, which `docs/DESIGN.md` §12 rules out; the rail seat is a button and gets the
+focus ring, `aria-pressed` and the `--selected` fill for free.
+
 ---
 
 ## 10. Event Schema
