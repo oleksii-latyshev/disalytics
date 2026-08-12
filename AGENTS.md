@@ -44,7 +44,12 @@ Violating any of these is a bug, not a trade-off.
    `{ key, params }` data and rendered by the client.
 8. **Parsing is deterministic.** Same demo bytes + same `SCHEMA_VERSION` → byte-identical output.
    The OPFS cache key and the golden snapshots both depend on it.
-9. **No animation runs on the main thread during playback.** See §17.
+9. **Nothing on the frame channel animates, and nothing anywhere animates a property that triggers
+   layout.** `transform` and `opacity` only, at every moment — not only during playback. What
+   changes on a canvas is a function of `clock.frame`, computed in the draw the frame was already
+   going to do; the test is which clock it reads, because match time is drawing and wall time is
+   animating. Everything else may animate whenever it likes, including while the match runs, and
+   the 60 fps budget in §16 is the enforcement. See §17 and `docs/DESIGN.md` §8.
 10. **New runtime dependencies require human approval.** Bundle size is a product constraint.
 11. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no browser-only APIs,
     no `@/` alias, no I/O.
@@ -1083,6 +1088,7 @@ CI assertions where possible. A regression here is a blocker.
 | Parse a 300 MB demo | < 15 s | Set from Phase 0 and **measured properly by #59**: in a foreground Chrome tab, off disk, drop to summary, three runs per input on an idle machine. The shipped `-Oz` binary takes **15.29 s** on the 353 MB raw fixture and **18.85 s** on the 264 MB `.dem.zst` — over budget on both, and the container is what most people have. `-O3` takes **11.11 s** and **14.19 s** for 0.40 MB more binary, which is the only configuration measured where this budget and the WASM one hold at once; **#66 makes that the shipped profile** and the 15 s stands as written. Measure from the drop: worker spawn plus `init()` is 0.08 s cold. Two things this number does *not* cover — a tab the user switches away from, which is 5× slower because Chrome backgrounds the renderer, and genuinely slow hardware, which `docs/PARSER.md` §11 keeps open. Full method and breakdown in `docs/PARSER.md` §16; the earlier native, Bun and blob-fed figures are §9, §14 and §15. |
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. A container adds a second copy while it is expanded — 264 MB compressed beside 353 MB expanded, **617 MB**, under what the parse itself reaches. It stays a transient because the compressed file is freed before the passes rather than after them (`docs/PARSER.md` §15). |
 | Timeline scrubbing | 60 fps sustained | |
+| Review screen, playing, everything on | 60 fps sustained | The assertion `docs/DESIGN.md` §2.3 and §8 are written against, and the thing that decides whether the material in that document survives contact with the loop. Measured with every floating card blurred (`backdrop-filter`), the event feed animating arrivals, ten tokens with names, needles and utility on the plate, on the reference machine and the 264 MB fixture. **Not yet measured** — the layout it describes is not built. When it fails, the blur is the first thing to go, then the feed's motion; the layout is not what gets cut. |
 | Cached-demo load (second visit) | < 3 s to interactive | **0.02 s, measured by #51** — the 264 MB `.dem.zst` fixture, foreground headed Chrome 151 over CDP, timed from the file landing on the input to the summary screen, three runs. The cache entry is **11.04 MB**, a 24× reduction on the container. With OPFS deleted before any application script runs, the IndexedDB fallback answers in **0.03 s** off the same key. The cold visit that fills the cache costs **18.60 s** (OPFS) and **18.48 s** (IndexedDB) against the 18.85 s #59 measured for the same input without a cache, so **storing a demo costs nothing measurable on top of parsing it**. `navigator.storage.persist()` returned `false` on this profile, which is the ordinary Chrome answer (§6.4). Storing runs **after** the demo is interactive and takes **0.39 s** for 11.04 MB, persistence request included — so a reader who leaves the moment the summary appears loses the entry and pays the parse again. That is the cost of not blocking the screen on a write, and it is the right way round. |
 | JS bundle, excl. WASM | < 500 kB gzip | single locale only. **101.22 kB, 20.2% of budget** since #51 — the 3.56 kB is `@disa/demo-store`, which adds no runtime dependency: the container codec, the fingerprint and the two tiers are all platform APIs. 97.66 kB since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. Since #93 it **refuses to report** when `apps/web/dist` holds two chunks of one family, because a Turborepo cache hit restores the directory without emptying it and never runs Vite, so a branch built there earlier leaves chunks that would be summed on top of the real ones — locally that read 206.31 kB against a true 108.87 kB. The fix it prints, `rm -rf apps/web/dist && bun run build`, is still a cache hit. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **2.22 MB, 55.5% of budget** — rising to 2.62 MB, 65.6%, when #66 switches the profile to `-O3`, which is what buys the parse-time budget above with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. 2.13 MB before #48; the 0.09 MB is the two container decoders (`docs/PARSER.md` §15). Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
@@ -1091,19 +1097,31 @@ CI assertions where possible. A regression here is a blocker.
 
 ## 17. Design
 
-Full system in **`docs/DESIGN.md`**. Rules that constrain engineering:
+Full system in **`docs/DESIGN.md`**, rewritten in full by #130 — the third revision, and the one
+that stopped treating austerity as a virtue. Rules that constrain engineering:
 
-1. **No animation on the main thread during playback.** `transform` and `opacity` only. Nothing
-   that triggers layout. No animation library driving React state per frame.
-2. Motion belongs to UI transitions, not the render loop.
-3. **All numbers use tabular figures.** Non-negotiable.
-4. **Colour carries meaning.** Team and event colours are semantic tokens with colour-blind-safe
-   variants; interaction is expressed in luminance, not hue.
-5. `prefers-reduced-motion` respected everywhere.
-6. **Layouts must survive Russian text**, which runs 15–30% longer than English. No fixed-width
+1. **Nothing on the frame channel animates, and nothing animates a property that triggers layout.**
+   `transform` and `opacity` only, always. No animation library driving React state per frame.
+   Everything else may animate during playback; the 60 fps assertion in §16 is what enforces it.
+   This replaced a blanket ban on DOM motion during playback, which shipped an interface that
+   stopped responding during the activity the product exists for.
+2. **What changes on a canvas is a function of `clock.frame`**, computed in the draw the frame was
+   already going to do. Match time is drawing; wall time is animating.
+3. **`backdrop-filter` is allowed only where nothing behind the surface repaints per frame.** The
+   review layout sizes the plate so no floating card overlaps it, which is what makes the blur
+   affordable — a layout rule, not a convention (`docs/DESIGN.md` §2.3, §5.1).
+4. **All numbers use tabular figures.** Non-negotiable.
+5. **Colour carries meaning.** Team and event colours are semantic tokens with colour-blind-safe
+   variants; interaction is expressed in luminance, not hue. The accent is violet and deliberately
+   far from every data colour, so it is not fenced off the main screen.
+6. `prefers-reduced-motion` respected everywhere, including by the WebGL backgrounds on the landing
+   and parse screens.
+7. **Layouts must survive Russian text**, which runs 15–30% longer than English. No fixed-width
    labels, no truncation-by-default, no layout that only works in `en`.
-7. Empty states, parse progress and error states are designed screens. They are what every user
+8. Empty states, parse progress and error states are designed screens. They are what every user
    sees first.
+9. **Keyboard is the primary interface, the pointer is the fallback.** Every control has a binding
+   and the help sheet is generated from the same table (`docs/DESIGN.md` §9).
 
 ---
 
@@ -1202,16 +1220,24 @@ proves worth it.
   full-tick-rate *detail windows* (±3 s) around kills — ~90 KB per kill, ~7 MB per match — rather
   than raising the global rate
 - Multi-demo comparison is out of scope for v1
+- **The design system is rebuilt around a stage rather than an instrument.** Decided 12 August 2026
+  and written up as `docs/DESIGN.md` revision 3 (#130), after three revisions drew the same verdict
+  from the owner. Four sub-decisions came with it: the player rails get live armour, weapon,
+  grenades and money (`SCHEMA_VERSION` 3 → 4); `ogl` is approved as a runtime dependency for two
+  WebGL backgrounds on the landing and parse screens only; hard rule 9 becomes a frame budget; and
+  the bottom of the review screen carries the round, with the whole-match spine re-scaled to a 14px
+  ribbon
 
 ### Open
 
 - [x] Default branch name — `main`, in use since the repository was created.
 - [x] Peak memory with the whole demo in WASM linear memory (§7.2) — 663 MB, `docs/PARSER.md` §9.
 - [ ] A cheap way to read a demo header — `only_header` costs a full pass (`docs/PARSER.md` §8)
-- [ ] **Is there a light theme?** `CODE_REQUIREMENTS.md` §1 promises a `core/theme/` light/dark
-      provider and §6.4 stores `theme` in localStorage, but `docs/DESIGN.md` designs only the dark
-      instrument palette and §1 argues for it at length. The app currently ships dark as its only
-      theme. Either design a light palette or drop the provider from the docs.
+- [x] **Is there a light theme?** No. Decided 12 August 2026 with #130: a second palette would
+      double the token layer, re-open every contrast measurement in `docs/DESIGN.md` §2 and need a
+      third radar plate. `@custom-variant dark (&)` stays unconditional and the `core/theme/`
+      provider is dropped from `CODE_REQUIREMENTS.md` rather than built. The day a light palette is
+      designed, that variant becomes a real selector again.
 - [x] Does Vite + `vite-plugin-pwa` build cleanly on the Bun runtime? — yes, #22. Plugin 1.3.0,
       `injectManifest`, Vite 8.2.0, Bun 1.3.13: manifest, `sw.js` and a nine-entry precache list all
       emitted correctly, and the Node fallback stayed unused. The plugin's own worker build prints
