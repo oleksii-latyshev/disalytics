@@ -168,6 +168,22 @@ than by the match. The audibility numbers are a named approximation of an unpubl
 largest mark on the plate and it competed with the players. Read `AGENTS.md` §9 before changing any
 of it.
 
+**#130 rewrote `docs/DESIGN.md` from the ground up, and most of the UI described above is now
+scheduled to be replaced.** It is the third revision and the first that is not an amendment: three
+revisions had drawn the same verdict from the owner — dated, unsurprising — which is evidence the
+rules were wrong rather than their execution. Four decisions came with it, each an `AGENTS.md` §21
+"stop and ask" now closed: the player rails get **live armour, weapon, grenades and money**
+(`SCHEMA_VERSION` 3 → 4); **`ogl` is an approved runtime dependency** for two WebGL backgrounds on
+the landing and parse screens only; **hard rule 9 is a frame budget, not a prohibition**, so
+`bindPlayingFlag` and the `data-playing` reset are removed; and **the bottom of the review screen
+carries the round**, with the whole-match spine re-scaled to a 14px ribbon rather than discarded.
+The review screen loses its top bar, its rails and its inspector column: a plate in the middle,
+four floating glass cards around it, sized so **no card ever overlaps the plate** — which is what
+makes `backdrop-filter` affordable and is a layout rule rather than a convention. `docs/DESIGN.md`
+§15 lists the nine issues that owe it code, in dependency order. **Until one of them lands, the code
+under `apps/web/src` follows the old document and the new one is what it is being measured
+against** — read §15 before assuming a component is wrong.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
@@ -203,7 +219,10 @@ Full text in `AGENTS.md` §2. Condensed:
 7. **No hardcoded user-facing strings.** Everything through i18n, `en` *and* `ru` together.
    `demo-core` and the parser emit `{ key, params }`, never display text.
 8. **Parsing is deterministic.** Same bytes + same `SCHEMA_VERSION` → byte-identical output.
-9. **No animation on the main thread during playback.** `transform`/`opacity` only.
+9. **Nothing on the frame channel animates, and nothing animates a property that triggers layout.**
+   `transform`/`opacity` only, always. Everything else may animate during playback; the 60 fps
+   assertion in `AGENTS.md` §16 is the enforcement. Rewritten by #130 — the old blanket ban on DOM
+   motion during playback is gone, and so is the `data-playing` kill switch that implemented it.
 10. **New runtime dependencies require human approval.** Bundle size is a product constraint.
 11. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no I/O, no `@/` alias.
 12. **`crates/demo-parser` contains no `wasm-bindgen`**, `js-sys`, or `web-sys`. That is what keeps
