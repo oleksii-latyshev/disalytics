@@ -53,6 +53,26 @@ describe('the demo store', () => {
     expect(catalogOf(backend)).toEqual([]);
   });
 
+  it('stops listing an entry whose file has gone', async () => {
+    const backend = newBackend();
+    const store = await createDemoStore(backend);
+    await store.write(KEY, newDemo(), 'match.dem');
+    backend.files.delete(nameFor(KEY));
+
+    expect(await store.read(KEY)).toBeNull();
+    expect(store.list()).toEqual([]);
+    expect(catalogOf(backend)).toEqual([]);
+  });
+
+  it('does not write the catalog for a key it never stored', async () => {
+    const backend = newBackend();
+    const store = await createDemoStore(backend);
+    const writes = backend.writes;
+
+    expect(await store.read(KEY)).toBeNull();
+    expect(backend.writes).toBe(writes);
+  });
+
   it('evicts the older entry when the newer one does not fit beside it', async () => {
     const backend = newBackend();
     const store = await createDemoStore(backend, 1024);

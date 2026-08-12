@@ -23,7 +23,7 @@ export function SavedDemoRow({ demo, onOpen, onRemove }: Props) {
   const t = useT();
 
   return (
-    <li className="flex items-stretch gap-2">
+    <li className="flex items-center gap-2">
       <button
         type="button"
         onClick={() => onOpen(demo)}
@@ -59,6 +59,7 @@ export function SavedDemoRow({ demo, onOpen, onRemove }: Props) {
         type="button"
         variant="ghost"
         size="icon"
+        className="text-ink-dim hover:text-ink"
         aria-label={t('library.saved.remove', { fileName: demo.fileName })}
         onClick={() => onRemove(demo.key)}
       >

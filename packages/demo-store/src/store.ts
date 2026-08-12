@@ -109,7 +109,18 @@ function createStore(backend: StoreBackend, catalog: CatalogEntry[], byteLimit: 
 
     async read(key) {
       const bytes = await backend.read(nameFor(key));
-      if (bytes === null) return null;
+
+      if (bytes === null) {
+        // An entry whose file has gone — cleared by the browser, or a write that was interrupted.
+        // Only an entry the catalog still claims is worth a write here: a key nobody has stored is
+        // the ordinary miss on every cold open, and repairing that would write the catalog for it.
+        if (entries.some((entry) => entry.key === key)) {
+          entries = withoutKeys(entries, [key]);
+          await saveCatalog(backend, entries);
+        }
+
+        return null;
+      }
 
       try {
         const demo = decodeDemo(bytes);
