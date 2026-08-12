@@ -12,7 +12,7 @@ export function ParseFailure({ code, fileName }: Props) {
   return (
     <section
       role="alert"
-      className="flex flex-col gap-2 rounded-float border border-damage/50 bg-surface-1 p-6"
+      className="flex flex-col gap-2 rounded-card border border-damage/50 bg-surface-2 p-4"
     >
       <h2 className="font-ui text-16 leading-dense">
         <Text path={errorTitleKey(code)} />

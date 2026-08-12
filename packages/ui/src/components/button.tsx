@@ -9,6 +9,10 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        // The ink on an accent fill is the stage colour, not `--ink`: DESIGN.md §12's floor puts
+        // `--surface-0` on `--accent` at 7.17:1 and `--ink` at 2.15:1. §2 fences where this variant
+        // may appear at all — never on the plate, the rails or the spine.
+        accent: 'bg-accent text-surface-0 hover:bg-accent/90',
         destructive:
           'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40',
         outline: 'border bg-input/30 shadow-xs hover:bg-hover',

@@ -1,1 +1,1 @@
-export { DemoLibrary } from './components/DemoLibrary';
+export { WayIn } from './components/WayIn';
