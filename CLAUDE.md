@@ -131,11 +131,11 @@ the match and would have put the wrong side ahead in half the rounds. Every cach
 once. `MARKER_BAND_PX` in `features/timeline/helpers/spine.ts` is the second number with two
 readers, alongside `SPINE_AXIS_FRACTION`.
 
-#108 opened Phase 5 by making hard rule 9 enforceable rather than trusted. `bindPlayingFlag` in
-`core/playback` writes `data-playing` on the document element **from the transport channel**, and one
-rule in `packages/ui/src/styles/motion.css` takes every transition and animation beneath it to zero.
-That rule uses `:where()` on purpose — zero specificity is what lets the `prefers-reduced-motion`
-reset below it still win. `motion` is installed and enters the tree through exactly one
+#108 opened Phase 5 by making the old hard rule 9 enforceable rather than trusted, with
+`bindPlayingFlag` writing `data-playing` on the document element and one rule in
+`packages/ui/src/styles/motion.css` taking every transition beneath it to zero. **#132 removed both**
+— rule 9 stopped banning DOM motion during playback, so a global kill switch enforces a rule the
+product no longer has. `motion` is installed and enters the tree through exactly one
 `MotionProvider` in `@disa/ui`, a `strict` `LazyMotion`, so `motion.*` throws and `m` is the only way
 to animate. Animate UI's registry is configured in `packages/ui/components.json`, and its aliases are
 **package.json `imports`** (`#components`, `#lib`, `#hooks`) because a package-local `@/` is
@@ -180,9 +180,17 @@ carries the round**, with the whole-match spine re-scaled to a 14px ribbon rathe
 The review screen loses its top bar, its rails and its inspector column: a plate in the middle,
 four floating glass cards around it, sized so **no card ever overlaps the plate** — which is what
 makes `backdrop-filter` affordable and is a layout rule rather than a convention. `docs/DESIGN.md`
-§15 lists the nine issues that owe it code, in dependency order. **Until one of them lands, the code
-under `apps/web/src` follows the old document and the new one is what it is being measured
-against** — read §15 before assuming a component is wrong.
+§15 lists the nine issues that owe it code, in dependency order.
+
+**#132 landed the first of them — the token layer.** `packages/ui/src/styles/tokens.css` is now
+§2's palette, §3's type scale and §4's radius, spacing and two control heights (32/40, up from
+28/36). `--kill` is deleted: it sat ΔE2000 2.37 from `--damage`, and a kill is told from damage by
+shape rather than hue. The accent moved from blue to violet (`#B07CFF`) and lost its fence, which is
+what lets the main screen have a voice at all. Optical tracking rides on the size token, so
+`text-44` cannot be written without it. Two blur filters exist under `--backdrop-*` rather than
+`--blur-*`, because that namespace would build `filter: blur(blur(24px) …)` out of them. Everything
+else on this list still follows the old document — **read §15 before assuming a component is
+wrong**, and expect every screen to look half-migrated until the layout issue lands.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
