@@ -1,4 +1,7 @@
 import type {
+  Blind,
+  BombDefuse,
+  Damage,
   Frame,
   Grenade,
   GrenadeTrajectory,
@@ -122,6 +125,49 @@ export function withKill(events: MatchEvents, overrides: Partial<Kill> = {}): Ma
   };
 
   return { ...events, kills: sortedByTick(events.kills, kill, (item) => item.tick) };
+}
+
+export function withDamage(events: MatchEvents, overrides: Partial<Damage> = {}): MatchEvents {
+  const damage: Damage = {
+    tick: asTick(0),
+    attacker: asPlayerSlot(0),
+    victim: asPlayerSlot(1),
+    weapon: 'ak47',
+    healthDamage: 27,
+    armorDamage: 5,
+    hitGroup: 'chest',
+    ...overrides,
+  };
+
+  return { ...events, damage: sortedByTick(events.damage, damage, (item) => item.tick) };
+}
+
+export function withBlind(events: MatchEvents, overrides: Partial<Blind> = {}): MatchEvents {
+  const blind: Blind = {
+    tick: asTick(0),
+    victim: asPlayerSlot(1),
+    attacker: asPlayerSlot(0),
+    durationSeconds: 2,
+    isTeammate: false,
+    ...overrides,
+  };
+
+  return { ...events, blinds: sortedByTick(events.blinds, blind, (item) => item.tick) };
+}
+
+export function withDefuse(events: MatchEvents, overrides: Partial<BombDefuse> = {}): MatchEvents {
+  const defuse: BombDefuse = {
+    startTick: asTick(0),
+    defuser: asPlayerSlot(0),
+    hasKit: false,
+    outcome: { status: 'interrupted' },
+    ...overrides,
+  };
+
+  return {
+    ...events,
+    defuses: sortedByTick(events.defuses, defuse, (item) => item.startTick),
+  };
 }
 
 function emptyTrajectory(firstTick: Tick): GrenadeTrajectory {

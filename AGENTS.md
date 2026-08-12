@@ -660,6 +660,44 @@ rails are what set it. A canvas hit test would have made the one interaction on 
 keyboard cannot reach, which `docs/DESIGN.md` §12 rules out; the rail seat is a button and gets the
 focus ring, `aria-pressed` and the `--selected` fill for free.
 
+### What is happening to them — #112
+
+Four states join the plate: a `--damage` flash on a token that was just hit, a facing needle dropped
+for as long as its player is blinded, an objective-coloured progress arc for a plant or a defuse, and
+a 1px audibility ring at the distance the player can currently be heard from.
+
+**All four read match time, and none reads wall time.** That is `docs/DESIGN.md` §8's test for
+whether something is a draw or an animation, and it is the whole reason these are allowed to move
+while `clock.isPlaying` is true. The flash decays over `DAMAGE_FLASH_SECONDS` **of match time**, so it
+is slow at 0.5× and a blink at 4×, and scrubbing backwards through a hit shows it again — the state
+is a function of the clock's position and never of history. Nothing here holds a timer, and nothing
+here remembers the previous frame.
+
+**The rules live in `packages/demo-core`, not in the layer.** `helpers/audibility.ts` holds the model
+— speed and `FLAG_WALKING` in, a radius in world units out — and `helpers/player-state.ts` holds
+`damageFlashBySlot`, `blindedBySlot` and `bombProgressAt`. They are rules about the game, which
+`§2` rule 11 keeps out of the view, and they are unit-tested there rather than eyeballed on a plate.
+The two per-slot lookups write into a caller's typed array instead of returning one, because they run
+inside a draw.
+
+**The audibility model is an approximation and is documented as one.** The engine's falloff curve is
+not published; `AUDIBLE_MAX_UNITS`, `RUNNING_SPEED_UNITS` and `SILENT_SPEED_UNITS` are named
+constants standing in for it. Walking is silent, which is the honest reading of what holding shift
+asks for. Changing the numbers is a change to one file and its test.
+
+**The ring is the one thing on the plate the reader switches off, and it starts off.** It is the
+largest mark there and it moves every frame, so it competes with the players it is describing —
+`docs/DESIGN.md` §7 records the decision. The toggle is in the top bar and the answer survives the
+session in `localStorage` under `disa.radar.audibility`, which is what `§2` rule 5 permits for an
+interface preference and forbids for anything parsed. `useStoredFlag` in `shared/hooks` treats a
+browser that refuses storage as a session-only preference rather than as an error: a screen that will
+not render is a worse answer than a setting that forgets.
+
+**Event lookups are binary searches that then walk backwards.** `lastIndexAtOrBefore` finds the last
+event at or before the current tick; the caller walks back from there and stops as soon as an event
+is older than the window it cares about. The walk is bounded by the window rather than by the match,
+which is what keeps a 40-minute demo's damage array off the frame budget.
+
 ---
 
 ## 10. Event Schema

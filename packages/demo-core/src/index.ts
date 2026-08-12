@@ -1,5 +1,22 @@
 export type { ErrorCode } from './errors';
 export { ERROR_CODES } from './errors';
+export {
+  AUDIBLE_MAX_UNITS,
+  audibleRadiusAt,
+  audibleRadiusUnits,
+  RUNNING_SPEED_UNITS,
+  SILENT_SPEED_UNITS,
+} from './helpers/audibility';
+export {
+  blindedBySlot,
+  bombProgressAt,
+  DAMAGE_FLASH_SECONDS,
+  DEFUSE_SECONDS,
+  DEFUSE_WITH_KIT_SECONDS,
+  damageFlashBySlot,
+  lastIndexAtOrBefore,
+  PLANT_SECONDS,
+} from './helpers/player-state';
 export type { SideScore } from './helpers/selectors';
 export {
   frameForTick,

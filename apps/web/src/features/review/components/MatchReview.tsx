@@ -13,9 +13,13 @@ import { useShortcuts } from '@/core/shortcuts';
 import { InspectorDrawer } from '@/features/inspector';
 import { MatchRadar } from '@/features/radar';
 import { MatchSpine } from '@/features/timeline';
+import { useStoredFlag } from '@/shared/hooks';
 import { FloatingTransport } from './FloatingTransport';
 import { PlayerRail } from './PlayerRail';
 import { TopBar } from './TopBar';
+
+/** Namespaced the way `@disa/i18n` namespaces the locale it remembers. */
+const AUDIBILITY_KEY = 'disa.radar.audibility';
 
 interface Props {
   demo: ParsedDemo;
@@ -33,6 +37,10 @@ export function MatchReview({ demo, fileName, cache, onClose }: Props) {
   // where it is set: a canvas hit test would put the one interaction on the screen that a keyboard
   // cannot reach, which DESIGN.md §12 rules out.
   const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
+
+  // Off by default: the rings are the loudest thing the plate draws, and a reader who wants them
+  // asks. `AGENTS.md` §2 rule 5 allows an interface preference to outlive the session.
+  const [isAudibilityShown, toggleAudibility] = useStoredFlag(AUDIBILITY_KEY, false);
 
   const toggleSelected = useCallback((slot: PlayerSlot) => {
     setSelectedSlot((current) => (current === slot ? null : slot));
@@ -81,6 +89,8 @@ export function MatchReview({ demo, fileName, cache, onClose }: Props) {
           transport={transport}
           isInspectorOpen={isInspectorOpen}
           onInspectorToggle={() => setIsInspectorOpen(!isInspectorOpen)}
+          isAudibilityShown={isAudibilityShown}
+          onAudibilityToggle={toggleAudibility}
           onClose={onClose}
         />
       </div>
@@ -101,7 +111,12 @@ export function MatchReview({ demo, fileName, cache, onClose }: Props) {
       </div>
 
       <div className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/-1] wide:[grid-area:2/2/3/3]">
-        <MatchRadar demo={demo} transport={transport} selectedSlot={selectedSlot} />
+        <MatchRadar
+          demo={demo}
+          transport={transport}
+          selectedSlot={selectedSlot}
+          isAudibilityShown={isAudibilityShown}
+        />
         <FloatingTransport demo={demo} transport={transport} />
       </div>
 
