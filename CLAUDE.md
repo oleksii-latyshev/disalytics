@@ -203,8 +203,11 @@ nothing and says nothing; `inventory_as_bitmask` is broken for every knife becau
 by a definition index that reaches 526; and `item_equip.item` cannot tell an M4A4 from an M4A1-S.
 Knives collapse to one `Knife` entry, argued from data in #53. `MatchHeader.weapons` is upstream's
 display-name vocabulary and so **a different vocabulary from `Kill.weapon`** — #53 is what unifies
-them. The table also contains `C4 Explosive`; §6.4's claim that the data does not exist is wrong and
-#137 restates it as a rendering rule.
+them. The table also contains `C4 Explosive`, and #137 rewrote `docs/DESIGN.md` §6.4 around that:
+the bomb stays off the screen as a **rendering rule** rather than for want of data. The prop reports
+the bomb only while it is *held*, never while it is stowed, so a carrier indicator would be right
+for a moment and quietly wrong for the rest of the round. A `weapon` sample pointing at that entry
+draws an empty glyph — not a distinct mark, not a placeholder.
 
 **#140 landed §15's fourth step — the catalog names what it holds.** `CatalogEntry` gained a `meta`
 block (file name, map, score, round count, stored-at) and the way in lists it: five rows on the card,
