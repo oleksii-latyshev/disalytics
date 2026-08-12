@@ -33,6 +33,14 @@ export function sampleAt(buffer: ArrayLike<number>, index: number): number {
   return value;
 }
 
+/**
+ * Where one slot's sample sits in every `TickTrack` buffer. The layout is the track's invariant, so
+ * it is stated here once rather than spelled out at each of the callers that read a column.
+ */
+export function slotSampleIndex(track: TickTrack, frame: number, slot: number): number {
+  return frame * track.slotCount + slot;
+}
+
 /** The last sample a track holds, which is the position playback stops on. */
 export function lastFrame(track: TickTrack): Frame {
   return asFrame(Math.max(track.frameCount - 1, 0));
@@ -86,6 +94,29 @@ export function sideScoreAtFrame(demo: ParsedDemo, frame: number): SideScore {
   }
 
   return score;
+}
+
+/**
+ * How far into its round a sample position stands, in seconds from the end of the freeze time —
+ * the moment the round is actually played from. `undefined` during warmup, which no round covers.
+ *
+ * It counts **up**, and that is a data limit rather than a preference: a countdown needs the round
+ * length, and no `mp_roundtime` reaches the demo any more than a tick rate or a bombsite name does
+ * (`docs/PARSER.md` §13). Counting down from an assumed 1:55 would be wrong on every server that
+ * runs anything else, and wrong quietly.
+ *
+ * The buy phase reads 0, because a round has not begun until it has begun.
+ */
+export function roundElapsedSeconds(demo: ParsedDemo, frame: number): number | undefined {
+  const roundIndex = roundIndexAtFrame(demo, frame);
+  if (roundIndex === undefined) return undefined;
+
+  const round = demo.events.rounds.at(roundIndex);
+  if (round === undefined || demo.track.tickRate === 0) return undefined;
+
+  const elapsed = (tickAtFrame(demo.track, frame) - round.freezeTimeEndTick) / demo.track.tickRate;
+
+  return Math.max(elapsed, 0);
 }
 
 /**

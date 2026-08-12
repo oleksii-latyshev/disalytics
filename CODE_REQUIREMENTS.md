@@ -27,10 +27,9 @@ apps/web/src/
                   There is no theme provider — dark is unconditional (AGENTS.md §20).
   features/       User-facing slices. May use core and other features.
     library/      Open/drop a demo, parse progress, error screens, cached demo list.
-    review/       The match-review workspace shell that composes the panels below.
-    timeline/     The match spine: round bands, event density, economy, scrubber.
+    review/       The stage: the four cards, the timeline block, and what they compose.
+    timeline/     The match ribbon and the round timeline: bands, density, economy, scrubber.
     radar/        Map rendering: layers, player tokens, grenades, sound circles.
-    inspector/    Event feed, selected player panel, round summary.
     filters/      Filter builder UI and highlight extraction controls.
     controls/     Playback transport: play/pause, speed, tick stepping.
     settings/     Locale, colour-blind mode, debug/calibration overlay.
@@ -85,9 +84,13 @@ One-way flow: `features → core → shared`, never the reverse.
 - `features → features`: only through the other feature's barrel, and only downward:
 
   ```
-  library → review → { timeline, inspector } → filters
+  library → review → timeline → filters
   radar, controls, settings are leaves
   ```
+
+  There is no `inspector/` slice. `docs/DESIGN.md` §5.6 removed the column and the drawer both —
+  selecting a player expands that player's row inside its team card — so what the slice held now
+  lives on the cards in `review/`, and the event feed §5.4 still owes the screen lands there too.
 
   Never create a cycle. If two features need the same thing, it belongs in `core` or `demo-core`,
   not in a sideways import. Changing this graph is an explicit decision, not a side effect of a PR.

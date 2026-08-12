@@ -3,18 +3,22 @@ import type { Layer } from '@/core/renderer';
 import { readCssToken } from '@/shared/lib';
 import type { EventDensity } from './density';
 import type { EconomyStep } from './economy';
-import { MARKER_BAND_PX, type RoundBand, SPINE_AXIS_FRACTION } from './spine';
+import { ECONOMY_REACH_PX, type RoundBand } from './spine';
 
 /** Low enough that a full-height tint reads as the round's outcome rather than as a surface. */
-const BAND_ALPHA = 0.1;
-
-/** The playhead is the brightest thing on the strip — `docs/DESIGN.md` §2 — and stays that way. */
-const DENSITY_ALPHA = 0.55;
+const BAND_ALPHA = 0.14;
 
 /**
- * Below the density and above the bands in alpha, and quieter than either in what it covers: the
- * trace spikes across the strip's whole upper half, the bands fill its full height, and this reads
- * a fifth of it. A gap that has to be seen against a band tinted the same hue cannot go lower.
+ * `docs/DESIGN.md` §7.3. The playhead is the brightest thing on screen and nothing else is allowed
+ * to be, and this is an aggregate rather than damage — §2.4 forbids spending a semantic colour on
+ * "how much happened in this minute", and monochrome is also what makes the trace read as terrain.
+ */
+const DENSITY_ALPHA = 0.3;
+
+/**
+ * Above the bands and below the playhead: the bands fill the ribbon's full height at 0.14 and this
+ * leaves the centre line by four pixels. A gap that has to be seen against a band tinted the same
+ * hue cannot go lower.
  */
 const ECONOMY_ALPHA = 0.32;
 
@@ -22,26 +26,57 @@ export interface SpineColors {
   readonly side: Readonly<Record<Team, string>>;
   readonly hairline: string;
   readonly density: string;
+  readonly edge: string;
 }
 
 export function readSpineColors(): SpineColors {
   return {
     side: { CT: readCssToken('--color-ct'), T: readCssToken('--color-t') },
     hairline: readCssToken('--color-line'),
-    density: readCssToken('--color-damage'),
+    density: readCssToken('--color-ink-dim'),
+    edge: readCssToken('--color-glass-edge'),
   };
 }
 
-export function outcomeBands(bands: readonly RoundBand[], colors: SpineColors): Layer {
+/**
+ * One band per round, tinted by its winner. The round being played is skipped: §7.3 lights it by
+ * dropping the tint and framing it instead, so the frame has bare ribbon to sit on.
+ */
+export function outcomeBands(
+  bands: readonly RoundBand[],
+  colors: SpineColors,
+  litRound: number | undefined,
+): Layer {
   return (context, size) => {
     context.globalAlpha = BAND_ALPHA;
 
     for (const band of bands) {
+      if (band.round === litRound) continue;
+
       const left = band.startFraction * size.width;
 
       context.fillStyle = colors.side[band.winner];
       context.fillRect(left, 0, band.endFraction * size.width - left, size.height);
     }
+  };
+}
+
+/** The round being played, lit by a 1px rim rather than by a brighter fill. */
+export function currentRoundFrame(
+  bands: readonly RoundBand[],
+  colors: SpineColors,
+  litRound: number | undefined,
+): Layer {
+  return (context, size) => {
+    const band = bands.find((candidate) => candidate.round === litRound);
+    if (band === undefined) return;
+
+    const left = Math.round(band.startFraction * size.width);
+    const width = Math.round(band.endFraction * size.width) - left;
+
+    context.strokeStyle = colors.edge;
+    context.lineWidth = 1;
+    context.strokeRect(left + 0.5, 0.5, Math.max(width - 1, 1), size.height - 1);
   };
 }
 
@@ -70,13 +105,16 @@ function peakBetween(perSecond: Float32Array, first: number, last: number): numb
  * A seismograph of the loud moments: one bar per pixel column, as tall as the loudest second that
  * column covers. Resolving the series against the column rather than the second is what keeps a
  * forty-minute match from collapsing into a smear on a strip a thousand pixels wide.
+ *
+ * It rises from the ribbon's bottom edge, which is what makes it read as terrain under the round
+ * bands rather than as a second chart competing with them.
  */
 export function densityTrace(density: EventDensity, colors: SpineColors): Layer {
   return (context, size) => {
     const { perSecond, durationSeconds } = density;
     if (perSecond.length === 0 || durationSeconds <= 0) return;
 
-    const baseline = size.height * SPINE_AXIS_FRACTION;
+    const baseline = size.height;
     const columns = Math.round(size.width);
 
     context.fillStyle = colors.density;
@@ -98,9 +136,9 @@ export function densityTrace(density: EventDensity, colors: SpineColors): Layer 
 }
 
 /**
- * The buy, as one step per round in the strip's bottom band: a block rising from the band's centre
- * for a round the CT side out-equipped, falling for one the T side did, as tall as the gap is wide
- * against the widest the match holds.
+ * The buy, as one step per round leaving the ribbon's centre line: a block rising for a round the
+ * CT side out-equipped, falling for one the T side did, as tall as the gap is wide against the
+ * widest the match holds.
  *
  * Which side is ahead is carried by the direction the block leaves the centre line, not by the
  * colour it is drawn in — `docs/DESIGN.md` §9 does not let side identity rest on hue.
@@ -109,9 +147,8 @@ export function economyGap(steps: readonly EconomyStep[], colors: SpineColors): 
   return (context, size) => {
     if (steps.length === 0) return;
 
-    const top = size.height * SPINE_AXIS_FRACTION + MARKER_BAND_PX;
-    const centre = (top + size.height) / 2;
-    const reach = size.height - centre;
+    const centre = size.height / 2;
+    const reach = Math.min(ECONOMY_REACH_PX, centre);
 
     context.globalAlpha = ECONOMY_ALPHA;
 

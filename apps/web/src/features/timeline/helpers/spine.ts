@@ -9,16 +9,22 @@ import {
 } from '@disa/demo-core';
 
 /**
- * The height the strip's axis sits at. `docs/DESIGN.md` §5 divides the spine along it — event
- * density above, kill markers and the economy chart below — so the canvas and the markers over it
- * have to agree on one number.
+ * The ribbon's height — `docs/DESIGN.md` §7.3. The block that lays the ribbon out and the layer
+ * that fits an economy block inside it both need it, so it is one number rather than a CSS height
+ * beside a canvas constant that agrees with it by hand.
+ *
+ * The previous revision's spine was 96px and carried kill marks and a scrubber. This is the same
+ * data re-scaled to a navigation strip: the marks moved up to the round timeline, where they fit.
  */
-export const SPINE_AXIS_FRACTION = 0.6;
+export const RIBBON_HEIGHT_PX = 14;
 
 /**
- * The height of the kill markers' band, measured down from the axis. The economy chart begins where
- * it ends, so the number belongs to both of them and to neither alone.
+ * How far an economy block may leave the ribbon's centre line — §7.3's 4px band. Bounded rather
+ * than proportional: at 14px a proportional reach would swallow the strip.
  */
+export const ECONOMY_REACH_PX = 4;
+
+/** The height of the kill markers' band on the round timeline, which is where they live now. */
 export const MARKER_BAND_PX = 10;
 
 export interface RoundBand {
