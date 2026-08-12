@@ -685,6 +685,14 @@ not published; `AUDIBLE_MAX_UNITS`, `RUNNING_SPEED_UNITS` and `SILENT_SPEED_UNIT
 constants standing in for it. Walking is silent, which is the honest reading of what holding shift
 asks for. Changing the numbers is a change to one file and its test.
 
+**The ring is the one thing on the plate the reader switches off, and it starts off.** It is the
+largest mark there and it moves every frame, so it competes with the players it is describing —
+`docs/DESIGN.md` §7 records the decision. The toggle is in the top bar and the answer survives the
+session in `localStorage` under `disa.radar.audibility`, which is what `§2` rule 5 permits for an
+interface preference and forbids for anything parsed. `useStoredFlag` in `shared/hooks` treats a
+browser that refuses storage as a session-only preference rather than as an error: a screen that will
+not render is a worse answer than a setting that forgets.
+
 **Event lookups are binary searches that then walk backwards.** `lastIndexAtOrBefore` finds the last
 event at or before the current tick; the caller walks back from there and stops as soon as an event
 is older than the window it cares about. The walk is bounded by the window rather than by the match,

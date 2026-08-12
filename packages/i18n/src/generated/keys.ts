@@ -45,6 +45,8 @@ export const TRANSLATION_KEYS = [
   'library.progress.phase.decompress',
   'library.progress.phase.parse',
   'library.progress.title',
+  'radar.audibility.hide',
+  'radar.audibility.show',
   'radar.debug.altitudeBand',
   'radar.debug.frame',
   'radar.debug.hide',

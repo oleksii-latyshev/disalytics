@@ -58,6 +58,7 @@ export interface PlayerTokensOptions {
   readonly teamBySlot: readonly (Team | undefined)[];
   readonly labelBySlot: readonly string[];
   readonly selectedSlot: PlayerSlot | null;
+  readonly isAudibilityShown: boolean;
   readonly colors: RadarColors;
   readonly labelStyle: LabelStyle;
 }
@@ -68,7 +69,7 @@ export interface PlayerTokensOptions {
  */
 export function playerTokens(options: PlayerTokensOptions): Layer {
   const { demo, clock, overview, levelIndex, teamBySlot, colors } = options;
-  const { labelBySlot, selectedSlot, labelStyle } = options;
+  const { labelBySlot, selectedSlot, isAudibilityShown, labelStyle } = options;
   const { track } = demo;
 
   const positions = positionScratch(track);
@@ -175,7 +176,9 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   /** What sits under a living player's token: how far they can be heard, and where they look. */
   function drawUnderToken(context: CanvasRenderingContext2D, slot: number, team: Team): void {
     const sample = base + slot;
-    const audible = (audibleRadiusAt(track, sample) / overview.scale) * scale;
+    const audible = isAudibilityShown
+      ? (audibleRadiusAt(track, sample) / overview.scale) * scale
+      : 0;
 
     if (audible > 0) {
       drawAudibleRing(

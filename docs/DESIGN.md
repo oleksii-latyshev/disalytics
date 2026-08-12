@@ -393,8 +393,16 @@ parser a line or `SCHEMA_VERSION` a bump, and the one that would is called out a
   token. This is the moment a round is decided; it earns its own state.
 - **Audibility** — a 1px ring in `--ink-faint` α0.40 at the radius the player can currently be heard
   from, derived from `speed` and suppressed by `FLAG_WALKING`. Drawn **only while the player is
-  actually making noise**, plus always for the selected player. Ten permanent rings is noise about
-  noise.
+  actually making noise**. Ten permanent rings is noise about noise.
+
+  **It is off until the reader asks for it, and the toggle is in the top bar — #112.** Even
+  suppressed to the moments a player is moving, a ring is the largest mark on the plate and it moves
+  every frame; against ten tokens, ten names and ten needles it was the thing the eye went to instead
+  of the players. So the ring is the one item in this section that is a preference rather than a
+  given, remembered across sessions like the locale. The clause about drawing it *always* for the
+  selected player is dropped rather than implemented: a silent player's radius is zero, so "always"
+  would draw an invisible circle, and a floor radius would claim a player can be heard when they
+  cannot.
 
 ### The world
 

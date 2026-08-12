@@ -32,9 +32,10 @@ interface Props {
   overview: MapOverview;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
+  isAudibilityShown: boolean;
 }
 
-export function RadarView({ demo, overview, transport, selectedSlot }: Props) {
+export function RadarView({ demo, overview, transport, selectedSlot, isAudibilityShown }: Props) {
   const t = useT();
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -75,6 +76,7 @@ export function RadarView({ demo, overview, transport, selectedSlot }: Props) {
       teamBySlot,
       labelBySlot,
       selectedSlot,
+      isAudibilityShown,
       colors,
       labelStyle,
     });
@@ -88,6 +90,7 @@ export function RadarView({ demo, overview, transport, selectedSlot }: Props) {
     teamBySlot,
     labelBySlot,
     selectedSlot,
+    isAudibilityShown,
     colors,
     labelStyle,
     image,

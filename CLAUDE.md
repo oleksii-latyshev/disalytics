@@ -163,8 +163,10 @@ backwards through a hit shows the flash again. **The rules live in `packages/dem
 `blindedBySlot` and `bombProgressAt`, and both are unit-tested there rather than eyeballed on a
 plate. The two per-slot lookups write into the caller's typed array because they run inside a draw,
 and every event lookup is `lastIndexAtOrBefore` plus a walk backwards bounded by the window rather
-than by the match. The audibility numbers are a named approximation of an unpublished falloff — read
-`AGENTS.md` §9 before changing them.
+than by the match. The audibility numbers are a named approximation of an unpublished falloff, and
+**the ring itself starts off** behind a top-bar toggle remembered in `localStorage` — it is the
+largest mark on the plate and it competed with the players. Read `AGENTS.md` §9 before changing any
+of it.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
