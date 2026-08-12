@@ -834,3 +834,66 @@ its own diff.
 
 Until #66 lands, the shipped `-Oz` build is over budget on the raw demo by 0.3 s and on the container
 by 3.9 s.
+
+---
+
+## 17. The four props schema 4 needed (#136)
+
+`docs/DESIGN.md` §5.3 asks the player rails for armour, weapon, grenades and money per sample. All
+four exist, but the route to two of them is not the obvious one, and one obvious name is the §5
+silent-omission trap firing again.
+
+Probed against the 264 MB fixture, 1,945,210 tick rows, before a line of #136 was written:
+
+| Requested name | What came back |
+|---|---|
+| `CCSPlayerPawn.m_ArmorValue` | `I32`, present on every row |
+| `CCSPlayerPawn.CCSPlayer_ItemServices.m_bHasHelmet` | `Bool`, present on every row |
+| `weapon_name` | `String`, present on 1,456,141 rows — the missing quarter is dead players |
+| `inventory_as_ids` | `U32Vec`, the same rows, e.g. `[517]`, `[508]` |
+| `inventory` | `StringVec`, the same rows as display names |
+| **`active_weapon_name`** | **no prop info and no column — silently absent** |
+
+### The active weapon is `weapon_name`, not `active_weapon_name`
+
+`vendor/parser/src/maps.rs:1100` maps `active_weapon_name` to `weapon_name`, but that table is the
+one applied *inside* the weapon entity, not to player props. Requested as a player prop,
+`active_weapon_name` produces nothing and says nothing — the §5 failure mode, in the one place a
+reader would most expect the friendly name to be the right one. `weapon_name` is what resolves.
+
+### `inventory_as_bitmask` is broken for knives and must not be used
+
+Upstream builds it as `bitmask |= 1 << def_idx`
+(`vendor/parser/src/second_pass/collect_data.rs:855`) and knife definition indices run to 526, so
+every knife above 63 shifts out of the `u64`. `inventory_as_ids` carries the same information
+soundly, and #136 uses that.
+
+### `item_equip.item` collapses distinct weapons
+
+The event that looks like the cheapest source of "what is this player holding" is the one that
+cannot tell an M4A4 from an M4A1-S: both arrive as `m4a1`, and P2000 and USP-S both arrive as
+`hkp2000`. Confirmed by joining `fire_bullets.item_def_index` to `weapon_fire.weapon` on the same
+demo — def 16 fired 359 times and def 60 fired 625, against one `m4a1` in `item_equip`.
+`weapon_name` resolves through the definition index and tells them apart.
+
+### The vocabulary is a fourth one
+
+`weapon_name` reports upstream's `WEAPINDICIES` **display names** — `AK-47`, `M4A1-S`,
+`Paracord Knife` — which is not the vocabulary `Kill.weapon` and `Damage.weapon` carry (`ak47`,
+`m4a1_silencer`, `knife_cord`) and not the one `weapon_fire` carries (`weapon_ak47`). #53 has the
+full survey of the five namespaces and the evidence-backed mapping between two of them; until it
+lands, `MatchHeader.weapons` and `Kill.weapon` are deliberately different vocabularies and the
+schema says so.
+
+### Cost
+
+Ticks pass over the same demo, five alternating runs, `--release`, native single-threaded:
+
+| Props requested | Median |
+|---|---|
+| 16 — before #136 | 5.06 s |
+| 20 — after | 6.18 s |
+
+**+22% on the ticks pass**, and the three-pass parse went 18.6 s → 18.2 s measured end to end, which
+is inside the run-to-run spread rather than an improvement. The binary grew 2.22 MB → 2.25 MB, 56.2%
+of the 4 MB cap.

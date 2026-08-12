@@ -9,6 +9,11 @@ pub fn header(header: &MatchHeader) -> Object {
     set(&out, "map", header.map.as_str());
     set(&out, "tickRate", header.tick_rate);
     set(&out, "players", array(&header.players, player));
+    set(
+        &out,
+        "weapons",
+        array(&header.weapons, |weapon| JsValue::from_str(weapon)),
+    );
 
     out
 }

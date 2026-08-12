@@ -31,7 +31,11 @@ function newDemo(
   events: MatchEvents,
   track: TickTrack = newTrack({ frameCount: 400 }),
 ): ParsedDemo {
-  return { header: { map: 'de_dust2', tickRate: TICK_RATE, players: [] }, track, events };
+  return {
+    header: { map: 'de_dust2', tickRate: TICK_RATE, players: [], weapons: [] },
+    track,
+    events,
+  };
 }
 
 /** The clock position, in frames, that stands `seconds` of match time into the demo. */

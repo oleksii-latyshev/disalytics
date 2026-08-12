@@ -22,7 +22,13 @@ pub(crate) const PASS_LABELS: [&str; PASS_COUNT] = ["events", "ticks", "projecti
 
 /// Real prop paths, never the friendly aliases `docs/PARSER.md` §5 measured being dropped in
 /// silence. Changing this list changes parsed output and so requires a `SCHEMA_VERSION` bump.
-pub(crate) const TICK_PROPS: [&str; 16] = [
+///
+/// The last two are upstream's *custom* props, which are a different thing from an alias: they have
+/// no send-table path at all because upstream computes them by walking from the player to the
+/// weapon entity. `active_weapon_name` is the trap — it is a name upstream maps only inside the
+/// weapon table, so requesting it as a player prop yields no column and no error. The name that
+/// resolves is `weapon_name`.
+pub(crate) const TICK_PROPS: [&str; 20] = [
     prop::X,
     prop::Y,
     prop::Z,
@@ -39,6 +45,10 @@ pub(crate) const TICK_PROPS: [&str; 16] = [
     prop::FLASH_DURATION,
     prop::EQUIPMENT_VALUE,
     prop::MONEY,
+    prop::ARMOUR,
+    prop::HAS_HELMET,
+    prop::ACTIVE_WEAPON,
+    prop::INVENTORY_IDS,
 ];
 
 pub(crate) mod prop {
@@ -59,6 +69,16 @@ pub(crate) mod prop {
     pub(crate) const EQUIPMENT_VALUE: &str = "CCSPlayerPawn.m_unCurrentEquipmentValue";
     pub(crate) const MONEY: &str =
         "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iAccount";
+    pub(crate) const ARMOUR: &str = "CCSPlayerPawn.m_ArmorValue";
+    pub(crate) const HAS_HELMET: &str = "CCSPlayerPawn.CCSPlayer_ItemServices.m_bHasHelmet";
+
+    /// Upstream's custom props. See the note on `TICK_PROPS` before renaming either — the obvious
+    /// name for the first one resolves to nothing.
+    pub(crate) const ACTIVE_WEAPON: &str = "weapon_name";
+    /// Item definition indices. The `inventory_as_bitmask` sibling looks cheaper and is wrong:
+    /// upstream builds it as `1 << def_idx` and knife indices run to 526, so every knife above 63
+    /// shifts out of the `u64`.
+    pub(crate) const INVENTORY_IDS: &str = "inventory_as_ids";
 
     pub(crate) const TICK: &str = "tick";
     pub(crate) const STEAM_ID: &str = "steamid";
@@ -268,11 +288,25 @@ mod tests {
         );
     }
 
+    /// A friendly alias for a prop that *has* a send-table path is what `docs/PARSER.md` §5
+    /// measured being dropped in silence. Upstream's custom props are the other thing — they have
+    /// no path to alias, so they are named here individually rather than waved through by shape.
     #[test]
     fn no_requested_prop_is_a_friendly_alias() {
         let real_paths_or_custom_ids = |name: &&str| {
             name.contains('.')
-                || ["X", "Y", "Z", "yaw", "pitch", "velocity", "is_alive"].contains(name)
+                || [
+                    "X",
+                    "Y",
+                    "Z",
+                    "yaw",
+                    "pitch",
+                    "velocity",
+                    "is_alive",
+                    "weapon_name",
+                    "inventory_as_ids",
+                ]
+                .contains(name)
         };
 
         assert!(TICK_PROPS.iter().all(real_paths_or_custom_ids));

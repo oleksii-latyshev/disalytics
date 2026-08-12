@@ -19,6 +19,10 @@ pub fn track(track: &TickTrack) -> Object {
     set(&out, "health", Uint8Array::from(&track.health[..]));
     set(&out, "flags", Uint8Array::from(&track.flags[..]));
     set(&out, "speed", Uint16Array::from(&track.speed[..]));
+    set(&out, "armour", Uint8Array::from(&track.armour[..]));
+    set(&out, "weapon", Uint8Array::from(&track.weapon[..]));
+    set(&out, "grenades", Uint8Array::from(&track.grenades[..]));
+    set(&out, "money", Uint16Array::from(&track.money[..]));
 
     out
 }

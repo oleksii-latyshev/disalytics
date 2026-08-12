@@ -12,15 +12,17 @@ mod schema;
 mod ticks;
 mod upstream;
 mod vocabulary;
+mod weapons;
 
 pub use container::is_compressed;
 pub use error::{ErrorCode, ParseError};
 pub use schema::{
     ANGLE_SCALE, Blind, BombDefuse, BombPlant, BuyType, DEFAULT_SAMPLE_HZ, Damage, DefuseOutcome,
-    FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING, Grenade,
-    GrenadeTrajectory, GrenadeType, HitGroup, Kill, MatchEvents, MatchHeader, ParsedDemo,
-    PlayerEconomy, PlayerInfo, PlayerSlot, Round, RoundWinReason, Team, Tick, TickTrack,
-    WorldPoint,
+    FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HELMET, FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING,
+    GRENADE_DECOY, GRENADE_DEFUSE_KIT, GRENADE_FIRE, GRENADE_FLASH, GRENADE_FLASH_SECOND,
+    GRENADE_HE, GRENADE_SMOKE, Grenade, GrenadeTrajectory, GrenadeType, HitGroup, Kill,
+    MatchEvents, MatchHeader, ParsedDemo, PlayerEconomy, PlayerInfo, PlayerSlot, Round,
+    RoundWinReason, Team, Tick, TickTrack, WEAPON_NONE, WorldPoint,
 };
 pub use upstream::{PASS_COUNT, event_names};
 
@@ -126,11 +128,12 @@ fn parse_expanded(
     let tick_rate = ticks::TICK_RATE;
     let frames = rounds::frames(&passes);
     let samples = table.samples(&events::sampled_ticks(&passes, &frames), &roster);
-    let track = table.track(&roster, &events::plant_windows(&passes), tick_rate);
+    let (track, weapons) = table.track(&roster, &events::plant_windows(&passes), tick_rate);
     let header = MatchHeader {
         map: map_name(&events_output),
         tick_rate,
         players: players(&table, &roster),
+        weapons,
     };
     let mut match_events = events::build(&passes, &frames, &samples);
 

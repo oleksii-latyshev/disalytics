@@ -81,6 +81,10 @@ function decodeTrack({ meta, payload }: Body): TickTrack {
     health: new Uint8Array(at(track.buffers.health)),
     flags: new Uint8Array(at(track.buffers.flags)),
     speed: new Uint16Array(at(track.buffers.speed)),
+    armour: new Uint8Array(at(track.buffers.armour)),
+    weapon: new Uint8Array(at(track.buffers.weapon)),
+    grenades: new Uint8Array(at(track.buffers.grenades)),
+    money: new Uint16Array(at(track.buffers.money)),
   };
 }
 

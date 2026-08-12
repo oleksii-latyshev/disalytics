@@ -3,7 +3,7 @@
  * `${fileHash}:${SCHEMA_VERSION}`, so an entry written by an older shape is a miss rather than
  * something to migrate.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 declare const unit: unique symbol;
 
@@ -75,6 +75,25 @@ export const FLAG_SCOPED = 1 << 2;
 export const FLAG_DEFUSING = 1 << 3;
 export const FLAG_PLANTING = 1 << 4;
 export const FLAG_WALKING = 1 << 5;
+export const FLAG_HELMET = 1 << 6;
+
+// grenades bitfield — must stay in sync with the writer in crates/demo-parser. Molotov and
+// incendiary share one bit: they are the same thing to a reader deciding whether a corner is
+// deniable, and `docs/DESIGN.md` §5.3 asks for one fire glyph.
+export const GRENADE_HE = 1 << 0;
+export const GRENADE_FLASH = 1 << 1;
+/** The game allows two flashbangs and only two, so the second one gets a bit rather than a count. */
+export const GRENADE_FLASH_SECOND = 1 << 2;
+export const GRENADE_SMOKE = 1 << 3;
+export const GRENADE_FIRE = 1 << 4;
+export const GRENADE_DECOY = 1 << 5;
+export const GRENADE_DEFUSE_KIT = 1 << 6;
+
+/**
+ * The `TickTrack.weapon` value for a slot holding nothing — a dead player, or a frame before the
+ * player has spawned. `255` rather than `0` because `0` is a legitimate index into the table.
+ */
+export const WEAPON_NONE = 255;
 
 /** Positional sampling rate. Raising it multiplies every buffer in `TickTrack`. */
 export const DEFAULT_SAMPLE_HZ = 16;
@@ -106,6 +125,12 @@ export interface TickTrack {
   flags: Uint8Array<ArrayBuffer>;
   /** Units per second. Feeds the audibility model. */
   speed: Uint16Array<ArrayBuffer>;
+  armour: Uint8Array<ArrayBuffer>;
+  /** Index into `MatchHeader.weapons`, or `WEAPON_NONE`. */
+  weapon: Uint8Array<ArrayBuffer>;
+  /** Bitfield of the `GRENADE_*` constants. */
+  grenades: Uint8Array<ArrayBuffer>;
+  money: Uint16Array<ArrayBuffer>;
 }
 
 export interface WorldPoint {
@@ -248,6 +273,15 @@ export interface MatchHeader {
   map: string;
   tickRate: number;
   players: readonly PlayerInfo[];
+  /**
+   * The weapons this match used, in the order `TickTrack.weapon` indexes them. Built per match
+   * rather than from a global enumeration, which is what keeps a weapon nobody has enumerated yet
+   * from failing a parse — #53 has the measurements.
+   *
+   * Canonical game vocabulary, never translated. A different vocabulary from `Kill.weapon`, which
+   * carries what the game event said.
+   */
+  weapons: readonly WeaponId[];
 }
 
 export interface ParsedDemo {

@@ -10,6 +10,7 @@ const HEADER: MatchHeader = {
   map: 'de_mirage',
   tickRate: 64,
   players: [{ slot: asPlayerSlot(0), steamId: '76561198000000000', name: 'player', team: 'CT' }],
+  weapons: ['AK-47'],
 };
 
 interface FakeWorker extends ParseWorker {

@@ -15,6 +15,23 @@ pub const FLAG_SCOPED: u8 = 1 << 2;
 pub const FLAG_DEFUSING: u8 = 1 << 3;
 pub const FLAG_PLANTING: u8 = 1 << 4;
 pub const FLAG_WALKING: u8 = 1 << 5;
+pub const FLAG_HELMET: u8 = 1 << 6;
+
+// grenades bitfield — must stay in sync with packages/demo-core/src/schema.ts. Molotov and
+// incendiary share one bit: they are the same thing to a reader deciding whether a corner is
+// deniable, and `docs/DESIGN.md` §5.3 asks for one fire glyph.
+pub const GRENADE_HE: u8 = 1 << 0;
+pub const GRENADE_FLASH: u8 = 1 << 1;
+/// The game allows two flashbangs and only two, so the second one gets a bit rather than a count.
+pub const GRENADE_FLASH_SECOND: u8 = 1 << 2;
+pub const GRENADE_SMOKE: u8 = 1 << 3;
+pub const GRENADE_FIRE: u8 = 1 << 4;
+pub const GRENADE_DECOY: u8 = 1 << 5;
+pub const GRENADE_DEFUSE_KIT: u8 = 1 << 6;
+
+/// The `TickTrack::weapon` value for a slot holding nothing — a dead player, or a frame before the
+/// player has spawned. `255` rather than `0` because `0` is a legitimate index into the table.
+pub const WEAPON_NONE: u8 = u8::MAX;
 
 /// A demo tick, counted at the demo's own tick rate.
 pub type Tick = i32;
@@ -157,6 +174,12 @@ pub struct TickTrack {
     pub flags: Vec<u8>,
     /// Units per second. Feeds the audibility model.
     pub speed: Vec<u16>,
+    pub armour: Vec<u8>,
+    /// Index into [`MatchHeader::weapons`], or [`WEAPON_NONE`].
+    pub weapon: Vec<u8>,
+    /// Bitfield of the `GRENADE_*` constants.
+    pub grenades: Vec<u8>,
+    pub money: Vec<u16>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -307,6 +330,13 @@ pub struct MatchHeader {
     pub map: String,
     pub tick_rate: u32,
     pub players: Vec<PlayerInfo>,
+    /// The weapons this match used, in the order [`TickTrack::weapon`] indexes them. Built per
+    /// match rather than from a global enumeration, which is what keeps a weapon nobody has
+    /// enumerated yet from failing a parse — #53 has the measurements.
+    ///
+    /// Canonical game vocabulary, never translated. These are upstream's `WEAPINDICIES` values and
+    /// so a different vocabulary from `Kill::weapon`, which carries what the game event said.
+    pub weapons: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

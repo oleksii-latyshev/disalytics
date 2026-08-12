@@ -74,6 +74,15 @@ impl<'a> Columns<'a> {
         }
     }
 
+    /// Upstream's custom list props land here — an inventory is one row holding many definition
+    /// indices, and an empty row is a player carrying nothing rather than a missing sample.
+    pub(crate) fn integer_lists(&self, name: &str) -> &'a [Vec<u32>] {
+        match self.data(name) {
+            Some(VarVec::U32Vec(values)) => values,
+            _ => &[],
+        }
+    }
+
     pub(crate) fn ids_64(&self, name: &str) -> &'a [Option<u64>] {
         match self.data(name) {
             Some(VarVec::U64(values)) => values,
@@ -122,4 +131,8 @@ pub(crate) fn id_at(column: &[Option<u64>], row: usize) -> Option<u64> {
 
 pub(crate) fn text_at(column: &[Option<String>], row: usize) -> Option<&str> {
     column.get(row)?.as_deref()
+}
+
+pub(crate) fn list_at(column: &[Vec<u32>], row: usize) -> &[u32] {
+    column.get(row).map_or(&[], Vec::as_slice)
 }

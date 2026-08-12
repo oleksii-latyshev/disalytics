@@ -3,7 +3,7 @@ import { newEvents, newTrack } from '@disa/demo-core/test-helpers';
 import { describe, expect, it } from 'vitest';
 import { IDLE_PARSE, type ParseState, reduceParse } from '../helpers/parse-state';
 
-const header: MatchHeader = { map: 'de_mirage', tickRate: 64, players: [] };
+const header: MatchHeader = { map: 'de_mirage', tickRate: 64, players: [], weapons: [] };
 const demo: ParsedDemo = { header, track: newTrack(), events: newEvents() };
 
 function opened(fileName = 'match.dem'): ParseState {
