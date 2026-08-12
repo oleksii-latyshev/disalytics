@@ -272,6 +272,19 @@ recently used evicted first, never the entry being written, entries under anothe
 and files no catalog entry claims both dropped on open. Recency lives in memory for the session and
 is flushed when a demo is stored — a read never writes, because eviction can only happen on a write.
 
+**The catalog also names what it holds** — file name, map, score and round count, and when it was
+stored. `docs/DESIGN.md` §10.2 puts that on the way in as a list of demos that reopen without a
+file. It is written **at the moment the demo is stored and at no other**, which is what keeps the
+paragraph above true: a read still writes nothing. An entry from before the metadata existed opens
+like any other and is simply not listed — a row that cannot be named is worse than no row — and one
+whose metadata is malformed loses its name rather than its demo.
+
+**The score in that list is by team, not by side.** `Round.winner` names a side, and a side belongs
+to a different team in each half, so counting winners by side produces a pair of numbers that is
+neither team's score. `matchScore` in `packages/demo-core` attributes each round through the side
+its own economy recorded, and names the two teams by the side they opened the match on because the
+demo carries no team name at all.
+
 **A tier that is missing is not an error.** No OPFS, no IndexedDB, or no Web Crypto to key with, and
 `openDemoStore()` answers `null`; the app parses every time and the summary screen says so. The
 same is true of a container that will not decode: it is a miss, and the entry is dropped.

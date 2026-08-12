@@ -1,10 +1,14 @@
-import type { MatchHeader, ParsedDemo } from '@disa/demo-core';
+import type { ErrorCode, MatchHeader, ParsedDemo } from '@disa/demo-core';
 import { newEvents, newTrack } from '@disa/demo-core/test-helpers';
 import { describe, expect, it } from 'vitest';
-import { IDLE_PARSE, type ParseState, reduceParse } from '../helpers/parse-state';
+import { IDLE_PARSE, type OpenFailure, type ParseState, reduceParse } from '../helpers/parse-state';
 
 const header: MatchHeader = { map: 'de_mirage', tickRate: 64, players: [], weapons: [] };
 const demo: ParsedDemo = { header, track: newTrack(), events: newEvents() };
+
+function parseFailure(code: ErrorCode): OpenFailure {
+  return { kind: 'parse', code };
+}
 
 function opened(fileName = 'match.dem'): ParseState {
   return reduceParse(IDLE_PARSE, { type: 'opened', fileName });
@@ -49,9 +53,21 @@ describe('reduceParse', () => {
       status: 'ready',
       fileName: 'faceit-1-2-3.dem',
     });
-    expect(reduceParse(started, { type: 'failed', code: 'NOT_A_DEMO' })).toMatchObject({
+    expect(
+      reduceParse(started, { type: 'failed', failure: parseFailure('NOT_A_DEMO') }),
+    ).toMatchObject({
       status: 'failed',
       fileName: 'faceit-1-2-3.dem',
+    });
+  });
+
+  it('says so when a saved demo has gone since it was listed', () => {
+    expect(
+      reduceParse(opened('saved.dem'), { type: 'failed', failure: { kind: 'cacheGone' } }),
+    ).toEqual({
+      status: 'failed',
+      fileName: 'saved.dem',
+      failure: { kind: 'cacheGone' },
     });
   });
 
@@ -98,7 +114,7 @@ describe('reduceParse', () => {
       { type: 'progressed', phase: 'parse', percent: 100 },
       { type: 'headerRead', header },
       { type: 'succeeded', demo, caching: true },
-      { type: 'failed', code: 'MALFORMED_DEMO' },
+      { type: 'failed', failure: parseFailure('MALFORMED_DEMO') },
     ] as const) {
       expect(reduceParse(IDLE_PARSE, event)).toBe(IDLE_PARSE);
     }
@@ -108,7 +124,9 @@ describe('reduceParse', () => {
     const done = ready();
 
     expect(reduceParse(done, { type: 'progressed', phase: 'parse', percent: 67 })).toBe(done);
-    expect(reduceParse(done, { type: 'failed', code: 'TRUNCATED_DEMO' })).toBe(done);
+    expect(reduceParse(done, { type: 'failed', failure: parseFailure('TRUNCATED_DEMO') })).toBe(
+      done,
+    );
     expect(reduceParse(done, { type: 'restored', demo })).toBe(done);
   });
 

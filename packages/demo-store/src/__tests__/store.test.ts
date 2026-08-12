@@ -26,7 +26,7 @@ describe('the demo store', () => {
 
   it('gives back the demo it was handed', async () => {
     const store = await createDemoStore(newBackend());
-    await store.write(KEY, newDemo());
+    await store.write(KEY, newDemo(), 'match.dem');
 
     expect(await store.read(KEY)).toEqual(newDemo());
   });
@@ -34,7 +34,7 @@ describe('the demo store', () => {
   it('records what the entry costs', async () => {
     const backend = newBackend();
     const store = await createDemoStore(backend);
-    const byteLength = await store.write(KEY, newDemo());
+    const byteLength = await store.write(KEY, newDemo(), 'match.dem');
     const entries = catalogOf(backend);
 
     expect(entries).toHaveLength(1);
@@ -45,7 +45,7 @@ describe('the demo store', () => {
   it('reads a damaged entry as a miss and stops keeping it', async () => {
     const backend = newBackend();
     const store = await createDemoStore(backend);
-    await store.write(KEY, newDemo());
+    await store.write(KEY, newDemo(), 'match.dem');
     backend.files.set(nameFor(KEY), new Uint8Array(32));
 
     expect(await store.read(KEY)).toBeNull();
@@ -57,8 +57,8 @@ describe('the demo store', () => {
     const backend = newBackend();
     const store = await createDemoStore(backend, 1024);
 
-    await store.write(KEY, newDemo());
-    await store.write(OTHER_KEY, newDemo());
+    await store.write(KEY, newDemo(), 'match.dem');
+    await store.write(OTHER_KEY, newDemo(), 'other.dem');
 
     expect(backend.files.has(nameFor(KEY))).toBe(false);
     expect(backend.files.has(nameFor(OTHER_KEY))).toBe(true);
@@ -88,9 +88,69 @@ describe('the demo store', () => {
     expect(backend.files.has(nameFor(KEY))).toBe(false);
   });
 
+  it('names what it stored, so the entry can be listed rather than only evicted', async () => {
+    const backend = newBackend();
+    const store = await createDemoStore(backend);
+    await store.write(KEY, newDemo(), 'match.dem');
+
+    expect(store.list()).toEqual([
+      expect.objectContaining({
+        key: KEY,
+        fileName: 'match.dem',
+        map: 'de_mirage',
+        roundCount: 1,
+        score: { startedCt: 1, startedT: 0 },
+      }),
+    ]);
+    expect(catalogOf(backend)[0]?.meta?.fileName).toBe('match.dem');
+  });
+
+  it('lists the most recently used first', async () => {
+    const store = await createDemoStore(newBackend());
+    await store.write(KEY, newDemo(), 'first.dem');
+    await store.write(OTHER_KEY, newDemo(), 'second.dem');
+    await store.read(KEY);
+
+    expect(store.list().map((demo) => demo.key)).toEqual([KEY, OTHER_KEY]);
+  });
+
+  it('does not forget the name when a read moves an entry to the front', async () => {
+    const store = await createDemoStore(newBackend());
+    await store.write(KEY, newDemo(), 'match.dem');
+    await store.read(KEY);
+
+    expect(store.list()[0]?.fileName).toBe('match.dem');
+  });
+
+  it('does not list an entry written before the metadata existed', async () => {
+    const backend = newBackend(
+      new Map([
+        [nameFor(KEY), new Uint8Array(8)],
+        [CATALOG_NAME, serialiseCatalog([{ key: KEY, byteLength: 8, lastUsedAt: 1 }])],
+      ]),
+    );
+    const store = await createDemoStore(backend);
+
+    expect(catalogOf(backend).map((entry) => entry.key)).toEqual([KEY]);
+    expect(store.list()).toEqual([]);
+  });
+
+  it('removes an entry and the file it named', async () => {
+    const backend = newBackend();
+    const store = await createDemoStore(backend);
+    await store.write(KEY, newDemo(), 'match.dem');
+
+    await store.remove(KEY);
+
+    expect(store.list()).toEqual([]);
+    expect(backend.files.has(nameFor(KEY))).toBe(false);
+    expect(catalogOf(backend)).toEqual([]);
+    expect(await store.read(KEY)).toBeNull();
+  });
+
   it('leaves an intact cache alone on open', async () => {
     const backend = newBackend();
-    await (await createDemoStore(backend)).write(KEY, newDemo());
+    await (await createDemoStore(backend)).write(KEY, newDemo(), 'match.dem');
     const writes = backend.writes;
 
     await createDemoStore(backend);

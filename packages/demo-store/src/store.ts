@@ -1,5 +1,5 @@
 import type { ParsedDemo } from '@disa/demo-core';
-import { SCHEMA_VERSION } from '@disa/demo-core';
+import { matchScore, SCHEMA_VERSION } from '@disa/demo-core';
 import type { BackendKind, StoreBackend } from './backend';
 import { openIndexedDbBackend } from './backends/indexeddb';
 import { openOpfsBackend } from './backends/opfs';
@@ -7,12 +7,16 @@ import {
   CACHE_BYTE_LIMIT,
   CATALOG_NAME,
   type CatalogEntry,
+  type CatalogMeta,
   overflowingKeys,
   parseCatalog,
+  type SavedDemo,
+  savedDemos,
   serialiseCatalog,
   staleKeys,
   withEntry,
   withoutKeys,
+  withUse,
 } from './catalog';
 import { decodeDemo } from './decode';
 import { byteLengthOf, encodeDemo } from './encode';
@@ -24,7 +28,24 @@ export interface DemoStore {
   keyFor(file: File): Promise<string>;
   read(key: string): Promise<ParsedDemo | null>;
   /** The number of bytes the demo occupies in the cache. */
-  write(key: string, demo: ParsedDemo): Promise<number>;
+  write(key: string, demo: ParsedDemo, fileName: string): Promise<number>;
+  /**
+   * What this device holds, most recently used first, from the catalog already in memory — opening
+   * the screen that lists them costs no I/O. Another tab's writes are not in it; the catalog is
+   * loaded once per store, and a demo saved elsewhere shows up on the next visit.
+   */
+  list(): readonly SavedDemo[];
+  remove(key: string): Promise<void>;
+}
+
+function metaFor(demo: ParsedDemo, fileName: string): CatalogMeta {
+  return {
+    fileName,
+    map: demo.header.map,
+    roundCount: demo.events.rounds.length,
+    score: matchScore(demo),
+    storedAt: Date.now(),
+  };
 }
 
 function nameFor(key: string): string {
@@ -80,13 +101,11 @@ async function prune(backend: StoreBackend): Promise<CatalogEntry[]> {
 function createStore(backend: StoreBackend, catalog: CatalogEntry[], byteLimit: number): DemoStore {
   let entries: readonly CatalogEntry[] = catalog;
 
-  const remember = (key: string, byteLength: number) => {
-    entries = withEntry(entries, { key, byteLength, lastUsedAt: Date.now() });
-  };
-
   return {
     kind: backend.kind,
     keyFor: demoKeyFor,
+
+    list: () => savedDemos(entries),
 
     async read(key) {
       const bytes = await backend.read(nameFor(key));
@@ -94,7 +113,11 @@ function createStore(backend: StoreBackend, catalog: CatalogEntry[], byteLimit: 
 
       try {
         const demo = decodeDemo(bytes);
-        remember(key, bytes.byteLength);
+        entries = withUse(entries, {
+          key,
+          byteLength: bytes.byteLength,
+          lastUsedAt: Date.now(),
+        });
 
         return demo;
       } catch {
@@ -107,17 +130,27 @@ function createStore(backend: StoreBackend, catalog: CatalogEntry[], byteLimit: 
       }
     },
 
-    async write(key, demo) {
+    async write(key, demo, fileName) {
       const chunks = encodeDemo(demo);
       const byteLength = byteLengthOf(chunks);
 
       await backend.write(nameFor(key), chunks);
-      remember(key, byteLength);
+      entries = withEntry(entries, {
+        key,
+        byteLength,
+        lastUsedAt: Date.now(),
+        meta: metaFor(demo, fileName),
+      });
 
       entries = await discard(backend, entries, overflowingKeys(entries, byteLimit, key));
       await saveCatalog(backend, entries);
 
       return byteLength;
+    },
+
+    async remove(key) {
+      entries = await discard(backend, entries, [key]);
+      await saveCatalog(backend, entries);
     },
   };
 }

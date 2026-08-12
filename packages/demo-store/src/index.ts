@@ -1,4 +1,5 @@
 export type { BackendKind } from './backend';
+export type { SavedDemo } from './catalog';
 export { CACHE_BYTE_LIMIT } from './catalog';
 export { CorruptCacheError } from './container';
 export type { PersistenceStatus } from './persistence';

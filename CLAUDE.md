@@ -206,6 +206,19 @@ display-name vocabulary and so **a different vocabulary from `Kill.weapon`** —
 them. The table also contains `C4 Explosive`; §6.4's claim that the data does not exist is wrong and
 #137 restates it as a rendering rule.
 
+**#140 landed §15's fourth step — the catalog names what it holds.** `CatalogEntry` gained a `meta`
+block (file name, map, score, round count, stored-at) and the way in lists it: five rows on the card,
+the rest behind a disclosure, each opening from the cache with no file and each removable on the
+spot. Four things are load-bearing. **The metadata is written at store time only** — the eviction
+contract in `catalog.ts` says a read never writes the catalog, so `withUse` moves recency and
+carries the existing `meta` across rather than replacing the entry. **An entry without `meta` still
+parses**: `parseCatalog` normalises rather than filters, so a catalog written before this change
+loses names, never entries. **The score is by team** — `matchScore` in `packages/demo-core`, because
+`Round.winner` is a side and sides swap; `sideScoreAtFrame`, which the review top bar still reads,
+has the bug this avoids and #141 owns it. And **`ParseState.failed` carries an `OpenFailure` rather
+than an `ErrorCode`**: a saved demo that has gone is not a parser error and has no code in the
+vocabulary `bun run errors:check` guards. `SCHEMA_VERSION` did not move — `ParsedDemo` is untouched.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

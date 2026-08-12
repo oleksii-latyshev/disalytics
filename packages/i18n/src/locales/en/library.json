@@ -24,6 +24,22 @@
     "storedBestEffort": "Saved on this device. The browser may clear it when space runs low.",
     "unavailable": "Not saved on this device. Opening it again will read the whole demo."
   },
+  "saved": {
+    "title": "On this device",
+    "note": "Opened before, kept in this browser. Removing one clears the saved copy — the .dem file on your disk is untouched.",
+    "score": "{startedCt} : {startedT}",
+    "rounds": "{count, plural, one {# round} other {# rounds}}",
+    "storedAt": "{when, date, medium}",
+    "size": "{megabytes, number, ::.#} MB",
+    "open": "Open {map}, saved on this device",
+    "remove": "Remove {fileName} from this device",
+    "showAll": "Show all ({count})",
+    "showFewer": "Show fewer",
+    "gone": {
+      "title": "That demo is no longer on this device.",
+      "hint": "The browser cleared it, or the cache made room for a newer one. Open the file again to read it."
+    }
+  },
   "counts": {
     "players": "{count, plural, one {# player} other {# players}}"
   }
