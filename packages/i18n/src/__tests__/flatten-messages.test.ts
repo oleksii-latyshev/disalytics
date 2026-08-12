@@ -8,7 +8,6 @@ const resources = {
   review: {},
   controls: {},
   timeline: { roundsRemaining: '{count} left' },
-  inspector: {},
   filters: { blindDuration: { label: 'Blind duration', hint: 'Seconds' } },
   radar: {},
   settings: {},

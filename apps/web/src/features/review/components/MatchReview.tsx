@@ -6,36 +6,48 @@ import {
   roundOpeningFrame,
   sidesBySlotAtRound,
 } from '@disa/demo-core';
+import { useLocale } from '@disa/i18n';
 import { useCallback, useMemo, useState } from 'react';
 import type { CacheState } from '@/core/parsing';
 import { useFrameReadout, useTransport } from '@/core/playback';
 import { useShortcuts } from '@/core/shortcuts';
-import { InspectorDrawer } from '@/features/inspector';
 import { MatchRadar } from '@/features/radar';
-import { MatchSpine } from '@/features/timeline';
-import { useStoredFlag } from '@/shared/hooks';
-import { FloatingTransport } from './FloatingTransport';
-import { PlayerRail } from './PlayerRail';
-import { TopBar } from './TopBar';
+import { useFullscreen, useStoredFlag } from '@/shared/hooks';
+import { createMoneyFormat } from '../helpers/money';
+import { CornerCluster } from './CornerCluster';
+import { RoundCard } from './RoundCard';
+import { TeamCard } from './TeamCard';
+import { TimelineBlock } from './TimelineBlock';
 
 /** Namespaced the way `@disa/i18n` namespaces the locale it remembers. */
 const AUDIBILITY_KEY = 'disa.radar.audibility';
 
 interface Props {
   demo: ParsedDemo;
-  fileName: string;
   cache: CacheState;
   onClose: () => void;
 }
 
-/** The workspace the match is reviewed in. It owns the transport every panel below reads from. */
-export function MatchReview({ demo, fileName, cache, onClose }: Props) {
+/**
+ * The stage — DESIGN.md §5. A plate in the middle and four cards around it, and the grid is what
+ * makes §5.1 structural rather than a promise: the middle column is exactly
+ * `100cqi - 2 * (card + gap) - 2 * inset` wide and `100cqb - timeline-block - 2 * inset` tall, the
+ * plate takes `min(100cqi, 100cqb)` of that cell, and **no card can overlap it because no card is
+ * in it**. That is what pays for every `backdrop-filter` on this screen (§2.3).
+ *
+ * Two widths, both layout facts rather than device sizes. Below `wide` the cards dock to the
+ * viewport edges — the stage inset goes, the plate takes what it leaves. Below `split` the side
+ * columns go and the two team cards merge into one strip above the timeline block, which is still
+ * not over the plate.
+ */
+export function MatchReview({ demo, cache, onClose }: Props) {
+  const locale = useLocale();
   const transport = useTransport(demo);
-  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const fullscreen = useFullscreen();
 
-  // Discrete state, so it lives in React rather than on the clock — AGENTS.md §8. The rails are
+  // Discrete state, so it lives in React rather than on the clock — AGENTS.md §8. A team row is
   // where it is set: a canvas hit test would put the one interaction on the screen that a keyboard
-  // cannot reach, which DESIGN.md §12 rules out.
+  // cannot reach, which DESIGN.md §9 rules out.
   const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
 
   // Off by default: the rings are the loudest thing the plate draws, and a reader who wants them
@@ -46,13 +58,14 @@ export function MatchReview({ demo, fileName, cache, onClose }: Props) {
     setSelectedSlot((current) => (current === slot ? null : slot));
   }, []);
 
-  // Which side a slot holds changes at halftime, so the rails follow the round rather than the
+  // Which side a slot holds changes at halftime, so the cards follow the round rather than the
   // end-of-match roster — and off the 10 Hz readout, because a roster is text.
   const frame = useFrameReadout(transport);
   const roundIndex = roundIndexAtFrame(demo, frame);
   const sides = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
   const ct = useMemo(() => playersOnSide(demo.header.players, sides, 'CT'), [demo, sides]);
   const t = useMemo(() => playersOnSide(demo.header.players, sides, 'T'), [demo, sides]);
+  const money = useMemo(() => createMoneyFormat(locale), [locale]);
 
   const jumpRounds = useCallback(
     (rounds: number) => {
@@ -65,73 +78,86 @@ export function MatchReview({ demo, fileName, cache, onClose }: Props) {
     [demo, transport],
   );
 
-  // DESIGN.md §9's accessibility floor: the match is operable without a pointer.
+  // DESIGN.md §9's accessibility floor: the match is operable without a pointer. The rest of §9.1 —
+  // the held-arrow rate, the row-number keys, `F`, `M` and zoom — is its own step.
   useShortcuts({
     ' ': transport.toggle,
     ',': () => transport.step(-1),
     '.': () => transport.step(1),
     '[': () => jumpRounds(-1),
     ']': () => jumpRounds(1),
+    Escape: () => setSelectedSlot(null),
   });
 
-  // DESIGN.md §5's layout, and the grid areas are written out rather than left to auto-placement
-  // because the rails move from beside the stage to a strip under it. The rail wrapper is
-  // `display: contents` above the breakpoint, which is what lets one pair of rails be a flex strip
-  // in one layout and two grid columns in the other.
-  //
-  // The stage cell carries no padding at all: `min(100cqi,100cqb)` spends every pixel of it on the
-  // map, and the transport floats over the result instead of taking a row.
-  return (
-    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] wide:grid-cols-[minmax(min-content,14rem)_minmax(0,1fr)_minmax(min-content,14rem)] wide:grid-rows-[auto_minmax(0,1fr)_auto]">
-      <div className="[grid-area:1/1/2/-1]">
-        <TopBar
+  const teamCards = (
+    <>
+      <div className="min-w-0 flex-1 split:[grid-area:3/1/4/2]">
+        <TeamCard
           demo={demo}
-          transport={transport}
-          isInspectorOpen={isInspectorOpen}
-          onInspectorToggle={() => setIsInspectorOpen(!isInspectorOpen)}
+          side="T"
+          players={t}
+          frame={frame}
+          roundIndex={roundIndex}
+          selectedSlot={selectedSlot}
+          money={money}
+          onSelect={toggleSelected}
+        />
+      </div>
+
+      <div className="min-w-0 flex-1 split:[grid-area:3/3/4/4]">
+        <TeamCard
+          demo={demo}
+          side="CT"
+          players={ct}
+          frame={frame}
+          roundIndex={roundIndex}
+          selectedSlot={selectedSlot}
+          money={money}
+          onSelect={toggleSelected}
+        />
+      </div>
+    </>
+  );
+
+  return (
+    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
+      <div className="justify-self-start [grid-area:1/1/2/2]">
+        <RoundCard
+          demo={demo}
+          frame={frame}
+          roundIndex={roundIndex}
+          locale={locale}
+          cache={cache}
+        />
+      </div>
+
+      <div className="justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/2/4]">
+        <CornerCluster
+          isFullscreen={fullscreen.isFullscreen}
+          onFullscreenToggle={fullscreen.toggle}
           isAudibilityShown={isAudibilityShown}
           onAudibilityToggle={toggleAudibility}
           onClose={onClose}
         />
       </div>
 
-      <div className="flex gap-px [grid-area:3/1/4/-1] wide:contents">
-        <div className="flex min-w-0 flex-1 wide:[grid-area:2/1/3/2]">
-          <PlayerRail
-            side="CT"
-            players={ct}
-            selectedSlot={selectedSlot}
-            onSelect={toggleSelected}
-          />
-        </div>
-
-        <div className="flex min-w-0 flex-1 wide:[grid-area:2/3/3/4]">
-          <PlayerRail side="T" players={t} selectedSlot={selectedSlot} onSelect={toggleSelected} />
-        </div>
-      </div>
-
-      <div className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/-1] wide:[grid-area:2/2/3/3]">
+      {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every
+          pixel on the map, which is why the cards are beside the cell rather than over it. */}
+      <div className="grid min-h-0 min-w-0 [grid-area:2/1/3/2] split:[grid-area:1/2/4/3]">
         <MatchRadar
           demo={demo}
           transport={transport}
           selectedSlot={selectedSlot}
           isAudibilityShown={isAudibilityShown}
         />
-        <FloatingTransport demo={demo} transport={transport} />
       </div>
 
-      {isInspectorOpen && (
-        <div className="z-10 grid w-[min(28rem,40%)] justify-self-end [grid-area:2/1/3/-1]">
-          <InspectorDrawer
-            cache={cache}
-            fileName={fileName}
-            onClose={() => setIsInspectorOpen(false)}
-          />
-        </div>
-      )}
+      {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two
+          grid columns in the other without being written out twice. */}
+      <div className="flex gap-3 [grid-area:3/1/4/2] split:contents">{teamCards}</div>
 
-      <div className="[grid-area:4/1/5/-1] wide:[grid-area:3/1/4/-1]">
-        <MatchSpine demo={demo} transport={transport} />
+      <div className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]">
+        <TimelineBlock demo={demo} transport={transport} />
       </div>
     </div>
   );

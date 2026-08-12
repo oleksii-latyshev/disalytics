@@ -2,7 +2,26 @@
   "map": "Map",
   "score": "Score",
   "roundOfTotal": "Round {current, number} of {total, number}",
+  "roundClock": "Time in round",
   "warmup": "Warm-up",
   "close": "Open another demo",
-  "rail": "{side} players"
+  "settings": "Settings",
+  "help": "Help",
+  "team": "{side} players",
+  "fullscreen": {
+    "enter": "Full screen",
+    "exit": "Leave full screen"
+  },
+  "player": {
+    "health": "Health",
+    "armour": "Armour",
+    "helmet": "Helmet",
+    "money": "Money",
+    "dead": "Dead",
+    "empty": "Empty slot",
+    "kills": "Kills",
+    "deaths": "Deaths",
+    "damage": "Damage",
+    "equipment": "Equipment"
+  }
 }

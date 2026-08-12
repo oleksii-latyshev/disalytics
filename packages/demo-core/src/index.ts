@@ -17,6 +17,8 @@ export {
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
+export type { PlayerRoundStats } from './helpers/round-stats';
+export { playerRoundStats } from './helpers/round-stats';
 export type { MatchScore } from './helpers/score';
 export { matchScore } from './helpers/score';
 export type { SideScore } from './helpers/selectors';
@@ -25,14 +27,18 @@ export {
   lastFrame,
   openingFrame,
   playersOnSide,
+  roundElapsedSeconds,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
   sideScoreAtFrame,
   sidesBySlotAtRound,
+  slotSampleIndex,
   tickAtFrame,
 } from './helpers/selectors';
+export type { UtilityHeld, UtilityKind, WeaponClass } from './helpers/weapons';
+export { isUtilityKind, UTILITY_NAMES, utilityHeld, weaponClass } from './helpers/weapons';
 export type { LocalizedMessage } from './message';
 export type { Clock } from './playback';
 export { advanceClock, createClock } from './playback';

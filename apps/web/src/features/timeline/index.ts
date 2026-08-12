@@ -1,2 +1,2 @@
-export { MatchSpine } from './components/MatchSpine';
-export { RoundPicker } from './components/RoundPicker';
+export { MatchRibbon } from './components/MatchRibbon';
+export { RoundTimeline } from './components/RoundTimeline';

@@ -12,7 +12,6 @@ export type Namespace =
   | 'review'
   | 'controls'
   | 'timeline'
-  | 'inspector'
   | 'filters'
   | 'radar'
   | 'settings'

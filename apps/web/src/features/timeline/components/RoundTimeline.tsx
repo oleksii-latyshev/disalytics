@@ -8,27 +8,23 @@ import {
   useFrameReadout,
   useFrameSink,
 } from '@/core/playback';
-import { useCanvasLayers } from '@/core/renderer';
-import { eventDensity } from '../helpers/density';
-import { economySteps } from '../helpers/economy';
-import {
-  densityTrace,
-  economyGap,
-  outcomeBands,
-  readSpineColors,
-  roundHairlines,
-} from '../helpers/layers';
-import { killMarkers, namesBySlot, positionOnSpine, roundBands } from '../helpers/spine';
-import { EconomyGaps } from './EconomyGaps';
+import { killMarkers, namesBySlot, positionOnSpine } from '../helpers/spine';
 import { KillMarkers } from './KillMarkers';
-import { RoundOutcomes } from './RoundOutcomes';
 
 interface Props {
   demo: ParsedDemo;
   transport: Transport;
 }
 
-export function MatchSpine({ demo, transport }: Props) {
+/**
+ * The strip between play/pause and the speed control, and the position control of the whole screen
+ * — DESIGN.md §7.1. It still spans the match rather than one round: §7.1's round-scoped axis, its
+ * buy-phase region and its event glyphs are the next step's, and this is where they land.
+ *
+ * The range input is **uncontrolled** — React never owns its value (#83) — and the playhead moves
+ * with `transform` only, which is what keeps playback off the main thread.
+ */
+export function RoundTimeline({ demo, transport }: Props) {
   const t = useT();
   const locale = useLocale();
 
@@ -46,28 +42,9 @@ export function MatchSpine({ demo, transport }: Props) {
   const end = lastFrame(demo.track);
   const format = useMemo(() => createClockFormat(locale), [locale]);
 
-  const bands = useMemo(() => roundBands(demo), [demo]);
   const markers = useMemo(() => killMarkers(demo), [demo]);
   const names = useMemo(() => namesBySlot(demo.header.players), [demo.header.players]);
-  const density = useMemo(() => eventDensity(demo), [demo]);
-  const economy = useMemo(() => economySteps(demo), [demo]);
-  const colors = useMemo(readSpineColors, []);
 
-  // What the strip says about the match changes only with the demo, so the array holds still and
-  // `useCanvasLayers` repaints on a resize rather than on a frame.
-  const layers = useMemo(
-    () => [
-      outcomeBands(bands, colors),
-      densityTrace(density, colors),
-      economyGap(economy, colors),
-      roundHairlines(bands, colors),
-    ],
-    [bands, density, economy, colors],
-  );
-
-  const { canvasRef } = useCanvasLayers(layers);
-
-  // Moves with `transform` only, which is what keeps playback off the main thread — DESIGN.md §6.
   const syncPlayhead = useCallback(() => {
     const playhead = playheadRef.current;
     if (playhead === null) return;
@@ -129,26 +106,20 @@ export function MatchSpine({ demo, transport }: Props) {
     transport.seek(Number(event.currentTarget.value));
   }
 
-  // The whole bottom band, edge to edge and 96px tall — DESIGN.md §5. It carries no radius, because
-  // a floating object has one and structure does not, and the focus ring is inset for the same
-  // reason: there is no room outside a band that touches three viewport edges.
   return (
     <div
       ref={stripRef}
-      className="relative h-24 overflow-hidden bg-surface-0 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus has-[input:focus-visible]:ring-inset [border-block-start:1px_solid_var(--color-line)]"
+      className="relative h-10 min-w-0 flex-1 has-[input:focus-visible]:rounded-card has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus"
     >
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label={t('timeline.overview')}
-        className="absolute inset-0 size-full"
-      />
+      {/* The axis the markers and the playhead are read against. `--line-soft` because it is an
+          internal divider on a card rather than the card's own edge — DESIGN.md §2.1. */}
+      <div className="absolute inset-x-0 top-1/2 h-px bg-line-soft" />
 
-      <RoundOutcomes rounds={demo.events.rounds} />
-
-      <EconomyGaps steps={economy} />
-
-      <div ref={playheadRef} className="absolute inset-y-0 left-0 w-px bg-playhead" />
+      <div ref={playheadRef} className="absolute inset-y-0 left-0 w-px bg-playhead">
+        {/* §7.1's glow, and shadowless the way §2.5 asks: a 3px accent bar behind a 1px white
+            line, not a blur. The playhead stays the brightest thing on the screen. */}
+        <span aria-hidden="true" className="-left-px absolute inset-y-0 w-[3px] bg-accent/40" />
+      </div>
 
       <input
         ref={inputRef}
@@ -161,7 +132,7 @@ export function MatchSpine({ demo, transport }: Props) {
         aria-valuetext={formatClock(format, secondsAtFrame(demo.track, frame))}
         onPointerDown={handlePointerDown}
         onInput={handleInput}
-        className="absolute inset-0 size-full cursor-pointer appearance-none bg-transparent outline-none [&::-moz-range-thumb]:h-24 [&::-moz-range-thumb]:w-px [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-transparent [&::-webkit-slider-thumb]:h-24 [&::-webkit-slider-thumb]:w-px [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-transparent"
+        className="absolute inset-0 size-full cursor-pointer appearance-none bg-transparent outline-none [&::-moz-range-thumb]:h-10 [&::-moz-range-thumb]:w-px [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-transparent [&::-webkit-slider-thumb]:h-10 [&::-webkit-slider-thumb]:w-px [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-transparent"
       />
 
       <KillMarkers markers={markers} names={names} transport={transport} />

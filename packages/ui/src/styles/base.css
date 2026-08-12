@@ -39,6 +39,30 @@ pre {
   letter-spacing: var(--tracking-label);
 }
 
+/* A card floating over the stage — DESIGN.md §2.2 and §4. Elevation is a 1px `--glass-hair` outer
+   edge plus a 1px `--glass-edge` inner top rim over a blurred ground, and never a drop shadow.
+
+   The blur is affordable for exactly one reason: §5.1 sizes the plate so that no card overlaps it,
+   so every one of these has a *static* ground behind it and the blur is paid for once. A surface
+   that does end up over the live canvas uses alpha alone and carries `--ink` only (§2.2).
+
+   The fallback is opaque rather than a cheaper blur: with `backdrop-filter` unavailable there is
+   nothing lifting the ground, and 0.62 alpha over whatever is behind is the contrast case §2.2
+   rules out. */
+.glass-panel {
+  background-color: var(--color-glass-panel);
+  backdrop-filter: var(--backdrop-panel);
+  box-shadow:
+    inset 0 1px 0 0 var(--color-glass-edge),
+    0 0 0 1px var(--color-glass-hair);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-panel {
+    background-color: var(--color-surface-1);
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;

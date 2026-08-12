@@ -4,12 +4,14 @@ import {
   lastFrame,
   openingFrame,
   playersOnSide,
+  roundElapsedSeconds,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
   sideScoreAtFrame,
   sidesBySlotAtRound,
+  slotSampleIndex,
   tickAtFrame,
 } from '../helpers/selectors';
 import {
@@ -307,6 +309,54 @@ describe('sidesBySlotAtRound', () => {
 
   it('falls back to the roster for a match with no rounds at all', () => {
     expect(sidesBySlotAtRound(newDemo([]), 0)).toEqual(['T', 'CT']);
+  });
+});
+
+describe('slotSampleIndex', () => {
+  it('indexes a buffer at frame * slotCount + slot', () => {
+    const track = newTrack({ frameCount: 4, slotCount: 3 });
+
+    expect(slotSampleIndex(track, 0, 0)).toBe(0);
+    expect(slotSampleIndex(track, 0, 2)).toBe(2);
+    expect(slotSampleIndex(track, 3, 1)).toBe(10);
+  });
+
+  it('agrees with the write the test helper makes', () => {
+    const track = newTrack({ frameCount: 2, slotCount: 2 });
+    atFrame(track, asFrame(1), asPlayerSlot(1), { money: 4200 });
+
+    expect(sampleAt(track.money, slotSampleIndex(track, 1, 1))).toBe(4200);
+  });
+});
+
+describe('roundElapsedSeconds', () => {
+  const track = newTrack({ tickRate: 64, sampleHz: 16, frameCount: 400 });
+
+  function newDemo(rounds: readonly Round[]): ParsedDemo {
+    return { header, track, events: { ...newEvents(), rounds } };
+  }
+
+  const round = newRound({
+    startTick: asTick(640),
+    freezeTimeEndTick: asTick(1280),
+    endTick: asTick(4480),
+  });
+
+  it('counts up from the end of the freeze time', () => {
+    // frame 400 is tick 1600 at 64/16, which is 320 ticks — five seconds — past the freeze end.
+    expect(roundElapsedSeconds(newDemo([round]), 400)).toBe(5);
+  });
+
+  it('reads zero through the buy phase rather than going negative', () => {
+    expect(roundElapsedSeconds(newDemo([round]), 200)).toBe(0);
+  });
+
+  it('has no answer during warmup, which no round covers', () => {
+    expect(roundElapsedSeconds(newDemo([round]), 0)).toBeUndefined();
+  });
+
+  it('has no answer for a match with no rounds', () => {
+    expect(roundElapsedSeconds(newDemo([]), 400)).toBeUndefined();
   });
 });
 
