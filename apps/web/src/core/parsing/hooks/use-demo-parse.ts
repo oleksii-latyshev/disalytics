@@ -1,12 +1,15 @@
 import type { ParsedDemo } from '@disa/demo-core';
 import { errorCodeOf, parseDemo } from '@disa/demo-parser';
+import type { SavedDemo } from '@disa/demo-store';
 import { type ActionDispatch, useCallback, useEffect, useReducer, useRef } from 'react';
-import { type DemoCache, openCacheFor } from '../helpers/demo-cache';
+import { type DemoCache, openCacheFor, readSavedDemo } from '../helpers/demo-cache';
 import { IDLE_PARSE, type ParseEvent, type ParseState, reduceParse } from '../helpers/parse-state';
 
 export interface DemoParse {
   state: ParseState;
   open: (file: File) => void;
+  /** Opens a demo the store already holds. There is no file and there is nothing to parse. */
+  openSaved: (saved: SavedDemo) => void;
   // Abandons whatever is on screen. While a parse is running this is the cancel, and it terminates
   // the worker rather than asking it to stop.
   close: () => void;
@@ -59,8 +62,20 @@ async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Prom
   } catch (thrown) {
     // An abort rejects with its own reason, which is not something to name on an error screen.
     if (signal.aborted) return;
-    dispatch({ type: 'failed', code: errorCodeOf(thrown) });
+    dispatch({ type: 'failed', failure: { kind: 'parse', code: errorCodeOf(thrown) } });
   }
+}
+
+async function restore(key: string, signal: AbortSignal, dispatch: Dispatch): Promise<void> {
+  const demo = await readSavedDemo(key);
+  if (signal.aborted) return;
+
+  if (demo === null) {
+    dispatch({ type: 'failed', failure: { kind: 'cacheGone' } });
+    return;
+  }
+
+  dispatch({ type: 'restored', demo });
 }
 
 export function useDemoParse(): DemoParse {
@@ -69,16 +84,31 @@ export function useDemoParse(): DemoParse {
 
   useEffect(() => () => running.current?.abort(), []);
 
-  // Both are memoised because the drop listeners in the library slice take them as effect
+  // All three are memoised because the drop listeners in the library slice take them as effect
   // dependencies, and a fresh identity every render would resubscribe the window every render.
-  const open = useCallback((file: File) => {
+  const begin = useCallback((fileName: string) => {
     running.current?.abort();
 
     const controller = new AbortController();
     running.current = controller;
-    dispatch({ type: 'opened', fileName: file.name });
-    void report(file, controller.signal, dispatch);
+    dispatch({ type: 'opened', fileName });
+
+    return controller.signal;
   }, []);
+
+  const open = useCallback(
+    (file: File) => {
+      void report(file, begin(file.name), dispatch);
+    },
+    [begin],
+  );
+
+  const openSaved = useCallback(
+    (saved: SavedDemo) => {
+      void restore(saved.key, begin(saved.fileName), dispatch);
+    },
+    [begin],
+  );
 
   const close = useCallback(() => {
     running.current?.abort();
@@ -86,5 +116,5 @@ export function useDemoParse(): DemoParse {
     dispatch({ type: 'closed' });
   }, []);
 
-  return { state, open, close };
+  return { state, open, openSaved, close };
 }

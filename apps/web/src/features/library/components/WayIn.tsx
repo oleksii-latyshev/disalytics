@@ -1,3 +1,4 @@
+import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
 import { AnimatePresence, m } from '@disa/ui';
 import type { ParseState } from '@/core/parsing';
@@ -9,6 +10,7 @@ interface Props {
   // An opened demo is the review screen's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
+  onSaved: (demo: SavedDemo) => void;
   onClose: () => void;
 }
 
@@ -17,7 +19,7 @@ interface Props {
  * whole viewport rather than a box inside it: `useFileDrop` already listens on the window, so what
  * this adds is the screen *acknowledging* the drag instead of a dashed rectangle doing it alone.
  */
-export function WayIn({ state, onFile, onClose }: Props) {
+export function WayIn({ state, onFile, onSaved, onClose }: Props) {
   const isDraggedOver = useFileDrop(onFile);
 
   return (
@@ -58,6 +60,7 @@ export function WayIn({ state, onFile, onClose }: Props) {
             <DemoLibrary
               state={state}
               onFile={onFile}
+              onSaved={onSaved}
               onClose={onClose}
               isDraggedOver={isDraggedOver}
             />

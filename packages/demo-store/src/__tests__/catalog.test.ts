@@ -1,16 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import {
   type CatalogEntry,
+  type CatalogMeta,
   overflowingKeys,
   parseCatalog,
+  savedDemos,
   serialiseCatalog,
   staleKeys,
   totalBytes,
   withEntry,
+  withUse,
 } from '../catalog';
 
 function entry(key: string, byteLength: number, lastUsedAt: number): CatalogEntry {
   return { key, byteLength, lastUsedAt };
+}
+
+function meta(overrides: Partial<CatalogMeta> = {}): CatalogMeta {
+  return {
+    fileName: 'match.dem',
+    map: 'de_mirage',
+    roundCount: 24,
+    score: { startedCt: 13, startedT: 11 },
+    storedAt: 1_700_000_000_000,
+    ...overrides,
+  };
+}
+
+function named(
+  key: string,
+  lastUsedAt: number,
+  overrides: Partial<CatalogMeta> = {},
+): CatalogEntry {
+  return { ...entry(key, 10, lastUsedAt), meta: meta(overrides) };
 }
 
 describe('eviction', () => {
@@ -75,5 +97,45 @@ describe('the catalog', () => {
     );
 
     expect(parseCatalog(bytes)).toEqual([entry('b:2', 1, 2)]);
+  });
+});
+
+describe('catalog metadata', () => {
+  it('survives being written and read back', () => {
+    const entries = [named('a:2', 1)];
+
+    expect(parseCatalog(serialiseCatalog(entries))).toEqual(entries);
+  });
+
+  it('reads an entry written before the metadata existed as one without it', () => {
+    const bytes = new TextEncoder().encode('[{"key":"a:2","byteLength":1,"lastUsedAt":2}]');
+
+    expect(parseCatalog(bytes)).toEqual([entry('a:2', 1, 2)]);
+  });
+
+  it('keeps the entry when its metadata is malformed, and only loses the name', () => {
+    const bytes = new TextEncoder().encode(
+      '[{"key":"a:2","byteLength":1,"lastUsedAt":2,"meta":{"map":"de_mirage"}}]',
+    );
+
+    expect(parseCatalog(bytes)).toEqual([entry('a:2', 1, 2)]);
+  });
+
+  it('keeps the name when a read moves an entry to the front', () => {
+    const entries = withUse([named('a:2', 1)], { key: 'a:2', byteLength: 20, lastUsedAt: 9 });
+
+    expect(entries).toEqual([{ ...entry('a:2', 20, 9), meta: meta() }]);
+  });
+
+  it('lists only what can be named, most recently used first', () => {
+    const entries = [entry('nameless:2', 10, 9), named('a:2', 1), named('b:2', 5)];
+
+    expect(savedDemos(entries).map((demo) => demo.key)).toEqual(['b:2', 'a:2']);
+  });
+
+  it('flattens an entry into what a row reads', () => {
+    expect(savedDemos([named('a:2', 5, { fileName: 'faceit.dem' })])).toEqual([
+      { key: 'a:2', byteLength: 10, lastUsedAt: 5, ...meta({ fileName: 'faceit.dem' }) },
+    ]);
   });
 });
