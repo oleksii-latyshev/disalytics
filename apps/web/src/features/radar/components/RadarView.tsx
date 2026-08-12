@@ -32,9 +32,10 @@ interface Props {
   overview: MapOverview;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
+  isAudibilityShown: boolean;
 }
 
-export function RadarView({ demo, overview, transport, selectedSlot }: Props) {
+export function RadarView({ demo, overview, transport, selectedSlot, isAudibilityShown }: Props) {
   const t = useT();
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -68,26 +69,28 @@ export function RadarView({ demo, overview, transport, selectedSlot }: Props) {
   // the clock moves. The clock itself is read inside the layer, once per animation frame.
   const layers = useMemo(() => {
     const tokens = playerTokens({
-      track: demo.track,
+      demo,
       clock: transport.clock,
       overview,
       levelIndex,
       teamBySlot,
       labelBySlot,
       selectedSlot,
+      isAudibilityShown,
       colors,
       labelStyle,
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image), tokens] : [tokens];
   }, [
-    demo.track,
+    demo,
     transport,
     overview,
     levelIndex,
     teamBySlot,
     labelBySlot,
     selectedSlot,
+    isAudibilityShown,
     colors,
     labelStyle,
     image,

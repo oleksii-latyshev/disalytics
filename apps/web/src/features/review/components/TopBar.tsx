@@ -8,6 +8,8 @@ interface Props {
   transport: Transport;
   isInspectorOpen: boolean;
   onInspectorToggle: () => void;
+  isAudibilityShown: boolean;
+  onAudibilityToggle: () => void;
   onClose: () => void;
 }
 
@@ -35,7 +37,15 @@ function RoundReadout({ demo, frame }: { demo: ParsedDemo; frame: number }) {
  * The round, the map and the score, in 56px — DESIGN.md §5. Nothing else is informational here: the
  * file name moved into the drawer, which is where the rest of this demo's provenance already lives.
  */
-export function TopBar({ demo, transport, isInspectorOpen, onInspectorToggle, onClose }: Props) {
+export function TopBar({
+  demo,
+  transport,
+  isInspectorOpen,
+  onInspectorToggle,
+  isAudibilityShown,
+  onAudibilityToggle,
+  onClose,
+}: Props) {
   // Everything here is read as text, so it moves at the 10 Hz readout rather than with the clock —
   // AGENTS.md §8.
   const frame = useFrameReadout(transport);
@@ -70,6 +80,18 @@ export function TopBar({ demo, transport, isInspectorOpen, onInspectorToggle, on
           plate's own tokens — and `--accent` against `--ct` measures ΔE2000 6.59 with 5.84° of hue
           between them, against ΔE2000 50.17 for the CT/T pair the reader is meant to tell apart. */}
       <div className="ms-auto flex items-center gap-2">
+        {/* A toggle rather than a pair of states: the plate under it says which way it is set, and
+            the pressed fill is `--selected`, which is §2's "interaction is luminance, not hue". */}
+        <Button
+          type="button"
+          variant="outline"
+          aria-pressed={isAudibilityShown}
+          onClick={onAudibilityToggle}
+          className="aria-pressed:bg-selected"
+        >
+          <Text path={isAudibilityShown ? 'radar.audibility.hide' : 'radar.audibility.show'} />
+        </Button>
+
         <Button
           type="button"
           variant="outline"

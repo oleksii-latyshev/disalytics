@@ -9,9 +9,10 @@ interface Props {
   demo: ParsedDemo;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
+  isAudibilityShown: boolean;
 }
 
-export function MatchRadar({ demo, transport, selectedSlot }: Props) {
+export function MatchRadar({ demo, transport, selectedSlot, isAudibilityShown }: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -27,6 +28,7 @@ export function MatchRadar({ demo, transport, selectedSlot }: Props) {
           overview={overview}
           transport={transport}
           selectedSlot={selectedSlot}
+          isAudibilityShown={isAudibilityShown}
         />
       )}
     </section>

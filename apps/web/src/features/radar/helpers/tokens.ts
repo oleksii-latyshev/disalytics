@@ -52,6 +52,68 @@ export function drawToken(
   context.stroke();
 }
 
+/**
+ * The hit, laid over the token that took it. Its opacity is the caller's, and the caller reads it
+ * off the clock: an opacity driven by wall time would be an animation, which §8 forbids during
+ * playback.
+ */
+export function drawDamageFlash(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  team: Team,
+  color: string,
+): void {
+  context.fillStyle = color;
+  traceToken(context, x, y, team);
+  context.fill();
+}
+
+/** How far the arc sits outside the token, so it reads as a state and not as a bigger player. */
+const ARC_GAP_PX = 3.5;
+const ARC_WIDTH_PX = 2;
+
+/** Planting or defusing, filling clockwise from the top — DESIGN.md §7. */
+export function drawProgressArc(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  progress: number,
+  color: string,
+): void {
+  const start = -Math.PI / 2;
+
+  context.lineWidth = ARC_WIDTH_PX;
+  context.strokeStyle = color;
+
+  context.beginPath();
+  context.arc(x, y, TOKEN_RADIUS_PX + ARC_GAP_PX, start, start + progress * 2 * Math.PI);
+  context.stroke();
+}
+
+const AUDIBLE_RING_WIDTH_PX = 1;
+const AUDIBLE_RING_ALPHA = 0.4;
+
+/** How far the player can be heard from. Drawn only when they are making noise at all. */
+export function drawAudibleRing(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+  alpha: number,
+): void {
+  context.save();
+  context.globalAlpha = alpha * AUDIBLE_RING_ALPHA;
+  context.lineWidth = AUDIBLE_RING_WIDTH_PX;
+  context.strokeStyle = color;
+
+  context.beginPath();
+  context.arc(x, y, radius, 0, 2 * Math.PI);
+  context.stroke();
+  context.restore();
+}
+
 /** A direction rather than an area: ten translucent cones is a fog — DESIGN.md §7. */
 export function drawNeedle(
   context: CanvasRenderingContext2D,
