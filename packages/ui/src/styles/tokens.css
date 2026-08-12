@@ -20,8 +20,8 @@
      plate can put behind it (the bombsite yellow #FFCA3D the `blue` theme keeps saturated) it
      composites to #6A5724 and `--color-ink-dim` collapses to 2.67:1. §5's layout answers that by
      sizing the plate so no card overlaps it; anything that does end up over plate pixels carries
-     `--color-ink` and nothing else. Raising the alpha is not the answer — the 0.89 it would take is
-     what stops this reading as glass at all. */
+     `--color-ink` and nothing else. Raising the alpha is not the answer — 0.80 is where `--ink-dim`
+     clears 4.5:1 on that pixel, and 0.62 → 0.80 is what stops this reading as glass at all. */
   --color-glass-panel: rgb(15 17 20 / 0.62);
   --color-glass-raised: rgb(23 26 30 / 0.8);
   --color-glass-sheet: rgb(8 9 11 / 0.88);
@@ -127,6 +127,6 @@
   /* Elevation is a `--color-glass-hair` outer edge plus this inner top rim over a blurred ground —
      DESIGN.md §4. `--shadow-float` is the exception it names: a surface that has to escape the
      layout entirely, which is the dialog and the menu and nothing else. */
-  --shadow-raised: inset 0 1px 0 0 rgb(255 255 255 / 0.08);
+  --shadow-raised: inset 0 1px 0 0 var(--color-glass-edge);
   --shadow-float: 0 24px 64px rgb(0 0 0 / 0.55);
 }
