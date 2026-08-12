@@ -382,7 +382,7 @@ Five rows per card, each row carrying, in this order:
 | health | `TickTrack.health` | a 3px bar in the side colour, plus the number in Plex Mono 12 |
 | armour | **new column** | a 3px bar under health in `--ink-dim`; a helmet glyph when the flag is set |
 | money | **new column** | Plex Mono 12, `--ink-dim`, prefixed by the locale's currency rule |
-| weapon | **new column** | the weapon glyph, `--ink`; game vocabulary, never translated |
+| weapon | **new column** | the weapon glyph, `--ink`; game vocabulary, never translated; `C4 Explosive` draws empty, §6.4 |
 | grenades | **new column** | up to five 10px glyphs in each utility's own colour |
 
 Four of those six do not exist in `SCHEMA_VERSION` 3 and are the reason for the bump in §0. What the
@@ -517,15 +517,30 @@ going to do. §8's test applies: match time is drawing, wall time is animating.
 - The debug overlay is a development affordance and lives behind the settings sheet, never on the
   stage.
 
-### 6.4 The bomb — still not free, still not faked
+### 6.4 The bomb — the data is partly there, and the interface still says nothing
 
-Showing which T carries the bomb is the one thing on this list the data cannot do. There is no
-`FLAG_` for it, no pickup or drop event, and `BombPlant` records `siteEntityId` without a position.
-The §0 schema bump does **not** include it, because carrying it means a bomb entity position and a
-carrier column — a bigger change than the four the rails need, with its own issue.
+The earlier revisions of this section argued from "the demo does not carry it". `SCHEMA_VERSION` 4
+(#136) established that it partly does, and the rule survives the correction because the rule was
+never really about the data.
 
-**The plate says nothing about the bomb before the plant, and nothing on the plate may imply
-otherwise.** Anyone who wants it opens the schema issue first.
+What exists: upstream's active-weapon prop reports **`C4 Explosive`** for whichever player holds the
+bomb at that sample, so from `SCHEMA_VERSION` 4 onward that entry stands in the per-match weapon
+table on `MatchHeader` and the `weapon` column can point at it. What does not exist: anything about
+a bomb that is **stowed**. A T with the bomb in their inventory and a rifle in their hands reads as
+the rifle, and no `FLAG_`, pickup or drop event fills that gap — `BombPlant` records `siteEntityId`
+without a position. So the demo answers "who is holding it right now" and never "who has it".
+
+That makes a carrier indicator worse than absent: it would be right while a T is switched to the
+bomb and silently wrong the rest of the round, which is the reading a review tool must not
+manufacture. And a tool that reveals the carrier changes how the round is read — the reader stops
+reconstructing the round and starts following an arrow. That is a product decision, and it does not
+turn back into an open question when a column arrives.
+
+**The rule is a rendering rule, not an absence of data.** No team-card row, plate token, glyph,
+tooltip or accessible label renders the `C4 Explosive` entry. A sample whose `weapon` points at it
+draws an **empty** weapon glyph — not a distinct mark, not a placeholder that reads as "something
+is being withheld". The entry stays in the schema (#136 settled that: hiding it there would cost a
+cache generation for a rendering rule), and §5.3's rows are where the rule is enforced.
 
 ---
 
@@ -901,9 +916,11 @@ Nothing here is built. In dependency order:
    and the golden snapshot.
 4. **The store catalog** — §10.2's metadata, and the library screen that reads it.
 5. **The review layout** — §5, replacing `features/review`'s three-row grid; the round timeline and
-   the ribbon re-scale in `features/timeline`. 6. **The plate** — §6's token, utility and world
-   states in `features/radar`. The per-frame rules live in `packages/demo-core` and are unit-tested
-   there rather than eyeballed on a plate (#112).
+   the ribbon re-scale in `features/timeline`. The team cards are the first thing to read the
+   `weapon` column, so §6.4's rendering rule is one of their constraints: the `C4 Explosive` entry
+   draws an empty glyph, and it is not rediscovered as an open question because the column exists.
+6. **The plate** — §6's token, utility and world states in `features/radar`. The per-frame rules
+   live in `packages/demo-core` and are unit-tested there rather than eyeballed on a plate (#112).
 7. **Input** — §9's bindings in `core/shortcuts`, the held-arrow rate in `core/playback`, the hot
    corners in `features/review`.
 8. **The way in** — §10.1–§10.4, the two vendored backgrounds, `ogl` added and lazy-loaded.
