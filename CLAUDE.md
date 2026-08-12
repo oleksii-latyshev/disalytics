@@ -210,8 +210,9 @@ them. The table also contains `C4 Explosive`; §6.4's claim that the data does n
 block (file name, map, score, round count, stored-at) and the way in lists it: five rows on the card,
 the rest behind a disclosure, each opening from the cache with no file and each removable on the
 spot. Four things are load-bearing. **The metadata is written at store time only** — the eviction
-contract in `catalog.ts` says a read never writes the catalog, so `withUse` moves recency and
-carries the existing `meta` across rather than replacing the entry. **An entry without `meta` still
+contract in `catalog.ts` says a read never writes recency, so `withUse` moves it and carries the
+existing `meta` across rather than replacing the entry — while a read that finds *no file* now drops
+that entry, because the alternative is a row that can never open. **An entry without `meta` still
 parses**: `parseCatalog` normalises rather than filters, so a catalog written before this change
 loses names, never entries. **The score is by team** — `matchScore` in `packages/demo-core`, because
 `Round.winner` is a side and sides swap; `sideScoreAtFrame`, which the review top bar still reads,
