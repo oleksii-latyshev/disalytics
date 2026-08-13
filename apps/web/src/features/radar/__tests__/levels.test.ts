@@ -1,4 +1,4 @@
-import { asFrame, FLAG_ALIVE, type TickTrack } from '@disa/demo-core';
+import { asFrame, FLAG_ALIVE, type TickTrack, WEAPON_NONE } from '@disa/demo-core';
 import { MAP_OVERVIEWS } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import { busiestLevelIndex, levelAt, levelIndexAt } from '../helpers/levels';
@@ -23,6 +23,10 @@ function newTrack(slotCount: number): TickTrack {
     health: new Uint8Array(slotCount),
     flags: new Uint8Array(slotCount),
     speed: new Uint16Array(slotCount),
+    armour: new Uint8Array(slotCount),
+    weapon: new Uint8Array(slotCount).fill(WEAPON_NONE),
+    grenades: new Uint8Array(slotCount),
+    money: new Uint16Array(slotCount),
   };
 }
 

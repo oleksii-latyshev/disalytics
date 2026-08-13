@@ -11,7 +11,7 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, Kill, MatchHeader, ParseObserver, ParsedDemo, TickTrack,
+    DefuseOutcome, Grenade, Kill, MatchHeader, ParseObserver, ParsedDemo, TickTrack, WEAPON_NONE,
     parse_observed, parse_recording_passes,
 };
 use serde_json::{Value, json};
@@ -56,6 +56,7 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
     );
 
     assert_track_is_rectangular(&first.track);
+    assert_weapon_column_indexes_the_table(&first);
     assert_events_are_sorted_by_tick(&first);
 
     let mut observed = ObservedParse::default();
@@ -121,8 +122,36 @@ fn assert_track_is_rectangular(track: &TickTrack) {
     assert_eq!(track.health.len(), cells);
     assert_eq!(track.flags.len(), cells);
     assert_eq!(track.speed.len(), cells);
+    assert_eq!(track.armour.len(), cells);
+    assert_eq!(track.weapon.len(), cells);
+    assert_eq!(track.grenades.len(), cells);
+    assert_eq!(track.money.len(), cells);
     assert!(track.tick_rate > 0);
     assert!(track.sample_hz > 0);
+}
+
+/// The weapon column is a `u8` into a list built on another pass over the same table. Nothing in
+/// the type system connects the two, so a match with real players is where the connection is
+/// checked.
+fn assert_weapon_column_indexes_the_table(demo: &ParsedDemo) {
+    let table_length = u8::try_from(demo.header.weapons.len()).expect("table wider than its index");
+
+    assert!(
+        demo.track
+            .weapon
+            .iter()
+            .all(|index| *index == WEAPON_NONE || *index < table_length),
+        "a sample points past the end of the match's weapon table"
+    );
+    assert!(
+        !demo.header.weapons.is_empty(),
+        "a match in which nobody held a weapon is not a match"
+    );
+    assert!(
+        demo.header.weapons.windows(2).all(|pair| pair[0] < pair[1]),
+        "the weapon table is sorted and distinct, or hard rule 8 does not hold for it"
+    );
+    eprintln!("weapon table ({}): {:?}", table_length, demo.header.weapons);
 }
 
 fn assert_events_are_sorted_by_tick(demo: &ParsedDemo) {
@@ -246,6 +275,7 @@ fn header_json(header: &MatchHeader) -> Value {
             "name": player.name,
             "team": player.team.as_str(),
         })).collect::<Vec<_>>(),
+        "weapons": header.weapons,
     })
 }
 
@@ -265,6 +295,10 @@ fn track_json(track: &TickTrack) -> Value {
                         track.health[cell],
                         track.flags[cell],
                         track.speed[cell],
+                        track.armour[cell],
+                        track.weapon[cell],
+                        track.grenades[cell],
+                        track.money[cell],
                     ])
                 })
                 .collect();
@@ -286,6 +320,10 @@ fn track_json(track: &TickTrack) -> Value {
             "health": checksum(&track.health),
             "flags": checksum(&track.flags),
             "speed": checksum(&track.speed),
+            "armour": checksum(&track.armour),
+            "weapon": checksum(&track.weapon),
+            "grenades": checksum(&track.grenades),
+            "money": checksum(&track.money),
         },
         "sampledFrames": frames,
     })

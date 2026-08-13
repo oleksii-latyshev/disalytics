@@ -22,7 +22,7 @@ import {
 } from '../schema';
 import { atFrame, newEvents, newTrack } from './helpers';
 
-const header = { map: 'de_dust2', tickRate: 64, players: [] };
+const header = { map: 'de_dust2', tickRate: 64, players: [], weapons: [] };
 
 function newRound(overrides: Partial<Round> = {}): Round {
   return {

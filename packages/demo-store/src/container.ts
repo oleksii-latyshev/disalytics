@@ -32,6 +32,10 @@ export interface StoredTrack {
     health: number;
     flags: number;
     speed: number;
+    armour: number;
+    weapon: number;
+    grenades: number;
+    money: number;
   };
 }
 

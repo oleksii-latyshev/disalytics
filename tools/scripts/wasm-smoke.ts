@@ -223,6 +223,7 @@ const map = field(header, 'map');
 
 if (typeof map !== 'string' || map.length === 0) fail(`the header names no map.`);
 if (arrayField(header, 'players').length === 0) fail('the header holds no players.');
+if (arrayField(header, 'weapons').length === 0) fail('the header holds no weapon table.');
 
 const track = field(parsed, 'track');
 const cells = numberField(track, 'frameCount') * numberField(track, 'slotCount');
@@ -235,6 +236,10 @@ bufferField(track, 'pitch', Int16Array, cells);
 bufferField(track, 'health', Uint8Array, cells);
 bufferField(track, 'flags', Uint8Array, cells);
 bufferField(track, 'speed', Uint16Array, cells);
+bufferField(track, 'armour', Uint8Array, cells);
+bufferField(track, 'weapon', Uint8Array, cells);
+bufferField(track, 'grenades', Uint8Array, cells);
+bufferField(track, 'money', Uint16Array, cells);
 
 const events = field(parsed, 'events');
 const grenades = arrayField(events, 'grenades');

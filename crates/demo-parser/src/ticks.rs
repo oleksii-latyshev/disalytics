@@ -1,10 +1,11 @@
-use crate::columns::{Columns, IntegerColumn, bool_at, float_at, id_at, text_at};
+use crate::columns::{Columns, IntegerColumn, bool_at, float_at, id_at, list_at, text_at};
 use crate::error::ParseError;
 use crate::schema::{
-    ANGLE_SCALE, DEFAULT_SAMPLE_HZ, FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_PLANTING,
-    FLAG_SCOPED, FLAG_WALKING, PlayerSlot, Team, Tick, TickTrack,
+    ANGLE_SCALE, DEFAULT_SAMPLE_HZ, FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HELMET,
+    FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING, PlayerSlot, Team, Tick, TickTrack, WEAPON_NONE,
 };
 use crate::upstream::{TICK_PROPS, prop};
+use crate::weapons::{WeaponTable, grenades_of};
 use parser::parse_demo::DemoOutput;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -184,15 +185,33 @@ impl<'a> Ticks<'a> {
         samples
     }
 
-    /// Writes the columnar buffers. The first row that lands in a frame wins, so frame `f` holds
-    /// the state at tick `f * tick_rate / sample_hz` rather than at whatever the last tick of the
-    /// bucket happened to be.
+    /// The weapons this match carried, indexed as [`TickTrack::weapon`] indexes them.
+    ///
+    /// Its own scan of the table: an index is only meaningful once every name is in, so the table
+    /// has to be sealed before the writing pass can look anything up.
+    fn weapon_table(&self) -> WeaponTable {
+        let active = self.columns.texts(prop::ACTIVE_WEAPON);
+        let mut table = WeaponTable::default();
+        for row in 0..self.row_count() {
+            if let Some(name) = text_at(active, row) {
+                table.record(name);
+            }
+        }
+        table.seal();
+        table
+    }
+
+    /// Writes the columnar buffers, and the weapon table their `weapon` column indexes into. The
+    /// first row that lands in a frame wins, so frame `f` holds the state at tick
+    /// `f * tick_rate / sample_hz` rather than at whatever the last tick of the bucket happened to
+    /// be.
     pub(crate) fn track(
         &self,
         roster: &Roster,
         planting: &[Planting],
         tick_rate: u32,
-    ) -> TickTrack {
+    ) -> (TickTrack, Vec<String>) {
+        let weapons = self.weapon_table();
         let slot_count = roster.len();
         let last_tick = (0..self.row_count())
             .filter_map(|row| self.tick_at(row))
@@ -214,6 +233,10 @@ impl<'a> Ticks<'a> {
             health: vec![0; cells],
             flags: vec![0; cells],
             speed: vec![0; cells],
+            armour: vec![0; cells],
+            weapon: vec![WEAPON_NONE; cells],
+            grenades: vec![0; cells],
+            money: vec![0; cells],
         };
 
         let xs = self.columns.floats(prop::X);
@@ -223,12 +246,17 @@ impl<'a> Ticks<'a> {
         let pitches = self.columns.floats(prop::PITCH);
         let speeds = self.columns.floats(prop::SPEED);
         let healths = self.columns.integers(prop::HEALTH);
+        let armours = self.columns.integers(prop::ARMOUR);
+        let monies = self.columns.integers(prop::MONEY);
+        let active = self.columns.texts(prop::ACTIVE_WEAPON);
+        let inventories = self.columns.integer_lists(prop::INVENTORY_IDS);
         let flag_columns = [
             (FLAG_ALIVE, self.columns.booleans(prop::IS_ALIVE)),
             (FLAG_DUCKING, self.columns.booleans(prop::IS_DUCKING)),
             (FLAG_SCOPED, self.columns.booleans(prop::IS_SCOPED)),
             (FLAG_DEFUSING, self.columns.booleans(prop::IS_DEFUSING)),
             (FLAG_WALKING, self.columns.booleans(prop::IS_WALKING)),
+            (FLAG_HELMET, self.columns.booleans(prop::HAS_HELMET)),
         ];
 
         let mut written = vec![false; cells];
@@ -256,6 +284,11 @@ impl<'a> Ticks<'a> {
             track.pitch[cell] = scaled_angle(float_at(pitches, row));
             track.health[cell] = clamp_health(healths.at(row));
             track.speed[cell] = clamp_speed(float_at(speeds, row));
+            track.armour[cell] = clamp_health(armours.at(row));
+            track.money[cell] = clamp_money(monies.at(row));
+            track.grenades[cell] = grenades_of(list_at(inventories, row));
+            track.weapon[cell] =
+                text_at(active, row).map_or(WEAPON_NONE, |name| weapons.index_of(name));
             track.flags[cell] = flag_columns
                 .iter()
                 .filter(|(_, column)| bool_at(column, row))
@@ -274,7 +307,7 @@ impl<'a> Ticks<'a> {
             }
         }
 
-        track
+        (track, weapons.into_names())
     }
 }
 
@@ -347,6 +380,12 @@ fn clamp_speed(speed: Option<f32>) -> u16 {
     {
         speed.clamp(0.0, f32::from(u16::MAX)).round() as u16
     }
+}
+
+/// The game caps a player at $16,000, so the buffer is `u16` and a value outside it is a demo
+/// saying something impossible rather than a number worth carrying.
+fn clamp_money(money: Option<i64>) -> u16 {
+    u16::try_from(money.unwrap_or_default().clamp(0, i64::from(u16::MAX))).unwrap_or(u16::MAX)
 }
 
 fn narrow(value: Option<i64>) -> i32 {

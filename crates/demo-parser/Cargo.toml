@@ -9,6 +9,9 @@ publish.workspace = true
 [dependencies]
 ahash.workspace = true
 bzip2.workspace = true
+# Upstream's own item table, already in the graph through `parser`: WEAPINDICIES is the only
+# vocabulary this crate can name without recalling a list it has never read. No bundle cost.
+csgoproto.workspace = true
 parser.workspace = true
 ruzstd.workspace = true
 thiserror.workspace = true
