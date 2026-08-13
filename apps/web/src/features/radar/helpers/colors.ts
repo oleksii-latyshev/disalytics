@@ -1,5 +1,6 @@
 import type { Team } from '@disa/demo-core';
 import { readCssToken } from '@/shared/lib';
+import type { LabelColors } from './labels';
 
 export interface RadarColors {
   readonly team: Readonly<Record<Team, string>>;
@@ -12,9 +13,7 @@ export interface RadarColors {
   readonly selectionRing: string;
   /** The ring's inner edge, which is what keeps it legible over both side colours. */
   readonly selectionEdge: string;
-  /** Behind the name rather than around it: a halo, not the chip #111 shipped — §6.1. */
-  readonly labelHalo: string;
-  readonly labelInk: string;
+  readonly label: LabelColors;
   /** The flash a token carries for a moment of match time after its player is hit. */
   readonly damage: string;
   /** What is left of a flashbang, counted down on the token it blinded. */
@@ -29,8 +28,7 @@ export function readRadarColors(): RadarColors {
     dead: readCssToken('--color-ink-faint'),
     selectionRing: readCssToken('--color-ink'),
     selectionEdge: readCssToken('--color-accent'),
-    labelHalo: readCssToken('--color-surface-0'),
-    labelInk: readCssToken('--color-ink-dim'),
+    label: { halo: readCssToken('--color-surface-0'), ink: readCssToken('--color-ink-dim') },
     damage: readCssToken('--color-damage'),
     blind: readCssToken('--color-nade-flash'),
     objective: readCssToken('--color-objective'),

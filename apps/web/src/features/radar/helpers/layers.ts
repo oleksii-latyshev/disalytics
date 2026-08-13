@@ -15,9 +15,9 @@ import {
 } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
 import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
-import type { CanvasSize, Layer } from '@/core/renderer';
+import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
-import { LABEL_HALO_PX, LABEL_HEIGHT_PX, type LabelStyle, labelPlacer } from './labels';
+import { type LabelStyle, type LabelSubject, labelPass } from './labels';
 import { levelIndexAt } from './levels';
 import {
   drawAudibleRing,
@@ -75,8 +75,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const { track } = demo;
 
   const positions = positionScratch(track);
-  const placer = labelPlacer(track.slotCount);
-  const labelWidths = new Float32Array(track.slotCount);
+  const labels = labelPass(labelBySlot, track.slotCount, labelStyle, colors.label, TOKEN_RADIUS_PX);
   let areLabelsMeasured = false;
 
   // Everything a frame derives before it draws, owned by the layer for the same reason
@@ -110,21 +109,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     return vision;
   }
 
-  function measureLabels(context: CanvasRenderingContext2D): void {
-    context.font = labelStyle.font;
-
-    for (let slot = 0; slot < track.slotCount; slot++) {
-      const label = labelBySlot[slot];
-
-      labelWidths[slot] =
-        label === undefined || label === ''
-          ? 0
-          : context.measureText(label).width + 2 * LABEL_HALO_PX;
-    }
-
-    areLabelsMeasured = true;
-  }
-
   /** Turns this frame's interpolated positions into the screen coordinates every pass draws at. */
   function readScreen(): void {
     for (let slot = 0; slot < track.slotCount; slot++) {
@@ -143,6 +127,17 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const screenX = (slot: number) => sampleAt(screen, slot * SCREEN_STRIDE);
   const screenY = (slot: number) => sampleAt(screen, slot * SCREEN_STRIDE + 1);
   const levelAlpha = (slot: number) => sampleAt(screen, slot * SCREEN_STRIDE + 2);
+  const isAlive = (slot: number) => (sampleAt(track.flags, base + slot) & FLAG_ALIVE) !== 0;
+
+  // Built once rather than per frame: the label pass reads this frame's values through it, and a
+  // fresh object every draw is exactly the allocation the whole layer is written to avoid. A dead
+  // player loses its name along with its needle and its ring — DESIGN.md §6.1.
+  const named: LabelSubject = {
+    isNamed: (slot) => teamBySlot[slot] !== undefined && isAlive(slot),
+    x: screenX,
+    y: screenY,
+    alpha: levelAlpha,
+  };
 
   /**
    * The cone the selected player can see, drawn before every token so it tints the plate rather
@@ -276,45 +271,16 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     }
   }
 
-  function drawLabels(context: CanvasRenderingContext2D, size: CanvasSize): void {
-    context.font = labelStyle.font;
-    context.textAlign = 'left';
-    context.textBaseline = 'middle';
-    // The halo is a stroke under the glyphs rather than a box behind them: a background per label
-    // is ten more rectangles on a plate that now carries ten larger tokens — DESIGN.md §6.1.
-    context.lineWidth = 2 * LABEL_HALO_PX;
-    context.lineJoin = 'round';
-    context.strokeStyle = colors.labelHalo;
-    placer.reset();
-
-    for (let slot = 0; slot < track.slotCount; slot++) {
-      if (teamBySlot[slot] === undefined) continue;
-      if ((sampleAt(track.flags, base + slot) & FLAG_ALIVE) === 0) continue;
-
-      const label = labelBySlot[slot];
-      const width = sampleAt(labelWidths, slot);
-      if (label === undefined || width === 0) continue;
-
-      placer.place(screenX(slot), screenY(slot), TOKEN_RADIUS_PX, width, size);
-
-      const x = placer.x + LABEL_HALO_PX;
-      const y = placer.y + LABEL_HEIGHT_PX / 2;
-
-      context.globalAlpha = levelAlpha(slot);
-      context.strokeText(label, x, y);
-
-      context.fillStyle = colors.labelInk;
-      context.fillText(label, x, y);
-    }
-  }
-
   return (context, size) => {
     if (track.frameCount === 0) return;
 
     base = readPositions(track, clock.frame, positions) * track.slotCount;
     scale = size.width / RADAR_IMAGE_SIZE;
 
-    if (!areLabelsMeasured) measureLabels(context);
+    if (!areLabelsMeasured) {
+      labels.measure(context);
+      areLabelsMeasured = true;
+    }
 
     // These read the fractional clock rather than the sample under it, so a hit decays smoothly
     // between samples and does so in match time — DESIGN.md §8's test for what is a draw.
@@ -325,6 +291,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
     drawVision(context);
     drawTokens(context);
-    drawLabels(context, size);
+    labels.draw(context, size, named);
   };
 }

@@ -26,6 +26,12 @@ export interface LabelStyle {
   readonly font: string;
 }
 
+/** Behind the name rather than around it: a halo, not the chip #111 shipped — DESIGN.md §6.1. */
+export interface LabelColors {
+  readonly halo: string;
+  readonly ink: string;
+}
+
 export function readLabelStyle(): LabelStyle {
   return { font: `${LABEL_SIZE_PX}px ${readCssToken('--font-narrow')}` };
 }
@@ -47,6 +53,81 @@ export function labelsBySlot(players: readonly PlayerInfo[], slotCount: number):
   }
 
   return labels;
+}
+
+/** What the label pass needs to know about a slot, answered by whoever is drawing the tokens. */
+export interface LabelSubject {
+  isNamed(slot: number): boolean;
+  x(slot: number): number;
+  y(slot: number): number;
+  alpha(slot: number): number;
+}
+
+export interface LabelPass {
+  /** Measured once per demo: a width taken against the fallback face would be wrong all match. */
+  measure(context: CanvasRenderingContext2D): void;
+  draw(context: CanvasRenderingContext2D, size: CanvasSize, subject: LabelSubject): void;
+}
+
+/**
+ * The names beside the tokens. Everything it owns — the placer, the measured widths — outlives the
+ * frame, because this runs inside a draw and nothing on the way to the canvas may allocate.
+ */
+export function labelPass(
+  labelBySlot: readonly string[],
+  slotCount: number,
+  style: LabelStyle,
+  colors: LabelColors,
+  tokenRadius: number,
+): LabelPass {
+  const placer = labelPlacer(slotCount);
+  const widths = new Float32Array(slotCount);
+
+  return {
+    measure(context): void {
+      context.font = style.font;
+
+      for (let slot = 0; slot < slotCount; slot++) {
+        const label = labelBySlot[slot];
+
+        widths[slot] =
+          label === undefined || label === ''
+            ? 0
+            : context.measureText(label).width + 2 * LABEL_HALO_PX;
+      }
+    },
+
+    draw(context, size, subject): void {
+      context.font = style.font;
+      context.textAlign = 'left';
+      context.textBaseline = 'middle';
+      // The halo is a stroke under the glyphs rather than a box behind them: a background per label
+      // is ten more rectangles on a plate that now carries ten larger tokens — DESIGN.md §6.1.
+      context.lineWidth = 2 * LABEL_HALO_PX;
+      context.lineJoin = 'round';
+      context.strokeStyle = colors.halo;
+      placer.reset();
+
+      for (let slot = 0; slot < slotCount; slot++) {
+        if (!subject.isNamed(slot)) continue;
+
+        const label = labelBySlot[slot];
+        const width = sampleAt(widths, slot);
+        if (label === undefined || width === 0) continue;
+
+        placer.place(subject.x(slot), subject.y(slot), tokenRadius, width, size);
+
+        const x = placer.x + LABEL_HALO_PX;
+        const y = placer.y + LABEL_HEIGHT_PX / 2;
+
+        context.globalAlpha = subject.alpha(slot);
+        context.strokeText(label, x, y);
+
+        context.fillStyle = colors.ink;
+        context.fillText(label, x, y);
+      }
+    },
+  };
 }
 
 /**
