@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  blindedBySlot,
+  blindRemainingBySlot,
   bombProgressAt,
   DAMAGE_FLASH_SECONDS,
+  DEATH_SHRINK_SECONDS,
   DEFUSE_SECONDS,
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
+  deathProgressBySlot,
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from '../helpers/player-state';
@@ -21,7 +23,15 @@ import {
   type ParsedDemo,
   type TickTrack,
 } from '../schema';
-import { atFrame, newEvents, newTrack, withBlind, withDamage, withDefuse } from './helpers';
+import {
+  atFrame,
+  newEvents,
+  newTrack,
+  withBlind,
+  withDamage,
+  withDefuse,
+  withKill,
+} from './helpers';
 
 const TICK_RATE = 64;
 const SLOTS = 10;
@@ -98,26 +108,77 @@ describe('damageFlashBySlot', () => {
   });
 });
 
-describe('blindedBySlot', () => {
+describe('blindRemainingBySlot', () => {
   const demo = newDemo(
     withBlind(newEvents(), { tick: asTick(TICK_RATE * 2), victim: VICTIM, durationSeconds: 3 }),
   );
-  const blinded = new Uint8Array(SLOTS);
+  const remaining = new Float32Array(SLOTS);
 
-  it('holds for the duration the event carries', () => {
-    blindedBySlot(demo, atSecond(2.5), blinded);
-    expect(blinded[VICTIM]).toBe(1);
+  it('counts down over the duration the event carries', () => {
+    blindRemainingBySlot(demo, atSecond(2), remaining);
+    expect(remaining[VICTIM]).toBeCloseTo(1, 2);
 
-    blindedBySlot(demo, atSecond(4.9), blinded);
-    expect(blinded[VICTIM]).toBe(1);
+    blindRemainingBySlot(demo, atSecond(3.5), remaining);
+    expect(remaining[VICTIM]).toBeCloseTo(0.5, 2);
+
+    blindRemainingBySlot(demo, atSecond(4.9), remaining);
+    expect(remaining[VICTIM]).toBeGreaterThan(0);
   });
 
   it('clears once the duration is spent, and is not set before the flash', () => {
-    blindedBySlot(demo, atSecond(5.1), blinded);
-    expect(blinded[VICTIM]).toBe(0);
+    blindRemainingBySlot(demo, atSecond(5.1), remaining);
+    expect(remaining[VICTIM]).toBe(0);
 
-    blindedBySlot(demo, atSecond(1.9), blinded);
-    expect(blinded[VICTIM]).toBe(0);
+    blindRemainingBySlot(demo, atSecond(1.9), remaining);
+    expect(remaining[VICTIM]).toBe(0);
+  });
+
+  it('takes the longer of two flashes overlapping on one player', () => {
+    const both = newDemo(
+      withBlind(
+        withBlind(newEvents(), {
+          tick: asTick(TICK_RATE * 2),
+          victim: VICTIM,
+          durationSeconds: 3,
+        }),
+        { tick: asTick(TICK_RATE * 3), victim: VICTIM, durationSeconds: 3 },
+      ),
+    );
+
+    blindRemainingBySlot(both, atSecond(3), remaining);
+
+    expect(remaining[VICTIM]).toBeCloseTo(1, 2);
+  });
+});
+
+describe('deathProgressBySlot', () => {
+  const demo = newDemo(withKill(newEvents(), { tick: asTick(TICK_RATE * 2), victim: VICTIM }));
+  const progress = new Float32Array(SLOTS);
+
+  it('runs from the kill to a settled body over the shrink window', () => {
+    deathProgressBySlot(demo, atSecond(2), progress);
+    expect(progress[VICTIM]).toBeCloseTo(0, 2);
+
+    deathProgressBySlot(demo, atSecond(2 + DEATH_SHRINK_SECONDS / 2), progress);
+    expect(progress[VICTIM]).toBeCloseTo(0.5, 1);
+
+    deathProgressBySlot(demo, atSecond(2 + DEATH_SHRINK_SECONDS * 2), progress);
+    expect(progress[VICTIM]).toBe(1);
+  });
+
+  it('reads settled for a slot with no kill inside the window', () => {
+    deathProgressBySlot(demo, atSecond(2), progress);
+
+    expect(progress[0]).toBe(1);
+    expect(progress[SLOTS - 1]).toBe(1);
+  });
+
+  it('starts again when the clock is scrubbed back to the kill', () => {
+    deathProgressBySlot(demo, atSecond(2 + DEATH_SHRINK_SECONDS * 2), progress);
+    expect(progress[VICTIM]).toBe(1);
+
+    deathProgressBySlot(demo, atSecond(2 + DEATH_SHRINK_SECONDS / 2), progress);
+    expect(progress[VICTIM]).toBeCloseTo(0.5, 1);
   });
 });
 

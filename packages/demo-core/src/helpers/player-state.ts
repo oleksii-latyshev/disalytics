@@ -17,6 +17,9 @@ export const DAMAGE_FLASH_SECONDS = 0.25;
  */
 const BLIND_LOOKBACK_SECONDS = 6;
 
+/** How long a token takes to settle into a body, in **match** seconds — `docs/DESIGN.md` §6.1. */
+export const DEATH_SHRINK_SECONDS = 0.2;
+
 export const PLANT_SECONDS = 3.2;
 export const DEFUSE_SECONDS = 10;
 export const DEFUSE_WITH_KIT_SECONDS = 5;
@@ -82,10 +85,12 @@ export function damageFlashBySlot(demo: ParsedDemo, frame: number, out: Float32A
 }
 
 /**
- * Which slots are still blinded, `1` for blinded. A flashed player is not looking anywhere, so the
- * plate drops their facing needle rather than claiming a direction they cannot see in.
+ * How much of each slot's flash is still to run — 1 on the tick of the blind, 0 once the event's
+ * own `durationSeconds` are spent. A flashed player is not looking anywhere, so the plate drops
+ * their facing needle rather than claiming a direction they cannot see in, and covers the token
+ * with what is left of the countdown.
  */
-export function blindedBySlot(demo: ParsedDemo, frame: number, out: Uint8Array): void {
+export function blindRemainingBySlot(demo: ParsedDemo, frame: number, out: Float32Array): void {
   out.fill(0);
 
   const { track, events } = demo;
@@ -101,7 +106,39 @@ export function blindedBySlot(demo: ParsedDemo, frame: number, out: Uint8Array):
 
     const age = now - event.tick / track.tickRate;
     if (age > BLIND_LOOKBACK_SECONDS) break;
-    if (age < event.durationSeconds) out[event.victim] = 1;
+    if (age >= event.durationSeconds) continue;
+
+    const remaining = 1 - Math.max(age, 0) / event.durationSeconds;
+    if (remaining > (out[event.victim] ?? 0)) out[event.victim] = remaining;
+  }
+}
+
+/**
+ * How far each slot is through the shrink that turns a token into a body — 0 on the tick of the
+ * kill, 1 once `DEATH_SHRINK_SECONDS` of match time have passed. A slot with no kill inside that
+ * window reads 1, so a body lying there since the start of the round is already settled and a slot
+ * that never died carries a value the caller has no reason to read: it asks only for slots it
+ * already knows to be dead.
+ */
+export function deathProgressBySlot(demo: ParsedDemo, frame: number, out: Float32Array): void {
+  out.fill(1);
+
+  const { track, events } = demo;
+  const now = secondsAtFrame(track, frame);
+
+  for (
+    let index = lastIndexAtOrBefore(events.kills, tickAtFrame(track, frame));
+    index >= 0;
+    index--
+  ) {
+    const event = events.kills[index];
+    if (event === undefined) break;
+
+    const age = now - event.tick / track.tickRate;
+    if (age > DEATH_SHRINK_SECONDS) break;
+
+    const progress = age <= 0 ? 0 : age / DEATH_SHRINK_SECONDS;
+    if (progress < (out[event.victim] ?? 1)) out[event.victim] = progress;
   }
 }
 

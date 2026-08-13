@@ -8,12 +8,14 @@ export {
   SILENT_SPEED_UNITS,
 } from './helpers/audibility';
 export {
-  blindedBySlot,
+  blindRemainingBySlot,
   bombProgressAt,
   DAMAGE_FLASH_SECONDS,
+  DEATH_SHRINK_SECONDS,
   DEFUSE_SECONDS,
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
+  deathProgressBySlot,
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
