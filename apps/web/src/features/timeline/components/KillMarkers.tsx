@@ -87,7 +87,7 @@ export const KillMarkers = memo(function KillMarkers({ markers, names, transport
             style={{ left: `${marker.fraction * 100}%` }}
             // A match holds a couple of hundred kills, so the tick is 2px and the target it
             // carries is the `::before` — wide enough to hit, narrow enough not to read as a bar.
-            className="pointer-events-auto absolute inset-y-0 w-0.5 -translate-x-1/2 bg-kill before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10"
+            className="pointer-events-auto absolute inset-y-0 w-0.5 -translate-x-1/2 bg-damage before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10"
           />
         </li>
       ))}

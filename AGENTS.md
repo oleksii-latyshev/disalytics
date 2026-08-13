@@ -509,20 +509,25 @@ side ahead in 15 of the 30 rounds. Carrying it took `SCHEMA_VERSION` to 3.
 tall, and the economy chart starts where it ends. Both live in `features/timeline/helpers/spine.ts`
 and a change to either has to be checked on the canvas and in the DOM.
 
-**What keeps it still — #108.** §2 rule 9 is enforced rather than trusted. `bindPlayingFlag` mirrors
-play and pause onto `data-playing` on the document element, and one rule in
-`packages/ui/src/styles/motion.css` takes every transition and animation beneath it to zero. It
-listens on the **transport** channel, so the attribute changes when the reader presses play and not
-once per animation frame, and it is bound inside `useTransport` rather than by a screen — a rule a
-screen has to remember to mount is a rule that gets forgotten. `PLAYING_ATTRIBUTE` is the third
-number-with-two-readers in the codebase, and its other reader is a stylesheet that cannot import it.
+**What enforces rule 9 — #108, then #132.** #108 built the enforcement the old rule needed:
+`bindPlayingFlag` mirrored play and pause onto `data-playing` on the document element, and one rule
+in `packages/ui/src/styles/motion.css` took every transition and animation beneath it to zero.
+**Both are gone since #132.** Rule 9 no longer bans DOM motion during playback, so a switch that
+bans all of it enforces a rule the product does not have — and what it shipped was an interface
+where hovering a button while the match ran did nothing.
 
-The rule is written with `:where()` so it carries no specificity, which is what lets the
-`prefers-reduced-motion` reset below it still win: two zero-specificity `!important` declarations are
-decided by source order, and reduced motion is the one a reader asked for. It stops CSS transitions
-and CSS animations; a JavaScript-driven tween is stopped by not starting one, which is what the
-`strict` `LazyMotion` in `@disa/ui`'s `MotionProvider` is for — under it only the `m` component
-exists, and `motion.*` throws.
+What is left is narrower and does not need a switch. **Nothing subscribed to the frame channel may
+touch React or start an animation** — that half was always the real rule and it is enforced by the
+channel split above, not by CSS. **Nothing may animate a property that triggers layout**, at every
+moment rather than during playback, which is a review question. And the rest is a budget: §16's
+60 fps assertion for the review screen with everything on is what decides whether the motion in
+`docs/DESIGN.md` §8 survives, and when it fails the motion is what goes.
+
+A JavaScript-driven tween is still stopped by not starting one, which is what the `strict`
+`LazyMotion` in `@disa/ui`'s `MotionProvider` is for — under it only the `m` component exists, and
+`motion.*` throws. The `prefers-reduced-motion` reset in `motion.css` is now the only global motion
+override in the product, and it no longer needs `:where()`: it had that to lose a specificity race
+against the playing-flag rule, and there is nothing left to race.
 
 **Where it all sits — #110.** `docs/DESIGN.md` §5's layout: a 56px top bar, two player rails beside a
 stage that takes the rest, and a 96px spine band. Measured at 1280×800 against the Phase 0 fixture,

@@ -74,11 +74,10 @@ export function TopBar({
         <span className="font-narrow text-t">T</span>
       </p>
 
-      {/* Monochrome, and measured rather than assumed. DESIGN.md §2 permits the accent on a top
-          bar's actions, then overrides itself: an accent control the reader can compare against a
-          CT token loses. This screen shows four at once — the CT glyph above, the rail markers, the
-          plate's own tokens — and `--accent` against `--ct` measures ΔE2000 6.59 with 5.84° of hue
-          between them, against ΔE2000 50.17 for the CT/T pair the reader is meant to tell apart. */}
+      {/* Monochrome, and no longer because the accent would be mistaken for a side: DESIGN.md §2.5
+          moved it to violet, ΔE2000 24.93 from `--ct` against the old blue's 6.59, and removed the
+          fence. These stay monochrome for the other half of §2.5 — the accent says *this is the
+          thing to press*, and a toggle's state is luminance. */}
       <div className="ms-auto flex items-center gap-2">
         {/* A toggle rather than a pair of states: the plate under it says which way it is set, and
             the pressed fill is `--selected`, which is §2's "interaction is luminance, not hue". */}
