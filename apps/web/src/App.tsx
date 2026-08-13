@@ -19,5 +19,7 @@ export function App() {
     );
   }
 
-  return <WayIn state={state} onFile={parse.open} onClose={parse.close} />;
+  return (
+    <WayIn state={state} onFile={parse.open} onSaved={parse.openSaved} onClose={parse.close} />
+  );
 }

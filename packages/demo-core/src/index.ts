@@ -17,6 +17,8 @@ export {
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
+export type { MatchScore } from './helpers/score';
+export { matchScore } from './helpers/score';
 export type { SideScore } from './helpers/selectors';
 export {
   frameForTick,

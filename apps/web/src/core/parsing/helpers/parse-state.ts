@@ -9,6 +9,13 @@ export type CacheState =
   | { status: 'stored'; persistence: PersistenceStatus }
   | { status: 'unavailable' };
 
+/**
+ * Why an open ended without a demo on screen. A saved demo that is no longer on the device is not
+ * a parser failure and has no `ErrorCode`: nothing was read, and the vocabulary in
+ * `packages/demo-core` describes what a demo turned out to be.
+ */
+export type OpenFailure = { kind: 'parse'; code: ErrorCode } | { kind: 'cacheGone' };
+
 export type ParseState =
   | { status: 'idle' }
   | { status: 'restoring'; fileName: string }
@@ -20,7 +27,7 @@ export type ParseState =
       header: MatchHeader | null;
     }
   | { status: 'ready'; fileName: string; demo: ParsedDemo; cache: CacheState }
-  | { status: 'failed'; fileName: string; code: ErrorCode };
+  | { status: 'failed'; fileName: string; failure: OpenFailure };
 
 export type ParseEvent =
   | { type: 'opened'; fileName: string }
@@ -32,7 +39,7 @@ export type ParseEvent =
   | { type: 'succeeded'; demo: ParsedDemo; caching: boolean }
   | { type: 'stored'; persistence: PersistenceStatus }
   | { type: 'notStored' }
-  | { type: 'failed'; code: ErrorCode };
+  | { type: 'failed'; failure: OpenFailure };
 
 export const IDLE_PARSE: ParseState = { status: 'idle' };
 
@@ -43,6 +50,12 @@ function reduceRestoring(fileName: string, event: ParseEvent): ParseState | null
 
   if (event.type === 'parseStarted') {
     return { status: 'parsing', fileName, phase: 'parse', percent: 0, header: null };
+  }
+
+  // Only a demo opened from the list can fail here: a file falls through to a parse instead, and a
+  // saved demo has nothing left to fall through to once its entry has gone.
+  if (event.type === 'failed') {
+    return { status: 'failed', fileName, failure: event.failure };
   }
 
   return null;
@@ -65,7 +78,7 @@ function reduceParsing(
         cache: { status: event.caching ? 'storing' : 'unavailable' },
       };
     case 'failed':
-      return { status: 'failed', fileName: state.fileName, code: event.code };
+      return { status: 'failed', fileName: state.fileName, failure: event.failure };
     default:
       return null;
   }

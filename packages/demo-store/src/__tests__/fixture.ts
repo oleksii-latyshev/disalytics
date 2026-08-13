@@ -53,7 +53,26 @@ function newGrenade(): Grenade {
 
 function newEvents(): MatchEvents {
   return {
-    rounds: [],
+    rounds: [
+      {
+        number: 1,
+        startTick: asTick(0),
+        freezeTimeEndTick: asTick(64),
+        endTick: asTick(1000),
+        winner: 'CT',
+        reason: 'all-t-eliminated',
+        economy: [
+          {
+            slot: asPlayerSlot(0),
+            money: 800,
+            equipmentValue: 1000,
+            buyType: 'pistol',
+            team: 'CT',
+          },
+          { slot: asPlayerSlot(1), money: 800, equipmentValue: 850, buyType: 'pistol', team: 'T' },
+        ],
+      },
+    ],
     kills: [
       {
         tick: asTick(200),

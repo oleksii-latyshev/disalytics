@@ -1,7 +1,35 @@
+import type { MatchScore } from '@disa/demo-core';
 import { schemaVersionOf } from './fingerprint';
 import { isRecord } from './guards';
 
+/**
+ * What a human needs to recognise a cached demo — `docs/DESIGN.md` §10.2. Written at the moment the
+ * demo is stored and never afterwards, which is what keeps a read from writing the catalog.
+ */
+export interface CatalogMeta {
+  /** The name of the file this demo was opened from. The cache key deliberately ignores it. */
+  fileName: string;
+  /** The demo's own map name. Game vocabulary: canonical, never translated. */
+  map: string;
+  roundCount: number;
+  score: MatchScore;
+  storedAt: number;
+}
+
 export interface CatalogEntry {
+  key: string;
+  byteLength: number;
+  lastUsedAt: number;
+  /**
+   * Absent on an entry written before this metadata existed. Such an entry still opens — it is a
+   * demo like any other — but it cannot be named, so it is not listed. It leaves the catalog the
+   * way every entry does: evicted, or replaced by a store that carries the metadata.
+   */
+  meta?: CatalogMeta;
+}
+
+/** One catalog entry as the screens read it: an entry that has metadata, flattened. */
+export interface SavedDemo extends CatalogMeta {
   key: string;
   byteLength: number;
   lastUsedAt: number;
@@ -26,21 +54,62 @@ export const CATALOG_NAME = 'catalog.json';
  */
 export const CACHE_BYTE_LIMIT = 512 * 1024 * 1024;
 
-function isEntry(value: unknown): value is CatalogEntry {
+function isScore(value: unknown): value is MatchScore {
+  return (
+    isRecord(value) && typeof value.startedCt === 'number' && typeof value.startedT === 'number'
+  );
+}
+
+function isMeta(value: unknown): value is CatalogMeta {
   return (
     isRecord(value) &&
-    typeof value.key === 'string' &&
-    typeof value.byteLength === 'number' &&
-    typeof value.lastUsedAt === 'number'
+    typeof value.fileName === 'string' &&
+    typeof value.map === 'string' &&
+    typeof value.roundCount === 'number' &&
+    typeof value.storedAt === 'number' &&
+    isScore(value.score)
   );
+}
+
+/**
+ * The three fields that make an entry evictable are the only ones it must have. Metadata arrived
+ * later and a malformed one costs a name rather than an entry — dropping the entry would delete a
+ * cached demo over a field nothing depends on.
+ */
+function toEntry(value: unknown): CatalogEntry | null {
+  if (
+    !isRecord(value) ||
+    typeof value.key !== 'string' ||
+    typeof value.byteLength !== 'number' ||
+    typeof value.lastUsedAt !== 'number'
+  ) {
+    return null;
+  }
+
+  const entry: CatalogEntry = {
+    key: value.key,
+    byteLength: value.byteLength,
+    lastUsedAt: value.lastUsedAt,
+  };
+
+  return isMeta(value.meta) ? { ...entry, meta: value.meta } : entry;
 }
 
 /** A catalog that cannot be read is an empty one: the files it described are pruned as orphans. */
 export function parseCatalog(bytes: Uint8Array<ArrayBuffer>): CatalogEntry[] {
   try {
     const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    if (!Array.isArray(parsed)) return [];
 
-    return Array.isArray(parsed) ? parsed.filter(isEntry) : [];
+    const entries: CatalogEntry[] = [];
+
+    for (const value of parsed) {
+      const entry = toEntry(value);
+
+      if (entry !== null) entries.push(entry);
+    }
+
+    return entries;
   } catch {
     return [];
   }
@@ -55,6 +124,31 @@ export function withEntry(
   entry: CatalogEntry,
 ): readonly CatalogEntry[] {
   return [...entries.filter((existing) => existing.key !== entry.key), entry];
+}
+
+/**
+ * A read moves an entry's recency and nothing else. Written separately from `withEntry` because
+ * replacing the entry wholesale is how a read would silently forget the name a store recorded.
+ */
+export function withUse(
+  entries: readonly CatalogEntry[],
+  used: Omit<CatalogEntry, 'meta'>,
+): readonly CatalogEntry[] {
+  const meta = entries.find((entry) => entry.key === used.key)?.meta;
+
+  return withEntry(entries, meta === undefined ? used : { ...used, meta });
+}
+
+function hasMeta(entry: CatalogEntry): entry is CatalogEntry & { meta: CatalogMeta } {
+  return entry.meta !== undefined;
+}
+
+/** Most recently used first. The key is the tiebreaker, so the order never depends on chance. */
+export function savedDemos(entries: readonly CatalogEntry[]): readonly SavedDemo[] {
+  return entries
+    .filter(hasMeta)
+    .map(({ key, byteLength, lastUsedAt, meta }) => ({ key, byteLength, lastUsedAt, ...meta }))
+    .sort((left, right) => right.lastUsedAt - left.lastUsedAt || left.key.localeCompare(right.key));
 }
 
 export function withoutKeys(
