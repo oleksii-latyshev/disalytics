@@ -23,7 +23,8 @@ apps/web/src/
                   Knows nothing about CS2 — it draws what it is told.
     parsing/      Parse worker lifecycle, progress state machine, cancellation.
     shortcuts/    Keyboard registry and scope handling.
-    theme/        Light/dark provider and token application.
+    settings/     UI preferences: playback rules, plate options, locale, palette.
+                  There is no theme provider — dark is unconditional (AGENTS.md §20).
   features/       User-facing slices. May use core and other features.
     library/      Open/drop a demo, parse progress, error screens, cached demo list.
     review/       The match-review workspace shell that composes the panels below.
