@@ -100,12 +100,13 @@
 
   --spacing: 4px;
 
-  /* The width the two player rails fit beside the stage at, and the only breakpoint the review
-     screen has — a layout fact rather than a device size. It stays as it is because the layout it
-     serves still exists: DESIGN.md §5.1 replaces it with two numbers, 1280px where the four cards
-     stop clearing the viewport edges and 1080px where the team cards merge, and that is the layout
-     issue's to land alongside the layout. */
-  --breakpoint-wide: 1100px;
+  /* The review screen's two widths, and layout facts rather than device sizes — DESIGN.md §5.1.
+     Above `wide` the four cards float clear of the viewport edges on the stage inset; below it they
+     dock to the edges and the plate takes what is left. Above `split` the two team cards stand in
+     their own columns; below it they merge into one strip above the timeline block, which is still
+     not over the plate, so §2.3's blur rule survives both. */
+  --breakpoint-wide: 1280px;
+  --breakpoint-split: 1080px;
 
   --duration-instant: 90ms;
   --duration-micro: 140ms;

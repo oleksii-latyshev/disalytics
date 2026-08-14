@@ -223,6 +223,26 @@ has the bug this avoids and #141 owns it. And **`ParseState.failed` carries an `
 than an `ErrorCode`**: a saved demo that has gone is not a parser error and has no code in the
 vocabulary `bun run errors:check` guards. `SCHEMA_VERSION` did not move — `ParsedDemo` is untouched.
 
+**#147 landed §15's fifth step — the review screen is a stage with four cards.** The top bar, both
+rails, the inspector column and its drawer are gone; `features/inspector` no longer exists. What
+replaces them is one grid, and **the grid is what makes §5.1 structural rather than a promise**: the
+plate lives in a cell no card is in, so no card can overlap it, which is what pays for every
+`backdrop-filter` on the screen (§2.3). Measured at 1440×900 the plate is **744×744** — the document
+predicted 660 — and no card overlaps it at 1440, 1280, 1100 or 1040. `--breakpoint-wide` is 1280 and
+`--breakpoint-split` is 1080; below the split the two team cards merge into one strip whose five
+seats run **across** it, because a stacked card there left the plate 100px tall. Five things are
+load-bearing. **The team rows are the first readers of `SCHEMA_VERSION` 4** — armour, weapon,
+grenades and money — and everything on them arrives at the 10 Hz readout, never on the frame channel.
+**A bar scales, it does not resize**: `transform: scaleX()`, because `width` triggers layout at every
+moment. **`playerRoundStats` is computed for the selected row only** and starts from a binary search;
+walking a match's damage for four rows nobody expanded was the cost this avoids. **The `C4 Explosive`
+entry draws nothing** — §6.4 as #137 restated it, verified over a play-through where the label never
+once appeared. And **the corner cluster carries five icons where §5.4 names three**: close and
+audibility are a bridge until the settings sheet exists, and they leave with it. The spine is now a
+14px `MatchRibbon` whose bands seek and whose density trace is `--ink-dim` at α0.30 rather than
+`--damage` at 0.55, which is what #116 asked for; kill marks moved up to `RoundTimeline`, where they
+fit. `AGENTS.md` §16's two frame budgets are **measured** rather than asserted for the first time.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

@@ -2,7 +2,26 @@
   "map": "Карта",
   "score": "Счёт",
   "roundOfTotal": "Раунд {current, number} из {total, number}",
+  "roundClock": "Время раунда",
   "warmup": "Разминка",
   "close": "Открыть другое демо",
-  "rail": "Игроки {side}"
+  "settings": "Настройки",
+  "help": "Помощь",
+  "team": "Игроки {side}",
+  "fullscreen": {
+    "enter": "Во весь экран",
+    "exit": "Выйти из полноэкранного режима"
+  },
+  "player": {
+    "health": "Здоровье",
+    "armour": "Броня",
+    "helmet": "Шлем",
+    "money": "Деньги",
+    "dead": "Убит",
+    "empty": "Пустое место",
+    "kills": "Убийства",
+    "deaths": "Смерти",
+    "damage": "Урон",
+    "equipment": "Снаряжение"
+  }
 }
