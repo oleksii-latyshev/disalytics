@@ -1,12 +1,14 @@
-import { ANGLE_SCALE, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
+import { ANGLE_SCALE, sampleAt, type TickTrack } from '@disa/demo-core';
 
-export const TOKEN_RADIUS_PX = 5;
-const TOKEN_OUTLINE_PX = 1.5;
+/** A filled circle, 16px across, for both sides — DESIGN.md §6.1 retires the per-side silhouette. */
+export const TOKEN_RADIUS_PX = 8;
+/** What a token has shrunk to once its player is a body rather than a player. */
+export const TOKEN_DEAD_RADIUS_PX = 4;
 
 const NEEDLE_WIDTH_PX = 2;
-const NEEDLE_LENGTH_PX = 13;
-/** Scoped in, a player is looking much further than they are turning — DESIGN.md §7. */
-const NEEDLE_SCOPED_LENGTH_PX = 22;
+const NEEDLE_LENGTH_PX = 10;
+/** Scoped in, a player is looking much further than they are turning — DESIGN.md §6.1. */
+const NEEDLE_SCOPED_LENGTH_PX = 18;
 
 /**
  * Where a player is looking, on the plate. World yaw counts anticlockwise from +X while radar rows
@@ -16,40 +18,22 @@ export function screenAngle(track: TickTrack, sample: number): number {
   return (-sampleAt(track.yaw, sample) / ANGLE_SCALE) * (Math.PI / 180);
 }
 
-/**
- * Side identity carries in shape as well as colour — `DESIGN.md` §2 rules out relying on hue,
- * which a colour-blind reader may not have.
- */
-function traceToken(context: CanvasRenderingContext2D, x: number, y: number, team: Team): void {
+function traceToken(context: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
   context.beginPath();
-
-  if (team === 'CT') {
-    context.arc(x, y, TOKEN_RADIUS_PX, 0, 2 * Math.PI);
-    return;
-  }
-
-  context.moveTo(x, y - TOKEN_RADIUS_PX);
-  context.lineTo(x + TOKEN_RADIUS_PX, y);
-  context.lineTo(x, y + TOKEN_RADIUS_PX);
-  context.lineTo(x - TOKEN_RADIUS_PX, y);
-  context.closePath();
+  context.arc(x, y, radius, 0, 2 * Math.PI);
 }
 
+/** No stroke: the ring a token can carry is selection, and nothing else — DESIGN.md §6.1. */
 export function drawToken(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
-  team: Team,
+  radius: number,
   fill: string,
-  outline: string,
 ): void {
-  context.lineWidth = TOKEN_OUTLINE_PX;
-  context.strokeStyle = outline;
   context.fillStyle = fill;
-
-  traceToken(context, x, y, team);
+  traceToken(context, x, y, radius);
   context.fill();
-  context.stroke();
 }
 
 /**
@@ -61,19 +45,74 @@ export function drawDamageFlash(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
-  team: Team,
   color: string,
 ): void {
+  drawToken(context, x, y, TOKEN_RADIUS_PX, color);
+}
+
+const BLIND_DISC_ALPHA = 0.5;
+
+/**
+ * What is left of a flash, covering the token and sweeping away anticlockwise. A flashed player is
+ * not looking anywhere, and this is how much longer that stays true — DESIGN.md §6.1.
+ */
+export function drawBlindDisc(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  remaining: number,
+  color: string,
+  alpha: number,
+): void {
+  const start = -Math.PI / 2;
+
+  context.save();
+  context.globalAlpha = alpha * BLIND_DISC_ALPHA;
   context.fillStyle = color;
-  traceToken(context, x, y, team);
+
+  context.beginPath();
+  context.moveTo(x, y);
+  context.arc(x, y, TOKEN_RADIUS_PX, start, start - remaining * 2 * Math.PI, true);
+  context.closePath();
   context.fill();
+  context.restore();
+}
+
+/** How far the ring sits outside the token, so selection reads as state and not as a bigger player. */
+const SELECTION_GAP_PX = 2;
+const SELECTION_WIDTH_PX = 1.5;
+const SELECTION_EDGE_WIDTH_PX = 1;
+
+/**
+ * The one stroke a token may carry. It is drawn twice because it has to stay legible against both
+ * side colours *and* against the plate: white outside, `--accent` on its inner edge — DESIGN.md
+ * §6.1.
+ */
+export function drawSelectionRing(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  ring: string,
+  edge: string,
+): void {
+  const inner = TOKEN_RADIUS_PX + SELECTION_EDGE_WIDTH_PX / 2;
+
+  context.lineWidth = SELECTION_EDGE_WIDTH_PX;
+  context.strokeStyle = edge;
+  traceToken(context, x, y, inner);
+  context.stroke();
+
+  context.lineWidth = SELECTION_WIDTH_PX;
+  context.strokeStyle = ring;
+  traceToken(context, x, y, TOKEN_RADIUS_PX + SELECTION_GAP_PX + SELECTION_WIDTH_PX / 2);
+  context.stroke();
 }
 
 /** How far the arc sits outside the token, so it reads as a state and not as a bigger player. */
 const ARC_GAP_PX = 3.5;
 const ARC_WIDTH_PX = 2;
 
-/** Planting or defusing, filling clockwise from the top — DESIGN.md §7. */
+/** Planting or defusing, filling clockwise from the top — DESIGN.md §6.1. */
 export function drawProgressArc(
   context: CanvasRenderingContext2D,
   x: number,
@@ -114,7 +153,7 @@ export function drawAudibleRing(
   context.restore();
 }
 
-/** A direction rather than an area: ten translucent cones is a fog — DESIGN.md §7. */
+/** A direction rather than an area: ten translucent cones is a fog — DESIGN.md §6.1. */
 export function drawNeedle(
   context: CanvasRenderingContext2D,
   x: number,
@@ -123,7 +162,7 @@ export function drawNeedle(
   isScoped: boolean,
   color: string,
 ): void {
-  const length = isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX;
+  const length = TOKEN_RADIUS_PX + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX);
   const dx = Math.cos(angle);
   const dy = Math.sin(angle);
 
