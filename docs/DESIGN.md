@@ -312,20 +312,18 @@ A component picks by **what it sits on**, never by taste: on the stage → `floa
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ ┌─────────────────┐                                      ┌─┬─┬─┬─────────┐ │
-│ │  14             │                                      │⛶│⚙│?│         │ │
-│ │  de_nuke        │                                      └─┴─┴─┴─────────┘ │
-│ │  CT 8 : 5 T     │              ┌───────────┐           ┌───────────────┐ │
-│ │  1:47           │              │           │           │  s1mple ✧ b1t │ │
-│ └─────────────────┘              │           │           │  ZywOo ✧ jL   │ │
-│                                  │   PLATE   │           │  ● PLANTED    │ │
-│                                  │           │           │  ...          │ │
-│ ┌─────────────────┐              │           │           └───────────────┘ │
-│ │ T               │              └───────────┘                             │
-│ │ ▸ five rows     │                                      ┌───────────────┐ │
-│ │   hp armour $   │                                      │ CT            │ │
-│ │   weapon nades  │                                      │   five rows   │ │
-│ └─────────────────┘                                      └───────────────┘ │
+│ ┌────┐          ┌─── de_nuke ──── CT 8 : 5 T ──── 1:47 ───┐ ┌─┬─┬─┬─┐   │
+│ │ 14 │          └──────────────────────────────────────────┘ │⛶│⚙│?│×│   │
+│ └────┘                                                      └─┴─┴─┴─┘   │
+│                                                              ┌─────────┐ │
+│                               ┌───────────┐                  │ feed    │ │
+│                               │           │                  │ a ✧ b   │ │
+│ ┌─────────────────┐           │   PLATE   │                  └─────────┘ │
+│ │ T               │           │           │           ┌─────────────────┐ │
+│ │ ▸ five rows     │           │           │           │ CT              │ │
+│ │   hp armour $   │           └───────────┘           │   five rows     │ │
+│ │   weapon nades  │                                   │   hp armour $   │ │
+│ └─────────────────┘                                   └─────────────────┘ │
 │ ┌────────────────────────────────────────────────────────────────────────┐ │
 │ │  ▶   ├──💀─────────💣──────💀──┤                                  1× ▾  │ │
 │ │  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ match ribbon ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ │ │
@@ -333,11 +331,11 @@ A component picks by **what it sits on**, never by taste: on the stage → `floa
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-There is no top bar, no rails and no inspector column. There is a plate in the middle and four
-floating cards around it, and everything else the previous layout spent structure on is either on a
-card or gone.
+There is no top bar, no rails and no inspector column. There is a plate in the middle, a
+centered scoreboard above it, and four floating cards around it. Everything else the previous
+layout spent structure on is either on a card or gone.
 
-### 5.1 The plate sizes itself so nothing covers it
+### 5.1 The plate sizes itself so nothing covers it — with one exception
 
 This is the load-bearing rule of the whole layout, and §2.3 depends on it.
 
@@ -355,18 +353,36 @@ floats costs the plate nothing until the window is narrow.
 
 The plate keeps its aspect ratio and is **never cropped or letterboxed**.
 
+**The one permitted overlap is the scoreboard** (§5.2). It is a narrow glass chip at the plate's
+top edge — small enough that it never hides a player, and positioned where CS2 places its own HUD
+so a reader already knows not to look there for map data. No other element may overlap the plate;
+the `backdrop-filter` budget and the spatial reasoning both depend on it.
+
 **Below 1280px** the cards dock to the viewport edges and the plate takes what is left, still
 uncovered. **Below 1080px** the two team cards merge into a single strip above the timeline block,
 and the blur rule in §2.3 still holds because that strip is not over the plate either. The tool
 targets a laptop and up; the phone is the landing page's problem.
 
-### 5.2 Top-left — the round card
+### 5.2 The scoreboard and the round card
 
-Round number at `44`, map name, score, and the round clock. Four values, one card, no chrome around
-them. The score is the one place a `--ct`/`--t` pair appears outside the plate and the team cards,
-because a score *is* side data.
+Two pieces that used to be one card.
 
-The round number is a button: pressing it opens the match ribbon full-height as an overlay (§7.3).
+**The scoreboard** is a glass chip centered at the plate's top edge: `--surface-glass` background,
+`--radius-card` corners, `backdrop-filter: blur(12px)`. It is absolutely positioned over the plate
+and is the only HUD element that overlaps it (§5.1). It contains, in one horizontal row:
+
+- the map name — `de_anubis`, not "Anubis"; game vocabulary, never translated
+- the match score, one number per team, coloured by side (`--ct` / `--t`), in Plex Mono
+- the round clock — freeze time counts down, live time counts up from `0:00`, post-round holds
+  the final time; Plex Mono, `tabular-nums`
+
+The match ID, if the demo carries one, is a line of `--ink-dim` caption text below the row inside
+the chip. Most demos do not carry one; the chip does not grow a row for it when it is absent.
+
+**The round card** is a small glass card at the top-left corner. It shows only the round number at
+`44` — prominent, centered. Pressing it opens the match ribbon full-height as an overlay (§7.3).
+The round phase ("Freeze time", "Live", "Post-round") sits below the number in `--ink-dim`. The
+card does not carry the map name, the score, or the clock — those moved to the scoreboard.
 
 ### 5.3 Bottom-left and bottom-right — the team cards
 
@@ -476,6 +492,12 @@ Everything in this section except §6.4 is drawable from data the parser emits o
   wrong weight — a background per label is ten more rectangles on a plate that now has ten larger
   tokens. Labels never overlap: **a collision moves the label, never the token**, and the placer
   resets per frame so placement is a function of the frame rather than of history.
+- **Weapon** — a small glyph (8×8) beside the name label showing the player's weapon class:
+  rifle, pistol, SMG, shotgun, sniper, knife, or grenade. Same `--ink-dim` and halo treatment as
+  the name. At plate scale a specific model (AK-47 vs M4A4) is unreadable — the class silhouette
+  is what fits; the team card already names the exact weapon. `C4 Explosive` draws nothing (§6.4).
+  The glyph reads `TickTrack.weapon` per frame and indexes through `MatchHeader.weapons` for the
+  class lookup.
 - **Health is not on the plate.** The team card carries it. The only health state the plate shows is
   dead.
 - **Audibility** — a 1px ring in `--ink-faint` α0.40 at the radius the player can currently be heard
@@ -905,22 +927,27 @@ Non-negotiable, and never announced in the UI:
 
 ## 15. What this document asks of the code
 
-Nothing here is built. In dependency order:
+Steps 1–5 are complete (#132, #136, #140, #147, #154); step 6 is under way — §6.1's token states
+landed in #154, §6.2 (utility) and §6.3 (world) remain. In dependency order:
 
-1. **`AGENTS.md` amendments** — rule 9 replaced by §8's wording, §16 gains the blurred-review-screen
-   frame assertion, §17's summary re-derived from this document, §20's light-theme question closed.
-2. **Tokens** — `packages/ui/src/styles/tokens.css` rewritten from §2, §3 and §4; `--kill` deleted;
-   two control heights made real in `@disa/ui`; `bindPlayingFlag` and the `data-playing` reset
-   removed.
-3. **Schema 4** — the four per-sample columns in §5.3, in `crates/demo-parser`, `packages/demo-core`
-   and the golden snapshot.
-4. **The store catalog** — §10.2's metadata, and the library screen that reads it.
-5. **The review layout** — §5, replacing `features/review`'s three-row grid; the round timeline and
-   the ribbon re-scale in `features/timeline`. The team cards are the first thing to read the
-   `weapon` column, so §6.4's rendering rule is one of their constraints: the `C4 Explosive` entry
-   draws an empty glyph, and it is not rediscovered as an open question because the column exists.
+1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
+   blurred-review-screen frame assertion, §17's summary re-derived from this document, §20's
+   light-theme question closed.
+2. ~~**Tokens**~~ *(done, #132)* — `packages/ui/src/styles/tokens.css` rewritten from §2, §3 and
+   §4; `--kill` deleted; two control heights made real in `@disa/ui`; `bindPlayingFlag` and the
+   `data-playing` reset removed.
+3. ~~**Schema 4**~~ *(done, #136)* — the four per-sample columns in §5.3, in `crates/demo-parser`,
+   `packages/demo-core` and the golden snapshot.
+4. ~~**The store catalog**~~ *(done, #140)* — §10.2's metadata, and the library screen that reads
+   it.
+5. ~~**The review layout**~~ *(done, #147)* — §5, replacing `features/review`'s three-row grid;
+   the round timeline and the ribbon re-scale in `features/timeline`. The team cards are the first
+   thing to read the `weapon` column, so §6.4's rendering rule is one of their constraints: the
+   `C4 Explosive` entry draws an empty glyph, and it is not rediscovered as an open question
+   because the column exists.
 6. **The plate** — §6's token, utility and world states in `features/radar`. The per-frame rules
    live in `packages/demo-core` and are unit-tested there rather than eyeballed on a plate (#112).
+   §6.1 token states landed in #154; §6.2 (utility) and §6.3 (world) are next.
 7. **Input** — §9's bindings in `core/shortcuts`, the held-arrow rate in `core/playback`, the hot
    corners in `features/review`.
 8. **The way in** — §10.1–§10.4, the two vendored backgrounds, `ogl` added and lazy-loaded.
