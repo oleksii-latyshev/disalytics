@@ -21,6 +21,7 @@ import { readRadarColors } from '../helpers/colors';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
+import { utilityLayer } from '../helpers/utility-layer';
 import { useRadarImage } from '../hooks/use-radar-image';
 import { RadarDebug } from './RadarDebug';
 
@@ -81,7 +82,11 @@ export function RadarView({ demo, overview, transport, selectedSlot, isAudibilit
       labelStyle,
     });
 
-    return image.status === 'ready' ? [radarBackdrop(image.image), tokens] : [tokens];
+    const utility = utilityLayer({ demo, clock: transport.clock, overview, colors });
+
+    return image.status === 'ready'
+      ? [radarBackdrop(image.image), utility, tokens]
+      : [utility, tokens];
   }, [
     demo,
     transport,
