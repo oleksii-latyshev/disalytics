@@ -1,0 +1,299 @@
+import type { Grenade, GrenadeType, Tick } from '../schema';
+
+// ── CS2 engine constants ────────────────────────────────────────────────────
+// Named approximations, same approach as `audibility.ts`. These are not published by Valve; the
+// numbers are calibrated against demo playback with developer overlay enabled.
+
+/** Effective radius of a smoke grenade cloud, in world units. */
+export const SMOKE_RADIUS_UNITS = 144;
+
+/** Effective radius of a molotov / incendiary fire area, in world units. */
+export const MOLOTOV_RADIUS_UNITS = 180;
+
+/** Effective radius of an HE grenade explosion, in world units. */
+export const HE_RADIUS_UNITS = 350;
+
+// ── visual timing constants ─────────────────────────────────────────────────
+// All durations are in **match** seconds, so at 2× speed the ring expands twice as fast and at
+// 0.5× it takes twice as long — the draw is a function of `clock.frame`, not wall time.
+
+/** How long the HE expanding ring takes to reach its radius — §6.2. */
+export const HE_EXPAND_SECONDS = 0.2;
+
+/** How long the HE static glyph lingers after the ring — §6.2. */
+export const HE_LINGER_SECONDS = 1.0;
+
+/** How long the flash expanding mark takes to reach its peak — §6.2. */
+export const FLASH_EXPAND_SECONDS = 0.15;
+
+/** How long the smoke / molotov disc alpha fades before expiry — §6.2. */
+export const AREA_FADE_SECONDS = 2.0;
+
+/** Pulse frequency of a decoy mark, in Hz of match time — §6.2. */
+export const DECOY_PULSE_HZ = 2;
+
+// ── grenade visual phase ────────────────────────────────────────────────────
+
+/**
+ * What phase a grenade is in, written into a caller-owned scratch to avoid per-frame allocation.
+ * Each phase carries enough state for the draw functions in `features/radar/helpers/grenades.ts`.
+ *
+ * - `'flight'`  — projectile in the air, draw trajectory
+ * - `'expand'`  — HE/flash expanding ring, `progress` goes 0→1
+ * - `'active'`  — smoke/molotov/decoy area on the ground, `alpha` is current opacity, `remaining`
+ *                 is the [0..1] fraction of life left (drives the depleting ring)
+ * - `'linger'`  — HE static glyph after the ring has expanded
+ * - `null`      — not visible at this tick
+ */
+export type GrenadePhase = 'flight' | 'expand' | 'active' | 'linger';
+
+export interface GrenadeVisualScratch {
+  phase: GrenadePhase | null;
+  /** [0..1] expansion progress for HE/flash rings. */
+  progress: number;
+  /** Current opacity for smoke/molotov disc. */
+  alpha: number;
+  /** [0..1] remaining life fraction for the depleting ring. */
+  remaining: number;
+  /** [0..1] decoy pulse phase — fed to a sine curve by the draw. */
+  pulsePhase: number;
+}
+
+/** Allocate once, reuse every frame. */
+export function createVisualScratch(): GrenadeVisualScratch {
+  return { phase: null, progress: 0, alpha: 0, remaining: 0, pulsePhase: 0 };
+}
+
+// ── visual state computation ────────────────────────────────────────────────
+
+/** The total visual lifetime of an HE after detonation. */
+const HE_TOTAL_SECONDS = HE_EXPAND_SECONDS + HE_LINGER_SECONDS;
+
+/**
+ * Computes the visual state of a grenade at a given tick and writes it into `out`. Returns `out`
+ * for convenience — no allocation.
+ *
+ * The caller must check `out.phase !== null` before drawing. All math is tick arithmetic:
+ * `elapsed = (tick - grenade.detonationTick) / tickRate` gives match seconds.
+ */
+export function grenadeVisual(
+  grenade: Grenade,
+  tick: Tick,
+  tickRate: number,
+  out: GrenadeVisualScratch,
+): GrenadeVisualScratch {
+  out.phase = null;
+  out.progress = 0;
+  out.alpha = 0;
+  out.remaining = 0;
+  out.pulsePhase = 0;
+
+  // Before throw: nothing.
+  if (tick < grenade.throwTick) return out;
+
+  // In flight: between throw and detonation.
+  if (grenade.detonationTick === null || tick < grenade.detonationTick) {
+    // Only show flight if not past the throw tick.
+    if (tick >= grenade.throwTick) {
+      out.phase = 'flight';
+    }
+    return out;
+  }
+
+  const elapsedTicks = (tick as number) - (grenade.detonationTick as number);
+  const elapsed = elapsedTicks / tickRate;
+
+  switch (grenade.type) {
+    case 'hegrenade': {
+      if (elapsed < HE_EXPAND_SECONDS) {
+        out.phase = 'expand';
+        out.progress = elapsed / HE_EXPAND_SECONDS;
+      } else if (elapsed < HE_TOTAL_SECONDS) {
+        out.phase = 'linger';
+      }
+      break;
+    }
+
+    case 'flashbang': {
+      if (elapsed < FLASH_EXPAND_SECONDS) {
+        out.phase = 'expand';
+        out.progress = elapsed / FLASH_EXPAND_SECONDS;
+      }
+      break;
+    }
+
+    case 'smokegrenade': {
+      if (grenade.expiryTick === null) break;
+      if (tick > grenade.expiryTick) break;
+
+      const totalTicks = (grenade.expiryTick as number) - (grenade.detonationTick as number);
+      const remainingTicks = (grenade.expiryTick as number) - (tick as number);
+      const remainingSeconds = remainingTicks / tickRate;
+
+      out.phase = 'active';
+      out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
+
+      // Base alpha 0.30, fading to 0 in the last AREA_FADE_SECONDS.
+      if (remainingSeconds <= AREA_FADE_SECONDS) {
+        out.alpha = 0.3 * (remainingSeconds / AREA_FADE_SECONDS);
+      } else {
+        out.alpha = 0.3;
+      }
+      break;
+    }
+
+    case 'molotov':
+    case 'incgrenade': {
+      if (grenade.expiryTick === null) break;
+      if (tick > grenade.expiryTick) break;
+
+      const totalTicks = (grenade.expiryTick as number) - (grenade.detonationTick as number);
+      const remainingTicks = (grenade.expiryTick as number) - (tick as number);
+      const remainingSeconds = remainingTicks / tickRate;
+
+      out.phase = 'active';
+      out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
+
+      // Base alpha 0.25, fading to 0 in the last AREA_FADE_SECONDS.
+      if (remainingSeconds <= AREA_FADE_SECONDS) {
+        out.alpha = 0.25 * (remainingSeconds / AREA_FADE_SECONDS);
+      } else {
+        out.alpha = 0.25;
+      }
+      break;
+    }
+
+    case 'decoy': {
+      if (grenade.expiryTick === null) break;
+      if (tick > grenade.expiryTick) break;
+
+      out.phase = 'active';
+      // Pulse phase wraps [0..1] at DECOY_PULSE_HZ, so the draw can sin(phase * 2π).
+      out.pulsePhase = (elapsed * DECOY_PULSE_HZ) % 1;
+      out.remaining = 1; // Decoy has no depleting ring.
+      out.alpha = 1;
+      break;
+    }
+  }
+
+  return out;
+}
+
+// ── trajectory clipping ─────────────────────────────────────────────────────
+
+/**
+ * How many trajectory samples to draw for a grenade at the current tick. Returns 0 if the grenade
+ * has not been thrown yet, and `trajectory.sampleCount` once it has landed.
+ */
+export function trajectoryClipCount(grenade: Grenade, tick: Tick): number {
+  const { trajectory } = grenade;
+  if (trajectory.sampleCount === 0) return 0;
+  if (tick < grenade.throwTick) return 0;
+
+  // Past detonation: draw the full trajectory.
+  if (grenade.detonationTick !== null && tick >= grenade.detonationTick) {
+    return trajectory.sampleCount;
+  }
+
+  // In flight: clip to the current tick.
+  const elapsedTicks = (tick as number) - (trajectory.firstTick as number);
+  if (elapsedTicks <= 0) return 1; // At least the start point.
+
+  const samplesPerTick = trajectory.sampleHz > 0 ? trajectory.sampleHz / 64 : 1;
+  const index = Math.ceil(elapsedTicks * samplesPerTick);
+
+  return Math.min(index + 1, trajectory.sampleCount);
+}
+
+// ── active grenade collection ───────────────────────────────────────────────
+
+/**
+ * Which grenades are visible at `tick`, determined by type-specific rules above. Writes indices
+ * into the `out` array and returns the count written. The caller pre-allocates `out` once per demo
+ * and reuses it every frame — no allocation in the draw loop.
+ *
+ * Grenades are sorted by `throwTick`, so the search starts from the most recent and walks backward.
+ * A grenade whose `throwTick` is more than 30 seconds ahead of `tick` terminates the walk.
+ */
+export function visibleGrenades(
+  grenades: readonly Grenade[],
+  tick: Tick,
+  tickRate: number,
+  out: Int32Array,
+): number {
+  let count = 0;
+  const maxLookahead = 30 * tickRate; // No grenade visual lasts > 30s.
+
+  for (let i = grenades.length - 1; i >= 0; i--) {
+    const g = grenades[i];
+    if (g === undefined) continue;
+
+    // Too far in the future.
+    if ((g.throwTick as number) > (tick as number) + maxLookahead) continue;
+
+    // Too far in the past: grenade thrown and fully expired.
+    if (g.throwTick > tick) continue;
+
+    // Check if visible.
+    const isInFlight = g.detonationTick === null || tick < g.detonationTick;
+
+    if (isInFlight) {
+      // In flight — always visible between throw and detonation.
+      if (tick >= g.throwTick) {
+        out[count++] = i;
+      }
+      continue;
+    }
+
+    // Post-detonation — check type-specific duration.
+    const elapsed = ((tick as number) - (g.detonationTick as number)) / tickRate;
+
+    switch (g.type) {
+      case 'hegrenade': {
+        if (elapsed < HE_EXPAND_SECONDS + HE_LINGER_SECONDS) {
+          out[count++] = i;
+        }
+        break;
+      }
+      case 'flashbang': {
+        if (elapsed < FLASH_EXPAND_SECONDS) {
+          out[count++] = i;
+        }
+        break;
+      }
+      case 'smokegrenade':
+      case 'molotov':
+      case 'incgrenade': {
+        if (g.expiryTick !== null && tick <= g.expiryTick) {
+          out[count++] = i;
+        }
+        break;
+      }
+      case 'decoy': {
+        if (g.expiryTick !== null && tick <= g.expiryTick) {
+          out[count++] = i;
+        }
+        break;
+      }
+    }
+  }
+
+  return count;
+}
+
+/**
+ * Returns the appropriate radius in world units for a grenade's area, or 0 if the type has no area.
+ */
+export function grenadeRadiusUnits(type: GrenadeType): number {
+  switch (type) {
+    case 'hegrenade':
+      return HE_RADIUS_UNITS;
+    case 'smokegrenade':
+      return SMOKE_RADIUS_UNITS;
+    case 'molotov':
+    case 'incgrenade':
+      return MOLOTOV_RADIUS_UNITS;
+    default:
+      return 0;
+  }
+}
