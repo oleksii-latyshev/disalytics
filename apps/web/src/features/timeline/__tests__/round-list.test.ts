@@ -22,26 +22,25 @@ describe('roundCells', () => {
         number: 1,
         winner: 'CT',
         reason: 'all-t-eliminated',
-        survivors: 5,
+        survivors: { CT: 5, T: 5 },
         score: { startedCt: 1, startedT: 0 },
       },
       {
         number: 2,
         winner: 'T',
         reason: 'all-t-eliminated',
-        survivors: 5,
+        survivors: { CT: 5, T: 5 },
         score: { startedCt: 1, startedT: 1 },
       },
     ]);
   });
 
-  it('counts the winning side down as it loses players, round by round', () => {
+  it('counts both sides down as they lose players, round by round', () => {
     const demo = newDemo(2001, {
       rounds: twoRounds(),
       kills: [
         newKill(2000, { victim: asPlayerSlot(0) }),
         newKill(3000, { victim: asPlayerSlot(1) }),
-        // The T side lost four, and none of them come off the CT side's count.
         newKill(3500, { victim: asPlayerSlot(5) }),
         newKill(3600, { victim: asPlayerSlot(6) }),
         newKill(SECOND_ROUND_START + 2000, { victim: asPlayerSlot(5) }),
@@ -49,8 +48,8 @@ describe('roundCells', () => {
     });
     const cells = roundCells(demo);
 
-    expect(cells.at(0)?.survivors).toBe(3);
-    expect(cells.at(1)?.survivors).toBe(4);
+    expect(cells.at(0)?.survivors).toEqual({ CT: 3, T: 3 });
+    expect(cells.at(1)?.survivors).toEqual({ CT: 5, T: 4 });
   });
 
   it('has no cells for a match with no rounds', () => {
@@ -59,15 +58,19 @@ describe('roundCells', () => {
 });
 
 describe('cellDetail', () => {
-  it('shows the tint, the number and the count at the width a real match has', () => {
-    // §7.3's arithmetic: the block is roughly 1390px wide at 1440, and 24 rounds is 58px a cell.
+  it('shows the tint, the number and both counts at the width a real match has', () => {
+    // §7.3's arithmetic: the block is roughly 1390px at 1440 and roughly 1000px below the split,
+    // so a 24-round match is 58px a cell on the wide end and 42px on the narrow one. Overtime
+    // keeps the counts on the wide end well past the 24 a match without it plays.
     expect(cellDetail(1390, 24)).toBe('full');
-    expect(cellDetail(1000, 40)).toBe('full');
-    expect(cellDetail(400, 20)).toBe('full');
+    expect(cellDetail(1000, 24)).toBe('full');
+    expect(cellDetail(1390, 34)).toBe('full');
   });
 
-  it('drops the count first, because the number is the way in', () => {
-    expect(cellDetail(399, 20)).toBe('number');
+  it('drops the counts first, because the number is the way in', () => {
+    // Overtime on the narrow end is where the three-column row runs out of width.
+    expect(cellDetail(1000, 40)).toBe('number');
+    expect(cellDetail(399, 10)).toBe('number');
     expect(cellDetail(280, 20)).toBe('number');
   });
 

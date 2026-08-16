@@ -9,7 +9,7 @@
     "lead": "Раунд {round, number}, у {side} снаряжения на ${value, number} больше",
     "even": "Раунд {round, number}, у сторон снаряжения поровну"
   },
-  "roundLabel": "{outcome}. {survivors, plural, one {Остался # игрок} few {Осталось # игрока} many {Осталось # игроков} other {Осталось # игрока}}. Счёт {startedCt, number} : {startedT, number}.",
+  "roundLabel": "{outcome}. Выжившие: CT {ct, number}, T {t, number}. Счёт {startedCt, number} : {startedT, number}.",
   "outcome": {
     "bombExploded": "Раунд {round, number}, побеждают {side}, бомба взорвалась",
     "bombDefused": "Раунд {round, number}, побеждают {side}, бомба обезврежена",

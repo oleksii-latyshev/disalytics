@@ -660,10 +660,11 @@ resolves the tint, which is a second lookup to answer a question they did not as
 `1 : 1` are the same win and a different round, and the pair says which without being decoded.
 
 **The sides are written out, not only coloured.** `CT` and `T` sit under their own digits in the
-side colour, which makes the colour the redundant channel rather than the only one — §9's rule for
-any pairing, and it matters twice as much here because the cell's own tint is already spending that
-same pair of hues on *who won*. Two readings of `--ct` in one 32px cell, one of them the sole
-carrier, is what this avoids. The letters are game vocabulary and are never translated (§13).
+side colour, which makes the colour the redundant channel rather than the only one — §14's floor
+says side identity never relies on hue alone, and it matters twice over here because the cell's own
+tint is already spending that same pair of hues on *who won*. Two readings of `--ct` in one 32px
+cell, one of them the sole carrier, is what this avoids. The letters are game vocabulary and are
+never translated (§13).
 
 **What the survivor counts count.** Side membership is `Round.economy[].team` — the side the slot
 held *that* round (#90), never `PlayerInfo.team`. Deaths are the `kills` whose `tick` falls in
