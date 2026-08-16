@@ -1,7 +1,11 @@
 import {
   asPlayerSlot,
   asTick,
+  type BombDefuse,
+  type BombPlant,
   type Damage,
+  type DefuseOutcome,
+  type Grenade,
   type Kill,
   type ParsedDemo,
   type PlayerEconomy,
@@ -104,10 +108,41 @@ export function newDamage(tick: number): Damage {
   };
 }
 
+export function newGrenade(throwTick: number, overrides: Partial<Grenade> = {}): Grenade {
+  return {
+    thrower: asPlayerSlot(0),
+    type: 'smokegrenade',
+    throwTick: asTick(throwTick),
+    detonationTick: null,
+    detonationPosition: null,
+    expiryTick: null,
+    trajectory: {
+      sampleHz: 8,
+      firstTick: asTick(throwTick),
+      sampleCount: 0,
+      x: new Float32Array(0),
+      y: new Float32Array(0),
+      z: new Float32Array(0),
+    },
+    ...overrides,
+  };
+}
+
+export function newPlant(tick: number, planter = 0): BombPlant {
+  return { tick: asTick(tick), planter: asPlayerSlot(planter), siteEntityId: 0 };
+}
+
+export function newDefuse(startTick: number, outcome: DefuseOutcome): BombDefuse {
+  return { startTick: asTick(startTick), defuser: asPlayerSlot(1), hasKit: true, outcome };
+}
+
 export interface NewDemoOptions {
   rounds?: readonly Round[];
   kills?: readonly Kill[];
   damage?: readonly Damage[];
+  grenades?: readonly Grenade[];
+  plants?: readonly BombPlant[];
+  defuses?: readonly BombDefuse[];
 }
 
 export function newDemo(frameCount: number, options: NewDemoOptions = {}): ParsedDemo {
@@ -118,10 +153,10 @@ export function newDemo(frameCount: number, options: NewDemoOptions = {}): Parse
       rounds: options.rounds ?? [],
       kills: options.kills ?? [],
       damage: options.damage ?? [],
-      grenades: [],
+      grenades: options.grenades ?? [],
       blinds: [],
-      plants: [],
-      defuses: [],
+      plants: options.plants ?? [],
+      defuses: options.defuses ?? [],
     },
   };
 }

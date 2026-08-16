@@ -157,7 +157,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
       <div className="flex gap-3 [grid-area:3/1/4/2] split:contents">{teamCards}</div>
 
       <div className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]">
-        <TimelineBlock demo={demo} transport={transport} />
+        <TimelineBlock demo={demo} transport={transport} selectedSlot={selectedSlot} />
       </div>
     </div>
   );

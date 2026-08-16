@@ -6,6 +6,7 @@ import {
   GRENADE_FLASH_SECOND,
   GRENADE_HE,
   GRENADE_SMOKE,
+  type GrenadeType,
   type WeaponId,
 } from '../schema';
 
@@ -98,6 +99,27 @@ const CLASS_BY_NAME: Readonly<Record<string, WeaponClass>> = {
  */
 export function weaponClass(weapon: WeaponId): WeaponClass {
   return CLASS_BY_NAME[weapon] ?? 'unknown';
+}
+
+/**
+ * What a thrown grenade is, as one of the kinds a glyph exists for. Molotov and incendiary answer
+ * the same `fire` for the reason `weaponClass` gives them one class, and the switch is exhaustive
+ * with no `default` so a new `GrenadeType` is a compile error rather than an unmarked glyph.
+ */
+export function utilityKindOfGrenade(type: GrenadeType): UtilityKind {
+  switch (type) {
+    case 'hegrenade':
+      return 'he';
+    case 'flashbang':
+      return 'flash';
+    case 'smokegrenade':
+      return 'smoke';
+    case 'molotov':
+    case 'incgrenade':
+      return 'fire';
+    case 'decoy':
+      return 'decoy';
+  }
 }
 
 const UTILITY_KINDS = new Set<WeaponClass>(['he', 'flash', 'smoke', 'fire', 'decoy', 'kit']);
