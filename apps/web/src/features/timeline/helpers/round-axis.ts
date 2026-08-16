@@ -18,8 +18,12 @@ import {
  * collapse threshold. Measured against the average pitch rather than the narrowest gap on the axis:
  * two kills in the same second are a double kill and happen in most rounds, and letting one pair
  * decide the form would put a whole round's axis back to marks for a reason nobody can see.
+ *
+ * It is one glyph's width, so it moves with the glyph: the symbols are 24px since the owner read the
+ * built axis as unreadably small, and a threshold left at the old 12px box would have drawn them
+ * overlapping instead of collapsing.
  */
-export const GLYPH_PITCH_PX = 14;
+export const GLYPH_PITCH_PX = 24;
 
 /**
  * The stretch of match the timeline is scoped to — one round, or the warm-up before the first one.

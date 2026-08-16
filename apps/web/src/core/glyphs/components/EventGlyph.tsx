@@ -1,3 +1,5 @@
+import { GLYPH_SIZE_CLASS, type GlyphSize } from '../helpers/size';
+
 /** What a round axis marks: a death, a plant and a defuse — DESIGN.md §7.1. */
 export type EventKind = 'kill' | 'plant' | 'defuse';
 
@@ -5,6 +7,7 @@ interface Props {
   kind: EventKind;
   /** An accessible name, or nothing when a list around the glyph already carries one. */
   label?: string | undefined;
+  size?: GlyphSize;
 }
 
 function Mark({ kind }: { kind: EventKind }) {
@@ -48,14 +51,14 @@ function Mark({ kind }: { kind: EventKind }) {
  * side of the player who died and the two objective marks by `--objective`, and both of those are
  * the caller's to know.
  */
-export function EventGlyph({ kind, label }: Props) {
+export function EventGlyph({ kind, label, size = 'row' }: Props) {
   return (
     <svg
       viewBox="0 0 12 12"
       role={label === undefined ? 'presentation' : 'img'}
       aria-label={label}
       fill="currentColor"
-      className="size-3 shrink-0"
+      className={`${GLYPH_SIZE_CLASS[size]} shrink-0`}
     >
       <Mark kind={kind} />
     </svg>

@@ -88,11 +88,11 @@ describe('hasRoomForGlyphs', () => {
 
   it('has room while the average pitch clears the threshold', () => {
     expect(hasRoomForGlyphs(10, 500)).toBe(true);
-    expect(hasRoomForGlyphs(10, 140)).toBe(true);
+    expect(hasRoomForGlyphs(10, 240)).toBe(true);
   });
 
   it('collapses to marks below it', () => {
-    expect(hasRoomForGlyphs(10, 139)).toBe(false);
+    expect(hasRoomForGlyphs(10, 239)).toBe(false);
     expect(hasRoomForGlyphs(60, 500)).toBe(false);
   });
 });

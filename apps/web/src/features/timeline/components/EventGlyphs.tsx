@@ -7,8 +7,8 @@ import { useRovingFocus } from '@/shared/hooks';
 import { defuseOutcomeKey } from '../helpers/outcome-copy';
 import type { AxisEvent, AxisGlyph } from '../helpers/round-axis';
 
-/** The band the glyphs occupy, centred on the axis — 12px of mark plus the room to rise into. */
-const GLYPH_BAND_PX = 20;
+/** The band the glyphs occupy, centred on the axis — 24px of mark plus the room to rise into. */
+const GLYPH_BAND_PX = 28;
 
 interface Props {
   glyphs: readonly AxisGlyph[];
@@ -39,13 +39,13 @@ function inkFor(event: AxisEvent): string {
 function Glyph({ event }: { event: AxisEvent }) {
   switch (event.kind) {
     case 'kill':
-      return <EventGlyph kind="kill" />;
+      return <EventGlyph kind="kill" size="axis" />;
     case 'plant':
-      return <EventGlyph kind="plant" />;
+      return <EventGlyph kind="plant" size="axis" />;
     case 'defuse':
-      return <EventGlyph kind="defuse" />;
+      return <EventGlyph kind="defuse" size="axis" />;
     case 'grenade':
-      return <UtilityGlyph kind={event.utility} />;
+      return <UtilityGlyph kind={event.utility} size="axis" />;
   }
 }
 
@@ -137,7 +137,7 @@ export const EventGlyphs = memo(function EventGlyphs({
                 <Glyph event={glyph.event} />
               ) : (
                 // A mark keeps the position and the colour and loses only the shape — §7.1.
-                <span aria-hidden="true" className="h-2.5 w-0.5 bg-current" />
+                <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
               )}
             </button>
           </li>
