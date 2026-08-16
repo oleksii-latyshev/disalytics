@@ -30,6 +30,11 @@ smoothness conflict, favour smoothness and label the approximation in the UI.
 
 ## Repository state
 
+**Active work is Phase 5 — the review screen.** What follows is in the order things landed rather
+than in order of importance, so the paragraphs that matter most to a change you are making now are
+usually the last ones. A phase described below as "under way" means its milestone still has open
+issues, not that it is where the work is.
+
 Phase 0 is complete — the parser is validated and the findings are in `docs/PARSER.md`. The
 `create-turbo` starter has been replaced: `apps/web` is a Vite SPA, Biome has replaced
 ESLint + Prettier, and every package is `@disa/*`.
@@ -176,7 +181,8 @@ rules were wrong rather than their execution. Four decisions came with it, each 
 (`SCHEMA_VERSION` 3 → 4); **`ogl` is an approved runtime dependency** for two WebGL backgrounds on
 the landing and parse screens only; **hard rule 9 is a frame budget, not a prohibition**, so
 `bindPlayingFlag` and the `data-playing` reset are removed; and **the bottom of the review screen
-carries the round**, with the whole-match spine re-scaled to a 14px ribbon rather than discarded.
+carries the round**, with the whole-match spine re-scaled rather than discarded — as a 14px ribbon
+until #157, which keeps the decision and changes the form.
 The review screen loses its top bar, its rails and its inspector column: a plate in the middle,
 four floating glass cards around it, sized so **no card ever overlaps the plate** — which is what
 makes `backdrop-filter` affordable and is a layout rule rather than a convention. `docs/DESIGN.md`
@@ -188,9 +194,9 @@ makes `backdrop-filter` affordable and is a layout rule rather than a convention
 shape rather than hue. The accent moved from blue to violet (`#B07CFF`) and lost its fence, which is
 what lets the main screen have a voice at all. Optical tracking rides on the size token, so
 `text-44` cannot be written without it. Two blur filters exist under `--backdrop-*` rather than
-`--blur-*`, because that namespace would build `filter: blur(blur(24px) …)` out of them. Everything
-else on this list still follows the old document — **read §15 before assuming a component is
-wrong**, and expect every screen to look half-migrated until the layout issue lands.
+`--blur-*`, because that namespace would build `filter: blur(blur(24px) …)` out of them. The review
+screen has since caught up with the document, but the screens in §10 have not — **read §15 before
+assuming a component is wrong**, and expect the way in to look half-migrated until step 8 lands.
 
 **#136 landed §15's third step — `SCHEMA_VERSION` is 4.** `TickTrack` gained `armour`, `weapon`,
 `grenades` and `money`, helmet became a seventh `flags` bit, and `MatchHeader` gained a **per-match
@@ -218,9 +224,10 @@ existing `meta` across rather than replacing the entry — while a read that fin
 that entry, because the alternative is a row that can never open. **An entry without `meta` still
 parses**: `parseCatalog` normalises rather than filters, so a catalog written before this change
 loses names, never entries. **The score is by team** — `matchScore` in `packages/demo-core`, because
-`Round.winner` is a side and sides swap; `sideScoreAtFrame`, which the review top bar still reads,
-has the bug this avoids and #141 owns it. And **`ParseState.failed` carries an `OpenFailure` rather
-than an `ErrorCode`**: a saved demo that has gone is not a parser error and has no code in the
+`Round.winner` is a side and sides swap; `sideScoreAtFrame`, which `features/review`'s `RoundCard`
+still reads, has the bug this avoids and #141 owns it. And **`ParseState.failed` carries an
+`OpenFailure` rather than an `ErrorCode`**: a saved demo that has gone is not a parser error and
+has no code in the
 vocabulary `bun run errors:check` guards. `SCHEMA_VERSION` did not move — `ParsedDemo` is untouched.
 
 **#147 landed §15's fifth step — the review screen is a stage with four cards.** The top bar, both
@@ -242,6 +249,58 @@ audibility are a bridge until the settings sheet exists, and they leave with it.
 14px `MatchRibbon` whose bands seek and whose density trace is `--ink-dim` at α0.30 rather than
 `--damage` at 0.55, which is what #116 asked for; kill marks moved up to `RoundTimeline`, where they
 fit. `AGENTS.md` §16's two frame budgets are **measured** rather than asserted for the first time.
+
+**#154 opened §15's sixth step — the plate — with §6.1's token.** One filled circle for both sides,
+a selection ring, a blind countdown disc sweeping over the `Blind` event's own `durationSeconds`, a
+death that shrinks to 8px and stays where it fell, and names as haloed text rather than glass chips.
+The T diamond and the per-token outline are gone and that is the owner's call, not an omission.
+Three things are load-bearing. **The selection ring reads `--ink`, not a literal white** —
+`--color-focus` and `--color-playhead` are both `#ffffff` and neither is this ring, and minting a
+token for it is a change to `docs/DESIGN.md` §2 that belongs to that document's own issue. **The
+needle lengths finally mean what §6.1 says**: they were 13px and 22px measured from the token's
+*centre*, so 8 and 17 of them were ever visible. And `blindRemainingBySlot` and
+`deathProgressBySlot` sit in `packages/demo-core` beside `damageFlashBySlot`, write into the
+caller's typed array, and walk back from a binary search over a window bounded by their own
+duration — because they run inside a draw. The label pass moved out to
+`features/radar/helpers/labels.ts` when the layer reached 330
+lines, and the plate measures pixel-identical either side of that move.
+
+**#166 corrected three sections of `docs/DESIGN.md` from owner feedback of 13 August 2026.** §5.2
+splits the old top-left card in two — a centered scoreboard chip at the plate's top edge carrying
+map, score and clock, and a round card reduced to the number and the phase — and §5.1 gains that
+chip as its **one permitted overlap exception**, with the reasoning attached. §6.1 gained the 8×8
+weapon-class glyph beside the name. §15's step annotations were factually wrong since #132, five
+steps earlier, and now name the PR that closed each one. **Nothing in that PR is built** — #171 is
+the scoreboard and #164 is the glyph.
+
+**#168 and #175 are §6.2 — utility on the plate.** `utilityLayer` draws between the backdrop and the
+tokens, so a smoke cloud sits *behind* the players: smoke and molotov as depleting areas, HE and
+flash as expanding marks, decoy as a pulse, and a 1px white trajectory for a grenade in flight only.
+`--color-nade-decoy` was added to the token layer. Everything is a function of `clock.frame`, so
+scrubbing backwards replays it, and **nothing in the draw allocates** — an `Int32Array` of visible
+indices once per demo and one mutable scratch object reused every frame. #175 then fixed what
+shipped with it: **`detonationTick` being `null` means the ending is unknown, never that the grenade
+is still in the air**, and reading it the second way drew 3 of the fixture's 519 grenades from their
+throw to the end of the match. `flightEndTick` is now the single definition of where a flight ends
+and `isInFlight` sits on top of it, rather than the condition being written twice and drifting.
+`trajectoryClipCount` takes the demo's `tickRate` instead of a hardcoded `64`, and `visibleGrenades`
+`break`s where it used to `continue`, so it walks a window as its own doc comment always promised.
+**The two tests that shipped with the bug asserted it as correct** — that is the thing to look for
+when a helper here changes. `grenade-state.ts` is 334 lines with three functions over Biome's
+complexity ceiling; those are warnings, CI is green on them, and #172 owns it.
+
+**#177 made play/pause a 40px icon button.** `size="icon-lg"` is a fixed square, so the control's
+footprint no longer depends on whether the label says "Pause" or "Воспроизвести" — the row right of
+it used to move on every press. The strings did not go anywhere: `controls.play` and
+`controls.pause` are the `aria-label` now.
+
+**#157 rewrites `docs/DESIGN.md` §7, as PR #178.** It replaces the 14px `MatchRibbon` described
+above with a 32px **list of rounds** — equal-width cells, winner tint, round number, survivor count
+— moves #90/#91's economy band and density trace behind the full-height overlay rather than
+deleting them, tints §7.1's kill glyph by the side of the player who died, and adds a §15 step 10
+for the implementation. **Whether that landed decides which of the two paragraphs above is
+current**, and none of it is built either way: the ribbon is what runs until step 10 does. Read §7
+rather than this summary before touching the bottom of the review screen.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
