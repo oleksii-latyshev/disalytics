@@ -1,3 +1,6 @@
+// The chart the round list replaced, kept rather than deleted: `docs/DESIGN.md` §7.3 moves the
+// round bands, the density trace and the economy gap behind the full-height match overlay, which is
+// unbuilt. Nothing renders these today and that is the intent, not an oversight (#183).
 import { sampleAt, type Team } from '@disa/demo-core';
 import type { Layer } from '@/core/renderer';
 import { readCssToken } from '@/shared/lib';

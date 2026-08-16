@@ -1,63 +1,99 @@
-import type { Round } from '@disa/demo-core';
+import type { Team } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { memo } from 'react';
 import { useRovingFocus } from '@/shared/hooks';
 import { roundOutcomeKey } from '../helpers/outcome-copy';
-import type { RoundBand } from '../helpers/spine';
+import type { CellDetail, RoundCell } from '../helpers/round-list';
 
 interface Props {
-  rounds: readonly Round[];
-  bands: readonly RoundBand[];
+  cells: readonly RoundCell[];
+  /** What every cell has room to carry — one width decides it for the list, not for each cell. */
+  detail: CellDetail;
+  litIndex: number | undefined;
   onSeek: (roundIndex: number) => void;
+  /** A pointer resting on a cell. The tooltip waits §9.2's dwell before it answers. */
+  onPoint: (roundIndex: number | null) => void;
+  /** A cell taking focus, which has no dwell to wait through. */
+  onReveal: (roundIndex: number | null) => void;
 }
 
-/**
- * What the ribbon draws, in words — and the way it is pressed. The bands say who won each round in
- * colour and nothing else, so each one carries the same reading as its accessible name: number,
- * side, and how the round ended.
- *
- * This used to be an `sr-only` list beside the canvas. It is the same list, now doing the seeking
- * as well: two enumerations of the same thirty rounds, one readable and one clickable, would say
- * everything twice to anyone using both.
- *
- * Memoised because the ribbon around it re-renders off the 10 Hz readout, and a match's worth of
- * rounds has no business reconciling ten times a second (#91).
- */
-export const RoundOutcomes = memo(function RoundOutcomes({ rounds, bands, onSeek }: Props) {
-  const t = useT();
-  const roving = useRovingFocus(bands.length);
+/** §7.3's tint: low enough that a full-height fill reads as an outcome rather than as a surface. */
+const TINT: Readonly<Record<Team, string>> = { CT: 'bg-ct/14', T: 'bg-t/14' };
 
-  if (bands.length === 0) return null;
+/**
+ * `docs/DESIGN.md` §7.3 — one equal-width cell per round, carrying who won it and how close it was.
+ * A list rather than a chart: the ribbon this replaces made a band as wide as its round was long, so
+ * a 13-second round was a sliver nobody could hit, and getting to a round is what the strip is for.
+ *
+ * It is also the text equivalent for itself (#92). A canvas needed an `sr-only` list beside it to
+ * say anything at all; cells are elements, so each one carries the whole reading — number, winner,
+ * reason, survivors and the score the round left behind — as its own accessible name. Two
+ * enumerations of the same thirty rounds would say everything twice to anyone using both.
+ *
+ * Memoised because the container re-renders off the 10 Hz readout and on every hover, and a match's
+ * worth of rounds has no business reconciling at either rate (#91).
+ */
+export const RoundOutcomes = memo(function RoundOutcomes({
+  cells,
+  detail,
+  litIndex,
+  onSeek,
+  onPoint,
+  onReveal,
+}: Props) {
+  const t = useT();
+  const roving = useRovingFocus(cells.length);
+
+  if (cells.length === 0) return null;
 
   return (
-    <ol aria-label={t('timeline.outcomes')} className="absolute inset-0">
-      {bands.map((band, index) => {
-        const round = rounds.at(index);
-        if (round === undefined) return null;
+    <ol aria-label={t('timeline.outcomes')} className="flex size-full">
+      {cells.map((cell, index) => {
+        const lit = index === litIndex;
 
         return (
-          <li key={band.round}>
+          <li key={cell.number} className="min-w-0 flex-1">
             <button
               type="button"
               ref={roving.register(index)}
               tabIndex={index === roving.tabStop ? 0 : -1}
-              aria-label={t(roundOutcomeKey(round.reason), {
-                round: round.number,
-                side: round.winner,
+              aria-current={lit ? 'true' : undefined}
+              aria-label={t('timeline.roundLabel', {
+                outcome: t(roundOutcomeKey(cell.reason), {
+                  round: cell.number,
+                  side: cell.winner,
+                }),
+                survivors: cell.survivors,
+                startedCt: cell.score.startedCt,
+                startedT: cell.score.startedT,
               })}
               onKeyDown={(event) => roving.onKeyDown(event, index)}
               onClick={() => {
                 roving.select(index);
                 onSeek(index);
               }}
-              style={{
-                left: `${band.startFraction * 100}%`,
-                width: `${(band.endFraction - band.startFraction) * 100}%`,
-              }}
-              // The canvas underneath is the whole picture; a band adds no fill of its own and
-              // shows where it is by the focus ring, which §2.6 keeps white and never removes.
-              className="absolute inset-y-0 cursor-pointer focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-inset"
-            />
+              onPointerEnter={() => onPoint(index)}
+              onPointerLeave={() => onPoint(null)}
+              onFocus={() => onReveal(index)}
+              onBlur={() => onReveal(null)}
+              // The round being played is lit by dropping the tint and framing what is left, so the
+              // frame has bare strip to sit on rather than a brighter fill of the same hue.
+              className={`flex size-full cursor-pointer flex-col items-center justify-center gap-px leading-none transition-colors duration-micro ease-out hover:bg-hover ${
+                lit ? 'ring-1 ring-glass-edge ring-inset' : TINT[cell.winner]
+              } ${index > 0 ? 'border-l border-line' : ''}`}
+            >
+              {detail !== 'tint' && (
+                <span aria-hidden="true" className="numeric text-10 text-ink-dim">
+                  {cell.number}
+                </span>
+              )}
+
+              {detail === 'full' && (
+                <span aria-hidden="true" className="numeric text-10 text-ink">
+                  {cell.survivors}
+                </span>
+              )}
+            </button>
           </li>
         );
       })}

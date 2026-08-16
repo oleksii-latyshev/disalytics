@@ -1,7 +1,7 @@
 import type { ParsedDemo, PlayerSlot } from '@disa/demo-core';
 import type { Transport } from '@/core/playback';
 import { PlaybackControls, SpeedControl } from '@/features/controls';
-import { MatchRibbon, RoundTimeline } from '@/features/timeline';
+import { RoundList, RoundTimeline } from '@/features/timeline';
 
 interface Props {
   demo: ParsedDemo;
@@ -11,12 +11,12 @@ interface Props {
 
 /**
  * The bottom of the screen — DESIGN.md §5.5. Play/pause, the round timeline and the speed control
- * on one line, with the match ribbon flush to the card's bottom edge beneath them. 96px for the
- * whole job, where the layout it replaces spent 205px on it.
+ * on one line, with the round list flush to the card's bottom edge beneath them. 96px for the whole
+ * job, where the layout it replaces spent 205px on it.
  *
- * The ribbon runs edge to edge inside the card and the row above it is padded, which is what makes
- * the strip read as part of the card rather than as a fifth panel: `overflow-hidden` is what lets
- * a 14px canvas sit inside a 16px radius without a corner cutting through it.
+ * The list runs edge to edge inside the card and the row above it is padded, which is what makes
+ * the strip read as part of the card rather than as a fifth panel: `overflow-hidden` is what lets a
+ * row of square cells sit inside a 16px radius without a corner cutting through them.
  */
 export function TimelineBlock({ demo, transport, selectedSlot }: Props) {
   return (
@@ -29,7 +29,7 @@ export function TimelineBlock({ demo, transport, selectedSlot }: Props) {
         <SpeedControl transport={transport} />
       </div>
 
-      <MatchRibbon demo={demo} transport={transport} />
+      <RoundList demo={demo} transport={transport} />
     </section>
   );
 }
