@@ -55,14 +55,20 @@ function openingCtOnCt(round: Round, opening: ReadonlySet<PlayerSlot>): boolean 
  *
  * A round the mapping cannot be read from keeps the previous round's, which is what makes a match
  * with no economy data at all degrade to a side count rather than to nonsense.
+ *
+ * `throughRound` bounds the walk at a round index, which is the score *after* that round — what
+ * §7.3's round list names on a hover. It is this function rather than `sideScoreAtFrame` because
+ * that one counts `Round.winner` by side and reports neither team's score once the halves swap.
  */
-export function matchScore(demo: ParsedDemo): MatchScore {
+export function matchScore(demo: ParsedDemo, throughRound?: number): MatchScore {
   const { rounds } = demo.events;
   const opening = openingCtSlots(rounds);
   const score: MatchScore = { startedCt: 0, startedT: 0 };
   let openingCtIsCt = true;
 
-  for (const round of rounds) {
+  for (const [index, round] of rounds.entries()) {
+    if (throughRound !== undefined && index > throughRound) break;
+
     openingCtIsCt = openingCtOnCt(round, opening) ?? openingCtIsCt;
 
     const wonByOpeningCt = (round.winner === 'CT') === openingCtIsCt;

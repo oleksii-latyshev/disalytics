@@ -38,7 +38,7 @@ export {
   PLANT_SECONDS,
 } from './helpers/player-state';
 export type { PlayerRoundStats } from './helpers/round-stats';
-export { playerRoundStats } from './helpers/round-stats';
+export { playerRoundStats, roundSurvivors } from './helpers/round-stats';
 export type { MatchScore } from './helpers/score';
 export { matchScore } from './helpers/score';
 export type { SideScore } from './helpers/selectors';

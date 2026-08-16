@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { playerRoundStats } from '../helpers/round-stats';
+import { playerRoundStats, roundSurvivors } from '../helpers/round-stats';
 import { asPlayerSlot, asTick, type MatchEvents, type ParsedDemo, type Round } from '../schema';
 import { newEvents, newTrack, withDamage, withKill } from './helpers';
 
 const first = asPlayerSlot(0);
 const enemy = asPlayerSlot(1);
 const mate = asPlayerSlot(2);
+const stranger = asPlayerSlot(3);
 
 const round: Round = {
   number: 1,
@@ -28,6 +29,45 @@ function newDemo(events: MatchEvents, rounds: readonly Round[] = [round]): Parse
     events: { ...events, rounds },
   };
 }
+
+describe('roundSurvivors', () => {
+  it('counts the winning side, less the players it lost inside the round', () => {
+    const events = withKill(newEvents(), { tick: asTick(400), attacker: enemy, victim: mate });
+
+    expect(roundSurvivors(newDemo(events), 0)).toBe(1);
+  });
+
+  it('leaves the losing side out of the count', () => {
+    const events = withKill(newEvents(), { tick: asTick(400), attacker: first, victim: enemy });
+
+    expect(roundSurvivors(newDemo(events), 0)).toBe(2);
+  });
+
+  it('does not count the post-round kills that follow most rounds', () => {
+    const events = withKill(newEvents(), { tick: asTick(950), attacker: enemy, victim: mate });
+
+    expect(roundSurvivors(newDemo(events), 0)).toBe(2);
+  });
+
+  it('puts a slot the round recorded no side for on neither side', () => {
+    // A four-man side reads a maximum of four, and the death of the slot with no side changes
+    // nothing — that is the correct answer rather than an off-by-one.
+    const fourMan: Round = {
+      ...round,
+      economy: [
+        ...round.economy,
+        { slot: stranger, money: 0, equipmentValue: 0, buyType: 'full-buy', team: null },
+      ],
+    };
+    const events = withKill(newEvents(), { tick: asTick(400), attacker: enemy, victim: stranger });
+
+    expect(roundSurvivors(newDemo(events, [fourMan]), 0)).toBe(2);
+  });
+
+  it('has nothing to say for a round that does not exist', () => {
+    expect(roundSurvivors(newDemo(newEvents()), 7)).toBe(0);
+  });
+});
 
 describe('playerRoundStats', () => {
   it('counts kills and deaths inside the round', () => {
