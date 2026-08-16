@@ -31,7 +31,7 @@ Settled with the owner on 12 August 2026, before a line of it was written. Each 
 | **The player rails get live armour, weapon, grenades and money** | `crates/demo-parser` gains four per-sample columns and `SCHEMA_VERSION` goes 3 → 4. Every cached demo is a miss once. §5.3 states what the rails need; the field names are the schema issue's to settle. |
 | **`ogl` is an approved runtime dependency** | ~10–15 kB gzip against a 500 kB budget currently 20% used. It buys the two WebGL backgrounds in §10, and it is loaded **only** by the landing and parse screens — never by the review screen, never during playback. |
 | **Rule 9 becomes a budget, not a prohibition** | The global `data-playing` kill switch that zeroes every transition is removed. §8 replaces it with a narrow, enforceable rule and a measurement. |
-| **The bottom of the screen is the round, not the match** | A round-scoped timeline is the primary control. The whole-match spine survives beneath it — §7. Nothing built by #90, #91 or #92 is thrown away. **Amended 16 August 2026 (#157):** the strip beneath is a 32px list of rounds, not a 14px re-scaled chart, and #90/#91's economy band and density trace move behind the full-height overlay. The decision held; the form it took did not. |
+| **The bottom of the screen is the round, not the match** | A round-scoped timeline is the primary control. The whole-match spine survives beneath it — §7. Nothing built by #90, #91 or #92 is thrown away. **Amended 16 August 2026 (#157):** the strip beneath is a 32px list of rounds, not a 14px re-scaled chart, and #90/#91's economy band and density trace move behind the full-height overlay. The decision held; the form it took did not. **Amended again the same day (#189):** the list moved *above* the controls as 28px of separated pills and the scoreboard came down to meet it as a brow, so the whole vertical middle of the screen now reads match → rounds → round. Third amendment, same decision. |
 
 Two things this revision deliberately does **not** re-open: there is still no light theme (§2), and
 the plate still says nothing about who carries the bomb (§6.4).
@@ -160,7 +160,10 @@ The rule, and it is enforceable by looking at the layout rather than by trusting
   `backdrop-filter` over the plate, at `--backdrop-hud` — 12px, half the panel's radius. What makes
   it affordable is area rather than repaint rate: the chip is a couple of percent of the plate, so
   the compositor re-blurs a strip rather than a 280px card. It is an exception with a number on it,
-  not a precedent — a second surface wanting one is a change to this section.
+  not a precedent — a second surface wanting one is a change to this section. **Since 16 August 2026
+  no default layout uses it**: §5.2 moved the scoreboard onto the timeline block, where it is over
+  the stage and takes no blur at all, and `--backdrop-hud` is now spent only by readers who choose
+  the over-the-plate position.
 - Every blurred surface carries an opaque fallback colour for `@supports not (backdrop-filter:
   blur(1px))`, which is also what a reader with the effect disabled gets.
 - `--blur-sheet` runs only on screens where playback is stopped by definition.
@@ -322,8 +325,8 @@ A component picks by **what it sits on**, never by taste: on the stage → `floa
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ ┌────┐          ┌─── de_nuke ──── CT 8 : 5 T ──── 1:47 ───┐ ┌─┬─┬─┬─┐   │
-│ │ 14 │          └──────────────────────────────────────────┘ │⛶│⚙│?│×│   │
+│ ┌────┐                                                      ┌─┬─┬─┬─┐   │
+│ │ 14 │                                                      │⛶│⚙│?│×│   │
 │ └────┘                                                      └─┴─┴─┴─┘   │
 │                                                              ┌─────────┐ │
 │                               ┌───────────┐                  │ feed    │ │
@@ -334,18 +337,19 @@ A component picks by **what it sits on**, never by taste: on the stage → `floa
 │ │   hp armour $   │           └───────────┘           │   five rows     │ │
 │ │   weapon nades  │                                   │   hp armour $   │ │
 │ └─────────────────┘                                   └─────────────────┘ │
-│ ┌────────────────────────────────────────────────────────────────────────┐ │
-│ │  ▶   ├──💀─────────💣──────💀──┤                                  1× ▾  │ │
-│ │  │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │ 9 │10 │11 │12 │13 │14 │15 │16 │17 │ │ │
-│ └────────────────────────────────────────────────────────────────────────┘ │
+│                    ┌── de_nuke ── CT 8 : 5 T ── 1:47 ──┐                  │
+│ ┌──────────────────┴───────────────────────────────────┴────────────────┐ │
+│ │ ⟨1⟩⟨2⟩⟨3⟩⟨4⟩⟨5⟩⟨6⟩⟨7⟩⟨8⟩⟨9⟩⟨10⟩⟨11⟩⟨12⟩ ⋮ ⟨13⟩⟨14⟩⟨15⟩⟨16⟩⟨17⟩     ⌄ │ │
+│ │  ▶   ├──💀─────────💣──────💀──┤                                1× ▾  │ │
+│ └──────────────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-There is no top bar, no rails and no inspector column. There is a plate in the middle, a
-centered scoreboard above it, and four floating cards around it. Everything else the previous
-layout spent structure on is either on a card or gone.
+There is no top bar, no rails and no inspector column. There is a plate in the middle, four floating
+cards around it, and the scoreboard rising from the timeline block as a brow. Everything else the
+previous layout spent structure on is either on a card or gone.
 
-### 5.1 The plate sizes itself so nothing covers it — with one exception
+### 5.1 The plate sizes itself so nothing covers it
 
 This is the load-bearing rule of the whole layout, and §2.3 depends on it.
 
@@ -363,10 +367,17 @@ floats costs the plate nothing until the window is narrow.
 
 The plate keeps its aspect ratio and is **never cropped or letterboxed**.
 
-**The one permitted overlap is the scoreboard** (§5.2). It is a narrow glass chip at the plate's
-top edge — small enough that it never hides a player, and positioned where CS2 places its own HUD
-so a reader already knows not to look there for map data. No other element may overlap the plate;
-the `backdrop-filter` budget and the spatial reasoning both depend on it.
+**Nothing overlaps the plate in the default layout.** Revised 16 August 2026: the scoreboard used to
+be a permitted exception, sitting as a glass chip on the plate's top edge, and §5.2 moved it onto the
+timeline block instead. The exception survives as **what the other scoreboard position spends** — a
+reader who prefers the score where CS2 puts its own HUD may put it back, and that preference is the
+only thing in the product allowed over the plate. Nothing else may be, in either position; the
+`backdrop-filter` budget and the spatial reasoning both depend on it.
+
+That the exception is now optional is worth more than the pixels it returns. The chip over the plate
+was the product's **only** `backdrop-filter` over a surface that repaints every frame (§2.3), so the
+default layout no longer pays for one at all, and the cost of the preference is confined to the
+readers who ask for it.
 
 **Below 1280px** the cards dock to the viewport edges and the plate takes what is left, still
 uncovered. **Below 1080px** the two team cards merge into a single strip above the timeline block,
@@ -377,14 +388,32 @@ targets a laptop and up; the phone is the landing page's problem.
 
 Two pieces that used to be one card.
 
-**The scoreboard** is a glass chip centered at the plate's top edge: `--surface-glass` background,
-`--radius-card` corners, `backdrop-filter: blur(12px)`. It is absolutely positioned over the plate
-and is the only HUD element that overlaps it (§5.1). It contains, in one horizontal row:
+**The scoreboard is a brow on the timeline block.** Revised 16 August 2026, on the owner's reading
+of the built screen; it was a chip centered over the plate until then. It rises from the centre of
+the block's top edge as a tab of that card — square-cornered where the two meet, `--radius-card`
+above, **no seam and no hairline across the join**, so it reads as the block growing a lip rather
+than as a fifth surface parked on it. It is `--glass-panel` like the block and carries **no
+`backdrop-filter`**: it is over the stage, not over the plate, and §2.3 does not pay for a blur that
+has nothing moving behind it.
 
-- the map name — `de_anubis`, not "Anubis"; game vocabulary, never translated
-- the match score, one number per team, coloured by side (`--ct` / `--t`), in Plex Mono
+It contains, in one horizontal row:
+
+- the map name — `de_anubis`, not "Anubis"; game vocabulary, never translated. Roboto Condensed 14.
+- the match score, one number per team, coloured by side (`--ct` / `--t`), Plex Mono 20
 - the round clock — freeze time counts down, live time counts up from `0:00`, post-round holds
-  the final time; Plex Mono, `tabular-nums`
+  the final time; Plex Mono 20, `tabular-nums`
+
+**The type is one rank larger than it shipped at** — 16 → 20 on the score and the clock, 13 → 14 on
+the map. The owner's reading was *«смело можно поднять шрифт на 1 ранг, поскольку пока мелковато»*,
+and a chip that was sized to stay off a player's head has no such constraint once it is off the
+plate. The score is the second-most-read number on the screen after the round clock; at 16 it was
+the same size as a player's money.
+
+**The position is a preference** (§10.5), and the brow is the default. The other position is the
+chip this section used to describe — centered on the plate's top edge, with the `backdrop-filter`
+and §5.1's exception that only it needs. Both readings are legitimate: the top of the screen is
+where CS2 and every broadcast put the score, and the bottom is where this product puts everything
+else the reader operates. The preference is how that argument stops being one.
 
 The match ID, if the demo carries one, is a line of `--ink-dim` caption text below the row inside
 the chip. Most demos do not carry one; the chip does not grow a row for it when it is absent.
@@ -433,6 +462,12 @@ They sit at `--ink-faint` and rise to `--ink` on hover or focus, and the whole c
 the pointer enters the top-right quadrant of the stage — the hot corner in §9.3. They are always
 reachable by keyboard regardless of pointer position.
 
+**The cluster is also the bridge for settings that ship before the sheet does.** It carries close
+and the audibility rings today (#147), and §10.5's scoreboard position and round-strip survivors
+join them. Every one of those is a `--glass-sheet` row the moment step 9 lands, and none of them
+stays here: a cluster of three named icons that has grown to six is a settings menu that has not
+admitted it. A control may bridge here only if §10.5's table already names it.
+
 Beneath the cluster, the **event feed**: the last events before the playhead, newest at the top,
 capped at eight rows and clipped to the current round. A row is *attacker · weapon glyph · victim*
 with the two names in their side colours, plus a headshot mark, a wallbang mark and a through-smoke
@@ -447,15 +482,31 @@ Pressing a feed row seeks to that event. Hovering one draws the kill's line on t
 
 ### 5.5 The timeline block
 
-A single floating card at the bottom holding, left to right: the **play/pause** button (40px,
-primary), the **round timeline** (§7.1), and the **speed control** (§7.2). Beneath them, flush to
-the card's bottom edge, the **round list** (§7.3) at 32px.
+A single floating card at the bottom, with a brow and two rows. Top to bottom:
+
+| Part | Height | What |
+|---|---|---|
+| the brow | 32px, **above** the card's top edge | the scoreboard (§5.2), centered, in its default position |
+| the round strip | 28px, or 44px expanded | §7.3's round pills, the card's top row |
+| the control row | 64px | **play/pause** (40px, primary), the **round timeline** (§7.1), the **speed control** (§7.2) |
 
 The block is `--glass-panel`, `--radius-float`, and it spans the width between the two team cards'
-outer edges. **Total height stays 96px** — the previous layout spent 205px on the same job — and
-#157 took the round list's extra 18px out of the control row rather than off the stage. The row is
-64px, which is the 40px button plus 12px of padding either side; it has no slack left, so the next
-thing that wants height here comes out of the plate and §5.1 has to be re-measured for it.
+outer edges. **Total height is 92px, or 108px with the survivors expanded** — 96px until 16 August
+2026, and the strip moving above the control row is what returned the 4px. The previous layout spent
+205px on the same job.
+
+**The strip is the top row now, not the bottom one.** It was flush to the card's bottom edge from
+#157 until this revision, which put it as far from the axis it seeks against as the card allowed;
+§7.3 records the rest of the reasoning. The control row is unchanged at 64px — a 40px button plus
+12px of padding either side — and still has no slack, so the next thing that wants height here comes
+out of the plate and §5.1 has to be re-measured for it. The expanded strip is exactly that case, and
+it is the reader's own doing rather than a default.
+
+The brow's 32px sit in the stage above the block, so the block and its brow are 124px of the
+viewport's height against 96px before. **Where that comes from depends on which axis binds the
+plate**: `min(100cqi, 100cqb)` takes it out of a height-bound plate and off the letterbox of a
+width-bound one, and at 1440×900 the plate is height-bound (744×744, #147). The code issue measures
+the new number at every width §5.1 names rather than predicting it here.
 
 ### 5.6 The inspector
 
@@ -622,87 +673,109 @@ A pill on the right of the block reading the current rate in Plex Mono. Pressing
 active entry is `--accent`. The pill also shows a `⏵⏵` mark while a held arrow key is
 fast-forwarding (§9.1), so a temporary rate never looks like a setting the reader changed.
 
-### 7.3 The round list
+### 7.3 The round strip
 
-32px, flush to the timeline block's bottom edge, spanning its full width. **One cell per round, all
-cells the same width** — a list, not a chart. Decided 16 August 2026 (#157), replacing the 14px
-match ribbon this document carried until then.
+28px, the timeline block's **top row**, spanning its full width. **One pill per round, all pills the
+same width** — a list, not a chart. Equal-width cells were decided 16 August 2026 (#157), replacing
+the 14px match ribbon; the pills, the position and everything below are the revision of the same
+day, on the owner's reading of the built strip.
 
 The ribbon was a chart of the match: bands proportional to round duration, an economy gap and an
-event-density trace. The owner's reading of the built screen was *«снизу у нас непонятные
-графики»* — a density trace at 14px is terrain with no legend, and the economy gap answers a
-question nobody asks while scrubbing. What the strip was actually being used for was **getting to
-a round**, and that is what it now is.
+event-density trace. The owner's reading of it was *«снизу у нас непонятные графики»* — a density
+trace at 14px is terrain with no legend, and the economy gap answers a question nobody asks while
+scrubbing. What the strip was actually being used for was **getting to a round**, and that is what
+it is. The ribbon's bands were a map of match time, so a 13-second round was a sliver nobody could
+hit; a list gives every round the same target and the same weight, which is what a reader wants when
+a round is a *thing* rather than an interval. Nothing on this strip is a playhead — the playhead is
+on §7.1, where it belongs.
 
-Equal-width cells are the substantive change. The ribbon's bands were a map of match time, so a
-13-second round was a sliver nobody could hit; a list gives every round the same target and the
-same weight, which is what a reader wants when a round is a *thing* rather than an interval.
-Nothing on this strip is a playhead any more — the playhead is on §7.1, where it belongs.
+**What the second reading found.** *«Из-за отсутствия гэпа между ними это уже сложно
+воспринимается, так же ещё и информация сколько кого выжило мне кажется всё же лишняя на постоянной
+основе.»* Both halves of that are the same failure: the strip was carrying five marks per round —
+a tint, a number, two counts and two side letters — with nothing but a hairline between them, so
+thirty rounds arrived as a hundred and fifty objects with no hierarchy. What the reader is doing at
+this strip is aiming at a number.
 
-A cell carries:
+A pill carries, by default:
 
-- **The winner's tint** — `--ct` / `--t` from `Round.winner` at α0.14, `--line` hairlines between
-  cells.
-- **The round number**, Plex Mono 12, `--ink`, on the cell's centre line. It is the largest and
-  brightest mark in the cell.
-- **Both sides' survivor counts**, flanking it — CT to the left, T to the right, Plex Mono 10,
-  `--ink-dim`, each with its side written **under** it in Plex Mono 10 and `--ct` / `--t`.
-- **The current round is lit**: the tint drops and a 1px `--glass-edge` frame takes its place.
+- **The round number** — Plex Mono 13, `--ink`, centred, and the only text in the pill.
+  Rounds ahead of the playhead take `--ink-dim`: the match is knowable, and the part that has been
+  watched is what the reader is navigating within.
+- **A 2px winner bar** on the pill's bottom edge, `--ct` / `--t` from `Round.winner`, full pill
+  width. **There is no tint** — a fill spends the whole cell on one bit, and thirty filled cells
+  read as a barcode rather than as thirty targets.
+- **`--radius-chip` corners, a 4px gap either side, and no hairlines.** Space is the separation.
+  This is the change that answers the reading: the pill has to be an object before its contents can
+  have an order.
+- **The current round** drops the winner bar for a fill of `--ink` α0.10 and a 1px `--glass-edge`
+  ring, and takes its number to weight 500. That reads as *here* rather than as a brighter outcome,
+  which is what a tinted highlight always ends up meaning.
 
-**Why the number leads and the counts are a pair.** Revised 16 August 2026, on the owner's reading
-of the built strip, from what this section said on the day it was written: one survivor count, the
-winner's, in `--ink`, over a round number in `--ink-dim`.
+**The match's own structure divides the strip.** Halves and overtimes are separated by a 12px gap
+with a 1px dotted `--line` rule in it. **The boundaries are derived, never assumed**: a divider goes
+wherever the slots' sides flip against the previous round, which is `Round.economy[].team` and
+therefore a fact of the demo — MR12, MR15, a 6-round overtime and a match that ends early all
+produce the right answer from the same rule, and no round count is hardcoded anywhere. A reader who
+wants round 14 in the second half does not count to fourteen; they cross the divider and count to
+two.
 
-That put the emphasis on the wrong value. The strip is how a reader *gets to a round*, so the round
-number is what they are aiming at and it deserves the size and the ink; the survivor count is what
-they read once they have arrived. And one count only reads as the winner's if the reader first
-resolves the tint, which is a second lookup to answer a question they did not ask — `5 : 1` and
-`1 : 1` are the same win and a different round, and the pair says which without being decoded.
+**Survivors are behind a disclosure.** A 24px control at the strip's end expands every pill at once:
+the strip goes to 44px and each pill gains a 16px block under its number holding two 5-segment
+tracks — **CT above, T below**, live segments in the side colour, lost ones at `--ink-faint`, each
+track spanning the pill's inner width so the segments scale with the pill instead of being fixed.
+**CT fills from the right and T fills from the left**, which is §5.3's card positions, so the side
+survives as fill direction as well as hue. No digits and no letters in the expanded state — the
+question *how did it end* is answered by shape at a glance, and the exact pair is a hover away.
 
-**The sides are written out, not only coloured.** `CT` and `T` sit under their own digits in the
-side colour, which makes the colour the redundant channel rather than the only one — §14's floor
-says side identity never relies on hue alone, and it matters twice over here because the cell's own
-tint is already spending that same pair of hues on *who won*. Two readings of `--ct` in one 32px
-cell, one of them the sole carrier, is what this avoids. The letters are game vocabulary and are
-never translated (§13).
+The state is a UI preference and is remembered (§10.5, hard rule 5). It is **off by default**, which
+is the owner's reading applied: what is always on screen is the way to a round, and the shape of the
+round is what the reader asks for.
 
-**What the survivor counts count.** Side membership is `Round.economy[].team` — the side the slot
+**What the survivor tracks count.** Side membership is `Round.economy[].team` — the side the slot
 held *that* round (#90), never `PlayerInfo.team`. Deaths are the `kills` whose `tick` falls in
 `[startTick, endTick]`, taken off whichever side the victim sat on; the window closes at `endTick`
 on purpose, or the post-round kills that follow most rounds would count. A slot with `team: null`
 carried no sample at freeze-time end and is not on either side, so a four-man side reads a maximum
-of four — that is the correct answer, not an off-by-one. No schema change: `Round` and `Kill`
-carry all of it, and `SCHEMA_VERSION` stays 4.
+of four — that is the correct answer, not an off-by-one. No schema change: `Round` and `Kill` carry
+all of it, and `SCHEMA_VERSION` stays 4.
 
-**Pressing a cell seeks to that round's `freezeTimeEndTick`.** Hovering one names the round: its
-number, the score after it, and `Round.reason` in words. That is §9.2-legal for the same reason
-§7.1's kill tooltip is — `RoundOutcomes` already says all three without a pointer.
+**Side identity without the letters.** `CT` and `T` used to sit under their own digits in the side
+colour, because §14's floor says side identity never relies on hue alone and the cell's tint was
+already spending that pair of hues on *who won*. Removing both the counts and the tint is what
+retires that argument rather than losing it: the winner bar is now the **only** use of the side
+pair in the pill, the expanded tracks carry fill direction as their second channel, and **the pill's
+accessible name is unchanged** — number, winner, `Round.reason` in words, both survivor counts and
+the score the round left behind, all without a pointer. The floor is met by the name, which is where
+it was always actually met; the letters were meeting it twice.
 
-**Degradation is by width, and in this order:**
+**Pressing a pill seeks to that round's `freezeTimeEndTick`.** Hovering one names the round: its
+number, the score after it, and `Round.reason` in words, plus both survivor counts while the strip
+is collapsed. That is §9.2-legal for the same reason §7.1's kill tooltip is — the pill already says
+all of it without a pointer.
 
-| Cell width | What the cell shows |
-|---|---|
-| ≥ 40px | tint, round number, both survivor counts with their side letters |
-| 14–40px | tint and round number; the counts go first, being the extra rather than the way in |
-| < 14px | tint only — bands again, and honestly so |
+**Degradation is one threshold now, not three.** Below **20px** of pill width the number goes and
+the winner bar carries the pill alone — bands again, and honestly so. That is the whole ladder: the
+counts used to be the first thing a narrow strip dropped, and they are no longer in the default
+state to drop.
 
-The counts go first because the tint answers *who won* at any width and position answers *which
-round*; a number that has to be read at 8px is worse than no number.
+**20px is the row's own arithmetic, not a guess.** Plex Mono advances 0.6em and §3 gives 13 no
+tracking, so a two-digit round number is 15.6px; 2px of padding either side puts the pill at 19.6px,
+and the 4px grid rounds it to 20.
 
-**40px is the row's own arithmetic, not a guess.** Plex Mono advances 0.6em and §3's tracking adds
-0.01em, so `CT` at 10 is 12.20px, a two-digit round number at 12 is 14.64px, and the three columns
-come to 39.04px. The cell carries no horizontal padding — the hairline between cells is the
-separation — and that is what buys the last two pixels rather than rounding the threshold up.
+The margin is wider than the three-row ladder ever had. The strip spans the block less its 16px
+padding either side and the 32px the disclosure takes with its gap, which is roughly 1326px at 1440
+and roughly 936px below
+`--breakpoint-split`. At 24 rounds — MR12, one divider — that is **51px** a pill on the wide end and
+**35px** on the narrow one. At 40 rounds with three dividers it is **29px** and **19px**: only the
+last of those loses the number, and it is a 40-round overtime on a sub-1080 laptop. The floor still
+gets implemented anyway — a rule with no test case is a rule that rots.
 
-The first row is still the normal case and the other two are a floor rather than a design target,
-but the margin is thinner than the one-count row had. A match is 24 rounds at MR12 and runs past 40
-with overtime; the strip spans the block, which is roughly 1390px at 1440 and roughly 1000px below
-`--breakpoint-split`. That is 58px per cell at 24 rounds on the wide end and 42px on the narrow one
-— both in the first row — while 40 rounds is 35px and 25px, which is the second. **Overtime on a
-narrow window is the case that loses the counts**, and it loses them to the round number rather than
-to an overlap. The degraded rows also exist so a 60-round overtime renders something honest instead
-of overflowing, and **the code implements all three anyway**: a rule with no test case is a rule
-that rots.
+**Why the strip moved to the top of the block.** It was flush to the card's bottom edge from #157
+until this revision. The reader's path is *pick a round → watch it on the axis*, and the strip was
+on the far side of the controls from the axis it feeds; putting it directly above §7.1 makes that
+path two adjacent rows. It also puts the scoreboard brow (§5.2), the round strip and the round axis
+on one vertical line through the middle of the screen — the match, its rounds and the round, in that
+order, top to bottom.
 
 **The overlay keeps the chart.** Pressing the round number in the top-left card (§5.2), or `M`,
 raises the match full-height over the stage — the kill marks, the round outcomes, **the density
@@ -716,10 +789,11 @@ spending a semantic colour on one wherever it is drawn.
 **`RoundOutcomes` and `EconomyGaps` stay, and one of them moves.** `role="img"` announces that a
 picture exists and nothing about what it shows, so the `sr-only` lists are what make any of this
 readable without eyes (#92) — and that obligation transfers to whatever replaces the canvas rather
-than lapsing with it. `RoundOutcomes` **is** the round list rather than a second enumeration beside
-it (#184) — a cell is an element, so each one carries the whole reading as its accessible name,
-both survivor counts included. `EconomyGaps` follows the economy gap into the overlay and is voiced
-there. Neither is deleted.
+than lapsing with it. `RoundOutcomes` **is** the round strip rather than a second enumeration beside
+it (#184) — a pill is an element, so each one carries the whole reading as its accessible name,
+both survivor counts included, and that name does not change when the strip is collapsed. It is what
+holds §14's floor once the side letters leave the pill. `EconomyGaps` follows the economy gap into
+the overlay and is voiced there. Neither is deleted.
 
 ---
 
@@ -783,7 +857,7 @@ backgrounds on a static frame, and is implemented once in `packages/ui/src/style
 ### The one orchestrated moment
 
 When a parse completes, the interface assembles rather than appearing: the plate fades up, the four
-cards arrive from their own corners over ~400 ms, the round list fills left to right as data lands,
+cards arrive from their own corners over ~400 ms, the round strip fills left to right as data lands,
 and the players take their opening positions. It runs exactly once per demo, while nothing is
 playing, so it costs nothing in the hot path — and it turns the end of a long wait into a payoff. It
 is #104 and it is still not built.
@@ -933,6 +1007,8 @@ it is open, so principle 4 is not violated by covering a plate that is not movin
 | Plate | Audibility rings | off |
 | Plate | Player names on the plate | on |
 | Plate | Grenade trajectories — in flight / selected only / off | in flight |
+| Interface | **Scoreboard position** — on the timeline block / over the plate (§5.2) | on the block |
+| Interface | **Round strip survivors** — the expanded tracks in §7.3 | off |
 | Colour | Colour-blind-safe side palette | off |
 | Interface | Language — English / Русский | system |
 | Interface | Reduce motion | follows the system |
@@ -942,8 +1018,17 @@ it is open, so principle 4 is not violated by covering a plate that is not movin
 scrubbing into the buy phase by hand still works and still shows it. A setting that made the buy
 phase unreachable would be a bug, not a feature.
 
+**The scoreboard position is the one setting that changes what may overlap the plate.** Over the
+plate it spends §5.1's exception and §2.3's `--backdrop-hud`; on the block it spends neither. That
+is a real cost attached to a real preference, and §5.2 argues why both readings are legitimate.
+
 Every setting is a UI preference and therefore allowed in `localStorage` under hard rule 5. Nothing
 parsed goes there.
+
+**This sheet does not exist yet** — it is step 9 in §15, and the settings that ship before it bridge
+through the corner cluster (§5.4), which is where the audibility rings already sit. The bridge is
+named in §5.4 as temporary and every control on it leaves when the sheet lands; a setting shipping
+early is not a reason to leave it out of this table.
 
 ### 10.6 Help
 
@@ -1026,7 +1111,9 @@ Non-negotiable, and never announced in the UI:
 - **`--ink-faint` never carries text.** 3.63:1 at best.
 - **Side identity never relies on hue alone**: which team card the player is in, then hue, then the
   colour-blind palette in settings. §2.7 records that this revision gave up token shape and what it
-  owes because of it.
+  owes because of it. §7.3's round pill is the case where the second channel is **the element's own
+  accessible name** rather than a mark beside the colour — permitted because the name carries the
+  whole reading and is reachable without a pointer, not because the pill ran out of room.
 - **Every canvas carries a text equivalent.** `RoundOutcomes` and `EconomyGaps` already do it, and
   §7.3 keeps both across the ribbon's replacement rather than letting the obligation lapse with the
   canvas that carried it; the round timeline needs one and does not have one yet. Vision cones and
@@ -1080,6 +1167,17 @@ dependency order:
     tooltip is #181 and still waits on the feed. **§7.3's cell was revised again on 16 August 2026**
     — the round number leads and both sides' counts flank it, with the sides written out — and that
     revision shipped inside #171 at the owner's request rather than as its own issue.
+11. **The strip and the brow** *(added by #189)* — §7.3 as rewritten on 16 August 2026 and §5.2's
+    scoreboard position, in `features/timeline` and `features/review`. Two pieces and two PRs. The
+    strip becomes gapped pills above the control row, the winner moves from a tint to a bottom bar,
+    the match's segments are divided by a dotted rule derived from `Round.economy[].team`, and the
+    survivor counts go behind an expand toggle as two 5-segment tracks. The scoreboard becomes a brow
+    on the timeline block with the over-the-plate chip kept as a preference, its type one rank
+    larger. **Both change the block's height, so §5.1's plate geometry is re-measured in each PR**
+    rather than asserted from #147's numbers. No schema change; `SCHEMA_VERSION` stays 4. The
+    segment boundaries want a helper in `packages/demo-core` beside `roundSurvivors`, unit-tested
+    there — a match that never swaps sides and a match with two overtimes are the cases that decide
+    it.
 
 Each is its own issue and its own PR, per `CONTRIBUTING.md`. **A PR that implements one of these and
 contradicts a rule in this document is wrong in the PR, not in the document** — the document is
