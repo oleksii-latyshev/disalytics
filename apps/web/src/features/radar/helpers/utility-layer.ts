@@ -67,7 +67,7 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
 
       // Trajectory — drawn for in-flight grenades.
       if (visual.phase === 'flight') {
-        const clipCount = trajectoryClipCount(grenade, tick);
+        const clipCount = trajectoryClipCount(grenade, tick, track.tickRate);
         if (clipCount >= 2) {
           drawTrajectory(
             context,
