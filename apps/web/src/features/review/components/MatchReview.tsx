@@ -16,6 +16,7 @@ import { useFullscreen, useStoredFlag } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { CornerCluster } from './CornerCluster';
 import { RoundCard } from './RoundCard';
+import { Scoreboard } from './Scoreboard';
 import { TeamCard } from './TeamCard';
 import { TimelineBlock } from './TimelineBlock';
 
@@ -122,13 +123,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
   return (
     <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
       <div className="justify-self-start [grid-area:1/1/2/2]">
-        <RoundCard
-          demo={demo}
-          frame={frame}
-          roundIndex={roundIndex}
-          locale={locale}
-          cache={cache}
-        />
+        <RoundCard demo={demo} frame={frame} roundIndex={roundIndex} cache={cache} />
       </div>
 
       <div className="justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/2/4]">
@@ -143,13 +138,22 @@ export function MatchReview({ demo, cache, onClose }: Props) {
 
       {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every
           pixel on the map, which is why the cards are beside the cell rather than over it. */}
-      <div className="grid min-h-0 min-w-0 [grid-area:2/1/3/2] split:[grid-area:1/2/4/3]">
+      <div className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/2] split:[grid-area:1/2/4/3]">
         <MatchRadar
           demo={demo}
           transport={transport}
           selectedSlot={selectedSlot}
           isAudibilityShown={isAudibilityShown}
         />
+
+        {/* §5.1's one permitted overlap, anchored to the top of the plate's *cell* rather than to
+            the canvas inside it. Above the split those two edges are the same line — the cell is
+            wider than it is tall, so the square plate fills its height — and where they are not,
+            the chip floats in the letterbox above the plate and covers nothing at all. Anchoring
+            to the canvas instead would mean a second reader of `min(100cqi,100cqb)`. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
+          <Scoreboard demo={demo} frame={frame} locale={locale} />
+        </div>
       </div>
 
       {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two

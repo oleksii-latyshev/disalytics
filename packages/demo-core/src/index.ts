@@ -37,22 +37,21 @@ export {
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
-export type { PlayerRoundStats } from './helpers/round-stats';
+export type { PlayerRoundStats, SideSurvivors } from './helpers/round-stats';
 export { playerRoundStats, roundSurvivors } from './helpers/round-stats';
-export type { MatchScore } from './helpers/score';
-export { matchScore } from './helpers/score';
-export type { SideScore } from './helpers/selectors';
+export type { MatchScore, SideScore } from './helpers/score';
+export { matchScore, sideScoreAtFrame } from './helpers/score';
+export type { RoundClock, RoundPhase } from './helpers/selectors';
 export {
   frameForTick,
   lastFrame,
   openingFrame,
   playersOnSide,
-  roundElapsedSeconds,
+  roundClockAtFrame,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
-  sideScoreAtFrame,
   sidesBySlotAtRound,
   slotSampleIndex,
   tickAtFrame,

@@ -67,9 +67,15 @@ function sumDamage(
   return total;
 }
 
+/** How many players each side still had when a round ended. */
+export type SideSurvivors = Record<Team, number>;
+
 /**
- * How many players the side that won a round still had when it ended — `docs/DESIGN.md` §7.3's one
- * digit, where five is a stomp and one is a clutch.
+ * How many players each side still had when a round ended — `docs/DESIGN.md` §7.3's two digits,
+ * where `5 : 1` is a stomp and `1 : 1` is a clutch.
+ *
+ * Both sides rather than the winner's alone: a cell that shows one number leaves the reader to
+ * infer whose it is from the tint, and the count that says how *close* a round was is the pair.
  *
  * Side membership is the round's own economy, read at freeze-time end: `PlayerInfo.team` is the
  * end-of-match roster and names the wrong side for half a match. A slot the round recorded no side
@@ -78,17 +84,17 @@ function sumDamage(
  * The window closes at `endTick`, which is what keeps the post-round kills that follow most rounds
  * out of the count.
  */
-export function roundSurvivors(demo: ParsedDemo, roundIndex: number): number {
+export function roundSurvivors(demo: ParsedDemo, roundIndex: number): SideSurvivors {
+  const alive: SideSurvivors = { CT: 0, T: 0 };
   const round = demo.events.rounds.at(roundIndex);
-  if (round === undefined) return 0;
+  if (round === undefined) return alive;
 
   const sides: (Team | null)[] = [];
-  let alive = 0;
 
   for (const entry of round.economy) {
     sides[entry.slot] = entry.team;
 
-    if (entry.team === round.winner) alive += 1;
+    if (entry.team !== null) alive[entry.team] += 1;
   }
 
   const { kills } = demo.events;
@@ -97,10 +103,13 @@ export function roundSurvivors(demo: ParsedDemo, roundIndex: number): number {
     const kill = kills[index];
     if (kill === undefined || kill.tick > round.endTick) break;
 
-    if (sides[kill.victim] === round.winner) alive -= 1;
+    const side = sides[kill.victim];
+    if (side === null || side === undefined) continue;
+
+    alive[side] -= 1;
   }
 
-  return Math.max(alive, 0);
+  return { CT: Math.max(alive.CT, 0), T: Math.max(alive.T, 0) };
 }
 
 /**

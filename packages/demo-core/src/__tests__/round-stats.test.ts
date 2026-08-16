@@ -31,22 +31,22 @@ function newDemo(events: MatchEvents, rounds: readonly Round[] = [round]): Parse
 }
 
 describe('roundSurvivors', () => {
-  it('counts the winning side, less the players it lost inside the round', () => {
+  it('counts each side, less the players it lost inside the round', () => {
     const events = withKill(newEvents(), { tick: asTick(400), attacker: enemy, victim: mate });
 
-    expect(roundSurvivors(newDemo(events), 0)).toBe(1);
+    expect(roundSurvivors(newDemo(events), 0)).toEqual({ CT: 1, T: 1 });
   });
 
-  it('leaves the losing side out of the count', () => {
+  it('takes the losing side down as well as the winning one', () => {
     const events = withKill(newEvents(), { tick: asTick(400), attacker: first, victim: enemy });
 
-    expect(roundSurvivors(newDemo(events), 0)).toBe(2);
+    expect(roundSurvivors(newDemo(events), 0)).toEqual({ CT: 2, T: 0 });
   });
 
   it('does not count the post-round kills that follow most rounds', () => {
     const events = withKill(newEvents(), { tick: asTick(950), attacker: enemy, victim: mate });
 
-    expect(roundSurvivors(newDemo(events), 0)).toBe(2);
+    expect(roundSurvivors(newDemo(events), 0)).toEqual({ CT: 2, T: 1 });
   });
 
   it('puts a slot the round recorded no side for on neither side', () => {
@@ -61,11 +61,11 @@ describe('roundSurvivors', () => {
     };
     const events = withKill(newEvents(), { tick: asTick(400), attacker: enemy, victim: stranger });
 
-    expect(roundSurvivors(newDemo(events, [fourMan]), 0)).toBe(2);
+    expect(roundSurvivors(newDemo(events, [fourMan]), 0)).toEqual({ CT: 2, T: 1 });
   });
 
   it('has nothing to say for a round that does not exist', () => {
-    expect(roundSurvivors(newDemo(newEvents()), 7)).toBe(0);
+    expect(roundSurvivors(newDemo(newEvents()), 7)).toEqual({ CT: 0, T: 0 });
   });
 });
 

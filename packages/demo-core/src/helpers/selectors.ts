@@ -11,13 +11,6 @@ import {
 } from '../schema';
 
 /**
- * Rounds won by each side. Sides, not teams: the demo carries a player's team number, and the
- * halftime swap moves the same five players from one side to the other without recording that they
- * are the same five.
- */
-export type SideScore = Record<Team, number>;
-
-/**
  * One value out of a `TickTrack` buffer. `noUncheckedIndexedAccess` types every buffer read as
  * possibly undefined, and the track's invariant — `frameCount * slotCount` values in each buffer —
  * is not something the type system carries, so an out-of-range read is a mis-indexed caller rather
@@ -82,41 +75,53 @@ export function openingFrame(demo: ParsedDemo): Frame {
   return roundOpeningFrame(demo, 0);
 }
 
-/** The score at a sample position. A round still being played has been won by neither side. */
-export function sideScoreAtFrame(demo: ParsedDemo, frame: number): SideScore {
-  const tick = tickAtFrame(demo.track, frame);
-  const score: SideScore = { CT: 0, T: 0 };
+/** Which part of a round a sample position stands in — `docs/DESIGN.md` §5.2's three phases. */
+export type RoundPhase = 'freeze' | 'live' | 'post';
 
-  for (const round of demo.events.rounds) {
-    if (round.endTick > tick) break;
-
-    score[round.winner] += 1;
-  }
-
-  return score;
+export interface RoundClock {
+  phase: RoundPhase;
+  /** Whole seconds the phase puts on the clock, already rounded the way its direction wants. */
+  seconds: number;
 }
 
 /**
- * How far into its round a sample position stands, in seconds from the end of the freeze time —
- * the moment the round is actually played from. `undefined` during warmup, which no round covers.
+ * The round clock at a sample position — `undefined` during warmup, which no round covers.
  *
- * It counts **up**, and that is a data limit rather than a preference: a countdown needs the round
- * length, and no `mp_roundtime` reaches the demo any more than a tick rate or a bombsite name does
- * (`docs/PARSER.md` §13). Counting down from an assumed 1:55 would be wrong on every server that
- * runs anything else, and wrong quietly.
+ * Three phases, three readings, and each one is answerable from the data the demo carries:
  *
- * The buy phase reads 0, because a round has not begun until it has begun.
+ * - **freeze** counts *down* to zero, over `startTick` → `freezeTimeEndTick`. The buy phase has a
+ *   length the demo states, so this is measured rather than assumed.
+ * - **live** counts *up* from `0:00`. It cannot count down: that needs the round length, and no
+ *   `mp_roundtime` reaches the demo any more than a tick rate or a bombsite name does
+ *   (`docs/PARSER.md` §13). Counting down from an assumed 1:55 would be wrong on every server
+ *   running anything else, and wrong quietly.
+ * - **post** holds the time the round ended on, because the five to seven seconds after `endTick`
+ *   are not round time and a clock that keeps running through them says they are.
+ *
+ * A countdown rounds up and a count-up rounds down, so each one shows the second it is *in* rather
+ * than the one it has finished: a freeze phase opens on its full length and reaches `0:00` as it
+ * ends, which is the opposite of what flooring both would do.
  */
-export function roundElapsedSeconds(demo: ParsedDemo, frame: number): number | undefined {
+export function roundClockAtFrame(demo: ParsedDemo, frame: number): RoundClock | undefined {
   const roundIndex = roundIndexAtFrame(demo, frame);
   if (roundIndex === undefined) return undefined;
 
   const round = demo.events.rounds.at(roundIndex);
   if (round === undefined || demo.track.tickRate === 0) return undefined;
 
-  const elapsed = (tickAtFrame(demo.track, frame) - round.freezeTimeEndTick) / demo.track.tickRate;
+  const tick = tickAtFrame(demo.track, frame);
+  const { tickRate } = demo.track;
 
-  return Math.max(elapsed, 0);
+  if (tick < round.freezeTimeEndTick) {
+    return { phase: 'freeze', seconds: Math.ceil((round.freezeTimeEndTick - tick) / tickRate) };
+  }
+
+  const played = Math.min(tick, round.endTick) - round.freezeTimeEndTick;
+
+  return {
+    phase: tick > round.endTick ? 'post' : 'live',
+    seconds: Math.max(Math.floor(played / tickRate), 0),
+  };
 }
 
 /**
