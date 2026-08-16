@@ -121,7 +121,10 @@ buttons ten times a second cost 5 fps and took the worst scrub frame from 13 ms 
 demo. **The density series is derived once per demo** — nothing walks an event array inside a draw,
 which is also why `layers` and everything feeding it are `useMemo`'d on `[demo]`. And
 **`SPINE_AXIS_FRACTION`** in `features/timeline/helpers/spine.ts` is one number with two readers, the
-canvas and the DOM markers above it. Read `AGENTS.md` §8 before changing any of it.
+canvas and the DOM markers above it. **None of that is on screen any more** — the canvas, both
+constants and `KillMarkers` went in #147 and #184, and the layers themselves are kept unreferenced
+for a match overlay nobody has built. The measured cost of un-`memo`ing a match's worth of DOM at
+10 Hz is the part that outlived them. Read `AGENTS.md` §8 before changing any of it.
 
 #92 gave the canvas words: `RoundOutcomes` is an `sr-only` list of every round — number, winning
 side, and `Round.reason` through an exhaustive switch — because `role="img"` announces that a
@@ -245,10 +248,12 @@ moment. **`playerRoundStats` is computed for the selected row only** and starts 
 walking a match's damage for four rows nobody expanded was the cost this avoids. **The `C4 Explosive`
 entry draws nothing** — §6.4 as #137 restated it, verified over a play-through where the label never
 once appeared. And **the corner cluster carries five icons where §5.4 names three**: close and
-audibility are a bridge until the settings sheet exists, and they leave with it. The spine is now a
+audibility are a bridge until the settings sheet exists, and they leave with it. The spine became a
 14px `MatchRibbon` whose bands seek and whose density trace is `--ink-dim` at α0.30 rather than
 `--damage` at 0.55, which is what #116 asked for; kill marks moved up to `RoundTimeline`, where they
-fit. `AGENTS.md` §16's two frame budgets are **measured** rather than asserted for the first time.
+fit. **That ribbon is gone since #184** — read the two paragraphs at the end of this section for what
+the bottom of the screen is now. `AGENTS.md` §16's two frame budgets are **measured** rather than
+asserted for the first time.
 
 **#154 opened §15's sixth step — the plate — with §6.1's token.** One filled circle for both sides,
 a selection ring, a blind countdown disc sweeping over the `Blind` event's own `durationSeconds`, a
@@ -294,13 +299,44 @@ footprint no longer depends on whether the label says "Pause" or "Воспрои
 it used to move on every press. The strings did not go anywhere: `controls.play` and
 `controls.pause` are the `aria-label` now.
 
-**#157 rewrites `docs/DESIGN.md` §7, as PR #178.** It replaces the 14px `MatchRibbon` described
-above with a 32px **list of rounds** — equal-width cells, winner tint, round number, survivor count
-— moves #90/#91's economy band and density trace behind the full-height overlay rather than
-deleting them, tints §7.1's kill glyph by the side of the player who died, and adds a §15 step 10
-for the implementation. **Whether that landed decides which of the two paragraphs above is
-current**, and none of it is built either way: the ribbon is what runs until step 10 does. Read §7
-rather than this summary before touching the bottom of the review screen.
+**#157 rewrote `docs/DESIGN.md` §7, as PR #178.** It replaced the 14px `MatchRibbon` described above
+with a 32px **list of rounds** — equal-width cells, winner tint, round number, survivor count —
+moved #90/#91's economy band and density trace behind the full-height overlay rather than deleting
+them, tinted §7.1's kill glyph by the side of the player who died, and added a §15 step 10 for the
+implementation. **#182 and #184 built that step**, in the two paragraphs below. The overlay is the
+one piece of §7.3 that has no issue and no code; read §7 rather than this summary before touching
+the bottom of the review screen.
+
+**#182 scoped the timeline to one round.** `RoundTimeline` is §7.1's axis: the buy phase as a region
+of its own, the round's events as glyphs — a skull tinted by the side of the player who died, the
+objective marks in `--objective`, a utility glyph per grenade in its own colour — and kills by the
+selected player rising while everything else drops to `--ink-faint`. Three things are load-bearing.
+**The axis runs to the *next* round's `startTick`, not to `Round.endTick`**, and that is a deliberate
+departure from §7.1's letter: the two are five to seven seconds apart, the clock passes through them
+at the end of every round, and stopping at `endTick` parks the playhead against the right edge once
+per round. The round's close is drawn as a hairline instead and **glyphs still stop at `endTick`**,
+so the post-round kills §7.3 refuses to count never appear. One expression in `timelineSegment`
+(`features/timeline/helpers/round-axis.ts`) reverts it. **`axisGlyphs` derives a round's events
+once per round**, never inside a render at the readout's rate, and **`EventGlyphs` is `memo`'d** for
+the reason `KillMarkers` was.
+
+**#184 replaced the ribbon with §7.3's round list, closing #183.** `RoundList` is 32px flush to the
+timeline block's bottom edge: one equal-width cell per round tinted by its winner at α0.14, carrying
+the round number and the winning side's survivor count, lit by a 1px `--glass-edge` frame while it
+plays, seeking to `freezeTimeEndTick` when pressed. Nothing on it is a playhead. Four things are
+load-bearing. **The survivor rule lives in `demo-core`** — `roundSurvivors` counts the winning side
+out of `Round.economy[].team` and takes off the deaths inside `[startTick, endTick]`, so a slot with
+`team: null` is on neither side and a four-man side reads a maximum of four; that is the correct
+answer, not an off-by-one. **`matchScore` gained a round bound** rather than a sibling, because the
+hover wants the score *after* round N and `sideScoreAtFrame` counts `Round.winner` by side, which is
+the bug #141 owns. **`RoundOutcomes` is the list itself** rather than an `sr-only` enumeration beside
+a canvas — a cell is an element, so each one carries the whole reading as its accessible name, and
+the tooltip is `aria-hidden` because it restates what is already there. And **`helpers/density.ts`,
+`helpers/economy.ts`, `helpers/layers.ts` and `EconomyGaps.tsx` are unreferenced on purpose**: §7.3
+moves them behind the unbuilt match overlay, `layers.ts` carries a comment saying so, and deleting
+them as dead code is the mistake to avoid. The same PR took the axis glyphs from 12px to 24px at the
+owner's request — `GlyphSize` in `core/glyphs` is the two sizes, and `GLYPH_PITCH_PX` moved 14 → 24
+with them, because the collapse threshold is one glyph's width.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
