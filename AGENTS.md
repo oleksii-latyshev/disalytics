@@ -466,69 +466,71 @@ re-deriving the conversion.
 step, `[` and `]` jump rounds. A binding never fires when the event target consumes the key itself —
 text entry for any key, and buttons and links for space and Enter.
 
-### What it shows — #91
+### What it shows — #91, and what shows it now — #182 and #183
 
-Under the playhead the strip carries one canvas with three layers: a band per round tinted `--ct` or
-`--t` by its winner at 0.1 alpha, an event-density trace of kills and damage bucketed per second and
-scaled against the loudest second, and the round hairlines. The hairlines are on that canvas rather
-than in the DOM because they have to land over the bands, and one compositing layer guarantees it.
-`KillMarkers` is the DOM above it: one 2px tick per kill just below the axis, the whole band a single
-tab stop walked with the arrow keys, `Home` and `End`. Its `ul` takes no pointer events, so the strip
-still scrubs everywhere between two markers.
+The bottom of the screen is a 96px card carrying two strips, and neither of them is a canvas.
 
-The canvas is **demand-driven**. `MatchSpine` hands `useCanvasLayers` a `layers` array held still by
-`useMemo` on `[demo]`, and the repaint runs on a resize or a new demo — nothing else. `repaint` is
-deliberately not given to `useFrameSink`; `RadarView` does that because it draws players, the spine
-draws the match, and the match does not change between frames. The frame sink `MatchSpine` does own
-writes the playhead transform and the range's value, and nothing more.
+**`RoundTimeline` is the round axis** — `docs/DESIGN.md` §7.1, scoped to one round since #182. The
+buy phase is a region of its own, the round's events are glyphs on the axis, the scrubber under them
+is the uncontrolled range input above, and the playhead is the only thing on either strip that moves
+per frame. The glyphs are 24px and `GLYPH_PITCH_PX` is 24 with them: the threshold is one glyph's
+width, so a row too tight for symbols collapses to marks rather than drawing them overlapping.
 
-`KillMarkers` is `memo`'d, which is the "when profiling shows a need" half of `CODE_REQUIREMENTS.md`
-§8 rather than a reflex. `MatchTimeline` reads the 10 Hz readout and passes `frame` down, so anything
-under the spine reconciles ten times a second whether or not it wants the frame. Without it, walking
-225 buttons at that rate cost 5 fps and took the worst scrub frame from 13 ms to 25 ms on a 264 MB
-demo. That number is measured, and it is why removing the `memo` is a regression rather than a
+**`RoundList` is the strip beneath it** — §7.3, since #183. One equal-width cell per round tinted by
+its winner at α0.14, carrying the round number and the winning side's survivor count, lit by a 1px
+`--glass-edge` frame while it plays, seeking to `freezeTimeEndTick` when pressed. Nothing on it is a
+playhead; that is the axis's job. Which of §7.3's three degradation rows it renders is one division
+against the measured strip width, so it is decided for the list rather than per cell.
+
+**The spine canvas is gone and its chart is not.** Until #183 this was one canvas of three layers —
+a band per round, an event-density trace, the round hairlines — with `KillMarkers` as the DOM above
+it. The bands were proportional to round duration, which made a 13-second round a sliver nobody
+could hit when getting to a round was what the strip was for. `helpers/density.ts`,
+`helpers/economy.ts`, `helpers/layers.ts` and `EconomyGaps` stay in the tree **unreferenced on
+purpose**: §7.3 moves the trace and the economy gap behind the full-height match overlay, which is
+unbuilt, and neither is deleted.
+
+Two rules the canvas established outlive it. **Nothing walks an event array inside a draw or inside
+a render running at the readout's rate** — `roundCells` derives every cell's winner, survivors and
+score once per demo, `axisGlyphs` derives a round's events once per round, and `eventDensity`
+bucketed the whole match once per demo before them. And **the round list is `memo`'d**, which is the
+"when profiling shows a need" half of `CODE_REQUIREMENTS.md` §8 rather than a reflex: its container
+reads the 10 Hz readout and re-renders on every hover, and the same mistake with `KillMarkers` — 225
+buttons at that rate on a 264 MB demo — cost 5 fps and took the worst scrub frame from 13 ms to
+25 ms. That number is measured, and it is why removing the `memo` is a regression rather than a
 simplification.
 
-Nothing walks an event array inside a draw. `eventDensity` buckets the whole match once per demo, and
-`roundBands`, `killMarkers` and `namesBySlot` are each derived once beside it.
+The axis's focus ring is scoped to the input rather than to the strip: on a bare
+`has-[:focus-visible]` a glyph taking focus would light a ring around the whole strip on top of its
+own.
 
-`SPINE_AXIS_FRACTION` in `features/timeline/helpers/spine.ts` is one number with two readers: the
-canvas puts the density trace's baseline on it, the marker band puts its `top` on it. `docs/DESIGN.md`
-§5 divides the spine along that axis — density above, markers and the economy chart below — so a
-change to it has to be checked on both sides.
+**What it says — #92, and what carries that now — #183.** A canvas carrying data owes a reader more
+than `role="img"`, so `RoundOutcomes` put the bands into words: an `sr-only` `<ol>` beside the
+canvas, one item per round. The obligation transferred to what replaced the canvas rather than
+lapsing with it, and `RoundOutcomes` *is* the round list now — a cell is an element, so each one
+carries the whole reading as its own accessible name: the round's number, the side that won it,
+`Round.reason`, the survivor count and the score the round left behind. The reason reaches copy
+through the same exhaustive switch with no `default` that `ErrorCode` uses, so a reason the
+`timeline` namespace has no sentence for is a compile error. Each sentence is whole in both locales
+(§11); the side is game vocabulary and is interpolated, never translated. Two enumerations of the
+same thirty rounds — one readable, one clickable — would say everything twice to anyone using both.
 
-The focus ring above is scoped to the input for the markers' sake: on a bare `has-[:focus-visible]`
-a kill marker taking focus lights a ring around the whole 96px strip on top of its own.
+**The density trace was decorative and stayed unvoiced**, and that reasoning goes with it into the
+overlay: it is a means of finding the loud stretches by eye, and what it is made of is already
+spoken elsewhere.
 
-**What it says — #92.** A canvas carrying data owes a reader more than `role="img"`, so `RoundOutcomes`
-puts the bands into words: an `sr-only` `<ol>` beside the canvas, one item per round, carrying the
-round's number, the side that won it and `Round.reason` — which reaches copy through the same
-exhaustive switch with no `default` that `ErrorCode` uses, so a reason the `timeline` namespace has
-no sentence for is a compile error. Each sentence is whole in both locales (§11); the side is game
-vocabulary and is interpolated, never translated. It is `memo`'d for the reason `KillMarkers` is.
-
-**The density trace is decorative and stays unvoiced.** It is a means of finding the loud stretches
-by eye, and what it is made of — the kills — is already spoken, one labelled button per kill in the
-markers' roving tab stop. Narrating the shape on top of that would add strings that tell a reader
-nothing the strip does not already tell them.
-
-**What it costs — #90.** The bottom band is the buy: one block per round, rising from the band's
-centre line for a round the CT side came out of freeze time better equipped, falling for one the T
-side did, as tall as that gap is against the widest gap the match holds. Which side leads is carried
-by the direction, not by the hue — §9's floor does not let side identity rest on colour. It is drawn
-at 0.32 alpha, under the density's 0.55 and in a band of its own: a CT block over a CT-tinted round
-band disappears below about 0.25, which was measured rather than guessed. Unlike the density this
-one *is* voiced — `EconomyGaps` is a second `sr-only` list beside `RoundOutcomes`, because nothing
-else in the interface says what a side bought.
+**What it costs — #90.** The buy was one block per round leaving the band's centre line, rising for a
+round the CT side came out of freeze time better equipped and falling for one the T side did, voiced
+by `EconomyGaps` because nothing else in the interface says what a side bought. Both are the
+overlay's now, and both still exist.
 
 The side comes from `PlayerEconomy.team`, which the parser reads at freeze-time end. It exists
 because `PlayerInfo.team` is the side a player held at the *end* of the match: on the Phase 0
 fixture the halves swap at round 13, and reading the buy through the roster would have put the wrong
-side ahead in 15 of the 30 rounds. Carrying it took `SCHEMA_VERSION` to 3.
-
-`MARKER_BAND_PX` joins `SPINE_AXIS_FRACTION` as a number with two readers: the marker band is that
-tall, and the economy chart starts where it ends. Both live in `features/timeline/helpers/spine.ts`
-and a change to either has to be checked on the canvas and in the DOM.
+side ahead in 15 of the 30 rounds. Carrying it took `SCHEMA_VERSION` to 3. **It is what the survivor
+count reads too** — `roundSurvivors` in `demo-core` counts the winning side out of `Round.economy`
+and takes off the deaths between `startTick` and `endTick`, and a slot the round recorded no side for
+is on neither, so a four-man side reads a maximum of four.
 
 **What enforces rule 9 — #108, then #132.** #108 built the enforcement the old rule needed:
 `bindPlayingFlag` mirrored play and pause onto `data-playing` on the document element, and one rule

@@ -7,18 +7,8 @@ import {
 } from '@disa/demo-core';
 
 /**
- * The ribbon's height — `docs/DESIGN.md` §7.3. The block that lays the ribbon out and the layer
- * that fits an economy block inside it both need it, so it is one number rather than a CSS height
- * beside a canvas constant that agrees with it by hand.
- *
- * The previous revision's spine was 96px and carried kill marks and a scrubber. This is the same
- * data re-scaled to a navigation strip: the marks moved up to the round timeline, where they fit.
- */
-export const RIBBON_HEIGHT_PX = 14;
-
-/**
- * How far an economy block may leave the ribbon's centre line — §7.3's 4px band. Bounded rather
- * than proportional: at 14px a proportional reach would swallow the strip.
+ * How far an economy block may leave the chart's centre line — a bounded reach rather than a
+ * proportional one, so a strip of any height keeps the gap legible against the round bands.
  */
 export const ECONOMY_REACH_PX = 4;
 

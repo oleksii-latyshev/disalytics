@@ -109,6 +109,7 @@ export const TRANSLATION_KEYS = [
   'timeline.plant',
   'timeline.positionInRound',
   'timeline.positionInWarmup',
+  'timeline.roundLabel',
   'timeline.roundsRemaining',
   'timeline.unknownPlayer',
 ] as const;

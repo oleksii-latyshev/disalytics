@@ -99,6 +99,20 @@ describe('matchScore', () => {
     expect(matchScore(demo)).toEqual({ startedCt: 2, startedT: 1 });
   });
 
+  it('stops at the round it is bounded to, which is the score after that round', () => {
+    const demo = newDemo([...half(3, 'CT', FIRST_HALF), ...half(2, 'T', FIRST_HALF)]);
+
+    expect(matchScore(demo, 0)).toEqual({ startedCt: 1, startedT: 0 });
+    expect(matchScore(demo, 3)).toEqual({ startedCt: 3, startedT: 1 });
+    expect(matchScore(demo, 99)).toEqual(matchScore(demo));
+  });
+
+  it('carries the halftime swap into a bounded score rather than counting sides', () => {
+    const demo = newDemo([...half(3, 'CT', FIRST_HALF), ...half(4, 'CT', SECOND_HALF)]);
+
+    expect(matchScore(demo, 4)).toEqual({ startedCt: 3, startedT: 2 });
+  });
+
   it('degrades to a side count when no round records a side', () => {
     const demo = newDemo([{ winner: 'CT' }, { winner: 'CT' }, { winner: 'T' }]);
 

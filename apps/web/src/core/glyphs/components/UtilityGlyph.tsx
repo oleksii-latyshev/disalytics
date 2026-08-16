@@ -1,9 +1,11 @@
 import type { UtilityKind } from '@disa/demo-core';
+import { GLYPH_SIZE_CLASS, type GlyphSize } from '../helpers/size';
 
 interface Props {
   kind: UtilityKind;
   /** An accessible name, or nothing when a list around the glyph already carries one. */
   label?: string | undefined;
+  size?: GlyphSize;
 }
 
 /**
@@ -60,16 +62,17 @@ function Mark({ kind }: { kind: UtilityKind }) {
 
 /**
  * One piece of utility, from the product's own set rather than an icon library — DESIGN.md §11.
- * 12px on the 4px grid, drawn in a 12-unit box so a mark reads at the size a row gives it.
+ * Drawn in a 12-unit box and rendered at whichever of the two sizes its caller has room for, so the
+ * same mark reads beside a name in a row and on a round axis.
  */
-export function UtilityGlyph({ kind, label }: Props) {
+export function UtilityGlyph({ kind, label, size = 'row' }: Props) {
   return (
     <svg
       viewBox="0 0 12 12"
       role={label === undefined ? 'presentation' : 'img'}
       aria-label={label}
       fill="currentColor"
-      className={`size-3 shrink-0 ${UTILITY_INK[kind]}`}
+      className={`${GLYPH_SIZE_CLASS[size]} shrink-0 ${UTILITY_INK[kind]}`}
     >
       <Mark kind={kind} />
     </svg>

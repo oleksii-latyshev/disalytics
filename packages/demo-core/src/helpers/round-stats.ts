@@ -68,6 +68,42 @@ function sumDamage(
 }
 
 /**
+ * How many players the side that won a round still had when it ended — `docs/DESIGN.md` §7.3's one
+ * digit, where five is a stomp and one is a clutch.
+ *
+ * Side membership is the round's own economy, read at freeze-time end: `PlayerInfo.team` is the
+ * end-of-match roster and names the wrong side for half a match. A slot the round recorded no side
+ * for stood on neither, so a four-man side reads a maximum of four rather than borrowing a fifth.
+ *
+ * The window closes at `endTick`, which is what keeps the post-round kills that follow most rounds
+ * out of the count.
+ */
+export function roundSurvivors(demo: ParsedDemo, roundIndex: number): number {
+  const round = demo.events.rounds.at(roundIndex);
+  if (round === undefined) return 0;
+
+  const sides: (Team | null)[] = [];
+  let alive = 0;
+
+  for (const entry of round.economy) {
+    sides[entry.slot] = entry.team;
+
+    if (entry.team === round.winner) alive += 1;
+  }
+
+  const { kills } = demo.events;
+
+  for (let index = firstOfRound(kills, round.startTick); index < kills.length; index++) {
+    const kill = kills[index];
+    if (kill === undefined || kill.tick > round.endTick) break;
+
+    if (sides[kill.victim] === round.winner) alive -= 1;
+  }
+
+  return Math.max(alive, 0);
+}
+
+/**
  * What one player did in one round. The rule lives here rather than in the component that shows it:
  * a count of kills between two ticks is the kind of thing that ends up written twice and drifting.
  *
