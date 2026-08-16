@@ -58,15 +58,38 @@ describe('grenadeVisual', () => {
     expect(scratch.phase).toBe('flight');
   });
 
-  it('returns flight when detonation is null', () => {
+  describe('a grenade whose detonation never arrived', () => {
+    // The crate emits `detonationTick: null` whenever it cannot match a detonation event to the
+    // projectile. That is an unknown ending, not a grenade that is still in the air (#169).
     const events = withGrenade(newEvents(), {
       type: 'smokegrenade',
       throwTick: asTick(100),
       detonationTick: null,
       detonationPosition: null,
+      trajectory: {
+        sampleHz: 16,
+        firstTick: asTick(100),
+        sampleCount: 33, // two seconds of samples at 16 Hz
+        x: new Float32Array(33),
+        y: new Float32Array(33),
+        z: new Float32Array(33),
+      },
     });
-    grenadeVisual(firstGrenade(events), asTick(150), TICK_RATE, scratch);
-    expect(scratch.phase).toBe('flight');
+
+    it('flies while the projectile is still being sampled', () => {
+      grenadeVisual(firstGrenade(events), asTick(150), TICK_RATE, scratch);
+      expect(scratch.phase).toBe('flight');
+    });
+
+    it('leaves the plate once the trajectory and its slack are past', () => {
+      grenadeVisual(firstGrenade(events), asTick(300), TICK_RATE, scratch);
+      expect(scratch.phase).toBeNull();
+    });
+
+    it('is gone a whole round later rather than drawn for the rest of the match', () => {
+      grenadeVisual(firstGrenade(events), asTick(100 + 115 * TICK_RATE), TICK_RATE, scratch);
+      expect(scratch.phase).toBeNull();
+    });
   });
 
   describe('HE grenade', () => {
@@ -236,7 +259,7 @@ describe('visibleGrenades', () => {
     expect(count).toBe(2);
   });
 
-  it('handles null detonationTick (in flight)', () => {
+  it('collects a grenade with no detonation while it is still being sampled', () => {
     const events = withGrenade(newEvents(), {
       type: 'smokegrenade',
       throwTick: asTick(100),
@@ -246,6 +269,45 @@ describe('visibleGrenades', () => {
     const out = new Int32Array(16);
     const count = visibleGrenades(events.grenades, asTick(150), TICK_RATE, out);
     expect(count).toBe(1);
+  });
+
+  it('drops a grenade with no detonation once its flight is over', () => {
+    const events = withGrenade(newEvents(), {
+      type: 'smokegrenade',
+      throwTick: asTick(100),
+      detonationTick: null,
+      detonationPosition: null,
+    });
+    const out = new Int32Array(16);
+    expect(visibleGrenades(events.grenades, asTick(400), TICK_RATE, out)).toBe(0);
+    expect(visibleGrenades(events.grenades, asTick(100_000), TICK_RATE, out)).toBe(0);
+  });
+
+  it('walks the window rather than the match', () => {
+    let events = newEvents();
+    for (let i = 0; i < 400; i++) {
+      events = withGrenade(events, {
+        type: 'hegrenade',
+        throwTick: asTick(i * 64),
+        detonationTick: asTick(i * 64 + 100),
+        detonationPosition: { x: 0, y: 0, z: 0 },
+      });
+    }
+
+    // One grenade per second for 400 s, sampled at the end: a walk bounded by the window reads a
+    // few dozen entries, and a walk bounded by the match reads all 400.
+    let reads = 0;
+    const counted = new Proxy(events.grenades, {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^\d+$/.test(key)) reads++;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+
+    const out = new Int32Array(512);
+    visibleGrenades(counted, asTick(399 * 64), TICK_RATE, out);
+
+    expect(reads).toBeLessThan(100);
   });
 });
 
@@ -265,7 +327,7 @@ describe('trajectoryClipCount', () => {
         z: new Float32Array(10),
       },
     });
-    expect(trajectoryClipCount(firstGrenade(events), asTick(50))).toBe(0);
+    expect(trajectoryClipCount(firstGrenade(events), asTick(50), TICK_RATE)).toBe(0);
   });
 
   it('returns full count after detonation', () => {
@@ -283,7 +345,7 @@ describe('trajectoryClipCount', () => {
         z: new Float32Array(10),
       },
     });
-    expect(trajectoryClipCount(firstGrenade(events), asTick(250))).toBe(10);
+    expect(trajectoryClipCount(firstGrenade(events), asTick(250), TICK_RATE)).toBe(10);
   });
 
   it('clips at mid-flight', () => {
@@ -301,7 +363,7 @@ describe('trajectoryClipCount', () => {
         z: new Float32Array(25),
       },
     });
-    const clip = trajectoryClipCount(firstGrenade(events), asTick(150));
+    const clip = trajectoryClipCount(firstGrenade(events), asTick(150), TICK_RATE);
     expect(clip).toBeGreaterThan(0);
     expect(clip).toBeLessThan(25);
   });
