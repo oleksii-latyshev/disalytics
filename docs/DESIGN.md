@@ -156,7 +156,11 @@ The rule, and it is enforceable by looking at the layout rather than by trusting
 - **A surface may use `backdrop-filter` only if nothing behind it repaints per frame.** The corner
   cards, the timeline block, menus, dialogs and the two full-screen sheets all qualify.
 - **A surface that does overlap a live canvas uses alpha alone**, no blur. That is the tooltip case
-  above, and it is the only case.
+  above, and it is the only case **bar one**: §5.1 grants the scoreboard chip (§5.2) a real
+  `backdrop-filter` over the plate, at `--backdrop-hud` — 12px, half the panel's radius. What makes
+  it affordable is area rather than repaint rate: the chip is a couple of percent of the plate, so
+  the compositor re-blurs a strip rather than a 280px card. It is an exception with a number on it,
+  not a precedent — a second surface wanting one is a change to this section.
 - Every blurred surface carries an opaque fallback colour for `@supports not (backdrop-filter:
   blur(1px))`, which is also what a reader with the effect disabled gets.
 - `--blur-sheet` runs only on screens where playback is stopped by definition.
@@ -639,15 +643,32 @@ A cell carries:
 
 - **The winner's tint** — `--ct` / `--t` from `Round.winner` at α0.14, `--line` hairlines between
   cells.
-- **The round number**, Plex Mono 10, `--ink-dim`.
-- **The winner's survivor count**, Plex Mono 10, `--ink`. One digit: how many players the winning
-  side still had at `endTick`. Five is a stomp and one is a clutch, and that is the whole of what a
-  reader wants at a glance. The loser's count belongs to the hover and the overlay.
+- **The round number**, Plex Mono 12, `--ink`, on the cell's centre line. It is the largest and
+  brightest mark in the cell.
+- **Both sides' survivor counts**, flanking it — CT to the left, T to the right, Plex Mono 10,
+  `--ink-dim`, each with its side written **under** it in Plex Mono 10 and `--ct` / `--t`.
 - **The current round is lit**: the tint drops and a 1px `--glass-edge` frame takes its place.
 
-**What the survivor count counts.** Side membership is `Round.economy[].team` — the side the slot
+**Why the number leads and the counts are a pair.** Revised 16 August 2026, on the owner's reading
+of the built strip, from what this section said on the day it was written: one survivor count, the
+winner's, in `--ink`, over a round number in `--ink-dim`.
+
+That put the emphasis on the wrong value. The strip is how a reader *gets to a round*, so the round
+number is what they are aiming at and it deserves the size and the ink; the survivor count is what
+they read once they have arrived. And one count only reads as the winner's if the reader first
+resolves the tint, which is a second lookup to answer a question they did not ask — `5 : 1` and
+`1 : 1` are the same win and a different round, and the pair says which without being decoded.
+
+**The sides are written out, not only coloured.** `CT` and `T` sit under their own digits in the
+side colour, which makes the colour the redundant channel rather than the only one — §14's floor
+says side identity never relies on hue alone, and it matters twice over here because the cell's own
+tint is already spending that same pair of hues on *who won*. Two readings of `--ct` in one 32px
+cell, one of them the sole carrier, is what this avoids. The letters are game vocabulary and are
+never translated (§13).
+
+**What the survivor counts count.** Side membership is `Round.economy[].team` — the side the slot
 held *that* round (#90), never `PlayerInfo.team`. Deaths are the `kills` whose `tick` falls in
-`[startTick, endTick]` and whose `victim` sat on the winning side; the window closes at `endTick`
+`[startTick, endTick]`, taken off whichever side the victim sat on; the window closes at `endTick`
 on purpose, or the post-round kills that follow most rounds would count. A slot with `team: null`
 carried no sample at freeze-time end and is not on either side, so a four-man side reads a maximum
 of four — that is the correct answer, not an off-by-one. No schema change: `Round` and `Kill`
@@ -661,19 +682,27 @@ number, the score after it, and `Round.reason` in words. That is §9.2-legal for
 
 | Cell width | What the cell shows |
 |---|---|
-| ≥ 20px | tint, round number, survivor count |
-| 14–20px | tint and round number; the count goes first, being the extra rather than the way in |
+| ≥ 40px | tint, round number, both survivor counts with their side letters |
+| 14–40px | tint and round number; the counts go first, being the extra rather than the way in |
 | < 14px | tint only — bands again, and honestly so |
 
-The count goes first because the tint answers *who won* at any width and position answers *which
+The counts go first because the tint answers *who won* at any width and position answers *which
 round*; a number that has to be read at 8px is worse than no number.
 
-The arithmetic says the first row is the normal case and the other two are a floor rather than a
-design target. A match is 24 rounds at MR12 and runs past 40 with overtime; the strip spans the
-block, which is roughly 1390px at 1440 and roughly 1000px below `--breakpoint-split`. That is 41px
-per cell at 24 rounds and 25px at 40 on the narrow end — both comfortably in the first row. The
-degraded rows exist so a 60-round overtime renders something honest instead of overflowing, and
-**the code implements all three anyway**: a rule with no test case is a rule that rots.
+**40px is the row's own arithmetic, not a guess.** Plex Mono advances 0.6em and §3's tracking adds
+0.01em, so `CT` at 10 is 12.20px, a two-digit round number at 12 is 14.64px, and the three columns
+come to 39.04px. The cell carries no horizontal padding — the hairline between cells is the
+separation — and that is what buys the last two pixels rather than rounding the threshold up.
+
+The first row is still the normal case and the other two are a floor rather than a design target,
+but the margin is thinner than the one-count row had. A match is 24 rounds at MR12 and runs past 40
+with overtime; the strip spans the block, which is roughly 1390px at 1440 and roughly 1000px below
+`--breakpoint-split`. That is 58px per cell at 24 rounds on the wide end and 42px on the narrow one
+— both in the first row — while 40 rounds is 35px and 25px, which is the second. **Overtime on a
+narrow window is the case that loses the counts**, and it loses them to the round number rather than
+to an overlap. The degraded rows also exist so a 60-round overtime renders something honest instead
+of overflowing, and **the code implements all three anyway**: a rule with no test case is a rule
+that rots.
 
 **The overlay keeps the chart.** Pressing the round number in the top-left card (§5.2), or `M`,
 raises the match full-height over the stage — the kill marks, the round outcomes, **the density
@@ -687,8 +716,9 @@ spending a semantic colour on one wherever it is drawn.
 **`RoundOutcomes` and `EconomyGaps` stay, and one of them moves.** `role="img"` announces that a
 picture exists and nothing about what it shows, so the `sr-only` lists are what make any of this
 readable without eyes (#92) — and that obligation transfers to whatever replaces the canvas rather
-than lapsing with it. `RoundOutcomes` stays beside the round list, gains the survivor count, and is
-the text equivalent for it. `EconomyGaps` follows the economy gap into the overlay and is voiced
+than lapsing with it. `RoundOutcomes` **is** the round list rather than a second enumeration beside
+it (#184) — a cell is an element, so each one carries the whole reading as its accessible name,
+both survivor counts included. `EconomyGaps` follows the economy gap into the overlay and is voiced
 there. Neither is deleted.
 
 ---
@@ -1028,6 +1058,10 @@ dependency order:
    `C4 Explosive` entry draws an empty glyph, and it is not rediscovered as an open question
    because the column exists. **One thing §5 asks for did not land with it: §5.4's event feed.**
    It is step 10's blocker as well as its own, so it is named here rather than left to be noticed.
+   §5.2 was rewritten by #166 *after* this step closed and caught up in **#171**, which split the
+   old top-left card into the scoreboard chip and the round card, gave the clock its three phases,
+   and replaced the halftime-swap bug in the score (#141) with `sideScoreAtFrame` attributing by
+   team. That PR is also the first caller of §2.3's one blur exception.
 6. **The plate** — §6's token, utility and world states in `features/radar`. The per-frame rules
    live in `packages/demo-core` and are unit-tested there rather than eyeballed on a plate (#112).
    §6.1 token states landed in #154 and §6.2 (utility) in #168 and #175; §6.3 (world) is next.
@@ -1040,9 +1074,12 @@ dependency order:
     tooltip, **which may not ship before step 5's event feed**, because §9.2 permits it only as a
     shortcut to something already on screen; and §7.3's round list replacing `MatchRibbon`, with
     `EconomyGaps`, the economy band and the density trace moving into the full-height overlay
-    rather than being deleted. `RoundOutcomes` stays where it is and gains the survivor count.
-    No schema change — `Round.economy[].team` and `kills` carry the survivor count already, and
-    `SCHEMA_VERSION` stays 4.
+    rather than being deleted. `RoundOutcomes` **is** the round list rather than a list beside it.
+    No schema change — `Round.economy[].team` and `kills` carry the survivor counts already, and
+    `SCHEMA_VERSION` stays 4. §7.1's glyph and §7.3's list landed in #182 and #184; the kill
+    tooltip is #181 and still waits on the feed. **§7.3's cell was revised again on 16 August 2026**
+    — the round number leads and both sides' counts flank it, with the sides written out — and that
+    revision shipped inside #171 at the owner's request rather than as its own issue.
 
 Each is its own issue and its own PR, per `CONTRIBUTING.md`. **A PR that implements one of these and
 contradicts a rule in this document is wrong in the PR, not in the document** — the document is

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchScore } from '../helpers/score';
+import { matchScore, sideScoreAtFrame } from '../helpers/score';
 import {
   asPlayerSlot,
   asTick,
@@ -117,5 +117,47 @@ describe('matchScore', () => {
     const demo = newDemo([{ winner: 'CT' }, { winner: 'CT' }, { winner: 'T' }]);
 
     expect(matchScore(demo)).toEqual({ startedCt: 2, startedT: 1 });
+  });
+});
+
+// A round is 1000 ticks apart and ends 900 into itself; at 64 ticks against 16 samples a frame is
+// four ticks, so round N runs from frame 250N to frame 250N + 225.
+describe('sideScoreAtFrame', () => {
+  it('starts the match at nil all', () => {
+    expect(sideScoreAtFrame(newDemo(half(3, 'CT', FIRST_HALF)), 0)).toEqual({ CT: 0, T: 0 });
+  });
+
+  it('leaves a round still being played out of the score', () => {
+    expect(sideScoreAtFrame(newDemo(half(3, 'CT', FIRST_HALF)), 224)).toEqual({ CT: 0, T: 0 });
+  });
+
+  it('counts a round on the sample its last tick falls on', () => {
+    expect(sideScoreAtFrame(newDemo(half(3, 'CT', FIRST_HALF)), 225)).toEqual({ CT: 1, T: 0 });
+  });
+
+  it('holds the finished round on the board through the post-round', () => {
+    expect(sideScoreAtFrame(newDemo(half(3, 'CT', FIRST_HALF)), 240)).toEqual({ CT: 1, T: 0 });
+  });
+
+  it('reports each team under the side it is now holding, not the side that won the round', () => {
+    // The opening CT team takes 3 as CT; the other team then takes 4 as CT after the swap. A side
+    // count reads that as 7 : 0, which is nobody's score — the teams are 3 and 4.
+    const demo = newDemo([...half(3, 'CT', FIRST_HALF), ...half(4, 'CT', SECOND_HALF)]);
+
+    expect(matchScore(demo)).toEqual({ startedCt: 3, startedT: 4 });
+    expect(sideScoreAtFrame(demo, 1725)).toEqual({ CT: 4, T: 3 });
+  });
+
+  it('swaps the pair over at halftime without a round being played', () => {
+    const demo = newDemo([...half(3, 'CT', FIRST_HALF), ...half(4, 'CT', SECOND_HALF)]);
+
+    // The last frame of the first half, and the first frame of the round after the swap: the same
+    // three rounds are on the board and they have changed sides.
+    expect(sideScoreAtFrame(demo, 749)).toEqual({ CT: 3, T: 0 });
+    expect(sideScoreAtFrame(demo, 750)).toEqual({ CT: 0, T: 3 });
+  });
+
+  it('scores a match with no rounds nil all', () => {
+    expect(sideScoreAtFrame(newDemo([]), 4)).toEqual({ CT: 0, T: 0 });
   });
 });

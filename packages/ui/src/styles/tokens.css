@@ -60,9 +60,15 @@
 
      DESIGN.md §2.3 allows these only where nothing behind the surface repaints per frame, which
      §5.1's plate sizing is what guarantees. Every caller carries an opaque fallback for
-     `@supports not (backdrop-filter: blur(1px))`. */
+     `@supports not (backdrop-filter: blur(1px))`.
+
+     `--backdrop-hud` is the single exception, and it is §5.1's rather than an escape hatch: the
+     scoreboard chip is the one surface allowed over the live plate (§5.2), so its ground *does*
+     repaint per frame. It is 12px against the panel's 24 for that reason — half the radius over a
+     chip a fraction of a card's area — and AGENTS.md §16's 60 fps assertion is what holds it. */
   --backdrop-panel: blur(24px) saturate(1.25);
   --backdrop-sheet: blur(40px) saturate(1.1);
+  --backdrop-hud: blur(12px);
 
   --font-ui: "Wix Madefor Display", system-ui, sans-serif;
   --font-narrow: "Roboto Condensed", "Wix Madefor Display", system-ui, sans-serif;

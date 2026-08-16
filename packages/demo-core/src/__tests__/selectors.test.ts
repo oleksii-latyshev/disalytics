@@ -4,12 +4,11 @@ import {
   lastFrame,
   openingFrame,
   playersOnSide,
-  roundElapsedSeconds,
+  roundClockAtFrame,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
   secondsAtFrame,
-  sideScoreAtFrame,
   sidesBySlotAtRound,
   slotSampleIndex,
   tickAtFrame,
@@ -219,47 +218,6 @@ describe('roundIndexAtFrame', () => {
   });
 });
 
-describe('sideScoreAtFrame', () => {
-  const demo: ParsedDemo = {
-    header,
-    track: newTrack({ tickRate: 64, sampleHz: 16, frameCount: 5000 }),
-    events: {
-      ...newEvents(),
-      rounds: [
-        newRound({ number: 1, startTick: asTick(640), endTick: asTick(6000), winner: 'CT' }),
-        newRound({ number: 2, startTick: asTick(6400), endTick: asTick(12000), winner: 'T' }),
-        newRound({ number: 3, startTick: asTick(12800), endTick: asTick(18000), winner: 'CT' }),
-      ],
-    },
-  };
-
-  it('starts the match at nil all', () => {
-    expect(sideScoreAtFrame(demo, 100)).toEqual({ CT: 0, T: 0 });
-  });
-
-  it('leaves a round in progress out of the score', () => {
-    expect(sideScoreAtFrame(demo, 1499)).toEqual({ CT: 0, T: 0 });
-  });
-
-  it('counts a round on the sample its last tick falls on', () => {
-    expect(sideScoreAtFrame(demo, 1500)).toEqual({ CT: 1, T: 0 });
-  });
-
-  it('counts each side separately', () => {
-    expect(sideScoreAtFrame(demo, 3000)).toEqual({ CT: 1, T: 1 });
-  });
-
-  it('reads the finished match at its last frame', () => {
-    expect(sideScoreAtFrame(demo, 4500)).toEqual({ CT: 2, T: 1 });
-  });
-
-  it('scores a match with no rounds nil all', () => {
-    const empty: ParsedDemo = { header, track: newTrack(), events: newEvents() };
-
-    expect(sideScoreAtFrame(empty, 4)).toEqual({ CT: 0, T: 0 });
-  });
-});
-
 describe('sidesBySlotAtRound', () => {
   const players: PlayerInfo[] = [
     { slot: asPlayerSlot(0), steamId: '1', name: 'one', team: 'T' },
@@ -329,8 +287,8 @@ describe('slotSampleIndex', () => {
   });
 });
 
-describe('roundElapsedSeconds', () => {
-  const track = newTrack({ tickRate: 64, sampleHz: 16, frameCount: 400 });
+describe('roundClockAtFrame', () => {
+  const track = newTrack({ tickRate: 64, sampleHz: 16, frameCount: 2000 });
 
   function newDemo(rounds: readonly Round[]): ParsedDemo {
     return { header, track, events: { ...newEvents(), rounds } };
@@ -342,21 +300,33 @@ describe('roundElapsedSeconds', () => {
     endTick: asTick(4480),
   });
 
-  it('counts up from the end of the freeze time', () => {
-    // frame 400 is tick 1600 at 64/16, which is 320 ticks — five seconds — past the freeze end.
-    expect(roundElapsedSeconds(newDemo([round]), 400)).toBe(5);
+  const demo = newDemo([round]);
+
+  it('counts the buy phase down to zero', () => {
+    // frame 200 is tick 800 at 64/16 — 480 ticks, seven and a half seconds, short of the freeze end.
+    expect(roundClockAtFrame(demo, 200)).toEqual({ phase: 'freeze', seconds: 8 });
   });
 
-  it('reads zero through the buy phase rather than going negative', () => {
-    expect(roundElapsedSeconds(newDemo([round]), 200)).toBe(0);
+  it('opens the buy phase on its full length rather than one second below it', () => {
+    expect(roundClockAtFrame(demo, 160)).toEqual({ phase: 'freeze', seconds: 10 });
+  });
+
+  it('counts up from the end of the freeze time', () => {
+    // frame 400 is tick 1600, which is 320 ticks — five seconds — past the freeze end.
+    expect(roundClockAtFrame(demo, 400)).toEqual({ phase: 'live', seconds: 5 });
+  });
+
+  it('holds the ending time through the post-round rather than counting on', () => {
+    // The round ran 3200 ticks, fifty seconds, and frame 1200 is well past its last tick.
+    expect(roundClockAtFrame(demo, 1200)).toEqual({ phase: 'post', seconds: 50 });
   });
 
   it('has no answer during warmup, which no round covers', () => {
-    expect(roundElapsedSeconds(newDemo([round]), 0)).toBeUndefined();
+    expect(roundClockAtFrame(demo, 0)).toBeUndefined();
   });
 
   it('has no answer for a match with no rounds', () => {
-    expect(roundElapsedSeconds(newDemo([]), 400)).toBeUndefined();
+    expect(roundClockAtFrame(newDemo([]), 400)).toBeUndefined();
   });
 });
 

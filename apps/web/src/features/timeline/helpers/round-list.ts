@@ -4,6 +4,7 @@ import {
   type ParsedDemo,
   type RoundWinReason,
   roundSurvivors,
+  type SideSurvivors,
   type Team,
 } from '@disa/demo-core';
 
@@ -14,10 +15,21 @@ export const ROUND_LIST_HEIGHT_PX = 32;
 const NUMBER_MIN_PX = 14;
 
 /**
- * Under this the survivor count goes first. It is the extra, where the number is the way in — a
- * number that has to be read at 8px is worse than no number.
+ * Under this the survivor counts go and the round number keeps the cell to itself.
+ *
+ * The number is what a reader is aiming at and the counts are what they read once they arrive, so
+ * the counts are what a narrow cell drops. 40px is the row's own arithmetic rather than a guess.
+ * Plex Mono advances 0.6em, and §3's tracking adds 0.01em on both sizes used here:
+ *
+ *     side column   `CT`, the wider of the two, at 10px   2 × 6.10  = 12.20px
+ *     round number  two digits at 12px                    2 × 7.32  = 14.64px
+ *     row           column + number + column                        = 39.04px
+ *
+ * The cell carries no horizontal padding, which is what buys the last two pixels: below the split
+ * a 24-round match is about 42px a cell, and a row that needed 44 would drop the counts on every
+ * laptop narrower than 1080. The hairline between cells is the separation instead.
  */
-const COUNT_MIN_PX = 20;
+const FULL_MIN_PX = 40;
 
 /** What a cell has room to carry — §7.3's three rows, narrowest last. */
 export type CellDetail = 'full' | 'number' | 'tint';
@@ -26,8 +38,8 @@ export interface RoundCell {
   readonly number: number;
   readonly winner: Team;
   readonly reason: RoundWinReason;
-  /** How many players the winning side still had when the round ended. */
-  readonly survivors: number;
+  /** How many players each side still had when the round ended. */
+  readonly survivors: SideSurvivors;
   /** The match score once this round was over, which is what a hover names. */
   readonly score: MatchScore;
 }
@@ -74,7 +86,7 @@ export function cellDetail(widthPx: number, count: number): CellDetail {
 
   const cellPx = widthPx / count;
 
-  if (cellPx >= COUNT_MIN_PX) return 'full';
+  if (cellPx >= FULL_MIN_PX) return 'full';
 
   return cellPx >= NUMBER_MIN_PX ? 'number' : 'tint';
 }

@@ -9,7 +9,7 @@
     "lead": "Round {round, number}, {side} carry ${value, number} more equipment",
     "even": "Round {round, number}, both sides carry equal equipment"
   },
-  "roundLabel": "{outcome}. {survivors, plural, one {# survivor left} other {# survivors left}}. Score {startedCt, number} to {startedT, number}.",
+  "roundLabel": "{outcome}. Survivors: CT {ct, number}, T {t, number}. Score {startedCt, number} to {startedT, number}.",
   "outcome": {
     "bombExploded": "Round {round, number}, {side} win, bomb exploded",
     "bombDefused": "Round {round, number}, {side} win, bomb defused",

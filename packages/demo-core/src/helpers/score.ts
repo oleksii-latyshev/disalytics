@@ -1,4 +1,12 @@
-import type { ParsedDemo, PlayerSlot, Round } from '../schema';
+import type { ParsedDemo, PlayerSlot, Round, Team } from '../schema';
+import { tickAtFrame } from './selectors';
+
+/**
+ * Rounds won by each side *as the sides stand right now*. This is what a scoreboard shows: the
+ * number beside `CT` belongs to whoever is playing CT at that moment, and it swaps with them at
+ * halftime.
+ */
+export type SideScore = Record<Team, number>;
 
 /**
  * A finished match's score, by **team** rather than by side.
@@ -57,8 +65,7 @@ function openingCtOnCt(round: Round, opening: ReadonlySet<PlayerSlot>): boolean 
  * with no economy data at all degrade to a side count rather than to nonsense.
  *
  * `throughRound` bounds the walk at a round index, which is the score *after* that round — what
- * §7.3's round list names on a hover. It is this function rather than `sideScoreAtFrame` because
- * that one counts `Round.winner` by side and reports neither team's score once the halves swap.
+ * §7.3's round list names on a hover.
  */
 export function matchScore(demo: ParsedDemo, throughRound?: number): MatchScore {
   const { rounds } = demo.events;
@@ -78,4 +85,41 @@ export function matchScore(demo: ParsedDemo, throughRound?: number): MatchScore 
   }
 
   return score;
+}
+
+/**
+ * The score a scoreboard shows at a sample position: rounds already decided, attributed to the
+ * **team** that won them and then reported under the **side** that team is holding right now.
+ *
+ * Counting `Round.winner` by side is the bug this replaces (#141). It gives a pair of numbers that
+ * is neither team's score once the halves swap — after a 12:3 first half it reads the second half's
+ * CT wins onto the same `CT` number the other five players earned, so both numbers are sums over
+ * two different sets of people.
+ *
+ * One walk does both jobs. A round that has *started* names the current sides even though it has
+ * not been won by anyone yet; a round that has *ended* is also counted. That ordering is what makes
+ * the score tick over at `endTick` — during the post-round the round it just decided is already on
+ * the board, which is where a reader looks for it.
+ */
+export function sideScoreAtFrame(demo: ParsedDemo, frame: number): SideScore {
+  const { rounds } = demo.events;
+  const tick = tickAtFrame(demo.track, frame);
+  const opening = openingCtSlots(rounds);
+  const score: MatchScore = { startedCt: 0, startedT: 0 };
+  let openingCtIsCt = true;
+
+  for (const round of rounds) {
+    if (round.startTick > tick) break;
+
+    openingCtIsCt = openingCtOnCt(round, opening) ?? openingCtIsCt;
+
+    if (round.endTick > tick) break;
+
+    if ((round.winner === 'CT') === openingCtIsCt) score.startedCt += 1;
+    else score.startedT += 1;
+  }
+
+  return openingCtIsCt
+    ? { CT: score.startedCt, T: score.startedT }
+    : { CT: score.startedT, T: score.startedCt };
 }

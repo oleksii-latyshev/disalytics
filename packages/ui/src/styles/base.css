@@ -63,6 +63,28 @@ pre {
   }
 }
 
+/* The scoreboard chip — DESIGN.md §5.2. The one surface in the product that sits over the live
+   plate and still carries a blur, which §5.1 grants it by name and §2.3's rule otherwise forbids.
+
+   It is not `.glass-panel` at a smaller radius: what makes this affordable is the *area*. A chip
+   that fits a map name, a score and a clock is a couple of percent of the plate, and the
+   compositor re-blurs that rather than a 280px card. Two things follow, and both are DESIGN.md §2.2
+   over-plate rules rather than taste — every string on it is `--ink`, secondary by size and never
+   by ink level, and it stays narrow. */
+.glass-hud {
+  background-color: var(--color-glass-panel);
+  backdrop-filter: var(--backdrop-hud);
+  box-shadow:
+    inset 0 1px 0 0 var(--color-glass-edge),
+    0 0 0 1px var(--color-glass-hair);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-hud {
+    background-color: var(--color-surface-1);
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;
