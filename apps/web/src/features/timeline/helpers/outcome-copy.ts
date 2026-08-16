@@ -1,4 +1,4 @@
-import type { RoundWinReason } from '@disa/demo-core';
+import type { DefuseOutcome, RoundWinReason } from '@disa/demo-core';
 import type { TranslationKey } from '@disa/i18n';
 
 type OutcomeStem =
@@ -30,4 +30,16 @@ function stemFor(reason: RoundWinReason): OutcomeStem {
 // namespace has no sentence for fails to compile here rather than at the strip that renders it.
 export function roundOutcomeKey(reason: RoundWinReason): TranslationKey {
   return `timeline.outcome.${stemFor(reason)}` as const;
+}
+
+/** A defuse says which of the three endings it had, for the same reason a round says its reason. */
+export function defuseOutcomeKey(status: DefuseOutcome['status']): TranslationKey {
+  switch (status) {
+    case 'completed':
+      return 'timeline.defuse.completed';
+    case 'aborted':
+      return 'timeline.defuse.aborted';
+    case 'interrupted':
+      return 'timeline.defuse.interrupted';
+  }
 }

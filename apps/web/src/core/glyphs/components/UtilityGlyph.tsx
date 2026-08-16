@@ -12,7 +12,7 @@ interface Props {
  * is equipment. Both sit at `--ink-dim`, which is where §2.4 puts anything that is not the thing a
  * semantic colour names.
  */
-const INK_BY_KIND: Readonly<Record<UtilityKind, string>> = {
+export const UTILITY_INK: Readonly<Record<UtilityKind, string>> = {
   he: 'text-nade-he',
   flash: 'text-nade-flash',
   smoke: 'text-nade-smoke',
@@ -69,7 +69,7 @@ export function UtilityGlyph({ kind, label }: Props) {
       role={label === undefined ? 'presentation' : 'img'}
       aria-label={label}
       fill="currentColor"
-      className={`size-3 shrink-0 ${INK_BY_KIND[kind]}`}
+      className={`size-3 shrink-0 ${UTILITY_INK[kind]}`}
     >
       <Mark kind={kind} />
     </svg>

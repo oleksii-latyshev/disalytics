@@ -1,6 +1,7 @@
 {
   "roundsRemaining": "{count, plural, one {# round left} other {# rounds left}}",
-  "position": "Position in the match",
+  "positionInRound": "Position in round {round, number}",
+  "positionInWarmup": "Position in the warm-up",
   "overview": "Round outcomes, event density and the equipment gap",
   "outcomes": "Round outcomes",
   "economy": {
@@ -16,8 +17,15 @@
     "timeExpired": "Round {round, number}, {side} win, time expired",
     "draw": "Round {round, number}, draw"
   },
-  "kills": "Kills",
+  "events": "Round events",
   "kill": "{attacker} kills {victim}",
   "killByWorld": "{victim} dies",
+  "plant": "{planter} plants the bomb",
+  "defuse": {
+    "completed": "{defuser} defuses the bomb",
+    "aborted": "{defuser} stops defusing",
+    "interrupted": "{defuser} is killed while defusing"
+  },
+  "grenade": "{thrower} throws {utility}",
   "unknownPlayer": "Unknown player"
 }

@@ -58,7 +58,13 @@ export {
   tickAtFrame,
 } from './helpers/selectors';
 export type { UtilityHeld, UtilityKind, WeaponClass } from './helpers/weapons';
-export { isUtilityKind, UTILITY_NAMES, utilityHeld, weaponClass } from './helpers/weapons';
+export {
+  isUtilityKind,
+  UTILITY_NAMES,
+  utilityHeld,
+  utilityKindOfGrenade,
+  weaponClass,
+} from './helpers/weapons';
 export type { LocalizedMessage } from './message';
 export type { Clock } from './playback';
 export { advanceClock, createClock } from './playback';

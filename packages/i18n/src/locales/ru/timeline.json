@@ -1,6 +1,7 @@
 {
   "roundsRemaining": "{count, plural, one {Остался # раунд} few {Осталось # раунда} many {Осталось # раундов} other {Осталось # раунда}}",
-  "position": "Позиция в матче",
+  "positionInRound": "Позиция в раунде {round, number}",
+  "positionInWarmup": "Позиция в разминке",
   "overview": "Исходы раундов, плотность событий и разрыв в снаряжении",
   "outcomes": "Исходы раундов",
   "economy": {
@@ -16,8 +17,15 @@
     "timeExpired": "Раунд {round, number}, побеждают {side}, время вышло",
     "draw": "Раунд {round, number}, ничья"
   },
-  "kills": "Убийства",
+  "events": "События раунда",
   "kill": "{attacker} убивает {victim}",
   "killByWorld": "{victim} погибает",
+  "plant": "{planter} ставит бомбу",
+  "defuse": {
+    "completed": "{defuser} обезвреживает бомбу",
+    "aborted": "{defuser} прекращает разминирование",
+    "interrupted": "{defuser} погибает при разминировании"
+  },
+  "grenade": "{thrower} бросает {utility}",
   "unknownPlayer": "Неизвестный игрок"
 }

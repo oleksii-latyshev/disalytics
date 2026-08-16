@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isUtilityKind, utilityHeld, weaponClass } from '../helpers/weapons';
+import { isUtilityKind, utilityHeld, utilityKindOfGrenade, weaponClass } from '../helpers/weapons';
 import {
   GRENADE_DECOY,
   GRENADE_DEFUSE_KIT,
@@ -8,7 +8,26 @@ import {
   GRENADE_FLASH_SECOND,
   GRENADE_HE,
   GRENADE_SMOKE,
+  GRENADE_TYPES,
 } from '../schema';
+
+describe('utilityKindOfGrenade', () => {
+  it('names the kind a thrown grenade is drawn as', () => {
+    expect(utilityKindOfGrenade('hegrenade')).toBe('he');
+    expect(utilityKindOfGrenade('flashbang')).toBe('flash');
+    expect(utilityKindOfGrenade('smokegrenade')).toBe('smoke');
+    expect(utilityKindOfGrenade('decoy')).toBe('decoy');
+  });
+
+  it('answers the same kind for a molotov and an incendiary', () => {
+    expect(utilityKindOfGrenade('molotov')).toBe('fire');
+    expect(utilityKindOfGrenade('incgrenade')).toBe('fire');
+  });
+
+  it('has a kind for every grenade the schema carries', () => {
+    for (const type of GRENADE_TYPES) expect(utilityKindOfGrenade(type)).toBeDefined();
+  });
+});
 
 describe('weaponClass', () => {
   it('classifies the vocabulary a real match carried', () => {
