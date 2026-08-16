@@ -31,7 +31,7 @@ Settled with the owner on 12 August 2026, before a line of it was written. Each 
 | **The player rails get live armour, weapon, grenades and money** | `crates/demo-parser` gains four per-sample columns and `SCHEMA_VERSION` goes 3 → 4. Every cached demo is a miss once. §5.3 states what the rails need; the field names are the schema issue's to settle. |
 | **`ogl` is an approved runtime dependency** | ~10–15 kB gzip against a 500 kB budget currently 20% used. It buys the two WebGL backgrounds in §10, and it is loaded **only** by the landing and parse screens — never by the review screen, never during playback. |
 | **Rule 9 becomes a budget, not a prohibition** | The global `data-playing` kill switch that zeroes every transition is removed. §8 replaces it with a narrow, enforceable rule and a measurement. |
-| **The bottom of the screen is the round, not the match** | A round-scoped timeline is the primary control. The whole-match spine survives as a 14px ribbon beneath it — §7. Nothing built by #90, #91 or #92 is thrown away; it is re-scaled. |
+| **The bottom of the screen is the round, not the match** | A round-scoped timeline is the primary control. The whole-match spine survives beneath it — §7. Nothing built by #90, #91 or #92 is thrown away. **Amended 16 August 2026 (#157):** the strip beneath is a 32px list of rounds, not a 14px re-scaled chart, and #90/#91's economy band and density trace move behind the full-height overlay. The decision held; the form it took did not. |
 
 Two things this revision deliberately does **not** re-open: there is still no light theme (§2), and
 the plate still says nothing about who carries the bomb (§6.4).
@@ -170,7 +170,7 @@ layout.
 ```css
 --ct:            #4FA3FF;   /* Counter-Terrorist */
 --t:             #FFB84D;   /* Terrorist */
---damage:        #F04248;   /* a hit landing, and a kill mark */
+--damage:        #F04248;   /* a hit landing — and nothing else, since §7.1 */
 --nade-he:       #FF9F1C;
 --nade-flash:    #F2F6FF;
 --nade-smoke:    #8B95A3;
@@ -184,6 +184,12 @@ the one pair a reader must never confuse and it is the furthest-apart pair in th
 **`--kill` is deleted.** It measured ΔE2000 **6.47** from `--damage` — two tokens a reader cannot
 tell apart, carrying a distinction the reader does not need to make by hue. A kill is distinguished
 from damage by *shape*: a kill is a glyph, damage is a wash. One fewer token, one fewer lie.
+
+**`--damage` has exactly one reader left**: the token's damage flash in §6.1. §7.1's kill glyph
+took the side colour of the player who died on 16 August 2026 (#157), and with it the last place
+this token stood in for *something bad happened* rather than for damage. That is the token working
+as intended — it names one thing and marks one thing — and it is worth stating here, because a
+future mark looking for a red will find this line rather than an unclaimed colour.
 
 A semantic colour may only be used for the thing it names. An aggregate is not a semantic: "how much
 happened in this minute" is not damage, and is drawn in `--ink-dim`.
@@ -326,7 +332,7 @@ A component picks by **what it sits on**, never by taste: on the stage → `floa
 │ └─────────────────┘                                   └─────────────────┘ │
 │ ┌────────────────────────────────────────────────────────────────────────┐ │
 │ │  ▶   ├──💀─────────💣──────💀──┤                                  1× ▾  │ │
-│ │  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ match ribbon ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ │ │
+│ │  │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │ 9 │10 │11 │12 │13 │14 │15 │16 │17 │ │ │
 │ └────────────────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -380,7 +386,7 @@ The match ID, if the demo carries one, is a line of `--ink-dim` caption text bel
 the chip. Most demos do not carry one; the chip does not grow a row for it when it is absent.
 
 **The round card** is a small glass card at the top-left corner. It shows only the round number at
-`44` — prominent, centered. Pressing it opens the match ribbon full-height as an overlay (§7.3).
+`44` — prominent, centered. Pressing it opens the match overlay full-height (§7.3).
 The round phase ("Freeze time", "Live", "Post-round") sits below the number in `--ink-dim`. The
 card does not carry the map name, the score, or the clock — those moved to the scoreboard.
 
@@ -439,11 +445,13 @@ Pressing a feed row seeks to that event. Hovering one draws the kill's line on t
 
 A single floating card at the bottom holding, left to right: the **play/pause** button (40px,
 primary), the **round timeline** (§7.1), and the **speed control** (§7.2). Beneath them, flush to
-the card's bottom edge, the **match ribbon** (§7.3) at 14px.
+the card's bottom edge, the **round list** (§7.3) at 32px.
 
 The block is `--glass-panel`, `--radius-float`, and it spans the width between the two team cards'
-outer edges. Total height 96px including the ribbon — the previous layout spent 205px on the same
-job.
+outer edges. **Total height stays 96px** — the previous layout spent 205px on the same job — and
+#157 took the round list's extra 18px out of the control row rather than off the stage. The row is
+64px, which is the 40px button plus 12px of padding either side; it has no slack left, so the next
+thing that wants height here comes out of the plate and §5.1 has to be re-measured for it.
 
 ### 5.6 The inspector
 
@@ -576,10 +584,16 @@ The strip between play/pause and the speed control shows **one round**, from `st
 - **The buy phase is a distinct region** — `startTick` to `freezeTimeEndTick`, drawn at
   `--surface-2` with a hairline at its end. When auto-skip is on (§10.5) the region is drawn hatched
   and the playhead jumps it.
-- **Events are glyphs on the axis, not ticks**: a skull for a kill in `--damage`, a bomb for the
-  plant and a cutter for the defuse in `--objective`, a small utility glyph per grenade in its own
-  colour. Below a threshold density the glyphs collapse to marks; the round is 1:55 and this is the
-  one timeline in the product with room for symbols.
+- **Events are glyphs on the axis, not ticks**: a skull for a kill, a bomb for the plant and a
+  cutter for the defuse in `--objective`, a small utility glyph per grenade in its own colour.
+  Below a threshold density the glyphs collapse to marks; the round is 1:55 and this is the one
+  timeline in the product with room for symbols.
+- **The skull is tinted by the side of the player who died** — `--ct` or `--t`, keyed on the
+  victim's side *in that round* and never on `PlayerInfo.team`, which is read at the end of the
+  match and is wrong for half of them. The question a reader asks of a round axis is not *was there
+  a kill* but *did we lose someone*, and §2.4 permits a side colour on a side fact. This is also
+  what takes `--damage` off the axis: a kill is still told from damage by shape, which is §2.4's
+  rule, and shape is now doing all of that work instead of sharing it with a hue.
 - **Kills by the selected player rise; everything else drops to `--ink-faint`.** This is where the
   "loud" the previous revision promised the spine actually belongs, and it only happens in answer to
   a question.
@@ -587,6 +601,15 @@ The strip between play/pause and the speed control shows **one round**, from `st
   `transform` only. The scrubber underneath stays an **uncontrolled** range input — React never owns
   its value (#83).
 - Hovering the axis shows a time readout and the frame under the cursor; pressing seeks.
+- **Hovering a kill glyph names the kill**: attacker, weapon glyph, victim — the two names in
+  their side colours — plus the headshot, wallbang and through-smoke marks, which is `Kill`'s
+  `isHeadshot`, `isWallbang` and `isThroughSmoke` and the same row the feed draws (§5.4). A `null`
+  attacker is the world, and the row reads as a death rather than as a kill by nobody. The other
+  four marks the schema carries — `isNoScope`, `isAttackerBlind`, `isVictimBlind`, `distanceUnits`
+  — stay off it: they are the stats view's material, not a hover's.
+- That tooltip is permitted **because the feed exists**, not on its own merits — §9.2 forbids a
+  tooltip that is the only route to a fact, and the feed is what makes this one a shortcut. It is a
+  build order as much as a rule: the kill tooltip may not ship before §5.4's feed does.
 
 ### 7.2 The speed control
 
@@ -595,26 +618,78 @@ A pill on the right of the block reading the current rate in Plex Mono. Pressing
 active entry is `--accent`. The pill also shows a `⏵⏵` mark while a held arrow key is
 fast-forwarding (§9.1), so a temporary rate never looks like a setting the reader changed.
 
-### 7.3 The match ribbon
+### 7.3 The round list
 
-14px, flush to the timeline block's bottom edge, spanning its full width: the whole match at a
-glance, and everything #90, #91 and #92 built, re-scaled to a navigation strip rather than a chart.
+32px, flush to the timeline block's bottom edge, spanning its full width. **One cell per round, all
+cells the same width** — a list, not a chart. Decided 16 August 2026 (#157), replacing the 14px
+match ribbon this document carried until then.
 
-- **Round bands** tinted `--ct` / `--t` by winner at α0.14, with `--line` hairlines between them.
-- **The economy gap** as a 4px band leaving the centre line, side-tinted at α0.32.
-- **The event-density trace** in `--ink-dim` α0.30. It is an aggregate, not damage, and §2.4 forbids
-  spending a semantic colour on it. Monochrome also makes it read as terrain, which is what it is.
-- **The current round is lit**: its band drops the tint and gains a 1px `--glass-edge` frame.
-- Pressing a band seeks to that round's `freezeTimeEndTick`.
-- Kill marks and per-round detail are **not** on the ribbon at 14px. They are on the round timeline,
-  where they fit.
-- Pressing the round number in the top-left card (§5.2) raises the ribbon into a full-height
-  overlay with the kill marks, the round outcomes and the density trace at readable size — this is
-  the previous revision's spine, and it is one keystroke away rather than always present.
+The ribbon was a chart of the match: bands proportional to round duration, an economy gap and an
+event-density trace. The owner's reading of the built screen was *«снизу у нас непонятные
+графики»* — a density trace at 14px is terrain with no legend, and the economy gap answers a
+question nobody asks while scrubbing. What the strip was actually being used for was **getting to
+a round**, and that is what it now is.
 
-**`RoundOutcomes` and `EconomyGaps` stay.** `role="img"` announces that a picture exists and nothing
-about what it shows; the `sr-only` lists are what make the ribbon readable without eyes (#92), and
-shrinking the canvas does not shrink that obligation.
+Equal-width cells are the substantive change. The ribbon's bands were a map of match time, so a
+13-second round was a sliver nobody could hit; a list gives every round the same target and the
+same weight, which is what a reader wants when a round is a *thing* rather than an interval.
+Nothing on this strip is a playhead any more — the playhead is on §7.1, where it belongs.
+
+A cell carries:
+
+- **The winner's tint** — `--ct` / `--t` from `Round.winner` at α0.14, `--line` hairlines between
+  cells.
+- **The round number**, Plex Mono 10, `--ink-dim`.
+- **The winner's survivor count**, Plex Mono 10, `--ink`. One digit: how many players the winning
+  side still had at `endTick`. Five is a stomp and one is a clutch, and that is the whole of what a
+  reader wants at a glance. The loser's count belongs to the hover and the overlay.
+- **The current round is lit**: the tint drops and a 1px `--glass-edge` frame takes its place.
+
+**What the survivor count counts.** Side membership is `Round.economy[].team` — the side the slot
+held *that* round (#90), never `PlayerInfo.team`. Deaths are the `kills` whose `tick` falls in
+`[startTick, endTick]` and whose `victim` sat on the winning side; the window closes at `endTick`
+on purpose, or the post-round kills that follow most rounds would count. A slot with `team: null`
+carried no sample at freeze-time end and is not on either side, so a four-man side reads a maximum
+of four — that is the correct answer, not an off-by-one. No schema change: `Round` and `Kill`
+carry all of it, and `SCHEMA_VERSION` stays 4.
+
+**Pressing a cell seeks to that round's `freezeTimeEndTick`.** Hovering one names the round: its
+number, the score after it, and `Round.reason` in words. That is §9.2-legal for the same reason
+§7.1's kill tooltip is — `RoundOutcomes` already says all three without a pointer.
+
+**Degradation is by width, and in this order:**
+
+| Cell width | What the cell shows |
+|---|---|
+| ≥ 20px | tint, round number, survivor count |
+| 14–20px | tint and round number; the count goes first, being the extra rather than the way in |
+| < 14px | tint only — bands again, and honestly so |
+
+The count goes first because the tint answers *who won* at any width and position answers *which
+round*; a number that has to be read at 8px is worse than no number.
+
+The arithmetic says the first row is the normal case and the other two are a floor rather than a
+design target. A match is 24 rounds at MR12 and runs past 40 with overtime; the strip spans the
+block, which is roughly 1390px at 1440 and roughly 1000px below `--breakpoint-split`. That is 41px
+per cell at 24 rounds and 25px at 40 on the narrow end — both comfortably in the first row. The
+degraded rows exist so a 60-round overtime renders something honest instead of overflowing, and
+**the code implements all three anyway**: a rule with no test case is a rule that rots.
+
+**The overlay keeps the chart.** Pressing the round number in the top-left card (§5.2), or `M`,
+raises the match full-height over the stage — the kill marks, the round outcomes, **the density
+trace and the economy gap**, all at readable size and, unlike the ribbon, **with a legend**.
+Everything #90, #91 and #92 built survives there; none of it is deleted. The reading that condemned
+them was about a 14px strip that is always on screen with nothing to explain it, and none of that is
+true of a full-height view the reader opened on purpose and is not scrubbing while reading. The
+density trace stays `--ink-dim` α0.30 in the overlay: it is an aggregate, and §2.4 forbids
+spending a semantic colour on one wherever it is drawn.
+
+**`RoundOutcomes` and `EconomyGaps` stay, and one of them moves.** `role="img"` announces that a
+picture exists and nothing about what it shows, so the `sr-only` lists are what make any of this
+readable without eyes (#92) — and that obligation transfers to whatever replaces the canvas rather
+than lapsing with it. `RoundOutcomes` stays beside the round list, gains the survivor count, and is
+the text equivalent for it. `EconomyGaps` follows the economy gap into the overlay and is voiced
+there. Neither is deleted.
 
 ---
 
@@ -640,7 +715,7 @@ Concretely, and this replaces `AGENTS.md` §2 rule 9:
 2. **`transform` and `opacity` only.** Never `width`, `height`, `top`, `left`, `margin`, `filter` or
    `backdrop-filter` in a transition. A property that triggers layout is banned at every moment, not
    only during playback.
-3. **Inside the radar and ribbon canvases there are no tweens.** Things that change there — the
+3. **Inside the radar and timeline canvases there are no tweens.** Things that change there — the
    damage flash, the smoke depleting, the defuse arc — are functions of `clock.frame`, computed in
    the draw the frame was already going to do. **The test is which clock it reads: match time is
    drawing, wall time is animating.**
@@ -678,7 +753,7 @@ backgrounds on a static frame, and is implemented once in `packages/ui/src/style
 ### The one orchestrated moment
 
 When a parse completes, the interface assembles rather than appearing: the plate fades up, the four
-cards arrive from their own corners over ~400 ms, the ribbon draws left to right as the data lands,
+cards arrive from their own corners over ~400 ms, the round list fills left to right as data lands,
 and the players take their opening positions. It runs exactly once per demo, while nothing is
 playing, so it costs nothing in the hot path — and it turns the end of a long wait into a payoff. It
 is #104 and it is still not built.
@@ -705,7 +780,7 @@ an accessibility footnote here; it is the primary interface, and the pointer is 
 | `6`–`0` | select the CT player in that row |
 | `Esc` | clear selection; close the topmost sheet, overlay or menu |
 | `F` | fullscreen |
-| `M` | raise the match ribbon overlay |
+| `M` | raise the match overlay |
 | `+` `−` `0` | zoom in, out, reset |
 | `?` | help |
 
@@ -722,10 +797,15 @@ and none of them fires while focus is in a text field.
 
 - The plate: wheel zooms, drag pans, double-click resets, hovering a token shows the player's name
   and the pointer's own world coordinate when the debug overlay is on.
-- Feed rows and ribbon bands seek. Team rows select.
+- Feed rows and round-list cells seek. Team rows select.
 - Every hoverable element answers in `--motion-micro`, including during playback.
 - Tooltips are `--glass-raised`, appear after 400 ms, and never carry information that exists
-  nowhere else.
+  nowhere else. Restated 16 August 2026 (#157), because the rule was being read as *a tooltip may
+  not be informative*: what it forbids is a fact reachable **only** by hovering. A tooltip that
+  shortens the route to something already on screen is fine, and §7.1's kill tooltip — attacker,
+  weapon, victim — is exactly that, since the feed (§5.4) is drawing the same row. The test is a
+  build order, not a judgement call: **if the thing it restates is not on screen yet, the tooltip is
+  not permitted yet.**
 
 ### 9.3 Hot corners
 
@@ -917,9 +997,10 @@ Non-negotiable, and never announced in the UI:
 - **Side identity never relies on hue alone**: which team card the player is in, then hue, then the
   colour-blind palette in settings. §2.7 records that this revision gave up token shape and what it
   owes because of it.
-- **Every canvas carries a text equivalent.** The ribbon's round outcomes and economy gaps already
-  do; the round timeline needs one and does not have one yet. Vision cones and audibility rings do
-  not need one, because they restate a position the feed reports in words.
+- **Every canvas carries a text equivalent.** `RoundOutcomes` and `EconomyGaps` already do it, and
+  §7.3 keeps both across the ribbon's replacement rather than letting the obligation lapse with the
+  canvas that carried it; the round timeline needs one and does not have one yet. Vision cones and
+  audibility rings do not need one, because they restate a position the feed reports in words.
 - **`prefers-reduced-motion` is honoured everywhere**, including by both WebGL backgrounds.
 - Responsive down to a laptop screen. The tool is not designed for phones; the landing page is.
 
@@ -927,8 +1008,9 @@ Non-negotiable, and never announced in the UI:
 
 ## 15. What this document asks of the code
 
-Steps 1–5 are complete (#132, #136, #140, #147, #154); step 6 is under way — §6.1's token states
-landed in #154, §6.2 (utility) and §6.3 (world) remain. In dependency order:
+Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed; step 6 is under way
+— §6.1's token states landed in #154, §6.2 (utility) in #168 and #175, §6.3 (world) remains. In
+dependency order:
 
 1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
    blurred-review-screen frame assertion, §17's summary re-derived from this document, §20's
@@ -944,14 +1026,23 @@ landed in #154, §6.2 (utility) and §6.3 (world) remain. In dependency order:
    the round timeline and the ribbon re-scale in `features/timeline`. The team cards are the first
    thing to read the `weapon` column, so §6.4's rendering rule is one of their constraints: the
    `C4 Explosive` entry draws an empty glyph, and it is not rediscovered as an open question
-   because the column exists.
+   because the column exists. **One thing §5 asks for did not land with it: §5.4's event feed.**
+   It is step 10's blocker as well as its own, so it is named here rather than left to be noticed.
 6. **The plate** — §6's token, utility and world states in `features/radar`. The per-frame rules
    live in `packages/demo-core` and are unit-tested there rather than eyeballed on a plate (#112).
-   §6.1 token states landed in #154; §6.2 (utility) and §6.3 (world) are next.
+   §6.1 token states landed in #154 and §6.2 (utility) in #168 and #175; §6.3 (world) is next.
 7. **Input** — §9's bindings in `core/shortcuts`, the held-arrow rate in `core/playback`, the hot
    corners in `features/review`.
 8. **The way in** — §10.1–§10.4, the two vendored backgrounds, `ogl` added and lazy-loaded.
 9. **Settings and help** — §10.5 and §10.6, with the help table generated from the bindings.
+10. **Time** *(added by #157)* — §7 as rewritten on 16 August 2026, in `features/timeline`. Three
+    pieces, and they are not one PR: §7.1's kill glyph takes the victim's side colour; §7.1's kill
+    tooltip, **which may not ship before step 5's event feed**, because §9.2 permits it only as a
+    shortcut to something already on screen; and §7.3's round list replacing `MatchRibbon`, with
+    `EconomyGaps`, the economy band and the density trace moving into the full-height overlay
+    rather than being deleted. `RoundOutcomes` stays where it is and gains the survivor count.
+    No schema change — `Round.economy[].team` and `kills` carry the survivor count already, and
+    `SCHEMA_VERSION` stays 4.
 
 Each is its own issue and its own PR, per `CONTRIBUTING.md`. **A PR that implements one of these and
 contradicts a rule in this document is wrong in the PR, not in the document** — the document is
