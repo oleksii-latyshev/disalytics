@@ -29,7 +29,7 @@ Settled with the owner on 12 August 2026, before a line of it was written. Each 
 | Decision | Consequence |
 |---|---|
 | **The player rails get live armour, weapon, grenades and money** | `crates/demo-parser` gains four per-sample columns and `SCHEMA_VERSION` goes 3 → 4. Every cached demo is a miss once. §5.3 states what the rails need; the field names are the schema issue's to settle. |
-| **`ogl` is an approved runtime dependency** | ~10–15 kB gzip against a 500 kB budget currently 20% used. It buys the two WebGL backgrounds in §10, and it is loaded **only** by the landing and parse screens — never by the review screen, never during playback. |
+| **`ogl` is an approved runtime dependency** | ~10–15 kB gzip against a 500 kB budget currently 20% used. It was approved to buy the two WebGL backgrounds in §10, loaded only by the way-in screens. **Amended 16 August 2026: those two backgrounds are deferred and `ogl` is deliberately unspent.** The way in carries a dimmed radar image from `packages/map-data` instead — material the repository already ships, at no dependency (§10.1). The approval stands so the question is not re-litigated, *not* as a licence: nothing may install `ogl` on the strength of this row alone, because what it was approved to buy is no longer being built. |
 | **Rule 9 becomes a budget, not a prohibition** | The global `data-playing` kill switch that zeroes every transition is removed. §8 replaces it with a narrow, enforceable rule and a measurement. |
 | **The bottom of the screen is the round, not the match** | A round-scoped timeline is the primary control. The whole-match spine survives beneath it — §7. Nothing built by #90, #91 or #92 is thrown away. **Amended 16 August 2026 (#157):** the strip beneath is a 32px list of rounds, not a 14px re-scaled chart, and #90/#91's economy band and density trace move behind the full-height overlay. The decision held; the form it took did not. **Amended again the same day (#189):** the list moved *above* the controls as 28px of separated pills and the scoreboard came down to meet it as a brow, so the whole vertical middle of the screen now reads match → rounds → round. Third amendment, same decision. |
 
@@ -843,8 +843,9 @@ Concretely, and this replaces `AGENTS.md` §2 rule 9:
    drawing, wall time is animating.**
 4. **Animations are discrete and event-triggered.** A hover, a focus, a selection, a card opening, a
    feed row arriving. Nothing loops, nothing breathes, nothing animates because time passed. The
-   review screen has no ambient motion at all — that is reserved for the landing and parse screens,
-   which have no clock to compete with.
+   review screen has no ambient motion at all, and since 16 August 2026 neither does the way in: the
+   two WebGL backgrounds that were the one exception here are deferred (§10.1), and what replaced
+   them is a still image that changes opacity when a file is over the window.
 5. **The frame budget is the enforcement.** `AGENTS.md` §16's 60 fps assertion gains the review
    screen with every card blurred and the feed animating, on the reference machine and the reference
    fixture. When something in this section costs the budget, that thing goes.
@@ -869,8 +870,9 @@ longer exist.
 fast and settles slowly is what separates an interface that feels expensive from one that feels
 linear.
 
-`prefers-reduced-motion: reduce` collapses every duration except opacity fades, stops both WebGL
-backgrounds on a static frame, and is implemented once in `packages/ui/src/styles/motion.css`.
+`prefers-reduced-motion: reduce` collapses every duration except opacity fades and is implemented
+once in `packages/ui/src/styles/motion.css`. It used to have a second job — holding both WebGL
+backgrounds on a static frame — and §10.1 removed the thing rather than the exemption.
 
 ### The one orchestrated moment
 
@@ -947,53 +949,154 @@ Hot corners are an accelerator and never the only route: everything they reveal 
 
 ## 10. Screens
 
-### 10.1 The landing
+### 10.1 The shell
 
-The way in, and the first impression. Today it is a ~450px reading column with a dashed box in it,
-which reads as a form to fill in.
+The way in is not one screen. It is a **shell with a persistent sidebar** and one view inside it,
+settled with the owner on 16 August 2026 against two alternatives: a shell shared with the review
+screen, and a collapsed icon rail there. Both lost to the same fact.
 
-- **A full-bleed WebGL Prism background** (reactbits, on `ogl`, approved in §0), retuned to the
-  palette: the product's violet accent through `--ct` blue, on `--surface-0`, at a speed slow enough
-  to be atmosphere rather than an event. It stops on a static frame under `prefers-reduced-motion`,
-  and it is torn down the moment the reader leaves the screen — it never coexists with a plate.
-- **The whole viewport is the drop target.** A file dragged anywhere is caught and the whole screen
-  acknowledges it. The dashed border goes; a dashed border is the universal signal for
+**The sidebar is absent from the review screen, and §5.1 is the reason.** The plate is sized from
+the viewport — `min(100cqi, 100cqb)` of the cell the grid leaves it — so a rail is not chrome beside
+the plate, it is a subtraction from the plate's own axis. At 1280 the plate measures 616px (#197's
+measurement); 280px of rail is nearly half of it, and an icon rail is the same argument at a smaller
+number. So the shell ends where the match begins: opening a demo replaces it entirely, and the
+corner cluster's close (§5.4) is the way back.
+
+The rail is **17.5rem wide** — the same column the team cards take, so the product has one measure
+rather than two — `--glass-panel` at `--blur-panel` over the backdrop below, which §2.3 permits
+because the ground behind it is a static image and a blur over static ground is paid for once.
+
+| Part | What |
+|---|---|
+| head | the product name, and the tagline beneath it above `--breakpoint-wide` |
+| body | **Upload** and **Library**, then **Utility lineups** and **Player stats** |
+| foot | settings and help — the same two sheets §10.5 and §10.6 describe, so the way in owns no copy of either |
+
+Entries are 40px, §4's larger control height. The current one carries a `--selected` fill and
+`--ink`; the rest sit at `--ink-dim`. **Two of the four are honest about being unfinished**: utility
+lineups and player stats are `--ink-faint` with a "soon" chip, focusable, and pressing one says what
+it will do and nothing else. The navigation shape exists now so that adding those screens later is
+not a redesign.
+
+**Below `--breakpoint-split` the rail becomes a row** of the same entries above the content: 280px
+of rail against a 1024px window leaves the library two columns of card, which is a worse trade than
+moving the nav. §14 keeps the landing as the one screen the product owes a phone, so at phone width
+the row stays, the card fills the width, and §10.2's grid becomes a single column. Nothing else
+about the shell changes shape.
+
+#### The upload view
+
+- **The whole viewport is the drop target**, rail included. A file dragged anywhere is caught and
+  the screen acknowledges it. The dashed border goes; a dashed border is the universal signal for
   *placeholder*.
-- **One glass card, centred, with room around it**: the product name, one line of what it does, the
-  primary action in `--accent`, and beneath it the saved-demo list when there is one (§10.2).
-- **Three entries, two of them honest about being unfinished.** *Review a match* is live. *Utility
-  lineups* and *Player stats* are listed at `--ink-faint` with a "soon" chip, and pressing one says
-  what it will do and nothing else. This is the groundwork the owner asked for: the navigation
-  shape exists now so that adding the screens later is not a redesign.
+- **One card, centred, with room around it**: the product name, one line of what it does, the
+  primary action in `--accent`, and beneath it the five most recent demos (§10.2) when the device
+  holds any.
 - Emptiness here is confidence. Feature bullets would be the opposite.
 
-### 10.2 The saved demos list
+#### The backdrop, and the two backgrounds nobody is building
 
-A demo that has been opened once opens again instantly — the store already reads a cached parse back
-in **0.02 s** against 18.6 s to parse it. What is missing is not speed, it is a list: `CatalogEntry`
-records `key`, `byteLength` and `lastUsedAt`, which is enough to evict an entry and not enough to
-name one.
+The previous revision of this section put a full-bleed WebGL **Prism** here and a **Radar** sweep on
+§10.3, both from reactbits on `ogl`. **Both are deferred, decided 16 August 2026.** What the way-in
+screens carry instead is a **radar image from `packages/map-data`, dimmed**: one fixed map, `cover`
+so it bleeds past both axes, lifting from 15% to 30% opacity while a file is over the window, and
+still under `prefers-reduced-motion` because opacity on a drag is a response to the reader rather
+than an animation of its own.
 
-- The catalog gains the metadata a human needs: **file name, map, score, round count, date parsed**,
-  written at the same moment the demo is stored.
-- The list shows the most recent five on the landing card, all of them on the library screen: map
-  name, score in Plex Mono, the two team names where the demo gives them, the date, and the size.
-- **Pressing one opens it from the cache without a file**, which is the whole point of the feature.
-- Each entry has a remove control. Removal is immediate and unconfirmed — it deletes a cache entry,
+That is the product's own material instead of an illustration of nothing, it ships in the repository
+already, and it costs no dependency. `ogl` stays approved and stays unspent — §0 records why that is
+a decision to keep rather than a gap to fill.
+
+### 10.2 The library
+
+A demo that has been opened once opens again instantly — the store reads a cached parse back in
+**0.02 s** against 18.6 s to parse it. #140 gave `CatalogEntry` the metadata that makes such a demo
+nameable (`fileName`, `map`, `score`, `roundCount`, `storedAt` beside `byteLength` and `lastUsedAt`)
+and put five rows on the way-in card. **The library is where all of them live, and it is a grid of
+cards rather than a list of rows** — decided 16 August 2026. A row is a filing cabinet; a card can
+carry the map, and the map is how a reader recognises a match they downloaded a week ago.
+
+One card carries: the **map thumbnail**, the **score**, the **file name**, the **round count**, the
+**size**, and the **date parsed**. Three of those need a rule attached.
+
+- **The thumbnail is the same radar asset the plate draws** (`packages/map-data`, the active theme),
+  so the grid adds no image to the build. It is the map and not the match: two demos of Mirage look
+  alike here, which is orientation rather than identity, and the file name is what tells them apart.
+- **The score is by the side each team started on.** `MatchScore` is `startedCt`/`startedT` because
+  `Round.winner` is a side and sides swap at halftime; a card reading `CT 13 – T 11` would be wrong
+  for half of every match — #141 is that same bug on the review screen.
+- **No team names, and not by omission.** Nothing in `MatchHeader` carries them, so the card does
+  not promise them. Putting a team name on a card is a parser change first and a screen change
+  second.
+
+**The header states the count, and beside it what the device is holding.** Two figures from two
+places, and conflating them is the failure to avoid:
+
+- **the demos' own total is ours** — the sum of `byteLength` in the catalog, exact, and the number
+  worth stating against `CACHE_BYTE_LIMIT` (512 MB), because that ceiling is what actually evicts;
+- **the device's is the browser's** — `navigator.storage.estimate()`, which reports usage and quota
+  for **the whole origin** and which browsers pad deliberately. It is quoted as an estimate, never
+  as an exact figure and never as the limit.
+
+If `requestPersistence` came back `best-effort` — the common answer, not the exceptional one — the
+library says once that the browser may reclaim the cache. It is a fact about the device, so it is
+stated in the interface's voice and never as an error.
+
+What survives from the list this replaces, unchanged:
+
+- **Pressing a card opens the demo from the cache without a file**, which is the whole point of the
+  feature. The dialog below is what a press opens.
+- Each card has a remove control. Removal is immediate and unconfirmed — it deletes a cache entry,
   not a demo; the reader's `.dem` is untouched on disk and the copy says so.
 - An entry whose `SCHEMA_VERSION` no longer matches is **not shown**. It is unreachable by
-  definition and the store already drops it on open; a list entry that cannot be opened is worse
-  than no entry.
-- The list is storage state, not a preference, so it lives in the store's catalog and never in
+  definition and the store drops it on open; a card that cannot be opened is worse than no card. The
+  same holds for an entry with no metadata (#140) and for one whose file has gone, which a read
+  removes.
+- The library is **store state, not a preference**: it lives in the catalog and never in
   `localStorage` — hard rule 5.
+- The way-in card keeps the five most recent (#140). The library screen holds every one of them.
+
+#### The demo dialog
+
+Pressing a card opens a dialog, and **its plate is rendered from the cached parse rather than stored
+as an image**. That is the decision of 16 August 2026 and the reason the dialog is worth building at
+all: the parse is already in the cache and `features/radar` already draws it, so the dialog can show
+where the players actually were instead of a screenshot of where they once were.
+
+- **The plate, at one frame.** `freezeTimeEndTick` of the round in question — the buy is over and
+  ten players are alive and spread — and it is one frame: the dialog draws and does not start the
+  transport, so nothing on this screen runs a clock.
+- **The roster by side**, from the round being shown rather than from the end of the match, for the
+  reason §6.1's tokens read the round: sides swap.
+- **The rounds as a way in.** Pressing one enters the match at that round instead of at the start,
+  which is the shortest route the product has from "which demo was that" to a specific moment.
+
+**What it costs, stated plainly.** The dialog needs the whole `ParsedDemo`: the 0.02 s cache read,
+and then the demo's entire `TickTrack` resident to draw a single frame. Three consequences, all of
+them rules rather than notes:
+
+- it opens on a **press and never on a hover** — a grid that parses on mouseover is a grid that
+  thrashes the cache;
+- **it releases the parse when it closes** without entering the match, or browsing eight cards holds
+  eight matches in memory;
+- it is the one route in that can fail after the card has drawn — a cached file that has gone. #140
+  drops such an entry on read, so what the reader sees is a card that disappears, not a dialog that
+  lies.
+
+A stored thumbnail was the alternative and it loses on three counts: it is a second copy of a truth
+the cache already holds, it needs invalidating when the radar theme changes, and it goes stale the
+moment `SCHEMA_VERSION` moves. The plate is cheaper to be correct about than an image is.
 
 ### 10.3 The parse screen
 
-The same screen as the landing, transformed in place. It does not navigate.
+The same screen as the upload view, transformed in place. It does not navigate, and the shell around
+it does not change either — the rail stays, with Upload still the current entry, because a parse is
+something the reader started rather than somewhere they went.
 
-- **The Radar background** (reactbits, `ogl`, §0), tuned to `--accent` on `--surface-0`, sweeping at
-  a rate tied to nothing — it is atmosphere, not a progress indicator, and it must never be mistaken
-  for one.
+- **The backdrop is §10.1's**, unmoved and undimmed further while the parse runs. The Radar sweep
+  this bullet used to name is deferred with Prism (§10.1), and nothing replaces it: a ground that
+  reacted to progress would be the progress indicator this section spends its last two bullets
+  refusing.
 - **Over it, the number**: the percentage at `44` in Plex Mono, and beneath it the stage in the
   reader's words. "Reading the demo", "Following the players", "Collecting the rounds" — never
   "Initializing WASM module".
@@ -1072,8 +1175,9 @@ dependency approved under hard rule 10 at roughly 30–35 kB gzipped.
   tidying: §4 says two control heights exist, and there is nowhere else that can be true.
 - An Animate UI component that animates something §8 forbids is **edited, not adopted as shipped**.
   The library is a starting point for a component, never an argument for breaking a rule.
-- The two WebGL backgrounds are vendored the same way — copied into `packages/ui`, retuned to the
-  palette, and **lazy-loaded**, so `ogl` never enters the review screen's chunk.
+- There is nothing to vendor for the way in. The two WebGL backgrounds this bullet used to describe
+  are deferred (§10.1) and the backdrop that replaced them is an image `packages/map-data` already
+  generates, so no third-party component and no `ogl` chunk enters the build at all.
 - Icons come from the animated Lucide set, per icon, never as a barrel import. Weapon and utility
   glyphs are the product's own SVG set, sized on the 4px grid, and they are game vocabulary — never
   translated, never re-drawn per locale.
@@ -1136,16 +1240,20 @@ Non-negotiable, and never announced in the UI:
   §7.3 keeps both across the ribbon's replacement rather than letting the obligation lapse with the
   canvas that carried it; the round timeline needs one and does not have one yet. Vision cones and
   audibility rings do not need one, because they restate a position the feed reports in words.
-- **`prefers-reduced-motion` is honoured everywhere**, including by both WebGL backgrounds.
-- Responsive down to a laptop screen. The tool is not designed for phones; the landing page is.
+- **`prefers-reduced-motion` is honoured everywhere.** There are no WebGL backgrounds to exempt from
+  it any more (§10.1); what the way in animates is an opacity on a drag, which is a response to the
+  reader rather than motion of its own.
+- Responsive down to a laptop screen. The tool is not designed for phones; the way in is, which is
+  what §10.1's rail-becomes-a-row rule exists to serve.
 
 ---
 
 ## 15. What this document asks of the code
 
-Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed; step 6 is under way
-— §6.1's token states landed in #154, §6.2 (utility) in #168 and #175, §6.3 (world) remains. In
-dependency order:
+Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed, and so is step 11
+(#194,
+#197). Step 6 is under way — §6.1's token states landed in #154, §6.2 (utility) in #168 and #175,
+§6.3 (world) remains. In dependency order:
 
 1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
    blurred-review-screen frame assertion, §17's summary re-derived from this document, §20's
@@ -1155,8 +1263,10 @@ dependency order:
    `data-playing` reset removed.
 3. ~~**Schema 4**~~ *(done, #136)* — the four per-sample columns in §5.3, in `crates/demo-parser`,
    `packages/demo-core` and the golden snapshot.
-4. ~~**The store catalog**~~ *(done, #140)* — §10.2's metadata, and the library screen that reads
-   it.
+4. ~~**The store catalog**~~ *(done, #140)* — §10.2's metadata, and the five rows on the way-in card
+   that read it. §10.2 was rewritten by #195 *after* this step closed: the metadata it wrote is
+   exactly what a card needs, so what is outstanding is the grid rather than the store, and it is
+   step 8's.
 5. ~~**The review layout**~~ *(done, #147)* — §5, replacing `features/review`'s three-row grid;
    the round timeline and the ribbon re-scale in `features/timeline`. The team cards are the first
    thing to read the `weapon` column, so §6.4's rendering rule is one of their constraints: the
@@ -1172,7 +1282,24 @@ dependency order:
    §6.1 token states landed in #154 and §6.2 (utility) in #168 and #175; §6.3 (world) is next.
 7. **Input** — §9's bindings in `core/shortcuts`, the held-arrow rate in `core/playback`, the hot
    corners in `features/review`.
-8. **The way in** — §10.1–§10.4, the two vendored backgrounds, `ogl` added and lazy-loaded.
+8. **The way in** *(rewritten by #195)* — §10.1–§10.4 as this document now describes them, in
+   `apps/web/src/features/library`. **No `ogl` and no vendored backgrounds**: the two WebGL screens
+   are deferred and the dimmed radar backdrop already ships, so this step adds no dependency at all.
+   Four pieces, in dependency order, and they are not one PR:
+   - **the shell** — §10.1's rail, its four entries, the row it becomes below `--breakpoint-split`,
+     and the upload view moving inside it. It ends where the review screen begins, which is a
+     routing rule as much as a layout one;
+   - **the library grid** — §10.2's cards replacing the rows on the way-in card, with the count, the
+     catalog's own byte total against `CACHE_BYTE_LIMIT`, and `navigator.storage.estimate()` beside
+     it as an estimate. The `best-effort` line comes from `requestPersistence`, which exists;
+   - **the demo dialog** — §10.2's dialog, drawing one frame through `features/radar` from the
+     cached parse. It is the first thing outside the review screen to mount the renderer, so
+     releasing it on close is part of the issue rather than a follow-up;
+   - **the parse and failure screens** — §10.3 and §10.4 inside the shell, keeping #68's hidden-tab
+     explanation where it is.
+
+   None of it changes `SCHEMA_VERSION`, and none of it touches §5, §6 or §7: the review screen is
+   not in the shell.
 9. **Settings and help** — §10.5 and §10.6, with the help table generated from the bindings.
 10. **Time** *(added by #157)* — §7 as rewritten on 16 August 2026, in `features/timeline`. Three
     pieces, and they are not one PR: §7.1's kill glyph takes the victim's side colour; §7.1's kill
