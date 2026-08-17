@@ -89,6 +89,8 @@ export const TRANSLATION_KEYS = [
   'review.roundOfTotal',
   'review.score',
   'review.scoreboard',
+  'review.scoreboardPosition.toBlock',
+  'review.scoreboardPosition.toPlate',
   'review.settings',
   'review.team',
   'review.warmup',
