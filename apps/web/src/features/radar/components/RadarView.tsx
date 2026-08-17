@@ -144,8 +144,10 @@ export function RadarView({
           switched on off the plate (DESIGN.md §6.3). Both are §2.2's tooltip case — `--ink` and
           alpha alone, no `backdrop-filter`. The strip itself takes no pointer events: it lies over
           the top of the canvas, and swallowing moves there would blank the coordinate readout in
-          exactly the band §9.2 asks the overlay to answer. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start gap-3 p-4">
+          exactly the band §9.2 asks the overlay to answer. Its inset is margin rather than padding
+          so that with both children silent it is a zero-height box and not 32px of nothing over the
+          plate — which is what a §5.1 overlap sweep walking every element sees. */}
+      <div className="pointer-events-none absolute inset-x-4 top-4 flex flex-wrap items-start gap-3">
         {image.status === 'failed' && (
           <p className="rounded-float border border-line bg-glass-panel px-3 py-2 text-13 text-ink leading-prose shadow-raised">
             <Text path="radar.imageUnavailable" />
