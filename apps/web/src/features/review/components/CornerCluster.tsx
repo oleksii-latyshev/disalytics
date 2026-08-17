@@ -6,6 +6,7 @@ import { Button } from '@disa/ui';
 import {
   ArrowDownToLine,
   ArrowUpToLine,
+  Bug,
   CircleQuestionMark,
   Ear,
   Maximize,
@@ -21,6 +22,8 @@ interface Props {
   onAudibilityToggle: () => void;
   isScoreboardOnPlate: boolean;
   onScoreboardPositionToggle: () => void;
+  isDebugShown: boolean;
+  onDebugToggle: () => void;
   onClose: () => void;
 }
 
@@ -30,12 +33,13 @@ interface Props {
  * The hot corner is an **accelerator only**: every button here is reachable by `Tab` from anywhere,
  * because a control that needs a pointer to appear has no keyboard at all.
  *
- * §5.4 names three buttons and this carries six. Deleting the top bar deleted the only route out of
- * a demo and the only audibility toggle, and §10.5's scoreboard position joined them when the brow
- * became the default. **All three extras leave when the settings sheet arrives** — §5.4 permits a
- * control to bridge here only while §10.5's table already names it, which is true of every one of
- * them. Settings and help are disabled for the same reason: they have nowhere to go yet, and a
- * control that looks live and answers nothing is worse than one that says so.
+ * §5.4 names three buttons and this carries seven. Deleting the top bar deleted the only route out
+ * of a demo and the only audibility toggle, §10.5's scoreboard position joined them when the brow
+ * became the default, and the debug overlay came here because §6.3 bars it from the stage and the
+ * sheet that owns it does not exist. **All four extras leave when the settings sheet arrives** —
+ * §5.4 permits a control to bridge here only while §10.5's table already names it, which is true of
+ * every one of them. Settings and help are disabled for the same reason: they have nowhere to go
+ * yet, and a control that looks live and answers nothing is worse than one that says so.
  */
 export function CornerCluster({
   isFullscreen,
@@ -44,6 +48,8 @@ export function CornerCluster({
   onAudibilityToggle,
   isScoreboardOnPlate,
   onScoreboardPositionToggle,
+  isDebugShown,
+  onDebugToggle,
   onClose,
 }: Props) {
   const t = useT();
@@ -94,6 +100,21 @@ export function CornerCluster({
         ) : (
           <ArrowUpToLine aria-hidden="true" />
         )}
+      </Button>
+
+      {/* §10.5's Developer row, bridging here until the sheet exists. It stays a named icon at
+          `--ink-faint` rather than a labelled button on the plate: the overlay is a development
+          affordance, and §6.3 gives it no place on the stage at all. */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-pressed={isDebugShown}
+        aria-label={t(isDebugShown ? 'radar.debug.hide' : 'radar.debug.show')}
+        onClick={onDebugToggle}
+        className="aria-pressed:bg-selected aria-pressed:text-ink"
+      >
+        <Bug aria-hidden="true" />
       </Button>
 
       <Button type="button" variant="ghost" size="icon" disabled aria-label={t('review.settings')}>

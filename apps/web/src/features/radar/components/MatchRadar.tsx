@@ -10,9 +10,16 @@ interface Props {
   transport: Transport;
   selectedSlot: PlayerSlot | null;
   isAudibilityShown: boolean;
+  isDebugShown: boolean;
 }
 
-export function MatchRadar({ demo, transport, selectedSlot, isAudibilityShown }: Props) {
+export function MatchRadar({
+  demo,
+  transport,
+  selectedSlot,
+  isAudibilityShown,
+  isDebugShown,
+}: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -29,6 +36,7 @@ export function MatchRadar({ demo, transport, selectedSlot, isAudibilityShown }:
           transport={transport}
           selectedSlot={selectedSlot}
           isAudibilityShown={isAudibilityShown}
+          isDebugShown={isDebugShown}
         />
       )}
     </section>
