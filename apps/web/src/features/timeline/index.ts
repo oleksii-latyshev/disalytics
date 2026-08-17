@@ -1,2 +1,2 @@
-export { RoundList } from './components/RoundList';
+export { RoundStrip } from './components/RoundStrip';
 export { RoundTimeline } from './components/RoundTimeline';

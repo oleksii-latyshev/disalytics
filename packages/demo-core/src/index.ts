@@ -41,6 +41,8 @@ export type { PlayerRoundStats, SideSurvivors } from './helpers/round-stats';
 export { playerRoundStats, roundSurvivors } from './helpers/round-stats';
 export type { MatchScore, SideScore } from './helpers/score';
 export { matchScore, sideScoreAtFrame } from './helpers/score';
+export type { MatchSegment } from './helpers/segments';
+export { matchSegments } from './helpers/segments';
 export type { RoundClock, RoundPhase } from './helpers/selectors';
 export {
   frameForTick,
