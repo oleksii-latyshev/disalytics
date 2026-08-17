@@ -18,6 +18,10 @@
     "enter": "Full screen",
     "exit": "Leave full screen"
   },
+  "scoreboardPosition": {
+    "toPlate": "Show the score over the map",
+    "toBlock": "Show the score on the timeline"
+  },
   "player": {
     "health": "Health",
     "armour": "Armour",

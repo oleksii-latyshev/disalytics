@@ -63,8 +63,41 @@ pre {
   }
 }
 
+/* The scoreboard brow — DESIGN.md §5.2, and the default position since 16 August 2026. A tab of the
+   timeline block rather than a card on it: `--glass-panel` like the block, `--radius-card` above,
+   square where the two meet, and **no `backdrop-filter`** — it is over the stage, not over the
+   plate, and §2.3 does not pay for a blur with nothing moving behind it.
+
+   The hair runs on three sides only, and `.glass-panel.has-brow` drops the block's lit top rim, so
+   the outline reads as one shape stepping up around the lip. Both halves are needed: §5.2 asks for
+   no seam and no hairline across the join, and a translucent brow cannot hide a line drawn under
+   it — at 0.62 alpha the block's rim would still come through at a third of its strength.
+
+   The fallback matches `.glass-panel`'s rather than staying translucent: without `backdrop-filter`
+   the block goes opaque, and a lip that did not would read as a different surface. */
+.glass-brow {
+  background-color: var(--color-glass-panel);
+  box-shadow:
+    inset 0 1px 0 0 var(--color-glass-edge),
+    0 -1px 0 0 var(--color-glass-hair),
+    -1px 0 0 0 var(--color-glass-hair),
+    1px 0 0 0 var(--color-glass-hair);
+}
+
+.glass-panel.has-brow {
+  box-shadow: 0 0 0 1px var(--color-glass-hair);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-brow {
+    background-color: var(--color-surface-1);
+  }
+}
+
 /* The scoreboard chip — DESIGN.md §5.2. The one surface in the product that sits over the live
    plate and still carries a blur, which §5.1 grants it by name and §2.3's rule otherwise forbids.
+   It is the **other** position now, chosen by the reader (§10.5); the brow above is the default and
+   spends neither the blur nor §5.1's overlap exception.
 
    It is not `.glass-panel` at a smaller radius: what makes this affordable is the *area*. A chip
    that fits a map name, a score and a clock is a couple of percent of the plate, and the

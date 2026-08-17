@@ -23,6 +23,9 @@ import { TimelineBlock } from './TimelineBlock';
 /** Namespaced the way `@disa/i18n` namespaces the locale it remembers. */
 const AUDIBILITY_KEY = 'disa.radar.audibility';
 
+/** DESIGN.md §10.5's scoreboard position, stored as "the reader asked for the plate". */
+const SCOREBOARD_ON_PLATE_KEY = 'disa.review.scoreboardOnPlate';
+
 interface Props {
   demo: ParsedDemo;
   cache: CacheState;
@@ -54,6 +57,13 @@ export function MatchReview({ demo, cache, onClose }: Props) {
   // Off by default: the rings are the loudest thing the plate draws, and a reader who wants them
   // asks. `AGENTS.md` §2 rule 5 allows an interface preference to outlive the session.
   const [isAudibilityShown, toggleAudibility] = useStoredFlag(AUDIBILITY_KEY, false);
+
+  // The brow is the default — DESIGN.md §5.2 — so this flag is the reader asking for the chip back
+  // over the plate, which is the only thing in the product allowed to cover it (§5.1).
+  const [isScoreboardOnPlate, toggleScoreboardPosition] = useStoredFlag(
+    SCOREBOARD_ON_PLATE_KEY,
+    false,
+  );
 
   const toggleSelected = useCallback((slot: PlayerSlot) => {
     setSelectedSlot((current) => (current === slot ? null : slot));
@@ -132,6 +142,8 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           onFullscreenToggle={fullscreen.toggle}
           isAudibilityShown={isAudibilityShown}
           onAudibilityToggle={toggleAudibility}
+          isScoreboardOnPlate={isScoreboardOnPlate}
+          onScoreboardPositionToggle={toggleScoreboardPosition}
           onClose={onClose}
         />
       </div>
@@ -146,14 +158,17 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           isAudibilityShown={isAudibilityShown}
         />
 
-        {/* §5.1's one permitted overlap, anchored to the top of the plate's *cell* rather than to
-            the canvas inside it. Above the split those two edges are the same line — the cell is
-            wider than it is tall, so the square plate fills its height — and where they are not,
-            the chip floats in the letterbox above the plate and covers nothing at all. Anchoring
-            to the canvas instead would mean a second reader of `min(100cqi,100cqb)`. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-          <Scoreboard demo={demo} frame={frame} locale={locale} />
-        </div>
+        {/* §5.1's one permitted overlap, and since #196 the reader's own choice rather than the
+            default (§10.5). It is anchored to the top of the plate's *cell* rather than to the
+            canvas inside it: above the split those two edges are the same line — the cell is wider
+            than it is tall, so the square plate fills its height — and where they are not, the chip
+            floats in the letterbox above the plate and covers nothing at all. Anchoring to the
+            canvas instead would mean a second reader of `min(100cqi,100cqb)`. */}
+        {isScoreboardOnPlate && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
+            <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
+          </div>
+        )}
       </div>
 
       {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two
@@ -161,7 +176,14 @@ export function MatchReview({ demo, cache, onClose }: Props) {
       <div className="flex gap-3 [grid-area:3/1/4/2] split:contents">{teamCards}</div>
 
       <div className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]">
-        <TimelineBlock demo={demo} transport={transport} selectedSlot={selectedSlot} />
+        <TimelineBlock
+          demo={demo}
+          transport={transport}
+          selectedSlot={selectedSlot}
+          frame={frame}
+          locale={locale}
+          hasScoreboard={!isScoreboardOnPlate}
+        />
       </div>
     </div>
   );
