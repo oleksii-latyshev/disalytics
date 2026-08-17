@@ -10,6 +10,10 @@
     "even": "Round {round, number}, both sides carry equal equipment"
   },
   "roundLabel": "{outcome}. Survivors: CT {ct, number}, T {t, number}. Score {startedCt, number} to {startedT, number}.",
+  "survivors": {
+    "show": "Show survivors on each round",
+    "hide": "Hide survivors on each round"
+  },
   "outcome": {
     "bombExploded": "Round {round, number}, {side} win, bomb exploded",
     "bombDefused": "Round {round, number}, {side} win, bomb defused",

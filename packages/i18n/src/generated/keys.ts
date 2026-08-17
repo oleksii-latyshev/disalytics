@@ -115,6 +115,8 @@ export const TRANSLATION_KEYS = [
   'timeline.positionInWarmup',
   'timeline.roundLabel',
   'timeline.roundsRemaining',
+  'timeline.survivors.hide',
+  'timeline.survivors.show',
   'timeline.unknownPlayer',
 ] as const;
 

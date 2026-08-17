@@ -3,59 +3,118 @@ import { useT } from '@disa/i18n';
 import { memo } from 'react';
 import { useRovingFocus } from '@/shared/hooks';
 import { roundOutcomeKey } from '../helpers/outcome-copy';
-import type { CellDetail, RoundCell } from '../helpers/round-list';
+import { PILL_GAP_PX, type RoundCell, trackSegments } from '../helpers/round-strip';
 
 interface Props {
   cells: readonly RoundCell[];
-  /** What every cell has room to carry — one width decides it for the list, not for each cell. */
-  detail: CellDetail;
+  /** Whether the strip is wide enough for its round numbers — §7.3's one threshold. */
+  hasNumbers: boolean;
+  /** Whether the survivor tracks are showing. The disclosure at the strip's end sets it. */
+  isExpanded: boolean;
   litIndex: number | undefined;
   onSeek: (roundIndex: number) => void;
-  /** A pointer resting on a cell. The tooltip waits §9.2's dwell before it answers. */
+  /** A pointer resting on a pill. The tooltip waits §9.2's dwell before it answers. */
   onPoint: (roundIndex: number | null) => void;
-  /** A cell taking focus, which has no dwell to wait through. */
+  /** A pill taking focus, which has no dwell to wait through. */
   onReveal: (roundIndex: number | null) => void;
 }
 
-/** §7.3's tint: low enough that a full-height fill reads as an outcome rather than as a surface. */
-const TINT: Readonly<Record<Team, string>> = { CT: 'bg-ct/14', T: 'bg-t/14' };
+const WINNER_BAR: Readonly<Record<Team, string>> = { CT: 'bg-ct', T: 'bg-t' };
 
-const SIDE_INK: Readonly<Record<Team, string>> = { CT: 'text-ct', T: 'text-t' };
+const TRACK_LIVE: Readonly<Record<Team, string>> = { CT: 'bg-ct', T: 'bg-t' };
 
 /**
- * One side's survivor count with the side written under it — §7.3.
+ * One side's survivors as a five-segment track — §7.3, and only while the strip is expanded.
  *
- * The letters are not decoration. A count that is told from its neighbour by hue alone asks the
- * reader to hold the palette in their head at 10px, and the tint of the cell behind it is already
- * spending that same pair of colours on who *won*. Written out, the colour becomes the redundant
- * channel rather than the only one — DESIGN.md §14's floor, which is that side identity never
- * relies on hue alone.
+ * No digits and no letters: the question the tracks answer is *how did it end*, and a shape answers
+ * it without being read. The exact pair is a hover away and is in the pill's own name regardless.
+ *
+ * The direction the track fills is what carries the side alongside the hue — CT from the right, T
+ * from the left, which is where §5.3 puts the two team cards. `trackSegments` owns that rule.
  */
-function SurvivorColumn({ side, count }: { side: Team; count: number }) {
+function SurvivorTrack({ side, alive }: { side: Team; alive: number }) {
   return (
-    <span aria-hidden="true" className="flex flex-1 flex-col items-center gap-px leading-none">
-      <span className="numeric text-10 text-ink-dim">{count}</span>
-      <span className={`numeric text-10 ${SIDE_INK[side]}`}>{side}</span>
+    <span className="flex gap-px">
+      {trackSegments(side, alive).map((seat) => (
+        // A lost seat is nearly out rather than half in. At α0.40 the two tracks read as a dotted
+        // texture and the live seats had to be picked out of it; at α0.20 the shape is the pips.
+        <span
+          key={seat.position}
+          className={`h-[3px] flex-1 rounded-[1px] ${
+            seat.isLive ? TRACK_LIVE[side] : 'bg-ink-faint/20'
+          }`}
+        />
+      ))}
     </span>
   );
 }
 
+/** The ink a round number takes: the one being played, one already watched, or one still ahead. */
+function numberInk(lit: boolean, ahead: boolean): string {
+  if (lit) return 'font-medium text-ink';
+
+  return ahead ? 'text-ink-dim' : 'text-ink';
+}
+
+interface FaceProps {
+  cell: RoundCell;
+  hasNumbers: boolean;
+  isExpanded: boolean;
+  lit: boolean;
+  ahead: boolean;
+}
+
+/** What is drawn inside a pill — §7.3's number, its survivor tracks and its winner bar. */
+function PillFace({ cell, hasNumbers, isExpanded, lit, ahead }: FaceProps) {
+  return (
+    <>
+      {hasNumbers && (
+        <span aria-hidden="true" className={`numeric text-13 ${numberInk(lit, ahead)}`}>
+          {cell.number}
+        </span>
+      )}
+
+      {isExpanded && (
+        <span aria-hidden="true" className="flex w-full flex-col gap-0.5">
+          <SurvivorTrack side="CT" alive={cell.survivors.CT} />
+          <SurvivorTrack side="T" alive={cell.survivors.T} />
+        </span>
+      )}
+
+      {!lit && (
+        <span
+          aria-hidden="true"
+          className={`absolute inset-x-0 bottom-0 h-0.5 ${WINNER_BAR[cell.winner]}`}
+        />
+      )}
+    </>
+  );
+}
+
 /**
- * `docs/DESIGN.md` §7.3 — one equal-width cell per round, carrying who won it and how close it was.
- * A list rather than a chart: the ribbon this replaces made a band as wide as its round was long, so
- * a 13-second round was a sliver nobody could hit, and getting to a round is what the strip is for.
+ * `docs/DESIGN.md` §7.3 — one equal-width pill per round, carrying who won it and nothing else
+ * until the reader asks for more. A list rather than a chart: the ribbon this replaces made a band
+ * as wide as its round was long, so a 13-second round was a sliver nobody could hit, and getting to
+ * a round is what the strip is for.
+ *
+ * The pills are separated by space rather than by a hairline, and the winner is a bar on the pill's
+ * bottom edge rather than a tint over the whole of it. Both are the same correction: the pill has to
+ * read as an object before its contents can have an order, and a filled cell spends the whole pill
+ * on one bit.
  *
  * It is also the text equivalent for itself (#92). A canvas needed an `sr-only` list beside it to
- * say anything at all; cells are elements, so each one carries the whole reading — number, winner,
- * reason, survivors and the score the round left behind — as its own accessible name. Two
- * enumerations of the same thirty rounds would say everything twice to anyone using both.
+ * say anything at all; pills are elements, so each one carries the whole reading — number, winner,
+ * reason, survivors and the score the round left behind — as its own accessible name, **and that
+ * name does not change when the strip is collapsed**. It is what holds §14's floor now that the
+ * `CT` and `T` letters have left the pill.
  *
  * Memoised because the container re-renders off the 10 Hz readout and on every hover, and a match's
  * worth of rounds has no business reconciling at either rate (#91).
  */
 export const RoundOutcomes = memo(function RoundOutcomes({
   cells,
-  detail,
+  hasNumbers,
+  isExpanded,
   litIndex,
   onSeek,
   onPoint,
@@ -67,12 +126,29 @@ export const RoundOutcomes = memo(function RoundOutcomes({
   if (cells.length === 0) return null;
 
   return (
-    <ol aria-label={t('timeline.outcomes')} className="flex size-full">
+    <ol
+      aria-label={t('timeline.outcomes')}
+      className="flex size-full items-stretch"
+      style={{ gap: `${PILL_GAP_PX}px` }}
+    >
       {cells.map((cell, index) => {
         const lit = index === litIndex;
+        const ahead = litIndex !== undefined && index > litIndex;
 
         return (
-          <li key={cell.number} className="min-w-0 flex-1">
+          // `ms-2` on top of the row's 4px gap is §7.3's 12px segment break, and the rule sits at
+          // -6px, which is that break's centre line.
+          <li
+            key={cell.number}
+            className={`relative min-w-0 flex-1 ${cell.startsSegment ? 'ms-2' : ''}`}
+          >
+            {cell.startsSegment && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-1 -left-1.5 border-l border-dashed border-line"
+              />
+            )}
+
             <button
               type="button"
               ref={roving.register(index)}
@@ -97,25 +173,22 @@ export const RoundOutcomes = memo(function RoundOutcomes({
               onPointerLeave={() => onPoint(null)}
               onFocus={() => onReveal(index)}
               onBlur={() => onReveal(null)}
-              // The round being played is lit by dropping the tint and framing what is left, so the
-              // frame has bare strip to sit on rather than a brighter fill of the same hue.
-              className={`flex size-full cursor-pointer items-center justify-center leading-none transition-colors duration-micro ease-out hover:bg-hover ${
-                lit ? 'ring-1 ring-glass-edge ring-inset' : TINT[cell.winner]
-              } ${index > 0 ? 'border-l border-line' : ''}`}
+              // The round being played drops its winner bar for a fill and a frame — *here* rather
+              // than a brighter outcome, which is what a tinted highlight always ends up meaning.
+              // `pb-1.5` only while expanded: the T track sits directly on the winner bar without
+              // it and the two colours read as one mark. Collapsed there is nothing to separate,
+              // and the padding would push the number off the pill's centre line.
+              className={`relative flex size-full cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-chip px-0.5 leading-none transition-colors duration-micro ease-out hover:bg-hover ${
+                isExpanded ? 'pb-1.5' : ''
+              } ${lit ? 'bg-ink/10 ring-1 ring-glass-edge ring-inset' : ''}`}
             >
-              {/* The two side columns are equally `flex-1`, which is what keeps the round number on
-                  the cell's centre line whatever the counts either side of it are. */}
-              {detail === 'full' && <SurvivorColumn side="CT" count={cell.survivors.CT} />}
-
-              {/* Medium rather than a larger size: Plex Mono advances the same at 400 and 500, so
-                  the weight buys the number its emphasis without moving `FULL_MIN_PX`. */}
-              {detail !== 'tint' && (
-                <span aria-hidden="true" className="numeric font-medium text-12 text-ink">
-                  {cell.number}
-                </span>
-              )}
-
-              {detail === 'full' && <SurvivorColumn side="T" count={cell.survivors.T} />}
+              <PillFace
+                cell={cell}
+                hasNumbers={hasNumbers}
+                isExpanded={isExpanded}
+                lit={lit}
+                ahead={ahead}
+              />
             </button>
           </li>
         );

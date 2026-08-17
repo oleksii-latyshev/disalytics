@@ -10,6 +10,10 @@
     "even": "Раунд {round, number}, у сторон снаряжения поровну"
   },
   "roundLabel": "{outcome}. Выжившие: CT {ct, number}, T {t, number}. Счёт {startedCt, number} : {startedT, number}.",
+  "survivors": {
+    "show": "Показывать выживших в каждом раунде",
+    "hide": "Скрыть выживших в каждом раунде"
+  },
   "outcome": {
     "bombExploded": "Раунд {round, number}, побеждают {side}, бомба взорвалась",
     "bombDefused": "Раунд {round, number}, побеждают {side}, бомба обезврежена",
