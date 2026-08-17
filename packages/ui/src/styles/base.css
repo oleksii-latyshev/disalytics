@@ -118,6 +118,26 @@ pre {
   }
 }
 
+/* Settings and help — DESIGN.md §10.5 and §10.6. The deepest grade and the widest blur, because what
+   this one has to let through is the whole screen. §2.3 permits the blur unconditionally here: these
+   sheets are open only while playback is stopped, so there is nothing repainting behind them.
+
+   The fallback is opaque for a stronger reason than the panel's: 0.88 alpha over a match reads as a
+   half-drawn screen rather than as a surface. `::backdrop` carries the same colour so the top-layer
+   ground matches the sheet on the one frame the two are painted separately. */
+.glass-sheet,
+.glass-sheet::backdrop {
+  background-color: var(--color-glass-sheet);
+  backdrop-filter: var(--backdrop-sheet);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-sheet,
+  .glass-sheet::backdrop {
+    background-color: var(--color-surface-0);
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;

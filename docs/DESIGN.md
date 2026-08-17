@@ -462,11 +462,14 @@ They sit at `--ink-faint` and rise to `--ink` on hover or focus, and the whole c
 the pointer enters the top-right quadrant of the stage — the hot corner in §9.3. They are always
 reachable by keyboard regardless of pointer position.
 
-**The cluster is also the bridge for settings that ship before the sheet does.** It carries close
-and the audibility rings today (#147), and §10.5's scoreboard position and round-strip survivors
-join them. Every one of those is a `--glass-sheet` row the moment step 9 lands, and none of them
-stays here: a cluster of three named icons that has grown to six is a settings menu that has not
-admitted it. A control may bridge here only if §10.5's table already names it.
+**The cluster was also the bridge for settings that shipped before the sheet did**, and that bridge
+closed on 17 August 2026 (#151). It carried the audibility rings from #147, §10.5's scoreboard
+position from #196 and the debug overlay from #199 — three named icons grown to seven, which is a
+settings menu that has not admitted it — and every one of them is a `--glass-sheet` row now. Leaving
+the demo went with them, to the foot of that sheet rather than into its rows: a control may bridge
+here only while §10.5's table names it, and leaving a match is not a setting. **The rule survives
+the bridge it authorised**, because the next control that ships ahead of its own home will want the
+same exception.
 
 Beneath the cluster, the **event feed**: the last events before the playhead, newest at the top,
 capped at eight rows and clipped to the current round. A row is *attacker · weapon glyph · victim*
@@ -1146,10 +1149,16 @@ is a real cost attached to a real preference, and §5.2 argues why both readings
 Every setting is a UI preference and therefore allowed in `localStorage` under hard rule 5. Nothing
 parsed goes there.
 
-**This sheet does not exist yet** — it is step 9 in §15, and the settings that ship before it bridge
-through the corner cluster (§5.4), which is where the audibility rings already sit. The bridge is
-named in §5.4 as temporary and every control on it leaves when the sheet lands; a setting shipping
-early is not a reason to leave it out of this table.
+**The sheet exists since 17 August 2026 (#151), carrying three of these rows** — the audibility
+rings, the scoreboard position and the debug overlay, which are the three that had bridged through
+the corner cluster (§5.4). The other rows are still step 9's, and a row that is not built yet is not
+a row that has been decided against: this table is the specification either way, which is what kept
+those three in it while they were living somewhere else.
+
+**Leaving the demo is at the foot of this sheet, and it is not one of these rows.** The cluster had
+no seat for it once §5.4's bridge closed, and §10.5 admits settings rather than actions, so it is
+set apart from them by a rule — playback is already stopped here, which is the one place in the
+product where a step that abandons the current match cannot be a mis-click during a round.
 
 ### 10.6 Help
 
@@ -1300,7 +1309,12 @@ Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed, 
 
    None of it changes `SCHEMA_VERSION`, and none of it touches §5, §6 or §7: the review screen is
    not in the shell.
-9. **Settings and help** — §10.5 and §10.6, with the help table generated from the bindings.
+9. **Settings and help** *(opened by #151)* — §10.5 and §10.6. Both sheets exist: `@disa/ui` has the
+   native `<dialog>` they are built on, settings carries the three rows that had bridged through the
+   corner cluster, and help carries §10.6's four sentences plus the keyboard table **generated from
+   `core/shortcuts`' own bindings** rather than written beside them. Two pieces remain, one issue
+   each: **the rest of §10.5's table** (#202), and **§10.6's legend of every mark on the plate**
+   (#201), which has to read the tokens the renderer reads or it drifts within two issues.
 10. **Time** *(added by #157)* — §7 as rewritten on 16 August 2026, in `features/timeline`. Three
     pieces, and they are not one PR: §7.1's kill glyph takes the victim's side colour; §7.1's kill
     tooltip, **which may not ship before step 5's event feed**, because §9.2 permits it only as a

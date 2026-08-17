@@ -1,5 +1,7 @@
 export { Button, buttonVariants } from './components/button';
 export { Input, inputVariants } from './components/input';
+export { Sheet } from './components/sheet';
+export { Switch } from './components/switch';
 export { cn } from './lib/utils';
 export { MotionProvider } from './motion/provider';
 // Re-exported rather than imported from `motion/react` at the call site so the package that owns
