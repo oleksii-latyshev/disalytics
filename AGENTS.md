@@ -276,8 +276,8 @@ eviction: it drops that entry and saves the catalog, because the alternative is 
 can never open.
 
 **The catalog also names what it holds** — file name, map, score and round count, and when it was
-stored. `docs/DESIGN.md` §10.2 puts that on the way in as a list of demos that reopen without a
-file. It is written **at the moment the demo is stored and at no other**, which is what keeps the
+stored. `docs/DESIGN.md` §10.2 puts that on the way in as five recent rows and on the library screen
+as a grid of cards, each reopening without a file. It is written **at the moment the demo is stored and at no other**, which is what keeps the
 paragraph above true: a read still writes nothing. An entry from before the metadata existed opens
 like any other and is simply not listed — a row that cannot be named is worse than no row — and one
 whose metadata is malformed loses its name rather than its demo.
