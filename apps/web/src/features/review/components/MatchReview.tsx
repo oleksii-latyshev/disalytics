@@ -26,6 +26,9 @@ const AUDIBILITY_KEY = 'disa.radar.audibility';
 /** DESIGN.md §10.5's scoreboard position, stored as "the reader asked for the plate". */
 const SCOREBOARD_ON_PLATE_KEY = 'disa.review.scoreboardOnPlate';
 
+/** DESIGN.md §10.5's Developer row. */
+const DEBUG_KEY = 'disa.radar.debug';
+
 interface Props {
   demo: ParsedDemo;
   cache: CacheState;
@@ -64,6 +67,11 @@ export function MatchReview({ demo, cache, onClose }: Props) {
     SCOREBOARD_ON_PLATE_KEY,
     false,
   );
+
+  // The overlay's switch lives in the corner cluster rather than on the plate — DESIGN.md §6.3 —
+  // and it is remembered for the same reason the other two are: whoever turns a development
+  // affordance on is mid-investigation and reopening the demo does not end it.
+  const [isDebugShown, toggleDebug] = useStoredFlag(DEBUG_KEY, false);
 
   const toggleSelected = useCallback((slot: PlayerSlot) => {
     setSelectedSlot((current) => (current === slot ? null : slot));
@@ -144,6 +152,8 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           onAudibilityToggle={toggleAudibility}
           isScoreboardOnPlate={isScoreboardOnPlate}
           onScoreboardPositionToggle={toggleScoreboardPosition}
+          isDebugShown={isDebugShown}
+          onDebugToggle={toggleDebug}
           onClose={onClose}
         />
       </div>
@@ -156,6 +166,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           transport={transport}
           selectedSlot={selectedSlot}
           isAudibilityShown={isAudibilityShown}
+          isDebugShown={isDebugShown}
         />
 
         {/* §5.1's one permitted overlap, and since #196 the reader's own choice rather than the

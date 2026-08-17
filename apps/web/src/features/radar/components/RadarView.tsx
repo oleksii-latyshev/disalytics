@@ -12,7 +12,6 @@ import {
   type RadarPoint,
   radarAssetPath,
 } from '@disa/map-data';
-import { Button } from '@disa/ui';
 import { type PointerEvent, useMemo, useState } from 'react';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
@@ -34,12 +33,19 @@ interface Props {
   transport: Transport;
   selectedSlot: PlayerSlot | null;
   isAudibilityShown: boolean;
+  isDebugShown: boolean;
 }
 
-export function RadarView({ demo, overview, transport, selectedSlot, isAudibilityShown }: Props) {
+export function RadarView({
+  demo,
+  overview,
+  transport,
+  selectedSlot,
+  isAudibilityShown,
+  isDebugShown,
+}: Props) {
   const t = useT();
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
-  const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [pointer, setPointer] = useState<RadarPoint | null>(null);
 
   // Which level is drawn follows the players, but off the 10 Hz readout rather than off the clock —
@@ -105,7 +111,7 @@ export function RadarView({ demo, overview, transport, selectedSlot, isAudibilit
   useFrameSink(transport, repaint);
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
-    if (!isDebugOpen) return;
+    if (!isDebugShown) return;
 
     const { left, top, width } = event.currentTarget.getBoundingClientRect();
     if (width === 0) return;
@@ -116,11 +122,6 @@ export function RadarView({ demo, overview, transport, selectedSlot, isAudibilit
       x: (event.clientX - left) / pixelsPerRadarPixel,
       y: (event.clientY - top) / pixelsPerRadarPixel,
     });
-  }
-
-  function handleDebugToggle(): void {
-    setIsDebugOpen(!isDebugOpen);
-    setPointer(null);
   }
 
   // The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller of
@@ -138,18 +139,22 @@ export function RadarView({ demo, overview, transport, selectedSlot, isAudibilit
         onPointerLeave={() => setPointer(null)}
       />
 
-      <div className="absolute inset-x-0 top-0 flex flex-wrap items-start gap-3 p-4">
-        <Button type="button" variant="outline" onClick={handleDebugToggle}>
-          <Text path={isDebugOpen ? 'radar.debug.hide' : 'radar.debug.show'} />
-        </Button>
-
+      {/* The two surfaces allowed over the live canvas, and neither is chrome the reader did not
+          ask for: the notice speaks only when the image failed, and the overlay only once it is
+          switched on off the plate (DESIGN.md §6.3). Both are §2.2's tooltip case — `--ink` and
+          alpha alone, no `backdrop-filter`. The strip itself takes no pointer events: it lies over
+          the top of the canvas, and swallowing moves there would blank the coordinate readout in
+          exactly the band §9.2 asks the overlay to answer. Its inset is margin rather than padding
+          so that with both children silent it is a zero-height box and not 32px of nothing over the
+          plate — which is what a §5.1 overlap sweep walking every element sees. */}
+      <div className="pointer-events-none absolute inset-x-4 top-4 flex flex-wrap items-start gap-3">
         {image.status === 'failed' && (
-          <p className="rounded-float border border-line bg-glass-panel px-3 py-2 text-13 leading-prose shadow-raised">
+          <p className="rounded-float border border-line bg-glass-panel px-3 py-2 text-13 text-ink leading-prose shadow-raised">
             <Text path="radar.imageUnavailable" />
           </p>
         )}
 
-        {isDebugOpen && (
+        {isDebugShown && (
           <RadarDebug
             overview={overview}
             frame={frame}
