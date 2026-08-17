@@ -719,10 +719,19 @@ produce the right answer from the same rule, and no round count is hardcoded any
 wants round 14 in the second half does not count to fourteen; they cross the divider and count to
 two.
 
-**Survivors are behind a disclosure.** A 24px control at the strip's end expands every pill at once:
-the strip goes to 44px and each pill gains a 16px block under its number holding two 5-segment
-tracks — **CT above, T below**, live segments in the side colour, lost ones at `--ink-faint`, each
-track spanning the pill's inner width so the segments scale with the pill instead of being fixed.
+**Survivors are behind a disclosure.** A 32px icon button at the strip's end expands every pill at
+once — §4's dense control height, and there is no third one to mint for a 28px row. Its hit area
+overruns the strip by 2px either side and lands in the block's own padding, which is the right way
+round: a target that is larger than its mark is a target, and one that is smaller is a miss.
+
+Expanded, the strip goes to 44px and each pill gains a 16px block under its number holding two
+5-segment tracks — **CT above, T below**, live segments in the side colour, lost ones at
+`--ink-faint` α0.20 rather than a half-strength grey, because at 0.40 the two tracks read as a
+dotted texture and the live seats have to be picked out of it. Each track spans the pill's inner
+width, so the segments scale with the pill instead of being fixed, and the block carries 6px of
+padding beneath it — without that the T track sits straight on the winner bar and the two colours
+read as one mark.
+
 **CT fills from the right and T fills from the left**, which is §5.3's card positions, so the side
 survives as fill direction as well as hue. No digits and no letters in the expanded state — the
 question *how did it end* is answered by shape at a glance, and the exact pair is a hover away.
@@ -762,13 +771,22 @@ state to drop.
 tracking, so a two-digit round number is 15.6px; 2px of padding either side puts the pill at 19.6px,
 and the 4px grid rounds it to 20.
 
-The margin is wider than the three-row ladder ever had. The strip spans the block less its 16px
-padding either side and the 32px the disclosure takes with its gap, which is roughly 1326px at 1440
-and roughly 936px below
-`--breakpoint-split`. At 24 rounds — MR12, one divider — that is **51px** a pill on the wide end and
-**35px** on the narrow one. At 40 rounds with three dividers it is **29px** and **19px**: only the
-last of those loses the number, and it is a 40-round overtime on a sub-1080 laptop. The floor still
-gets implemented anyway — a rule with no test case is a rule that rots.
+The margin is wider than the three-row ladder ever had. The pill row is the block less its 16px
+padding either side and the 40px the disclosure takes with its gap, and these are **measured** —
+against a replica of §5's grid that reproduces #147's 744×744 at 1440×900 exactly, so the arithmetic
+below is the layout's rather than a prediction of it:
+
+| Viewport | Pill row | 24 rounds, one divider | 40 rounds, three dividers |
+|---|---|---|---|
+| 1440×900 | 1320px | **50.8px** | **28.5px** |
+| 1280×800 | 1160px | 44.2px | 24.5px |
+| 1100×800 | 1028px | **38.7px** | **21.2px** |
+| 1040×800 | 968px | 36.2px | 19.7px |
+
+Only the last cell of that table is under 20px. **A 40-round overtime on a sub-1080 laptop is the
+one case that loses the number**, and everything a match without overtime plays is comfortably clear
+of the threshold on every width the tool targets. The floor still gets implemented anyway — a rule
+with no test case is a rule that rots.
 
 **Why the strip moved to the top of the block.** It was flush to the card's bottom edge from #157
 until this revision. The reader's path is *pick a round → watch it on the axis*, and the strip was
