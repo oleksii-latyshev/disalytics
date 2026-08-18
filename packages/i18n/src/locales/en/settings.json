@@ -1,1 +1,24 @@
-{}
+{
+  "title": "Settings",
+  "dismiss": "Close settings",
+  "group": {
+    "plate": "Plate",
+    "interface": "Interface",
+    "developer": "Developer"
+  },
+  "audibility": {
+    "label": "Audibility rings",
+    "note": "A ring around each player showing how far their movement carries. It is the largest mark on the plate, and it is an approximation of the game's own falloff."
+  },
+  "scoreboard": {
+    "label": "Scoreboard position",
+    "note": "On the timeline it costs the plate nothing. Over the map it floats above the players, which is the one thing allowed to cover them.",
+    "onBlock": "On the timeline",
+    "onPlate": "Over the map"
+  },
+  "debug": {
+    "label": "Debug overlay",
+    "note": "Map, frame, drawn level, and the world coordinate under the pointer. Built for working on the tool rather than on a match."
+  },
+  "closeNote": "The match stays on this device. Closing it returns to your demos, and nothing is deleted."
+}

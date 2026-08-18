@@ -15,8 +15,10 @@ import { MatchRadar } from '@/features/radar';
 import { useFullscreen, useStoredFlag } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { CornerCluster } from './CornerCluster';
+import { HelpSheet } from './HelpSheet';
 import { RoundCard } from './RoundCard';
 import { Scoreboard } from './Scoreboard';
+import { SettingsSheet } from './SettingsSheet';
 import { TeamCard } from './TeamCard';
 import { TimelineBlock } from './TimelineBlock';
 
@@ -68,10 +70,25 @@ export function MatchReview({ demo, cache, onClose }: Props) {
     false,
   );
 
-  // The overlay's switch lives in the corner cluster rather than on the plate — DESIGN.md §6.3 —
-  // and it is remembered for the same reason the other two are: whoever turns a development
-  // affordance on is mid-investigation and reopening the demo does not end it.
+  // The overlay's switch lives in the settings sheet rather than on the plate — DESIGN.md §6.3 and
+  // §10.5's Developer row — and it is remembered for the same reason the other two are: whoever turns
+  // a development affordance on is mid-investigation and reopening the demo does not end it.
   const [isDebugShown, toggleDebug] = useStoredFlag(DEBUG_KEY, false);
+
+  // Which sheet covers the screen, if any. §10.5 stops playback while one is open, which is what
+  // makes covering the plate legitimate rather than an exception to principle 4 — and the same state
+  // suspends §9.1's bindings, because `Esc` belongs to the dialog while a dialog is up.
+  const [openSheet, setOpenSheet] = useState<'settings' | 'help' | null>(null);
+
+  const showSheet = useCallback(
+    (sheet: 'settings' | 'help') => {
+      transport.pause();
+      setOpenSheet(sheet);
+    },
+    [transport],
+  );
+
+  const dismissSheet = useCallback(() => setOpenSheet(null), []);
 
   const toggleSelected = useCallback((slot: PlayerSlot) => {
     setSelectedSlot((current) => (current === slot ? null : slot));
@@ -97,16 +114,21 @@ export function MatchReview({ demo, cache, onClose }: Props) {
     [demo, transport],
   );
 
-  // DESIGN.md §9's accessibility floor: the match is operable without a pointer. The rest of §9.1 —
-  // the held-arrow rate, the row-number keys, `F`, `M` and zoom — is its own step.
-  useShortcuts({
-    ' ': transport.toggle,
-    ',': () => transport.step(-1),
-    '.': () => transport.step(1),
-    '[': () => jumpRounds(-1),
-    ']': () => jumpRounds(1),
-    Escape: () => setSelectedSlot(null),
-  });
+  // DESIGN.md §9's accessibility floor: the match is operable without a pointer. Which key reaches
+  // which action is `core/shortcuts`' table, so the help sheet lists exactly what is bound here. The
+  // rest of §9.1 — the held-arrow rate, the row-number keys, `F`, `M` and zoom — is its own step.
+  useShortcuts(
+    {
+      playPause: transport.toggle,
+      stepBack: () => transport.step(-1),
+      stepForward: () => transport.step(1),
+      previousRound: () => jumpRounds(-1),
+      nextRound: () => jumpRounds(1),
+      clearSelection: () => setSelectedSlot(null),
+      help: () => showSheet('help'),
+    },
+    { isSuspended: openSheet !== null },
+  );
 
   const teamCards = (
     <>
@@ -148,13 +170,8 @@ export function MatchReview({ demo, cache, onClose }: Props) {
         <CornerCluster
           isFullscreen={fullscreen.isFullscreen}
           onFullscreenToggle={fullscreen.toggle}
-          isAudibilityShown={isAudibilityShown}
-          onAudibilityToggle={toggleAudibility}
-          isScoreboardOnPlate={isScoreboardOnPlate}
-          onScoreboardPositionToggle={toggleScoreboardPosition}
-          isDebugShown={isDebugShown}
-          onDebugToggle={toggleDebug}
-          onClose={onClose}
+          onSettingsOpen={() => showSheet('settings')}
+          onHelpOpen={() => showSheet('help')}
         />
       </div>
 
@@ -196,6 +213,23 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           hasScoreboard={!isScoreboardOnPlate}
         />
       </div>
+
+      {/* Both sheets live in the top layer, so where they sit in this grid decides nothing about where
+          they paint — they are last because that is the reading order a reader who never opens one
+          gets from the DOM. */}
+      <SettingsSheet
+        isOpen={openSheet === 'settings'}
+        onDismiss={dismissSheet}
+        isAudibilityShown={isAudibilityShown}
+        onAudibilityToggle={toggleAudibility}
+        isScoreboardOnPlate={isScoreboardOnPlate}
+        onScoreboardPositionToggle={toggleScoreboardPosition}
+        isDebugShown={isDebugShown}
+        onDebugToggle={toggleDebug}
+        onCloseDemo={onClose}
+      />
+
+      <HelpSheet isOpen={openSheet === 'help'} onDismiss={dismissSheet} />
     </div>
   );
 }

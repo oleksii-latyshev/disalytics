@@ -11,6 +11,7 @@ const resources = {
   filters: { blindDuration: { label: 'Blind duration', hint: 'Seconds' } },
   radar: {},
   settings: {},
+  help: {},
   errors: {},
 } satisfies LocaleResources;
 

@@ -3,6 +3,7 @@ import common from './common.json';
 import controls from './controls.json';
 import errors from './errors.json';
 import filters from './filters.json';
+import help from './help.json';
 import library from './library.json';
 import radar from './radar.json';
 import review from './review.json';
@@ -19,4 +20,5 @@ export default {
   radar,
   settings,
   errors,
+  help,
 } satisfies LocaleResources;

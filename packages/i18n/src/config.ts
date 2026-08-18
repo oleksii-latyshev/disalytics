@@ -15,6 +15,7 @@ export type Namespace =
   | 'filters'
   | 'radar'
   | 'settings'
+  | 'help'
   | 'errors';
 
 export type MessageTree = { readonly [segment: string]: string | MessageTree };

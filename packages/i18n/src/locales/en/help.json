@@ -1,0 +1,25 @@
+{
+  "title": "Help",
+  "dismiss": "Close help",
+  "about": {
+    "title": "What this does",
+    "body": "disalytics reads a match demo and lets you review it: the players on the map, the round on the timeline, and every kill, grenade and buy in its place. Everything happens on this device — no demo is ever uploaded. A demo you have opened once opens again straight away, out of this device's own cache. The point is to compress a forty-minute match into a review of about ten."
+  },
+  "keyboard": {
+    "title": "Keyboard",
+    "note": "Keys do nothing while you are typing in a field, and the round timeline reads the arrow keys itself while it has focus."
+  },
+  "keys": {
+    "space": "Space",
+    "escape": "Esc"
+  },
+  "shortcut": {
+    "playPause": "Play or pause",
+    "stepBack": "One frame back",
+    "stepForward": "One frame forward",
+    "previousRound": "Previous round",
+    "nextRound": "Next round",
+    "clearSelection": "Clear the selected player, or close this sheet",
+    "help": "Open this help"
+  }
+}

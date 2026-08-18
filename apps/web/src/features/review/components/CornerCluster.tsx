@@ -3,54 +3,33 @@ import { Button } from '@disa/ui';
 // Named imports rather than the per-icon deep paths DESIGN.md §11 asks for: `lucide-react` ships
 // ESM with `sideEffects: false` and no `exports` map, so the deep files carry no declarations and
 // the barrel tree-shakes to the icons named here. `bun run size` is what holds this to its word.
-import {
-  ArrowDownToLine,
-  ArrowUpToLine,
-  Bug,
-  CircleQuestionMark,
-  Ear,
-  Maximize,
-  Minimize,
-  Settings,
-  X,
-} from 'lucide-react';
+import { CircleQuestionMark, Maximize, Minimize, Settings } from 'lucide-react';
 
 interface Props {
   isFullscreen: boolean;
   onFullscreenToggle: () => void;
-  isAudibilityShown: boolean;
-  onAudibilityToggle: () => void;
-  isScoreboardOnPlate: boolean;
-  onScoreboardPositionToggle: () => void;
-  isDebugShown: boolean;
-  onDebugToggle: () => void;
-  onClose: () => void;
+  onSettingsOpen: () => void;
+  onHelpOpen: () => void;
 }
 
 /**
- * The corner cluster — DESIGN.md §5.4. It sits at `--ink-faint` and rises to `--ink` on hover or
- * focus, and the whole strip lifts when the pointer enters the stage's top-right quadrant (§9.3).
- * The hot corner is an **accelerator only**: every button here is reachable by `Tab` from anywhere,
- * because a control that needs a pointer to appear has no keyboard at all.
+ * The corner cluster — DESIGN.md §5.4: **fullscreen, settings, help**, and nothing else. It sits at
+ * `--ink-faint` and rises to `--ink` on hover or focus, and the whole strip lifts when the pointer
+ * enters the stage's top-right quadrant (§9.3). The hot corner is an **accelerator only**: every
+ * button here is reachable by `Tab` from anywhere, because a control that needs a pointer to appear
+ * has no keyboard at all.
  *
- * §5.4 names three buttons and this carries seven. Deleting the top bar deleted the only route out
- * of a demo and the only audibility toggle, §10.5's scoreboard position joined them when the brow
- * became the default, and the debug overlay came here because §6.3 bars it from the stage and the
- * sheet that owns it does not exist. **All four extras leave when the settings sheet arrives** —
- * §5.4 permits a control to bridge here only while §10.5's table already names it, which is true of
- * every one of them. Settings and help are disabled for the same reason: they have nowhere to go
- * yet, and a control that looks live and answers nothing is worse than one that says so.
+ * It carried seven for four PRs (#147, #196, #199), because deleting the top bar deleted the only
+ * route out of a demo and the only audibility toggle, and §10.5's settings sheet did not exist to
+ * take them. #151 is the other half of that trade: the three settings moved into the sheet, leaving
+ * a demo moved to the sheet's foot — §5.4 admits a control here only while §10.5's table names it,
+ * and leaving a match is not a setting — and no button on this strip is `disabled` any more.
  */
 export function CornerCluster({
   isFullscreen,
   onFullscreenToggle,
-  isAudibilityShown,
-  onAudibilityToggle,
-  isScoreboardOnPlate,
-  onScoreboardPositionToggle,
-  isDebugShown,
-  onDebugToggle,
-  onClose,
+  onSettingsOpen,
+  onHelpOpen,
 }: Props) {
   const t = useT();
 
@@ -66,73 +45,24 @@ export function CornerCluster({
         {isFullscreen ? <Minimize aria-hidden="true" /> : <Maximize aria-hidden="true" />}
       </Button>
 
-      {/* A toggle rather than a pair of states: the plate under it says which way it is set, and
-          the pressed fill is `--selected`, which is §2.6's "interaction is luminance, not hue". */}
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        aria-pressed={isAudibilityShown}
-        aria-label={t(isAudibilityShown ? 'radar.audibility.hide' : 'radar.audibility.show')}
-        onClick={onAudibilityToggle}
-        className="aria-pressed:bg-selected aria-pressed:text-ink"
+        aria-label={t('review.settings')}
+        onClick={onSettingsOpen}
       >
-        <Ear aria-hidden="true" />
-      </Button>
-
-      {/* The icon is the move rather than the state: pressed means the score is over the plate, and
-          the arrow points at where pressing would send it next. */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-pressed={isScoreboardOnPlate}
-        aria-label={t(
-          isScoreboardOnPlate
-            ? 'review.scoreboardPosition.toBlock'
-            : 'review.scoreboardPosition.toPlate',
-        )}
-        onClick={onScoreboardPositionToggle}
-        className="aria-pressed:bg-selected aria-pressed:text-ink"
-      >
-        {isScoreboardOnPlate ? (
-          <ArrowDownToLine aria-hidden="true" />
-        ) : (
-          <ArrowUpToLine aria-hidden="true" />
-        )}
-      </Button>
-
-      {/* §10.5's Developer row, bridging here until the sheet exists. It stays a named icon at
-          `--ink-faint` rather than a labelled button on the plate: the overlay is a development
-          affordance, and §6.3 gives it no place on the stage at all. */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-pressed={isDebugShown}
-        aria-label={t(isDebugShown ? 'radar.debug.hide' : 'radar.debug.show')}
-        onClick={onDebugToggle}
-        className="aria-pressed:bg-selected aria-pressed:text-ink"
-      >
-        <Bug aria-hidden="true" />
-      </Button>
-
-      <Button type="button" variant="ghost" size="icon" disabled aria-label={t('review.settings')}>
         <Settings aria-hidden="true" />
       </Button>
 
-      <Button type="button" variant="ghost" size="icon" disabled aria-label={t('review.help')}>
-        <CircleQuestionMark aria-hidden="true" />
-      </Button>
-
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={t('review.close')}
-        onClick={onClose}
+        aria-label={t('review.help')}
+        onClick={onHelpOpen}
       >
-        <X aria-hidden="true" />
+        <CircleQuestionMark aria-hidden="true" />
       </Button>
     </div>
   );
