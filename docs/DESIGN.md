@@ -281,8 +281,10 @@ without the basic block). A typeface is not a candidate for this product until t
   sizes are set tight and small sizes loose: `44 → -0.03em`, `28 → -0.02em`, `20 → -0.01em`,
   `16/14/13 → 0`, `12/11/10 → +0.01em`, uppercase labels `+0.06em`. Type that is not optically
   corrected is the difference between a screen that looks drawn and one that looks typed.
-- `44` exists and appears **once per screen** — the round number over the stage, the way a broadcast
-  captions a round. Two of them and the effect is gone.
+- `44` exists and appears **at most once per screen** — the parse screen's percentage (§10.3).
+  Two of them and the effect is gone. It was the review screen's round number until 18 August 2026, when
+  §5.2 dropped it as a second reading of §7.3's round strip; a screen with none is what this rule
+  permits, and a screen with two is what it forbids.
 - Line height 1.25 in dense rows, 1.5 in prose.
 - Labels are Roboto Condensed 11px, uppercase, `+0.06em`, `--ink-dim`. `.label-dense` carries type
   only and **no colour**; every caller names its own ink level (#110).
@@ -327,8 +329,8 @@ A component picks by **what it sits on**, never by taste: on the stage → `floa
 ┌────────────────────────────────────────────────────────────────────────────┐
 │ ← Open another demo                                        ┌─┬─┬─┐         │
 │ de_nuke                                                    │⛶│⚙│?│         │
-│ 14                                                         └─┴─┴─┘         │
-│ Live                                                                       │
+│                                                            └─┴─┴─┘         │
+│                                                                            │
 │                                                                            │
 │                              ┌───────────┐                 ┌─────────┐     │
 │                              │           │                 │ feed    │     │
@@ -387,9 +389,9 @@ uncovered. **Below 1080px** the two team cards merge into a single strip above t
 and the blur rule in §2.3 still holds because that strip is not over the plate either. The tool
 targets a laptop and up; the phone is the landing page's problem.
 
-### 5.2 Top-left — the scoreboard, the round readout and the way out
+### 5.2 The scoreboard, and the top-left corner
 
-Two pieces that used to be one card, and a route that used to be somewhere else entirely.
+A brow on the timeline block, and a corner that is two lines of type on the stage.
 
 **The scoreboard is a brow on the timeline block.** Revised 16 August 2026, on the owner's reading
 of the built screen; it was a chip centered over the plate until then. It rises from the centre of
@@ -435,32 +437,34 @@ else the reader operates. The preference is how that argument stops being one.
 The match ID, if the demo carries one, is a line of `--ink-dim` caption text below the row inside
 the chip. Most demos do not carry one; the chip does not grow a row for it when it is absent.
 
-**The round readout is the top-left corner, and it is not a card.** It was a small `--glass-panel`
-box until 18 August 2026; the way out of the match arriving above it made the corner two glass boxes
-of different widths stacked on each other, the owner read that as *«выглядит прям ужасно»*, and the
-answer was to take the glass off both rather than to shuffle them. **Type on the stage** is what the
-corner is now — no fill, no edge, no radius, nothing to line up with anything — and `--surface-0` is
-what is behind it, because §5.1 keeps the plate in its own cell and it never reaches this corner. It
-costs the plate nothing: measured at 1040×800 the plate is 449px against the 450 the two cards left,
-so the map name and the way out are paid for by the chrome that went.
+**The top-left corner is two lines, and it is not a card.** Rewritten twice on 18 August 2026, and
+both revisions took something away:
 
-Four lines on one left edge, reading downward:
-
-- the way out — a left arrow with its label beside it, `--ink-dim` at rest, `--ink` on hover or
+- **the way out** — a left arrow with its label beside it, `--ink-dim` at rest, `--ink` on hover or
   focus. Its hover padding is pulled back on the left so the arrow starts on the same edge as the
-  three lines under it
-- the map name — `de_anubis`, not "Anubis"; game vocabulary, never translated, never uppercased and
-  never prettified, which is exactly what `.label-dense` would do to it. Roboto Condensed 12,
+  line under it
+- **the map name** — `de_anubis`, not "Anubis"; game vocabulary, never translated, never uppercased
+  and never prettified, which is exactly what `.label-dense` would do to it. Roboto Condensed 12,
   `--ink-dim`
-- the round number at `44`, the screen's single one (§3). Pressing it opens the match overlay
-  full-height (§7.3)
-- the round phase ("Freeze time", "Live", "Post-round"), in the map name's own treatment on the
-  other side of the number, so the `44` is the only thing this corner says at a glance
 
-**The map moved here on 18 August 2026** because it is the one thing on the scoreboard's row that
-never changes. A brow re-reading a score and a clock every frame had a third reading in it that the
-reader had finished with by the first round, and what says which round this is is where what is
-fixed about a match belongs. The score and the clock stay the scoreboard's.
+**The glass went first.** It was a small `--glass-panel` box holding the round number until that
+morning; the way out arriving above it made the corner two glass boxes of different widths stacked
+on each other, the owner read that as *«выглядит прям ужасно»*, and the answer was to take the glass
+off both rather than to shuffle them. **Type on the stage** is what the corner is — no fill, no
+edge, no radius, nothing to line up with anything — and `--surface-0` is what is behind it, because
+§5.1 keeps the plate in its own cell and it never reaches here.
+
+**Then the round went.** The corner carried the round number at `44` and the phase under it, and
+§7.3's round strip runs the whole match along the bottom of the screen with the playing round lit —
+so the number restated the strip in the opposite corner, and the phase restated §7.1's own buy-phase
+region beside it. **What is already on screen twice is not a reading, it is noise**, and this corner
+keeps only what nothing else says. §3's one `44` per screen is spent on the parse screen now
+(§10.3); this screen has none, and that is not a rule broken but a rule with nothing left to
+claim it.
+
+Nothing in the corner is a function of the frame any more, which is the second thing the round took
+with it: the map name is fixed for the whole match, so the corner stopped re-rendering at the 10 Hz
+readout entirely.
 
 **The way out has moved three times since #147 deleted the top bar it started in**: into the corner
 cluster, which §5.4 had no seat for it in; to the foot of the settings sheet for one day (#151); and
@@ -470,11 +474,13 @@ screen**, in the corner where a reader looks for back. It carries its label rath
 alone, and that is not redundancy: an unlabelled back arrow over a match is the one icon a reader
 tests by pressing it, and pressing this one costs them their place.
 
-Below `--breakpoint-wide` the corner carries its own inset, and that is the one thing here the cards
+**The map moved here from the scoreboard** because it is the one thing on that row that never
+changes. A brow re-reading a score and a clock every frame had a third reading in it that the reader
+had finished with by the first round. The score and the clock stay the scoreboard's.
+
+Below `--breakpoint-wide` the corner carries its own inset, and that is the one thing here the card
 used to do for free: the stage has no padding at those widths and everything docks to the viewport
-edges, which a card survives on its own padding and bare type does not. Below `--breakpoint-split`
-the way out stands beside the three lines rather than above them, because row 1 spans the viewport
-there and every pixel of its height comes out of the plate's square.
+edges, which a card survives on its own padding and bare type does not.
 
 ### 5.3 Bottom-left and bottom-right — the team cards
 
@@ -852,9 +858,11 @@ path two adjacent rows. It also puts the scoreboard brow (§5.2), the round stri
 on one vertical line through the middle of the screen — the match, its rounds and the round, in that
 order, top to bottom.
 
-**The overlay keeps the chart.** Pressing the round number in the top-left corner (§5.2), or `M`,
-raises the match full-height over the stage — the kill marks, the round outcomes, **the density
-trace and the economy gap**, all at readable size and, unlike the ribbon, **with a legend**.
+**The overlay keeps the chart.** `M` opens it, and `M` is the whole way in: the round number in the
+top-left corner used to as well, and §5.2 removed that number on 18 August 2026 as a second reading
+of the round strip below. It raises the match full-height over the stage — the kill marks, the round
+outcomes, **the density trace and the economy gap**, all at readable size and, unlike the ribbon,
+**with a legend**.
 Everything #90, #91 and #92 built survives there; none of it is deleted. The reading that condemned
 them was about a 14px strip that is always on screen with nothing to explain it, and none of that is
 true of a full-height view the reader opened on purpose and is not scrubbing while reading. The
@@ -1342,8 +1350,9 @@ Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed, 
    and replaced the halftime-swap bug in the score (#141) with `sideScoreAtFrame` attributing by
    team. That PR is also the first caller of §2.3's one blur exception. **§5.2 changed again on 18
    August 2026 (#204)** — the brow gave up the map name and the two faces it never needed, the way
-   out of a match left the settings sheet for the top-left corner, and that corner stopped being
-   cards at all: the map, the round number and the phase are type on the stage now.
+   out of a match left the settings sheet for the top-left corner, and that corner stopped being a
+   card and then stopped carrying the round: the way out and the map name are two lines of type on
+   the stage, and §7.3's strip is the only place the round is stated.
 6. **The plate** — §6's token, utility and world states in `features/radar`. The per-frame rules
    live in `packages/demo-core` and are unit-tested there rather than eyeballed on a plate (#112).
    §6.1 token states landed in #154 and §6.2 (utility) in #168 and #175; §6.3 (world) is next.

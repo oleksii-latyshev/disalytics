@@ -2,14 +2,7 @@
   "map": "Карта",
   "score": "Счёт",
   "scoreboard": "Счёт матча",
-  "roundOfTotal": "Раунд {current, number} из {total, number}",
   "roundClock": "Время раунда",
-  "phase": {
-    "freeze": "Закупка",
-    "live": "Идёт раунд",
-    "post": "Раунд окончен"
-  },
-  "warmup": "Разминка",
   "close": "Открыть другое демо",
   "settings": "Настройки",
   "help": "Помощь",

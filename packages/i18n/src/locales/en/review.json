@@ -2,14 +2,7 @@
   "map": "Map",
   "score": "Score",
   "scoreboard": "Match score",
-  "roundOfTotal": "Round {current, number} of {total, number}",
   "roundClock": "Time in round",
-  "phase": {
-    "freeze": "Freeze time",
-    "live": "Live",
-    "post": "Post-round"
-  },
-  "warmup": "Warm-up",
   "close": "Open another demo",
   "settings": "Settings",
   "help": "Help",
