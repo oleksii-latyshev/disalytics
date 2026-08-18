@@ -219,19 +219,21 @@ for a moment and quietly wrong for the rest of the round. A `weapon` sample poin
 draws an empty glyph — not a distinct mark, not a placeholder.
 
 **#140 landed §15's fourth step — the catalog names what it holds.** `CatalogEntry` gained a `meta`
-block (file name, map, score, round count, stored-at) and the way in lists it: five rows on the card,
-the rest behind a disclosure, each opening from the cache with no file and each removable on the
-spot. Four things are load-bearing. **The metadata is written at store time only** — the eviction
-contract in `catalog.ts` says a read never writes recency, so `withUse` moves it and carries the
-existing `meta` across rather than replacing the entry — while a read that finds *no file* now drops
-that entry, because the alternative is a row that can never open. **An entry without `meta` still
-parses**: `parseCatalog` normalises rather than filters, so a catalog written before this change
-loses names, never entries. **The score is by team** — `matchScore` in `packages/demo-core`, because
-`Round.winner` is a side and sides swap; `sideScoreAtFrame`, which `features/review`'s `RoundCard`
-still reads, has the bug this avoids and #141 owns it. And **`ParseState.failed` carries an
-`OpenFailure` rather than an `ErrorCode`**: a saved demo that has gone is not a parser error and
-has no code in the
-vocabulary `bun run errors:check` guards. `SCHEMA_VERSION` did not move — `ParsedDemo` is untouched.
+block (file name, map, score, round count, stored-at) and the way in lists it: five rows on the
+card, the rest behind a disclosure, each opening from the cache with no file and each removable on
+the spot. Four things are load-bearing. **The metadata is written at store time only** — the
+eviction contract in `catalog.ts` says a read never writes recency, so `withUse` moves it and
+carries the existing `meta` across rather than replacing the entry — while a read that finds *no
+file* now drops that entry, because the alternative is a row that can never open. **An entry without
+`meta` still parses**: `parseCatalog` normalises rather than filters, so a catalog written before
+this change loses names, never entries. **The score is by team** — `matchScore` in
+`packages/demo-core`, because `Round.winner` is a side and sides swap. `sideScoreAtFrame` sits
+beside it in `packages/demo-core/src/helpers/score.ts` and carried the bug this avoids until #171
+closed #141; both walk the rounds tracking which slots opened on CT, so a side score belongs to
+whoever is playing that side now and a match score names its teams by the side they started on. And
+**`ParseState.failed` carries an `OpenFailure` rather than an `ErrorCode`**: a saved demo that has
+gone is not a parser error and has no code in the vocabulary `bun run errors:check` guards.
+`SCHEMA_VERSION` did not move — `ParsedDemo` is untouched.
 
 **#147 landed §15's fifth step — the review screen is a stage with four cards.** The top bar, both
 rails, the inspector column and its drawer are gone; `features/inspector` no longer exists. What
@@ -242,18 +244,19 @@ predicted 660 — and no card overlaps it at 1440, 1280, 1100 or 1040. `--breakp
 `--breakpoint-split` is 1080; below the split the two team cards merge into one strip whose five
 seats run **across** it, because a stacked card there left the plate 100px tall. Five things are
 load-bearing. **The team rows are the first readers of `SCHEMA_VERSION` 4** — armour, weapon,
-grenades and money — and everything on them arrives at the 10 Hz readout, never on the frame channel.
-**A bar scales, it does not resize**: `transform: scaleX()`, because `width` triggers layout at every
-moment. **`playerRoundStats` is computed for the selected row only** and starts from a binary search;
-walking a match's damage for four rows nobody expanded was the cost this avoids. **The `C4 Explosive`
-entry draws nothing** — §6.4 as #137 restated it, verified over a play-through where the label never
-once appeared. And **the corner cluster carries five icons where §5.4 names three**: close and
-audibility are a bridge until the settings sheet exists, and they leave with it. The spine became a
-14px `MatchRibbon` whose bands seek and whose density trace is `--ink-dim` at α0.30 rather than
-`--damage` at 0.55, which is what #116 asked for; kill marks moved up to `RoundTimeline`, where they
-fit. **That ribbon is gone since #184** — read the two paragraphs at the end of this section for what
-the bottom of the screen is now. `AGENTS.md` §16's two frame budgets are **measured** rather than
-asserted for the first time.
+grenades and money — and everything on them arrives at the 10 Hz readout, never on the frame
+channel. **A bar scales, it does not resize**: `transform: scaleX()`, because `width` triggers
+layout at every moment. **`playerRoundStats` is computed for the selected row only** and starts from
+a binary search; walking a match's damage for four rows nobody expanded was the cost this avoids.
+**The `C4 Explosive` entry draws nothing** — §6.4 as #137 restated it, verified over a play-through
+where the label never once appeared. And **the corner cluster carried five icons where §5.4 names
+three**: close and audibility were a bridge until the settings sheet existed. It reached seven
+before #203 built that sheet and took it back to three. The spine became a 14px `MatchRibbon` whose
+bands seek and whose density trace is `--ink-dim` at α0.30 rather than `--damage` at 0.55, which is
+what #116 asked for; kill marks moved up to `RoundTimeline`, where they fit. **That ribbon is gone
+since #184** — read the two paragraphs at the end of this section for what the bottom of the screen
+is now. `AGENTS.md` §16's two frame budgets are **measured** rather than asserted for the first
+time.
 
 **#154 opened §15's sixth step — the plate — with §6.1's token.** One filled circle for both sides,
 a selection ring, a blind countdown disc sweeping over the `Blind` event's own `durationSeconds`, a
@@ -328,15 +331,102 @@ load-bearing. **The survivor rule lives in `demo-core`** — `roundSurvivors` co
 out of `Round.economy[].team` and takes off the deaths inside `[startTick, endTick]`, so a slot with
 `team: null` is on neither side and a four-man side reads a maximum of four; that is the correct
 answer, not an off-by-one. **`matchScore` gained a round bound** rather than a sibling, because the
-hover wants the score *after* round N and `sideScoreAtFrame` counts `Round.winner` by side, which is
-the bug #141 owns. **`RoundOutcomes` is the list itself** rather than an `sr-only` enumeration beside
-a canvas — a cell is an element, so each one carries the whole reading as its accessible name, and
-the tooltip is `aria-hidden` because it restates what is already there. And **`helpers/density.ts`,
-`helpers/economy.ts`, `helpers/layers.ts` and `EconomyGaps.tsx` are unreferenced on purpose**: §7.3
-moves them behind the unbuilt match overlay, `layers.ts` carries a comment saying so, and deleting
-them as dead code is the mistake to avoid. The same PR took the axis glyphs from 12px to 24px at the
-owner's request — `GlyphSize` in `core/glyphs` is the two sizes, and `GLYPH_PITCH_PX` moved 14 → 24
-with them, because the collapse threshold is one glyph's width.
+hover wants the score *after* round N; `sideScoreAtFrame` still counted `Round.winner` by side on
+the day this landed, which is the bug #141 owned and #171 fixed an hour later. **`RoundOutcomes` is
+the list itself** rather than an `sr-only` enumeration beside a canvas — a cell is an element, so
+each one carries the whole reading as its accessible name, and the tooltip is `aria-hidden` because
+it restates what is already there. And **`helpers/density.ts`, `helpers/economy.ts`,
+`helpers/layers.ts` and `EconomyGaps.tsx` are unreferenced on purpose**: §7.3 moves them behind the
+unbuilt match overlay, `layers.ts` carries a comment saying so, and deleting them as dead code is
+the mistake to avoid. The same PR took the axis glyphs from 12px to 24px at the owner's request —
+`GlyphSize` in `core/glyphs` is the two sizes, and `GLYPH_PITCH_PX` moved 14 → 24 with them, because
+the collapse threshold is one glyph's width. **Neither the name nor the position survived the
+week**: #194 made it `RoundStrip` on the block's *top* row, in separated pills, and nothing on
+the block is flush to its bottom edge any more.
+
+**#171 split the old top-left card in two, as PR #187, and closed #141 on the way.** The scoreboard
+became a glass chip centered over the plate — map, score, clock — and the round card kept the number
+and the phase and nothing else. Three things came with it. **`roundClockAtFrame` replaced
+`roundElapsedSeconds`** and returns a phase as well as a number: freeze counts down, live counts up,
+post-round holds. **`sideScoreAtFrame` stopped counting `Round.winner` by side** — the halftime bug
+— and now tracks which slots opened on CT, which is what #141 was. And **`--backdrop-hud` is the one
+`backdrop-filter` in the product over a ground that repaints every frame**; it is 12px against the
+panel's 24 for that reason, and it is an exception granted by name in `docs/DESIGN.md` §5.1 rather
+than a third blur token to reach for. That chip is the reader's *other* scoreboard position since
+#197, and the default spends neither the blur nor the overlap.
+
+**#190 rewrote `docs/DESIGN.md` §7.3 and moved §5.2's scoreboard, and #193 corrected it before the
+code arrived.** The round strip became separated pills — a 4px gap, no hairlines, no tint, the round
+number as the only text, the winner as a 2px bar on the bottom edge, survivor counts behind a
+disclosure — and the halves and overtimes became a gap and a dotted rule derived from the rounds
+themselves. #193 is the pattern to copy rather than the exception: building §7.3 found a **24px
+control §4 does not allow** and a predicted pill-row width the layout does not produce, and §15 says
+the document changes first, by its own issue, so both were fixed in the document before the branch
+that implements it merged.
+
+**#194 built that strip.** `packages/demo-core` gained **`matchSegments`**, and it is the
+load-bearing part: a boundary falls wherever the majority of the slots both rounds recorded a side
+for have swapped, read from `Round.economy[].team`. **Nothing in the product knows what MR12 is** —
+MR12, MR15, a match called at 13–3 and three overtimes all come out of that one comparison, and a
+tie is not a swap because a two-slot comparison that splits is a substitution rather than a half
+ending. `RoundList` is `RoundStrip` and `round-list.ts` is `round-strip.ts`; `RoundOutcomes` keeps
+its name, which §7.3 gives it. The expanded survivor tracks are `localStorage`, off by default, and
+the disclosure on the strip is their only control — no bridge in the corner cluster.
+
+**#197 raised the scoreboard as a brow on the timeline block, and that is the default position
+now.** It is a tab of that card — `--glass-panel`, `--radius-card` above, square where the two meet,
+and **no `backdrop-filter` at all**, because it is over the stage rather than over the plate. Two
+things are load-bearing. **The join is line-free by construction**: `.glass-panel.has-brow` drops
+the block's lit top rim, `.glass-brow` draws hair on three sides only, and the brow paints above the
+block's outer hair — a 0.62-alpha lip cannot hide a line drawn beneath it, so removing the rim and
+covering the hair are both needed. And **the brow is in flow**, so §5.1's plate re-measures from a
+124px block instead of being covered: 716×716 at 1440×900 against the chip's 748. `AGENTS.md` §16's
+two frame budgets were re-measured here for the first time since #147 — 0 frames over 16.7 ms out of
+399, three runs each.
+
+**#199 took the debug control off the plate, and the lesson is the sweep rather than the button.**
+"Show coordinates" had been pinned inside the plate's cell in every build since #147 and survived
+#197's overlap check because **that check walked the glass classes**; the sweep that found it walks
+`document.querySelectorAll('*')`, and that is the only form of it worth running. Two smaller things
+came out of measuring the fix and are easy to undo: the strip over the plate's top edge takes **no
+pointer events**, so the canvas is the hit target §9.2's readout needs there, and its inset is
+**margin rather than padding**, so with both children silent it is a zero-height box instead of 32px
+of nothing over the plate.
+
+**#200 rewrote `docs/DESIGN.md` §10 around a sidebar shell and a library of cards.** §10.1 is a
+persistent 17.5rem rail — the same measure as a team card, so the product has one — that **never
+appears on the review screen**, with §5.1 as the stated reason: the plate is sized from the
+viewport, so a rail is a subtraction from the plate's own axis. §10.2 is a grid of cards over the
+five rows #140 shipped, with no team names because `MatchHeader` carries none. The correction that
+matters outside §10: **§0's `ogl` row no longer reads as a licence to install it.** It is approved
+and deliberately unspent — the two WebGL backgrounds it was approved to buy are deferred in favour
+of the dimmed radar image `PlateBackdrop` already ships — and a stale row like that is how a
+dependency gets installed by a session doing what the document told it to.
+
+**#203 built §10.5's settings sheet and §10.6's help sheet, and took the corner cluster back to
+three.** `@disa/ui` gained `Sheet` and `Switch`: the sheet is a native `<dialog>` opened with
+`showModal()`, so the top layer, the focus trap and the `Esc` close request are the platform's.
+Three things are load-bearing. **`core/shortcuts` suspends itself while a sheet is open** — a global
+handler calling `preventDefault()` on `Escape` cancels the dialog's own close request and locks the
+reader in, so `useShortcuts` takes `{ isSuspended }` and that option is not tidiness. **The keyboard
+table in help is generated from `SHORTCUT_BINDINGS`**, which is why `useShortcuts` now takes actions
+by name rather than key handlers — one source, the same argument §7.3 made for `RoundOutcomes`. And
+**`Switch` keeps its knob in a sibling `<span>` with `peer-checked:`** rather than an `::after` on
+the checkbox: pseudo-elements on a replaced element only paint after `appearance: none` and not in
+every engine.
+
+**#205 quieted the brow and emptied the top-left corner.** The brow carried three typefaces in a
+32px lip — Roboto Condensed on the map name and the side letters, Plex Mono on the digits, and the
+UI face on the colon nothing had set a face on — and it is one face and two readings now: the score,
+with each side's letters in that side's colour so `CT 9` is one token, and the clock behind a 1px
+rule. The corner lost its glass and then lost the round: it is the way out of the match and the map
+name, two lines of type on `--surface-0`, and **nothing in it is a function of the frame**, so it
+stopped re-rendering at the 10 Hz readout. The round number and the phase went because §7.3's strip
+already states the round along the bottom of the screen and §7.1's axis already draws the buy phase
+— **what is on screen twice is not a reading**. Two consequences to know: leaving the demo is no
+longer in the settings sheet (it spent one day there, #203 → #205, and the sheet has no footer at
+all), and **the review screen spends no `44`** — §3's one-per-screen rule is the parse screen's now,
+and `review.phase.*`, `review.warmup` and `review.roundOfTotal` are deleted in both locales.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
