@@ -19,6 +19,5 @@
   "debug": {
     "label": "Debug overlay",
     "note": "Map, frame, drawn level, and the world coordinate under the pointer. Built for working on the tool rather than on a match."
-  },
-  "closeNote": "The match stays on this device. Closing it returns to your demos, and nothing is deleted."
+  }
 }

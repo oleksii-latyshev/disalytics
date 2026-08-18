@@ -16,7 +16,8 @@ import { useFullscreen, useStoredFlag } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { CornerCluster } from './CornerCluster';
 import { HelpSheet } from './HelpSheet';
-import { RoundCard } from './RoundCard';
+import { LeaveMatch } from './LeaveMatch';
+import { MatchIdentity } from './MatchIdentity';
 import { Scoreboard } from './Scoreboard';
 import { SettingsSheet } from './SettingsSheet';
 import { TeamCard } from './TeamCard';
@@ -162,8 +163,15 @@ export function MatchReview({ demo, cache, onClose }: Props) {
 
   return (
     <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
-      <div className="justify-self-start [grid-area:1/1/2/2]">
-        <RoundCard demo={demo} frame={frame} roundIndex={roundIndex} cache={cache} />
+      {/* The inset is this corner's own below `wide`, where the stage has none and the cards dock to
+          the viewport edges: a docked card still holds its content off the edge with its own
+          padding, and type with no card behind it would sit on the glass of the window. It has no
+          bottom half — the grid's own `gap-3` is already under this row, and a second 12px there
+          comes out of the plate's square. */}
+      <div className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]">
+        <LeaveMatch onClose={onClose} />
+
+        <MatchIdentity demo={demo} cache={cache} />
       </div>
 
       <div className="justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/2/4]">
@@ -226,7 +234,6 @@ export function MatchReview({ demo, cache, onClose }: Props) {
         onScoreboardPositionToggle={toggleScoreboardPosition}
         isDebugShown={isDebugShown}
         onDebugToggle={toggleDebug}
-        onCloseDemo={onClose}
       />
 
       <HelpSheet isOpen={openSheet === 'help'} onDismiss={dismissSheet} />
