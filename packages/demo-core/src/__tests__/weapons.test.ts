@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { isUtilityKind, utilityHeld, utilityKindOfGrenade, weaponClass } from '../helpers/weapons';
+import {
+  isUtilityKind,
+  killWeaponClass,
+  utilityHeld,
+  utilityKindOfGrenade,
+  weaponClass,
+} from '../helpers/weapons';
 import {
   GRENADE_DECOY,
   GRENADE_DEFUSE_KIT,
@@ -65,6 +71,61 @@ describe('weaponClass', () => {
   it('falls back rather than failing on a weapon nobody enumerated', () => {
     expect(weaponClass('Portal Gun')).toBe('unknown');
     expect(weaponClass('')).toBe('unknown');
+  });
+});
+
+describe('killWeaponClass', () => {
+  it('reads the internal vocabulary the fixture demo actually carried', () => {
+    // Every weapon string the golden snapshot holds on a `weapon` field, which is the only evidence
+    // this table has for what `Kill.weapon` looks like.
+    expect(killWeaponClass('ak47')).toBe('rifle');
+    expect(killWeaponClass('m4a1')).toBe('rifle');
+    expect(killWeaponClass('m4a1_silencer')).toBe('rifle');
+    expect(killWeaponClass('awp')).toBe('sniper');
+    expect(killWeaponClass('inferno')).toBe('fire');
+  });
+
+  it('is a different vocabulary from `weaponClass`, and neither answers the other', () => {
+    expect(weaponClass('ak47')).toBe('unknown');
+    expect(killWeaponClass('AK-47')).toBe('unknown');
+  });
+
+  it('reads a knife through its skin, which is what the field carries', () => {
+    expect(killWeaponClass('knife')).toBe('knife');
+    expect(killWeaponClass('knife_butterfly')).toBe('knife');
+    expect(killWeaponClass('knife_cord')).toBe('knife');
+    expect(killWeaponClass('knife_m9_bayonet')).toBe('knife');
+    expect(killWeaponClass('bayonet')).toBe('knife');
+  });
+
+  it('reads a knife skin nobody enumerated, because Valve keeps adding them', () => {
+    expect(killWeaponClass('knife_kukri')).toBe('knife');
+  });
+
+  it('answers `fire` for a molotov, an incendiary and the area they leave', () => {
+    expect(killWeaponClass('molotov')).toBe('fire');
+    expect(killWeaponClass('incgrenade')).toBe('fire');
+    expect(killWeaponClass('inferno')).toBe('fire');
+  });
+
+  it('resolves thrown utility to its own kind', () => {
+    expect(killWeaponClass('hegrenade')).toBe('he');
+    expect(killWeaponClass('flashbang')).toBe('flash');
+    expect(killWeaponClass('smokegrenade')).toBe('smoke');
+    expect(killWeaponClass('decoy')).toBe('decoy');
+  });
+
+  it('gives the bomb its own class, which is what the rendering rule matches on', () => {
+    expect(killWeaponClass('c4')).toBe('bomb');
+  });
+
+  it('answers `unknown` for a kill the world dealt', () => {
+    expect(killWeaponClass('world')).toBe('unknown');
+    expect(killWeaponClass('')).toBe('unknown');
+  });
+
+  it('falls back rather than failing on a weapon nobody enumerated', () => {
+    expect(killWeaponClass('portalgun')).toBe('unknown');
   });
 });
 

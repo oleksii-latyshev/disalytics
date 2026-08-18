@@ -61,6 +61,7 @@ export {
 export type { UtilityHeld, UtilityKind, WeaponClass } from './helpers/weapons';
 export {
   isUtilityKind,
+  killWeaponClass,
   UTILITY_NAMES,
   utilityHeld,
   utilityKindOfGrenade,

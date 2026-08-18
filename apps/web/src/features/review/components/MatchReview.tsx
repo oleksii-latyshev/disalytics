@@ -15,6 +15,7 @@ import { MatchRadar } from '@/features/radar';
 import { useFullscreen, useStoredFlag } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { CornerCluster } from './CornerCluster';
+import { EventFeed } from './EventFeed';
 import { HelpSheet } from './HelpSheet';
 import { LeaveMatch } from './LeaveMatch';
 import { MatchIdentity } from './MatchIdentity';
@@ -174,13 +175,33 @@ export function MatchReview({ demo, cache, onClose }: Props) {
         <MatchIdentity demo={demo} cache={cache} />
       </div>
 
-      <div className="justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/2/4]">
+      {/* The cluster and, under it, §5.4's feed. Above the split this spans rows 1 and 2 of the
+          right-hand column — the one cell on the stage that neither a card nor the plate is in — so
+          the feed costs the plate nothing but the column width the team card under it already
+          claims. Every row inside is `min-w-0` and truncates for that reason: the column is
+          `minmax(min-content, 17.5rem)`, so a long enough name would otherwise widen it and take
+          the difference out of the plate's square.
+
+          Below the split there is no such cell. Row 1 is shared with the top-left corner and row 2
+          *is* the plate, so a feed there would be §5.1's one rule broken; it is not drawn at those
+          widths rather than drawn somewhere it does not belong. */}
+      <div className="flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4]">
         <CornerCluster
           isFullscreen={fullscreen.isFullscreen}
           onFullscreenToggle={fullscreen.toggle}
           onSettingsOpen={() => showSheet('settings')}
           onHelpOpen={() => showSheet('help')}
         />
+
+        <div className="hidden min-w-0 self-stretch split:block">
+          <EventFeed
+            demo={demo}
+            transport={transport}
+            frame={frame}
+            roundIndex={roundIndex}
+            players={demo.header.players}
+          />
+        </div>
       </div>
 
       {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every

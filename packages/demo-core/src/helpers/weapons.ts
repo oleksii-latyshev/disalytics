@@ -101,6 +101,84 @@ export function weaponClass(weapon: WeaponId): WeaponClass {
   return CLASS_BY_NAME[weapon] ?? 'unknown';
 }
 
+// Upstream's *internal* vocabulary, which is what `Kill.weapon` and `Damage.weapon` carry —
+// `ak47`, `m4a1_silencer`, `inferno` — and a different vocabulary from the display names
+// `MatchHeader.weapons` holds (docs/PARSER.md §17). The two tables are both here, side by side and
+// separately named, rather than merged into one lookup that would answer either: #53 is what
+// unifies them, and a merged table would hide the split it exists to close.
+const CLASS_BY_INTERNAL_NAME: Readonly<Record<string, WeaponClass>> = {
+  cz75a: 'pistol',
+  deagle: 'pistol',
+  elite: 'pistol',
+  fiveseven: 'pistol',
+  glock: 'pistol',
+  hkp2000: 'pistol',
+  p250: 'pistol',
+  revolver: 'pistol',
+  tec9: 'pistol',
+  usp_silencer: 'pistol',
+
+  bizon: 'smg',
+  mac10: 'smg',
+  mp5sd: 'smg',
+  mp7: 'smg',
+  mp9: 'smg',
+  p90: 'smg',
+  ump45: 'smg',
+
+  ak47: 'rifle',
+  aug: 'rifle',
+  famas: 'rifle',
+  galilar: 'rifle',
+  m4a1: 'rifle',
+  m4a1_silencer: 'rifle',
+  sg556: 'rifle',
+
+  awp: 'sniper',
+  g3sg1: 'sniper',
+  scar20: 'sniper',
+  ssg08: 'sniper',
+
+  mag7: 'shotgun',
+  nova: 'shotgun',
+  sawedoff: 'shotgun',
+  xm1014: 'shotgun',
+
+  m249: 'machinegun',
+  negev: 'machinegun',
+
+  taser: 'zeus',
+  c4: 'bomb',
+
+  decoy: 'decoy',
+  flashbang: 'flash',
+  hegrenade: 'he',
+  // The burning area rather than the thrown grenade: a molotov kills as `inferno`, and both the
+  // molotov and the incendiary answer `fire` for the reason `weaponClass` gives them one class.
+  inferno: 'fire',
+  incgrenade: 'fire',
+  molotov: 'fire',
+  smokegrenade: 'smoke',
+};
+
+/**
+ * What a kill or a damage event was dealt with. A **separate vocabulary** from `weaponClass`, which
+ * reads the display names on `MatchHeader.weapons`; calling that one with `ak47` answers `unknown`
+ * for every kill in the match, which is the trap this function exists to close.
+ *
+ * Knives are matched by prefix rather than enumerated. The field carries the skin — the fixture
+ * alone holds `knife_butterfly`, `knife_cord` and `knife_m9_bayonet` — and Valve adds them faster
+ * than a table can be maintained, so a knife nobody here has heard of still reads as a knife.
+ *
+ * A kill by the world (`world`, or the empty string) has no weapon and answers `unknown`, the same
+ * as a weapon this table has never seen. Both are drawn as an absence rather than as a placeholder.
+ */
+export function killWeaponClass(weapon: WeaponId): WeaponClass {
+  if (weapon.startsWith('knife') || weapon === 'bayonet') return 'knife';
+
+  return CLASS_BY_INTERNAL_NAME[weapon] ?? 'unknown';
+}
+
 /**
  * What a thrown grenade is, as one of the kinds a glyph exists for. Molotov and incendiary answer
  * the same `fire` for the reason `weaponClass` gives them one class, and the switch is exhaustive
