@@ -12,7 +12,6 @@ interface Props {
   onScoreboardPositionToggle: () => void;
   isDebugShown: boolean;
   onDebugToggle: () => void;
-  onCloseDemo: () => void;
 }
 
 interface RowProps {
@@ -60,12 +59,13 @@ function Group({ titlePath, children }: { titlePath: TranslationKey; children: R
  * (#147, #196, #199) and nothing else — the rest of §10.5's table is §15's step 9. The cluster is
  * three named buttons again, which is what #151 was for.
  *
- * Two things here are the document's rather than this component's. **Playback is stopped while the
- * sheet is open** — `MatchReview` pauses on the way in, which is what makes covering the plate
- * legitimate under principle 4 rather than an exception to it. And **leaving the demo lives at the
- * foot of this sheet**: §5.4 admits a control to the cluster only while §10.5's table names it, and
- * leaving a match is not a setting, so it has no seat there. It is an action set apart from the rows
- * rather than a row pretending to be one.
+ * **Playback is stopped while the sheet is open** — `MatchReview` pauses on the way in, which is
+ * what makes covering the plate legitimate under principle 4 rather than an exception to it.
+ *
+ * The sheet had a footer for one day: leaving the demo landed here on 17 August because the corner
+ * cluster had no seat for a control §10.5 does not name, and left again on 18 August because §10.5
+ * not naming it was the point. Settings are settings; a route out of the match is `LeaveMatch`, in
+ * the top-left corner where a reader looks for back.
  */
 export function SettingsSheet({
   isOpen,
@@ -76,7 +76,6 @@ export function SettingsSheet({
   onScoreboardPositionToggle,
   isDebugShown,
   onDebugToggle,
-  onCloseDemo,
 }: Props) {
   const t = useT();
 
@@ -156,16 +155,6 @@ export function SettingsSheet({
             }
           />
         </Group>
-
-        <footer className="flex flex-col gap-3 [border-block-start:1px_solid_var(--color-line)] pt-6">
-          <Button type="button" variant="outline" className="self-start" onClick={onCloseDemo}>
-            <Text path="review.close" />
-          </Button>
-
-          <span className="text-13 text-ink-dim leading-prose">
-            <Text path="settings.closeNote" />
-          </span>
-        </footer>
       </div>
     </Sheet>
   );

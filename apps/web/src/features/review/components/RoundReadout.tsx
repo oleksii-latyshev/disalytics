@@ -23,9 +23,21 @@ function phaseKey(phase: RoundPhase): TranslationKey {
 }
 
 /**
- * The round card — DESIGN.md §5.2 as #166 rewrote it: the round number and the phase it is in, and
- * nothing else. The map, the score and the clock moved to the scoreboard over the plate, which is
- * where a reader of any CS2 HUD looks for them.
+ * Where the match is — DESIGN.md §5.2: the map, the round number and the phase, stacked in the
+ * top-left corner and reading downward as *where, which, when*.
+ *
+ * **It is not a card, and that is the correction of 18 August 2026.** It was a `--glass-panel` box
+ * until then, and putting the way out of the match above it made the corner two glass boxes of
+ * different widths stacked on each other — which is what the owner read as *«выглядит прям
+ * ужасно»*, and the second box is what made it so rather than either box on its own. Type on the
+ * stage is what this corner is now: no fill, no edge, no radius, nothing to line up with anything.
+ * `--surface-0` is behind it — the plate is in its own grid cell (§5.1) and never reaches here — so
+ * there is no contrast case to answer and no blur to pay for.
+ *
+ * A map name is game vocabulary: `de_mirage` is the name, never translated, never uppercased and
+ * never prettified, which is exactly what `.label-dense` would do to it. The map and the phase share
+ * one treatment on either side of the number, so the `44` is the only thing this corner says at a
+ * glance.
  *
  * The round number is the screen's single `44` (§3), and it is **not** a button: §7.3 makes it the
  * way into the full-height match overlay, and that overlay is not built. A control that looks
@@ -33,16 +45,24 @@ function phaseKey(phase: RoundPhase): TranslationKey {
  *
  * The storage notice is not §5.2's, and it stays because nothing else on the screen says it. A
  * directory handle taken before the cache was cleared fails every write silently, and this line is
- * the only thing that has ever revealed it.
+ * the only thing that has ever revealed it. It is the one thing here that wraps, so it carries the
+ * column's own bound rather than inheriting a card's width.
  */
-export function RoundCard({ demo, frame, roundIndex, cache }: Props) {
+export function RoundReadout({ demo, frame, roundIndex, cache }: Props) {
   const { rounds } = demo.events;
   const round = roundIndex === undefined ? undefined : rounds.at(roundIndex);
   const clock = roundClockAtFrame(demo, frame);
   const notice = cacheNoticeKey(cache);
 
   return (
-    <section className="glass-panel flex min-w-24 flex-col items-center gap-0.5 rounded-float px-4 py-3">
+    <section className="flex flex-col items-start">
+      <p className="font-narrow text-12 text-ink-dim">
+        <span className="sr-only">
+          <Text path="review.map" />{' '}
+        </span>
+        {demo.header.map}
+      </p>
+
       {round === undefined ? (
         <p className="text-16">
           <Text path="review.warmup" />
@@ -70,7 +90,7 @@ export function RoundCard({ demo, frame, roundIndex, cache }: Props) {
       )}
 
       {notice !== undefined && (
-        <p className="text-11 text-ink-dim leading-prose">
+        <p className="max-w-56 text-11 text-ink-dim leading-prose">
           <Text path={notice} />
         </p>
       )}

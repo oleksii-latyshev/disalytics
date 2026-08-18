@@ -105,7 +105,6 @@ export const TRANSLATION_KEYS = [
   'review.warmup',
   'settings.audibility.label',
   'settings.audibility.note',
-  'settings.closeNote',
   'settings.debug.label',
   'settings.debug.note',
   'settings.dismiss',
