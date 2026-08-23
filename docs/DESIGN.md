@@ -365,10 +365,60 @@ plate = min(
 )
 ```
 
-At 1440×900 that is a **660px** plate with 300px of clear column on each side — enough for a 280px
-card. At 1280×800 it is 596px. Both are larger than the 479px the pre-#87 layout produced and larger
-than the 656px figure the previous revision claimed for a layout with rails, because a card that
-floats costs the plate nothing until the window is narrow.
+The formula is the rule and the numbers below are what it produces, **measured rather than
+predicted**. An earlier revision of this section predicted 660px at 1440×900 and 596px at 1280×800,
+for a layout whose timeline block had no brow; both are superseded by the table below.
+
+| Viewport | Plate | Which axis binds, and out of what |
+|---|---|---|
+| 1440×900 | **716** | height — `47 + 12 + 319 + 12 + 326`, the cell spanning rows 1 to 3 |
+| 1280×800 | **616** | height — the same three rows at 800 |
+| 1100×800 | **516** | width — `1100 - 2 × (280 + 12)`, the two card columns and their gaps |
+| 1040×800 | **476** | height — `800 - (59 + 12) - (12 + 105) - (12 + 124)`, below the split |
+
+Every one of them is larger than the 479px the pre-#87 layout produced and larger than the 656px
+figure the revision with rails claimed, because a card that floats costs the plate nothing until the
+window is narrow.
+
+**A plate figure is a claim with a setup**, and #211 is why that is written down rather than
+assumed: the same code was measured at 1040×800 twice and reported 476 and 492; only 476 reproduces,
+and neither run recorded the state it was taken in. Below the split the plate is height-bound, so it
+takes every vertical pixel on the screen personally — three states named elsewhere in this document
+move it, and a run that does not say which one it was in has not measured anything.
+
+| State | 1040×800 | 1440×900 |
+|---|---|---|
+| default | 476 | 716 |
+| the survivor tracks expanded (§7.3) | 460 | 700 |
+| a player selected (§5.6) | 395 | 716 |
+| the scoreboard over the plate (§5.2) | 508 | 748 |
+
+The locale, the audibility rings and the debug overlay move neither width. A selection costs the
+plate nothing **above** the split, where the team card grows inside its own column; below it, that
+same growth is 81px off the plate's square. So a measurement of this section states:
+
+- **the five preference keys**, which live in `localStorage` and outlive a reload and a new parse
+  alike: `disa.timeline.survivors`, `disa.review.scoreboardOnPlate`, `disa.radar.audibility`,
+  `disa.radar.debug`, `disa.locale`. Clear them, and say that you did.
+- **whether a player row is selected**, which no key records.
+- **the viewport height**, not the width alone. Three of the four widths above are height-bound, so
+  quoting "the plate at 1040" without saying 800 is quoting nothing.
+- **`devicePixelRatio`, `document.visibilityState` and `document.fonts.status`** — the last two are
+  what the in-app browser pane cannot promise, and a font that has not arrived changes the corner's
+  line box and therefore row 1.
+- **how the demo was opened.** §5.2's corner is row 1's height below the split, and the storage
+  notice inside it is a line of type there whenever it speaks — `storing` while the write is in
+  flight, `unavailable` for good. One line of it costs the corner 17px and the plate the same, so a
+  run that measures during the write reads 459 and a run that measures after it reads 476.
+
+The figures above were measured on `4e1b535` against the built bundle in a headed Chrome 151 driven
+over CDP at `deviceScaleFactor: 2`, `visibilityState` `visible` and fonts `loaded`, on the 264 MB
+fixture at 01:43 of round 1 with every preference key cleared, each width reached by
+`Emulation.setDeviceMetricsOverride` rather than by resizing a window. The plate is
+`canvas[role="img"]`; the overlap check is #199's sweep over `document.querySelectorAll('*')`, and
+it found nothing over the plate at any of the four widths, with the survivor tracks expanded and
+with a player selected alike. The scoreboard over the plate is the one thing that ever is, and it is
+this section's own exception.
 
 The plate keeps its aspect ratio and is **never cropped or letterboxed**.
 
@@ -568,8 +618,14 @@ it is the reader's own doing rather than a default.
 The brow's 32px sit in the stage above the block, so the block and its brow are 124px of the
 viewport's height against 96px before. **Where that comes from depends on which axis binds the
 plate**: `min(100cqi, 100cqb)` takes it out of a height-bound plate and off the letterbox of a
-width-bound one, and at 1440×900 the plate is height-bound (744×744, #147). The code issue measures
-the new number at every width §5.1 names rather than predicting it here.
+width-bound one, and at 1440×900 the plate is height-bound (744×744 before the brow, #147; 716×716
+after it). §5.1 carries the measured figure at every width it names.
+
+**The expanded strip costs the plate 16px** — 476 → 460 at 1040×800 and 716 → 700 at 1440×900,
+which is the 92px against 108px above arriving intact at both, because the plate is height-bound at
+each of those widths and everything this block gains comes out of it. It is the reader's own doing
+*and* it is remembered across parses, which is exactly why §5.1's procedure states the preference
+key rather than assuming the default.
 
 ### 5.6 The inspector
 
