@@ -923,16 +923,40 @@ path two adjacent rows. It also puts the scoreboard brow (§5.2), the round stri
 on one vertical line through the middle of the screen — the match, its rounds and the round, in that
 order, top to bottom.
 
-**The overlay keeps the chart.** `M` opens it, and `M` is the whole way in: the round number in the
-top-left corner used to as well, and §5.2 removed that number on 18 August 2026 as a second reading
-of the round strip below. It raises the match full-height over the stage — the kill marks, the round
-outcomes, **the density trace and the economy gap**, all at readable size and, unlike the ribbon,
-**with a legend**.
+**The overlay keeps the chart**, and it is built (#207). `M` opens it, and `M` is the whole way in:
+the round number in the top-left corner used to as well, and §5.2 removed that number on 18 August
+2026 as a second reading of the round strip below. It raises the match full-height over the stage —
+the kill marks, the round outcomes, **the density trace and the economy gap**, all at readable size
+and, unlike the ribbon, **with a legend**.
 Everything #90, #91 and #92 built survives there; none of it is deleted. The reading that condemned
 them was about a 14px strip that is always on screen with nothing to explain it, and none of that is
 true of a full-height view the reader opened on purpose and is not scrubbing while reading. The
 density trace stays `--ink-dim` α0.30 in the overlay: it is an aggregate, and §2.4 forbids
 spending a semantic colour on one wherever it is drawn.
+
+**The three readings sit in bands of their own** — kills across the top, the density trace in the
+middle, the economy gap along the bottom — over round columns that run the chart's full height, so a
+spike, a kill and a buy in the same column are visibly the same round. That separation is what the
+height buys: the layers were never what made the ribbon unreadable, and superimposing four series on
+14px was. A kill takes the colour of the side that **lost** the player, which is §7.1's rule for a
+kill at the scale of a whole match, and a kill no round covers keeps its place and loses its side.
+
+**It pauses playback, and that is what earns the plate.** §5.1 lets a surface cover the plate only
+when the plate is not the thing being read, and a match still running behind a chart is a plate
+still being read; §10.5's sheets stop playback for the same reason. It also settles `AGENTS.md` §16
+by construction rather than by argument — the rAF loop runs only while the clock does, so nothing
+repaints underneath. **Nothing on the overlay is a playhead and nothing on it seeks**: the playhead
+is §7.1's and the way to a round is the strip's, and the only mark here that knows where the reader
+is, is the 1px frame around the current round. Every round keeps its winner tint, the current one
+included — dropping the tint is the strip's device for cells that touch, and on a chart this tall
+the seconds between rounds are already bare ground, so an untinted round reads as one of those
+gaps rather than as *here*.
+
+**A modal makes the strip behind it inert**, so the reading §7.3 keeps on the pills cannot be
+borrowed from there while the overlay is up: the overlay carries its own `sr-only` enumeration of
+the round outcomes beside `EconomyGaps`. That is not the second enumeration #184 removed — it is
+#92's obligation following the canvas, which is exactly what that paragraph says happens. The
+density trace stays unvoiced there too; it is an aggregate, and there is no sentence in it.
 
 **`RoundOutcomes` and `EconomyGaps` stay, and one of them moves.** `role="img"` announces that a
 picture exists and nothing about what it shows, so the `sr-only` lists are what make any of this
@@ -1455,8 +1479,10 @@ feed was the one thing step 5 left behind: its rows landed in #209 and its hover
     `EconomyGaps`, the economy band and the density trace moving into the full-height overlay
     rather than being deleted. `RoundOutcomes` **is** the round list rather than a list beside it.
     No schema change — `Round.economy[].team` and `kills` carry the survivor counts already, and
-    `SCHEMA_VERSION` stays 4. §7.1's glyph and §7.3's list landed in #182 and #184, and the kill
-    tooltip in #213 once #209's feed unblocked it, so this step is complete. **§7.3's cell was revised again on 16 August 2026**
+    `SCHEMA_VERSION` stays 4. §7.1's glyph and §7.3's list landed in #182 and #184, the kill tooltip
+    in #213 once #209's feed unblocked it, and **§7.3's full-height match overlay in #207**, which is
+    where #90's economy gap, #91's density trace and #92's `EconomyGaps` went rather than being
+    deleted. The step is complete, and §7 has nothing left without code. **§7.3's cell was revised again on 16 August 2026**
     — the round number leads and both sides' counts flank it, with the sides written out — and that
     revision shipped inside #171 at the owner's request rather than as its own issue.
 11. **The strip and the brow** *(added by #189)* — §7.3 as rewritten on 16 August 2026 and §5.2's

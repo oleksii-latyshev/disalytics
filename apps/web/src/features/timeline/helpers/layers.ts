@@ -1,12 +1,10 @@
-// The chart the round list replaced, kept rather than deleted: `docs/DESIGN.md` §7.3 moves the
-// round bands, the density trace and the economy gap behind the full-height match overlay, which is
-// unbuilt. Nothing renders these today and that is the intent, not an oversight (#183).
 import { sampleAt, type Team } from '@disa/demo-core';
 import type { Layer } from '@/core/renderer';
 import { readCssToken } from '@/shared/lib';
 import type { EventDensity } from './density';
 import type { EconomyStep } from './economy';
-import { ECONOMY_REACH_PX, type RoundBand } from './spine';
+import type { MatchKill } from './kills';
+import type { RoundBand } from './spine';
 
 /** Low enough that a full-height tint reads as the round's outcome rather than as a surface. */
 const BAND_ALPHA = 0.14;
@@ -19,11 +17,21 @@ const BAND_ALPHA = 0.14;
 const DENSITY_ALPHA = 0.3;
 
 /**
- * Above the bands and below the playhead: the bands fill the ribbon's full height at 0.14 and this
- * leaves the centre line by four pixels. A gap that has to be seen against a band tinted the same
- * hue cannot go lower.
+ * Above the bands: they fill their surface at 0.14, and a gap that has to be seen against a band
+ * tinted the same hue cannot go lower.
  */
 const ECONOMY_ALPHA = 0.32;
+
+/**
+ * How far an economy block may leave its centre line, as a share of the half it has. A fraction
+ * rather than the four pixels the 14px ribbon fixed it at: the same layer now draws into a band of
+ * the match overlay that is tens of pixels tall, and four of them there is not a chart.
+ */
+const ECONOMY_REACH = 0.9;
+
+/** One kill, thin enough that a busy round reads as a comb rather than as a block. */
+const KILL_MARK_WIDTH_PX = 2;
+const KILL_MARK_ALPHA = 0.75;
 
 export interface SpineColors {
   readonly side: Readonly<Record<Team, string>>;
@@ -43,7 +51,7 @@ export function readSpineColors(): SpineColors {
 
 /**
  * One band per round, tinted by its winner. The round being played is skipped: §7.3 lights it by
- * dropping the tint and framing it instead, so the frame has bare ribbon to sit on.
+ * dropping the tint and framing it instead, so the frame has bare ground to sit on.
  */
 export function outcomeBands(
   bands: readonly RoundBand[],
@@ -109,8 +117,8 @@ function peakBetween(perSecond: Float32Array, first: number, last: number): numb
  * column covers. Resolving the series against the column rather than the second is what keeps a
  * forty-minute match from collapsing into a smear on a strip a thousand pixels wide.
  *
- * It rises from the ribbon's bottom edge, which is what makes it read as terrain under the round
- * bands rather than as a second chart competing with them.
+ * It rises from the bottom edge of whatever it is given, which is what makes it read as terrain
+ * under the round bands rather than as a second chart competing with them.
  */
 export function densityTrace(density: EventDensity, colors: SpineColors): Layer {
   return (context, size) => {
@@ -139,7 +147,26 @@ export function densityTrace(density: EventDensity, colors: SpineColors): Layer 
 }
 
 /**
- * The buy, as one step per round leaving the ribbon's centre line: a block rising for a round the
+ * One mark per kill, hanging from the top of whatever band it is given, tinted by the side of the
+ * player who died — §7.1's rule for a kill, at the scale of a whole match.
+ *
+ * It is a layer rather than the row of buttons #91 shipped for the same reading. That row cost 5 fps
+ * and took the worst scrub frame from 13 ms to 25 ms on a 264 MB demo, and a match's kills as DOM is
+ * the shape of that cost rather than an accident of it.
+ */
+export function killMarks(kills: readonly MatchKill[], colors: SpineColors): Layer {
+  return (context, size) => {
+    context.globalAlpha = KILL_MARK_ALPHA;
+
+    for (const kill of kills) {
+      context.fillStyle = kill.side === undefined ? colors.density : colors.side[kill.side];
+      context.fillRect(Math.round(kill.fraction * size.width), 0, KILL_MARK_WIDTH_PX, size.height);
+    }
+  };
+}
+
+/**
+ * The buy, as one step per round leaving the chart's centre line: a block rising for a round the
  * CT side out-equipped, falling for one the T side did, as tall as the gap is wide against the
  * widest the match holds.
  *
@@ -151,7 +178,7 @@ export function economyGap(steps: readonly EconomyStep[], colors: SpineColors): 
     if (steps.length === 0) return;
 
     const centre = size.height / 2;
-    const reach = Math.min(ECONOMY_REACH_PX, centre);
+    const reach = centre * ECONOMY_REACH;
 
     context.globalAlpha = ECONOMY_ALPHA;
 

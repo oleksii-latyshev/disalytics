@@ -6,12 +6,6 @@ import {
   type Team,
 } from '@disa/demo-core';
 
-/**
- * How far an economy block may leave the chart's centre line — a bounded reach rather than a
- * proportional one, so a strip of any height keeps the gap legible against the round bands.
- */
-export const ECONOMY_REACH_PX = 4;
-
 export interface RoundBand {
   readonly round: number;
   readonly winner: Team;

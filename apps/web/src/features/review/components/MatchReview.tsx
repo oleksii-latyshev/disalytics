@@ -13,6 +13,7 @@ import type { CacheState } from '@/core/parsing';
 import { useFrameReadout, useTransport } from '@/core/playback';
 import { useShortcuts } from '@/core/shortcuts';
 import { MatchRadar } from '@/features/radar';
+import { MatchOverlay } from '@/features/timeline';
 import { useFullscreen, useStoredFlag } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { CornerCluster } from './CornerCluster';
@@ -39,6 +40,9 @@ interface Props {
   cache: CacheState;
   onClose: () => void;
 }
+
+/** What can cover the stage. §7.3's match overlay is one of these in every way that matters here. */
+type Sheet = 'settings' | 'help' | 'match';
 
 /**
  * The stage — DESIGN.md §5. A plate in the middle and four cards around it, and the grid is what
@@ -83,13 +87,14 @@ export function MatchReview({ demo, cache, onClose }: Props) {
   // a development affordance on is mid-investigation and reopening the demo does not end it.
   const [isDebugShown, toggleDebug] = useStoredFlag(DEBUG_KEY, false);
 
-  // Which sheet covers the screen, if any. §10.5 stops playback while one is open, which is what
-  // makes covering the plate legitimate rather than an exception to principle 4 — and the same state
-  // suspends §9.1's bindings, because `Esc` belongs to the dialog while a dialog is up.
-  const [openSheet, setOpenSheet] = useState<'settings' | 'help' | null>(null);
+  // Which full-screen surface covers the screen, if any. All three stop playback while they are
+  // open, which is what makes covering the plate legitimate rather than an exception to principle 4
+  // — §5.1 allows it exactly when the plate is not the thing being read. The same state suspends
+  // §9.1's bindings, because `Esc` belongs to the dialog while a dialog is up.
+  const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
   const showSheet = useCallback(
-    (sheet: 'settings' | 'help') => {
+    (sheet: Sheet) => {
       transport.pause();
       setOpenSheet(sheet);
     },
@@ -124,7 +129,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
 
   // DESIGN.md §9's accessibility floor: the match is operable without a pointer. Which key reaches
   // which action is `core/shortcuts`' table, so the help sheet lists exactly what is bound here. The
-  // rest of §9.1 — the held-arrow rate, the row-number keys, `F`, `M` and zoom — is its own step.
+  // rest of §9.1 — the held-arrow rate, the row-number keys, `F` and zoom — is its own step.
   useShortcuts(
     {
       playPause: transport.toggle,
@@ -133,6 +138,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
       previousRound: () => jumpRounds(-1),
       nextRound: () => jumpRounds(1),
       clearSelection: () => setSelectedSlot(null),
+      matchOverlay: () => showSheet('match'),
       help: () => showSheet('help'),
     },
     { isSuspended: openSheet !== null },
@@ -266,6 +272,13 @@ export function MatchReview({ demo, cache, onClose }: Props) {
       />
 
       <HelpSheet isOpen={openSheet === 'help'} onDismiss={dismissSheet} />
+
+      <MatchOverlay
+        demo={demo}
+        isOpen={openSheet === 'match'}
+        onDismiss={dismissSheet}
+        roundIndex={roundIndex}
+      />
     </div>
   );
 }

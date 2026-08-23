@@ -20,6 +20,7 @@
     "previousRound": "Previous round",
     "nextRound": "Next round",
     "clearSelection": "Clear the selected player, or close this sheet",
+    "matchOverlay": "Show the whole match",
     "help": "Open this help"
   }
 }
