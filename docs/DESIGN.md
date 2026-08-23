@@ -374,7 +374,7 @@ for a layout whose timeline block had no brow; both are superseded by the table 
 | 1440×900 | **716** | height — `47 + 12 + 319 + 12 + 326`, the cell spanning rows 1 to 3 |
 | 1280×800 | **616** | height — the same three rows at 800 |
 | 1100×800 | **516** | width — `1100 - 2 × (280 + 12)`, the two card columns and their gaps |
-| 1040×800 | **476** | height — `800 - (59 + 12) - (12 + 105) - (12 + 124)`, below the split |
+| 1040×800 | **459** | height — `800 - (59 + 12) - (12 + 122) - (12 + 124)`, below the split |
 
 Every one of them is larger than the 479px the pre-#87 layout produced and larger than the 656px
 figure the revision with rails claimed, because a card that floats costs the plate nothing until the
@@ -388,10 +388,10 @@ move it, and a run that does not say which one it was in has not measured anythi
 
 | State | 1040×800 | 1440×900 |
 |---|---|---|
-| default | 476 | 716 |
-| the survivor tracks expanded (§7.3) | 460 | 700 |
-| a player selected (§5.6) | 395 | 716 |
-| the scoreboard over the plate (§5.2) | 508 | 748 |
+| default | 459 | 716 |
+| the survivor tracks expanded (§7.3) | 443 | 700 |
+| a player selected (§5.6) | 378 | 716 |
+| the scoreboard over the plate (§5.2) | 491 | 748 |
 
 The locale, the audibility rings and the debug overlay move neither width. A selection costs the
 plate nothing **above** the split, where the team card grows inside its own column; below it, that
@@ -409,11 +409,21 @@ same growth is 81px off the plate's square. So a measurement of this section sta
 - **how the demo was opened.** §5.2's corner is row 1's height below the split, and the storage
   notice inside it is a line of type there whenever it speaks — `storing` while the write is in
   flight, `unavailable` for good. One line of it costs the corner 17px and the plate the same, so a
-  run that measures during the write reads 459 and a run that measures after it reads 476.
+  run that measures during the write reads 17px under the table above and a run that measures after
+  it reads the table. Both figures the run behind #211 quoted — 459 during the write, 476 after it —
+  are that difference at the strip height of the day, and #218 has since moved the pair.
 
-The figures above were measured on `4e1b535` against the built bundle in a headed Chrome 151 driven
-over CDP at `deviceScaleFactor: 2`, `visibilityState` `visible` and fonts `loaded`, on the 264 MB
-fixture at 01:43 of round 1 with every preference key cleared, each width reached by
+**The 1040 column is 17px smaller since #218**, and the 1440 column is untouched. A team row's
+numbers wrap below the split because no arrangement of them fits a 79px seat — §5.3 — and the
+second line is 17px the strip did not spend before. Every state moved by exactly that, which is
+what says the wrap and not something else did it; above the split the same row never wraps, so
+1440×900 measures 716 either side of the change.
+
+The figures above were measured on `4e1b535`, and the 1040 column again on #218's branch, against
+the built bundle in a headed Chrome 151 driven over CDP at `deviceScaleFactor: 2`,
+`visibilityState` `visible` and fonts `loaded`, on the 264 MB fixture with every preference key
+cleared — at 01:43 of round 1 for the first run and at the freeze of round 7 for the second, which
+agree on every figure the wrap does not move. Each width was reached by
 `Emulation.setDeviceMetricsOverride` rather than by resizing a window. The plate is
 `canvas[role="img"]`; the overlap check is #199's sweep over `document.querySelectorAll('*')`, and
 it found nothing over the plate at any of the four widths, with the survivor tracks expanded and
@@ -557,6 +567,13 @@ slots, smoke, fire, decoy, defuse kit fit in one byte), and **money** per sample
 5 bytes on top of the current 20 per player per sample: **+1.9 MB on a 40-minute match at 16 Hz**,
 against a 1.5 GB peak budget. The cost is not the memory; the cost is one cache generation.
 
+**Below the split the money takes a line of its own.** A seat in the merged strip is 79px of
+content box and the health figure, the helmet and the money are 95px of it at their narrowest —
+107px in `ru`, where `9 050 $` is a glyph wider than `$9,050` — so no horizontal arrangement of
+them fits and the row wraps rather than overflowing into the seat beside it (#218). It costs the
+plate 17px at 1040×800, which §5.1's table carries. Above the split the line is 240px wide and
+never wraps.
+
 A row is a button. Pressing it selects that player — the vision wedge, the plate halo and the
 inspector all key off the same selection, which is React state in `features/review` and never a
 canvas hit test (#111). Selection survives scrubbing and round changes.
@@ -630,7 +647,7 @@ plate**: `min(100cqi, 100cqb)` takes it out of a height-bound plate and off the 
 width-bound one, and at 1440×900 the plate is height-bound (744×744 before the brow, #147; 716×716
 after it). §5.1 carries the measured figure at every width it names.
 
-**The expanded strip costs the plate 16px** — 476 → 460 at 1040×800 and 716 → 700 at 1440×900,
+**The expanded strip costs the plate 16px** — 459 → 443 at 1040×800 and 716 → 700 at 1440×900,
 which is the 92px against 108px above arriving intact at both, because the plate is height-bound at
 each of those widths and everything this block gains comes out of it. It is the reader's own doing
 *and* it is remembered across parses, which is exactly why §5.1's procedure states the preference

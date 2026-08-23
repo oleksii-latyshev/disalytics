@@ -444,6 +444,20 @@ arithmetic and the preconditions list; read it before quoting a plate size, and 
 **height** — three of the four widths are height-bound and "the plate at 1040" on its own says
 nothing.
 
+**#218 made a team row's numbers wrap, and every figure in that table moved 17px.** Below the split
+a seat is 79px of content box against 95px of health figure, helmet and money that nothing shrinks —
+107px in `ru`, which is why only Russian pushed the last seat past the viewport and gave the bug its
+name; `en` overlapped the seat beside it in silence at the same widths. No horizontal arrangement
+fits, so the line wraps and the strip is 17px taller: **1040×800 is 459 by default**, 443 with the
+survivor tracks, 378 with a player selected, 491 with the scoreboard over the plate. Above the split
+the line is 240px and never wraps, so 1440×900 is still 716. Two things worth keeping. **The sweep
+that proves it is #199's** — over `document.querySelectorAll('*')` — and it needs one addition: an
+element clipped by an ancestor never reaches the scrollbar, and `sr-only` labels are wide elements
+inside a 1px box, so a sweep that does not walk `overflow` for each hit reports them as overflow
+every time. And **the reproduction is stateful**: the last CT seat overflows at freeze time, where
+every player has a helmet and full money, and not 40 seconds later where the same row is a dead
+player holding $100.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
