@@ -1,10 +1,10 @@
-import type { ParsedDemo, PlayerInfo, PlayerSlot, Team } from '@disa/demo-core';
+import type { ParsedDemo, PlayerInfo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { m } from '@disa/ui';
 import { useMemo } from 'react';
-import { EventGlyph, KillMark, WeaponGlyph } from '@/core/glyphs';
+import { EventRow, type RowEvent } from '@/core/events';
 import type { Transport } from '@/core/playback';
-import { type FeedEvent, roundFeed, visibleFeed } from '../helpers/event-feed';
+import { roundFeed, visibleFeed } from '../helpers/event-feed';
 
 interface Props {
   demo: ParsedDemo;
@@ -12,62 +12,6 @@ interface Props {
   frame: number;
   roundIndex: number | undefined;
   players: readonly PlayerInfo[];
-}
-
-const SIDE_INK: Readonly<Record<Team, string>> = {
-  CT: 'text-ct',
-  T: 'text-t',
-};
-
-function sideInk(side: Team | undefined): string {
-  return side === undefined ? 'text-ink-dim' : SIDE_INK[side];
-}
-
-/**
- * A row's visible shape — *attacker · weapon glyph · victim* for a kill, and a single line in
- * `--objective` for a plant or a defuse (§5.4). It is declared here rather than inside `EventFeed`
- * because a component declared inside another is a new type on every render, and React remounts the
- * whole subtree when that happens — ten times a second, on the readout.
- */
-function RowBody({
-  event,
-  nameOf,
-}: {
-  event: FeedEvent;
-  nameOf: (slot: PlayerSlot | null) => string;
-}) {
-  if (event.kind !== 'kill') {
-    return (
-      <span className="flex min-w-0 items-center gap-1.5 text-objective">
-        <EventGlyph kind={event.kind} />
-        <span className="min-w-0 truncate">
-          {nameOf(event.kind === 'plant' ? event.planter : event.defuser)}
-        </span>
-      </span>
-    );
-  }
-
-  return (
-    <span className="flex min-w-0 items-center gap-1.5">
-      {event.attacker !== null && (
-        <span className={`min-w-0 truncate ${sideInk(event.attackerSide)}`}>
-          {nameOf(event.attacker)}
-        </span>
-      )}
-
-      <span className="flex shrink-0 items-center gap-1 text-ink-dim">
-        {/* A world kill has no weapon to draw, and the bomb draws nothing by rule — §6.4. */}
-        {event.attacker !== null && <WeaponGlyph weapon={event.weapon} />}
-        {event.isHeadshot && <KillMark kind="headshot" />}
-        {event.isWallbang && <KillMark kind="wallbang" />}
-        {event.isThroughSmoke && <KillMark kind="smoke" />}
-      </span>
-
-      <span className={`min-w-0 truncate ${sideInk(event.victimSide)}`}>
-        {nameOf(event.victim)}
-      </span>
-    </span>
-  );
 }
 
 /**
@@ -109,7 +53,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players }: Props
     return names[slot] ?? t('review.feed.unknownPlayer');
   }
 
-  function marksOf(event: FeedEvent): readonly string[] {
+  function marksOf(event: RowEvent): readonly string[] {
     if (event.kind !== 'kill') return [];
 
     const marks: string[] = [];
@@ -120,7 +64,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players }: Props
     return marks;
   }
 
-  function sentenceOf(event: FeedEvent): string {
+  function sentenceOf(event: RowEvent): string {
     switch (event.kind) {
       case 'kill':
         return event.attacker === null
@@ -140,7 +84,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players }: Props
 
   // One accessible name for the whole row: the marks are `aria-hidden` glyphs inside a button, and
   // a label on the button is what a reader hears instead of them.
-  function labelFor(event: FeedEvent): string {
+  function labelFor(event: RowEvent): string {
     return [sentenceOf(event), ...marksOf(event)].join('. ');
   }
 
@@ -161,7 +105,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players }: Props
               onClick={() => transport.seek(row.frame)}
               className="flex w-full min-w-0 rounded-chip px-1.5 py-0.5 text-left text-13 text-ink transition-colors duration-micro ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-              <RowBody event={row.event} nameOf={nameOf} />
+              <EventRow event={row.event} nameOf={nameOf} />
             </m.button>
           </li>
         ))}

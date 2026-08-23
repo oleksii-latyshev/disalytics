@@ -1445,8 +1445,8 @@ Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed, 
     `EconomyGaps`, the economy band and the density trace moving into the full-height overlay
     rather than being deleted. `RoundOutcomes` **is** the round list rather than a list beside it.
     No schema change — `Round.economy[].team` and `kills` carry the survivor counts already, and
-    `SCHEMA_VERSION` stays 4. §7.1's glyph and §7.3's list landed in #182 and #184; the kill
-    tooltip is #181 and still waits on the feed. **§7.3's cell was revised again on 16 August 2026**
+    `SCHEMA_VERSION` stays 4. §7.1's glyph and §7.3's list landed in #182 and #184, and the kill
+    tooltip in #213 once #209's feed unblocked it, so this step is complete. **§7.3's cell was revised again on 16 August 2026**
     — the round number leads and both sides' counts flank it, with the sides written out — and that
     revision shipped inside #171 at the owner's request rather than as its own issue.
 11. **The strip and the brow** *(added by #189)* — §7.3 as rewritten on 16 August 2026 and §5.2's

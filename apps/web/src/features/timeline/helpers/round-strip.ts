@@ -75,9 +75,15 @@ export type TooltipAnchor = { readonly left: string } | { readonly right: string
  * reach is half the strip, and the sentence is nowhere near that wide.
  */
 export function tooltipAnchor(index: number, count: number): TooltipAnchor {
-  const centre = count === 0 ? 0 : (index + 0.5) / count;
+  return anchorAtFraction(count === 0 ? 0 : (index + 0.5) / count);
+}
 
-  return centre <= 0.5 ? { left: `${centre * 100}%` } : { right: `${(1 - centre) * 100}%` };
+/**
+ * The same rule read off a position along the strip rather than off a cell index, which is what
+ * §7.1's glyphs need: they are placed by fraction, not by an equal share of the width.
+ */
+export function anchorAtFraction(fraction: number): TooltipAnchor {
+  return fraction <= 0.5 ? { left: `${fraction * 100}%` } : { right: `${(1 - fraction) * 100}%` };
 }
 
 /**
