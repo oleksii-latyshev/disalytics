@@ -30,6 +30,8 @@ export interface RadarColors {
   readonly nadeDecoy: string;
   /** Trajectory line — white, §6.2 says "not in the utility's colour". */
   readonly trajectory: string;
+  /** The line between a hovered kill's two ends — white, for the reason a trajectory is (§5.4). */
+  readonly killLine: string;
 }
 
 export function readRadarColors(): RadarColors {
@@ -47,5 +49,6 @@ export function readRadarColors(): RadarColors {
     nadeMolotov: readCssToken('--color-nade-molotov'),
     nadeDecoy: readCssToken('--color-nade-decoy'),
     trajectory: readCssToken('--color-ink'),
+    killLine: readCssToken('--color-ink'),
   };
 }

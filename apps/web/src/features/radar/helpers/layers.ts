@@ -18,7 +18,7 @@ import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import { type LabelStyle, type LabelSubject, labelPass } from './labels';
-import { levelIndexAt } from './levels';
+import { levelIndexAt, OTHER_LEVEL_ALPHA } from './levels';
 import {
   drawAudibleRing,
   drawBlindDisc,
@@ -36,9 +36,6 @@ const VISION_ALPHA = 0.15;
 const VISION_FADE_UNITS = 1000;
 /** The game's default field of view, so the wedge stands for what the player can actually see. */
 const VISION_HALF_ANGLE = Math.PI / 4;
-
-/** A player standing on a level the map is not currently showing, seen through the floor. */
-const OTHER_LEVEL_ALPHA = 0.25;
 
 /** What a token has faded to once its player is a body — DESIGN.md §6.1. */
 const DEAD_ALPHA = 0.5;

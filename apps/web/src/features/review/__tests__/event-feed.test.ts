@@ -11,7 +11,7 @@ import {
   WEAPON_NONE,
 } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { FEED_ROW_LIMIT, roundFeed, visibleFeed } from '../helpers/event-feed';
+import { FEED_ROW_LIMIT, killLineOf, roundFeed, visibleFeed } from '../helpers/event-feed';
 
 // 64 ticks to 16 samples, so a frame is a tick over four. The fixture is local rather than shared
 // with `features/timeline`'s: a test reaching sideways into another feature is the import direction
@@ -220,5 +220,32 @@ describe('visibleFeed', () => {
 
   it('includes an event standing exactly on the playhead', () => {
     expect(visibleFeed(rows, 100).map((row) => row.id)).toEqual(['kill-0']);
+  });
+});
+
+describe('killLineOf', () => {
+  it('carries both ends, both sides and the frame the kill happened on', () => {
+    const row = roundFeed(newDemo({ kills: [newKill(2000)] }), 0).at(0);
+
+    expect(row !== undefined && killLineOf(row)).toEqual({
+      frame: 500,
+      attacker: 0,
+      victim: 1,
+      attackerSide: 'CT',
+      victimSide: 'T',
+    });
+  });
+
+  it('draws no line for a world kill, which has no second end', () => {
+    const kill = newKill(2000, { attacker: null, weapon: 'world' });
+    const row = roundFeed(newDemo({ kills: [kill] }), 0).at(0);
+
+    expect(row !== undefined && killLineOf(row)).toBeNull();
+  });
+
+  it('draws no line for an objective row', () => {
+    const row = roundFeed(newDemo({ plants: [newPlant(3000)] }), 0).at(0);
+
+    expect(row !== undefined && killLineOf(row)).toBeNull();
   });
 });

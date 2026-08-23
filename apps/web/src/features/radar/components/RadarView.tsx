@@ -12,11 +12,13 @@ import {
   type RadarPoint,
   radarAssetPath,
 } from '@disa/map-data';
-import { type PointerEvent, useMemo, useState } from 'react';
+import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
+import type { KillLine } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { useFontReady } from '@/shared/hooks';
 import { readRadarColors } from '../helpers/colors';
+import { killLineLayer } from '../helpers/kill-line';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
@@ -32,6 +34,7 @@ interface Props {
   overview: MapOverview;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
+  hoveredKill: KillLine | null;
   isAudibilityShown: boolean;
   isDebugShown: boolean;
 }
@@ -41,6 +44,7 @@ export function RadarView({
   overview,
   transport,
   selectedSlot,
+  hoveredKill,
   isAudibilityShown,
   isDebugShown,
 }: Props) {
@@ -72,6 +76,10 @@ export function RadarView({
     [demo.header.players, demo.track.slotCount, isLabelFontReady],
   );
 
+  // The hovered row reaches the plate through a box rather than through the layer array, so a hover
+  // repaints what is already built instead of rebuilding it — see `killLineLayer`.
+  const hoveredKillRef = useRef<KillLine | null>(hoveredKill);
+
   // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
   // the clock moves. The clock itself is read inside the layer, once per animation frame.
   const layers = useMemo(() => {
@@ -89,10 +97,18 @@ export function RadarView({
     });
 
     const utility = utilityLayer({ demo, clock: transport.clock, overview, colors });
+    const killLine = killLineLayer({
+      demo,
+      clock: transport.clock,
+      overview,
+      levelIndex,
+      colors,
+      hovered: hoveredKillRef,
+    });
 
     return image.status === 'ready'
-      ? [radarBackdrop(image.image), utility, tokens]
-      : [utility, tokens];
+      ? [radarBackdrop(image.image), utility, killLine, tokens]
+      : [utility, killLine, tokens];
   }, [
     demo,
     transport,
@@ -109,6 +125,13 @@ export function RadarView({
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
   useFrameSink(transport, repaint);
+
+  // The one thing that has to repaint off a React state change rather than off the clock: while
+  // playback is paused there is no frame to carry the line onto the plate.
+  useEffect(() => {
+    hoveredKillRef.current = hoveredKill;
+    repaint();
+  }, [hoveredKill, repaint]);
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
     if (!isDebugShown) return;

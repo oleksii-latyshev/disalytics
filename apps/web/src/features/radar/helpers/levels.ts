@@ -1,6 +1,9 @@
 import { FLAG_ALIVE, type Frame, sampleAt, type TickTrack } from '@disa/demo-core';
 import { type MapOverview, type RadarLevel, radarLevelAt } from '@disa/map-data';
 
+/** A player standing on a level the map is not currently showing, seen through the floor. */
+export const OTHER_LEVEL_ALPHA = 0.25;
+
 /** The level a player at altitude `z` belongs to, as a position in the overview's own order. */
 export function levelIndexAt(overview: MapOverview, z: number): number {
   const index = overview.levels.indexOf(radarLevelAt(overview, z));

@@ -1,6 +1,7 @@
 import type { ParsedDemo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
+import type { KillLine } from '@/core/events';
 import type { Transport } from '@/core/playback';
 import { RadarView } from './RadarView';
 import { UnknownMap } from './UnknownMap';
@@ -9,6 +10,7 @@ interface Props {
   demo: ParsedDemo;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
+  hoveredKill: KillLine | null;
   isAudibilityShown: boolean;
   isDebugShown: boolean;
 }
@@ -17,6 +19,7 @@ export function MatchRadar({
   demo,
   transport,
   selectedSlot,
+  hoveredKill,
   isAudibilityShown,
   isDebugShown,
 }: Props) {
@@ -35,6 +38,7 @@ export function MatchRadar({
           overview={overview}
           transport={transport}
           selectedSlot={selectedSlot}
+          hoveredKill={hoveredKill}
           isAudibilityShown={isAudibilityShown}
           isDebugShown={isDebugShown}
         />

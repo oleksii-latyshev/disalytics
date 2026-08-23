@@ -6,7 +6,7 @@ import {
   sidesBySlotAtRound,
   type Tick,
 } from '@disa/demo-core';
-import type { RowEvent } from '@/core/events';
+import type { KillLine, RowEvent } from '@/core/events';
 
 /**
  * How many rows the feed holds — DESIGN.md §5.4. It is a cap on what is *shown*, not on what is
@@ -120,4 +120,24 @@ export function visibleFeed(rows: readonly FeedRow[], frame: number): readonly F
   }
 
   return visible;
+}
+
+/**
+ * The line §5.4 draws when a row is hovered, or nothing when the row has none to draw.
+ *
+ * Two rows have none, and for the same reason rather than by exception: an objective row is not a
+ * kill, and a kill by the world has no attacker and so no second end. Neither is a case the plate
+ * has to be told about — the answer is simply no line.
+ */
+export function killLineOf(row: FeedRow): KillLine | null {
+  const { event } = row;
+  if (event.kind !== 'kill' || event.attacker === null) return null;
+
+  return {
+    frame: row.frame,
+    attacker: event.attacker,
+    victim: event.victim,
+    attackerSide: event.attackerSide,
+    victimSide: event.victimSide,
+  };
 }

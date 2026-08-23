@@ -8,6 +8,7 @@ import {
 } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
 import { useCallback, useMemo, useState } from 'react';
+import type { KillLine } from '@/core/events';
 import type { CacheState } from '@/core/parsing';
 import { useFrameReadout, useTransport } from '@/core/playback';
 import { useShortcuts } from '@/core/shortcuts';
@@ -60,6 +61,11 @@ export function MatchReview({ demo, cache, onClose }: Props) {
   // where it is set: a canvas hit test would put the one interaction on the screen that a keyboard
   // cannot reach, which DESIGN.md §9 rules out.
   const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
+
+  // The feed row the pointer or the keyboard is on, and the one thing on this screen that a *hover*
+  // sets — DESIGN.md §5.4. It is discrete state for the same reason the selection is, and the feed
+  // is what clears it: a row cannot report the pointer leaving once the row itself has gone.
+  const [hoveredKill, setHoveredKill] = useState<KillLine | null>(null);
 
   // Off by default: the rings are the loudest thing the plate draws, and a reader who wants them
   // asks. `AGENTS.md` §2 rule 5 allows an interface preference to outlive the session.
@@ -200,6 +206,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
             frame={frame}
             roundIndex={roundIndex}
             players={demo.header.players}
+            onKillHover={setHoveredKill}
           />
         </div>
       </div>
@@ -211,6 +218,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           demo={demo}
           transport={transport}
           selectedSlot={selectedSlot}
+          hoveredKill={hoveredKill}
           isAudibilityShown={isAudibilityShown}
           isDebugShown={isDebugShown}
         />
