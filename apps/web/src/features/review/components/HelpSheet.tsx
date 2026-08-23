@@ -1,7 +1,9 @@
 import { Text, useT } from '@disa/i18n';
 import { Button, Sheet } from '@disa/ui';
 import { X } from 'lucide-react';
+import { useMemo } from 'react';
 import { type KeyLabel, SHORTCUT_BINDINGS } from '@/core/shortcuts';
+import { PLATE_MARKS, PlateMarkSwatch, readRadarColors } from '@/features/radar';
 
 interface Props {
   isOpen: boolean;
@@ -17,16 +19,21 @@ function KeyCap({ label }: { label: KeyLabel }) {
 }
 
 /**
- * DESIGN.md §10.6's sheet. Two of its three parts: what the product does, and the keyboard table
- * **generated from `core/shortcuts`' own bindings** rather than written out here — §10.6 asks for one
- * source precisely because a hand-kept table drifts from the keyboard within two issues, and this is
- * the same argument §7.3 made for `RoundOutcomes` being the round list rather than a copy of it.
+ * DESIGN.md §10.6's sheet, and all three of its parts: what the product does, the keyboard table
+ * **generated from `core/shortcuts`' own bindings**, and the legend of every mark on the plate
+ * **drawn by the plate's own functions**. Both of those are one argument — a table kept by hand
+ * drifts from the thing it describes within two issues — and it is the argument §7.3 made for
+ * `RoundOutcomes` being the round list rather than a copy of it.
  *
- * The third part, the legend of every mark on the plate, is not here. It has to read the tokens the
- * renderer reads to be worth anything, which is its own issue rather than a paragraph of this one.
+ * What this file owns of the legend is the copy and the order. What a mark *looks* like is
+ * `features/radar`, because that is the slice that draws it.
  */
 export function HelpSheet({ isOpen, onDismiss }: Props) {
   const t = useT();
+
+  // Read once for fourteen swatches rather than once per swatch, and only ever at mount: the
+  // palette is not a preference and there is no second theme to switch to.
+  const colors = useMemo(() => readRadarColors(), []);
 
   return (
     <Sheet isOpen={isOpen} onDismiss={onDismiss} aria-label={t('help.title')}>
@@ -84,6 +91,34 @@ export function HelpSheet({ isOpen, onDismiss }: Props) {
           <p className="text-13 text-ink-faint leading-prose">
             <Text path="help.keyboard.note" />
           </p>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <h3 className="label-dense text-ink-dim">
+            <Text path="help.legend.title" />
+          </h3>
+
+          {/* A list rather than the keyboard table's `dl`: the mark is a picture and the sentence
+              beside it is the whole reading, so there is no term here to define. It is the shape
+              §7.3's own legend already uses. */}
+          <ul className="flex flex-col gap-3">
+            {PLATE_MARKS.map((mark) => (
+              <li key={mark.id} className="flex items-center gap-6 text-15 leading-prose">
+                <PlateMarkSwatch mark={mark} colors={colors} />
+
+                <span>
+                  {/* A grenade's name is game vocabulary and reaches the reader untranslated —
+                      AGENTS.md §11 — so it is a value beside the sentence rather than inside it. */}
+                  {mark.vocabulary !== undefined && (
+                    <span className="text-ink">{mark.vocabulary} — </span>
+                  )}
+                  <span className="text-ink-dim">
+                    <Text path={`help.legend.${mark.id}`} />
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
     </Sheet>

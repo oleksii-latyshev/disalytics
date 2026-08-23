@@ -38,7 +38,7 @@ const VISION_FADE_UNITS = 1000;
 const VISION_HALF_ANGLE = Math.PI / 4;
 
 /** What a token has faded to once its player is a body — DESIGN.md §6.1. */
-const DEAD_ALPHA = 0.5;
+export const DEAD_ALPHA = 0.5;
 
 /** Screen `x`, screen `y` and the level's opacity, per slot. */
 const SCREEN_STRIDE = 3;

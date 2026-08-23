@@ -22,5 +22,22 @@
     "clearSelection": "Clear the selected player, or close this sheet",
     "matchOverlay": "Show the whole match",
     "help": "Open this help"
+  },
+  "legend": {
+    "title": "On the plate",
+    "player": "A player, in their side's colour. The needle is where they are looking, and it grows longer while they are scoped in.",
+    "selected": "The player you have selected. They also get the cone of what they can see.",
+    "hit": "A player who has just been hit. It fades over match time, so scrubbing back through the hit shows it again.",
+    "blinded": "A player under a flash, with what is left of it sweeping away. A blinded player is not looking anywhere, so the needle goes.",
+    "objective": "Planting or defusing, filling as it goes.",
+    "dead": "A player who died, left where they fell.",
+    "audible": "How far a player can be heard from while they are making noise. Off until you switch it on in settings.",
+    "trajectory": "A grenade in the air, and the path it took to get there.",
+    "he": "the blast, over about as quickly as it is in the game.",
+    "flash": "the bang. What lasts is on the players it caught, not on the ground.",
+    "smoke": "the cloud, with a ring counting down what is left of it.",
+    "fire": "the fire, counted down by the same ring.",
+    "decoy": "the lie, pulsing where it was thrown.",
+    "kill": "A kill you are pointing at in the feed: a ring where the shot came from, a disc where the player fell."
   }
 }

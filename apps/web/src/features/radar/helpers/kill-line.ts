@@ -28,6 +28,63 @@ const ORIGIN_WIDTH_PX = 1.5;
 /** And this is where they fell — smaller than a body, which is 4px and `--ink-faint` (§6.1). */
 const FALL_RADIUS_PX = 3;
 
+/**
+ * The three marks §5.4 settled on, each on its own so that a drawing which is not the plate —
+ * §10.6's legend — draws the same ring, the same disc and the same line rather than a second
+ * copy of them. The alpha is the caller's, because on the plate it carries the level the end is on.
+ */
+export function drawKillPath(
+  context: CanvasRenderingContext2D,
+  originX: number,
+  originY: number,
+  fallX: number,
+  fallY: number,
+  alpha: number,
+  color: string,
+): void {
+  context.globalAlpha = alpha * LINE_ALPHA;
+  context.lineWidth = LINE_WIDTH_PX;
+  context.strokeStyle = color;
+
+  context.beginPath();
+  context.moveTo(originX, originY);
+  context.lineTo(fallX, fallY);
+  context.stroke();
+}
+
+/** Where the shot came from. */
+export function drawKillOrigin(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  alpha: number,
+  color: string,
+): void {
+  context.globalAlpha = alpha;
+  context.lineWidth = ORIGIN_WIDTH_PX;
+  context.strokeStyle = color;
+
+  context.beginPath();
+  context.arc(x, y, ORIGIN_RADIUS_PX, 0, FULL_TURN);
+  context.stroke();
+}
+
+/** And where they fell. */
+export function drawKillFall(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  alpha: number,
+  color: string,
+): void {
+  context.globalAlpha = alpha;
+  context.fillStyle = color;
+
+  context.beginPath();
+  context.arc(x, y, FALL_RADIUS_PX, 0, FULL_TURN);
+  context.fill();
+}
+
 export interface KillLineGeometry {
   /** The two ends, `ENDS_LENGTH` numbers, rewritten in place by `read`. */
   readonly ends: Float32Array;
@@ -137,28 +194,17 @@ export function killLineLayer(options: KillLineLayerOptions): Layer {
     const fallAlpha = sampleAt(ends, END_STRIDE + 2);
 
     // A line crossing a floor the map is not showing is as faint as its fainter end.
-    context.globalAlpha = Math.min(originAlpha, fallAlpha) * LINE_ALPHA;
-    context.lineWidth = LINE_WIDTH_PX;
-    context.strokeStyle = colors.killLine;
+    drawKillPath(
+      context,
+      originX,
+      originY,
+      fallX,
+      fallY,
+      Math.min(originAlpha, fallAlpha),
+      colors.killLine,
+    );
 
-    context.beginPath();
-    context.moveTo(originX, originY);
-    context.lineTo(fallX, fallY);
-    context.stroke();
-
-    context.globalAlpha = originAlpha;
-    context.lineWidth = ORIGIN_WIDTH_PX;
-    context.strokeStyle = sideColor(kill.attackerSide);
-
-    context.beginPath();
-    context.arc(originX, originY, ORIGIN_RADIUS_PX, 0, FULL_TURN);
-    context.stroke();
-
-    context.globalAlpha = fallAlpha;
-    context.fillStyle = sideColor(kill.victimSide);
-
-    context.beginPath();
-    context.arc(fallX, fallY, FALL_RADIUS_PX, 0, FULL_TURN);
-    context.fill();
+    drawKillOrigin(context, originX, originY, originAlpha, sideColor(kill.attackerSide));
+    drawKillFall(context, fallX, fallY, fallAlpha, sideColor(kill.victimSide));
   };
 }

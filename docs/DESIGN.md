@@ -1337,6 +1337,15 @@ bindings**, and a legend of every mark on the plate — token states, utility st
 arc. A legend that is written by hand drifts from the renderer within two issues; this one reads the
 same tokens the renderer does.
 
+It ended up stronger than that rule asks: a swatch is a canvas drawn by the plate's **own** draw
+functions, so a mark's colour, its opacity and its geometry all arrive from the code that draws it
+on the plate, and the legend chooses nothing but where in a 56×28 box a mark sits and how far
+through its own life it is caught. §5.4's three kill marks are named here too, which is the promise
+that section makes. **The vision wedge is the one mark of §6 the legend does not draw**: its
+geometry sits inside the token layer around a gradient the layer caches across frames, and lifting
+it out for a picture would move a frame path — so the entry for a selected player names the cone in
+words instead.
+
 ---
 
 ## 11. Components
