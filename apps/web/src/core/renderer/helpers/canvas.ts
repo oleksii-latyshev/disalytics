@@ -46,3 +46,35 @@ export function paintLayers(
     context.restore();
   }
 }
+
+/** A horizontal slice of the canvas, as fractions of its height. */
+export interface Band {
+  readonly top: number;
+  readonly height: number;
+}
+
+/**
+ * Runs a layer inside a horizontal band of the canvas: it is translated to the band's top edge,
+ * clipped to it, and handed the band's own size.
+ *
+ * This is what lets one canvas stack charts that each assume they own their whole surface — a trace
+ * that rises from `size.height` rises from the bottom of its band, and a chart that centres on
+ * `size.height / 2` centres in its band. Superimposing them all on one surface is what made the
+ * 14px ribbon unreadable; the layers themselves were never the problem.
+ */
+export function inBand(layer: Layer, band: Band): Layer {
+  return (context, size) => {
+    const height = size.height * band.height;
+    if (height <= 0) return;
+
+    context.save();
+    context.translate(0, size.height * band.top);
+
+    context.beginPath();
+    context.rect(0, 0, size.width, height);
+    context.clip();
+
+    layer(context, { width: size.width, height });
+    context.restore();
+  };
+}

@@ -3,6 +3,17 @@
   "positionInRound": "Position in round {round, number}",
   "positionInWarmup": "Position in the warm-up",
   "overview": "Round outcomes, event density and the equipment gap",
+  "match": {
+    "title": "The whole match",
+    "dismiss": "Close the match view",
+    "caption": "Paused while this is open.",
+    "legend": {
+      "kills": "Each kill, in the colour of the side that lost the player",
+      "rounds": "Each round, in the colour of the side that won it",
+      "density": "How much was happening",
+      "economy": "Equipment lead out of freeze time — CT above the line, T below"
+    }
+  },
   "outcomes": "Round outcomes",
   "economy": {
     "label": "Equipment gap by round",

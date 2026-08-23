@@ -12,6 +12,7 @@ export type ShortcutAction =
   | 'previousRound'
   | 'nextRound'
   | 'clearSelection'
+  | 'matchOverlay'
   | 'help';
 
 /**
@@ -66,6 +67,15 @@ export const SHORTCUT_BINDINGS: readonly ShortcutBinding[] = [
     triggers: ['Escape'],
     labels: [{ path: 'help.keys.escape' }],
     descriptionPath: 'help.shortcut.clearSelection',
+  },
+  {
+    action: 'matchOverlay',
+    // Both cases, because a keycap prints one letter and `event.key` reports what was typed: `M`
+    // arrives lower case unshifted and upper case with `Shift`, and §9.1 binds the key, not the
+    // shift state.
+    triggers: ['m', 'M'],
+    labels: [{ literal: 'M' }],
+    descriptionPath: 'help.shortcut.matchOverlay',
   },
   {
     action: 'help',
