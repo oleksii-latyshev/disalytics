@@ -1,4 +1,4 @@
-import type { PlayerSlot, Team, WeaponClass, WeaponId } from '@disa/demo-core';
+import type { Frame, PlayerSlot, Team, WeaponClass, WeaponId } from '@disa/demo-core';
 
 /**
  * One kill, as both readers of the row need it — §5.4's feed and §7.1's tooltip on the round axis.
@@ -39,3 +39,24 @@ export type RowEvent =
  * feed says one thing for a slot it cannot name and the axis says another, in their own namespaces.
  */
 export type NameOfSlot = (slot: PlayerSlot | null) => string;
+
+/**
+ * The one kill the plate is drawing a line for — §5.4's hover, handed from the feed to the radar.
+ *
+ * It is a separate type from `KillRow` rather than the same one because the two answer different
+ * questions. A row says *what happened*; a line says *where*, so it carries the frame the two
+ * positions are read at and drops every mark that qualifies the kill. Its `attacker` is a slot
+ * rather than `PlayerSlot | null`: the world has no position on the plate, so a world kill has no
+ * line and never reaches here.
+ *
+ * The sides travel with it instead of being looked up at draw time. The feed is clipped to the
+ * round being played, so the round's own sides would give the same answer today — and would
+ * silently give the wrong one the day anything hands over a kill from another round.
+ */
+export interface KillLine {
+  readonly frame: Frame;
+  readonly attacker: PlayerSlot;
+  readonly victim: PlayerSlot;
+  readonly attackerSide: Team | undefined;
+  readonly victimSide: Team | undefined;
+}

@@ -1,10 +1,10 @@
 import type { ParsedDemo, PlayerInfo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { m } from '@disa/ui';
-import { useMemo } from 'react';
-import { EventRow, type RowEvent } from '@/core/events';
+import { useEffect, useMemo } from 'react';
+import { EventRow, type KillLine, type RowEvent } from '@/core/events';
 import type { Transport } from '@/core/playback';
-import { roundFeed, visibleFeed } from '../helpers/event-feed';
+import { killLineOf, roundFeed, visibleFeed } from '../helpers/event-feed';
 
 interface Props {
   demo: ParsedDemo;
@@ -12,13 +12,14 @@ interface Props {
   frame: number;
   roundIndex: number | undefined;
   players: readonly PlayerInfo[];
+  onKillHover: (kill: KillLine | null) => void;
 }
 
 /**
  * DESIGN.md §5.4's feed, under the corner cluster: the last events before the playhead, newest
  * first, clipped to the round being played.
  *
- * Three things here are load-bearing.
+ * Four things here are load-bearing.
  *
  * **It is a function of the playhead rather than a log.** Nothing accumulates — `visibleFeed` is
  * asked again on every readout, so scrubbing backwards takes rows away and scrubbing forward brings
@@ -28,12 +29,16 @@ interface Props {
  * events are derived once per round, which is the cost #91 measured on 225 DOM buttons at the
  * readout's rate; what runs ten times a second is a walk over a dozen rows.
  *
+ * **Hovering a row is also §5.4's other half** — the plate draws that kill's line — and focus does
+ * exactly what hover does, because §9's floor is that the screen is operable without a pointer and a
+ * hover-only affordance has no keyboard at all.
+ *
  * **The arrival is the one animation §8 permits while playback runs**, and it is a mount transition
  * rather than a tween: a discrete event at the rate a match produces kills, on `opacity` and
  * `transform` only. There is deliberately no exit — a row leaves when the reader scrubs past it,
  * and animating that would put motion on the scrub.
  */
-export function EventFeed({ demo, transport, frame, roundIndex, players }: Props) {
+export function EventFeed({ demo, transport, frame, roundIndex, players, onKillHover }: Props) {
   const t = useT();
 
   const rows = useMemo(() => roundFeed(demo, roundIndex), [demo, roundIndex]);
@@ -45,7 +50,15 @@ export function EventFeed({ demo, transport, frame, roundIndex, players }: Props
   }, [players]);
   const visible = visibleFeed(rows, frame);
 
-  if (visible.length === 0) return null;
+  // A row that goes cannot report the pointer leaving it, and one goes at every round boundary: the
+  // list empties while the pointer is still where the row was. Without this the plate would keep
+  // drawing a line for a round nobody is watching any more.
+  const isEmpty = visible.length === 0;
+  useEffect(() => {
+    if (isEmpty) onKillHover(null);
+  }, [isEmpty, onKillHover]);
+
+  if (isEmpty) return null;
 
   function nameOf(slot: PlayerSlot | null): string {
     if (slot === null) return t('review.feed.unknownPlayer');
@@ -103,6 +116,10 @@ export function EventFeed({ demo, transport, frame, roundIndex, players }: Props
               transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
               aria-label={labelFor(row.event)}
               onClick={() => transport.seek(row.frame)}
+              onPointerEnter={() => onKillHover(killLineOf(row))}
+              onPointerLeave={() => onKillHover(null)}
+              onFocus={() => onKillHover(killLineOf(row))}
+              onBlur={() => onKillHover(null)}
               className="flex w-full min-w-0 rounded-chip px-1.5 py-0.5 text-left text-13 text-ink transition-colors duration-micro ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <EventRow event={row.event} nameOf={nameOf} />
