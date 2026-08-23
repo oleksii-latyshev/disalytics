@@ -3,13 +3,10 @@ import {
   frameForTick,
   killWeaponClass,
   type ParsedDemo,
-  type PlayerSlot,
   sidesBySlotAtRound,
-  type Team,
   type Tick,
-  type WeaponClass,
-  type WeaponId,
 } from '@disa/demo-core';
+import type { RowEvent } from '@/core/events';
 
 /**
  * How many rows the feed holds — DESIGN.md §5.4. It is a cap on what is *shown*, not on what is
@@ -18,34 +15,11 @@ import {
  */
 export const FEED_ROW_LIMIT = 8;
 
-export type FeedEvent =
-  | {
-      readonly kind: 'kill';
-      /** `null` when the world did the killing — fall damage, or the `kill` command. */
-      readonly attacker: PlayerSlot | null;
-      readonly victim: PlayerSlot;
-      readonly attackerSide: Team | undefined;
-      readonly victimSide: Team | undefined;
-      /** From `killWeaponClass`: `Kill.weapon` is the internal vocabulary, not the display one. */
-      readonly weapon: WeaponClass;
-      /**
-       * The weapon as the demo named it, for the row's accessible name. Game vocabulary reaches a
-       * label untranslated, the way a team row's does (§5.3) — and this is the *kill* vocabulary,
-       * so it reads `ak47` where a team row reads `AK-47` until #53 makes them one.
-       */
-      readonly weaponName: WeaponId;
-      readonly isHeadshot: boolean;
-      readonly isWallbang: boolean;
-      readonly isThroughSmoke: boolean;
-    }
-  | { readonly kind: 'plant'; readonly planter: PlayerSlot }
-  | { readonly kind: 'defuse'; readonly defuser: PlayerSlot };
-
 export interface FeedRow {
   /** Stable for the whole match, which is what identifies a row to React and to its arrival. */
   readonly id: string;
   readonly frame: Frame;
-  readonly event: FeedEvent;
+  readonly event: RowEvent;
 }
 
 interface RoundWindow {

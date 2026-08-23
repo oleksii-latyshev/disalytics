@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   axisGlyphs,
   hasRoomForGlyphs,
+  namedKill,
   positionInSegment,
   timelineSegment,
 } from '../helpers/round-axis';
@@ -175,5 +176,67 @@ describe('axisGlyphs', () => {
     const demo = newDemo(4001, { rounds: ROUNDS, kills: [newKill(400)] });
 
     expect(axisGlyphs(demo, undefined, timelineSegment(demo, undefined))).toEqual([]);
+  });
+
+  it('carries the whole row a kill needs, because §7.1 draws §5.4 row on hover', () => {
+    const rounds = [newRound(1, 0, 'CT', newBuy({ CT: [0], T: [0] }))];
+    const kills = [
+      newKill(400, { weapon: 'awp', isHeadshot: true, isThroughSmoke: true, isWallbang: true }),
+    ];
+    const demo = newDemo(4001, { rounds, kills });
+    const [glyph] = axisGlyphs(demo, 0, timelineSegment(demo, 0));
+
+    expect(glyph?.event).toMatchObject({
+      kind: 'kill',
+      attackerSide: 'CT',
+      victimSide: 'T',
+      weapon: 'sniper',
+      weaponName: 'awp',
+      isHeadshot: true,
+      isWallbang: true,
+      isThroughSmoke: true,
+    });
+  });
+
+  it('leaves the attacker sideless when the world did the killing', () => {
+    const rounds = [newRound(1, 0, 'CT', newBuy({ CT: [0], T: [0] }))];
+    const demo = newDemo(4001, { rounds, kills: [newKill(400, { attacker: null })] });
+    const [glyph] = axisGlyphs(demo, 0, timelineSegment(demo, 0));
+
+    expect(glyph?.event).toMatchObject({ kind: 'kill', attacker: null, attackerSide: undefined });
+  });
+});
+
+describe('namedKill', () => {
+  function glyphs() {
+    const demo = newDemo(4001, {
+      rounds: ROUNDS,
+      kills: [newKill(400)],
+      plants: [newPlant(500)],
+      grenades: [newGrenade(600)],
+    });
+
+    return axisGlyphs(demo, 0, timelineSegment(demo, 0));
+  }
+
+  it('names a kill, and hands over where to hang the row', () => {
+    const kill = glyphs().find((glyph) => glyph.event.kind === 'kill');
+    const named = namedKill(glyphs(), kill?.id ?? null);
+
+    expect(named?.event.kind).toBe('kill');
+    expect(named?.fraction).toBe(kill?.fraction);
+  });
+
+  it('names nothing else on the axis — §9.2 permits the row only where the feed draws it', () => {
+    for (const glyph of glyphs()) {
+      if (glyph.event.kind === 'kill') continue;
+
+      expect(namedKill(glyphs(), glyph.id)).toBeUndefined();
+    }
+  });
+
+  it('names nothing when the pointer is off the axis, or when the round has turned over', () => {
+    expect(namedKill(glyphs(), null)).toBeUndefined();
+    expect(namedKill(glyphs(), 'kill-404')).toBeUndefined();
   });
 });

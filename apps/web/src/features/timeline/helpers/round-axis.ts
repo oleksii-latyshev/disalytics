@@ -3,6 +3,7 @@ import {
   type DefuseOutcome,
   type Frame,
   frameForTick,
+  killWeaponClass,
   lastFrame,
   type ParsedDemo,
   type PlayerSlot,
@@ -12,6 +13,7 @@ import {
   type UtilityKind,
   utilityKindOfGrenade,
 } from '@disa/demo-core';
+import type { KillRow } from '@/core/events';
 
 /**
  * How much room one glyph needs before a row of them stops being a row of symbols — DESIGN.md §7.1's
@@ -45,14 +47,13 @@ export interface TimelineSegment {
   readonly closeFraction: number | null;
 }
 
+/**
+ * A kill on the axis is the same `KillRow` §5.4's feed draws, because §7.1's tooltip draws that row.
+ * `victimSide` is what tints the skull; the rest of it is the tooltip's, and none of it costs
+ * anything at the readout — `axisGlyphs` runs once per round.
+ */
 export type AxisEvent =
-  | {
-      readonly kind: 'kill';
-      readonly attacker: PlayerSlot | null;
-      readonly victim: PlayerSlot;
-      /** The side the victim held *that* round, which is what tints the skull — §7.1. */
-      readonly victimSide: Team | undefined;
-    }
+  | ({ readonly kind: 'kill' } & KillRow)
   | { readonly kind: 'plant'; readonly planter: PlayerSlot }
   | {
       readonly kind: 'defuse';
@@ -173,7 +174,13 @@ function killGlyphs(
         kind: 'kill',
         attacker: kill.attacker,
         victim: kill.victim,
+        attackerSide: kill.attacker === null ? undefined : sides[kill.attacker],
         victimSide: sides[kill.victim],
+        weapon: killWeaponClass(kill.weapon),
+        weaponName: kill.weapon,
+        isHeadshot: kill.isHeadshot,
+        isWallbang: kill.isWallbang,
+        isThroughSmoke: kill.isThroughSmoke,
       }),
     );
   });
@@ -269,4 +276,30 @@ export function axisGlyphs(
     ...defuseGlyphs(demo, window),
     ...grenadeGlyphs(demo, window),
   ].sort((a, b) => a.frame - b.frame || a.id.localeCompare(b.id));
+}
+
+/** What §7.1's tooltip needs of a glyph: where to hang, and the row to draw there. */
+export interface NamedKill {
+  readonly fraction: number;
+  readonly event: Extract<AxisEvent, { kind: 'kill' }>;
+}
+
+/**
+ * The glyph a tooltip is owed, which is a kill and only a kill — §7.1.
+ *
+ * §9.2 is what draws the line rather than taste: the tooltip is permitted because §5.4's feed draws
+ * the same row, and pressing a glyph seeks to it, so the row is always reachable without hovering. A
+ * grenade is on no feed at all, and an aborted or interrupted defuse is on the axis alone, so a
+ * tooltip for either would be the only route to its own fact.
+ *
+ * It takes the glyph's id rather than its position: a round turning over replaces the whole list
+ * under a held pointer, and an index into the old one names a different event in the new one.
+ */
+export function namedKill(glyphs: readonly AxisGlyph[], id: string | null): NamedKill | undefined {
+  if (id === null) return undefined;
+
+  const glyph = glyphs.find((candidate) => candidate.id === id);
+  if (glyph === undefined || glyph.event.kind !== 'kill') return undefined;
+
+  return { fraction: glyph.fraction, event: glyph.event };
 }

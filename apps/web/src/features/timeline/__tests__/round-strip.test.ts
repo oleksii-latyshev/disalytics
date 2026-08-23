@@ -1,6 +1,7 @@
 import { asPlayerSlot, type Team } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import {
+  anchorAtFraction,
   hasRoomForNumbers,
   type RoundCell,
   roundCells,
@@ -171,5 +172,13 @@ describe('tooltipAnchor', () => {
 
   it('has somewhere to sit when there is nothing to name', () => {
     expect(tooltipAnchor(0, 0)).toEqual({ left: '0%' });
+  });
+
+  it('reads the same rule off a position, which is how §7.1 anchors a glyph', () => {
+    expect(anchorAtFraction(0)).toEqual({ left: '0%' });
+    expect(anchorAtFraction(0.25)).toEqual({ left: '25%' });
+    expect(anchorAtFraction(0.5)).toEqual({ left: '50%' });
+    expect(anchorAtFraction(0.75)).toEqual({ right: '25%' });
+    expect(anchorAtFraction(1)).toEqual({ right: '0%' });
   });
 });

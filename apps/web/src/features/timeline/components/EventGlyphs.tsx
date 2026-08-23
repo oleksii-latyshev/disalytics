@@ -1,14 +1,19 @@
 import { type PlayerSlot, type Team, UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { memo } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { EventRow } from '@/core/events';
 import { EventGlyph, UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { Transport } from '@/core/playback';
 import { useRovingFocus } from '@/shared/hooks';
 import { defuseOutcomeKey } from '../helpers/outcome-copy';
-import type { AxisEvent, AxisGlyph } from '../helpers/round-axis';
+import { type AxisEvent, type AxisGlyph, namedKill } from '../helpers/round-axis';
+import { anchorAtFraction } from '../helpers/round-strip';
 
 /** The band the glyphs occupy, centred on the axis — 24px of mark plus the room to rise into. */
 const GLYPH_BAND_PX = 28;
+
+/** §9.2's dwell, the same one §7.3's pills answer on: a tooltip answers a pointer that stayed. */
+const HOVER_DWELL_MS = 400;
 
 interface Props {
   glyphs: readonly AxisGlyph[];
@@ -66,8 +71,33 @@ export const EventGlyphs = memo(function EventGlyphs({
 }: Props) {
   const t = useT();
   const roving = useRovingFocus(glyphs.length);
+  const dwellRef = useRef(0);
+
+  const [namedId, setNamedId] = useState<string | null>(null);
+
+  useEffect(() => () => window.clearTimeout(dwellRef.current), []);
+
+  const point = useCallback((id: string | null) => {
+    window.clearTimeout(dwellRef.current);
+
+    if (id === null) {
+      setNamedId(null);
+      return;
+    }
+
+    dwellRef.current = window.setTimeout(() => setNamedId(id), HOVER_DWELL_MS);
+  }, []);
+
+  // Focus answers at once: a reader arriving with the arrow keys has already committed to the glyph,
+  // and a dwell would be a delay on a deliberate move rather than a guard against a passing pointer.
+  const reveal = useCallback((id: string | null) => {
+    window.clearTimeout(dwellRef.current);
+    setNamedId(id);
+  }, []);
 
   if (glyphs.length === 0) return null;
+
+  const named = namedKill(glyphs, namedId);
 
   function nameOf(slot: PlayerSlot | null): string {
     if (slot === null) return t('timeline.unknownPlayer');
@@ -103,46 +133,71 @@ export const EventGlyphs = memo(function EventGlyphs({
   }
 
   return (
-    // The band takes no pointer events of its own, so everything between two glyphs still scrubs.
-    <ul
-      aria-label={t('timeline.events')}
-      className="-translate-y-1/2 pointer-events-none absolute inset-x-0 top-1/2"
-      style={{ height: `${GLYPH_BAND_PX}px` }}
-    >
-      {glyphs.map((glyph, index) => {
-        const raised = isRaised(glyph.event);
-        const muted = selectedSlot !== null && !raised;
+    <>
+      {/* The band takes no pointer events of its own, so everything between two glyphs still
+          scrubs. */}
+      <ul
+        aria-label={t('timeline.events')}
+        className="-translate-y-1/2 pointer-events-none absolute inset-x-0 top-1/2"
+        style={{ height: `${GLYPH_BAND_PX}px` }}
+      >
+        {glyphs.map((glyph, index) => {
+          const raised = isRaised(glyph.event);
+          const muted = selectedSlot !== null && !raised;
 
-        return (
-          <li key={glyph.id}>
-            <button
-              type="button"
-              ref={roving.register(index)}
-              tabIndex={index === roving.tabStop ? 0 : -1}
-              aria-label={labelFor(glyph.event)}
-              onKeyDown={(event) => roving.onKeyDown(event, index)}
-              onClick={() => {
-                roving.select(index);
-                transport.seek(glyph.frame);
-              }}
-              style={{ left: `${glyph.fraction * 100}%` }}
-              // The target a pointer hits is the `::before`, wider than the mark it carries. The
-              // descendant selector is what mutes a `UtilityGlyph`, which owns its colour class:
-              // between two single-class rules the stylesheet's order would decide instead.
-              className={`-translate-x-1/2 pointer-events-auto absolute inset-y-0 flex items-center justify-center transition-transform duration-micro ease-out before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10 ${
-                muted ? 'text-ink-faint [&_svg]:text-ink-faint' : inkFor(glyph.event)
-              } ${raised ? '-translate-y-1' : ''}`}
-            >
-              {hasRoom ? (
-                <Glyph event={glyph.event} />
-              ) : (
-                // A mark keeps the position and the colour and loses only the shape — §7.1.
-                <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
-              )}
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+          return (
+            <li key={glyph.id}>
+              <button
+                type="button"
+                ref={roving.register(index)}
+                tabIndex={index === roving.tabStop ? 0 : -1}
+                aria-label={labelFor(glyph.event)}
+                onKeyDown={(event) => roving.onKeyDown(event, index)}
+                onPointerEnter={() => point(glyph.id)}
+                onPointerLeave={() => point(null)}
+                onFocus={() => reveal(glyph.id)}
+                onBlur={() => reveal(null)}
+                onClick={() => {
+                  roving.select(index);
+                  transport.seek(glyph.frame);
+                }}
+                style={{ left: `${glyph.fraction * 100}%` }}
+                // The target a pointer hits is the `::before`, wider than the mark it carries. The
+                // descendant selector is what mutes a `UtilityGlyph`, which owns its colour class:
+                // between two single-class rules the stylesheet's order would decide instead.
+                className={`-translate-x-1/2 pointer-events-auto absolute inset-y-0 flex items-center justify-center transition-transform duration-micro ease-out before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10 ${
+                  muted ? 'text-ink-faint [&_svg]:text-ink-faint' : inkFor(glyph.event)
+                } ${raised ? '-translate-y-1' : ''}`}
+              >
+                {hasRoom ? (
+                  <Glyph event={glyph.event} />
+                ) : (
+                  // A mark keeps the position and the colour and loses only the shape — §7.1.
+                  <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* §7.1's kill row, and §2.3's tooltip case: `--glass-raised` and no `backdrop-filter`, because
+          the playhead and the glyphs are moving under it every frame. It hangs above the axis and
+          over the round strip — the block does not clip its overflow, and below the axis is the
+          bottom of the window. Anchored by the edge nearer its end of the axis, so the row grows
+          inward and the last kill of a round is not drawn off the screen.
+
+          `aria-hidden` because it restates the glyph's own accessible name, which is the whole
+          reason §9.2 lets it exist. */}
+      {named !== undefined && (
+        <div
+          aria-hidden="true"
+          style={anchorAtFraction(named.fraction)}
+          className="pointer-events-none absolute bottom-1/2 z-20 mb-4 flex items-center whitespace-nowrap rounded-chip bg-glass-raised px-2 py-1 text-12 shadow-raised ring-1 ring-glass-hair"
+        >
+          <EventRow event={named.event} nameOf={nameOf} />
+        </div>
+      )}
+    </>
   );
 });
