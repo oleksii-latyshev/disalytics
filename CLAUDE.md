@@ -458,6 +458,22 @@ every time. And **the reproduction is stateful**: the last CT seat overflows at 
 every player has a helmet and full money, and not 40 seconds later where the same row is a dead
 player holding $100.
 
+**#220 built §10.6's legend, and it is drawn rather than described.** Fourteen marks in the help
+sheet — the token and its states, every piece of utility §6.2 draws, the trajectory, and §5.4's
+three kill marks — each a 56×28 canvas painted by **the plate's own draw function**, colour off
+`RadarColors`. §10.6 only asked the legend to read the same tokens the renderer reads; drawing it
+with the same code is what makes drift impossible rather than unlikely, and
+`features/radar/helpers/plate-legend.ts` chooses nothing but where in the box a mark sits and how
+far through its own life it is caught. Three things to know. **The test is the rule**: every mark
+is painted against a palette of sentinels and any colour outside it fails the suite, which is the
+only form of this that survives a hurried change. **Three extractions came with it and each removed
+a duplicate** — `trajectoryStroke`, the kill line's `drawKillPath`/`drawKillOrigin`/`drawKillFall`,
+and `SMOKE_AREA_ALPHA`/`FIRE_AREA_ALPHA`, which `grenadeVisual` had carried as bare 0.30 and 0.25
+inside a switch. And **the vision wedge is the one mark not drawn**: its geometry sits around a
+gradient the token layer caches across frames, so the entry for a selected player names the cone in
+words and §10.6 records why. A canvas cannot carry `aria-hidden` — Biome's a11y rule counts it as
+focusable — so the wrapper carries it.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

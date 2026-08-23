@@ -29,6 +29,12 @@ export const FLASH_EXPAND_SECONDS = 0.15;
 /** How long the smoke / molotov disc alpha fades before expiry — §6.2. */
 export const AREA_FADE_SECONDS = 2.0;
 
+/** What a smoke cloud is drawn at while it is not fading — §6.2. */
+export const SMOKE_AREA_ALPHA = 0.3;
+
+/** And a fire area, which is thinner because it is read through — §6.2. */
+export const FIRE_AREA_ALPHA = 0.25;
+
 /** Pulse frequency of a decoy mark, in Hz of match time — §6.2. */
 export const DECOY_PULSE_HZ = 2;
 
@@ -170,11 +176,10 @@ export function grenadeVisual(
       out.phase = 'active';
       out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
 
-      // Base alpha 0.30, fading to 0 in the last AREA_FADE_SECONDS.
       if (remainingSeconds <= AREA_FADE_SECONDS) {
-        out.alpha = 0.3 * (remainingSeconds / AREA_FADE_SECONDS);
+        out.alpha = SMOKE_AREA_ALPHA * (remainingSeconds / AREA_FADE_SECONDS);
       } else {
-        out.alpha = 0.3;
+        out.alpha = SMOKE_AREA_ALPHA;
       }
       break;
     }
@@ -191,11 +196,10 @@ export function grenadeVisual(
       out.phase = 'active';
       out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
 
-      // Base alpha 0.25, fading to 0 in the last AREA_FADE_SECONDS.
       if (remainingSeconds <= AREA_FADE_SECONDS) {
-        out.alpha = 0.25 * (remainingSeconds / AREA_FADE_SECONDS);
+        out.alpha = FIRE_AREA_ALPHA * (remainingSeconds / AREA_FADE_SECONDS);
       } else {
-        out.alpha = 0.25;
+        out.alpha = FIRE_AREA_ALPHA;
       }
       break;
     }

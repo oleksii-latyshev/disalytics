@@ -8,6 +8,16 @@ const TRAJECTORY_ALPHA = 0.35;
 const TRAJECTORY_WIDTH_PX = 1;
 
 /**
+ * The path's ink, on its own so that a drawing which is not a grenade's own trajectory — §10.6's
+ * legend — strokes the line with these values rather than with a second copy of them.
+ */
+export function trajectoryStroke(context: CanvasRenderingContext2D, color: string): void {
+  context.globalAlpha = TRAJECTORY_ALPHA;
+  context.strokeStyle = color;
+  context.lineWidth = TRAJECTORY_WIDTH_PX;
+}
+
+/**
  * A grenade's flight path clipped to `clipCount` positions. White, 1px, α0.35 — not in the
  * utility's colour, because a path is not the grenade — §6.2.
  */
@@ -22,9 +32,7 @@ export function drawTrajectory(
   if (clipCount < 2) return;
 
   context.save();
-  context.globalAlpha = TRAJECTORY_ALPHA;
-  context.strokeStyle = color;
-  context.lineWidth = TRAJECTORY_WIDTH_PX;
+  trajectoryStroke(context, color);
   context.beginPath();
 
   const startX = radarX(overview, sampleAt(trajectory.x, 0)) * scale;

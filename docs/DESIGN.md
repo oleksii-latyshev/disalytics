@@ -1337,6 +1337,15 @@ bindings**, and a legend of every mark on the plate — token states, utility st
 arc. A legend that is written by hand drifts from the renderer within two issues; this one reads the
 same tokens the renderer does.
 
+It ended up stronger than that rule asks: a swatch is a canvas drawn by the plate's **own** draw
+functions, so a mark's colour, its opacity and its geometry all arrive from the code that draws it
+on the plate, and the legend chooses nothing but where in a 56×28 box a mark sits and how far
+through its own life it is caught. §5.4's three kill marks are named here too, which is the promise
+that section makes. **The vision wedge is the one mark of §6 the legend does not draw**: its
+geometry sits inside the token layer around a gradient the layer caches across frames, and lifting
+it out for a picture would move a frame path — so the entry for a selected player names the cone in
+words instead.
+
 ---
 
 ## 11. Components
@@ -1486,9 +1495,10 @@ feed was the one thing step 5 left behind: its rows landed in #209 and its hover
 9. **Settings and help** *(opened by #151)* — §10.5 and §10.6. Both sheets exist: `@disa/ui` has the
    native `<dialog>` they are built on, settings carries the three rows that had bridged through the
    corner cluster, and help carries §10.6's four sentences plus the keyboard table **generated from
-   `core/shortcuts`' own bindings** rather than written beside them. Two pieces remain, one issue
-   each: **the rest of §10.5's table** (#202), and **§10.6's legend of every mark on the plate**
-   (#201), which has to read the tokens the renderer reads or it drifts within two issues.
+   `core/shortcuts`' own bindings** rather than written beside them. **§10.6's legend landed in
+   #220**, and it went past the rule it was given: a swatch is drawn by the plate's own draw
+   function, so a mark cannot drift from the renderer without the renderer changing shape. One piece
+   remains — **the rest of §10.5's table** (#202).
 10. **Time** *(added by #157)* — §7 as rewritten on 16 August 2026, in `features/timeline`. Three
     pieces, and they are not one PR: §7.1's kill glyph takes the victim's side colour; §7.1's kill
     tooltip, **which may not ship before step 5's event feed**, because §9.2 permits it only as a
