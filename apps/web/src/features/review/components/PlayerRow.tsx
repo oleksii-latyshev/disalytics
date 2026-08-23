@@ -117,7 +117,11 @@ export function PlayerRow({
         )}
       </span>
 
-      <span className="flex items-center gap-2">
+      {/* The numbers wrap because below the split they cannot do anything else: a seat in §5.1's
+          strip is 79px of content box and the health figure, the helmet and the money are 95–107px
+          of it that no locale can shrink. Above the split the box is 240px and this line never
+          wraps at all. */}
+      <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <Bar value={health / 100} className={side === 'CT' ? 'bg-ct' : 'bg-t'} />
           <Bar value={armour / 100} className="bg-ink-dim" />
