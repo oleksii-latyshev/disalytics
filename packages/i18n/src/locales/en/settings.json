@@ -2,19 +2,72 @@
   "title": "Settings",
   "dismiss": "Close settings",
   "group": {
+    "playback": "Playback",
     "plate": "Plate",
     "interface": "Interface",
+    "colour": "Colour",
     "developer": "Developer"
+  },
+  "skipBuyPhase": {
+    "label": "Skip the buy phase",
+    "note": "Playback jumps to the moment each round opens. Scrubbing into a buy phase by hand still takes you there and still shows it."
+  },
+  "seekStep": {
+    "label": "Seek step",
+    "note": "How far the left and right arrow keys move the clock.",
+    "option": "{seconds} s"
+  },
+  "heldArrowRate": {
+    "label": "Held-arrow rate",
+    "note": "How much faster a held arrow key moves than a tapped one.",
+    "option": "{rate}×"
+  },
+  "radarTheme": {
+    "label": "Radar theme",
+    "note": "Which set of map images the plate draws. Which one is better is settled by looking at ten players on top of both."
   },
   "audibility": {
     "label": "Audibility rings",
     "note": "A ring around each player showing how far their movement carries. It is the largest mark on the plate, and it is an approximation of the game's own falloff."
   },
+  "playerNames": {
+    "label": "Player names on the plate",
+    "note": "The name beside each living player. Turning it off leaves the team cards as the way to tell who is who."
+  },
+  "trajectories": {
+    "label": "Grenade trajectories",
+    "note": "The flight path a grenade leaves behind it. Narrowed to the selected player, it draws nothing until you pick one.",
+    "flight": "In flight",
+    "selected": "Selected only",
+    "off": "Off"
+  },
   "scoreboard": {
     "label": "Scoreboard position",
     "note": "On the timeline it costs the plate nothing. Over the map it floats above the players, which is the one thing allowed to cover them.",
-    "onBlock": "On the timeline",
-    "onPlate": "Over the map"
+    "block": "On the timeline",
+    "plate": "Over the map"
+  },
+  "survivors": {
+    "label": "Round strip survivors",
+    "note": "Two tracks under the round numbers, showing how many players each side had left. The same control sits on the strip itself."
+  },
+  "language": {
+    "label": "Language",
+    "note": "Game words — map names, weapons, callouts — are never translated.",
+    "system": "System",
+    "en": "English",
+    "ru": "Русский"
+  },
+  "motion": {
+    "label": "Reduce motion",
+    "note": "Follows the device unless you answer here. What moves with the match is drawing rather than animation, and is unaffected either way.",
+    "system": "System",
+    "reduced": "Reduce",
+    "full": "Full"
+  },
+  "palette": {
+    "label": "Colour-blind-safe palette",
+    "note": "Both side colours and every mark on the plate, chosen so that no two stay close under red-green colour blindness."
   },
   "debug": {
     "label": "Debug overlay",

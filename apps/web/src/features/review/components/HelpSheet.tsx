@@ -1,9 +1,9 @@
 import { Text, useT } from '@disa/i18n';
 import { Button, Sheet } from '@disa/ui';
 import { X } from 'lucide-react';
-import { useMemo } from 'react';
+import { useSetting } from '@/core/settings';
 import { type KeyLabel, SHORTCUT_BINDINGS } from '@/core/shortcuts';
-import { PLATE_MARKS, PlateMarkSwatch, readRadarColors } from '@/features/radar';
+import { PLATE_MARKS, PlateMarkSwatch, radarColors } from '@/features/radar';
 
 interface Props {
   isOpen: boolean;
@@ -31,9 +31,10 @@ function KeyCap({ label }: { label: KeyLabel }) {
 export function HelpSheet({ isOpen, onDismiss }: Props) {
   const t = useT();
 
-  // Read once for fourteen swatches rather than once per swatch, and only ever at mount: the
-  // palette is not a preference and there is no second theme to switch to.
-  const colors = useMemo(() => readRadarColors(), []);
+  // One read for fourteen swatches rather than one per swatch, and re-read only when §10.5's
+  // palette row moves — the legend has to show the marks as the plate is drawing them now.
+  const [palette] = useSetting('palette');
+  const colors = radarColors(palette);
 
   return (
     <Sheet isOpen={isOpen} onDismiss={onDismiss} aria-label={t('help.title')}>

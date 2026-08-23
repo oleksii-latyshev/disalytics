@@ -474,6 +474,37 @@ gradient the token layer caches across frames, so the entry for a selected playe
 words and §10.6 records why. A canvas cannot carry `aria-hidden` — Biome's a11y rule counts it as
 focusable — so the wrapper carries it.
 
+**#202 filled out §10.5's table and closed §15's step 9, absorbing #81 on the way.** Thirteen rows,
+and the shape they arrive in is the load-bearing part: `apps/web/src/core/settings` is **one store
+with one key per setting**, and a setting is read *where it is obeyed* rather than drilled from the
+stage — `RadarView` reads its own four, `RoundStrip` reads the survivor tracks it already had a
+control for, and `SettingsSheet` takes two props. `useStoredFlag` is deleted; four of its storage
+keys survive it unchanged, and the scoreboard's does not — `disa.review.scoreboardOnPlate` became
+`disa.review.scoreboard` carrying a position rather than a boolean, so a reader who had chosen the
+plate gets the brow back once. Five things to know. **The palette and the motion override are
+document attributes written outside React**: the plate reads its colours out of the computed style,
+so an effect would paint one frame of the palette the reader just left. **`radarColors(palette)`
+caches on that palette** — the colours go into a layer array, and a fresh object per render rebuilds
+every layer on the plate ten times a second. **Skipping the buy phase is `transport.setFrameSkip`,
+applied inside `advance` and never inside `seek`**, which is what keeps a hand-scrubbed buy phase
+reachable and visible. **The locale stays `@disa/i18n`'s**, because that package reads its key
+before React starts and two writers to one key is one too many; `I18nProvider` holds the locale in
+state now and ignores a chunk that lands after a second switch. And **the seek step and the
+held-arrow rate are stored and obeyed by nothing** — `←` and `→` are §15's step 7, and #202's own
+body says so.
+
+**The colour-blind palette in that PR is #81's, and it is measured rather than picked.** Every
+candidate was run through a dichromat simulation (Viénot, Brettel & Mollon 1999) for protanopia and
+deuteranopia, and the set maximises the *smallest* CIEDE2000 distance over every pair of marks
+across normal, protan and deutan vision at once — a floor of **14.28** where the defaults collapse
+to **1.79** (`--nade-decoy` against `--objective` under deuteranopia). Two findings outlive the PR.
+**`--ct` and `--accent` are ΔE2000 0.9 apart under deuteranopia in the *default* palette** — the
+violet accent and CT blue are one colour to a deuteranope — and this palette does not fix it,
+because the accent is §2.5's rather than a data colour; what saves the selection ring is that the
+ring itself is `--ink`. And **`--nade-flash` sits 3.3 from `--ink` in ordinary vision**, which is
+not a deficiency at all: both are white on purpose. `docs/DESIGN.md` §2.4 carries the values, the
+method and both exclusions.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

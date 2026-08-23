@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buyPhaseSkipFrame,
   frameForTick,
   lastFrame,
   openingFrame,
@@ -327,6 +328,42 @@ describe('roundClockAtFrame', () => {
 
   it('has no answer for a match with no rounds', () => {
     expect(roundClockAtFrame(newDemo([]), 400)).toBeUndefined();
+  });
+});
+
+describe('buyPhaseSkipFrame', () => {
+  const track = newTrack({ tickRate: 64, sampleHz: 16, frameCount: 2000 });
+  const rounds = [
+    newRound({ startTick: asTick(640), freezeTimeEndTick: asTick(1280), endTick: asTick(4480) }),
+    newRound({ startTick: asTick(4800), freezeTimeEndTick: asTick(5440), endTick: asTick(8000) }),
+  ];
+  const demo: ParsedDemo = { header, track, events: { ...newEvents(), rounds } };
+
+  it('sends a position inside a buy phase to the moment the round opens', () => {
+    expect(buyPhaseSkipFrame(demo, 200)).toBe(320);
+  });
+
+  it('does the same in every round, not only the first', () => {
+    expect(buyPhaseSkipFrame(demo, 1250)).toBe(1360);
+  });
+
+  it('has nothing to say once the round is live', () => {
+    expect(buyPhaseSkipFrame(demo, 400)).toBeNull();
+  });
+
+  it('has nothing to say during warmup, which is not a buy phase', () => {
+    expect(buyPhaseSkipFrame(demo, 0)).toBeNull();
+  });
+
+  it('never sends the clock backwards', () => {
+    const opening = buyPhaseSkipFrame(demo, 319);
+
+    expect(opening).toBe(320);
+    expect(buyPhaseSkipFrame(demo, 320)).toBeNull();
+  });
+
+  it('has nothing to say in a match with no rounds', () => {
+    expect(buyPhaseSkipFrame({ header, track, events: newEvents() }, 400)).toBeNull();
   });
 });
 

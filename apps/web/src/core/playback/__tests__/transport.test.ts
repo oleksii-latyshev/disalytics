@@ -1,4 +1,4 @@
-import { type TickTrack, WEAPON_NONE } from '@disa/demo-core';
+import { asFrame, type TickTrack, WEAPON_NONE } from '@disa/demo-core';
 import { describe, expect, it, vi } from 'vitest';
 import { createTransport } from '../helpers/transport';
 
@@ -203,5 +203,39 @@ describe('resume', () => {
 
     expect(transport.clock.frame).toBe(63);
     expect(transport.clock.isPlaying).toBe(true);
+  });
+});
+
+describe('setFrameSkip', () => {
+  it('moves the clock where the rule says, once playback has advanced it', () => {
+    const transport = createTransport(newTrack(64), 0);
+    transport.setFrameSkip((frame) => (frame < 32 ? asFrame(32) : null));
+
+    transport.play();
+    transport.advance(SECOND_MS);
+
+    expect(transport.clock.frame).toBe(32);
+  });
+
+  it('leaves a seek alone, so what playback skips is still reachable by hand', () => {
+    const transport = createTransport(newTrack(64), 0);
+    transport.setFrameSkip((frame) => (frame < 32 ? asFrame(32) : null));
+
+    transport.seek(8);
+    expect(transport.clock.frame).toBe(8);
+
+    transport.step(1);
+    expect(transport.clock.frame).toBe(9);
+  });
+
+  it('stops obeying a rule that has been taken away', () => {
+    const transport = createTransport(newTrack(64), 0);
+    transport.setFrameSkip((frame) => (frame < 32 ? asFrame(32) : null));
+    transport.setFrameSkip(null);
+
+    transport.play();
+    transport.advance(SECOND_MS);
+
+    expect(transport.clock.frame).toBe(SAMPLE_HZ);
   });
 });

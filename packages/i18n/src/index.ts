@@ -1,9 +1,13 @@
 export type { InitialLocale } from './bootstrap';
 export { loadInitialLocale } from './bootstrap';
+export type { LocaleControl } from './components/I18nProvider';
 export { I18nProvider } from './components/I18nProvider';
 export { Text } from './components/Text';
 export type { Locale, TranslationValues } from './config';
+export { LOCALES } from './config';
 export type { TranslationKey } from './generated/keys';
+export type { LocalePreference } from './helpers/resolve-locale';
 export { useLocale } from './hooks/use-locale';
+export { useLocalePreference } from './hooks/use-locale-preference';
 export type { Translate } from './hooks/use-t';
 export { useT } from './hooks/use-t';

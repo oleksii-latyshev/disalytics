@@ -1,8 +1,27 @@
-import { type GrenadeTrajectory, sampleAt } from '@disa/demo-core';
+import { type GrenadeTrajectory, type PlayerSlot, sampleAt } from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
 import { radarX, radarY } from '@disa/map-data';
+import type { TrajectoryVisibility } from '@/core/settings';
 
 // ── trajectory ──────────────────────────────────────────────────────────────
+
+/**
+ * Whether a grenade in flight draws its path — `docs/DESIGN.md` §10.5's trajectories row.
+ *
+ * `selected` narrows `flight` rather than replacing it: §6.2 draws a path for a grenade in the air
+ * and for a grenade the reader has picked out, and the only thing on this screen a reader picks out
+ * is a player (§6.1), so the narrow answer is *that player's* grenades. With nobody selected it
+ * draws nothing, which is the honest reading of "selected only".
+ */
+export function isTrajectoryDrawn(
+  visibility: TrajectoryVisibility,
+  thrower: PlayerSlot,
+  selectedSlot: PlayerSlot | null,
+): boolean {
+  if (visibility === 'off') return false;
+
+  return visibility === 'flight' || thrower === selectedSlot;
+}
 
 const TRAJECTORY_ALPHA = 0.35;
 const TRAJECTORY_WIDTH_PX = 1;

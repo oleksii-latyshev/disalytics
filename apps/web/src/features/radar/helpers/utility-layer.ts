@@ -4,6 +4,7 @@ import {
   grenadeRadiusUnits,
   grenadeVisual,
   type ParsedDemo,
+  type PlayerSlot,
   sampleAt,
   tickAtFrame,
   trajectoryClipCount,
@@ -11,6 +12,7 @@ import {
 } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
+import type { TrajectoryVisibility } from '@/core/settings';
 import type { RadarColors } from './colors';
 import {
   drawDecoyPulse,
@@ -19,6 +21,7 @@ import {
   drawMolotovArea,
   drawSmokeCloud,
   drawTrajectory,
+  isTrajectoryDrawn,
 } from './grenades';
 
 export interface UtilityLayerOptions {
@@ -26,6 +29,8 @@ export interface UtilityLayerOptions {
   readonly clock: Clock;
   readonly overview: MapOverview;
   readonly colors: RadarColors;
+  readonly trajectories: TrajectoryVisibility;
+  readonly selectedSlot: PlayerSlot | null;
 }
 
 /**
@@ -37,7 +42,7 @@ export interface UtilityLayerOptions {
  * frame — no allocation in the draw loop.
  */
 export function utilityLayer(options: UtilityLayerOptions): Layer {
-  const { demo, clock, overview, colors } = options;
+  const { demo, clock, overview, colors, trajectories, selectedSlot } = options;
   const { events, track } = demo;
   const { grenades } = events;
 
@@ -65,9 +70,12 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
       grenadeVisual(grenade, tick, track.tickRate, visual);
       if (visual.phase === null) continue;
 
-      // Trajectory — drawn for in-flight grenades.
+      // Trajectory — drawn for in-flight grenades, and for which of them is §10.5's to say.
       if (visual.phase === 'flight') {
-        const clipCount = trajectoryClipCount(grenade, tick, track.tickRate);
+        const clipCount = isTrajectoryDrawn(trajectories, grenade.thrower, selectedSlot)
+          ? trajectoryClipCount(grenade, tick, track.tickRate)
+          : 0;
+
         if (clipCount >= 2) {
           drawTrajectory(
             context,

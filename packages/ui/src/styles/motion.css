@@ -10,18 +10,38 @@
    switch cannot express either half of that rule, and what it did express was an interface that
    stopped answering the reader during the activity the product exists for.
 
-   Opacity keeps its transition so fades still read as intentional rather than as a flicker. */
+   Opacity keeps its transition so fades still read as intentional rather than as a flicker.
+
+   DESIGN.md §10.5 lets the reader answer over the top of the device, and `data-motion-reduce` on
+   the document element is that answer: `on` reduces whatever the media query says, `off` declines
+   to, and no attribute at all leaves the device to speak. That is why the block is written twice —
+   a media query and an attribute are two conditions with no selector that ORs them, and expressing
+   the override as a custom property cannot work, because a reset that has to beat author
+   declarations has nothing to interpolate. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion-reduce="off"]) *,
+  :root:not([data-motion-reduce="off"]) *::before,
+  :root:not([data-motion-reduce="off"]) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 
-  *:not([data-motion="opacity"]) {
+  :root:not([data-motion-reduce="off"]) *:not([data-motion="opacity"]) {
     transition-property: opacity !important;
   }
+}
+
+:root[data-motion-reduce="on"] *,
+:root[data-motion-reduce="on"] *::before,
+:root[data-motion-reduce="on"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-motion-reduce="on"] *:not([data-motion="opacity"]) {
+  transition-property: opacity !important;
 }

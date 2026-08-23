@@ -75,6 +75,27 @@ export function openingFrame(demo: ParsedDemo): Frame {
   return roundOpeningFrame(demo, 0);
 }
 
+/**
+ * Where playback should stand instead of `frame`, or `null` for a position it may keep.
+ *
+ * This is `docs/DESIGN.md` §10.5's skip-the-buy-phase rule and it is deliberately a *playback*
+ * rule: only the transport's own advance consults it, so scrubbing into a buy phase by hand still
+ * lands there and still draws it. A rule that made the buy phase unreachable would be a bug.
+ */
+export function buyPhaseSkipFrame(demo: ParsedDemo, frame: number): Frame | null {
+  const roundIndex = roundIndexAtFrame(demo, frame);
+  if (roundIndex === undefined) return null;
+
+  const round = demo.events.rounds.at(roundIndex);
+  if (round === undefined) return null;
+
+  if (tickAtFrame(demo.track, frame) >= round.freezeTimeEndTick) return null;
+
+  const opening = frameForTick(demo.track, round.freezeTimeEndTick);
+
+  return opening > frame ? opening : null;
+}
+
 /** Which part of a round a sample position stands in — `docs/DESIGN.md` §5.2's three phases. */
 export type RoundPhase = 'freeze' | 'live' | 'post';
 

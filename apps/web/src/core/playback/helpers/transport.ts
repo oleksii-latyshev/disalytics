@@ -1,6 +1,19 @@
-import { advanceClock, type Clock, createClock, lastFrame, type TickTrack } from '@disa/demo-core';
+import {
+  advanceClock,
+  type Clock,
+  createClock,
+  type Frame,
+  lastFrame,
+  type TickTrack,
+} from '@disa/demo-core';
 
 type Listener = () => void;
+
+/**
+ * Where playback should stand instead of the position it just advanced to, or `null` to keep it.
+ * Consulted once per animation frame, so it must not allocate.
+ */
+export type FrameSkip = (frame: number) => Frame | null;
 
 export interface Transport {
   readonly clock: Clock;
@@ -17,6 +30,12 @@ export interface Transport {
   seek(frame: number): void;
   /** Moves by whole samples from the sample the clock stands on, and stops playback. */
   step(samples: number): void;
+  /**
+   * A rule playback obeys and a seek does not — DESIGN.md §10.5's skip-the-buy-phase row is the
+   * only caller. It is deliberately not applied in `seek`: scrubbing into what the rule skips has
+   * to land there, or the reader is locked out of part of the match.
+   */
+  setFrameSkip(skip: FrameSkip | null): void;
   /** Moves the clock on by real time elapsed. The rAF loop calls this and nothing else does. */
   advance(elapsedMs: number): void;
   /** Once per animation frame. A sink draws; it never writes React state. */
@@ -47,6 +66,7 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
   const clock = createClock(startFrame);
   const frameListeners: Listener[] = [];
   const transportListeners: Listener[] = [];
+  let frameSkip: FrameSkip | null = null;
 
   function resume(): void {
     if (clock.isPlaying) return;
@@ -90,6 +110,10 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
       seek(Math.round(clock.frame) + samples);
     },
 
+    setFrameSkip(skip) {
+      frameSkip = skip;
+    },
+
     setSpeed(speed) {
       if (clock.speed === speed) return;
 
@@ -101,6 +125,12 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
       const wasPlaying = clock.isPlaying;
 
       advanceClock(clock, track, elapsedMs);
+
+      if (frameSkip !== null) {
+        const skipped = frameSkip(clock.frame);
+        if (skipped !== null) clock.frame = skipped;
+      }
+
       notify(frameListeners);
 
       if (clock.isPlaying !== wasPlaying) notify(transportListeners);

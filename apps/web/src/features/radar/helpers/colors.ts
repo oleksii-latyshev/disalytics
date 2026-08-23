@@ -1,4 +1,5 @@
 import type { Team } from '@disa/demo-core';
+import type { Palette } from '@/core/settings';
 import { readCssToken } from '@/shared/lib';
 import type { LabelColors } from './labels';
 
@@ -34,7 +35,7 @@ export interface RadarColors {
   readonly killLine: string;
 }
 
-export function readRadarColors(): RadarColors {
+function readRadarColors(): RadarColors {
   return {
     team: { CT: readCssToken('--color-ct'), T: readCssToken('--color-t') },
     dead: readCssToken('--color-ink-faint'),
@@ -51,4 +52,23 @@ export function readRadarColors(): RadarColors {
     trajectory: readCssToken('--color-ink'),
     killLine: readCssToken('--color-ink'),
   };
+}
+
+let cached: { readonly palette: Palette; readonly colors: RadarColors } | null = null;
+
+/**
+ * The data colours as the document currently resolves them, held until the palette changes.
+ *
+ * The palette is a token swap (`docs/DESIGN.md` §2.7), so nothing here branches on it — it is the
+ * cache key, and the one thing that can make sixteen `getComputedStyle` reads worth doing again.
+ * Holding the result matters because the callers pass it into a layer array: a new object every
+ * render would rebuild every layer on the plate ten times a second.
+ */
+export function radarColors(palette: Palette): RadarColors {
+  if (cached !== null && cached.palette === palette) return cached.colors;
+
+  const colors = readRadarColors();
+  cached = { palette, colors };
+
+  return colors;
 }

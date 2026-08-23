@@ -201,6 +201,47 @@ future mark looking for a red will find this line rather than an unclaimed colou
 A semantic colour may only be used for the thing it names. An aggregate is not a semantic: "how much
 happened in this minute" is not damage, and is drawn in `--ink-dim`.
 
+#### The colour-blind-safe variant
+
+§2.7 requires one and §10.5 selects it. These are the values, measured rather than picked, and they
+landed on 23 August 2026 with the settings table (#202, absorbing #81):
+
+```css
+--ct:            #60A6FB;   /* still blue: ΔE2000 1.6 from the default */
+--t:             #F9E12A;
+--damage:        #D2696E;
+--nade-he:       #EAA46A;
+--nade-flash:    #F2F6FF;   /* unchanged — white is not a hue anyone confuses */
+--nade-smoke:    #979BA2;
+--nade-molotov:  #E94814;
+--nade-decoy:    #C2BBAD;
+--objective:     #A26FAB;
+```
+
+**How they were chosen.** Each candidate was run through a dichromat simulation (Viénot, Brettel &
+Mollon 1999) for protanopia and deuteranopia — the red-green deficiencies, and between them almost
+every colour-blind reader — and the set was picked to maximise the *smallest* CIEDE2000 distance
+across every pair of marks, under all of normal, protan and deutan vision at once. Two colours the
+palette does not own were held in that comparison because they share the plate: `--ink-faint`, which
+is a dead player's token, and the brightest ground a radar image puts behind a mark.
+
+**What that buys.** The defaults collapse under deuteranopia in four places, and two of them are
+severe: `--nade-decoy` against `--objective` at **ΔE2000 1.79**, `--nade-smoke` against
+`--objective` at **4.19**, `--nade-he` against `--nade-molotov` at **7.53**, and `--damage` against
+`--nade-molotov` at **8.60**. The variant holds a floor of **14.28** across all 36 pairs, and the
+sides — the pair a reader must never confuse — stand at **65.4** where the defaults reach 67.7.
+Every mark keeps at least 2.10:1 against the brightest ground either radar theme draws, which is
+the defaults' own floor.
+
+Two pairs are deliberately outside that claim, and neither is a hue failure:
+
+- **`--nade-flash` against `--ink`** measures 3.3 in *normal* vision. Both are white on purpose; a
+  flash is told from a line by shape, which is the argument §2.4 already makes about `--kill`.
+- **`--ct` against `--accent`** measures **0.9 under deuteranopia** in the default palette and 2.5
+  in the variant — the violet accent and CT blue are one colour to a deuteranope, and moving the
+  accent is a change to §2.5 rather than to the data colours. It costs the selection ring its violet
+  inner edge and nothing else: the ring itself is `--ink`, and §6.1 has it carry the reading.
+
 ### 2.5 The accent — violet, and no longer fenced
 
 ```css
@@ -256,6 +297,9 @@ and it matters more in this revision than the last, because §6.1 gives up token
 of side identity. After this revision side identity has two carriers: hue, and which card the player
 is listed in. That is a real reduction and the colour-blind palette is what pays for it; it is no
 longer a nice-to-have and it ships with the rails.
+
+**It shipped on 23 August 2026 (#202).** §2.4 carries the values, the method they were measured by
+and the two pairs the claim deliberately excludes.
 
 ---
 
@@ -1301,7 +1345,7 @@ it is open, so principle 4 is not violated by covering a plate that is not movin
 | Plate | Grenade trajectories — in flight / selected only / off | in flight |
 | Interface | **Scoreboard position** — on the timeline block / over the plate (§5.2) | on the block |
 | Interface | **Round strip survivors** — the expanded tracks in §7.3 | off |
-| Colour | Colour-blind-safe side palette | off |
+| Colour | **Colour-blind-safe palette** — every data colour in §2.4, not only the sides | off |
 | Interface | Language — English / Русский | system |
 | Interface | Reduce motion | follows the system |
 | Developer | Debug overlay — coordinates and frame counters | off |
@@ -1317,11 +1361,22 @@ is a real cost attached to a real preference, and §5.2 argues why both readings
 Every setting is a UI preference and therefore allowed in `localStorage` under hard rule 5. Nothing
 parsed goes there.
 
-**The sheet exists since 17 August 2026 (#151), carrying three of these rows** — the audibility
-rings, the scoreboard position and the debug overlay, which are the three that had bridged through
-the corner cluster (§5.4). The other rows are still step 9's, and a row that is not built yet is not
-a row that has been decided against: this table is the specification either way, which is what kept
-those three in it while they were living somewhere else.
+**The sheet exists since 17 August 2026 (#151)** and carried three of these rows until 23 August —
+the audibility rings, the scoreboard position and the debug overlay, which are the three that had
+bridged through the corner cluster (§5.4). **The rest of the table landed in #202**, and two of its
+rows are worth stating in full, because the table's own wording leaves them open:
+
+- **Seek step and held-arrow rate are stored and obeyed by nothing yet.** `←` and `→` are §9.1's and
+  belong to §15's step 7; a setting whose consumer has not been built is not a setting that does
+  nothing, it is one waiting on a step. Nothing else in this table is in that position.
+- **Trajectories narrowed to *selected only* draw nothing until a player is selected.** §6.2 draws a
+  path for a grenade in the air and for a grenade the reader has picked out, and the only thing this
+  screen lets a reader pick out is a player — so the narrow answer is that player's grenades, and
+  with nobody selected there is honestly nothing to draw.
+
+A row that had not been built was never a row that had been decided against: this table is the
+specification either way, which is what kept those three in it while they were living somewhere
+else.
 
 **Leaving the demo is not here, and was for a day.** It landed at the foot of this sheet on 17
 August because the corner cluster had no seat for it once §5.4's bridge closed, and left on 18
@@ -1497,8 +1552,9 @@ feed was the one thing step 5 left behind: its rows landed in #209 and its hover
    corner cluster, and help carries §10.6's four sentences plus the keyboard table **generated from
    `core/shortcuts`' own bindings** rather than written beside them. **§10.6's legend landed in
    #220**, and it went past the rule it was given: a swatch is drawn by the plate's own draw
-   function, so a mark cannot drift from the renderer without the renderer changing shape. One piece
-   remains — **the rest of §10.5's table** (#202).
+   function, so a mark cannot drift from the renderer without the renderer changing shape. **The
+   rest of §10.5's table landed in #202**, which brought #81's colour-blind palette in with it
+   rather than leaving one row of the table pointing at an issue of its own. The step is complete.
 10. **Time** *(added by #157)* — §7 as rewritten on 16 August 2026, in `features/timeline`. Three
     pieces, and they are not one PR: §7.1's kill glyph takes the victim's side colour; §7.1's kill
     tooltip, **which may not ship before step 5's event feed**, because §9.2 permits it only as a

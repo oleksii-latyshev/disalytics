@@ -1,6 +1,7 @@
 export { createClockFormat, formatClock, formatElapsedOfTotal } from './helpers/elapsed';
 export { POSITION_STRIDE, positionScratch, readPositions } from './helpers/interpolation';
-export type { Transport } from './helpers/transport';
+export type { FrameSkip, Transport } from './helpers/transport';
+export { useBuyPhaseSkip } from './hooks/use-buy-phase-skip';
 export { useFrameReadout } from './hooks/use-frame-readout';
 export { useFrameSink } from './hooks/use-frame-sink';
 export { useIsPlaying } from './hooks/use-is-playing';
