@@ -599,8 +599,8 @@ are read at the **kill's own frame** and not at the playhead's, because by the t
 hovered both players have moved. Keyboard focus on a row does exactly what hovering it does: §9's
 floor is that the screen is operable without a pointer, and a hover-only affordance has no keyboard
 at all. An objective row draws nothing, and neither does a kill by the world, which has no second
-end. Shipped in #208; the marks were chosen there rather than here, and §10.6's legend (#201) is
-where they are named to the reader.
+end. The three marks were drawn in #208 rather than specified here first, and settled by the owner
+on 23 August 2026; §10.6's legend (#201) is where they are named to the reader.
 
 ### 5.5 The timeline block
 
