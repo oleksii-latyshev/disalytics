@@ -428,6 +428,22 @@ longer in the settings sheet (it spent one day there, #203 → #205, and the she
 all), and **the review screen spends no `44`** — §3's one-per-screen rule is the parse screen's now,
 and `review.phase.*`, `review.warmup` and `review.roundOfTotal` are deleted in both locales.
 
+**#211 settled the §5.1 plate figure at 1040 and turned a number into a procedure.** The two answers
+on record for the same code — 476 and 492 — are not both right: **476 reproduces** and 492 does not,
+across a fresh drop and a catalog restore, in `en` and in `ru`. The issue's own hypothesis is wrong
+in a way worth keeping: the expanded survivor tracks really do cost 16px, but they cost it at
+**every** height-bound width, and 716 and 616 agreed across both runs, so they cannot be what moved
+1040 alone. What the run produced instead is the thing to reuse — **a plate figure is only a claim
+with a setup**. Three states move the plate below the split and no key records the second of them:
+the survivor tracks (−16), a selected player (−81, and nothing at all above the split), and the
+scoreboard over the plate (+32, because the brow leaves the block). The locale, the audibility rings
+and the debug overlay move nothing. The storage notice in §5.2's corner is a fourth: it is a line of
+type in row 1 whenever it speaks, so a run measuring while the demo is still being written reads 459
+where a run measuring after it reads 476. `docs/DESIGN.md` §5.1 carries the measured table, the row
+arithmetic and the preconditions list; read it before quoting a plate size, and state the viewport
+**height** — three of the four widths are height-bound and "the plate at 1040" on its own says
+nothing.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
