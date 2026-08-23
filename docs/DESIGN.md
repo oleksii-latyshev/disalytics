@@ -591,7 +591,16 @@ The feed is the one place in the product where **a new item animates in while pl
 §8 permits it explicitly: it is a discrete, event-triggered arrival at the rate the match produces
 kills, not a per-frame tween.
 
-Pressing a feed row seeks to that event. Hovering one draws the kill's line on the plate.
+Pressing a feed row seeks to that event. Hovering one draws the kill's line on the plate: a ring in
+the attacker's side colour where the shot came from, a filled disc in the victim's where they fell,
+and a white line between them at α0.45. White for §6.2's reason for a white trajectory — the line is
+the ground the kill crossed rather than the kill itself, and the two ends carry a side. Both ends
+are read at the **kill's own frame** and not at the playhead's, because by the time a row can be
+hovered both players have moved. Keyboard focus on a row does exactly what hovering it does: §9's
+floor is that the screen is operable without a pointer, and a hover-only affordance has no keyboard
+at all. An objective row draws nothing, and neither does a kill by the world, which has no second
+end. Shipped in #208; the marks were chosen there rather than here, and §10.6's legend (#201) is
+where they are named to the reader.
 
 ### 5.5 The timeline block
 
@@ -1378,9 +1387,9 @@ Non-negotiable, and never announced in the UI:
 
 ## 15. What this document asks of the code
 
-Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed, and so is step 11
-(#194,
-#197). Step 6 is under way — §6.1's token states landed in #154, §6.2 (utility) in #168 and #175,
+Steps 1–5 are complete (#132, #136, #140, #147, #154), and so is step 11 (#194, #197). §5.4's event
+feed was the one thing step 5 left behind: its rows landed in #209 and its hover on the plate in
+#208. Step 6 is under way — §6.1's token states landed in #154, §6.2 (utility) in #168 and #175,
 §6.3 (world) remains. In dependency order:
 
 1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
@@ -1400,7 +1409,8 @@ Steps 1–5 are complete (#132, #136, #140, #147, #154) bar §5.4's event feed, 
    thing to read the `weapon` column, so §6.4's rendering rule is one of their constraints: the
    `C4 Explosive` entry draws an empty glyph, and it is not rediscovered as an open question
    because the column exists. **One thing §5 asks for did not land with it: §5.4's event feed.**
-   It is step 10's blocker as well as its own, so it is named here rather than left to be noticed.
+   It was step 10's blocker as well as its own, and it closed in two halves — the rows in #209 and
+   the kill's line on the plate in #208, which is the hover §5.4 names beside the press.
    §5.2 was rewritten by #166 *after* this step closed and caught up in **#171**, which split the
    old top-left card into the scoreboard chip and the round card, gave the clock its three phases,
    and replaced the halftime-swap bug in the score (#141) with `sideScoreAtFrame` attributing by
