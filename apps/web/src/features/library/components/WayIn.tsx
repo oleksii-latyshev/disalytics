@@ -1,5 +1,5 @@
 import type { SavedDemo } from '@disa/demo-store';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
 import { HelpSheet, SettingsSheet } from '@/features/review';
 import type { RailView } from '../helpers/views';
@@ -33,13 +33,41 @@ type Sheet = 'settings' | 'help';
  * own axis, and 280px of it is nearly half the 616px the plate measures at 1280.
  */
 export function WayIn({ state, onFile, onSaved, onClose }: Props) {
-  const isDraggedOver = useFileDrop(onFile);
-  const [chosenView, setChosenView] = useState<RailView>('upload');
+  const [view, setView] = useState<RailView>('upload');
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
-  // A parse is something the reader started rather than somewhere they went — §10.3 — so it stays
-  // on the view that started it and Upload stays the current entry while it runs.
-  const view = state.status === 'idle' ? chosenView : 'upload';
+  // An open lands the reader on the upload view wherever they were, because that is the view that
+  // reports it — §10.3. It is a move made once, at the moment they ask for it, rather than a rule
+  // that holds them there: a parse they started is not a screen they cannot leave, and a failure is
+  // terminal, so a rule keyed on "not idle" would strand them on it with nothing to press.
+  const openFile = useCallback(
+    (file: File) => {
+      setView('upload');
+      onFile(file);
+    },
+    [onFile],
+  );
+
+  const openSaved = useCallback(
+    (demo: SavedDemo) => {
+      setView('upload');
+      onSaved(demo);
+    },
+    [onSaved],
+  );
+
+  // A failure belongs to the screen that raised it. Leaving ends it rather than parking it behind
+  // the rail to reappear on the way back; a parse still running is left alone, because `close`
+  // terminates the worker and navigating away is not cancelling.
+  const chooseView = useCallback(
+    (next: RailView) => {
+      if (state.status === 'failed') onClose();
+      setView(next);
+    },
+    [state.status, onClose],
+  );
+
+  const isDraggedOver = useFileDrop(openFile);
 
   return (
     <div className="app-shell relative grid grid-rows-[auto_minmax(0,1fr)] bg-surface-0 split:h-dvh split:grid-cols-[17.5rem_minmax(0,1fr)] split:grid-rows-1">
@@ -56,7 +84,7 @@ export function WayIn({ state, onFile, onSaved, onClose }: Props) {
 
       <SideRail
         view={view}
-        onView={setChosenView}
+        onView={chooseView}
         onSettingsOpen={() => setOpenSheet('settings')}
         onHelpOpen={() => setOpenSheet('help')}
       />
@@ -65,14 +93,14 @@ export function WayIn({ state, onFile, onSaved, onClose }: Props) {
         {view === 'upload' && (
           <UploadView
             state={state}
-            onFile={onFile}
-            onSaved={onSaved}
+            onFile={openFile}
+            onSaved={openSaved}
             onClose={onClose}
-            onShowAll={() => setChosenView('library')}
+            onShowAll={() => setView('library')}
             isDraggedOver={isDraggedOver}
           />
         )}
-        {view === 'library' && <LibraryView onOpen={onSaved} />}
+        {view === 'library' && <LibraryView onOpen={openSaved} />}
         {(view === 'lineups' || view === 'stats') && <SoonView view={view} />}
       </main>
 
