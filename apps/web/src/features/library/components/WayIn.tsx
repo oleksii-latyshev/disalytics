@@ -14,7 +14,7 @@ interface Props {
   // An opened demo is the review screen's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
-  onSaved: (demo: SavedDemo) => void;
+  onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onClose: () => void;
 }
 
@@ -32,7 +32,7 @@ type Sheet = 'settings' | 'help';
  * stage leaves it, so a rail is not chrome beside the plate — it is a subtraction from the plate's
  * own axis, and 280px of it is nearly half the 616px the plate measures at 1280.
  */
-export function WayIn({ state, onFile, onSaved, onClose }: Props) {
+export function WayIn({ state, onFile, onEnter, onClose }: Props) {
   const [view, setView] = useState<RailView>('upload');
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
@@ -48,12 +48,12 @@ export function WayIn({ state, onFile, onSaved, onClose }: Props) {
     [onFile],
   );
 
-  const openSaved = useCallback(
-    (demo: SavedDemo) => {
+  const enterMatch = useCallback(
+    (demo: SavedDemo, roundIndex: number) => {
       setView('upload');
-      onSaved(demo);
+      onEnter(demo, roundIndex);
     },
-    [onSaved],
+    [onEnter],
   );
 
   // A failure belongs to the screen that raised it. Leaving ends it rather than parking it behind
@@ -94,13 +94,13 @@ export function WayIn({ state, onFile, onSaved, onClose }: Props) {
           <UploadView
             state={state}
             onFile={openFile}
-            onSaved={openSaved}
+            onEnter={enterMatch}
             onClose={onClose}
             onShowAll={() => setView('library')}
             isDraggedOver={isDraggedOver}
           />
         )}
-        {view === 'library' && <LibraryView onOpen={openSaved} />}
+        {view === 'library' && <LibraryView onEnter={enterMatch} />}
         {(view === 'lineups' || view === 'stats') && <SoonView view={view} />}
       </main>
 

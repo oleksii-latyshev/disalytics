@@ -38,12 +38,25 @@ describe('reduceParse', () => {
   });
 
   it('skips the parse entirely when the cache had the demo', () => {
-    expect(reduceParse(opened(), { type: 'restored', demo })).toEqual({
+    expect(reduceParse(opened(), { type: 'restored', demo, roundIndex: 0 })).toEqual({
       status: 'ready',
       fileName: 'match.dem',
       demo,
       cache: { status: 'restored' },
+      roundIndex: 0,
     });
+  });
+
+  // DESIGN.md §10.2: the reader picks a round in the demo dialog, before there is a match on screen
+  // to pick one in, so the choice has to survive the open that follows it.
+  it('opens at the round the demo dialog was standing on', () => {
+    const entered = reduceParse(opened(), { type: 'restored', demo, roundIndex: 12 });
+
+    expect(entered).toMatchObject({ status: 'ready', roundIndex: 12 });
+  });
+
+  it('opens a freshly parsed demo at its first round', () => {
+    expect(ready()).toMatchObject({ status: 'ready', roundIndex: 0 });
   });
 
   it('keeps the file name across every outcome', () => {
@@ -127,7 +140,7 @@ describe('reduceParse', () => {
     expect(reduceParse(done, { type: 'failed', failure: parseFailure('TRUNCATED_DEMO') })).toBe(
       done,
     );
-    expect(reduceParse(done, { type: 'restored', demo })).toBe(done);
+    expect(reduceParse(done, { type: 'restored', demo, roundIndex: 0 })).toBe(done);
   });
 
   it('does not let a cache answer arrive before the demo does', () => {

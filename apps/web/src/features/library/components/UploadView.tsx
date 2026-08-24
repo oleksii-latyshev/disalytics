@@ -8,7 +8,7 @@ interface Props {
   // An opened demo is the review screen's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
-  onSaved: (demo: SavedDemo) => void;
+  onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onClose: () => void;
   onShowAll: () => void;
   isDraggedOver: boolean;
@@ -23,7 +23,7 @@ interface Props {
  * §5.2's lesson from #205 is that what is on screen twice is not a reading. The name is the rail's
  * and the tagline goes with it; what is left here is what the reader came to do.
  */
-export function UploadView({ state, onFile, onSaved, onClose, onShowAll, isDraggedOver }: Props) {
+export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDraggedOver }: Props) {
   return (
     <div className="flex min-h-full items-center justify-center">
       <div className="relative w-full max-w-[36rem] rounded-float border border-line bg-surface-1 p-8 shadow-raised">
@@ -42,7 +42,7 @@ export function UploadView({ state, onFile, onSaved, onClose, onShowAll, isDragg
             <DemoLibrary
               state={state}
               onFile={onFile}
-              onSaved={onSaved}
+              onEnter={onEnter}
               onClose={onClose}
               onShowAll={onShowAll}
               isDraggedOver={isDraggedOver}

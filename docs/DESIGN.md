@@ -1365,6 +1365,21 @@ A stored thumbnail was the alternative and it loses on three counts: it is a sec
 the cache already holds, it needs invalidating when the radar theme changes, and it goes stale the
 moment `SCHEMA_VERSION` moves. The plate is cheaper to be correct about than an image is.
 
+**The round in question is the first**, and the primary action opens there. This section said "the
+round in question" without saying which, and the answer that keeps the dialog one reading rather
+than two is the round the match itself opens on: the plate is a picture of the demo, and the row of
+rounds beneath it is the way in. A strip that also re-drew the plate would make the dialog a second
+review screen — which is the screen one press away.
+
+**The dialog is `@disa/ui`'s `Dialog`, and it is the card itself rather than a card inside a
+full-viewport `<dialog>`.** That is what lets light dismiss be the platform's: `closedby="any"` fires
+on a press *outside the element*, and an element covering the viewport has no outside. Safari has no
+implementation, so the attribute is set behind a feature test and the fallback is the press-outside
+listener the feature's own guidance names. Two consequences worth knowing: the ground is
+`::backdrop` at §10.5's grade — the card is glass and only the ground behind it is pushed back — and
+a caller's `display` utility must be written behind `open:`, because a bare one beats the UA's
+`dialog:not([open]) { display: none }` and puts the dialog on screen while it is closed.
+
 ### 10.3 The parse screen
 
 The same screen as the upload view, transformed in place. It does not navigate, and the shell around
@@ -1625,9 +1640,14 @@ dependency order:
      `navigator.storage.estimate()` beside it as an estimate. The `best-effort` line comes from
      `requestPersistence`, which existed already; `storageEstimate()` joined it in
      `packages/demo-store` so that `navigator.storage` stays behind one door;
-   - **the demo dialog** — §10.2's dialog, drawing one frame through `features/radar` from the
-     cached parse. It is the first thing outside the review screen to mount the renderer, so
-     releasing it on close is part of the issue rather than a follow-up;
+   - ~~**the demo dialog**~~ *(done, #235)* — §10.2's dialog, drawing one frame through
+     `features/radar` from the cached parse. It is the first thing outside the review screen to
+     mount the renderer, and releasing it on close was measured rather than asserted: with forced
+     GC the heap reads 35 MB, 89 MB with the dialog open and 35 MB again once it closes, three
+     cycles identical. `PlateStill` is what draws it — the map and the players and nothing else,
+     because the buy ending is the moment every question the utility and kill-line layers answer
+     has an empty answer — and the round the reader picks reaches the match as `ParseState.ready`'s
+     own `roundIndex` rather than as a seek after the fact;
    - **the parse and failure screens** — §10.3 and §10.4 inside the shell, keeping #68's hidden-tab
      explanation where it is.
 

@@ -21,9 +21,14 @@ export function App() {
   return (
     <MotionProvider reducedMotion={REDUCED_MOTION[motion]}>
       {state.status === 'ready' ? (
-        <MatchReview demo={state.demo} cache={state.cache} onClose={parse.close} />
+        <MatchReview
+          demo={state.demo}
+          cache={state.cache}
+          roundIndex={state.roundIndex}
+          onClose={parse.close}
+        />
       ) : (
-        <WayIn state={state} onFile={parse.open} onSaved={parse.openSaved} onClose={parse.close} />
+        <WayIn state={state} onFile={parse.open} onEnter={parse.openSaved} onClose={parse.close} />
       )}
     </MotionProvider>
   );

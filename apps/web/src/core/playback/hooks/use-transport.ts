@@ -1,4 +1,4 @@
-import { openingFrame, type ParsedDemo } from '@disa/demo-core';
+import { type Frame, openingFrame, type ParsedDemo } from '@disa/demo-core';
 import { useEffect, useMemo } from 'react';
 import { frameElapsedMs } from '../helpers/frame-step';
 import { createTransport, type Transport } from '../helpers/transport';
@@ -7,9 +7,16 @@ import { createTransport, type Transport } from '../helpers/transport';
  * The match's transport, with the one `requestAnimationFrame` loop that drives it. The loop runs
  * only while the clock is playing, and the clock itself never enters React state — `AGENTS.md` §2
  * rule 4.
+ *
+ * `startFrame` is where the match opens. It defaults to the first round, and the one caller that
+ * passes anything else is a reader who chose a round in §10.2's dialog before the match existed to
+ * choose one in. It is read once: the transport is rebuilt only when the demo changes.
  */
-export function useTransport(demo: ParsedDemo): Transport {
-  const transport = useMemo(() => createTransport(demo.track, openingFrame(demo)), [demo]);
+export function useTransport(demo: ParsedDemo, startFrame?: Frame): Transport {
+  const transport = useMemo(
+    () => createTransport(demo.track, startFrame ?? openingFrame(demo)),
+    [demo, startFrame],
+  );
 
   useEffect(() => {
     let handle = 0;

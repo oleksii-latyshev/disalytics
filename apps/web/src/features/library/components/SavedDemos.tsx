@@ -1,12 +1,14 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
+import { useState } from 'react';
 import { RECENT_COUNT, visibleDemos } from '../helpers/saved-list';
 import { useSavedDemos } from '../hooks/use-saved-demos';
+import { DemoDialog } from './DemoDialog';
 import { SavedDemoRow } from './SavedDemoRow';
 
 interface Props {
-  onOpen: (demo: SavedDemo) => void;
+  onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onShowAll: () => void;
 }
 
@@ -19,8 +21,9 @@ interface Props {
  * Library entry to send them to (§10.1); keeping both would have been the same list in two states
  * one press apart.
  */
-export function SavedDemos({ onOpen, onShowAll }: Props) {
+export function SavedDemos({ onEnter, onShowAll }: Props) {
   const { demos, forget } = useSavedDemos();
+  const [opened, setOpened] = useState<SavedDemo | null>(null);
 
   if (demos === null || demos.length === 0) return null;
 
@@ -32,7 +35,7 @@ export function SavedDemos({ onOpen, onShowAll }: Props) {
 
       <ul className="flex list-none flex-col gap-2 p-0">
         {visibleDemos(demos).map((demo) => (
-          <SavedDemoRow key={demo.key} demo={demo} onOpen={onOpen} onRemove={forget} />
+          <SavedDemoRow key={demo.key} demo={demo} onOpen={setOpened} onRemove={forget} />
         ))}
       </ul>
 
@@ -45,6 +48,15 @@ export function SavedDemos({ onOpen, onShowAll }: Props) {
       <p className="text-12 text-ink-faint leading-prose">
         <Text path="library.saved.note" />
       </p>
+
+      {opened !== null && (
+        <DemoDialog
+          saved={opened}
+          onEnter={onEnter}
+          onDismiss={() => setOpened(null)}
+          onGone={forget}
+        />
+      )}
     </section>
   );
 }
