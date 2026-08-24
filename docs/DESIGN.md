@@ -1128,7 +1128,7 @@ an accessibility footnote here; it is the primary interface, and the pointer is 
 |---|---|
 | `Space` | play / pause |
 | `←` `→` | seek back / forward by the configured step (§10.5, default 10 s) |
-| **hold** `←` `→` | fast-forward or rewind at 2× while held; releasing restores the previous rate |
+| **hold** `←` `→` | fast-forward or rewind at the configured rate while held; releasing restores the previous one |
 | `,` `.` | step one frame back / forward |
 | `[` `]` | previous / next round |
 | `1`–`5` | select the T player in that row |
@@ -1136,23 +1136,31 @@ an accessibility footnote here; it is the primary interface, and the pointer is 
 | `Esc` | clear selection; close the topmost sheet, overlay or menu |
 | `F` | fullscreen |
 | `M` | raise the match overlay |
-| `+` `−` `0` | zoom in, out, reset — **not bound yet**, see below |
+| `+` `−` | zoom the plate in and out; all the way out is also how it is put back |
 | `?` | help |
 
-A held arrow is a **rate change, not a repeat**: `keydown` raises the rate to 2× in the seek
-direction and `keyup` restores it, so the reader scrubs continuously rather than in steps. The
-transport is the only thing that knows about this; the speed pill reflects it (§7.2) and does not
-own it. `keyup` is also bound on `blur` and `visibilitychange`, or a key released outside the window
-leaves the match running at 2× forever.
+A held arrow is a **rate change, not a repeat**: `keydown` raises the rate to the one §10.5
+carries — 2× by default — in the seek direction, and `keyup` restores it, so the reader scrubs
+continuously rather than in steps. What separates a tap from a hold is the keyboard's own repeat:
+the first press seeks by the step, and the repeat that follows it is the hardware saying the key is
+being held. The transport is the only thing that knows about this — it is a rate beside the speed
+rather than written over it — and the speed pill reflects it (§7.2) and does not own it. `keyup` is
+also bound on `blur` and `visibilitychange`, or a key released outside the window leaves the match
+running fast forever. The buy-phase rule (§10.5) stands aside while an arrow is held, for the same
+reason it stands aside for a seek.
 
 Every binding lives in `core/shortcuts`, appears in the help sheet generated from the same table,
-and none of them fires while focus is in a text field.
+and none of them fires while focus is in a text field — or on a control that reads the same key
+itself. The round timeline's scrubber walks its own value with `←` `→`, and a roving-focus group
+walks itself with them; a group says so by calling `preventDefault`, and a press that has already
+been handled never reaches a binding.
 
-**`0` is claimed twice in the table above** — by the zoom reset and by the last seat of `6`–`0` —
-and that is why #114 shipped §6.3's zoom without touching the keyboard at all. The row-number keys
-are a contiguous range and cannot give up their last member; the zoom reset has a double-click and a
-`−` held down to the floor. Whichever way §15's step 7 settles it, it settles it for both rows at
-once rather than binding half of one.
+**`0` is the last CT seat and nothing else.** It was claimed twice — by that seat and by the zoom
+reset — which is why #114 shipped §6.3's zoom without touching the keyboard at all, and #226
+settled it against the zoom. The row-number keys are a contiguous range and cannot give up their
+last member, and the zoom loses nothing by it: `−` held down reaches 1×, and at 1× the pan is
+pinned, so **the floor of the zoom is the reset**. The double-click in §9.2 is still the direct
+route to it. `=` fires the zoom in as well as `+`, because it is the same keycap unshifted.
 
 ### 9.2 Pointer
 
@@ -1388,9 +1396,10 @@ the audibility rings, the scoreboard position and the debug overlay, which are t
 bridged through the corner cluster (§5.4). **The rest of the table landed in #202**, and two of its
 rows are worth stating in full, because the table's own wording leaves them open:
 
-- **Seek step and held-arrow rate are stored and obeyed by nothing yet.** `←` and `→` are §9.1's and
-  belong to §15's step 7; a setting whose consumer has not been built is not a setting that does
-  nothing, it is one waiting on a step. Nothing else in this table is in that position.
+- **Seek step and held-arrow rate are read by `features/review`** since #226, and they are the only
+  two rows in this table that are not read where they are obeyed: a key binding belongs to the
+  screen that holds §9.1's table, not to the transport it moves. They were stored and obeyed by
+  nothing for two days, which was a row waiting on a step rather than a row that did nothing.
 - **Trajectories narrowed to *selected only* draw nothing until a player is selected.** §6.2 draws a
   path for a grenade in the air and for a grenade the reader has picked out, and the only thing this
   screen lets a reader pick out is a player — so the narrow answer is that player's grenades, and
@@ -1516,7 +1525,8 @@ Non-negotiable, and never announced in the UI:
 
 Steps 1–5 are complete (#132, #136, #140, #147, #154), and so is step 11 (#194, #197). §5.4's event
 feed was the one thing step 5 left behind: its rows landed in #209 and its hover on the plate in
-#208. Step 6 is complete as of #114. In dependency order:
+#208. Step 6 is complete as of #114, and step 7 is down to §9.3's hot corners as of #226. In
+dependency order:
 
 1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
    blurred-review-screen frame assertion, §17's summary re-derived from this document, §20's
@@ -1553,7 +1563,13 @@ feed was the one thing step 5 left behind: its rows landed in #209 and its hover
    `features/radar/helpers/view.ts` and unit-tested there. Its keyboard half is step 7's, for the
    reason §9.1 now records.
 7. **Input** — §9's bindings in `core/shortcuts`, the held-arrow rate in `core/playback`, the hot
-   corners in `features/review`.
+   corners in `features/review`. **The keyboard half landed in #226**: §9.1's table is bound in
+   full, the held arrow is a rate the transport owns rather than a stream of seeks, and `0` is the
+   last CT seat — the collision §9.1 recorded is settled there and in this document at once. The
+   zoom's two keys are bound in `features/radar`, because the view they move is a box that lives
+   there and reaching it from the stage would be a second source of truth for it. **§9.3's hot
+   corners are what is left of this step**; they are a pointer feature with no keyboard in them and
+   nothing waits on them.
 8. **The way in** *(rewritten by #195)* — §10.1–§10.4 as this document now describes them, in
    `apps/web/src/features/library`. **No `ogl` and no vendored backgrounds**: the two WebGL screens
    are deferred and the dimmed radar backdrop already ships, so this step adds no dependency at all.

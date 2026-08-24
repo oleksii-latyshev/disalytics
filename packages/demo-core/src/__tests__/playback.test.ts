@@ -6,7 +6,7 @@ const SECOND_MS = 1000;
 
 describe('createClock', () => {
   it('starts paused at real speed', () => {
-    expect(createClock()).toEqual({ frame: 0, isPlaying: false, speed: 1 });
+    expect(createClock()).toEqual({ frame: 0, isPlaying: false, speed: 1, scrub: null });
   });
 
   it('starts wherever the match is meant to open', () => {
@@ -76,5 +76,42 @@ describe('advanceClock', () => {
 
     expect(clock.frame).toBe(0);
     expect(clock.isPlaying).toBe(false);
+  });
+});
+
+describe('a held arrow key', () => {
+  it('runs at its own rate rather than at the chosen speed', () => {
+    const track = newTrack({ sampleHz: 16, frameCount: 1024 });
+    const clock = createClock();
+    clock.isPlaying = true;
+    clock.speed = 0.5;
+    clock.scrub = 4;
+
+    advanceClock(clock, track, SECOND_MS);
+
+    expect(clock.frame).toBe(64);
+  });
+
+  it('rewinds when its rate is negative', () => {
+    const track = newTrack({ sampleHz: 16, frameCount: 1024 });
+    const clock = createClock(100);
+    clock.isPlaying = true;
+    clock.scrub = -2;
+
+    advanceClock(clock, track, SECOND_MS);
+
+    expect(clock.frame).toBe(68);
+  });
+
+  it('stops at the start of the match without ending playback', () => {
+    const track = newTrack({ sampleHz: 16, frameCount: 1024 });
+    const clock = createClock(4);
+    clock.isPlaying = true;
+    clock.scrub = -2;
+
+    advanceClock(clock, track, SECOND_MS);
+
+    expect(clock.frame).toBe(0);
+    expect(clock.isPlaying).toBe(true);
   });
 });

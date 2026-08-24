@@ -5,5 +5,6 @@ export { useBuyPhaseSkip } from './hooks/use-buy-phase-skip';
 export { useFrameReadout } from './hooks/use-frame-readout';
 export { useFrameSink } from './hooks/use-frame-sink';
 export { useIsPlaying } from './hooks/use-is-playing';
+export { usePlaybackScrub } from './hooks/use-playback-scrub';
 export { usePlaybackSpeed } from './hooks/use-playback-speed';
 export { useTransport } from './hooks/use-transport';

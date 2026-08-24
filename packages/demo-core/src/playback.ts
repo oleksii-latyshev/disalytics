@@ -14,21 +14,30 @@ export interface Clock {
   isPlaying: boolean;
   /** A multiplier on real time. At 1 the match runs at the speed it was played at. */
   speed: number;
+  /**
+   * The rate a held arrow key is scrubbing at, signed by its direction, or `null` when nothing is
+   * held — `docs/DESIGN.md` §9.1. It is separate from `speed` rather than written over it because
+   * it is temporary: the speed control shows the rate the reader *chose*, and a hold must not look
+   * like a choice (§7.2).
+   */
+  scrub: number | null;
 }
 
 export function createClock(frame = 0): Clock {
-  return { frame, isPlaying: false, speed: 1 };
+  return { frame, isPlaying: false, speed: 1, scrub: null };
 }
 
 /**
  * Moves the clock by the real time that has passed. Playback stops on the last sample rather than
- * running past the end of the track.
+ * running past the end of the track; the start is a floor and not a stop, because only a held arrow
+ * key reaches it and releasing that key is what ends the scrub.
  */
 export function advanceClock(clock: Clock, track: TickTrack, elapsedMs: number): void {
   if (!clock.isPlaying) return;
 
   const end = lastFrame(track);
-  const next = clock.frame + (elapsedMs / 1000) * track.sampleHz * clock.speed;
+  const rate = clock.scrub ?? clock.speed;
+  const next = clock.frame + (elapsedMs / 1000) * track.sampleHz * rate;
 
   if (next >= end) {
     clock.frame = end;
@@ -36,5 +45,5 @@ export function advanceClock(clock: Clock, track: TickTrack, elapsedMs: number):
     return;
   }
 
-  clock.frame = next;
+  clock.frame = next < 0 ? 0 : next;
 }

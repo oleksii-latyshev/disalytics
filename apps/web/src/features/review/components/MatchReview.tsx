@@ -1,5 +1,6 @@
 import {
   type ParsedDemo,
+  type PlayerInfo,
   type PlayerSlot,
   playersOnSide,
   roundIndexAtFrame,
@@ -12,7 +13,13 @@ import type { KillLine } from '@/core/events';
 import type { CacheState } from '@/core/parsing';
 import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
-import { useShortcuts } from '@/core/shortcuts';
+import {
+  CT_ROW_KEYS,
+  type ShortcutAction,
+  type ShortcutPress,
+  T_ROW_KEYS,
+  useShortcuts,
+} from '@/core/shortcuts';
 import { MatchRadar } from '@/features/radar';
 import { MatchOverlay } from '@/features/timeline';
 import { useFullscreen } from '@/shared/hooks';
@@ -69,6 +76,11 @@ export function MatchReview({ demo, cache, onClose }: Props) {
   const [scoreboard] = useSetting('scoreboard');
   const [isBuyPhaseSkipped] = useSetting('isBuyPhaseSkipped');
 
+  // §9.1's two arrow-key rows, and the only settings on this screen that are neither read where they
+  // are obeyed nor drawn: a key binding is the stage's, because the stage is what holds the table.
+  const [seekStepSeconds] = useSetting('seekStepSeconds');
+  const [heldArrowRate] = useSetting('heldArrowRate');
+
   useBuyPhaseSkip(transport, demo, isBuyPhaseSkipped);
 
   // Which full-screen surface covers the screen, if any. All three stop playback while they are
@@ -111,21 +123,58 @@ export function MatchReview({ demo, cache, onClose }: Props) {
     [demo, transport],
   );
 
+  // DESIGN.md §9.1's arrow row, both halves of it. A tap seeks by the configured step; the
+  // keyboard's own repeat is what turns the same key into a hold, and a hold is a *rate* the
+  // transport owns rather than a stream of seeks — releasing it puts back the rate and the play
+  // state it interrupted.
+  const seekBy = useCallback(
+    (direction: 1 | -1, press: ShortcutPress) => {
+      if (press.isRepeat) {
+        transport.holdScrub(direction * heldArrowRate);
+        return;
+      }
+
+      transport.seek(transport.clock.frame + direction * seekStepSeconds * demo.track.sampleHz);
+    },
+    [demo, transport, seekStepSeconds, heldArrowRate],
+  );
+
+  const releaseAction = useCallback(
+    (action: ShortcutAction) => {
+      if (action === 'seekBack' || action === 'seekForward') transport.releaseScrub();
+    },
+    [transport],
+  );
+
+  const selectRow = useCallback(
+    (players: readonly PlayerInfo[], keys: readonly string[], press: ShortcutPress) => {
+      const player = players[keys.indexOf(press.key)];
+
+      if (player !== undefined) toggleSelected(player.slot);
+    },
+    [toggleSelected],
+  );
+
   // DESIGN.md §9's accessibility floor: the match is operable without a pointer. Which key reaches
-  // which action is `core/shortcuts`' table, so the help sheet lists exactly what is bound here. The
-  // rest of §9.1 — the held-arrow rate, the row-number keys, `F` and zoom — is its own step.
+  // which action is `core/shortcuts`' table, so the help sheet lists exactly what is bound here.
+  // The plate's own two keys are bound where the view they move lives, not here.
   useShortcuts(
     {
       playPause: transport.toggle,
+      seekBack: (press) => seekBy(-1, press),
+      seekForward: (press) => seekBy(1, press),
       stepBack: () => transport.step(-1),
       stepForward: () => transport.step(1),
       previousRound: () => jumpRounds(-1),
       nextRound: () => jumpRounds(1),
+      selectTRow: (press) => selectRow(t, T_ROW_KEYS, press),
+      selectCtRow: (press) => selectRow(ct, CT_ROW_KEYS, press),
       clearSelection: () => setSelectedSlot(null),
+      fullscreen: fullscreen.toggle,
       matchOverlay: () => showSheet('match'),
       help: () => showSheet('help'),
     },
-    { isSuspended: openSheet !== null },
+    { isSuspended: openSheet !== null, onRelease: releaseAction },
   );
 
   const teamCards = (
@@ -209,6 +258,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           transport={transport}
           selectedSlot={selectedSlot}
           hoveredKill={hoveredKill}
+          isSuspended={openSheet !== null}
         />
 
         {/* §5.1's one permitted overlap, and since #196 the reader's own choice rather than the

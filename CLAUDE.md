@@ -525,6 +525,27 @@ rows wait for §15's step 7 to settle it at once. Two corrections ride with it �
 `AGENTS.md` §16's two frame rows carry a `320f821` baseline and a measurement at the 4× ceiling,
 both **0 over 16.7 ms across three passes of 399 frames**.
 
+**#226 bound the rest of §9.1, and the held arrow is the part with a design in it.** A tap on `←`
+or `→` seeks by §10.5's step; the *keyboard's own repeat* is what turns the same key into a hold,
+and a hold is a **rate the transport owns** — `Clock.scrub` beside `Clock.speed`, signed by the
+direction — rather than a stream of seeks. Five things are load-bearing. **`scrub` is beside `speed`
+and never written over it**, because §7.2 says a temporary rate must not light a button the reader
+did not press; the speed control shows the chosen speed and a `⏵⏵` mark whose box is always there,
+so the row cannot move at the moment a scrub starts. **A release has three sources** — `keyup`,
+`blur` and `visibilitychange` — and `useShortcuts` owns all three, because a key let go outside the
+window never reports itself and would leave the match running fast for ever; `pause()` ends a hold
+as well, so a sheet raised mid-hold cannot restore a play state that is no longer true. **The
+buy-phase skip stands aside while `scrub` is set**, for the reason it stands aside for `seek`:
+rewinding into a phase the rule skips has to land there instead of being pushed back out of it once
+per animation frame. **A press that was already handled never reaches a binding** — `useShortcuts`
+returns on `event.defaultPrevented`, which is what stops a roving-focus group's `←` from both moving
+the focus and seeking the match, and `input[type="range"]` keeps its own arrow keys by name. And
+**`0` is the last CT seat**: the row keys are a contiguous range and cannot give up their last
+member, while `−` held down reaches 1× where the pan is pinned — so the floor of the zoom *is* the
+reset, and `docs/DESIGN.md` §9.1 records that rather than leaving the collision open. The zoom's two
+keys are bound in `features/radar` from a second `useShortcuts` call, whose suspension arrives as a
+prop; nothing new is on the frame path, so §16's rows were not re-measured.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
