@@ -27,6 +27,10 @@ const SCALE = WEAPON_MARK_PX / SILHOUETTE_WIDTH;
  * The scale is baked into the path rather than applied to the context, so the halo the caller has
  * already set keeps the width it has beside the name — `context.scale` would shrink the stroke with
  * the shape and leave a mark haloed more faintly than the label it belongs to.
+ *
+ * There are ten classes, so this allocates at most ten times in a session and never again — the
+ * same bargain `visionFill` strikes with its gradient one file over, and the reason both are caches
+ * rather than eager tables is that `Path2D` is a browser global the suite has no use for.
  */
 const compiled = new Map<WeaponClass, Path2D>();
 

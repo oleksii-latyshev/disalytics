@@ -1,6 +1,7 @@
 import { asPlayerSlot, type PlayerInfo, type WeaponClass } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { LABEL_HEIGHT_PX, labelPass, labelPlacer, labelsBySlot } from '../helpers/labels';
+import { labelPlacer } from '../helpers/label-placer';
+import { LABEL_HEIGHT_PX, labelPass, labelsBySlot } from '../helpers/labels';
 import type { PlateBounds } from '../helpers/view';
 import { stubPath2D } from './canvas-globals';
 
@@ -48,7 +49,7 @@ describe('labelsBySlot', () => {
 
 describe('labelPlacer', () => {
   it('moves the second label rather than letting the two overlap', () => {
-    const placer = labelPlacer(2);
+    const placer = labelPlacer(2, LABEL_HEIGHT_PX);
 
     placer.place(320, 320, TOKEN_RADIUS, LABEL_WIDTH, PLATE);
     const first = { x: placer.x, y: placer.y };
@@ -60,7 +61,7 @@ describe('labelPlacer', () => {
   });
 
   it('keeps a label inside the plate at either edge', () => {
-    const placer = labelPlacer(1);
+    const placer = labelPlacer(1, LABEL_HEIGHT_PX);
 
     placer.place(PLATE.width, PLATE.height, TOKEN_RADIUS, LABEL_WIDTH, PLATE);
 
@@ -69,7 +70,7 @@ describe('labelPlacer', () => {
   });
 
   it('forgets the previous frame on reset, so a label may return to its first choice', () => {
-    const placer = labelPlacer(2);
+    const placer = labelPlacer(2, LABEL_HEIGHT_PX);
 
     placer.place(320, 320, TOKEN_RADIUS, LABEL_WIDTH, PLATE);
     const alone = { x: placer.x, y: placer.y };
