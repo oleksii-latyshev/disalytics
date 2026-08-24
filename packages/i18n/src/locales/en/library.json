@@ -51,5 +51,11 @@
       "lineups": "Every grenade thrown in the match, grouped by where it was thrown from and where it landed. Not built yet.",
       "stats": "What each player did across the match — opening duels, trades, utility, damage. Not built yet."
     }
+  },
+  "grid": {
+    "count": "{count, plural, one {# demo} other {# demos}}",
+    "cacheTotal": "These demos take {used, number} MB of the {limit, number} MB this app keeps.",
+    "estimate": "Your browser estimates {used, number} MB in use for this site, out of about {quota, number} MB.",
+    "persistence": "The browser may clear this cache to make room. A demo it clears is read from the file again."
   }
 }

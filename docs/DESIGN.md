@@ -1620,9 +1620,11 @@ dependency order:
      product name on the upload card loses to the rail's head two hundred pixels away. Both were
      corrected in that PR rather than ahead of it — the decision needing a document first is one
      that has to be *made*, and looking at the screen made these two;
-   - **the library grid** — §10.2's cards replacing the rows on the way-in card, with the count, the
-     catalog's own byte total against `CACHE_BYTE_LIMIT`, and `navigator.storage.estimate()` beside
-     it as an estimate. The `best-effort` line comes from `requestPersistence`, which exists;
+   - ~~**the library grid**~~ *(done, #240)* — §10.2's cards replacing the rows on the way-in card,
+     with the count, the catalog's own byte total against `CACHE_BYTE_LIMIT`, and
+     `navigator.storage.estimate()` beside it as an estimate. The `best-effort` line comes from
+     `requestPersistence`, which existed already; `storageEstimate()` joined it in
+     `packages/demo-store` so that `navigator.storage` stays behind one door;
    - **the demo dialog** — §10.2's dialog, drawing one frame through `features/radar` from the
      cached parse. It is the first thing outside the review screen to mount the renderer, so
      releasing it on close is part of the issue rather than a follow-up;
