@@ -28,13 +28,22 @@
     "rounds": "{count, plural, one {# round} other {# rounds}}",
     "storedAt": "{when, date, medium}",
     "size": "{megabytes, number, ::.#} MB",
-    "open": "Open {map}, saved on this device",
+    "open": "Show {map}, saved on this device",
     "remove": "Remove {fileName} from this device",
     "showAll": "Show all ({count})",
     "gone": {
       "title": "That demo is no longer on this device.",
       "hint": "The browser cleared it, or the cache made room for a newer one. Open the file again to read it."
     }
+  },
+  "dialog": {
+    "label": "Saved match on {map}",
+    "loading": "Reading it from the cache",
+    "plate": "Round {round, number}, as the buy ends",
+    "rounds": "Open at a round",
+    "round": "Round {round, number}, won by {side}",
+    "open": "Open the match",
+    "close": "Close"
   },
   "counts": {
     "players": "{count, plural, one {# player} other {# players}}"

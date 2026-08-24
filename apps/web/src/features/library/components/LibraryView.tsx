@@ -1,12 +1,14 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
+import { useState } from 'react';
 import { useSetting } from '@/core/settings';
 import { useSavedDemos } from '../hooks/use-saved-demos';
 import { DemoCard } from './DemoCard';
+import { DemoDialog } from './DemoDialog';
 import { LibraryStorage } from './LibraryStorage';
 
 interface Props {
-  onOpen: (demo: SavedDemo) => void;
+  onEnter: (demo: SavedDemo, roundIndex: number) => void;
 }
 
 /**
@@ -20,10 +22,15 @@ interface Props {
  *
  * An entry with no metadata, a stale `SCHEMA_VERSION` or a file that has gone never reaches here:
  * the store drops all three, so a card that cannot be opened is never drawn.
+ *
+ * **A press opens the dialog rather than the match** (§10.2). The dialog is mounted only while it is
+ * open, which is what releases the parse it read, and it is owned here rather than by the shell
+ * because a read that finds no file has to take the card with it — and `forget` is the list's.
  */
-export function LibraryView({ onOpen }: Props) {
+export function LibraryView({ onEnter }: Props) {
   const { demos, forget } = useSavedDemos();
   const [theme] = useSetting('radarTheme');
+  const [opened, setOpened] = useState<SavedDemo | null>(null);
 
   return (
     <section className="mx-auto flex w-full max-w-[72rem] flex-col gap-4">
@@ -58,7 +65,7 @@ export function LibraryView({ onOpen }: Props) {
                   key={demo.key}
                   demo={demo}
                   theme={theme}
-                  onOpen={onOpen}
+                  onOpen={setOpened}
                   onRemove={forget}
                 />
               ))}
@@ -69,6 +76,15 @@ export function LibraryView({ onOpen }: Props) {
             </p>
           </>
         ))}
+
+      {opened !== null && (
+        <DemoDialog
+          saved={opened}
+          onEnter={onEnter}
+          onDismiss={() => setOpened(null)}
+          onGone={forget}
+        />
+      )}
     </section>
   );
 }

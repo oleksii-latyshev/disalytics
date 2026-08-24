@@ -37,6 +37,8 @@ import { TimelineBlock } from './TimelineBlock';
 interface Props {
   demo: ParsedDemo;
   cache: CacheState;
+  /** Which round the match opens on — §10.2's dialog is what makes it anything but the first. */
+  roundIndex: number;
   onClose: () => void;
 }
 
@@ -55,9 +57,9 @@ type Sheet = 'settings' | 'help' | 'match';
  * columns go and the two team cards merge into one strip above the timeline block, which is still
  * not over the plate.
  */
-export function MatchReview({ demo, cache, onClose }: Props) {
+export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClose }: Props) {
   const locale = useLocale();
-  const transport = useTransport(demo);
+  const transport = useTransport(demo, roundOpeningFrame(demo, openingRoundIndex));
   const fullscreen = useFullscreen();
 
   // Discrete state, so it lives in React rather than on the clock — AGENTS.md §8. A team row is

@@ -26,13 +26,23 @@ export type ParseState =
       percent: number;
       header: MatchHeader | null;
     }
-  | { status: 'ready'; fileName: string; demo: ParsedDemo; cache: CacheState }
+  | {
+      status: 'ready';
+      fileName: string;
+      demo: ParsedDemo;
+      cache: CacheState;
+      /**
+       * Which round the match opens on. Zero for every route but §10.2's demo dialog, where the
+       * reader picked a round out of a list before there was a match to pick it in.
+       */
+      roundIndex: number;
+    }
   | { status: 'failed'; fileName: string; failure: OpenFailure };
 
 export type ParseEvent =
   | { type: 'opened'; fileName: string }
   | { type: 'closed' }
-  | { type: 'restored'; demo: ParsedDemo }
+  | { type: 'restored'; demo: ParsedDemo; roundIndex: number }
   | { type: 'parseStarted' }
   | { type: 'progressed'; phase: ParsePhase; percent: number }
   | { type: 'headerRead'; header: MatchHeader }
@@ -45,7 +55,13 @@ export const IDLE_PARSE: ParseState = { status: 'idle' };
 
 function reduceRestoring(fileName: string, event: ParseEvent): ParseState | null {
   if (event.type === 'restored') {
-    return { status: 'ready', fileName, demo: event.demo, cache: { status: 'restored' } };
+    return {
+      status: 'ready',
+      fileName,
+      demo: event.demo,
+      cache: { status: 'restored' },
+      roundIndex: event.roundIndex,
+    };
   }
 
   if (event.type === 'parseStarted') {
@@ -76,6 +92,7 @@ function reduceParsing(
         fileName: state.fileName,
         demo: event.demo,
         cache: { status: event.caching ? 'storing' : 'unavailable' },
+        roundIndex: 0,
       };
     case 'failed':
       return { status: 'failed', fileName: state.fileName, failure: event.failure };

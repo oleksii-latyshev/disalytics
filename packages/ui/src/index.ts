@@ -1,4 +1,5 @@
 export { Button, buttonVariants } from './components/button';
+export { Dialog } from './components/dialog';
 export { Input, inputVariants } from './components/input';
 export { Sheet } from './components/sheet';
 export { Switch } from './components/switch';

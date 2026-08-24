@@ -8,8 +8,11 @@ import { IDLE_PARSE, type ParseEvent, type ParseState, reduceParse } from '../he
 export interface DemoParse {
   state: ParseState;
   open: (file: File) => void;
-  /** Opens a demo the store already holds. There is no file and there is nothing to parse. */
-  openSaved: (saved: SavedDemo) => void;
+  /**
+   * Opens a demo the store already holds, at the round §10.2's dialog was standing on. There is no
+   * file and there is nothing to parse.
+   */
+  openSaved: (saved: SavedDemo, roundIndex: number) => void;
   // Abandons whatever is on screen. While a parse is running this is the cancel, and it terminates
   // the worker rather than asking it to stop.
   close: () => void;
@@ -42,7 +45,7 @@ async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Prom
   if (signal.aborted) return;
 
   if (restored !== null) {
-    dispatch({ type: 'restored', demo: restored });
+    dispatch({ type: 'restored', demo: restored, roundIndex: 0 });
     return;
   }
 
@@ -66,7 +69,12 @@ async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Prom
   }
 }
 
-async function restore(key: string, signal: AbortSignal, dispatch: Dispatch): Promise<void> {
+async function restore(
+  key: string,
+  roundIndex: number,
+  signal: AbortSignal,
+  dispatch: Dispatch,
+): Promise<void> {
   const demo = await readSavedDemo(key);
   if (signal.aborted) return;
 
@@ -75,7 +83,7 @@ async function restore(key: string, signal: AbortSignal, dispatch: Dispatch): Pr
     return;
   }
 
-  dispatch({ type: 'restored', demo });
+  dispatch({ type: 'restored', demo, roundIndex });
 }
 
 export function useDemoParse(): DemoParse {
@@ -104,8 +112,8 @@ export function useDemoParse(): DemoParse {
   );
 
   const openSaved = useCallback(
-    (saved: SavedDemo) => {
-      void restore(saved.key, begin(saved.fileName), dispatch);
+    (saved: SavedDemo, roundIndex: number) => {
+      void restore(saved.key, roundIndex, begin(saved.fileName), dispatch);
     },
     [begin],
   );

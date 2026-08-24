@@ -10,20 +10,20 @@ interface Props {
   // An opened demo is the workspace's screen rather than the library's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
-  onSaved: (demo: SavedDemo) => void;
+  onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onClose: () => void;
   onShowAll: () => void;
   isDraggedOver: boolean;
 }
 
 /** The card's body. The card itself, and the screen around it, are `WayIn`'s. */
-export function DemoLibrary({ state, onFile, onSaved, onClose, onShowAll, isDraggedOver }: Props) {
+export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDraggedOver }: Props) {
   switch (state.status) {
     case 'idle':
       return (
         <div className="flex flex-col gap-6">
           <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
-          <SavedDemos onOpen={onSaved} onShowAll={onShowAll} />
+          <SavedDemos onEnter={onEnter} onShowAll={onShowAll} />
         </div>
       );
     case 'restoring':
@@ -43,7 +43,7 @@ export function DemoLibrary({ state, onFile, onSaved, onClose, onShowAll, isDrag
         <div className="flex flex-col gap-6">
           <ParseFailure failure={state.failure} fileName={state.fileName} />
           <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
-          <SavedDemos onOpen={onSaved} onShowAll={onShowAll} />
+          <SavedDemos onEnter={onEnter} onShowAll={onShowAll} />
         </div>
       );
   }
