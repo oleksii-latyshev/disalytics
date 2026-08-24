@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actionForKey, SHORTCUT_BINDINGS } from '../helpers/bindings';
+import { actionForKey, CT_ROW_KEYS, SHORTCUT_BINDINGS, T_ROW_KEYS } from '../helpers/bindings';
 
 describe('SHORTCUT_BINDINGS', () => {
   it('binds each action once', () => {
@@ -26,11 +26,30 @@ describe('SHORTCUT_BINDINGS', () => {
     expect(actionForKey('[')).toBe('previousRound');
     expect(actionForKey(']')).toBe('nextRound');
     expect(actionForKey('Escape')).toBe('clearSelection');
+    expect(actionForKey('ArrowLeft')).toBe('seekBack');
+    expect(actionForKey('ArrowRight')).toBe('seekForward');
+    expect(actionForKey('F')).toBe('fullscreen');
+    expect(actionForKey('+')).toBe('zoomIn');
+    expect(actionForKey('-')).toBe('zoomOut');
     expect(actionForKey('?')).toBe('help');
   });
 
+  it('gives `0` to the last CT seat and to no zoom', () => {
+    expect(actionForKey('0')).toBe('selectCtRow');
+    expect(CT_ROW_KEYS.indexOf('0')).toBe(4);
+  });
+
+  it('seats five players a side, in the order the cards list them', () => {
+    expect(T_ROW_KEYS).toHaveLength(5);
+    expect(CT_ROW_KEYS).toHaveLength(5);
+
+    for (const key of [...T_ROW_KEYS, ...CT_ROW_KEYS]) {
+      expect(actionForKey(key)).toBe(key <= '5' && key !== '0' ? 'selectTRow' : 'selectCtRow');
+    }
+  });
+
   it('leaves an unbound key alone, so the browser keeps it', () => {
-    expect(actionForKey('F')).toBeUndefined();
     expect(actionForKey('Tab')).toBeUndefined();
+    expect(actionForKey('ArrowUp')).toBeUndefined();
   });
 });

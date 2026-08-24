@@ -15,12 +15,19 @@
   },
   "shortcut": {
     "playPause": "Play or pause",
+    "seekBack": "Seek back, or hold to rewind",
+    "seekForward": "Seek forward, or hold to fast-forward",
     "stepBack": "One frame back",
     "stepForward": "One frame forward",
     "previousRound": "Previous round",
     "nextRound": "Next round",
+    "selectTRow": "Select the T player in that row",
+    "selectCtRow": "Select the CT player in that row",
     "clearSelection": "Clear the selected player, or close this sheet",
+    "fullscreen": "Fullscreen",
     "matchOverlay": "Show the whole match",
+    "zoomIn": "Zoom the map in",
+    "zoomOut": "Zoom the map out, and all the way out puts it back",
     "help": "Open this help"
   },
   "legend": {

@@ -18,6 +18,7 @@ import type { KillLine } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
+import { useShortcuts } from '@/core/shortcuts';
 import { useFontReady } from '@/shared/hooks';
 import { radarColors } from '../helpers/colors';
 import { killLineLayer } from '../helpers/kill-line';
@@ -47,9 +48,17 @@ interface Props {
   transport: Transport;
   selectedSlot: PlayerSlot | null;
   hoveredKill: KillLine | null;
+  isSuspended: boolean;
 }
 
-export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill }: Props) {
+export function RadarView({
+  demo,
+  overview,
+  transport,
+  selectedSlot,
+  hoveredKill,
+  isSuspended,
+}: Props) {
   const t = useT();
 
   // Everything on the plate the reader gets a say over — DESIGN.md §10.5. These are read here
@@ -184,6 +193,18 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
       repaint();
     },
     [plateBox, repaint],
+  );
+
+  // DESIGN.md §9.1's `+` and `−`, bound here rather than on the stage: the view they move is this
+  // component's own box, and reaching it from there would mean a second source of truth for the
+  // zoom. What the second call does not get for free is the stage's suspension, which is why that
+  // arrives as a prop — a plate that zooms behind an open sheet is the failure this avoids.
+  useShortcuts(
+    {
+      zoomIn: () => zoomStep(ZOOM_STEP),
+      zoomOut: () => zoomStep(1 / ZOOM_STEP),
+    },
+    { isSuspended },
   );
 
   // Non-passive, because a wheel over the plate zooms instead of scrolling the page and only a

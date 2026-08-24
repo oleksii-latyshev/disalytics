@@ -11,9 +11,11 @@ interface Props {
   transport: Transport;
   selectedSlot: PlayerSlot | null;
   hoveredKill: KillLine | null;
+  /** Something in the top layer owns the keyboard, so §6.3's two zoom keys stand down. */
+  isSuspended: boolean;
 }
 
-export function MatchRadar({ demo, transport, selectedSlot, hoveredKill }: Props) {
+export function MatchRadar({ demo, transport, selectedSlot, hoveredKill, isSuspended }: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -30,6 +32,7 @@ export function MatchRadar({ demo, transport, selectedSlot, hoveredKill }: Props
           transport={transport}
           selectedSlot={selectedSlot}
           hoveredKill={hoveredKill}
+          isSuspended={isSuspended}
         />
       )}
     </section>

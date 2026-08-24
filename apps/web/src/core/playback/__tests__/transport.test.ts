@@ -30,7 +30,7 @@ describe('createTransport', () => {
   it('opens paused on the frame it was given', () => {
     const transport = createTransport(newTrack(64), 20);
 
-    expect(transport.clock).toEqual({ frame: 20, isPlaying: false, speed: 1 });
+    expect(transport.clock).toEqual({ frame: 20, isPlaying: false, speed: 1, scrub: null });
   });
 
   it('leaves the clock alone while paused', () => {
@@ -237,5 +237,84 @@ describe('setFrameSkip', () => {
     transport.advance(SECOND_MS);
 
     expect(transport.clock.frame).toBe(SAMPLE_HZ);
+  });
+});
+
+describe('holdScrub', () => {
+  it('runs the clock at the held rate without touching the chosen speed', () => {
+    const transport = createTransport(newTrack(1024), 100);
+    transport.setSpeed(0.5);
+
+    transport.holdScrub(-2);
+    transport.advance(SECOND_MS);
+
+    expect(transport.clock.frame).toBe(100 - 2 * SAMPLE_HZ);
+    expect(transport.clock.speed).toBe(0.5);
+  });
+
+  it('moves a paused match, and releasing it pauses again', () => {
+    const transport = createTransport(newTrack(1024), 100);
+
+    transport.holdScrub(2);
+    transport.advance(SECOND_MS);
+    transport.releaseScrub();
+
+    expect(transport.clock.frame).toBe(100 + 2 * SAMPLE_HZ);
+    expect(transport.clock.isPlaying).toBe(false);
+    expect(transport.clock.scrub).toBeNull();
+  });
+
+  it('gives a playing match back its own rate on release', () => {
+    const transport = createTransport(newTrack(1024), 100);
+    transport.setSpeed(2);
+    transport.play();
+
+    transport.holdScrub(-4);
+    transport.releaseScrub();
+    transport.advance(SECOND_MS);
+
+    expect(transport.clock.isPlaying).toBe(true);
+    expect(transport.clock.frame).toBe(100 + 2 * SAMPLE_HZ);
+  });
+
+  it('holds once however many times the key repeats', () => {
+    const transport = createTransport(newTrack(1024), 100);
+    transport.play();
+
+    transport.holdScrub(2);
+    transport.holdScrub(2);
+    transport.holdScrub(2);
+    transport.releaseScrub();
+
+    expect(transport.clock.isPlaying).toBe(true);
+  });
+
+  it('ignores a release nothing is holding', () => {
+    const transport = createTransport(newTrack(1024), 100);
+
+    transport.releaseScrub();
+
+    expect(transport.clock.isPlaying).toBe(false);
+  });
+
+  it('is ended by a pause rather than outliving it', () => {
+    const transport = createTransport(newTrack(1024), 100);
+
+    transport.holdScrub(2);
+    transport.pause();
+    transport.releaseScrub();
+
+    expect(transport.clock.scrub).toBeNull();
+    expect(transport.clock.isPlaying).toBe(false);
+  });
+
+  it('scrubs into what the buy-phase rule skips, the way a seek does', () => {
+    const transport = createTransport(newTrack(64), 40);
+    transport.setFrameSkip((frame) => (frame < 32 ? asFrame(32) : null));
+
+    transport.holdScrub(-2);
+    transport.advance(SECOND_MS);
+
+    expect(transport.clock.frame).toBe(8);
   });
 });

@@ -26,6 +26,14 @@ export interface Transport {
   pause(): void;
   toggle(): void;
   setSpeed(speed: number): void;
+  /**
+   * A held arrow key — DESIGN.md §9.1. The clock runs at `rate` — signed by the direction the
+   * reader is holding — until `releaseScrub` puts back the speed and the play state the hold
+   * interrupted. It is not `setSpeed`: a rate nobody chose must not appear on the speed control as
+   * one that was (§7.2).
+   */
+  holdScrub(rate: number): void;
+  releaseScrub(): void;
   /** Moves the clock to a position, clamped into the track. Repaints; does not change play state. */
   seek(frame: number): void;
   /** Moves by whole samples from the sample the clock stands on, and stops playback. */
@@ -67,6 +75,7 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
   const frameListeners: Listener[] = [];
   const transportListeners: Listener[] = [];
   let frameSkip: FrameSkip | null = null;
+  let playStateBeforeScrub: boolean | null = null;
 
   function resume(): void {
     if (clock.isPlaying) return;
@@ -84,6 +93,11 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
   }
 
   function pause(): void {
+    // A hold interrupted by anything other than its own key release ends here instead of being
+    // restored later: `releaseScrub` puts back a play state, and a pause is the newer answer to it.
+    clock.scrub = null;
+    playStateBeforeScrub = null;
+
     if (!clock.isPlaying) return;
 
     clock.isPlaying = false;
@@ -104,6 +118,24 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
     pause,
     seek,
     toggle: () => (clock.isPlaying ? pause() : play()),
+
+    holdScrub(rate) {
+      if (playStateBeforeScrub === null) playStateBeforeScrub = clock.isPlaying;
+
+      clock.scrub = rate;
+      clock.isPlaying = true;
+      notify(transportListeners);
+    },
+
+    releaseScrub() {
+      if (playStateBeforeScrub === null) return;
+
+      clock.scrub = null;
+      clock.isPlaying = playStateBeforeScrub;
+      playStateBeforeScrub = null;
+      notify(transportListeners);
+      notify(frameListeners);
+    },
 
     step(samples) {
       pause();
@@ -126,7 +158,10 @@ export function createTransport(track: TickTrack, startFrame: number): Transport
 
       advanceClock(clock, track, elapsedMs);
 
-      if (frameSkip !== null) {
+      // A held arrow is the reader scrubbing by hand, so the buy-phase rule stands aside for it for
+      // the reason it stands aside for `seek`: rewinding into a phase the rule skips has to land
+      // there rather than be pushed back out of it once per animation frame.
+      if (frameSkip !== null && clock.scrub === null) {
         const skipped = frameSkip(clock.frame);
         if (skipped !== null) clock.frame = skipped;
       }
