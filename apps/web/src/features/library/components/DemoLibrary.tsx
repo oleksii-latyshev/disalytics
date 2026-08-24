@@ -38,11 +38,13 @@ export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDrag
           onCancel={onClose}
         />
       );
+    // §10.4 is the same card in the same place, so the failure replaces the way in rather than
+    // sitting above a copy of it. What it keeps is the route out — its own file picker, and the
+    // demos this device already holds.
     case 'failed':
       return (
         <div className="flex flex-col gap-6">
-          <ParseFailure failure={state.failure} fileName={state.fileName} />
-          <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
+          <ParseFailure failure={state.failure} fileName={state.fileName} onFile={onFile} />
           <SavedDemos onEnter={onEnter} onShowAll={onShowAll} />
         </div>
       );

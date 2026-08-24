@@ -3,6 +3,7 @@ import type { ParsePhase } from '@disa/demo-parser';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { DemoFileName } from './DemoFileName';
+import { MetaDot } from './MetaDot';
 
 interface Props {
   fileName: string;
@@ -12,41 +13,41 @@ interface Props {
   onCancel: () => void;
 }
 
+/**
+ * The parse — DESIGN.md §10.3. The same card as the upload view, transformed in place: it does not
+ * navigate, and the shell around it does not change either, because a parse is something the reader
+ * started rather than somewhere they went.
+ *
+ * **The number is the reading**, at §3's `44` in Plex Mono, and this screen is the one the scale
+ * allows to spend it. The progress *bar* that stood beside it until this screen was rebuilt is gone
+ * — it stated the same fact a second time, which §5.2's lesson from #205 says is not a reading — so
+ * the `progressbar` role rides on the percentage itself. That role names its element by
+ * `aria-label` alone and never by its content, which is why the stage below is a sibling and not a
+ * child: inside it, it would be read by nobody.
+ *
+ * **Nothing here is a spinner.** What moves is a percentage, and §14 counts that as a reading rather
+ * than motion, so it stands under `prefers-reduced-motion` as it stands anywhere else.
+ */
 export function ParseProgress({ fileName, phase, percent, header, onCancel }: Props) {
   const t = useT();
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h2 className="font-ui text-20 leading-dense">
-          <Text path="library.progress.title" />
-        </h2>
-        <span className="numeric text-13 text-ink-dim">
-          <Text path="library.progress.percent" values={{ percent: percent / 100 }} />
-        </span>
-      </div>
-
-      <DemoFileName fileName={fileName} />
-
-      <div
+    <section className="flex flex-col items-start gap-4">
+      <p
         role="progressbar"
         aria-label={t('library.progress.label')}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="h-1 overflow-hidden rounded-chip bg-surface-2"
+        className="numeric text-44 leading-dense"
       >
-        {/* A transform rather than a width: the bar advances while the worker holds the demo, and
-            AGENTS.md §17.1 keeps everything but transform and opacity off the main thread. */}
-        {/* Accent, per DESIGN.md §5 — this screen carries no side data, which is the whole reason
-            §2's fence lets the accent live here. It reads 5.82:1 against the `--surface-2` track. */}
-        <div
-          className="h-full origin-left bg-accent transition-transform duration-(--duration-base) ease-out"
-          style={{ transform: `scaleX(${percent / 100})` }}
-        />
-      </div>
+        <Text path="library.progress.percent" values={{ percent: percent / 100 }} />
+      </p>
 
-      <p className="label-dense text-ink-dim">
+      {/* The stage in the reader's words, never the machine's — §10.3 rules out "Initializing WASM
+          module" by name. It is the card's heading because the card has no other: a title above a
+          stage line would be the same sentence twice. */}
+      <h2 className="font-ui text-16 leading-dense">
         <Text
           path={
             phase === 'decompress'
@@ -54,23 +55,27 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
               : 'library.progress.phase.parse'
           }
         />
-      </p>
+      </h2>
 
-      {/* The header is complete while the last pass is still running, so it is worth showing
-          before the demo is. */}
-      {header !== null && (
-        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-          <span className="label-dense text-ink-dim">
-            <Text path="library.map" />
-          </span>
-          <span className="text-14">{header.map}</span>
-          <span className="numeric text-13 text-ink-dim">
-            <Text path="library.counts.players" values={{ count: header.players.length }} />
-          </span>
-        </div>
-      )}
+      {/* §10.3's "fills in as the parser learns". The file name is known from the drop; the map and
+          the player count arrive together, because `onHeader` delivers one whole `MatchHeader` and
+          the header is complete while the last pass is still running. */}
+      <div className="flex w-full min-w-0 flex-col gap-1">
+        <DemoFileName fileName={fileName} />
 
-      <Button type="button" variant="outline" className="self-start" onClick={onCancel}>
+        {header !== null && (
+          <p className="flex flex-wrap items-baseline gap-x-2 text-13 text-ink-dim">
+            {/* A map name is game vocabulary and stays as the demo wrote it — AGENTS.md §11. */}
+            <span className="text-14 text-ink">{header.map}</span>
+            <MetaDot />
+            <span className="numeric">
+              <Text path="library.counts.players" values={{ count: header.players.length }} />
+            </span>
+          </p>
+        )}
+      </div>
+
+      <Button type="button" variant="outline" onClick={onCancel}>
         <Text path="library.progress.cancel" />
       </Button>
     </section>
