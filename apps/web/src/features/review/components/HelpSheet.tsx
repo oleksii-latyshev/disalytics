@@ -12,7 +12,7 @@ interface Props {
 
 function KeyCap({ label }: { label: KeyLabel }) {
   return (
-    <kbd className="numeric inline-flex h-6 min-w-6 items-center justify-center rounded-control border border-line bg-surface-1 px-1.5 text-13 text-ink">
+    <kbd className="numeric inline-flex h-6 min-w-6 items-center justify-center rounded-chip border border-line bg-surface-1 px-1.5 text-13 text-ink">
       {'literal' in label ? label.literal : <Text path={label.path} />}
     </kbd>
   );
@@ -60,7 +60,7 @@ export function HelpSheet({ isOpen, onDismiss }: Props) {
             <Text path="help.about.title" />
           </h3>
 
-          <p className="text-15 text-ink-dim leading-prose">
+          <p className="text-14 text-ink-dim leading-prose">
             <Text path="help.about.body" />
           </p>
         </section>
@@ -82,7 +82,7 @@ export function HelpSheet({ isOpen, onDismiss }: Props) {
                   ))}
                 </dt>
 
-                <dd className="text-15">
+                <dd className="text-14">
                   <Text path={binding.descriptionPath} />
                 </dd>
               </div>
@@ -104,7 +104,7 @@ export function HelpSheet({ isOpen, onDismiss }: Props) {
               §7.3's own legend already uses. */}
           <ul className="flex flex-col gap-3">
             {PLATE_MARKS.map((mark) => (
-              <li key={mark.id} className="flex items-center gap-6 text-15 leading-prose">
+              <li key={mark.id} className="flex items-center gap-6 text-14 leading-prose">
                 <PlateMarkSwatch mark={mark} colors={colors} />
 
                 <span>

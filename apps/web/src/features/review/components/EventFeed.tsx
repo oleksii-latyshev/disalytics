@@ -120,7 +120,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onKillH
               onPointerLeave={() => onKillHover(null)}
               onFocus={() => onKillHover(killLineOf(row))}
               onBlur={() => onKillHover(null)}
-              className="flex w-full min-w-0 rounded-chip px-1.5 py-0.5 text-left text-13 text-ink transition-colors duration-micro ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              className="flex w-full min-w-0 rounded-chip px-1.5 py-0.5 text-left text-13 text-ink transition-colors duration-(--duration-micro) ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <EventRow event={row.event} nameOf={nameOf} />
             </m.button>

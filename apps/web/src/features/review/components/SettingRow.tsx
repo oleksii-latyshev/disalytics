@@ -16,7 +16,7 @@ export function SettingRow({ labelPath, notePath, control }: Props) {
   return (
     <div className="flex min-h-control-lg items-start justify-between gap-6">
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="text-15">
+        <span className="text-14">
           <Text path={labelPath} />
         </span>
         <span className="text-13 text-ink-dim leading-prose">

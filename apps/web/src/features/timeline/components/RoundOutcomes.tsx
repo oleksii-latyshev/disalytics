@@ -178,7 +178,7 @@ export const RoundOutcomes = memo(function RoundOutcomes({
               // `pb-1.5` only while expanded: the T track sits directly on the winner bar without
               // it and the two colours read as one mark. Collapsed there is nothing to separate,
               // and the padding would push the number off the pill's centre line.
-              className={`relative flex size-full cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-chip px-0.5 leading-none transition-colors duration-micro ease-out hover:bg-hover ${
+              className={`relative flex size-full cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-chip px-0.5 leading-none transition-colors duration-(--duration-micro) ease-out hover:bg-hover ${
                 isExpanded ? 'pb-1.5' : ''
               } ${lit ? 'bg-ink/10 ring-1 ring-glass-edge ring-inset' : ''}`}
             >
