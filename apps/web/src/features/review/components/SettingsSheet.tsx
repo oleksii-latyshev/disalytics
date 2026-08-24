@@ -6,7 +6,7 @@ import {
   useLocalePreference,
   useT,
 } from '@disa/i18n';
-import { RADAR_THEMES } from '@disa/map-data';
+import { DEFAULT_RADAR_THEME, RADAR_THEMES, type RadarTheme } from '@disa/map-data';
 import { Button, Sheet, Switch } from '@disa/ui';
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -43,10 +43,12 @@ const HELD_ARROW_OPTIONS: readonly ChoiceOption<HeldArrowRate>[] = HELD_ARROW_RA
 }));
 
 // Map and theme names are game vocabulary — AGENTS.md §11 — so `blue` and `vanilla` reach the
-// screen as they are rather than through a key that would have to be translated twice.
-const THEME_OPTIONS: readonly ChoiceOption<(typeof RADAR_THEMES)[number]>[] = RADAR_THEMES.map(
-  (theme) => ({ value: theme, label: theme }),
-);
+// screen as they are rather than through a key that would have to be translated twice. The default
+// leads, the way §10.5 writes the row, rather than in whatever order the package declares them.
+const THEME_OPTIONS: readonly ChoiceOption<RadarTheme>[] = [
+  DEFAULT_RADAR_THEME,
+  ...RADAR_THEMES.filter((theme) => theme !== DEFAULT_RADAR_THEME),
+].map((theme) => ({ value: theme, label: theme }));
 
 const TRAJECTORY_OPTIONS: readonly ChoiceOption<TrajectoryVisibility>[] =
   TRAJECTORY_VISIBILITIES.map((visibility) => ({
