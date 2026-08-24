@@ -5,6 +5,7 @@ import {
   utilityHeld,
   utilityKindOfGrenade,
   weaponClass,
+  weaponClasses,
 } from '../helpers/weapons';
 import {
   GRENADE_DECOY,
@@ -15,6 +16,7 @@ import {
   GRENADE_HE,
   GRENADE_SMOKE,
   GRENADE_TYPES,
+  WEAPON_NONE,
 } from '../schema';
 
 describe('utilityKindOfGrenade', () => {
@@ -71,6 +73,25 @@ describe('weaponClass', () => {
   it('falls back rather than failing on a weapon nobody enumerated', () => {
     expect(weaponClass('Portal Gun')).toBe('unknown');
     expect(weaponClass('')).toBe('unknown');
+  });
+});
+
+describe('weaponClasses', () => {
+  it('answers class for class, in the order the table indexes them', () => {
+    expect(weaponClasses(['AK-47', 'C4 Explosive', 'AWP', 'Knife'])).toEqual([
+      'rifle',
+      'bomb',
+      'sniper',
+      'knife',
+    ]);
+  });
+
+  it('holds a place for a weapon it has never heard of rather than dropping it', () => {
+    expect(weaponClasses(['Portal Gun', 'AWP'])).toEqual(['unknown', 'sniper']);
+  });
+
+  it('has nothing at WEAPON_NONE, which is not the same answer as `unknown`', () => {
+    expect(weaponClasses(['AK-47'])[WEAPON_NONE]).toBeUndefined();
   });
 });
 

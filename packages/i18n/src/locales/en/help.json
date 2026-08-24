@@ -33,6 +33,9 @@
   "legend": {
     "title": "On the plate",
     "player": "A player, in their side's colour. The needle is where they are looking, and it grows longer while they are scoped in.",
+    "weapon": "What a player is holding, beside the name that says who they are. The class only — a rifle, an AWP, a pistol. The team card names the model.",
+    "walking": "A player holding shift: slower, and quiet enough that the audibility ring goes with it.",
+    "firing": "A trigger pull, down the line the player is facing. It fades over match time, so scrubbing back through a burst plays it again.",
     "selected": "The player you have selected. They also get the cone of what they can see.",
     "hit": "A player who has just been hit. It fades over match time, so scrubbing back through the hit shows it again.",
     "blinded": "A player under a flash, with what is left of it sweeping away. A blinded player is not looking anywhere, so the needle goes.",

@@ -36,6 +36,8 @@ export {
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
   deathProgressBySlot,
+  GUNFIRE_SPUR_SECONDS,
+  gunfireBySlot,
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
@@ -69,6 +71,7 @@ export {
   utilityHeld,
   utilityKindOfGrenade,
   weaponClass,
+  weaponClasses,
 } from './helpers/weapons';
 export type { LocalizedMessage } from './message';
 export type { Clock } from './playback';

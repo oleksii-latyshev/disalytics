@@ -15,6 +15,15 @@ export interface RadarColors {
   /** The ring's inner edge, which is what keeps it legible over both side colours. */
   readonly selectionEdge: string;
   readonly label: LabelColors;
+  /**
+   * The hole a walking player is drawn with — the plate's own ground, so a quiet player reads as a
+   * token with its middle taken out. The same token the label halo cuts with, and named separately
+   * because the two are different marks that would be changed for different reasons.
+   */
+  readonly hollow: string;
+  /** The spur past a needle's tip on the frame a trigger was pulled — §6.1, and white like §6.2's
+   * trajectory: gunfire belongs to no side's colour and to no piece of utility. */
+  readonly gunfire: string;
   /** The hit a token carries for a moment of match time after its player is hit. */
   readonly damage: string;
   /** What is left of a flashbang, counted down on the token it blinded. */
@@ -42,6 +51,8 @@ function readRadarColors(): RadarColors {
     selectionRing: readCssToken('--color-ink'),
     selectionEdge: readCssToken('--color-accent'),
     label: { halo: readCssToken('--color-surface-0'), ink: readCssToken('--color-ink-dim') },
+    hollow: readCssToken('--color-surface-0'),
+    gunfire: readCssToken('--color-ink'),
     damage: readCssToken('--color-damage'),
     blind: readCssToken('--color-nade-flash'),
     objective: readCssToken('--color-objective'),

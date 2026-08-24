@@ -2,6 +2,9 @@ import { UTILITY_NAMES } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import type { RadarColors } from '../helpers/colors';
 import { PLATE_MARKS, type PlateMarkId } from '../helpers/plate-legend';
+import { stubPath2D } from './canvas-globals';
+
+stubPath2D();
 
 /**
  * Sentinels rather than the real palette: a mark that paints anything outside this table painted a
@@ -13,6 +16,8 @@ const COLORS: RadarColors = {
   selectionRing: '#ring00',
   selectionEdge: '#edge00',
   label: { halo: '#halo00', ink: '#ink000' },
+  hollow: '#hollow',
+  gunfire: '#gunfir',
   damage: '#damage',
   blind: '#blind0',
   objective: '#objective',
@@ -32,6 +37,8 @@ const PALETTE = new Set<string>([
   COLORS.selectionEdge,
   COLORS.label.halo,
   COLORS.label.ink,
+  COLORS.hollow,
+  COLORS.gunfire,
   COLORS.damage,
   COLORS.blind,
   COLORS.objective,
@@ -57,6 +64,8 @@ function newContext(painted: string[]): CanvasRenderingContext2D {
     beginPath: ignore,
     closePath: ignore,
     arc: ignore,
+    rect: ignore,
+    translate: ignore,
     moveTo: ignore,
     lineTo: ignore,
     quadraticCurveTo: ignore,
@@ -115,6 +124,14 @@ describe('PLATE_MARKS', () => {
       if (mark.vocabulary === undefined) continue;
 
       expect(vocabulary, `${mark.id} is called ${mark.vocabulary}`).toContain(mark.vocabulary);
+    }
+  });
+
+  it('draws a mark for each of the three §6.1 states the token gained in #164', () => {
+    const ids = new Set(PLATE_MARKS.map((mark) => mark.id));
+
+    for (const id of ['weapon', 'walking', 'firing'] as const) {
+      expect(ids).toContain(id);
     }
   });
 

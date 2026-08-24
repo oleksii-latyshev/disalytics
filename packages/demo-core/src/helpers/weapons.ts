@@ -101,6 +101,19 @@ export function weaponClass(weapon: WeaponId): WeaponClass {
   return CLASS_BY_NAME[weapon] ?? 'unknown';
 }
 
+/**
+ * What class every entry of `MatchHeader.weapons` belongs to, in the order `TickTrack.weapon` and
+ * `Shot.weapon` index them. Derived once per demo and read by index afterwards: the plate resolves
+ * a class per player per animation frame, and a string lookup per token per frame is the walk
+ * `AGENTS.md` §8 keeps out of a draw.
+ *
+ * A `weapon` sample of `WEAPON_NONE` falls outside this table on purpose — no sample ever saw that
+ * slot holding anything, which is a different answer from `unknown` and is drawn as one.
+ */
+export function weaponClasses(weapons: readonly WeaponId[]): readonly WeaponClass[] {
+  return weapons.map(weaponClass);
+}
+
 // Upstream's *internal* vocabulary, which is what `Kill.weapon` and `Damage.weapon` carry —
 // `ak47`, `m4a1_silencer`, `inferno` — and a different vocabulary from the display names
 // `MatchHeader.weapons` holds (docs/PARSER.md §17). The two tables are both here, side by side and
