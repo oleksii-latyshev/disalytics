@@ -34,7 +34,7 @@ export function CornerCluster({
   const t = useT();
 
   return (
-    <div className="glass-panel flex items-center gap-1 rounded-float p-1 text-ink-faint transition-colors duration-micro ease-out focus-within:text-ink hover:text-ink">
+    <div className="glass-panel flex items-center gap-1 rounded-float p-1 text-ink-faint transition-colors duration-(--duration-micro) ease-out focus-within:text-ink hover:text-ink">
       <Button
         type="button"
         variant="ghost"

@@ -165,7 +165,7 @@ export const EventGlyphs = memo(function EventGlyphs({
                 // The target a pointer hits is the `::before`, wider than the mark it carries. The
                 // descendant selector is what mutes a `UtilityGlyph`, which owns its colour class:
                 // between two single-class rules the stylesheet's order would decide instead.
-                className={`-translate-x-1/2 pointer-events-auto absolute inset-y-0 flex items-center justify-center transition-transform duration-micro ease-out before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10 ${
+                className={`-translate-x-1/2 pointer-events-auto absolute inset-y-0 flex items-center justify-center transition-transform duration-(--duration-micro) ease-out before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10 ${
                   muted ? 'text-ink-faint [&_svg]:text-ink-faint' : inkFor(glyph.event)
                 } ${raised ? '-translate-y-1' : ''}`}
               >

@@ -87,7 +87,7 @@ export function PlayerRow({
       type="button"
       aria-pressed={isSelected}
       onClick={() => onSelect(player.slot)}
-      className={`flex w-full flex-col gap-1 rounded-card px-2 py-1.5 text-left transition-colors duration-micro ease-out ${
+      className={`flex w-full flex-col gap-1 rounded-card px-2 py-1.5 text-left transition-colors duration-(--duration-micro) ease-out ${
         isSelected ? 'bg-selected' : 'hover:bg-hover'
       }`}
     >
