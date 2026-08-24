@@ -1613,9 +1613,13 @@ dependency order:
    `apps/web/src/features/library`. **No `ogl` and no vendored backgrounds**: the two WebGL screens
    are deferred and the dimmed radar backdrop already ships, so this step adds no dependency at all.
    Four pieces, in dependency order, and they are not one PR:
-   - **the shell** — §10.1's rail, its four entries, the row it becomes below `--breakpoint-split`,
-     and the upload view moving inside it. It ends where the review screen begins, which is a
-     routing rule as much as a layout one;
+   - ~~**the shell**~~ *(done, #237)* — §10.1's rail, its four entries, the row it becomes below
+     `--breakpoint-split`, and the upload view moving inside it. It ends where the review screen
+     begins, which is a routing rule as much as a layout one. Two of §10.1's own sentences did not
+     survive being drawn: `--ink-faint` on the unfinished entries loses to §14's floor, and the
+     product name on the upload card loses to the rail's head two hundred pixels away. Both were
+     corrected in that PR rather than ahead of it — the decision needing a document first is one
+     that has to be *made*, and looking at the screen made these two;
    - **the library grid** — §10.2's cards replacing the rows on the way-in card, with the count, the
      catalog's own byte total against `CACHE_BYTE_LIMIT`, and `navigator.storage.estimate()` beside
      it as an estimate. The `best-effort` line comes from `requestPersistence`, which exists;
