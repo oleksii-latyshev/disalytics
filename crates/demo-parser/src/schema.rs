@@ -245,6 +245,19 @@ pub struct Grenade {
     pub trajectory: GrenadeTrajectory,
 }
 
+/// One trigger pull with a gun. A grenade throw and a knife swing are not shots: they reach the
+/// schema as [`Grenade`] and as nothing at all, and `docs/PARSER.md` §18 carries the join that
+/// separates the three.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Shot {
+    pub tick: Tick,
+    pub shooter: PlayerSlot,
+    /// Index into [`MatchHeader::weapons`], or [`WEAPON_NONE`] for a gun no sample ever saw held.
+    /// The same index and the same vocabulary as [`TickTrack::weapon`], because both resolve
+    /// through the item definition rather than through an event's own name for the weapon.
+    pub weapon: u8,
+}
+
 /// One affected player, not one flashbang — a single grenade produces several of these.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Blind {
@@ -309,6 +322,7 @@ pub struct MatchEvents {
     pub rounds: Vec<Round>,
     pub kills: Vec<Kill>,
     pub damage: Vec<Damage>,
+    pub shots: Vec<Shot>,
     pub grenades: Vec<Grenade>,
     pub blinds: Vec<Blind>,
     pub plants: Vec<BombPlant>,

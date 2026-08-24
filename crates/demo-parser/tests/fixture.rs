@@ -11,8 +11,8 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, Kill, MatchHeader, ParseObserver, ParsedDemo, TickTrack, WEAPON_NONE,
-    parse_observed, parse_recording_passes,
+    DefuseOutcome, Grenade, Kill, MatchHeader, ParseObserver, ParsedDemo, Shot, TickTrack,
+    WEAPON_NONE, parse_observed, parse_recording_passes,
 };
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -57,6 +57,7 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
 
     assert_track_is_rectangular(&first.track);
     assert_weapon_column_indexes_the_table(&first);
+    assert_shots_name_a_weapon_in_the_table(&first);
     assert_events_are_sorted_by_tick(&first);
 
     let mut observed = ObservedParse::default();
@@ -154,6 +155,38 @@ fn assert_weapon_column_indexes_the_table(demo: &ParsedDemo) {
     eprintln!("weapon table ({}): {:?}", table_length, demo.header.weapons);
 }
 
+/// A shot names its weapon by the same index the sample column uses, so the two are checked the
+/// same way — and a match in which nobody fired is not a match.
+fn assert_shots_name_a_weapon_in_the_table(demo: &ParsedDemo) {
+    let table_length = u8::try_from(demo.header.weapons.len()).expect("table wider than its index");
+    let unnamed = demo
+        .events
+        .shots
+        .iter()
+        .filter(|shot| shot.weapon == WEAPON_NONE)
+        .count();
+
+    assert!(!demo.events.shots.is_empty(), "nobody fired a shot");
+    assert!(
+        demo.events
+            .shots
+            .iter()
+            .all(|shot| shot.weapon == WEAPON_NONE || shot.weapon < table_length),
+        "a shot points past the end of the match's weapon table"
+    );
+    assert!(
+        demo.events
+            .shots
+            .iter()
+            .all(|shot| (shot.shooter as usize) < demo.track.slot_count),
+        "a shot names a slot the track does not have"
+    );
+    eprintln!(
+        "shots: {} ({unnamed} naming no weapon in the table)",
+        demo.events.shots.len()
+    );
+}
+
 fn assert_events_are_sorted_by_tick(demo: &ParsedDemo) {
     let events = &demo.events;
 
@@ -199,6 +232,12 @@ fn assert_events_are_sorted_by_tick(demo: &ParsedDemo) {
             .windows(2)
             .all(|pair| pair[0].throw_tick <= pair[1].throw_tick)
     );
+    assert!(
+        events
+            .shots
+            .windows(2)
+            .all(|pair| pair[0].tick <= pair[1].tick)
+    );
 }
 
 fn snapshot_of(demo: &ParsedDemo, passes: &[&str]) -> Value {
@@ -212,6 +251,7 @@ fn snapshot_of(demo: &ParsedDemo, passes: &[&str]) -> Value {
             "rounds": events.rounds.len(),
             "kills": events.kills.len(),
             "damage": events.damage.len(),
+            "shots": events.shots.len(),
             "grenades": events.grenades.len(),
             "blinds": events.blinds.len(),
             "plants": events.plants.len(),
@@ -250,8 +290,32 @@ fn snapshot_of(demo: &ParsedDemo, passes: &[&str]) -> Value {
             "durationSeconds": blind.duration_seconds,
             "isTeammate": blind.is_teammate,
         })),
+        "shotsByWeapon": shots_by_weapon(&events.shots, &demo.header.weapons),
+        "shots": sampled(&events.shots, shot_json),
         "grenadesByType": grenades_by_type(&events.grenades),
         "grenades": sampled(&events.grenades, grenade_json),
+    })
+}
+
+/// The per-weapon shot counts a reviewer compares against `weapon_fire` for the same match —
+/// `docs/PARSER.md` §18 records that join, and it is the evidence that `fire_bullets` counts
+/// trigger pulls rather than bullets in the air.
+fn shots_by_weapon(shots: &[Shot], weapons: &[String]) -> Value {
+    let mut counts: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+    for shot in shots {
+        let name = weapons
+            .get(usize::from(shot.weapon))
+            .map_or("<none>", String::as_str);
+        *counts.entry(name).or_insert(0) += 1;
+    }
+    json!(counts)
+}
+
+fn shot_json(shot: &Shot) -> Value {
+    json!({
+        "tick": shot.tick,
+        "shooter": shot.shooter,
+        "weapon": shot.weapon,
     })
 }
 

@@ -81,7 +81,7 @@ export function slotAt(buffers: readonly BufferSlot[], index: number): BufferSlo
 }
 
 function hasArrays(events: Record<string, unknown>): boolean {
-  const names = ['rounds', 'kills', 'damage', 'grenades', 'blinds', 'plants', 'defuses'];
+  const names = ['rounds', 'kills', 'damage', 'shots', 'grenades', 'blinds', 'plants', 'defuses'];
   return names.every((name) => Array.isArray(events[name]));
 }
 

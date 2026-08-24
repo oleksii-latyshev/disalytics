@@ -120,6 +120,24 @@ impl WeaponTable {
     }
 }
 
+/// Where an item definition index sits in a sealed table, or [`WEAPON_NONE`].
+///
+/// A shot names its weapon by definition index, which is the *same* route
+/// [`WeaponTable::record`] takes to a display name — so a shot and the sample column agree by
+/// construction rather than by a mapping between two event vocabularies. `docs/PARSER.md` §18.
+pub(crate) fn index_in(names: &[String], def_index: u32) -> u8 {
+    let Some(display) = WEAPINDICIES.get(&def_index) else {
+        return WEAPON_NONE;
+    };
+    let canonical = if is_knife(def_index) { KNIFE } else { *display };
+
+    names
+        .binary_search_by(|name| name.as_str().cmp(canonical))
+        .ok()
+        .and_then(|index| u8::try_from(index).ok())
+        .unwrap_or(WEAPON_NONE)
+}
+
 /// The `GRENADE_*` bitfield for one player's inventory.
 ///
 /// A second flashbang is a second `43` in the list — upstream pushes the index twice rather than
@@ -152,7 +170,7 @@ pub(crate) fn grenades_of(inventory: &[u32]) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{WeaponTable, grenades_of, is_knife_name};
+    use super::{WeaponTable, grenades_of, index_in, is_knife_name};
     use crate::schema::{
         GRENADE_DECOY, GRENADE_DEFUSE_KIT, GRENADE_FIRE, GRENADE_FLASH, GRENADE_FLASH_SECOND,
         GRENADE_HE, GRENADE_SMOKE, WEAPON_NONE,
@@ -236,6 +254,27 @@ mod tests {
         let table = sealed(&names.iter().map(String::as_str).collect::<Vec<_>>());
 
         assert_eq!(table.into_names().len(), usize::from(WEAPON_NONE));
+    }
+
+    /// The two routes to an index have to agree, or a shot and the sample column would name
+    /// different weapons for the same trigger pull. `7` is the AK-47's definition index and `16`
+    /// the M4A4's, from `vendor/csgoproto/src/maps.rs`.
+    #[test]
+    fn a_definition_index_finds_the_entry_the_display_name_found() {
+        let table = sealed(&["AK-47", "M4A4", "Paracord Knife"]);
+        let names = table.into_names();
+
+        assert_eq!(index_in(&names, 7), 0);
+        assert_eq!(index_in(&names, 16), 2);
+        assert_eq!(index_in(&names, 508), 1);
+    }
+
+    #[test]
+    fn a_definition_the_match_never_carried_reads_as_nothing() {
+        let names = sealed(&["AK-47"]).into_names();
+
+        assert_eq!(index_in(&names, 28), WEAPON_NONE);
+        assert_eq!(index_in(&names, 9_999), WEAPON_NONE);
     }
 
     #[test]

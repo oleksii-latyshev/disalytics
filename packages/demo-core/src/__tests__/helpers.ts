@@ -122,6 +122,7 @@ export function newEvents(): MatchEvents {
     rounds: [],
     kills: [],
     damage: [],
+    shots: [],
     grenades: [],
     blinds: [],
     plants: [],

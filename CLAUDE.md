@@ -525,6 +525,26 @@ rows wait for §15's step 7 to settle it at once. Two corrections ride with it �
 `AGENTS.md` §16's two frame rows carry a `320f821` baseline and a measurement at the 4× ceiling,
 both **0 over 16.7 ms across three passes of 399 frames**.
 
+**#163 put gunfire in the schema, and `SCHEMA_VERSION` is 5.** `MatchEvents.shots` is one entry
+per trigger pull with a gun — tick, shooter, weapon — and the load-bearing decision is **which
+event it comes from**. Upstream carries two: `weapon_fire` (4,788 on the fixture) fires for guns,
+thrown grenades and knife swings alike and names its weapon `weapon_ak47`, which is the fifth
+vocabulary `docs/PARSER.md` §17 counts and the one nothing here can map without #53;
+`fire_bullets` (3,500) fires when a bullet leaves a gun and carries an **item definition index**,
+which is the route `MatchHeader.weapons` is already built through. So `Shot.weapon` is an index
+into that per-match table and means exactly what `TickTrack.weapon` means at the same tick — no
+sixth namespace, and on the fixture **all 3,500 shots resolved into the table**. Four things to
+know. **The two events join weapon for weapon** — AK-47 1,280 in both, M4A1-S 625, M4A4 359, over
+18 guns — which is what says `fire_bullets` counts trigger pulls rather than bullets in flight; the
+one exception is a single Glock-18, 203 against 202, and it is recorded rather than modelled.
+**A shotgun is unverified**: the match held a MAG-7 and an XM1014 but fired neither, so whether
+nine pellets are one event or nine is an open question and §18 says so instead of assuming.
+**The shape is a plain sorted array** — hard rule 3's default — because 3,500 events three fields
+wide is four times the damage array and a third of `item_equip`, so §10's columnar exception was
+measured and not taken. And **the cost is nothing measurable**: 16.31 s → 16.09 s native and
+19.94 s → 20.06 s in the browser, three runs an arm each way. `weapons::index_in` is the definition
+index → table index lookup, unit-tested against the display-name route so the two cannot drift.
+
 **#226 bound the rest of §9.1, and the held arrow is the part with a design in it.** A tap on `←`
 or `→` seeks by §10.5's step; the *keyboard's own repeat* is what turns the same key into a hold,
 and a hold is a **rate the transport owns** — `Clock.scrub` beside `Clock.speed`, signed by the

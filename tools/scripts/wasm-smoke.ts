@@ -248,6 +248,14 @@ for (const name of ['rounds', 'kills', 'damage', 'blinds', 'plants', 'defuses'] 
   arrayField(events, name);
 }
 
+const shots = arrayField(events, 'shots');
+
+for (const shot of shots) {
+  numberField(shot, 'tick');
+  numberField(shot, 'shooter');
+  numberField(shot, 'weapon');
+}
+
 for (const grenade of grenades) {
   const trajectory = field(grenade, 'trajectory');
   const samples = numberField(trajectory, 'sampleCount');
@@ -258,6 +266,7 @@ for (const grenade of grenades) {
 }
 
 console.log(
-  `${map}: ${cells} track cells and ${grenades.length} grenades in ${seconds.toFixed(2)}s, ` +
+  `${map}: ${cells} track cells, ${grenades.length} grenades and ${shots.length} shots ` +
+    `in ${seconds.toFixed(2)}s, ` +
     'every buffer owned by JavaScript.',
 );

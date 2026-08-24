@@ -126,7 +126,8 @@
     "grenades": 519,
     "kills": 225,
     "plants": 22,
-    "rounds": 30
+    "rounds": 30,
+    "shots": 3500
   },
   "damage": {
     "checksum": "afe1da0fdc41fe83",
@@ -3491,6 +3492,114 @@
       "winner": "T"
     }
   ],
+  "shots": {
+    "checksum": "80bbd2f30dd50c8b",
+    "count": 3500,
+    "first": [
+      {
+        "shooter": 5,
+        "tick": 4637,
+        "weapon": 16
+      },
+      {
+        "shooter": 5,
+        "tick": 4651,
+        "weapon": 16
+      },
+      {
+        "shooter": 5,
+        "tick": 4730,
+        "weapon": 26
+      },
+      {
+        "shooter": 8,
+        "tick": 4774,
+        "weapon": 11
+      },
+      {
+        "shooter": 8,
+        "tick": 4797,
+        "weapon": 11
+      },
+      {
+        "shooter": 8,
+        "tick": 4819,
+        "weapon": 11
+      },
+      {
+        "shooter": 8,
+        "tick": 4840,
+        "weapon": 11
+      },
+      {
+        "shooter": 8,
+        "tick": 4852,
+        "weapon": 11
+      }
+    ],
+    "last": [
+      {
+        "shooter": 9,
+        "tick": 193764,
+        "weapon": 15
+      },
+      {
+        "shooter": 1,
+        "tick": 193768,
+        "weapon": 15
+      },
+      {
+        "shooter": 9,
+        "tick": 193770,
+        "weapon": 15
+      },
+      {
+        "shooter": 9,
+        "tick": 193776,
+        "weapon": 15
+      },
+      {
+        "shooter": 9,
+        "tick": 193783,
+        "weapon": 15
+      },
+      {
+        "shooter": 9,
+        "tick": 193789,
+        "weapon": 15
+      },
+      {
+        "shooter": 9,
+        "tick": 193796,
+        "weapon": 15
+      },
+      {
+        "shooter": 3,
+        "tick": 194127,
+        "weapon": 2
+      }
+    ]
+  },
+  "shotsByWeapon": {
+    "AK-47": 1280,
+    "AUG": 13,
+    "AWP": 95,
+    "Desert Eagle": 49,
+    "Dual Berettas": 8,
+    "FAMAS": 90,
+    "Five-SeveN": 84,
+    "Galil AR": 121,
+    "Glock-18": 202,
+    "M4A1-S": 625,
+    "M4A4": 359,
+    "MAC-10": 295,
+    "MP9": 80,
+    "P250": 38,
+    "R8 Revolver": 3,
+    "SSG 08": 37,
+    "Tec-9": 14,
+    "USP-S": 107
+  },
   "track": {
     "checksums": {
       "armour": "d11520c62c92973f",
