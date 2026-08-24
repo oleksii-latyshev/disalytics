@@ -662,10 +662,12 @@ debug overlay of §9 above **verifies** an entry — map, frame, altitude band, 
 coordinates under the pointer, with a manual level override — and deliberately cannot edit `posX`,
 `posY` or `scale`.
 
-Side identity never rests on hue alone (`docs/DESIGN.md` §2): CT is a circle, T is a diamond, and
-the two colours are read out of the `--color-ct` / `--color-t` tokens at draw time rather than
-written into the renderer. A colour-blind *variant* of those tokens is still unbuilt — it is a
-settings concern, and no settings slice exists yet.
+Side identity never rests on hue alone (`docs/DESIGN.md` §2). The silhouettes that used to carry it
+are gone — #154 draws both sides as one filled circle — so what carries it now is hue plus which
+team card the player is listed in, and the two colours are read out of the `--color-ct` /
+`--color-t` tokens at draw time rather than written into the renderer. **The colour-blind variant of
+those tokens exists since #202** and is selected in §10.5's settings sheet; `docs/DESIGN.md` §2.4
+carries its values and the dichromat simulation they were measured with.
 
 ### Who is on the plate — #111
 
