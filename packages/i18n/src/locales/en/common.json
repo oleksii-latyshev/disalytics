@@ -1,4 +1,6 @@
 {
   "tagline": "Turn a forty-minute match into a ten-minute review.",
-  "privacyNote": "Demos are parsed in your browser. The file never leaves your device."
+  "privacyNote": "Demos are parsed in your browser. The file never leaves your device.",
+  "settings": "Settings",
+  "help": "Help"
 }

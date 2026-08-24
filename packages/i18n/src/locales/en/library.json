@@ -31,7 +31,6 @@
     "open": "Open {map}, saved on this device",
     "remove": "Remove {fileName} from this device",
     "showAll": "Show all ({count})",
-    "showFewer": "Show fewer",
     "gone": {
       "title": "That demo is no longer on this device.",
       "hint": "The browser cleared it, or the cache made room for a newer one. Open the file again to read it."
@@ -39,5 +38,18 @@
   },
   "counts": {
     "players": "{count, plural, one {# player} other {# players}}"
+  },
+  "shell": {
+    "nav": "Sections",
+    "upload": "Upload",
+    "library": "Library",
+    "lineups": "Utility lineups",
+    "stats": "Player stats",
+    "soon": "Soon",
+    "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
+    "soonNote": {
+      "lineups": "Every grenade thrown in the match, grouped by where it was thrown from and where it landed. Not built yet.",
+      "stats": "What each player did across the match — opening duels, trades, utility, damage. Not built yet."
+    }
   }
 }

@@ -1245,9 +1245,11 @@ because the ground behind it is a static image and a blur over static ground is 
 
 Entries are 40px, §4's larger control height. The current one carries a `--selected` fill and
 `--ink`; the rest sit at `--ink-dim`. **Two of the four are honest about being unfinished**: utility
-lineups and player stats are `--ink-faint` with a "soon" chip, focusable, and pressing one says what
-it will do and nothing else. The navigation shape exists now so that adding those screens later is
-not a redesign.
+lineups and player stats carry a "soon" chip, are focusable, and pressing one says what it will do
+and nothing else. The navigation shape exists now so that adding those screens later is not a
+redesign. This section asked for `--ink-faint` on those two labels until they were built; §14 rules
+that ink off text at 3.63:1 and the floor wins, so **the chip is what tells an unfinished entry
+apart and the label stays at `--ink-dim`**.
 
 **Below `--breakpoint-split` the rail becomes a row** of the same entries above the content: 280px
 of rail against a 1024px window leaves the library two columns of card, which is a worse trade than
@@ -1260,9 +1262,12 @@ about the shell changes shape.
 - **The whole viewport is the drop target**, rail included. A file dragged anywhere is caught and
   the screen acknowledges it. The dashed border goes; a dashed border is the universal signal for
   *placeholder*.
-- **One card, centred, with room around it**: the product name, one line of what it does, the
-  primary action in `--accent`, and beneath it the five most recent demos (§10.2) when the device
-  holds any.
+- **One card, centred, with room around it**: what the reader came to do — the action's own
+  heading, one line of what to do, the primary action in `--accent`, and beneath it the five most
+  recent demos (§10.2) when the device holds any. **The product name is the rail's and not the
+  card's**: this section asked for it in both until they were built two hundred pixels apart on one
+  screen, and §5.2's lesson from #205 is that what is on screen twice is not a reading. The tagline
+  goes with the name.
 - Emptiness here is confidence. Feature bullets would be the opposite.
 
 #### The backdrop, and the two backgrounds nobody is building
@@ -1325,7 +1330,9 @@ What survives from the list this replaces, unchanged:
   removes.
 - The library is **store state, not a preference**: it lives in the catalog and never in
   `localStorage` — hard rule 5.
-- The way-in card keeps the five most recent (#140). The library screen holds every one of them.
+- The way-in card keeps the five most recent (#140). The library screen holds every one of them,
+  and the card's disclosure is **a route to that screen rather than an expansion in place** — once
+  the rail has a Library entry, expanding would be the same list in two states one press apart.
 
 #### The demo dialog
 
