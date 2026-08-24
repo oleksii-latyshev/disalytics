@@ -2,8 +2,16 @@ import { ANGLE_SCALE, sampleAt, type TickTrack } from '@disa/demo-core';
 
 /** A filled circle, 16px across, for both sides — DESIGN.md §6.1 retires the per-side silhouette. */
 export const TOKEN_RADIUS_PX = 8;
-/** What a token has shrunk to once its player is a body rather than a player. */
-export const TOKEN_DEAD_RADIUS_PX = 4;
+/**
+ * The token follows the plate's zoom between 12px and 20px across — DESIGN.md §6.1. It is a mark
+ * rather than a footprint, so it grows to stay hittable and stops before it starts covering the
+ * callout the player is standing in.
+ */
+export const TOKEN_MIN_RADIUS_PX = 6;
+export const TOKEN_MAX_RADIUS_PX = 10;
+
+/** What a token has shrunk to once its player is a body rather than a player: half its own size. */
+export const DEAD_RADIUS_FRACTION = 0.5;
 
 const NEEDLE_WIDTH_PX = 2;
 const NEEDLE_LENGTH_PX = 10;
@@ -45,9 +53,10 @@ export function drawDamageFlash(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
+  radius: number,
   color: string,
 ): void {
-  drawToken(context, x, y, TOKEN_RADIUS_PX, color);
+  drawToken(context, x, y, radius, color);
 }
 
 const BLIND_DISC_ALPHA = 0.5;
@@ -60,6 +69,7 @@ export function drawBlindDisc(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
+  radius: number,
   remaining: number,
   color: string,
   alpha: number,
@@ -72,7 +82,7 @@ export function drawBlindDisc(
 
   context.beginPath();
   context.moveTo(x, y);
-  context.arc(x, y, TOKEN_RADIUS_PX, start, start - remaining * 2 * Math.PI, true);
+  context.arc(x, y, radius, start, start - remaining * 2 * Math.PI, true);
   context.closePath();
   context.fill();
   context.restore();
@@ -92,10 +102,11 @@ export function drawSelectionRing(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
+  radius: number,
   ring: string,
   edge: string,
 ): void {
-  const inner = TOKEN_RADIUS_PX + SELECTION_EDGE_WIDTH_PX / 2;
+  const inner = radius + SELECTION_EDGE_WIDTH_PX / 2;
 
   context.lineWidth = SELECTION_EDGE_WIDTH_PX;
   context.strokeStyle = edge;
@@ -104,7 +115,7 @@ export function drawSelectionRing(
 
   context.lineWidth = SELECTION_WIDTH_PX;
   context.strokeStyle = ring;
-  traceToken(context, x, y, TOKEN_RADIUS_PX + SELECTION_GAP_PX + SELECTION_WIDTH_PX / 2);
+  traceToken(context, x, y, radius + SELECTION_GAP_PX + SELECTION_WIDTH_PX / 2);
   context.stroke();
 }
 
@@ -117,6 +128,7 @@ export function drawProgressArc(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
+  radius: number,
   progress: number,
   color: string,
 ): void {
@@ -126,7 +138,7 @@ export function drawProgressArc(
   context.strokeStyle = color;
 
   context.beginPath();
-  context.arc(x, y, TOKEN_RADIUS_PX + ARC_GAP_PX, start, start + progress * 2 * Math.PI);
+  context.arc(x, y, radius + ARC_GAP_PX, start, start + progress * 2 * Math.PI);
   context.stroke();
 }
 
@@ -158,11 +170,12 @@ export function drawNeedle(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
+  radius: number,
   angle: number,
   isScoped: boolean,
   color: string,
 ): void {
-  const length = TOKEN_RADIUS_PX + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX);
+  const length = radius + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX);
   const dx = Math.cos(angle);
   const dy = Math.sin(angle);
 
@@ -170,7 +183,7 @@ export function drawNeedle(
   context.strokeStyle = color;
 
   context.beginPath();
-  context.moveTo(x + dx * TOKEN_RADIUS_PX, y + dy * TOKEN_RADIUS_PX);
+  context.moveTo(x + dx * radius, y + dy * radius);
   context.lineTo(x + dx * length, y + dy * length);
   context.stroke();
 }

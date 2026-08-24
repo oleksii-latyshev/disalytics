@@ -5,6 +5,7 @@ import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import { levelIndexAt, OTHER_LEVEL_ALPHA } from './levels';
+import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /** Screen `x`, screen `y` and the level's opacity, per end. */
 export const END_STRIDE = 3;
@@ -142,6 +143,8 @@ export interface KillLineLayerOptions {
    * chips, which §6.1 does once per demo on purpose.
    */
   readonly hovered: { readonly current: KillLine | null };
+  /** Read at draw time, for the same reason `hovered` is — DESIGN.md §6.3. */
+  readonly view: { readonly current: PlateView };
 }
 
 /**
@@ -156,11 +159,12 @@ export interface KillLineLayerOptions {
  * plate's width changes, and while no row is hovered the layer returns before it touches anything.
  */
 export function killLineLayer(options: KillLineLayerOptions): Layer {
-  const { demo, clock, overview, levelIndex, colors, hovered } = options;
+  const { demo, clock, overview, levelIndex, colors, hovered, view } = options;
   const { track } = demo;
 
   const geometry = killLineGeometry(track, overview, levelIndex);
   const { ends } = geometry;
+  const plate = plateGeometry();
 
   let lastKill: KillLine | null = null;
   let lastScale = 0;
@@ -178,7 +182,10 @@ export function killLineLayer(options: KillLineLayerOptions): Layer {
     // back past the kill takes it away rather than drawing a shot out of the future.
     if (kill.frame > clock.frame) return;
 
-    const scale = size.width / RADAR_IMAGE_SIZE;
+    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, plate);
+    context.translate(plate.offsetX, plate.offsetY);
+
+    const scale = plate.scale;
 
     if (kill !== lastKill || scale !== lastScale) {
       geometry.read(kill, scale);

@@ -94,6 +94,8 @@ export const TRANSLATION_KEYS = [
   'radar.title',
   'radar.unknownMap.hint',
   'radar.unknownMap.title',
+  'radar.zoomIn',
+  'radar.zoomOut',
   'review.close',
   'review.feed.defuse',
   'review.feed.headshot',

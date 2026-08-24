@@ -785,9 +785,25 @@ going to do. §8's test applies: match time is drawing, wall time is animating.
 
 - **Levels** — a two-level map draws one at a time, chosen from the 10 Hz readout rather than from
   the clock, or the view flickers between floors as a player crosses the split.
-- **Zoom and pan** — scroll wheel, a `+`/`−` pair on the plate's bottom-right, and `Cmd`/`Ctrl` +
-  drag. Zoom is a *view* state, not playback state: it survives scrubbing and never moves on its
-  own. Double-click resets.
+- **Zoom and pan** — scroll wheel anchored on the pointer, a `+`/`−` pair on the plate's
+  bottom-right, and **drag to pan, with no modifier**. Zoom is a *view* state, not playback state:
+  it survives scrubbing, a round jump, a pause and a re-render, and nothing but the reader moves it.
+  Double-click resets, and so does zooming out all the way — at 1× the pan has nowhere to go.
+  Corrected 24 August 2026 (#114): this bullet asked for `Cmd`/`Ctrl` + drag and §9.2 asked for a
+  plain drag, and §9.2 is the pointer section and the one that wins. Nothing else on the plate reads
+  a drag, so the modifier bought nothing and cost the reader a discovery.
+- **The range is 1× to 4×**, and 1× is the floor because the plate is already sized to fit the whole
+  map (§5.1) — below it there is only margin. The ceiling is a product choice rather than a limit of
+  the renderer, and it is worth knowing what it spends: the radar image is 1024px square, so on a
+  716px plate the map is at its own resolution around 1.4× and is being enlarged above that. What
+  the reader is reading — tokens, needles, names, utility, the kill line — is drawn rather than
+  sampled and stays sharp at every level.
+- **Zoom is applied in the renderer**, never by scaling a CSS-transformed canvas: the world scales
+  and everything measured in device pixels does not, so a hairline is 1px and a name is 10px at 4×
+  as at 1×. The token is the one mark that follows the zoom, within the 12–20px §6.1 gives it.
+- **A name is drawn beside its token or not at all.** A label whose player the zoom has left off the
+  plate is dropped rather than clamped to the nearest edge — clamping is what grows a row of names
+  along the edge of a panned plate.
 - The debug overlay is a development affordance and lives behind the settings sheet, never on the
   stage.
 
@@ -1120,7 +1136,7 @@ an accessibility footnote here; it is the primary interface, and the pointer is 
 | `Esc` | clear selection; close the topmost sheet, overlay or menu |
 | `F` | fullscreen |
 | `M` | raise the match overlay |
-| `+` `−` `0` | zoom in, out, reset |
+| `+` `−` `0` | zoom in, out, reset — **not bound yet**, see below |
 | `?` | help |
 
 A held arrow is a **rate change, not a repeat**: `keydown` raises the rate to 2× in the seek
@@ -1131,6 +1147,12 @@ leaves the match running at 2× forever.
 
 Every binding lives in `core/shortcuts`, appears in the help sheet generated from the same table,
 and none of them fires while focus is in a text field.
+
+**`0` is claimed twice in the table above** — by the zoom reset and by the last seat of `6`–`0` —
+and that is why #114 shipped §6.3's zoom without touching the keyboard at all. The row-number keys
+are a contiguous range and cannot give up their last member; the zoom reset has a double-click and a
+`−` held down to the floor. Whichever way §15's step 7 settles it, it settles it for both rows at
+once rather than binding half of one.
 
 ### 9.2 Pointer
 
@@ -1494,8 +1516,7 @@ Non-negotiable, and never announced in the UI:
 
 Steps 1–5 are complete (#132, #136, #140, #147, #154), and so is step 11 (#194, #197). §5.4's event
 feed was the one thing step 5 left behind: its rows landed in #209 and its hover on the plate in
-#208. Step 6 is under way — §6.1's token states landed in #154, §6.2 (utility) in #168 and #175,
-§6.3 (world) remains. In dependency order:
+#208. Step 6 is complete as of #114. In dependency order:
 
 1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
    blurred-review-screen frame assertion, §17's summary re-derived from this document, §20's
@@ -1524,9 +1545,13 @@ feed was the one thing step 5 left behind: its rows landed in #209 and its hover
    out of a match left the settings sheet for the top-left corner, and that corner stopped being a
    card and then stopped carrying the round: the way out and the map name are two lines of type on
    the stage, and §7.3's strip is the only place the round is stated.
-6. **The plate** — §6's token, utility and world states in `features/radar`. The per-frame rules
-   live in `packages/demo-core` and are unit-tested there rather than eyeballed on a plate (#112).
-   §6.1 token states landed in #154 and §6.2 (utility) in #168 and #175; §6.3 (world) is next.
+6. ~~**The plate**~~ *(done, #154, #168, #175, #114)* — §6's token, utility and world states in
+   `features/radar`. The per-frame rules live in `packages/demo-core` and are unit-tested there
+   rather than eyeballed on a plate (#112). §6.1's token states landed in #154, §6.2's utility in
+   #168 and #175, and §6.3's zoom and pan in #114. The zoom is the one part of §6 whose rules did
+   **not** go to `demo-core`: it is plate geometry and knows about the radar image, so it is
+   `features/radar/helpers/view.ts` and unit-tested there. Its keyboard half is step 7's, for the
+   reason §9.1 now records.
 7. **Input** — §9's bindings in `core/shortcuts`, the held-arrow rate in `core/playback`, the hot
    corners in `features/review`.
 8. **The way in** *(rewritten by #195)* — §10.1–§10.4 as this document now describes them, in

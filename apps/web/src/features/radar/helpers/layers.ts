@@ -20,6 +20,7 @@ import type { RadarColors } from './colors';
 import { type LabelStyle, type LabelSubject, labelPass } from './labels';
 import { levelIndexAt, OTHER_LEVEL_ALPHA } from './levels';
 import {
+  DEAD_RADIUS_FRACTION,
   drawAudibleRing,
   drawBlindDisc,
   drawDamageFlash,
@@ -28,9 +29,16 @@ import {
   drawSelectionRing,
   drawToken,
   screenAngle,
-  TOKEN_DEAD_RADIUS_PX,
-  TOKEN_RADIUS_PX,
 } from './tokens';
+import {
+  type PlateBounds,
+  type PlateGeometry,
+  type PlateView,
+  plateBounds,
+  plateGeometry,
+  readPlateBounds,
+  readPlateGeometry,
+} from './view';
 
 const VISION_ALPHA = 0.15;
 const VISION_FADE_UNITS = 1000;
@@ -43,9 +51,20 @@ export const DEAD_ALPHA = 0.5;
 /** Screen `x`, screen `y` and the level's opacity, per slot. */
 const SCREEN_STRIDE = 3;
 
-export function radarBackdrop(image: HTMLImageElement): Layer {
+/**
+ * The map itself, under everything. It is drawn at the reader's zoom rather than scaled by CSS, so
+ * every mark above it stays on a device pixel — DESIGN.md §6.3. The image is 1024px square, so past
+ * about 1.4× the plate is enlarging it rather than resolving more of it; that is the asset's
+ * ceiling and not the renderer's.
+ */
+export function radarBackdrop(
+  image: HTMLImageElement,
+  view: { readonly current: PlateView },
+): Layer {
   return (context, size) => {
-    context.drawImage(image, 0, 0, size.width, size.height);
+    const { zoom, panX, panY } = view.current;
+
+    context.drawImage(image, panX, panY, size.width * zoom, size.height * zoom);
   };
 }
 
@@ -60,6 +79,8 @@ export interface PlayerTokensOptions {
   readonly isAudibilityShown: boolean;
   readonly colors: RadarColors;
   readonly labelStyle: LabelStyle;
+  /** Read at draw time, not captured: a pan repaints these layers rather than rebuilding them. */
+  readonly view: { readonly current: PlateView };
 }
 
 /**
@@ -67,12 +88,12 @@ export interface PlayerTokensOptions {
  * repaint without rebuilding the layer — and so without allocating — every animation frame.
  */
 export function playerTokens(options: PlayerTokensOptions): Layer {
-  const { demo, clock, overview, levelIndex, teamBySlot, colors } = options;
+  const { demo, clock, overview, levelIndex, teamBySlot, colors, view } = options;
   const { labelBySlot, selectedSlot, isAudibilityShown, labelStyle } = options;
   const { track } = demo;
 
   const positions = positionScratch(track);
-  const labels = labelPass(labelBySlot, track.slotCount, labelStyle, colors.label, TOKEN_RADIUS_PX);
+  const labels = labelPass(labelBySlot, track.slotCount, labelStyle, colors.label);
   let areLabelsMeasured = false;
 
   // Everything a frame derives before it draws, owned by the layer for the same reason
@@ -85,6 +106,11 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   // The frame's own scalars, set once per draw and read by every pass below.
   let base = 0;
   let scale = 0;
+  let tokenRadius = 0;
+
+  // The reader's zoom and pan, resolved once per draw into the caller's own objects.
+  const geometry: PlateGeometry = plateGeometry();
+  const bounds: PlateBounds = plateBounds();
 
   // One gradient serves every frame: it is created around the origin and painted under a
   // translation, so only its radius — which follows the canvas — can invalidate it.
@@ -193,6 +219,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       context,
       screenX(slot),
       screenY(slot),
+      tokenRadius,
       screenAngle(track, sample),
       (sampleAt(track.flags, sample) & FLAG_SCOPED) !== 0,
       colors.team[team],
@@ -205,7 +232,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
     if (flash > 0) {
       context.globalAlpha = levelAlpha(slot) * flash;
-      drawDamageFlash(context, screenX(slot), screenY(slot), colors.damage);
+      drawDamageFlash(context, screenX(slot), screenY(slot), tokenRadius, colors.damage);
       context.globalAlpha = levelAlpha(slot);
     }
 
@@ -215,6 +242,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
         context,
         screenX(slot),
         screenY(slot),
+        tokenRadius,
         remaining,
         colors.blind,
         levelAlpha(slot),
@@ -226,6 +254,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
         context,
         screenX(slot),
         screenY(slot),
+        tokenRadius,
         colors.selectionRing,
         colors.selectionEdge,
       );
@@ -234,7 +263,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     const progress = bombProgressAt(demo, clock.frame, asPlayerSlot(slot));
     if (progress === null) return;
 
-    drawProgressArc(context, screenX(slot), screenY(slot), progress, colors.objective);
+    drawProgressArc(context, screenX(slot), screenY(slot), tokenRadius, progress, colors.objective);
   }
 
   function drawTokens(context: CanvasRenderingContext2D): void {
@@ -247,7 +276,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
       if (isAlive) {
         drawUnderToken(context, slot, team);
-        drawToken(context, screenX(slot), screenY(slot), TOKEN_RADIUS_PX, colors.team[team]);
+        drawToken(context, screenX(slot), screenY(slot), tokenRadius, colors.team[team]);
         drawOverToken(context, slot);
         continue;
       }
@@ -262,7 +291,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
         context,
         screenX(slot),
         screenY(slot),
-        TOKEN_RADIUS_PX - (TOKEN_RADIUS_PX - TOKEN_DEAD_RADIUS_PX) * settled,
+        tokenRadius * (1 - (1 - DEAD_RADIUS_FRACTION) * settled),
         colors.dead,
       );
     }
@@ -272,7 +301,15 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     if (track.frameCount === 0) return;
 
     base = readPositions(track, clock.frame, positions) * track.slotCount;
-    scale = size.width / RADAR_IMAGE_SIZE;
+
+    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateBounds(geometry, size, bounds);
+    scale = geometry.scale;
+    tokenRadius = geometry.tokenRadius;
+
+    // The pan is a translation, so it moves the world without touching the size of anything drawn
+    // in device pixels — a needle, a halo and a hairline are the same width at every zoom.
+    context.translate(geometry.offsetX, geometry.offsetY);
 
     if (!areLabelsMeasured) {
       labels.measure(context);
@@ -288,6 +325,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
     drawVision(context);
     drawTokens(context);
-    labels.draw(context, size, named);
+    labels.draw(context, bounds, named, tokenRadius);
   };
 }

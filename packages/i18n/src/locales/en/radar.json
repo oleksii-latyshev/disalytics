@@ -2,6 +2,8 @@
   "title": "Radar",
   "label": "Radar of {map}",
   "imageUnavailable": "The radar image did not load. The players are drawn without it.",
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
   "unknownMap": {
     "title": "No radar for this map",
     "hint": "disalytics carries radars for the active duty maps. {map} is not one of them, so there is nothing to draw the players on."
