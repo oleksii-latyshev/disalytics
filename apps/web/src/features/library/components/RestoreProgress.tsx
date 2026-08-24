@@ -17,7 +17,7 @@ export function RestoreProgress({ fileName, onCancel }: Props) {
       <DemoFileName fileName={fileName} />
 
       <Button type="button" variant="outline" className="self-start" onClick={onCancel}>
-        <Text path="library.progress.cancel" />
+        <Text path="library.cache.cancel" />
       </Button>
     </section>
   );

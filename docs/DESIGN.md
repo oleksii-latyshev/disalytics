@@ -1399,6 +1399,21 @@ something the reader started rather than somewhere they went.
   they conclude the product is broken.
 - Cancel is always available and says "Cancel parse".
 
+**The progress bar is gone, and the number is the reading.** A 1px accent track sat under the
+percentage from #52 until this screen was built to the section above it, and the two stated one
+fact twice — which is §5.2's lesson from #205, applied to a screen rather than to a corner. What
+that costs is a shape the eye can read without parsing digits, and what it buys is the thing this
+section asks for: one number, large, in the only place §3 lets `44` be spent. The `progressbar`
+role rides on the percentage itself, so nothing is lost to a screen reader — and because that role
+names its element by `aria-label` and never by its content, **the stage line is a sibling of the
+number and not a child of it**. Inside, it would be read by nobody.
+
+**There are two stages and not three.** The three in the bullet above are the voice rather than the
+list: `ParsePhase` is `decompress` and `parse`, because the demo's three passes are upstream's and
+are not reported separately. The card's own filling-in is two steps for the same reason — the file
+name is known from the drop, and the map and the player count arrive together in one
+`MatchHeader`.
+
 ### 10.4 The failure screen
 
 Same card, same place. The error states what happened and what to do, in the interface's voice,
@@ -1406,6 +1421,15 @@ without apologising:
 
 > **This is a POV demo.** Only match demos (GOTV) contain data for all ten players.
 > Download the match demo from your match history and try again.
+
+**"Same card" is the whole card.** The failure replaces the way in rather than sitting above a copy
+of it: a heading saying what went wrong, over a second heading offering to open a demo, is the
+screen apologising and then changing the subject. What it keeps is the route out — its own file
+picker, and the demos this device already holds — and the whole viewport is still the drop target.
+
+**It carries no `--damage`.** §2 leaves that token exactly one reader, the token's damage flash in
+§6.1, and a tinted border here would be it standing in for *something bad happened* — the use that
+section rules out by name. The copy is what says an open failed.
 
 ### 10.5 Settings
 
@@ -1574,8 +1598,9 @@ Non-negotiable, and never announced in the UI:
 
 Steps 1–5 are complete (#132, #136, #140, #147, #154), and so is step 11 (#194, #197). §5.4's event
 feed was the one thing step 5 left behind: its rows landed in #209 and its hover on the plate in
-#208. Step 6 is complete as of #114, and step 7 is down to §9.3's hot corners as of #226. In
-dependency order:
+#208. Step 6 is complete as of #114, step 7 is down to §9.3's hot corners as of #226, and **step 8
+is complete as of #236** — the way in is the shell, the grid, the dialog and the two screens a parse
+passes through. In dependency order:
 
 1. ~~**`AGENTS.md` amendments**~~ *(done, #132)* — rule 9 replaced by §8's wording, §16 gains the
    blurred-review-screen frame assertion, §17's summary re-derived from this document, §20's
@@ -1648,8 +1673,12 @@ dependency order:
      because the buy ending is the moment every question the utility and kill-line layers answer
      has an empty answer — and the round the reader picks reaches the match as `ParseState.ready`'s
      own `roundIndex` rather than as a seek after the fact;
-   - **the parse and failure screens** — §10.3 and §10.4 inside the shell, keeping #68's hidden-tab
-     explanation where it is.
+   - ~~**the parse and failure screens**~~ *(done, #236)* — §10.3 and §10.4 inside the shell. Two
+     of those sections' own sentences did not survive being built, and both are corrected in them
+     rather than here: the progress bar loses to the number beside it, and the failure is the whole
+     card rather than a box above the way in. **#68's hidden-tab explanation is still unbuilt** —
+     this step gave it the screen it belongs on and nothing more, because it is its own issue and a
+     PR closes one.
 
    None of it changes `SCHEMA_VERSION`, and none of it touches §5, §6 or §7: the review screen is
    not in the shell.

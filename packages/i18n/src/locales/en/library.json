@@ -7,19 +7,19 @@
     "release": "Release to open it."
   },
   "progress": {
-    "title": "Opening demo",
     "phase": {
-      "decompress": "Decompressing",
+      "decompress": "Unpacking the file",
       "parse": "Reading the demo"
     },
     "percent": "{percent, number, percent}",
     "label": "Reading progress",
-    "cancel": "Cancel"
+    "cancel": "Cancel parse"
   },
   "cache": {
     "restoring": "Opening from cache",
     "storing": "Saving it for the next visit.",
-    "unavailable": "Not saved on this device. Opening it again will read the whole demo."
+    "unavailable": "Not saved on this device. Opening it again will read the whole demo.",
+    "cancel": "Cancel"
   },
   "saved": {
     "title": "On this device",
