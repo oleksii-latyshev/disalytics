@@ -11,13 +11,13 @@ import {
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
 import { DEAD_ALPHA } from './layers';
 import {
+  DEAD_RADIUS_FRACTION,
   drawAudibleRing,
   drawBlindDisc,
   drawNeedle,
   drawProgressArc,
   drawSelectionRing,
   drawToken,
-  TOKEN_DEAD_RADIUS_PX,
   TOKEN_RADIUS_PX,
 } from './tokens';
 
@@ -91,17 +91,24 @@ export const PLATE_MARKS: readonly PlateMark[] = [
     id: 'player',
     draw: (context, colors) => {
       drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawNeedle(context, LEFT_X, CENTRE_Y, NEEDLE_ANGLE, false, colors.team.CT);
+      drawNeedle(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, NEEDLE_ANGLE, false, colors.team.CT);
 
       drawToken(context, RIGHT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.T);
-      drawNeedle(context, RIGHT_X, CENTRE_Y, NEEDLE_ANGLE, false, colors.team.T);
+      drawNeedle(context, RIGHT_X, CENTRE_Y, TOKEN_RADIUS_PX, NEEDLE_ANGLE, false, colors.team.T);
     },
   },
   {
     id: 'selected',
     draw: (context, colors) => {
       drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawSelectionRing(context, CENTRE_X, CENTRE_Y, colors.selectionRing, colors.selectionEdge);
+      drawSelectionRing(
+        context,
+        CENTRE_X,
+        CENTRE_Y,
+        TOKEN_RADIUS_PX,
+        colors.selectionRing,
+        colors.selectionEdge,
+      );
     },
   },
   {
@@ -115,21 +122,21 @@ export const PLATE_MARKS: readonly PlateMark[] = [
     id: 'blinded',
     draw: (context, colors) => {
       drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawBlindDisc(context, CENTRE_X, CENTRE_Y, PART_WAY, colors.blind, 1);
+      drawBlindDisc(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, PART_WAY, colors.blind, 1);
     },
   },
   {
     id: 'objective',
     draw: (context, colors) => {
       drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawProgressArc(context, CENTRE_X, CENTRE_Y, PART_WAY, colors.objective);
+      drawProgressArc(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, PART_WAY, colors.objective);
     },
   },
   {
     id: 'dead',
     draw: (context, colors) => {
       context.globalAlpha = DEAD_ALPHA;
-      drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_DEAD_RADIUS_PX, colors.dead);
+      drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX * DEAD_RADIUS_FRACTION, colors.dead);
     },
   },
   {

@@ -505,6 +505,26 @@ ring itself is `--ink`. And **`--nade-flash` sits 3.3 from `--ink` in ordinary v
 not a deficiency at all: both are white on purpose. `docs/DESIGN.md` §2.4 carries the values, the
 method and both exclusions.
 
+**#114 closed §15's step 6 — the plate can be zoomed and panned.** The wheel zooms anchored on the
+pointer, a `+`/`−` pair sits on the plate's bottom-right, a drag pans, and a double-click resets;
+the range is 1× to 4×. Five things are load-bearing. **The view lives in a mutable box, not in
+React** — `features/radar/helpers/view.ts` — for the reason `hoveredKillRef` does: a drag repaints
+the layers that already exist instead of rebuilding them, and hard rule 4 stays off the path. The
+`zoom` beside it in React state exists only so the `+`/`−` pair knows when it has run out of range;
+nothing draws from it. **The transform enters through each layer's own `scale`, and the pan through
+`context.translate`** — all four layers already derived `size.width / RADAR_IMAGE_SIZE` in one line
+each — so the world scales and everything measured in device pixels does not; a needle, a halo and a
+hairline are the same width at 4× as at 1×. **The token is the one mark that follows the zoom**, and
+`readPlateGeometry` clamps it to §6.1's 12–20px, which is why the five draw helpers in `tokens.ts`
+now take a radius instead of reading the constant. **A label whose token the zoom has left off the
+plate is dropped rather than clamped** — clamping is what grew a row of names along the edge of a
+panned plate, and it is the one defect the browser found that the types could not. And **nothing was
+bound to the keyboard**: §9.1 gives `0` to the zoom reset *and* to the last seat of `6`–`0`, so both
+rows wait for §15's step 7 to settle it at once. Two corrections ride with it — §6.3 asked for
+`Cmd`/`Ctrl` + drag where §9.2 asked for a plain drag, and the pointer section wins; and
+`AGENTS.md` §16's two frame rows carry a `320f821` baseline and a measurement at the 4× ceiling,
+both **0 over 16.7 ms across three passes of 399 frames**.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

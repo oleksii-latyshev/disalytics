@@ -11,7 +11,9 @@ import {
   type RadarPoint,
   radarAssetPath,
 } from '@disa/map-data';
-import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@disa/ui';
+import { Minus, Plus } from 'lucide-react';
+import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KillLine } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
@@ -23,6 +25,16 @@ import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
 import { utilityLayer } from '../helpers/utility-layer';
+import {
+  MAX_ZOOM,
+  MIN_ZOOM,
+  panBy,
+  plateView,
+  resetView,
+  ZOOM_STEP,
+  zoomAbout,
+  zoomByStep,
+} from '../helpers/view';
 import { useRadarImage } from '../hooks/use-radar-image';
 import { RadarDebug } from './RadarDebug';
 
@@ -83,6 +95,14 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
   // repaints what is already built instead of rebuilding it — see `killLineLayer`.
   const hoveredKillRef = useRef<KillLine | null>(hoveredKill);
 
+  // How the reader is looking at the plate, in a box for the same reason. Zoom is view state and
+  // never playback state — DESIGN.md §6.3 — so it survives a scrub, a round jump and a pause, and
+  // a drag repaints the layers that exist rather than rebuilding them. `zoom` beside it is a copy
+  // the `+`/`−` pair reads to know when it has run out of range; nothing draws from it.
+  const viewRef = useRef(plateView());
+  const panRef = useRef({ isPanning: false, x: 0, y: 0 });
+  const [zoom, setZoom] = useState(MIN_ZOOM);
+
   // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
   // the clock moves. The clock itself is read inside the layer, once per animation frame.
   const layers = useMemo(() => {
@@ -97,6 +117,7 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
       isAudibilityShown,
       colors,
       labelStyle,
+      view: viewRef,
     });
 
     const utility = utilityLayer({
@@ -106,6 +127,7 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
       colors,
       trajectories,
       selectedSlot,
+      view: viewRef,
     });
     const killLine = killLineLayer({
       demo,
@@ -114,10 +136,11 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
       levelIndex,
       colors,
       hovered: hoveredKillRef,
+      view: viewRef,
     });
 
     return image.status === 'ready'
-      ? [radarBackdrop(image.image), utility, killLine, tokens]
+      ? [radarBackdrop(image.image, viewRef), utility, killLine, tokens]
       : [utility, killLine, tokens];
   }, [
     demo,
@@ -144,18 +167,98 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
     repaint();
   }, [hoveredKill, repaint]);
 
+  // Measured in the handler rather than kept in a ref: a pointer event is not the frame path, and
+  // the plate's box is the one thing a resize can change without telling this component.
+  const plateBox = useCallback(
+    () => canvasRef.current?.getBoundingClientRect() ?? null,
+    [canvasRef],
+  );
+
+  const zoomStep = useCallback(
+    (factor: number) => {
+      const box = plateBox();
+      if (box === null) return;
+
+      zoomByStep(viewRef.current, factor, box);
+      setZoom(viewRef.current.zoom);
+      repaint();
+    },
+    [plateBox, repaint],
+  );
+
+  // Non-passive, because a wheel over the plate zooms instead of scrolling the page and only a
+  // `preventDefault` says so. React's own `onWheel` is delegated and cannot promise that.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas === null) return;
+
+    const handleWheel = (event: WheelEvent): void => {
+      event.preventDefault();
+
+      const box = canvas.getBoundingClientRect();
+      if (box.width === 0) return;
+
+      zoomAbout(
+        viewRef.current,
+        event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
+        event.clientX - box.left,
+        event.clientY - box.top,
+        box,
+      );
+      setZoom(viewRef.current.zoom);
+      repaint();
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, [canvasRef, repaint]);
+
+  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {
+    if (viewRef.current.zoom === MIN_ZOOM) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    panRef.current = { isPanning: true, x: event.clientX, y: event.clientY };
+    // Written straight onto the element: a state change per drag would render the plate's whole
+    // component to change a cursor.
+    event.currentTarget.dataset.panning = 'true';
+  }
+
+  function endPan(event: PointerEvent<HTMLCanvasElement>): void {
+    panRef.current.isPanning = false;
+    delete event.currentTarget.dataset.panning;
+  }
+
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
+    const box = event.currentTarget.getBoundingClientRect();
+    if (box.width === 0) return;
+
+    const pan = panRef.current;
+    if (pan.isPanning) {
+      panBy(viewRef.current, event.clientX - pan.x, event.clientY - pan.y, box);
+      pan.x = event.clientX;
+      pan.y = event.clientY;
+      repaint();
+      return;
+    }
+
     if (!isDebugShown) return;
 
-    const { left, top, width } = event.currentTarget.getBoundingClientRect();
-    if (width === 0) return;
-
-    const pixelsPerRadarPixel = width / RADAR_IMAGE_SIZE;
+    // The readout answers for the world under the pointer, so it reads through the same zoom and
+    // pan the layers draw with — DESIGN.md §9.2.
+    const { zoom: current, panX, panY } = viewRef.current;
+    const pixelsPerRadarPixel = (box.width / RADAR_IMAGE_SIZE) * current;
 
     setPointer({
-      x: (event.clientX - left) / pixelsPerRadarPixel,
-      y: (event.clientY - top) / pixelsPerRadarPixel,
+      x: (event.clientX - box.left - panX) / pixelsPerRadarPixel,
+      y: (event.clientY - box.top - panY) / pixelsPerRadarPixel,
     });
+  }
+
+  function handleDoubleClick(): void {
+    resetView(viewRef.current);
+    setZoom(MIN_ZOOM);
+    repaint();
   }
 
   // The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller of
@@ -168,10 +271,45 @@ export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill
         ref={canvasRef}
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
-        className="aspect-square w-[min(100cqi,100cqb)] bg-surface-0"
+        className={`aspect-square w-[min(100cqi,100cqb)] touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
+          zoom > MIN_ZOOM ? 'cursor-grab' : ''
+        }`}
+        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
+        onDoubleClick={handleDoubleClick}
         onPointerLeave={() => setPointer(null)}
       />
+
+      {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
+          above the split the cell is wider than the square it centres, so the offset is half the
+          slack on each axis plus the stage inset. Colour and a hairline, never `.glass-panel` —
+          §2.3 grants the one `backdrop-filter` over the live plate to the scoreboard and to nothing
+          else. */}
+      <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-glass-panel p-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={t('radar.zoomIn')}
+          disabled={zoom >= MAX_ZOOM}
+          onClick={() => zoomStep(ZOOM_STEP)}
+        >
+          <Plus aria-hidden="true" />
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={t('radar.zoomOut')}
+          disabled={zoom <= MIN_ZOOM}
+          onClick={() => zoomStep(1 / ZOOM_STEP)}
+        >
+          <Minus aria-hidden="true" />
+        </Button>
+      </div>
 
       {/* The two surfaces allowed over the live canvas, and neither is chrome the reader did not
           ask for: the notice speaks only when the image failed, and the overlay only once it is

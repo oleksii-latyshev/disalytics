@@ -23,6 +23,7 @@ import {
   drawTrajectory,
   isTrajectoryDrawn,
 } from './grenades';
+import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 export interface UtilityLayerOptions {
   readonly demo: ParsedDemo;
@@ -31,6 +32,8 @@ export interface UtilityLayerOptions {
   readonly colors: RadarColors;
   readonly trajectories: TrajectoryVisibility;
   readonly selectedSlot: PlayerSlot | null;
+  /** Read at draw time, not captured — DESIGN.md §6.3's zoom is view state, never layer state. */
+  readonly view: { readonly current: PlateView };
 }
 
 /**
@@ -42,7 +45,7 @@ export interface UtilityLayerOptions {
  * frame — no allocation in the draw loop.
  */
 export function utilityLayer(options: UtilityLayerOptions): Layer {
-  const { demo, clock, overview, colors, trajectories, selectedSlot } = options;
+  const { demo, clock, overview, colors, trajectories, selectedSlot, view } = options;
   const { events, track } = demo;
   const { grenades } = events;
 
@@ -54,9 +57,13 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
   // Pre-allocated scratch — reused every frame.
   const visibleIndices = new Int32Array(grenades.length);
   const visual = createVisualScratch();
+  const geometry = plateGeometry();
 
   return (context, size) => {
-    const scale = size.width / RADAR_IMAGE_SIZE;
+    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    context.translate(geometry.offsetX, geometry.offsetY);
+
+    const scale = geometry.scale;
     const tick = tickAtFrame(track, clock.frame);
     const count = visibleGrenades(grenades, tick, track.tickRate, visibleIndices);
 

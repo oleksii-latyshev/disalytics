@@ -1,7 +1,7 @@
 import type { PlayerInfo } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
-import type { CanvasSize } from '@/core/renderer';
 import { readCssToken } from '@/shared/lib';
+import type { PlateBounds } from './view';
 
 /** DESIGN.md §6.1 — Roboto Condensed 10px, which is what `--font-narrow` resolves to. */
 const LABEL_SIZE_PX = 10;
@@ -66,7 +66,17 @@ export interface LabelSubject {
 export interface LabelPass {
   /** Measured once per demo: a width taken against the fallback face would be wrong all match. */
   measure(context: CanvasRenderingContext2D): void;
-  draw(context: CanvasRenderingContext2D, size: CanvasSize, subject: LabelSubject): void;
+  /**
+   * The bounds are the *visible* plate rather than the canvas, and under a pan the two are not the
+   * same rectangle — a name kept inside the canvas would stack against an edge the reader has
+   * scrolled off the screen. The token radius arrives per draw because it follows the zoom.
+   */
+  draw(
+    context: CanvasRenderingContext2D,
+    bounds: PlateBounds,
+    subject: LabelSubject,
+    tokenRadius: number,
+  ): void;
 }
 
 /**
@@ -78,7 +88,6 @@ export function labelPass(
   slotCount: number,
   style: LabelStyle,
   colors: LabelColors,
-  tokenRadius: number,
 ): LabelPass {
   const placer = labelPlacer(slotCount);
   const widths = new Float32Array(slotCount);
@@ -97,7 +106,7 @@ export function labelPass(
       }
     },
 
-    draw(context, size, subject): void {
+    draw(context, bounds, subject, tokenRadius): void {
       context.font = style.font;
       context.textAlign = 'left';
       context.textBaseline = 'middle';
@@ -115,7 +124,21 @@ export function labelPass(
         const width = sampleAt(widths, slot);
         if (label === undefined || width === 0) continue;
 
-        placer.place(subject.x(slot), subject.y(slot), tokenRadius, width, size);
+        // A name belongs to a token the reader can see. Without this the placer clamps the label
+        // of a player the zoom has left off the plate to the nearest edge, and a panned plate grows
+        // a row of names along it — DESIGN.md §6.1 puts the label beside its token or nowhere.
+        const tokenX = subject.x(slot);
+        const tokenY = subject.y(slot);
+        if (
+          tokenX < bounds.left ||
+          tokenX > bounds.left + bounds.width ||
+          tokenY < bounds.top ||
+          tokenY > bounds.top + bounds.height
+        ) {
+          continue;
+        }
+
+        placer.place(tokenX, tokenY, tokenRadius, width, bounds);
 
         const x = placer.x + LABEL_HALO_PX;
         const y = placer.y + LABEL_HEIGHT_PX / 2;
@@ -139,15 +162,21 @@ export interface LabelPlacer {
   x: number;
   y: number;
   reset(): void;
-  place(tokenX: number, tokenY: number, tokenRadius: number, width: number, size: CanvasSize): void;
+  place(
+    tokenX: number,
+    tokenY: number,
+    tokenRadius: number,
+    width: number,
+    bounds: PlateBounds,
+  ): void;
 }
 
 const CANDIDATE_COUNT = 4;
 
-function clamp(value: number, limit: number): number {
-  if (value < 0) return 0;
+function clamp(value: number, min: number, max: number): number {
+  if (value < min) return min;
 
-  return value > limit ? limit : value;
+  return value > max ? max : value;
 }
 
 export function labelPlacer(capacity: number): LabelPlacer {
@@ -183,11 +212,11 @@ export function labelPlacer(capacity: number): LabelPlacer {
       count = 0;
     },
 
-    place(tokenX, tokenY, tokenRadius, width, size): void {
+    place(tokenX, tokenY, tokenRadius, width, bounds): void {
       const half = width / 2;
       const gap = tokenRadius + LABEL_GAP_PX;
-      const maxX = Math.max(size.width - width, 0);
-      const maxY = Math.max(size.height - LABEL_HEIGHT_PX, 0);
+      const maxX = bounds.left + Math.max(bounds.width - width, 0);
+      const maxY = bounds.top + Math.max(bounds.height - LABEL_HEIGHT_PX, 0);
 
       candidates[0] = tokenX - half;
       candidates[1] = tokenY + gap;
@@ -202,8 +231,8 @@ export function labelPlacer(capacity: number): LabelPlacer {
       let chosenY = 0;
 
       for (let candidate = 0; candidate < CANDIDATE_COUNT; candidate++) {
-        const x = clamp(sampleAt(candidates, candidate * 2), maxX);
-        const y = clamp(sampleAt(candidates, candidate * 2 + 1), maxY);
+        const x = clamp(sampleAt(candidates, candidate * 2), bounds.left, maxX);
+        const y = clamp(sampleAt(candidates, candidate * 2 + 1), bounds.top, maxY);
 
         if (candidate === 0) {
           chosenX = x;
