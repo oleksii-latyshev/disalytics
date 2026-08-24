@@ -20,6 +20,13 @@ const BLIND_LOOKBACK_SECONDS = 6;
 /** How long a token takes to settle into a body, in **match** seconds — `docs/DESIGN.md` §6.1. */
 export const DEATH_SHRINK_SECONDS = 0.2;
 
+/**
+ * How long a shot stays on the token that fired it, in **match** seconds — `docs/DESIGN.md` §6.1.
+ * Short enough that a burst reads as a burst rather than as one continuous mark, and long enough to
+ * survive a frame at 4×.
+ */
+export const GUNFIRE_SPUR_SECONDS = 0.15;
+
 export const PLANT_SECONDS = 3.2;
 export const DEFUSE_SECONDS = 10;
 export const DEFUSE_WITH_KIT_SECONDS = 5;
@@ -81,6 +88,37 @@ export function damageFlashBySlot(demo: ParsedDemo, frame: number, out: Float32A
 
     const flash = age <= 0 ? 1 : 1 - age / DAMAGE_FLASH_SECONDS;
     if (flash > (out[event.victim] ?? 0)) out[event.victim] = flash;
+  }
+}
+
+/**
+ * How brightly each slot is still showing a trigger pull — 1 on the tick of the shot, 0 once
+ * `GUNFIRE_SPUR_SECONDS` of match time have passed. Written into `out` rather than returned, for
+ * the reason `damageFlashBySlot` is: this runs inside a draw.
+ *
+ * A function of the clock's position and never of history, so scrubbing backwards through a burst
+ * plays it again — `docs/DESIGN.md` §8's test. `MatchEvents.shots` counts trigger pulls with a gun,
+ * so a grenade throw and a knife swing leave nothing here (`docs/PARSER.md` §18).
+ */
+export function gunfireBySlot(demo: ParsedDemo, frame: number, out: Float32Array): void {
+  out.fill(0);
+
+  const { track, events } = demo;
+  const now = secondsAtFrame(track, frame);
+
+  for (
+    let index = lastIndexAtOrBefore(events.shots, tickAtFrame(track, frame));
+    index >= 0;
+    index--
+  ) {
+    const event = events.shots[index];
+    if (event === undefined) break;
+
+    const age = now - event.tick / track.tickRate;
+    if (age > GUNFIRE_SPUR_SECONDS) break;
+
+    const spur = age <= 0 ? 1 : 1 - age / GUNFIRE_SPUR_SECONDS;
+    if (spur > (out[event.shooter] ?? 0)) out[event.shooter] = spur;
   }
 }
 

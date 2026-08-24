@@ -8,6 +8,8 @@ import {
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
   deathProgressBySlot,
+  GUNFIRE_SPUR_SECONDS,
+  gunfireBySlot,
   lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from '../helpers/player-state';
@@ -31,6 +33,7 @@ import {
   withDamage,
   withDefuse,
   withKill,
+  withShot,
 } from './helpers';
 
 const TICK_RATE = 64;
@@ -105,6 +108,57 @@ describe('damageFlashBySlot', () => {
     damageFlashBySlot(both, atSecond(2 + 0.125), flashes);
 
     expect(flashes[VICTIM]).toBeCloseTo(1, 2);
+  });
+});
+
+describe('gunfireBySlot', () => {
+  const SHOOTER = asPlayerSlot(3);
+  const demo = newDemo(withShot(newEvents(), { tick: asTick(TICK_RATE * 2), shooter: SHOOTER }));
+  const spurs = new Float32Array(SLOTS);
+
+  it('is at its brightest on the tick of the shot', () => {
+    gunfireBySlot(demo, atSecond(2), spurs);
+
+    expect(spurs[SHOOTER]).toBeCloseTo(1, 2);
+  });
+
+  it('decays to nothing over the spur window and stays there', () => {
+    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS / 2), spurs);
+    expect(spurs[SHOOTER]).toBeCloseTo(0.5, 1);
+
+    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS * 2), spurs);
+    expect(spurs[SHOOTER]).toBe(0);
+  });
+
+  it('leaves every other slot alone, and shows nothing before the trigger was pulled', () => {
+    gunfireBySlot(demo, atSecond(2), spurs);
+    expect(spurs[0]).toBe(0);
+
+    gunfireBySlot(demo, atSecond(1), spurs);
+    expect(spurs[SHOOTER]).toBe(0);
+  });
+
+  it('takes the brightest of a burst landing inside one window', () => {
+    const burst = newDemo(
+      withShot(withShot(newEvents(), { tick: asTick(TICK_RATE * 2), shooter: SHOOTER }), {
+        tick: asTick(TICK_RATE * 2 + TICK_RATE / 16),
+        shooter: SHOOTER,
+      }),
+    );
+
+    gunfireBySlot(burst, atSecond(2 + 1 / 16), spurs);
+
+    expect(spurs[SHOOTER]).toBeCloseTo(1, 2);
+  });
+
+  it('reads the same value going backwards as going forwards', () => {
+    const forwards = new Float32Array(SLOTS);
+    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS / 2), forwards);
+
+    gunfireBySlot(demo, atSecond(5), spurs);
+    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS / 2), spurs);
+
+    expect(spurs[SHOOTER]).toBe(forwards[SHOOTER]);
   });
 });
 

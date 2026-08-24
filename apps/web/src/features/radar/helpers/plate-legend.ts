@@ -9,17 +9,21 @@ import {
   trajectoryStroke,
 } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
+import { haloStroke } from './labels';
 import { DEAD_ALPHA } from './layers';
 import {
   DEAD_RADIUS_FRACTION,
   drawAudibleRing,
   drawBlindDisc,
+  drawGunfireSpur,
   drawNeedle,
   drawProgressArc,
   drawSelectionRing,
   drawToken,
+  drawWalkHollow,
   TOKEN_RADIUS_PX,
 } from './tokens';
+import { drawWeaponMark, WEAPON_MARK_PX } from './weapon-marks';
 
 /**
  * The swatch every mark is drawn in, in CSS pixels. Wide enough for two tokens with their needles
@@ -39,6 +43,9 @@ const RIGHT_X = 42;
 /** Up and to the right, so a needle fits the swatch's height as well as its width. */
 const NEEDLE_ANGLE = -Math.PI / 4;
 
+/** Where the name would begin, which is where the weapon mark sits on the plate. */
+const WEAPON_STRIP_X = TOKEN_RADIUS_PX + 6 + WEAPON_MARK_PX / 2;
+
 /** Radii the swatch chooses, where on the plate the map's own scale does — everything else is the renderer's. */
 const AUDIBLE_RADIUS_PX = 12;
 const AREA_RADIUS_PX = 11;
@@ -51,6 +58,9 @@ const MOLOTOV_SEED = 3;
 
 export type PlateMarkId =
   | 'player'
+  | 'weapon'
+  | 'walking'
+  | 'firing'
   | 'selected'
   | 'hit'
   | 'blinded'
@@ -95,6 +105,35 @@ export const PLATE_MARKS: readonly PlateMark[] = [
 
       drawToken(context, RIGHT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.T);
       drawNeedle(context, RIGHT_X, CENTRE_Y, TOKEN_RADIUS_PX, NEEDLE_ANGLE, false, colors.team.T);
+    },
+  },
+  {
+    id: 'weapon',
+    draw: (context, colors) => {
+      drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+
+      // One mark, where the name would start — the arrangement the plate actually draws. Which
+      // class it is, is the sentence's job: three silhouettes in a 56px swatch is a row of shapes
+      // with no token beside them, which is not what a reader sees.
+      haloStroke(context, colors.label.halo);
+      drawWeaponMark(context, LEFT_X + WEAPON_STRIP_X, CENTRE_Y, 'rifle', colors.label.ink);
+    },
+  },
+  {
+    id: 'walking',
+    draw: (context, colors) => {
+      drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+
+      drawToken(context, RIGHT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+      drawWalkHollow(context, RIGHT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.hollow);
+    },
+  },
+  {
+    id: 'firing',
+    draw: (context, colors) => {
+      drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+      drawNeedle(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, 0, false, colors.team.CT);
+      drawGunfireSpur(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, 0, false, colors.gunfire, 1);
     },
   },
   {

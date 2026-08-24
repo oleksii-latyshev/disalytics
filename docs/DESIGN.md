@@ -744,14 +744,40 @@ Everything in this section except §6.4 is drawable from data the parser emits o
   wrong weight — a background per label is ten more rectangles on a plate that now has ten larger
   tokens. Labels never overlap: **a collision moves the label, never the token**, and the placer
   resets per frame so placement is a function of the frame rather than of history.
-- **Weapon** — a small glyph (8×8) beside the name label showing the player's weapon class:
-  rifle, pistol, SMG, shotgun, sniper, knife, or grenade. Same `--ink-dim` and halo treatment as
-  the name. At plate scale a specific model (AK-47 vs M4A4) is unreadable — the class silhouette
-  is what fits; the team card already names the exact weapon. `C4 Explosive` draws nothing (§6.4).
-  The glyph reads `TickTrack.weapon` per frame and indexes through `MatchHeader.weapons` for the
-  class lookup.
+- **Weapon** — a small silhouette **in a 14×7 box** beside the name label, leading it rather than
+  trailing it so that ten labels down one side of the plate line their weapons up in a column. Same
+  `--ink-dim` and halo treatment as the name: it is part of the label, and it goes when the label
+  goes. At plate scale a specific model (AK-47 vs M4A4) is unreadable — the class silhouette is what
+  fits, and the team card already names the exact weapon. `C4 Explosive` draws nothing (§6.4). The
+  mark reads `TickTrack.weapon` per frame and indexes through `MatchHeader.weapons` for the class.
+  **The box is reserved whether or not a mark goes in it**, so a name never twitches sideways as its
+  player switches weapon, and which labels collide does not change with what anybody is holding.
+  Three things about this bullet were settled by building it (#164) and the reasons are worth
+  keeping. **The box is 14×7 and not the 8×8 this section first asked for**: a gun is a wide object,
+  and the same set squeezed into a square turns every long gun into the letter T — 14px is where the
+  scope on an AWP and the stock on a rifle survive the reduction from §5.3's 24px. **The shapes are
+  §5.3's own**, drawn from one table with two renderers rather than a second set drawn by hand,
+  because two sets agree on the day they are written and not a week later. And **every piece of
+  utility draws one grenade**, where the team row draws the kind: a smoke, a flash and a molotov are
+  three marks at 24px and one blur at 14px.
 - **Health is not on the plate.** The team card carries it. The only health state the plate shows is
   dead.
+- **Walking** — `FLAG_WALKING` takes the token's middle out: a disc of `--surface-0` at 0.35 of the
+  token's radius, so a player holding shift reads as hollow. It is a hole rather than a ring because
+  **every radius outside the token is already spoken for** — audibility at the radius the player can
+  be heard from, selection at +2px, the objective arc at +3.5px — and walking is the thing that
+  *suppresses* the audibility ring, so of all the marks on this list those two must not share a
+  shape. Drawn after the damage flash rather than under it: a flash repaints the whole token, and a
+  player being shot at is still walking.
+- **Firing** — a shot draws a 2px `--ink` spur, 4px long, beginning 3px past the tip of the facing
+  needle and fading to nothing over **150 ms of match time**. Direction and gunfire in one mark: the
+  needle says where the player is looking and the spur says they are shooting down it, which is why
+  it is neither a ring — audibility's shape — nor a fill crossover, which is damage's. It reads
+  `MatchEvents.shots`, one entry per trigger pull with a gun, binary-searched by tick like every
+  other event on this list. Two consequences. It is drawn **from the same angle whether or not the
+  needle is**, so a blinded player firing blind still shows where the rounds went. And because it is
+  a function of match time, at 0.5× a burst is a stutter of separate marks, at 4× it is one flicker,
+  and scrubbing backwards through it plays it again — §8's test.
 - **Audibility** — a 1px ring in `--ink-faint` α0.40 at the radius the player can currently be heard
   from, from `speed`, suppressed by `FLAG_WALKING`, drawn only while the player is actually making
   noise. **Off by default**, toggled in settings and remembered — it is the largest mark on the
@@ -1427,7 +1453,8 @@ It ended up stronger than that rule asks: a swatch is a canvas drawn by the plat
 functions, so a mark's colour, its opacity and its geometry all arrive from the code that draws it
 on the plate, and the legend chooses nothing but where in a 56×28 box a mark sits and how far
 through its own life it is caught. §5.4's three kill marks are named here too, which is the promise
-that section makes. **The vision wedge is the one mark of §6 the legend does not draw**: its
+that section makes, and §6.1's weapon, walking and firing marks joined them with #164 — seventeen
+entries rather than fourteen. **The vision wedge is the one §6 mark the legend will not draw**: its
 geometry sits inside the token layer around a gradient the layer caches across frames, and lifting
 it out for a picture would move a frame path — so the entry for a selected player names the cone in
 words instead.
@@ -1555,10 +1582,15 @@ dependency order:
    out of a match left the settings sheet for the top-left corner, and that corner stopped being a
    card and then stopped carrying the round: the way out and the map name are two lines of type on
    the stage, and §7.3's strip is the only place the round is stated.
-6. ~~**The plate**~~ *(done, #154, #168, #175, #114)* — §6's token, utility and world states in
-   `features/radar`. The per-frame rules live in `packages/demo-core` and are unit-tested there
+6. ~~**The plate**~~ *(done, #154, #168, #175, #114, #164)* — §6's token, utility and world states
+   in `features/radar`. The per-frame rules live in `packages/demo-core` and are unit-tested there
    rather than eyeballed on a plate (#112). §6.1's token states landed in #154, §6.2's utility in
-   #168 and #175, and §6.3's zoom and pan in #114. The zoom is the one part of §6 whose rules did
+   #168 and #175, and §6.3's zoom and pan in #114. **The weapon, the walk and the gunfire landed in
+   #164**, which is also where §6.1 finally got the walk and the fire written down: #162 asked for
+   three marks and #166 wrote one, so the two decisions that section says must be settled before a
+   PR were settled in that PR's own first hour instead of in a document ahead of it. The pattern to
+   copy is still #190/#193's — but the gap to look for is this one: an issue closed by a commit that
+   did *part* of it. The zoom is the one part of §6 whose rules did
    **not** go to `demo-core`: it is plate geometry and knows about the radar image, so it is
    `features/radar/helpers/view.ts` and unit-tested there. Its keyboard half is step 7's, for the
    reason §9.1 now records.

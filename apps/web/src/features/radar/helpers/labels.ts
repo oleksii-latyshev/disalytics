@@ -1,7 +1,9 @@
-import type { PlayerInfo } from '@disa/demo-core';
+import type { PlayerInfo, WeaponClass } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
 import { readCssToken } from '@/shared/lib';
+import { labelPlacer } from './label-placer';
 import type { PlateBounds } from './view';
+import { drawWeaponMark, WEAPON_MARK_PX } from './weapon-marks';
 
 /** DESIGN.md §6.1 — Roboto Condensed 10px, which is what `--font-narrow` resolves to. */
 const LABEL_SIZE_PX = 10;
@@ -13,8 +15,16 @@ const LABEL_SIZE_PX = 10;
 export const LABEL_HALO_PX = 2;
 export const LABEL_HEIGHT_PX = LABEL_SIZE_PX + 2 * LABEL_HALO_PX;
 
-/** How far the name sits from the token it names, on whichever side it ends up on. */
-const LABEL_GAP_PX = 4;
+/** Between the weapon mark and the name it leads, tight enough that the two read as one label. */
+const WEAPON_GAP_PX = 3;
+
+/**
+ * The mark's box is reserved for every named slot, whether or not a mark goes in it. A width that
+ * followed the weapon would move the name sideways every time its player switched, and would change
+ * which labels collide from one frame to the next — the placer is allowed to depend on the frame,
+ * but a reader should not have to watch a name twitch to learn that somebody drew a knife.
+ */
+const WEAPON_BOX_PX = WEAPON_MARK_PX + WEAPON_GAP_PX;
 
 /**
  * A nick long enough to cover a bombsite stops being a label. The rails carry the full name, which
@@ -34,6 +44,17 @@ export interface LabelColors {
 
 export function readLabelStyle(): LabelStyle {
   return { font: `${LABEL_SIZE_PX}px ${readCssToken('--font-narrow')}` };
+}
+
+/**
+ * The halo the label and its weapon mark share — a stroke laid under the glyphs rather than a box
+ * behind them. Both callers take it from here, so §10.6's legend cannot draw a lighter or heavier
+ * halo than the plate does.
+ */
+export function haloStroke(context: CanvasRenderingContext2D, halo: string): void {
+  context.lineWidth = 2 * LABEL_HALO_PX;
+  context.lineJoin = 'round';
+  context.strokeStyle = halo;
 }
 
 function shorten(name: string): string {
@@ -61,6 +82,8 @@ export interface LabelSubject {
   x(slot: number): number;
   y(slot: number): number;
   alpha(slot: number): number;
+  /** What the slot is holding this frame, or `null` where no sample ever saw it holding anything. */
+  weapon(slot: number): WeaponClass | null;
 }
 
 export interface LabelPass {
@@ -79,6 +102,16 @@ export interface LabelPass {
   ): void;
 }
 
+/** Whether a token is inside the rectangle the reader is actually looking at. */
+function isOnPlate(x: number, y: number, bounds: PlateBounds): boolean {
+  return (
+    x >= bounds.left &&
+    x <= bounds.left + bounds.width &&
+    y >= bounds.top &&
+    y <= bounds.top + bounds.height
+  );
+}
+
 /**
  * The names beside the tokens. Everything it owns — the placer, the measured widths — outlives the
  * frame, because this runs inside a draw and nothing on the way to the canvas may allocate.
@@ -89,8 +122,30 @@ export function labelPass(
   style: LabelStyle,
   colors: LabelColors,
 ): LabelPass {
-  const placer = labelPlacer(slotCount);
+  const placer = labelPlacer(slotCount, LABEL_HEIGHT_PX);
   const widths = new Float32Array(slotCount);
+
+  /** One placed label: the mark it leads with, then the name, both over the same halo. */
+  function write(
+    context: CanvasRenderingContext2D,
+    label: string,
+    weapon: WeaponClass | null,
+    alpha: number,
+  ): void {
+    const x = placer.x + LABEL_HALO_PX;
+    const y = placer.y + LABEL_HEIGHT_PX / 2;
+
+    context.globalAlpha = alpha;
+
+    // The mark leads the name rather than trailing it, so ten labels down the left of the plate
+    // still line their weapons up in one column — DESIGN.md §6.1.
+    if (weapon !== null) drawWeaponMark(context, x + WEAPON_MARK_PX / 2, y, weapon, colors.ink);
+
+    context.strokeText(label, x + WEAPON_BOX_PX, y);
+
+    context.fillStyle = colors.ink;
+    context.fillText(label, x + WEAPON_BOX_PX, y);
+  }
 
   return {
     measure(context): void {
@@ -102,7 +157,7 @@ export function labelPass(
         widths[slot] =
           label === undefined || label === ''
             ? 0
-            : context.measureText(label).width + 2 * LABEL_HALO_PX;
+            : WEAPON_BOX_PX + context.measureText(label).width + 2 * LABEL_HALO_PX;
       }
     },
 
@@ -111,10 +166,9 @@ export function labelPass(
       context.textAlign = 'left';
       context.textBaseline = 'middle';
       // The halo is a stroke under the glyphs rather than a box behind them: a background per label
-      // is ten more rectangles on a plate that now carries ten larger tokens — DESIGN.md §6.1.
-      context.lineWidth = 2 * LABEL_HALO_PX;
-      context.lineJoin = 'round';
-      context.strokeStyle = colors.halo;
+      // is ten more rectangles on a plate that now carries ten larger tokens — DESIGN.md §6.1. It is
+      // set once for the whole pass, and the weapon mark strokes with it too.
+      haloStroke(context, colors.halo);
       placer.reset();
 
       for (let slot = 0; slot < slotCount; slot++) {
@@ -129,136 +183,11 @@ export function labelPass(
         // a row of names along it — DESIGN.md §6.1 puts the label beside its token or nowhere.
         const tokenX = subject.x(slot);
         const tokenY = subject.y(slot);
-        if (
-          tokenX < bounds.left ||
-          tokenX > bounds.left + bounds.width ||
-          tokenY < bounds.top ||
-          tokenY > bounds.top + bounds.height
-        ) {
-          continue;
-        }
+        if (!isOnPlate(tokenX, tokenY, bounds)) continue;
 
         placer.place(tokenX, tokenY, tokenRadius, width, bounds);
-
-        const x = placer.x + LABEL_HALO_PX;
-        const y = placer.y + LABEL_HEIGHT_PX / 2;
-
-        context.globalAlpha = subject.alpha(slot);
-        context.strokeText(label, x, y);
-
-        context.fillStyle = colors.ink;
-        context.fillText(label, x, y);
+        write(context, label, subject.weapon(slot), subject.alpha(slot));
       }
     },
   };
-}
-
-/**
- * Chooses where each label goes so that no two overlap — DESIGN.md §6.1 moves the label on a
- * collision, never the token. The result of the last `place` is read off `x` and `y`: this runs for
- * ten players every animation frame, so nothing here returns an object.
- */
-export interface LabelPlacer {
-  x: number;
-  y: number;
-  reset(): void;
-  place(
-    tokenX: number,
-    tokenY: number,
-    tokenRadius: number,
-    width: number,
-    bounds: PlateBounds,
-  ): void;
-}
-
-const CANDIDATE_COUNT = 4;
-
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) return min;
-
-  return value > max ? max : value;
-}
-
-export function labelPlacer(capacity: number): LabelPlacer {
-  // x, y, width, height per label already placed this frame.
-  const placed = new Float32Array(capacity * 4);
-  const candidates = new Float32Array(CANDIDATE_COUNT * 2);
-  let count = 0;
-
-  function overlapsPlaced(x: number, y: number, width: number): boolean {
-    for (let index = 0; index < count; index++) {
-      const offset = index * 4;
-      const otherX = sampleAt(placed, offset);
-      const otherY = sampleAt(placed, offset + 1);
-
-      if (
-        x < otherX + sampleAt(placed, offset + 2) &&
-        x + width > otherX &&
-        y < otherY + sampleAt(placed, offset + 3) &&
-        y + LABEL_HEIGHT_PX > otherY
-      ) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  const placer: LabelPlacer = {
-    x: 0,
-    y: 0,
-
-    reset(): void {
-      count = 0;
-    },
-
-    place(tokenX, tokenY, tokenRadius, width, bounds): void {
-      const half = width / 2;
-      const gap = tokenRadius + LABEL_GAP_PX;
-      const maxX = bounds.left + Math.max(bounds.width - width, 0);
-      const maxY = bounds.top + Math.max(bounds.height - LABEL_HEIGHT_PX, 0);
-
-      candidates[0] = tokenX - half;
-      candidates[1] = tokenY + gap;
-      candidates[2] = tokenX - half;
-      candidates[3] = tokenY - gap - LABEL_HEIGHT_PX;
-      candidates[4] = tokenX + gap;
-      candidates[5] = tokenY - LABEL_HEIGHT_PX / 2;
-      candidates[6] = tokenX - gap - width;
-      candidates[7] = tokenY - LABEL_HEIGHT_PX / 2;
-
-      let chosenX = 0;
-      let chosenY = 0;
-
-      for (let candidate = 0; candidate < CANDIDATE_COUNT; candidate++) {
-        const x = clamp(sampleAt(candidates, candidate * 2), bounds.left, maxX);
-        const y = clamp(sampleAt(candidates, candidate * 2 + 1), bounds.top, maxY);
-
-        if (candidate === 0) {
-          chosenX = x;
-          chosenY = y;
-        }
-
-        if (!overlapsPlaced(x, y, width)) {
-          chosenX = x;
-          chosenY = y;
-          break;
-        }
-      }
-
-      if (count < capacity) {
-        const offset = count * 4;
-        placed[offset] = chosenX;
-        placed[offset + 1] = chosenY;
-        placed[offset + 2] = width;
-        placed[offset + 3] = LABEL_HEIGHT_PX;
-        count++;
-      }
-
-      placer.x = chosenX;
-      placer.y = chosenY;
-    },
-  };
-
-  return placer;
 }

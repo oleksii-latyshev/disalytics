@@ -8,10 +8,13 @@ import {
   deathProgressBySlot,
   FLAG_ALIVE,
   FLAG_SCOPED,
+  FLAG_WALKING,
+  gunfireBySlot,
   type ParsedDemo,
   type PlayerSlot,
   sampleAt,
   type Team,
+  weaponClasses,
 } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
 import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
@@ -24,10 +27,12 @@ import {
   drawAudibleRing,
   drawBlindDisc,
   drawDamageFlash,
+  drawGunfireSpur,
   drawNeedle,
   drawProgressArc,
   drawSelectionRing,
   drawToken,
+  drawWalkHollow,
   screenAngle,
 } from './tokens';
 import {
@@ -102,6 +107,12 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const damageFlashes = new Float32Array(track.slotCount);
   const blindRemaining = new Float32Array(track.slotCount);
   const deathProgress = new Float32Array(track.slotCount);
+  const gunfire = new Float32Array(track.slotCount);
+
+  // The per-match weapon table resolved to classes once, so a token reads its class by index rather
+  // than by name — `MatchHeader.weapons` is a different lookup for every demo, and a string lookup
+  // per player per animation frame is the walk that does not belong in a draw.
+  const classByWeapon = weaponClasses(demo.header.weapons);
 
   // The frame's own scalars, set once per draw and read by every pass below.
   let base = 0;
@@ -160,6 +171,9 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     x: screenX,
     y: screenY,
     alpha: levelAlpha,
+    // `WEAPON_NONE` falls off the end of the table, which is the answer for a slot no sample ever
+    // saw holding anything — a different thing from `unknown`, and drawn as nothing at all.
+    weapon: (slot) => classByWeapon[sampleAt(track.weapon, base + slot)] ?? null,
   };
 
   /**
@@ -212,6 +226,25 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       );
     }
 
+    const angle = screenAngle(track, sample);
+    const isScoped = (sampleAt(track.flags, sample) & FLAG_SCOPED) !== 0;
+    const shot = sampleAt(gunfire, slot);
+
+    // Before the blind check rather than after it: a flashed player still pulls a trigger, and the
+    // spur says where the rounds went even where the needle no longer claims a direction.
+    if (shot > 0) {
+      drawGunfireSpur(
+        context,
+        screenX(slot),
+        screenY(slot),
+        tokenRadius,
+        angle,
+        isScoped,
+        colors.gunfire,
+        levelAlpha(slot) * shot,
+      );
+    }
+
     // A flashed player is not looking anywhere, and the plate does not claim otherwise.
     if (sampleAt(blindRemaining, slot) > 0) return;
 
@@ -220,8 +253,8 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       screenX(slot),
       screenY(slot),
       tokenRadius,
-      screenAngle(track, sample),
-      (sampleAt(track.flags, sample) & FLAG_SCOPED) !== 0,
+      angle,
+      isScoped,
       colors.team[team],
     );
   }
@@ -234,6 +267,13 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       context.globalAlpha = levelAlpha(slot) * flash;
       drawDamageFlash(context, screenX(slot), screenY(slot), tokenRadius, colors.damage);
       context.globalAlpha = levelAlpha(slot);
+    }
+
+    // After the hit rather than under it: a flash repaints the whole token, and a player being shot
+    // at is still walking. DESIGN.md §6.1 puts the mark inside the token because every radius
+    // outside it already means something else.
+    if ((sampleAt(track.flags, base + slot) & FLAG_WALKING) !== 0) {
+      drawWalkHollow(context, screenX(slot), screenY(slot), tokenRadius, colors.hollow);
     }
 
     const remaining = sampleAt(blindRemaining, slot);
@@ -321,6 +361,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     damageFlashBySlot(demo, clock.frame, damageFlashes);
     blindRemainingBySlot(demo, clock.frame, blindRemaining);
     deathProgressBySlot(demo, clock.frame, deathProgress);
+    gunfireBySlot(demo, clock.frame, gunfire);
     readScreen();
 
     drawVision(context);

@@ -8,6 +8,7 @@ import type {
   Kill,
   MatchEvents,
   PlayerSlot,
+  Shot,
   Tick,
   TickTrack,
 } from '../schema';
@@ -195,6 +196,17 @@ export function withDefuse(events: MatchEvents, overrides: Partial<BombDefuse> =
     ...events,
     defuses: sortedByTick(events.defuses, defuse, (item) => item.startTick),
   };
+}
+
+export function withShot(events: MatchEvents, overrides: Partial<Shot> = {}): MatchEvents {
+  const shot: Shot = {
+    tick: asTick(0),
+    shooter: asPlayerSlot(0),
+    weapon: WEAPON_NONE,
+    ...overrides,
+  };
+
+  return { ...events, shots: sortedByTick(events.shots, shot, (item) => item.tick) };
 }
 
 function emptyTrajectory(firstTick: Tick): GrenadeTrajectory {

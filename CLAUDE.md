@@ -566,6 +566,35 @@ reset, and `docs/DESIGN.md` §9.1 records that rather than leaving the collision
 keys are bound in `features/radar` from a second `useShortcuts` call, whose suspension arrives as a
 prop; nothing new is on the frame path, so §16's rows were not re-measured.
 
+**#164 put three marks on the token, and the one to know about is where the shapes come from.**
+A weapon silhouette beside every name, a hollow in a walking player's token, and a white spur past
+the needle on the frame a trigger was pulled — §6.1's last three states, and the first readers of
+`MatchEvents.shots`. Five things are load-bearing. **The silhouettes are §5.3's own**: they moved
+out of `WeaponGlyph` into `core/glyphs/helpers/silhouettes.ts` because the set has two renderers,
+and the canvas compiles each class to a `Path2D` **once per session at plate scale** rather than
+scaling the context — `context.scale` shrinks the stroke with the shape and would halo a mark more
+faintly than the name beside it. **The box is 14×7 and `docs/DESIGN.md` §6.1 says 8×8 no longer**:
+the square was specified before anything was drawn, and the same set squeezed into it turned every
+long gun into the letter T — that was found by looking at it, which is the only way it could have
+been. **The mark's box is reserved whether or not a mark goes in it**, so a name never twitches
+sideways when its player switches weapon, and `C4 Explosive` leaves it empty (§6.4) — verified over
+all 30 rounds, 84 of 630 sampled frames with a live carrier and no mark on any of them. **`walk` is
+a hole and not a ring** because audibility, selection and the objective arc have every radius
+outside the token, and walking is the thing that suppresses the audibility ring. And **the spur is
+drawn from the facing angle whether or not the needle is** — a blinded player still pulls a trigger.
+`gunfireBySlot` is `damageFlashBySlot`'s shape in `packages/demo-core`; `weaponClasses` resolves the
+per-match table once per demo so a token reads its class by index. `AGENTS.md` §16's two rows were
+re-measured with a `3b29b62` baseline beside them: **0 frames over 16.7 ms out of 399, three passes
+an arm, both arms**.
+
+**#164 is also the second half of a documentation gap worth recognising by shape.** #162 asked §6.1
+for three marks; #166 wrote one and the issue was closed anyway. Nothing caught it for five months
+because the *issue* was closed — so when an issue says "the document changes first", check the
+document rather than the issue's state. The walk and the fire were settled with the owner at the
+start of #164 and written into §6.1 in the same PR as the code, which is the standing rule for docs
+here; §15's exception is for a decision that has to be made before code, and asking is what made it
+one.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

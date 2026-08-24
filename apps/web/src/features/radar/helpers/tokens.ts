@@ -165,6 +165,28 @@ export function drawAudibleRing(
   context.restore();
 }
 
+/**
+ * How much of the token the hollow takes out of its middle. Small enough that the token still reads
+ * as its side's colour, wide enough to survive the 12px end of §6.3's zoom range.
+ */
+const WALK_HOLE_FRACTION = 0.35;
+
+/**
+ * A player holding shift, drawn hollow — DESIGN.md §6.1. It is a hole in the token rather than a
+ * ring around it, because every radius outside the token is already spoken for: audibility at the
+ * radius they can be heard from, selection at +2px and the objective arc at +3.5px. Walking is also
+ * the thing that *suppresses* the audibility ring, so those two above all must not share a shape.
+ */
+export function drawWalkHollow(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+): void {
+  drawToken(context, x, y, radius * WALK_HOLE_FRACTION, color);
+}
+
 /** A direction rather than an area: ten translucent cones is a fog — DESIGN.md §6.1. */
 export function drawNeedle(
   context: CanvasRenderingContext2D,
@@ -186,4 +208,44 @@ export function drawNeedle(
   context.moveTo(x + dx * radius, y + dy * radius);
   context.lineTo(x + dx * length, y + dy * length);
   context.stroke();
+}
+
+/** How far past the needle's tip the spur begins, so the two read as two marks and not one line. */
+const SPUR_GAP_PX = 3;
+const SPUR_LENGTH_PX = 4;
+const SPUR_WIDTH_PX = 2;
+
+/**
+ * A trigger pull, as a bright spur past the tip of the facing needle — DESIGN.md §6.1. Direction
+ * and gunfire in one mark: the needle already says where the player is looking, and this says they
+ * are shooting down it.
+ *
+ * Drawn from the same angle whether or not the needle is, because a blinded player still pulls a
+ * trigger and the plate has no reason to hide it. Its opacity is the caller's and the caller reads
+ * it off the clock, so a burst survives scrubbing backwards through it.
+ */
+export function drawGunfireSpur(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  angle: number,
+  isScoped: boolean,
+  color: string,
+  alpha: number,
+): void {
+  const from = radius + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX) + SPUR_GAP_PX;
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+
+  context.save();
+  context.globalAlpha = alpha;
+  context.lineWidth = SPUR_WIDTH_PX;
+  context.strokeStyle = color;
+
+  context.beginPath();
+  context.moveTo(x + dx * from, y + dy * from);
+  context.lineTo(x + dx * (from + SPUR_LENGTH_PX), y + dy * (from + SPUR_LENGTH_PX));
+  context.stroke();
+  context.restore();
 }
