@@ -2,7 +2,7 @@ use crate::js::{array, optional, set};
 use crate::track::trajectory;
 use demo_parser::{
     Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Grenade, Kill, MatchEvents, PlayerEconomy,
-    Round, Team, WorldPoint,
+    Round, Shot, Team, WorldPoint,
 };
 use js_sys::Object;
 use wasm_bindgen::JsValue;
@@ -13,6 +13,7 @@ pub fn events(events: &MatchEvents) -> Object {
     set(&out, "rounds", array(&events.rounds, round));
     set(&out, "kills", array(&events.kills, kill));
     set(&out, "damage", array(&events.damage, damage));
+    set(&out, "shots", array(&events.shots, shot));
     set(&out, "grenades", array(&events.grenades, grenade));
     set(&out, "blinds", array(&events.blinds, blind));
     set(&out, "plants", array(&events.plants, plant));
@@ -76,6 +77,16 @@ fn damage(damage: &Damage) -> JsValue {
     set(&out, "healthDamage", damage.health_damage);
     set(&out, "armorDamage", damage.armor_damage);
     set(&out, "hitGroup", damage.hit_group.as_str());
+
+    out.into()
+}
+
+fn shot(shot: &Shot) -> JsValue {
+    let out = Object::new();
+
+    set(&out, "tick", shot.tick);
+    set(&out, "shooter", shot.shooter);
+    set(&out, "weapon", shot.weapon);
 
     out.into()
 }

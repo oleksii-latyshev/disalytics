@@ -897,3 +897,78 @@ Ticks pass over the same demo, five alternating runs, `--release`, native single
 **+22% on the ticks pass**, and the three-pass parse went 18.6 s → 18.2 s measured end to end, which
 is inside the run-to-run spread rather than an improvement. The binary grew 2.22 MB → 2.25 MB, 56.2%
 of the 4 MB cap.
+
+---
+
+## 18. Gunfire, and the two events that carry it (#163)
+
+A shot has two candidate sources and they are not the same event. Counted on the 264 MB fixture, a
+25-round match with 225 kills:
+
+| Event | Count | What it is |
+|---|---|---|
+| `weapon_fire` | 4,788 | a weapon was used — guns, thrown grenades and knife swings alike |
+| `fire_bullets` | 3,500 | a bullet left a gun |
+
+The difference is the 519 grenade throws and the 768 knife swings `weapon_fire` also counts:
+4,788 − 519 − 768 = 3,501, one more than `fire_bullets` reports. **The one extra is a Glock-18**:
+`weapon_fire` counts 203 of them and `fire_bullets` 202, and every other weapon in the match agrees
+exactly. One trigger pull in 4,788 leaving no bullet event is not a discrepancy worth modelling; it
+is recorded here so the next reader who joins the two does not go looking for a bug.
+
+### `fire_bullets` is the one the schema carries
+
+Not because it is the smaller number, but because of the fields:
+
+| Field | Value on the fixture |
+|---|---|
+| `item_def_index` | `U32(16)` — the M4A4, resolving through `WEAPINDICIES` |
+| `user_steamid` | `String("765…")` — present on **all 3,500**, none missing |
+| `tick` | already ascending; the array needs no sort to be sorted |
+
+`weapon_fire` names its weapon `weapon_ak47`, which is the **fifth vocabulary** §17 counts and the
+one nothing in this repository can map without #53. `fire_bullets` names it by definition index,
+which is the route `MatchHeader.weapons` is *already* built through — so `Shot.weapon` is an index
+into that table and means exactly what `TickTrack.weapon` means at the same tick. On the fixture
+**every one of the 3,500 shots resolved into the table**; none fell back to `WEAPON_NONE`.
+
+The per-weapon counts are identical across the two events, which is what says `fire_bullets` counts
+trigger pulls rather than bullets in flight: AK-47 1,280 in both, M4A1-S 625 in both, M4A4 359 in
+both, over 18 guns. **A shotgun could not be checked**: the match carried a MAG-7 and an XM1014 in
+the weapon table but neither was ever fired, so whether nine pellets are one event or nine is
+unverified here. The event carries a single `seed`, `spread` and `inaccuracy`, from which the game
+derives the whole pattern, which is an argument for one — not evidence.
+
+### The shape is a plain array, and the count is why
+
+Hard rule 3 sends discrete events to sorted arrays of objects, and `AGENTS.md` §10 would take a
+columnar exception if the volume argued for one. It does not: 3,500 shots is four times the damage
+array and a third of `item_equip`, three fields wide. The array is ~100 kB in the cache container
+against the 11 MB it already holds.
+
+### Cost
+
+Native, `--release`, single-threaded, three runs of the three-pass parse over the same 264 MB
+container, alternating between the branch and its base on one machine:
+
+| | Runs | Median |
+|---|---|---|
+| before | 16.31 / 16.34 / 16.28 s | 16.31 s |
+| after | 16.20 / 16.09 / 16.09 s | 16.09 s |
+
+**No measurable cost**, and the direction of the difference is run-to-run spread rather than a
+speed-up: the events pass already collects every game event, so this walks a list that was being
+built and discarded.
+
+The browser is where `AGENTS.md` §16's row is measured, so the same comparison was run there —
+headed Chrome 151 over CDP against the built bundle, timed from the drop to the review screen,
+`document.visibilityState` asserted inside every run, three runs an arm on one machine:
+
+| | Runs | Median |
+|---|---|---|
+| before | 20.03 / 19.94 / 19.88 s | 19.94 s |
+| after | 20.22 / 20.05 / 20.06 s | 20.06 s |
+
+**+0.12 s, inside the spread of either arm.** Both sit about 1.1 s above the 18.85 s §16 records
+for this input, and that is the day rather than the change — the before arm is this repository's
+own base, built and measured the same afternoon. §16's figure stands as #59 measured it.

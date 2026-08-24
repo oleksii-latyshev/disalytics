@@ -3,7 +3,7 @@
  * `${fileHash}:${SCHEMA_VERSION}`, so an entry written by an older shape is a miss rather than
  * something to migrate.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 declare const unit: unique symbol;
 
@@ -166,6 +166,21 @@ export interface Damage {
 }
 
 /**
+ * One trigger pull with a gun. A grenade throw is a `Grenade` and a knife swing reaches the schema
+ * as nothing at all: the demo counts what left a barrel separately from what a weapon did, and
+ * `docs/PARSER.md` §18 carries the join between the two.
+ */
+export interface Shot {
+  tick: Tick;
+  shooter: PlayerSlot;
+  /**
+   * Index into `MatchHeader.weapons`, or `WEAPON_NONE` for a gun no sample ever saw held. The same
+   * index and the same vocabulary as `TickTrack.weapon`, which is why a shot needs no `WeaponId`.
+   */
+  weapon: number;
+}
+
+/**
  * A projectile's flight path. Per-tick data, so typed arrays rather than one object per sample;
  * `sampleHz` records the rate the samples survive at, which is below the rate they arrive at.
  */
@@ -254,6 +269,7 @@ export interface MatchEvents {
   rounds: readonly Round[];
   kills: readonly Kill[];
   damage: readonly Damage[];
+  shots: readonly Shot[];
   grenades: readonly Grenade[];
   blinds: readonly Blind[];
   plants: readonly BombPlant[];

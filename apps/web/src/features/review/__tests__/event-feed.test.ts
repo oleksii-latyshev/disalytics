@@ -96,6 +96,7 @@ function newDemo(options: Options = {}): ParsedDemo {
       rounds: [newRound(1, 0), newRound(2, 8000)],
       kills: options.kills ?? [],
       damage: [],
+      shots: [],
       grenades: [],
       blinds: [],
       plants: options.plants ?? [],

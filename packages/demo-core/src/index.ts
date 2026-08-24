@@ -94,6 +94,7 @@ export type {
   PlayerSlot,
   Round,
   RoundWinReason,
+  Shot,
   Team,
   Tick,
   TickTrack,

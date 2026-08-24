@@ -153,6 +153,7 @@ export function newDemo(frameCount: number, options: NewDemoOptions = {}): Parse
       rounds: options.rounds ?? [],
       kills: options.kills ?? [],
       damage: options.damage ?? [],
+      shots: [],
       grenades: options.grenades ?? [],
       blinds: [],
       plants: options.plants ?? [],

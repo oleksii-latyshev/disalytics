@@ -22,7 +22,7 @@ pub use schema::{
     GRENADE_DECOY, GRENADE_DEFUSE_KIT, GRENADE_FIRE, GRENADE_FLASH, GRENADE_FLASH_SECOND,
     GRENADE_HE, GRENADE_SMOKE, Grenade, GrenadeTrajectory, GrenadeType, HitGroup, Kill,
     MatchEvents, MatchHeader, ParsedDemo, PlayerEconomy, PlayerInfo, PlayerSlot, Round,
-    RoundWinReason, Team, Tick, TickTrack, WEAPON_NONE, WorldPoint,
+    RoundWinReason, Shot, Team, Tick, TickTrack, WEAPON_NONE, WorldPoint,
 };
 pub use upstream::{PASS_COUNT, event_names};
 
@@ -135,7 +135,7 @@ fn parse_expanded(
         players: players(&table, &roster),
         weapons,
     };
-    let mut match_events = events::build(&passes, &frames, &samples);
+    let mut match_events = events::build(&passes, &frames, &samples, &header.weapons);
 
     drop(table);
     drop(ticks_output);

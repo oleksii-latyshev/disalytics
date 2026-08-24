@@ -2,10 +2,12 @@ use crate::fields::{boolean, float, integer, narrow, text};
 use crate::passes::Passes;
 use crate::rounds::RoundFrame;
 use crate::schema::{
-    Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Kill, MatchEvents, PlayerSlot, Tick,
+    Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Kill, MatchEvents, PlayerSlot, Shot, Tick,
+    WEAPON_NONE,
 };
 use crate::ticks::{Planting, Sample};
 use crate::vocabulary::hit_group_of;
+use parser::second_pass::game_events::GameEvent;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// A Source unit is one inch, and `player_death` reports its distance in metres. Measured against
@@ -32,11 +34,13 @@ pub(crate) fn build(
     passes: &Passes<'_>,
     frames: &[RoundFrame],
     samples: &BTreeMap<(Tick, PlayerSlot), Sample>,
+    weapons: &[String],
 ) -> MatchEvents {
     MatchEvents {
         rounds: crate::rounds::build(passes, frames, samples),
         kills: kills(passes, samples),
         damage: damage(passes),
+        shots: shots(passes, weapons),
         grenades: vec![],
         blinds: blinds(passes, samples),
         plants: plants(passes),
@@ -92,6 +96,31 @@ fn damage(passes: &Passes<'_>) -> Vec<Damage> {
         .collect();
     damage.sort_by_key(|entry| entry.tick);
     damage
+}
+
+/// `fire_bullets` rather than `weapon_fire`: it is the event that carries the item definition
+/// index, which is what lets a shot name its weapon in the sample column's own vocabulary instead
+/// of in a fifth one. It also counts what left a barrel, so a thrown grenade and a knife swing are
+/// not in it — `docs/PARSER.md` §18 has both counts and the join between them.
+fn shots(passes: &Passes<'_>, weapons: &[String]) -> Vec<Shot> {
+    let mut shots: Vec<Shot> = passes
+        .named("fire_bullets")
+        .filter_map(|event| {
+            Some(Shot {
+                tick: event.tick,
+                shooter: passes.slot(event, "user_steamid")?,
+                weapon: definition_index(event).map_or(WEAPON_NONE, |definition| {
+                    crate::weapons::index_in(weapons, definition)
+                }),
+            })
+        })
+        .collect();
+    shots.sort_by_key(|shot| shot.tick);
+    shots
+}
+
+fn definition_index(event: &GameEvent) -> Option<u32> {
+    u32::try_from(integer(event, "item_def_index")?).ok()
 }
 
 fn blinds(passes: &Passes<'_>, samples: &BTreeMap<(Tick, PlayerSlot), Sample>) -> Vec<Blind> {
