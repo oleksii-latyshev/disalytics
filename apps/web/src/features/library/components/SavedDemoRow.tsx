@@ -3,20 +3,12 @@ import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { megabytesOf } from '../helpers/saved-list';
 import { DemoFileName } from './DemoFileName';
+import { MetaDot } from './MetaDot';
 
 interface Props {
   demo: SavedDemo;
   onOpen: (demo: SavedDemo) => void;
   onRemove: (key: string) => void;
-}
-
-/** A separator between facts, not a word: it is drawn for the eye and hidden from the reader. */
-function Dot() {
-  return (
-    <span aria-hidden="true" className="text-ink-faint">
-      ·
-    </span>
-  );
 }
 
 export function SavedDemoRow({ demo, onOpen, onRemove }: Props) {
@@ -42,11 +34,11 @@ export function SavedDemoRow({ demo, onOpen, onRemove }: Props) {
           <span className="numeric">
             <Text path="library.saved.rounds" values={{ count: demo.roundCount }} />
           </span>
-          <Dot />
+          <MetaDot />
           <span className="numeric">
             <Text path="library.saved.storedAt" values={{ when: new Date(demo.storedAt) }} />
           </span>
-          <Dot />
+          <MetaDot />
           <span className="numeric">
             <Text path="library.saved.size" values={{ megabytes: megabytesOf(demo.byteLength) }} />
           </span>
