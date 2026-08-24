@@ -1,45 +1,23 @@
-import { Text, type TranslationKey, useT } from '@disa/i18n';
+import { Text, type TranslationKey, useLocalePreference, useT } from '@disa/i18n';
 import { Button, Sheet, Switch } from '@disa/ui';
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useSetting, useSettingToggle } from '@/core/settings';
+import {
+  HELD_ARROW_OPTIONS,
+  LANGUAGE_OPTIONS,
+  MOTION_OPTIONS,
+  SCOREBOARD_OPTIONS,
+  SEEK_STEP_OPTIONS,
+  THEME_OPTIONS,
+  TRAJECTORY_OPTIONS,
+} from '../helpers/setting-options';
+import { SettingChoice } from './SettingChoice';
+import { SettingRow } from './SettingRow';
 
 interface Props {
   isOpen: boolean;
   onDismiss: () => void;
-  isAudibilityShown: boolean;
-  onAudibilityToggle: () => void;
-  isScoreboardOnPlate: boolean;
-  onScoreboardPositionToggle: () => void;
-  isDebugShown: boolean;
-  onDebugToggle: () => void;
-}
-
-interface RowProps {
-  labelPath: TranslationKey;
-  notePath: TranslationKey;
-  control: ReactNode;
-}
-
-/**
- * One setting: what it is, what choosing it costs, and the control. The note is not decoration —
- * every row in §10.5 that has a real cost says so, and the scoreboard's is the clearest case in the
- * product, since choosing the plate is what spends §2.3's one blur exception.
- */
-function SettingRow({ labelPath, notePath, control }: RowProps) {
-  return (
-    <div className="flex min-h-control-lg items-start justify-between gap-6">
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="text-15">
-          <Text path={labelPath} />
-        </span>
-        <span className="text-13 text-ink-dim leading-prose">
-          <Text path={notePath} />
-        </span>
-      </div>
-
-      {control}
-    </div>
-  );
 }
 
 function Group({ titlePath, children }: { titlePath: TranslationKey; children: ReactNode }) {
@@ -55,9 +33,9 @@ function Group({ titlePath, children }: { titlePath: TranslationKey; children: R
 }
 
 /**
- * DESIGN.md §10.5's sheet, carrying the three settings the review layout parked in the corner cluster
- * (#147, #196, #199) and nothing else — the rest of §10.5's table is §15's step 9. The cluster is
- * three named buttons again, which is what #151 was for.
+ * DESIGN.md §10.5's sheet, and every row of its table. Each one is read where it is *obeyed* — the
+ * plate reads its own four, the round strip reads its own — so this file holds the copy, the
+ * grouping and the controls, and nothing else knows the sheet exists.
  *
  * **Playback is stopped while the sheet is open** — `MatchReview` pauses on the way in, which is
  * what makes covering the plate legitimate under principle 4 rather than an exception to it.
@@ -67,17 +45,22 @@ function Group({ titlePath, children }: { titlePath: TranslationKey; children: R
  * not naming it was the point. Settings are settings; a route out of the match is `LeaveMatch`, in
  * the top-left corner where a reader looks for back.
  */
-export function SettingsSheet({
-  isOpen,
-  onDismiss,
-  isAudibilityShown,
-  onAudibilityToggle,
-  isScoreboardOnPlate,
-  onScoreboardPositionToggle,
-  isDebugShown,
-  onDebugToggle,
-}: Props) {
+export function SettingsSheet({ isOpen, onDismiss }: Props) {
   const t = useT();
+  const language = useLocalePreference();
+
+  const [isBuyPhaseSkipped, toggleBuyPhaseSkip] = useSettingToggle('isBuyPhaseSkipped');
+  const [seekStepSeconds, setSeekStep] = useSetting('seekStepSeconds');
+  const [heldArrowRate, setHeldArrowRate] = useSetting('heldArrowRate');
+  const [radarTheme, setRadarTheme] = useSetting('radarTheme');
+  const [isAudibilityShown, toggleAudibility] = useSettingToggle('isAudibilityShown');
+  const [arePlayerNamesShown, togglePlayerNames] = useSettingToggle('arePlayerNamesShown');
+  const [trajectories, setTrajectories] = useSetting('trajectories');
+  const [scoreboard, setScoreboard] = useSetting('scoreboard');
+  const [areSurvivorsShown, toggleSurvivors] = useSettingToggle('areSurvivorsShown');
+  const [palette, setPalette] = useSetting('palette');
+  const [motion, setMotion] = useSetting('motion');
+  const [isDebugShown, toggleDebug] = useSettingToggle('isDebugShown');
 
   return (
     <Sheet isOpen={isOpen} onDismiss={onDismiss} aria-label={t('settings.title')}>
@@ -98,15 +81,93 @@ export function SettingsSheet({
           </Button>
         </header>
 
+        <Group titlePath="settings.group.playback">
+          <SettingRow
+            labelPath="settings.skipBuyPhase.label"
+            notePath="settings.skipBuyPhase.note"
+            control={
+              <Switch
+                checked={isBuyPhaseSkipped}
+                onChange={toggleBuyPhaseSkip}
+                aria-label={t('settings.skipBuyPhase.label')}
+              />
+            }
+          />
+
+          <SettingRow
+            labelPath="settings.seekStep.label"
+            notePath="settings.seekStep.note"
+            control={
+              <SettingChoice
+                labelPath="settings.seekStep.label"
+                value={seekStepSeconds}
+                options={SEEK_STEP_OPTIONS}
+                onChange={setSeekStep}
+              />
+            }
+          />
+
+          <SettingRow
+            labelPath="settings.heldArrowRate.label"
+            notePath="settings.heldArrowRate.note"
+            control={
+              <SettingChoice
+                labelPath="settings.heldArrowRate.label"
+                value={heldArrowRate}
+                options={HELD_ARROW_OPTIONS}
+                onChange={setHeldArrowRate}
+              />
+            }
+          />
+        </Group>
+
         <Group titlePath="settings.group.plate">
+          <SettingRow
+            labelPath="settings.radarTheme.label"
+            notePath="settings.radarTheme.note"
+            control={
+              <SettingChoice
+                labelPath="settings.radarTheme.label"
+                value={radarTheme}
+                options={THEME_OPTIONS}
+                onChange={setRadarTheme}
+              />
+            }
+          />
+
           <SettingRow
             labelPath="settings.audibility.label"
             notePath="settings.audibility.note"
             control={
               <Switch
                 checked={isAudibilityShown}
-                onChange={onAudibilityToggle}
+                onChange={toggleAudibility}
                 aria-label={t('settings.audibility.label')}
+              />
+            }
+          />
+
+          <SettingRow
+            labelPath="settings.playerNames.label"
+            notePath="settings.playerNames.note"
+            control={
+              <Switch
+                checked={arePlayerNamesShown}
+                onChange={togglePlayerNames}
+                aria-label={t('settings.playerNames.label')}
+              />
+            }
+          />
+
+          <SettingRow
+            labelPath="settings.trajectories.label"
+            notePath="settings.trajectories.note"
+            control={
+              <SettingChoice
+                labelPath="settings.trajectories.label"
+                value={trajectories}
+                options={TRAJECTORY_OPTIONS}
+                onChange={setTrajectories}
               />
             }
           />
@@ -117,27 +178,64 @@ export function SettingsSheet({
             labelPath="settings.scoreboard.label"
             notePath="settings.scoreboard.note"
             control={
-              // Two named positions rather than an on/off: §10.5 writes this setting as a choice
-              // between the block and the plate, and "off" would not say which one it left.
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  type="button"
-                  variant={isScoreboardOnPlate ? 'ghost' : 'secondary'}
-                  aria-pressed={!isScoreboardOnPlate}
-                  onClick={isScoreboardOnPlate ? onScoreboardPositionToggle : undefined}
-                >
-                  <Text path="settings.scoreboard.onBlock" />
-                </Button>
+              <SettingChoice
+                labelPath="settings.scoreboard.label"
+                value={scoreboard}
+                options={SCOREBOARD_OPTIONS}
+                onChange={setScoreboard}
+              />
+            }
+          />
 
-                <Button
-                  type="button"
-                  variant={isScoreboardOnPlate ? 'secondary' : 'ghost'}
-                  aria-pressed={isScoreboardOnPlate}
-                  onClick={isScoreboardOnPlate ? undefined : onScoreboardPositionToggle}
-                >
-                  <Text path="settings.scoreboard.onPlate" />
-                </Button>
-              </div>
+          <SettingRow
+            labelPath="settings.survivors.label"
+            notePath="settings.survivors.note"
+            control={
+              <Switch
+                checked={areSurvivorsShown}
+                onChange={toggleSurvivors}
+                aria-label={t('settings.survivors.label')}
+              />
+            }
+          />
+
+          <SettingRow
+            labelPath="settings.language.label"
+            notePath="settings.language.note"
+            control={
+              <SettingChoice
+                labelPath="settings.language.label"
+                value={language.preference}
+                options={LANGUAGE_OPTIONS}
+                onChange={language.choose}
+              />
+            }
+          />
+
+          <SettingRow
+            labelPath="settings.motion.label"
+            notePath="settings.motion.note"
+            control={
+              <SettingChoice
+                labelPath="settings.motion.label"
+                value={motion}
+                options={MOTION_OPTIONS}
+                onChange={setMotion}
+              />
+            }
+          />
+        </Group>
+
+        <Group titlePath="settings.group.colour">
+          <SettingRow
+            labelPath="settings.palette.label"
+            notePath="settings.palette.note"
+            control={
+              <Switch
+                checked={palette === 'colour-blind'}
+                onChange={() => setPalette(palette === 'colour-blind' ? 'default' : 'colour-blind')}
+                aria-label={t('settings.palette.label')}
+              />
             }
           />
         </Group>
@@ -149,7 +247,7 @@ export function SettingsSheet({
             control={
               <Switch
                 checked={isDebugShown}
-                onChange={onDebugToggle}
+                onChange={toggleDebug}
                 aria-label={t('settings.debug.label')}
               />
             }

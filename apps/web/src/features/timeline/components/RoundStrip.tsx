@@ -4,7 +4,7 @@ import { Button } from '@disa/ui';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Transport, useFrameReadout } from '@/core/playback';
-import { useStoredFlag } from '@/shared/hooks';
+import { useSettingToggle } from '@/core/settings';
 import { roundOutcomeKey } from '../helpers/outcome-copy';
 import {
   hasRoomForNumbers,
@@ -24,9 +24,6 @@ interface Props {
 
 /** §9.2's dwell: a tooltip answers a pointer that stayed, never one that passed through. */
 const HOVER_DWELL_MS = 400;
-
-/** Namespaced the way `@disa/i18n` namespaces the locale it remembers. */
-const SURVIVORS_KEY = 'disa.timeline.survivors';
 
 interface Naming {
   readonly cell: RoundCell;
@@ -67,9 +64,9 @@ export function RoundStrip({ demo, transport }: Props) {
   const [namedIndex, setNamedIndex] = useState<number | null>(null);
 
   // Off by default — §7.3. What is always on screen is the way to a round; the shape of the round is
-  // what the reader asks for. `AGENTS.md` §2 rule 5 allows an interface preference to outlive the
-  // session.
-  const [isExpanded, toggleExpanded] = useStoredFlag(SURVIVORS_KEY, false);
+  // what the reader asks for. The disclosure on the strip and §10.5's row are two controls over one
+  // preference, which is what the settings table asked for rather than a second key beside it.
+  const [isExpanded, toggleExpanded] = useSettingToggle('areSurvivorsShown');
 
   useEffect(() => {
     const row = rowRef.current;

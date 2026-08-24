@@ -11,18 +11,9 @@ interface Props {
   transport: Transport;
   selectedSlot: PlayerSlot | null;
   hoveredKill: KillLine | null;
-  isAudibilityShown: boolean;
-  isDebugShown: boolean;
 }
 
-export function MatchRadar({
-  demo,
-  transport,
-  selectedSlot,
-  hoveredKill,
-  isAudibilityShown,
-  isDebugShown,
-}: Props) {
+export function MatchRadar({ demo, transport, selectedSlot, hoveredKill }: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -39,8 +30,6 @@ export function MatchRadar({
           transport={transport}
           selectedSlot={selectedSlot}
           hoveredKill={hoveredKill}
-          isAudibilityShown={isAudibilityShown}
-          isDebugShown={isDebugShown}
         />
       )}
     </section>

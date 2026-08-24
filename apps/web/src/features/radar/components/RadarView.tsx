@@ -6,7 +6,6 @@ import {
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import {
-  DEFAULT_RADAR_THEME,
   type MapOverview,
   RADAR_IMAGE_SIZE,
   type RadarPoint,
@@ -16,8 +15,9 @@ import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { KillLine } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
+import { useSetting } from '@/core/settings';
 import { useFontReady } from '@/shared/hooks';
-import { readRadarColors } from '../helpers/colors';
+import { radarColors } from '../helpers/colors';
 import { killLineLayer } from '../helpers/kill-line';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { playerTokens, radarBackdrop } from '../helpers/layers';
@@ -35,20 +35,20 @@ interface Props {
   transport: Transport;
   selectedSlot: PlayerSlot | null;
   hoveredKill: KillLine | null;
-  isAudibilityShown: boolean;
-  isDebugShown: boolean;
 }
 
-export function RadarView({
-  demo,
-  overview,
-  transport,
-  selectedSlot,
-  hoveredKill,
-  isAudibilityShown,
-  isDebugShown,
-}: Props) {
+export function RadarView({ demo, overview, transport, selectedSlot, hoveredKill }: Props) {
   const t = useT();
+
+  // Everything on the plate the reader gets a say over — DESIGN.md §10.5. These are read here
+  // rather than handed down from the stage: the plate is the only consumer of any of them, and a
+  // prop per row would be six props that exist only to be passed on.
+  const [theme] = useSetting('radarTheme');
+  const [palette] = useSetting('palette');
+  const [isAudibilityShown] = useSetting('isAudibilityShown');
+  const [arePlayerNamesShown] = useSetting('arePlayerNamesShown');
+  const [trajectories] = useSetting('trajectories');
+  const [isDebugShown] = useSetting('isDebugShown');
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [pointer, setPointer] = useState<RadarPoint | null>(null);
 
@@ -57,14 +57,14 @@ export function RadarView({
   const frame = useFrameReadout(transport);
   const levelIndex = forcedLevelIndex ?? busiestLevelIndex(overview, demo.track, frame);
   const level = levelAt(overview, levelIndex);
-  const image = useRadarImage(radarAssetPath(level, DEFAULT_RADAR_THEME));
+  const image = useRadarImage(radarAssetPath(level, theme));
 
   // The side a slot holds changes at halftime, so a token's colour follows the round rather than
   // the end-of-match roster — the same reasoning that put `PlayerEconomy.team` in the schema. The
   // rails read this too, and the two disagreeing for half a match is the failure this prevents.
   const roundIndex = roundIndexAtFrame(demo, frame);
   const teamBySlot = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
-  const colors = useMemo(readRadarColors, []);
+  const colors = radarColors(palette);
   const labelStyle = useMemo(readLabelStyle, []);
 
   // Chip widths are measured once per layer, so a label drawn before its webfont arrives would keep
@@ -72,8 +72,11 @@ export function RadarView({
   // rails have already asked for the same face.
   const isLabelFontReady = useFontReady(labelStyle.font);
   const labelBySlot = useMemo(
-    () => (isLabelFontReady ? labelsBySlot(demo.header.players, demo.track.slotCount) : NO_LABELS),
-    [demo.header.players, demo.track.slotCount, isLabelFontReady],
+    () =>
+      isLabelFontReady && arePlayerNamesShown
+        ? labelsBySlot(demo.header.players, demo.track.slotCount)
+        : NO_LABELS,
+    [demo.header.players, demo.track.slotCount, isLabelFontReady, arePlayerNamesShown],
   );
 
   // The hovered row reaches the plate through a box rather than through the layer array, so a hover
@@ -96,7 +99,14 @@ export function RadarView({
       labelStyle,
     });
 
-    const utility = utilityLayer({ demo, clock: transport.clock, overview, colors });
+    const utility = utilityLayer({
+      demo,
+      clock: transport.clock,
+      overview,
+      colors,
+      trajectories,
+      selectedSlot,
+    });
     const killLine = killLineLayer({
       demo,
       clock: transport.clock,
@@ -118,6 +128,7 @@ export function RadarView({
     labelBySlot,
     selectedSlot,
     isAudibilityShown,
+    trajectories,
     colors,
     labelStyle,
     image,

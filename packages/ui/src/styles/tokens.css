@@ -138,3 +138,26 @@
   --shadow-raised: inset 0 1px 0 0 var(--color-glass-edge);
   --shadow-float: 0 24px 64px rgb(0 0 0 / 0.55);
 }
+
+/* DESIGN.md §2.7's colour-blind-safe variant of §2.4's data colours, selected in settings (§10.5)
+   and applied as a token swap: every mark on the plate and every side colour in the interface reads
+   these through `var()`, canvas included, so nothing branches on which palette is active.
+
+   Chosen against deuteranopia and protanopia — the red-green deficiencies, and between them almost
+   every colour-blind reader — by simulating each candidate (Viénot, Brettel & Mollon 1999) and
+   maximising the *smallest* CIEDE2000 distance across all of normal, protan and deutan vision. The
+   defaults put two pairs within ΔE2000 2 of each other under deuteranopia: `--color-nade-decoy` and
+   `--color-objective` at 1.79, `--color-nade-smoke` and `--color-objective` at 4.19. These hold a
+   floor of 14.3 across every pair, and the sides stand at 65.4 where the defaults reach 67.7.
+
+   The numbers, the method and what is deliberately left alone are in DESIGN.md §2.4. */
+:root[data-palette="colour-blind"] {
+  --color-ct: #60a6fb;
+  --color-t: #f9e12a;
+  --color-damage: #d2696e;
+  --color-nade-he: #eaa46a;
+  --color-nade-smoke: #979ba2;
+  --color-nade-molotov: #e94814;
+  --color-nade-decoy: #c2bbad;
+  --color-objective: #a26fab;
+}

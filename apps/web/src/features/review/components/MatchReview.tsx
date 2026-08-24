@@ -10,11 +10,12 @@ import { useLocale } from '@disa/i18n';
 import { useCallback, useMemo, useState } from 'react';
 import type { KillLine } from '@/core/events';
 import type { CacheState } from '@/core/parsing';
-import { useFrameReadout, useTransport } from '@/core/playback';
+import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
+import { useSetting } from '@/core/settings';
 import { useShortcuts } from '@/core/shortcuts';
 import { MatchRadar } from '@/features/radar';
 import { MatchOverlay } from '@/features/timeline';
-import { useFullscreen, useStoredFlag } from '@/shared/hooks';
+import { useFullscreen } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { CornerCluster } from './CornerCluster';
 import { EventFeed } from './EventFeed';
@@ -25,15 +26,6 @@ import { Scoreboard } from './Scoreboard';
 import { SettingsSheet } from './SettingsSheet';
 import { TeamCard } from './TeamCard';
 import { TimelineBlock } from './TimelineBlock';
-
-/** Namespaced the way `@disa/i18n` namespaces the locale it remembers. */
-const AUDIBILITY_KEY = 'disa.radar.audibility';
-
-/** DESIGN.md §10.5's scoreboard position, stored as "the reader asked for the plate". */
-const SCOREBOARD_ON_PLATE_KEY = 'disa.review.scoreboardOnPlate';
-
-/** DESIGN.md §10.5's Developer row. */
-const DEBUG_KEY = 'disa.radar.debug';
 
 interface Props {
   demo: ParsedDemo;
@@ -71,21 +63,13 @@ export function MatchReview({ demo, cache, onClose }: Props) {
   // is what clears it: a row cannot report the pointer leaving once the row itself has gone.
   const [hoveredKill, setHoveredKill] = useState<KillLine | null>(null);
 
-  // Off by default: the rings are the loudest thing the plate draws, and a reader who wants them
-  // asks. `AGENTS.md` §2 rule 5 allows an interface preference to outlive the session.
-  const [isAudibilityShown, toggleAudibility] = useStoredFlag(AUDIBILITY_KEY, false);
+  // The brow is the default — DESIGN.md §5.2 — so this is the reader asking for the chip back over
+  // the plate, which is the only thing in the product allowed to cover it (§5.1). Every other row
+  // of §10.5's table is read where it is obeyed rather than here.
+  const [scoreboard] = useSetting('scoreboard');
+  const [isBuyPhaseSkipped] = useSetting('isBuyPhaseSkipped');
 
-  // The brow is the default — DESIGN.md §5.2 — so this flag is the reader asking for the chip back
-  // over the plate, which is the only thing in the product allowed to cover it (§5.1).
-  const [isScoreboardOnPlate, toggleScoreboardPosition] = useStoredFlag(
-    SCOREBOARD_ON_PLATE_KEY,
-    false,
-  );
-
-  // The overlay's switch lives in the settings sheet rather than on the plate — DESIGN.md §6.3 and
-  // §10.5's Developer row — and it is remembered for the same reason the other two are: whoever turns
-  // a development affordance on is mid-investigation and reopening the demo does not end it.
-  const [isDebugShown, toggleDebug] = useStoredFlag(DEBUG_KEY, false);
+  useBuyPhaseSkip(transport, demo, isBuyPhaseSkipped);
 
   // Which full-screen surface covers the screen, if any. All three stop playback while they are
   // open, which is what makes covering the plate legitimate rather than an exception to principle 4
@@ -225,8 +209,6 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           transport={transport}
           selectedSlot={selectedSlot}
           hoveredKill={hoveredKill}
-          isAudibilityShown={isAudibilityShown}
-          isDebugShown={isDebugShown}
         />
 
         {/* §5.1's one permitted overlap, and since #196 the reader's own choice rather than the
@@ -235,7 +217,7 @@ export function MatchReview({ demo, cache, onClose }: Props) {
             than it is tall, so the square plate fills its height — and where they are not, the chip
             floats in the letterbox above the plate and covers nothing at all. Anchoring to the
             canvas instead would mean a second reader of `min(100cqi,100cqb)`. */}
-        {isScoreboardOnPlate && (
+        {scoreboard === 'plate' && (
           <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
             <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
           </div>
@@ -253,23 +235,14 @@ export function MatchReview({ demo, cache, onClose }: Props) {
           selectedSlot={selectedSlot}
           frame={frame}
           locale={locale}
-          hasScoreboard={!isScoreboardOnPlate}
+          hasScoreboard={scoreboard === 'block'}
         />
       </div>
 
       {/* Both sheets live in the top layer, so where they sit in this grid decides nothing about where
           they paint — they are last because that is the reading order a reader who never opens one
           gets from the DOM. */}
-      <SettingsSheet
-        isOpen={openSheet === 'settings'}
-        onDismiss={dismissSheet}
-        isAudibilityShown={isAudibilityShown}
-        onAudibilityToggle={toggleAudibility}
-        isScoreboardOnPlate={isScoreboardOnPlate}
-        onScoreboardPositionToggle={toggleScoreboardPosition}
-        isDebugShown={isDebugShown}
-        onDebugToggle={toggleDebug}
-      />
+      <SettingsSheet isOpen={openSheet === 'settings'} onDismiss={dismissSheet} />
 
       <HelpSheet isOpen={openSheet === 'help'} onDismiss={dismissSheet} />
 
