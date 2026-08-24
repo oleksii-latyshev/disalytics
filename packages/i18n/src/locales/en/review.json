@@ -4,8 +4,6 @@
   "scoreboard": "Match score",
   "roundClock": "Time in round",
   "close": "Open another demo",
-  "settings": "Settings",
-  "help": "Help",
   "team": "{side} players",
   "feed": {
     "label": "Event feed",

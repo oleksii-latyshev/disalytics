@@ -12,17 +12,18 @@ interface Props {
   onFile: (file: File) => void;
   onSaved: (demo: SavedDemo) => void;
   onClose: () => void;
+  onShowAll: () => void;
   isDraggedOver: boolean;
 }
 
 /** The card's body. The card itself, and the screen around it, are `WayIn`'s. */
-export function DemoLibrary({ state, onFile, onSaved, onClose, isDraggedOver }: Props) {
+export function DemoLibrary({ state, onFile, onSaved, onClose, onShowAll, isDraggedOver }: Props) {
   switch (state.status) {
     case 'idle':
       return (
         <div className="flex flex-col gap-6">
           <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
-          <SavedDemos onOpen={onSaved} />
+          <SavedDemos onOpen={onSaved} onShowAll={onShowAll} />
         </div>
       );
     case 'restoring':
@@ -42,7 +43,7 @@ export function DemoLibrary({ state, onFile, onSaved, onClose, isDraggedOver }: 
         <div className="flex flex-col gap-6">
           <ParseFailure failure={state.failure} fileName={state.fileName} />
           <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
-          <SavedDemos onOpen={onSaved} />
+          <SavedDemos onOpen={onSaved} onShowAll={onShowAll} />
         </div>
       );
   }

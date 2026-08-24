@@ -13,9 +13,6 @@ export function megabytesOf(byteLength: number): number {
   return byteLength / BYTES_PER_MEGABYTE;
 }
 
-export function visibleDemos(
-  demos: readonly SavedDemo[],
-  isExpanded: boolean,
-): readonly SavedDemo[] {
-  return isExpanded ? demos : demos.slice(0, RECENT_COUNT);
+export function visibleDemos(demos: readonly SavedDemo[]): readonly SavedDemo[] {
+  return demos.slice(0, RECENT_COUNT);
 }

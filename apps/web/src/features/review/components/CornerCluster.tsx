@@ -49,7 +49,7 @@ export function CornerCluster({
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={t('review.settings')}
+        aria-label={t('common.settings')}
         onClick={onSettingsOpen}
       >
         <Settings aria-hidden="true" />
@@ -59,7 +59,7 @@ export function CornerCluster({
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={t('review.help')}
+        aria-label={t('common.help')}
         onClick={onHelpOpen}
       >
         <CircleQuestionMark aria-hidden="true" />
