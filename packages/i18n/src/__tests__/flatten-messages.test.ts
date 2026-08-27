@@ -7,7 +7,7 @@ const resources = {
   library: {},
   review: {},
   controls: {},
-  timeline: { roundsRemaining: '{count} left' },
+  timeline: { overview: 'Round outcomes' },
   filters: { blindDuration: { label: 'Blind duration', hint: 'Seconds' } },
   radar: {},
   settings: {},
@@ -19,7 +19,7 @@ describe('flattenResources', () => {
   it('prefixes every key with its namespace', () => {
     expect(flattenResources(resources)).toEqual({
       'common.tagline': 'Tagline',
-      'timeline.roundsRemaining': '{count} left',
+      'timeline.overview': 'Round outcomes',
       'filters.blindDuration.label': 'Blind duration',
       'filters.blindDuration.hint': 'Seconds',
     });

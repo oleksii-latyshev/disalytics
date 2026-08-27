@@ -172,7 +172,7 @@ bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
 bun run wasm:smoke           # call into the built binary — proves it runs, not that it compiled
                              # DISALYTICS_FIXTURE_DEMO also checks the shape it hands to JavaScript
 bun run mapdata:generate     # map constants from Valve overview files, plus the themed radars
-bun run i18n:check           # fail on missing/orphaned keys, regenerate the key union
+bun run i18n:check           # fail on a missing, orphaned or unread key; regenerate the union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
 bun run size                 # bundle + wasm sizes against budgets (§16)
 bun run preview              # build, then serve apps/web/dist through wrangler dev
@@ -823,7 +823,10 @@ term genuinely needs localising later, it moves — but the default is: leave it
 - Initial locale: persisted preference → `navigator.language` → `en`.
 - `<html lang>` updates when the locale changes.
 - Missing key: throws in development, falls back to `en` in production.
-- `bun run i18n:check` runs in CI and fails on missing or orphaned keys.
+- `bun run i18n:check` runs in CI and fails on missing or orphaned keys, and on a key no source
+  reads. A key assembled from a template — `errors.${stem}.title` — counts as read, one
+  interpolation standing for one segment. Tests are not sources: a key whose only reader is an
+  assertion is copy that ships and is never shown.
 
 ---
 
@@ -1163,7 +1166,7 @@ that stopped treating austerity as a virtue. Rules that constrain engineering:
 
 1. `bun run typecheck` passes
 2. `bun run check` passes with no new suppressions
-3. `bun run i18n:check` passes — no missing or orphaned keys in either locale
+3. `bun run i18n:check` passes — no missing, orphaned or unread keys in either locale
 4. `bun run test` passes; new logic in `demo-core` has unit tests; `cargo test` passes for crates
 5. No performance budget in §16 regressed
 6. No new runtime dependency without approval

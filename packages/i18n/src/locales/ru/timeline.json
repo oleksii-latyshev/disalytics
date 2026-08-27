@@ -1,5 +1,4 @@
 {
-  "roundsRemaining": "{count, plural, one {Остался # раунд} few {Осталось # раунда} many {Осталось # раундов} other {Осталось # раунда}}",
   "positionInRound": "Позиция в раунде {round, number}",
   "positionInWarmup": "Позиция в разминке",
   "overview": "Исходы раундов, плотность событий и разрыв в снаряжении",

@@ -312,7 +312,7 @@ component cannot produce an `aria-label`, a `document.title`, or a toast string.
 
 ```tsx
 <Text path="filters.blindDuration.label" as="label" />
-<Text path="timeline.roundsRemaining" values={{ count: 7 }} />
+<Text path="library.saved.rounds" values={{ count: 7 }} />
 
 const t = useT();
 <button aria-label={t('controls.togglePlayback')} />
@@ -421,7 +421,7 @@ thoroughness. See the table in `AGENTS.md` §11.
 ```bash
 bun run typecheck   # tsc over app, worker, and node configs
 bun run check       # biome — lint + format (check:fix to apply)
-bun run i18n:check  # key parity + regenerate the typed key union
+bun run i18n:check  # key parity, every key read + regenerate the typed key union
 bun run test        # vitest
 bun run build       # tsc -b && vite build
 cargo test -p demo-parser

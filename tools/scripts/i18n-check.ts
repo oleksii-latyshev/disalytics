@@ -1,11 +1,19 @@
 import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import { $ } from 'bun';
+import { collectReaders, unreadKeys } from './i18n-check/readers';
 
 const SOURCE_LOCALE = 'en';
 const TARGET_LOCALES = ['ru'];
 
 const LOCALES_DIR = 'packages/i18n/src/locales';
 const GENERATED_PATH = 'packages/i18n/src/generated/keys.ts';
+
+const SOURCE_ROOTS = ['apps', 'packages'];
+const SOURCE_FILE = /\.tsx?$/;
+// Tests are deliberately not sources. A key whose only reader is an assertion is copy that ships
+// and is never shown, which is the thing this check exists to find.
+const NOT_A_SOURCE = /\/(?:node_modules|dist)\/|\/__tests__\/|\.test\.tsx?$/;
 
 type MessageTree = { [segment: string]: string | MessageTree };
 
@@ -28,6 +36,21 @@ async function readNamespaces(locale: string): Promise<string[]> {
     .sort();
 }
 
+async function readSources(): Promise<string[]> {
+  const paths: string[] = [];
+
+  for (const root of SOURCE_ROOTS) {
+    for (const entry of await readdir(root, { withFileTypes: true, recursive: true })) {
+      const path = join(entry.parentPath, entry.name);
+      if (!entry.isFile() || !SOURCE_FILE.test(path)) continue;
+      if (NOT_A_SOURCE.test(path) || path === GENERATED_PATH) continue;
+      paths.push(path);
+    }
+  }
+
+  return Promise.all(paths.map((path) => Bun.file(path).text()));
+}
+
 async function readLocale(locale: string): Promise<Map<string, string>> {
   const messages = new Map<string, string>();
   for (const namespace of await readNamespaces(locale)) {
@@ -37,7 +60,7 @@ async function readLocale(locale: string): Promise<Map<string, string>> {
   return messages;
 }
 
-function report(title: string, keys: string[]): void {
+function report(title: string, keys: readonly string[]): void {
   if (keys.length === 0) return;
   console.error(`\n${title}`);
   for (const key of keys) console.error(`  ${key}`);
@@ -81,6 +104,29 @@ if (hasParityFailure) {
   process.exit(1);
 }
 
+const sources = await readSources();
+
+if (sources.length === 0) {
+  console.error(`\nNo source files under ${SOURCE_ROOTS.join(', ')}.`);
+  console.error('A check that scans nothing passes for the wrong reason — fix it.');
+  process.exit(1);
+}
+
+const unread = unreadKeys(
+  [...source.keys()],
+  collectReaders(sources, await readNamespaces(SOURCE_LOCALE)),
+);
+
+report(`Read by nothing in ${SOURCE_ROOTS.join(' or ')}:`, unread);
+
+if (unread.length > 0) {
+  console.error(
+    '\nA key nothing reads is copy that ships and is never shown. Delete it from every',
+  );
+  console.error('locale, or write the reader it was added for.');
+  process.exit(1);
+}
+
 const generated = Bun.file(GENERATED_PATH);
 const before = (await generated.exists()) ? await generated.text() : '';
 
@@ -94,4 +140,6 @@ if (before !== after) {
   process.exit(1);
 }
 
-console.log(`${source.size} keys, ${[SOURCE_LOCALE, ...TARGET_LOCALES].join(' + ')} in parity.`);
+console.log(
+  `${source.size} keys, ${[SOURCE_LOCALE, ...TARGET_LOCALES].join(' + ')} in parity, every one read.`,
+);
