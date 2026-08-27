@@ -87,6 +87,7 @@ export const TRANSLATION_KEYS = [
   'library.open.release',
   'library.open.title',
   'library.progress.cancel',
+  'library.progress.hiddenTab',
   'library.progress.label',
   'library.progress.percent',
   'library.progress.phase.decompress',

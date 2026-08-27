@@ -34,7 +34,25 @@ describe('reduceParse', () => {
       phase: 'parse',
       percent: 0,
       header: null,
+      wasHidden: false,
     });
+  });
+
+  it('remembers that the tab was hidden, and says so once however often it happens', () => {
+    const hidden = reduceParse(parsing(), { type: 'wentHidden' });
+
+    expect(hidden).toMatchObject({ status: 'parsing', wasHidden: true });
+    expect(reduceParse(hidden, { type: 'wentHidden' })).toBe(hidden);
+  });
+
+  it('leaves the note behind with the parse it belonged to', () => {
+    const hidden = reduceParse(parsing(), { type: 'wentHidden' });
+    const next = reduceParse(reduceParse(hidden, { type: 'closed' }), {
+      type: 'opened',
+      fileName: 'second.dem',
+    });
+
+    expect(reduceParse(next, { type: 'parseStarted' })).toMatchObject({ wasHidden: false });
   });
 
   it('skips the parse entirely when the cache had the demo', () => {

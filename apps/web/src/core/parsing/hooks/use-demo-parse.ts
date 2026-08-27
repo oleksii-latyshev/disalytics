@@ -37,6 +37,25 @@ async function keep(
   }
 }
 
+/**
+ * Watches for this tab going to the background while a parse is in flight. It belongs to the run
+ * and not to the app — a hidden tab costs nothing on any other screen — so the listener is created
+ * where the parse is and abandoned with it. Registration reads `document.hidden` on the spot as
+ * well: a tab already in the background when the worker starts is just as slow as one that leaves
+ * afterwards, and `visibilitychange` will not fire to say so.
+ */
+function watchVisibility(dispatch: Dispatch): AbortController {
+  const watching = new AbortController();
+  const record = () => {
+    if (document.hidden) dispatch({ type: 'wentHidden' });
+  };
+
+  record();
+  document.addEventListener('visibilitychange', record, { signal: watching.signal });
+
+  return watching;
+}
+
 async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Promise<void> {
   const cache = await openCacheFor(file);
   if (signal.aborted) return;
@@ -50,6 +69,7 @@ async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Prom
   }
 
   dispatch({ type: 'parseStarted' });
+  const watching = watchVisibility(dispatch);
 
   try {
     const demo = await parseDemo(file, {
@@ -66,6 +86,8 @@ async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Prom
     // An abort rejects with its own reason, which is not something to name on an error screen.
     if (signal.aborted) return;
     dispatch({ type: 'failed', failure: { kind: 'parse', code: errorCodeOf(thrown) } });
+  } finally {
+    watching.abort();
   }
 }
 

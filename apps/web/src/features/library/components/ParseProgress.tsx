@@ -10,6 +10,7 @@ interface Props {
   phase: ParsePhase;
   percent: number;
   header: MatchHeader | null;
+  wasHidden: boolean;
   onCancel: () => void;
 }
 
@@ -28,7 +29,7 @@ interface Props {
  * **Nothing here is a spinner.** What moves is a percentage, and §14 counts that as a reading rather
  * than motion, so it stands under `prefers-reduced-motion` as it stands anywhere else.
  */
-export function ParseProgress({ fileName, phase, percent, header, onCancel }: Props) {
+export function ParseProgress({ fileName, phase, percent, header, wasHidden, onCancel }: Props) {
   const t = useT();
 
   return (
@@ -74,6 +75,16 @@ export function ParseProgress({ fileName, phase, percent, header, onCancel }: Pr
           </p>
         )}
       </div>
+
+      {/* §10.3's hidden-tab explanation, and it appears only once this tab has actually been in the
+          background during this parse — a warning shown pre-emptively would describe a slowdown the
+          reader is not having. It carries no multiplier: the 5× in `docs/PARSER.md` §16 is one
+          machine's, and the browser's scheduler is not a number this product knows. */}
+      {wasHidden && (
+        <p role="status" className="text-13 text-ink-dim leading-prose">
+          <Text path="library.progress.hiddenTab" />
+        </p>
+      )}
 
       <Button type="button" variant="outline" onClick={onCancel}>
         <Text path="library.progress.cancel" />
