@@ -1637,7 +1637,7 @@ Non-negotiable, and never announced in the UI:
 
 Steps 1–5 are complete (#132, #136, #140, #147, #154), and so is step 11 (#194, #197). §5.4's event
 feed was the one thing step 5 left behind: its rows landed in #209 and its hover on the plate in
-#208. Step 6 is complete as of #114, step 7 is complete as of #226 and #247, and **step 8
+#208. Step 6 is complete as of #114, step 7 is complete as of #226 and #246, and **step 8
 is complete as of #236** — the way in is the shell, the grid, the dialog and the two screens a parse
 passes through. In dependency order:
 
@@ -1686,7 +1686,7 @@ passes through. In dependency order:
    last CT seat — the collision §9.1 recorded is settled there and in this document at once. The
    zoom's two keys are bound in `features/radar`, because the view they move is a box that lives
    there and reaching it from the stage would be a second source of truth for it. **§9.3's hot
-   corners landed in #247** and close the step: the cluster's region, and a timeline block that
+   corners landed in #246** and close the step: the cluster's region, and a timeline block that
    leaves after three seconds of stillness in fullscreen and comes back from the bottom band or from
    a `Tab`.
 8. **The way in** *(rewritten by #195)* — §10.1–§10.4 as this document now describes them, in
