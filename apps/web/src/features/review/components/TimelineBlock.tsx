@@ -11,6 +11,8 @@ interface Props {
   frame: number;
   locale: string;
   hasScoreboard: boolean;
+  /** Whether §9.3's stillness has sent the block off the bottom of the screen. */
+  isAway: boolean;
 }
 
 /**
@@ -31,6 +33,9 @@ interface Props {
  * the plate: the 32px are the block's own height, so §5.1's plate re-measures from 124px instead of
  * 92px and nothing is covered. Sending it over the plate instead is the reader's other position, and
  * the block goes back to 92px when they take it.
+ *
+ * **In fullscreen it leaves after three seconds of stillness** and the bottom 80px brings it back —
+ * `docs/DESIGN.md` §9.3, and `useHotCorners` is what decides. Out of fullscreen it never hides.
  */
 export function TimelineBlock({
   demo,
@@ -39,9 +44,26 @@ export function TimelineBlock({
   frame,
   locale,
   hasScoreboard,
+  isAway,
 }: Props) {
   return (
-    <div className="flex flex-col">
+    // §9.3's auto-hide, and it **keeps its space**: the cell's height is what §5.1 subtracts from
+    // the plate's axis, so a block that collapsed would resize the plate under the reader in the
+    // middle of a round. It leaves by `translate` and `opacity` and by nothing else — hard rule 9,
+    // and `translate` is the individual transform property Tailwind's `translate-y-*` actually
+    // writes: naming `transform` in the transition list leaves the slide to snap while the fade
+    // runs, which looks like a working animation until it is measured. The stage clips the box it
+    // slides into. `opacity` rather than the slide alone is what
+    // hides it: the stage's bottom padding is shorter than the block, so a 100% slide leaves a strip
+    // of it in the very band that reveals it. It takes no pointer while it is away, and keeps every
+    // control reachable by `Tab` — which is what brings it back. `prefers-reduced-motion` and
+    // §10.5's motion row are the global reset's, which takes the duration to zero and leaves the
+    // reveal instant rather than absent.
+    <div
+      className={`flex flex-col transition-[translate,opacity] duration-(--duration-base) ease-out ${
+        isAway ? 'pointer-events-none translate-y-full opacity-0' : ''
+      }`}
+    >
       {hasScoreboard && (
         // `z-1` is the join rather than a layer: the block's own hair runs in the 1px row directly
         // above its top edge, which is the brow's last row, and a later-painting sibling would draw

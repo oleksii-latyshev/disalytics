@@ -8,7 +8,7 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { KillLine } from '@/core/events';
 import type { CacheState } from '@/core/parsing';
 import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
@@ -24,6 +24,7 @@ import { MatchRadar } from '@/features/radar';
 import { MatchOverlay } from '@/features/timeline';
 import { useFullscreen } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
+import { useHotCorners } from '../hooks/use-hot-corners';
 import { CornerCluster } from './CornerCluster';
 import { EventFeed } from './EventFeed';
 import { HelpSheet } from './HelpSheet';
@@ -66,6 +67,11 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   // where it is set: a canvas hit test would put the one interaction on the screen that a keyboard
   // cannot reach, which DESIGN.md §9 rules out.
   const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
+
+  // DESIGN.md §9.3's two live regions. The block's own cell is what the hook watches for focus,
+  // because a block that has left the screen still holds every control the keyboard can reach.
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const corners = useHotCorners(fullscreen.isFullscreen, timelineRef);
 
   // The feed row the pointer or the keyboard is on, and the one thing on this screen that a *hover*
   // sets — DESIGN.md §5.4. It is discrete state for the same reason the selection is, and the feed
@@ -210,7 +216,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   );
 
   return (
-    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
+    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 overflow-hidden bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
       {/* The inset is this corner's own below `wide`, where the stage has none and the cards dock to
           the viewport edges: a docked card still holds its content off the edge with its own
           padding, and type with no card behind it would sit on the glass of the window. It has no
@@ -234,6 +240,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           widths rather than drawn somewhere it does not belong. */}
       <div className="flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4]">
         <CornerCluster
+          isRaised={corners.isClusterRaised}
           isFullscreen={fullscreen.isFullscreen}
           onFullscreenToggle={fullscreen.toggle}
           onSettingsOpen={() => showSheet('settings')}
@@ -280,7 +287,10 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           grid columns in the other without being written out twice. */}
       <div className="flex gap-3 [grid-area:3/1/4/2] split:contents">{teamCards}</div>
 
-      <div className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]">
+      {/* The cell keeps its height whether or not the block is in it — §5.1's plate is sized from
+          this row, so a block that collapsed would resize the plate under the reader mid-match. The
+          ref is how §9.3's hide knows to stand aside for a `Tab` that has landed inside. */}
+      <div ref={timelineRef} className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]">
         <TimelineBlock
           demo={demo}
           transport={transport}
@@ -288,6 +298,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           frame={frame}
           locale={locale}
           hasScoreboard={scoreboard === 'block'}
+          isAway={corners.isTimelineAway}
         />
       </div>
 
