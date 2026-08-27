@@ -8,6 +8,7 @@ import {
   plateBounds,
   plateGeometry,
   plateView,
+  radarPointAt,
   readPlateBounds,
   readPlateGeometry,
   resetView,
@@ -160,5 +161,46 @@ describe('resetView', () => {
     resetView(view);
 
     expect(view).toEqual({ zoom: MIN_ZOOM, panX: 0, panY: 0 });
+  });
+});
+
+describe('radarPointAt', () => {
+  // The readout has to answer for the map the layers drew, so the only property worth asserting is
+  // that it undoes `readPlateGeometry` exactly — a second formula that merely looks like the
+  // inverse is how a panned plate ends up reporting the coordinates of an unpanned one.
+  it('is readPlateGeometry run backwards, at every zoom and pan', () => {
+    const views = [
+      { zoom: MIN_ZOOM, panX: 0, panY: 0 },
+      { zoom: 2, panX: -100, panY: -60 },
+      { zoom: MAX_ZOOM, panX: -640, panY: -320 },
+    ];
+
+    const geometry = plateGeometry();
+
+    for (const view of views) {
+      readPlateGeometry(view, PLATE, RADAR_SIZE, geometry);
+
+      for (const radar of [0, 137, 512, 1024]) {
+        // `project` is the x axis only, and the two pans differ — which is the asymmetry a readout
+        // that reuses one offset for both axes gets wrong.
+        const x = radar * geometry.scale + geometry.offsetX;
+        const y = radar * geometry.scale + geometry.offsetY;
+        const point = radarPointAt(view, x, y, PLATE, RADAR_SIZE);
+
+        expect(point.x, `x at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
+        expect(point.y, `y at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
+      }
+    }
+  });
+
+  it("reads the plate's own corner as the map's corner while nothing is panned", () => {
+    expect(radarPointAt(plateView(), 0, 0, PLATE, RADAR_SIZE)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('answers outside the map for a pointer past its edge, rather than clamping to it', () => {
+    const point = radarPointAt(plateView(), PLATE.width + 64, -32, PLATE, RADAR_SIZE);
+
+    expect(point.x).toBeGreaterThan(RADAR_SIZE);
+    expect(point.y).toBeLessThan(0);
   });
 });

@@ -5,20 +5,14 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
-import {
-  type MapOverview,
-  RADAR_IMAGE_SIZE,
-  type RadarPoint,
-  radarAssetPath,
-} from '@disa/map-data';
+import { type MapOverview, type RadarPoint, radarAssetPath } from '@disa/map-data';
 import { Button } from '@disa/ui';
 import { Minus, Plus } from 'lucide-react';
-import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KillLine } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
-import { useShortcuts } from '@/core/shortcuts';
 import { useFontReady } from '@/shared/hooks';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
@@ -27,16 +21,8 @@ import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
 import { playerTokens } from '../helpers/token-layer';
 import { utilityLayer } from '../helpers/utility-layer';
-import {
-  MAX_ZOOM,
-  MIN_ZOOM,
-  panBy,
-  plateView,
-  resetView,
-  ZOOM_STEP,
-  zoomAbout,
-  zoomByStep,
-} from '../helpers/view';
+import { MAX_ZOOM, MIN_ZOOM, plateView, ZOOM_STEP } from '../helpers/view';
+import { usePlateNavigation } from '../hooks/use-plate-navigation';
 import { useRadarImage } from '../hooks/use-radar-image';
 import { RadarDebug } from './RadarDebug';
 
@@ -106,12 +92,10 @@ export function RadarView({
   const hoveredKillRef = useRef<KillLine | null>(hoveredKill);
 
   // How the reader is looking at the plate, in a box for the same reason. Zoom is view state and
-  // never playback state — DESIGN.md §6.3 — so it survives a scrub, a round jump and a pause, and
-  // a drag repaints the layers that exist rather than rebuilding them. `zoom` beside it is a copy
-  // the `+`/`−` pair reads to know when it has run out of range; nothing draws from it.
+  // never playback state — DESIGN.md §6.3 — so it survives a scrub, a round jump and a pause. The
+  // box is created here rather than inside `usePlateNavigation` because the layers below read it
+  // too, and it has to exist before they are built.
   const viewRef = useRef(plateView());
-  const panRef = useRef({ isPanning: false, x: 0, y: 0 });
-  const [zoom, setZoom] = useState(MIN_ZOOM);
 
   // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
   // the clock moves. The clock itself is read inside the layer, once per animation frame.
@@ -177,111 +161,17 @@ export function RadarView({
     repaint();
   }, [hoveredKill, repaint]);
 
-  // Measured in the handler rather than kept in a ref: a pointer event is not the frame path, and
-  // the plate's box is the one thing a resize can change without telling this component.
-  const plateBox = useCallback(
-    () => canvasRef.current?.getBoundingClientRect() ?? null,
-    [canvasRef],
-  );
-
-  const zoomStep = useCallback(
-    (factor: number) => {
-      const box = plateBox();
-      if (box === null) return;
-
-      zoomByStep(viewRef.current, factor, box);
-      setZoom(viewRef.current.zoom);
-      repaint();
-    },
-    [plateBox, repaint],
-  );
-
-  // DESIGN.md §9.1's `+` and `−`, bound here rather than on the stage: the view they move is this
-  // component's own box, and reaching it from there would mean a second source of truth for the
-  // zoom. What the second call does not get for free is the stage's suspension, which is why that
-  // arrives as a prop — a plate that zooms behind an open sheet is the failure this avoids.
-  useShortcuts(
-    {
-      zoomIn: () => zoomStep(ZOOM_STEP),
-      zoomOut: () => zoomStep(1 / ZOOM_STEP),
-    },
-    { isSuspended },
-  );
-
-  // Non-passive, because a wheel over the plate zooms instead of scrolling the page and only a
-  // `preventDefault` says so. React's own `onWheel` is delegated and cannot promise that.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas === null) return;
-
-    const handleWheel = (event: WheelEvent): void => {
-      event.preventDefault();
-
-      const box = canvas.getBoundingClientRect();
-      if (box.width === 0) return;
-
-      zoomAbout(
-        viewRef.current,
-        event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
-        event.clientX - box.left,
-        event.clientY - box.top,
-        box,
-      );
-      setZoom(viewRef.current.zoom);
-      repaint();
-    };
-
-    canvas.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => canvas.removeEventListener('wheel', handleWheel);
-  }, [canvasRef, repaint]);
-
-  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {
-    if (viewRef.current.zoom === MIN_ZOOM) return;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    panRef.current = { isPanning: true, x: event.clientX, y: event.clientY };
-    // Written straight onto the element: a state change per drag would render the plate's whole
-    // component to change a cursor.
-    event.currentTarget.dataset.panning = 'true';
-  }
-
-  function endPan(event: PointerEvent<HTMLCanvasElement>): void {
-    panRef.current.isPanning = false;
-    delete event.currentTarget.dataset.panning;
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
-    const box = event.currentTarget.getBoundingClientRect();
-    if (box.width === 0) return;
-
-    const pan = panRef.current;
-    if (pan.isPanning) {
-      panBy(viewRef.current, event.clientX - pan.x, event.clientY - pan.y, box);
-      pan.x = event.clientX;
-      pan.y = event.clientY;
-      repaint();
-      return;
-    }
-
-    if (!isDebugShown) return;
-
-    // The readout answers for the world under the pointer, so it reads through the same zoom and
-    // pan the layers draw with — DESIGN.md §9.2.
-    const { zoom: current, panX, panY } = viewRef.current;
-    const pixelsPerRadarPixel = (box.width / RADAR_IMAGE_SIZE) * current;
-
-    setPointer({
-      x: (event.clientX - box.left - panX) / pixelsPerRadarPixel,
-      y: (event.clientY - box.top - panY) / pixelsPerRadarPixel,
-    });
-  }
-
-  function handleDoubleClick(): void {
-    resetView(viewRef.current);
-    setZoom(MIN_ZOOM);
-    repaint();
-  }
+  // Everything the reader can do to move the plate. The coordinate readout is the only consumer of
+  // a hover, so the callback is handed over only while the overlay is on — DESIGN.md §9.2. Leaving
+  // the plate stays here rather than going with it: the readout has to be cleared whether or not it
+  // was being fed, or switching the overlay back on would show the point the pointer left from.
+  const navigation = usePlateNavigation({
+    view: viewRef,
+    canvasRef,
+    repaint,
+    isSuspended,
+    onHover: isDebugShown ? setPointer : undefined,
+  });
 
   // The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller of
   // the two axes the cell offers it, which is what the container units read. Everything else on the
@@ -294,13 +184,9 @@ export function RadarView({
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
         className={`aspect-square w-[min(100cqi,100cqb)] touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
-          zoom > MIN_ZOOM ? 'cursor-grab' : ''
+          navigation.zoom > MIN_ZOOM ? 'cursor-grab' : ''
         }`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={endPan}
-        onPointerCancel={endPan}
-        onDoubleClick={handleDoubleClick}
+        {...navigation.canvasProps}
         onPointerLeave={() => setPointer(null)}
       />
 
@@ -315,8 +201,8 @@ export function RadarView({
           variant="ghost"
           size="icon"
           aria-label={t('radar.zoomIn')}
-          disabled={zoom >= MAX_ZOOM}
-          onClick={() => zoomStep(ZOOM_STEP)}
+          disabled={navigation.zoom >= MAX_ZOOM}
+          onClick={() => navigation.zoomBy(ZOOM_STEP)}
         >
           <Plus aria-hidden="true" />
         </Button>
@@ -326,8 +212,8 @@ export function RadarView({
           variant="ghost"
           size="icon"
           aria-label={t('radar.zoomOut')}
-          disabled={zoom <= MIN_ZOOM}
-          onClick={() => zoomStep(1 / ZOOM_STEP)}
+          disabled={navigation.zoom <= MIN_ZOOM}
+          onClick={() => navigation.zoomBy(1 / ZOOM_STEP)}
         >
           <Minus aria-hidden="true" />
         </Button>

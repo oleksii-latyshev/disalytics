@@ -77,6 +77,28 @@ export function zoomByStep(view: PlateView, factor: number, size: CanvasSize): v
 }
 
 /**
+ * The radar-image coordinate under a point on the canvas — `readPlateGeometry` run backwards, so a
+ * readout answers for the world the layers actually drew rather than for the plate at rest.
+ *
+ * A fresh object, unlike everything below it: this answers a pointer event, and a pointer event is
+ * not the frame path.
+ */
+export function radarPointAt(
+  view: PlateView,
+  x: number,
+  y: number,
+  size: CanvasSize,
+  radarImageSize: number,
+): { x: number; y: number } {
+  const pixelsPerRadarPixel = (size.width / radarImageSize) * view.zoom;
+
+  return {
+    x: (x - view.panX) / pixelsPerRadarPixel,
+    y: (y - view.panY) / pixelsPerRadarPixel,
+  };
+}
+
+/**
  * What a layer needs to put a radar-image coordinate on the canvas. Written into the caller's own
  * object rather than returned as a fresh one: this is read once per layer per animation frame, and
  * nothing on the way to the canvas allocates.
