@@ -1,3 +1,4 @@
+import { MAP_OVERVIEWS } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import { visionRadius, visionWedge } from '../helpers/vision';
 
@@ -65,12 +66,18 @@ function newRecorder(): Recorder {
   return recorder;
 }
 
-const OVERVIEW = { scale: 5 } as Parameters<typeof visionRadius>[0];
+const dust2 = MAP_OVERVIEWS.de_dust2;
 
 describe('visionRadius', () => {
   it('converts the cone reach from world units to device pixels', () => {
-    expect(visionRadius(OVERVIEW, 1)).toBe(200);
-    expect(visionRadius(OVERVIEW, 2)).toBe(400);
+    const oneToOne = visionRadius(dust2, 1);
+
+    expect(oneToOne).toBe(1000 / dust2.scale);
+    expect(visionRadius(dust2, 2)).toBe(oneToOne * 2);
+  });
+
+  it('gives the plate no cone to draw before it has been sized', () => {
+    expect(visionRadius(dust2, 0)).toBe(0);
   });
 });
 
