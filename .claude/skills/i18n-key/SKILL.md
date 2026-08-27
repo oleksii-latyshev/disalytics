@@ -73,7 +73,7 @@ Russian.
 
 ```tsx
 <Text path="filters.blindDuration.label" as="label" />
-<Text path="timeline.roundsRemaining" values={{ count: 7 }} />
+<Text path="library.saved.rounds" values={{ count: 7 }} />
 
 const t = useT();
 <button aria-label={t('controls.togglePlayback')} />
@@ -108,7 +108,7 @@ Error copy states what happened and what to do, in the interface's voice, withou
 ## Step 6 — verify
 
 ```bash
-bun run i18n:check    # key parity + regenerates the typed key union
+bun run i18n:check    # key parity, every key read + regenerates the typed key union
 bun run typecheck
 ```
 

@@ -110,7 +110,7 @@ bun run build          # tsc --noEmit && vite build -> apps/web/dist
 bun run typecheck      # tsc --noEmit across the workspace, then tools/scripts
 bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest
-bun run i18n:check     # en/ru parity + regenerates the typed key union
+bun run i18n:check     # en/ru parity, every key read + regenerates the typed key union
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
 bun run repo:labels    # sync the GitHub label taxonomy (idempotent)
 bun run repo:milestones

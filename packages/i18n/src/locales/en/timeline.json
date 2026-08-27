@@ -1,5 +1,4 @@
 {
-  "roundsRemaining": "{count, plural, one {# round left} other {# rounds left}}",
   "positionInRound": "Position in round {round, number}",
   "positionInWarmup": "Position in the warm-up",
   "overview": "Round outcomes, event density and the equipment gap",

@@ -1,5 +1,4 @@
 {
-  "map": "Map",
   "open": {
     "title": "Open a demo",
     "hint": "Drop a .dem file here, or choose one from your match history folder.",

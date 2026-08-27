@@ -16,7 +16,7 @@ say so explicitly rather than quietly omitting it.
 ```bash
 bun run typecheck
 bun run check          # biome; no new suppressions
-bun run i18n:check     # no missing or orphaned keys in either locale
+bun run i18n:check     # no missing, orphaned or unread keys in either locale
 bun run test
 bun run build
 bun run size           # budgets in AGENTS.md §16
