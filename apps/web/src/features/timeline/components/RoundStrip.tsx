@@ -148,6 +148,8 @@ export function RoundStrip({ demo, transport }: Props) {
       {naming !== undefined && (
         // Aria-hidden because the pill's own name already says all of this — §9.2 permits the
         // tooltip as a shortcut to what is reachable without a pointer, not as a second voice.
+        // That is also what leaves the two `:` at `--ink-faint`: a separator the reader never
+        // hears is a mark, and §14's floor is about text.
         //
         // `--glass-raised` without a blur behind it: §2.3 pays for a `backdrop-filter` only where
         // the ground is static, and §7.1's playhead is moving under this one every frame.

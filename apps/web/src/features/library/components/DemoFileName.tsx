@@ -8,7 +8,7 @@ interface Props {
  */
 export function DemoFileName({ fileName }: Props) {
   return (
-    <span className="numeric block truncate text-12 text-ink-faint" title={fileName}>
+    <span className="numeric block truncate text-12 text-ink-dim" title={fileName}>
       {fileName}
     </span>
   );

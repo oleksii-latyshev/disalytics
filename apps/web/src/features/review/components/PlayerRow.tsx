@@ -98,12 +98,12 @@ export function PlayerRow({
         />
 
         {/* Truncation is the last resort §11 allows, and it carries the full name with it. */}
-        <span className={`truncate font-narrow text-13 ${isAlive ? 'text-ink' : 'text-ink-faint'}`}>
+        <span className={`truncate font-narrow text-13 ${isAlive ? 'text-ink' : 'text-ink-dim'}`}>
           {player.name}
         </span>
 
         {!isAlive && (
-          <span className="label-dense ms-auto shrink-0 text-ink-faint">
+          <span className="label-dense ms-auto shrink-0 text-ink-dim">
             <Text path="review.player.dead" />
           </span>
         )}

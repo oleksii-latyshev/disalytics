@@ -45,7 +45,7 @@ export function SavedDemos({ onEnter, onShowAll }: Props) {
         </Button>
       )}
 
-      <p className="text-12 text-ink-faint leading-prose">
+      <p className="text-12 text-ink-dim leading-prose">
         <Text path="library.saved.note" />
       </p>
 

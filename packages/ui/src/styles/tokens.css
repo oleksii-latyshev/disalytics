@@ -10,6 +10,8 @@
   --color-line-soft: #1c2025;
   --color-ink: #f4f6f8;
   --color-ink-dim: #98a1ac;
+  /* Marks, ticks, separators and disabled controls — never text. It reads 3.63:1 at best, under
+     the 4.5:1 floor on every surface in this file — DESIGN.md §14. */
   --color-ink-faint: #616a75;
 
   /* A card picks its grade by what it must let through — DESIGN.md §2.2: the stage → panel,

@@ -77,6 +77,8 @@ export function Scoreboard({ demo, frame, locale, position }: Props) {
         </span>
         <span className={`text-ct ${type.side}`}>CT</span>
         <span className="text-ct">{score.CT}</span>
+        {/* A separator rather than a word — hidden from the reader, so §14's floor for text does
+            not reach it. */}
         <span aria-hidden="true" className="text-ink-faint">
           :
         </span>

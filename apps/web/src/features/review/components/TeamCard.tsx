@@ -63,7 +63,7 @@ export function TeamCard({
             className="min-w-0 flex-1 split:flex-none"
           >
             {player === undefined ? (
-              <p className="px-2 py-1.5 text-13 text-ink-faint">
+              <p className="px-2 py-1.5 text-13 text-ink-dim">
                 <Text path="review.player.empty" />
               </p>
             ) : (
