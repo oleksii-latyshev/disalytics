@@ -1216,6 +1216,35 @@ without a click:
 Hot corners are an accelerator and never the only route: everything they reveal is reachable by
 `Tab` and has a keyboard binding.
 
+**The block is taken by stillness and given back by the edge**, which is not the usual rule and is
+deliberate: three seconds without a pointer move sends it away, and a nudge in the middle of the
+stage does not bring it back — only the bottom band does, or a `Tab` that lands inside it. A control
+strip that flashes over the match every time the reader's hand brushes the mouse is the thing this
+section exists to stop, and "any movement reveals" is that behaviour with a timer on it. Focus is
+the exception because it has to be: a reader who has tabbed into a block they cannot see has been
+handed a corner instead of a control, so the block returns on `focusin` and cannot leave while the
+focus is still inside it.
+
+**It leaves by `transform` and `opacity` and keeps its space.** §5.1 sizes the plate out of the row
+this block sits in, so a block that collapsed would resize the plate under the reader in the middle
+of a round — measured either way at 1512×949, the plate is **765** and the row is **124** whether
+the block is there or gone. Opacity is what actually hides it rather than the slide: the stage's
+bottom padding is shorter than the block, so a 100% translation leaves a strip of it standing in the
+very band that reveals it. The stage clips its own box, because a transform still counts toward the
+scrollable overflow of every ancestor.
+
+**The top-right region is the quadrant §5.4 names and not a box in pixels.** The cluster is an
+ambient reveal rather than a target: a corner the reader has to aim at is worse than one that is
+always lit, and the fade it triggers is the same `--ink-faint` → `--ink` that hover and focus have
+always driven — one destination reached three ways. Colour is the property §5.4 asks for; it neither
+triggers layout nor runs on the frame channel, and the block below, which does move, moves by
+`transform` alone.
+
+Both regions are compared against what they last were, so a pointer crossing the stage re-renders it
+twice rather than at the pointer's own rate. Measured against `main` with the pointer sweeping the
+stage all the way through playback — three passes of 399 frames an arm — **0 frames over 16.7 ms in
+every pass on both**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms.
+
 ---
 
 ## 10. Screens
@@ -1608,7 +1637,7 @@ Non-negotiable, and never announced in the UI:
 
 Steps 1–5 are complete (#132, #136, #140, #147, #154), and so is step 11 (#194, #197). §5.4's event
 feed was the one thing step 5 left behind: its rows landed in #209 and its hover on the plate in
-#208. Step 6 is complete as of #114, step 7 is down to §9.3's hot corners as of #226, and **step 8
+#208. Step 6 is complete as of #114, step 7 is complete as of #226 and #246, and **step 8
 is complete as of #236** — the way in is the shell, the grid, the dialog and the two screens a parse
 passes through. In dependency order:
 
@@ -1657,8 +1686,9 @@ passes through. In dependency order:
    last CT seat — the collision §9.1 recorded is settled there and in this document at once. The
    zoom's two keys are bound in `features/radar`, because the view they move is a box that lives
    there and reaching it from the stage would be a second source of truth for it. **§9.3's hot
-   corners are what is left of this step**; they are a pointer feature with no keyboard in them and
-   nothing waits on them.
+   corners landed in #246** and close the step: the cluster's region, and a timeline block that
+   leaves after three seconds of stillness in fullscreen and comes back from the bottom band or from
+   a `Tab`.
 8. **The way in** *(rewritten by #195)* — §10.1–§10.4 as this document now describes them, in
    `apps/web/src/features/library`. **No `ogl` and no vendored backgrounds**: the two WebGL screens
    are deferred and the dimmed radar backdrop already ships, so this step adds no dependency at all.

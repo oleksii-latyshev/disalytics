@@ -6,6 +6,8 @@ import { Button } from '@disa/ui';
 import { CircleQuestionMark, Maximize, Minimize, Settings } from 'lucide-react';
 
 interface Props {
+  /** Whether §9.3's top-right region has the pointer in it. */
+  isRaised: boolean;
   isFullscreen: boolean;
   onFullscreenToggle: () => void;
   onSettingsOpen: () => void;
@@ -19,6 +21,12 @@ interface Props {
  * button here is reachable by `Tab` from anywhere, because a control that needs a pointer to appear
  * has no keyboard at all.
  *
+ * **The corner is the same fade as the hover, reached from further away.** `hover` and
+ * `focus-within` are still the two that answer a reader who went straight for a button; the region
+ * is what answers the one who has not decided yet, and all three end on the same `--ink`. Colour is
+ * the property §5.4 names, and it neither triggers layout nor runs on the frame channel — the block
+ * below, which does move, moves by `transform` alone.
+ *
  * It carried seven for four PRs (#147, #196, #199), because deleting the top bar deleted the only
  * route out of a demo and the only audibility toggle, and §10.5's settings sheet did not exist to
  * take them. #151 is the other half of that trade: the three settings moved into the sheet, leaving
@@ -26,6 +34,7 @@ interface Props {
  * and leaving a match is not a setting — and no button on this strip is `disabled` any more.
  */
 export function CornerCluster({
+  isRaised,
   isFullscreen,
   onFullscreenToggle,
   onSettingsOpen,
@@ -34,7 +43,11 @@ export function CornerCluster({
   const t = useT();
 
   return (
-    <div className="glass-panel flex items-center gap-1 rounded-float p-1 text-ink-faint transition-colors duration-(--duration-micro) ease-out focus-within:text-ink hover:text-ink">
+    <div
+      className={`glass-panel flex items-center gap-1 rounded-float p-1 transition-colors duration-(--duration-micro) ease-out focus-within:text-ink hover:text-ink ${
+        isRaised ? 'text-ink' : 'text-ink-faint'
+      }`}
+    >
       <Button
         type="button"
         variant="ghost"
