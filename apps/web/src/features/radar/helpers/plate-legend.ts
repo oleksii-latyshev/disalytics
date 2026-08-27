@@ -10,8 +10,8 @@ import {
 } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
 import { haloStroke } from './labels';
-import { DEAD_ALPHA } from './layers';
 import {
+  DEAD_ALPHA,
   DEAD_RADIUS_FRACTION,
   drawAudibleRing,
   drawBlindDisc,

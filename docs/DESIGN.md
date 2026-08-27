@@ -1544,10 +1544,13 @@ functions, so a mark's colour, its opacity and its geometry all arrive from the 
 on the plate, and the legend chooses nothing but where in a 56×28 box a mark sits and how far
 through its own life it is caught. §5.4's three kill marks are named here too, which is the promise
 that section makes, and §6.1's weapon, walking and firing marks joined them with #164 — seventeen
-entries rather than fourteen. **The vision wedge is the one §6 mark the legend will not draw**: its
-geometry sits inside the token layer around a gradient the layer caches across frames, and lifting
-it out for a picture would move a frame path — so the entry for a selected player names the cone in
-words instead.
+entries rather than fourteen. **The vision wedge is the one §6 mark the legend does not draw**, and
+the reason has changed: its geometry used to sit inside the token layer around a gradient that layer
+cached across frames, so lifting it out for a picture would have moved a frame path. It now lives in
+`features/radar/helpers/vision.ts` and the cache moved with it — a caller builds a wedge of its own,
+with a cache of its own, and the layer's is untouched. So the entry for a selected player still
+names the cone in words, but that is now a choice about the swatch rather than something the
+renderer forbids.
 
 ---
 

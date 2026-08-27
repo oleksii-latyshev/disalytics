@@ -20,11 +20,12 @@ import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { useShortcuts } from '@/core/shortcuts';
 import { useFontReady } from '@/shared/hooks';
+import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { killLineLayer } from '../helpers/kill-line';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
-import { playerTokens, radarBackdrop } from '../helpers/layers';
 import { busiestLevelIndex, levelAt } from '../helpers/levels';
+import { playerTokens } from '../helpers/token-layer';
 import { utilityLayer } from '../helpers/utility-layer';
 import {
   MAX_ZOOM,
