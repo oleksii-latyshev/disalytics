@@ -35,6 +35,7 @@ export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDrag
           phase={state.phase}
           percent={state.percent}
           header={state.header}
+          wasHidden={state.wasHidden}
           onCancel={onClose}
         />
       );

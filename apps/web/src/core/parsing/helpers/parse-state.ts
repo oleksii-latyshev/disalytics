@@ -25,6 +25,12 @@ export type ParseState =
       phase: ParsePhase;
       percent: number;
       header: MatchHeader | null;
+      /**
+       * Whether this tab has been hidden at any point during *this* parse. A backgrounded renderer
+       * is confined to efficiency cores and the same demo takes multiples of the time
+       * (`docs/PARSER.md` §16), so the screen owes the reader the reason once it has happened.
+       */
+      wasHidden: boolean;
     }
   | {
       status: 'ready';
@@ -45,6 +51,7 @@ export type ParseEvent =
   | { type: 'restored'; demo: ParsedDemo; roundIndex: number }
   | { type: 'parseStarted' }
   | { type: 'progressed'; phase: ParsePhase; percent: number }
+  | { type: 'wentHidden' }
   | { type: 'headerRead'; header: MatchHeader }
   | { type: 'succeeded'; demo: ParsedDemo; caching: boolean }
   | { type: 'stored'; persistence: PersistenceStatus }
@@ -65,7 +72,14 @@ function reduceRestoring(fileName: string, event: ParseEvent): ParseState | null
   }
 
   if (event.type === 'parseStarted') {
-    return { status: 'parsing', fileName, phase: 'parse', percent: 0, header: null };
+    return {
+      status: 'parsing',
+      fileName,
+      phase: 'parse',
+      percent: 0,
+      header: null,
+      wasHidden: false,
+    };
   }
 
   // Only a demo opened from the list can fail here: a file falls through to a parse instead, and a
@@ -84,6 +98,10 @@ function reduceParsing(
   switch (event.type) {
     case 'progressed':
       return { ...state, phase: event.phase, percent: event.percent };
+    // Nothing once it is set: the note is about the run rather than about where the tab is now, and
+    // returning the same state is what keeps every later trip to the background off the screen.
+    case 'wentHidden':
+      return state.wasHidden ? null : { ...state, wasHidden: true };
     case 'headerRead':
       return { ...state, header: event.header };
     case 'succeeded':

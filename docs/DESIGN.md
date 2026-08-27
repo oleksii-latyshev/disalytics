@@ -1394,8 +1394,8 @@ something the reader started rather than somewhere they went.
   reader's words. "Reading the demo", "Following the players", "Collecting the rounds" — never
   "Initializing WASM module".
 - **The card fills in as the parser learns**: file name first, then map, then player count.
-- **Nothing here is a spinner**, and the hidden-tab explanation (#68) belongs on this screen and
-  nowhere else — a backgrounded tab parses ~5× slower and the reader deserves to know that before
+- **Nothing here is a spinner**, and the hidden-tab explanation belongs on this screen and nowhere
+  else — a backgrounded tab parses several times slower and the reader deserves to know that before
   they conclude the product is broken.
 - Cancel is always available and says "Cancel parse".
 
@@ -1407,6 +1407,16 @@ section asks for: one number, large, in the only place §3 lets `44` be spent. T
 role rides on the percentage itself, so nothing is lost to a screen reader — and because that role
 names its element by `aria-label` and never by its content, **the stage line is a sibling of the
 number and not a child of it**. Inside, it would be read by nobody.
+
+**The hidden-tab note is earned, and it carries no number.** It appears under the card's facts once
+this tab has actually been in the background during *this* parse, and never before — a warning shown
+pre-emptively describes a slowdown the reader is not having, and would read as an excuse made in
+advance. The multiplier stays out of the copy: `docs/PARSER.md` §16 measured ~5× on one machine
+against one fixture, §11 still has no model of slow hardware generally, and a figure on screen is a
+promise the product cannot keep. The listener lives with the parse rather than with the app — a tab
+in the background costs nothing on any other screen — and it reads `document.hidden` when it
+registers as well as on every change, because a tab that was already hidden when the worker started
+is just as slow and `visibilitychange` will never fire to say so.
 
 **There are two stages and not three.** The three in the bullet above are the voice rather than the
 list: `ParsePhase` is `decompress` and `parse`, because the demo's three passes are upstream's and
