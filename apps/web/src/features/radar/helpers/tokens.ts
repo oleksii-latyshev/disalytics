@@ -12,6 +12,8 @@ export const TOKEN_MAX_RADIUS_PX = 10;
 
 /** What a token has shrunk to once its player is a body rather than a player: half its own size. */
 export const DEAD_RADIUS_FRACTION = 0.5;
+/** And what it has faded to — DESIGN.md §6.1. The two are read together wherever a body is drawn. */
+export const DEAD_ALPHA = 0.5;
 
 const NEEDLE_WIDTH_PX = 2;
 const NEEDLE_LENGTH_PX = 10;
