@@ -136,7 +136,7 @@ function MatchFigure({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: numbe
           </li>
         </ul>
 
-        <p className="text-13 text-ink-faint leading-prose">
+        <p className="text-13 text-ink-dim leading-prose">
           <Text path="timeline.match.caption" />
         </p>
       </figcaption>

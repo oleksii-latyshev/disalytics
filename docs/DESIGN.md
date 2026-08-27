@@ -99,7 +99,7 @@ enough that the plate's own colour is the only hue in the frame.
 --line-soft: #1C2025;   /* internal dividers */
 --ink:       #F4F6F8;   /* primary text */
 --ink-dim:   #98A1AC;   /* secondary text and labels */
---ink-faint: #616A75;   /* disabled, axis ticks, audibility rings — never body text */
+--ink-faint: #616A75;   /* disabled, ticks, marks, separators — never text */
 ```
 
 Measured, not asserted:
@@ -137,6 +137,11 @@ yellow the `blue` theme keeps saturated on purpose, `#FFCA3D`) `--glass-panel` c
 `#6A5724`, where `--ink` still reads **6.46:1** but `--ink-dim` collapses to **2.67:1**. Secondary
 text in that situation is secondary by size and weight, never by ink level. This is the same
 conclusion #119 reached against the old palette, and it survives the new one.
+
+**The `sheet` grade is not in that trap**, which is what lets §10.6's help text and §7.3's
+overlay caption be secondary by ink at all: over the same yellow, `--glass-sheet` composites to
+`#262011`, where `--ink` reads **14.94:1** and `--ink-dim` **6.19:1**. A sheet covers the screen,
+so it is the one grade that is over the plate by design rather than by accident.
 
 ### 2.3 Blur is allowed now, and §1's fourth principle is what pays for it
 
@@ -596,7 +601,7 @@ Five rows per card, each row carrying, in this order:
 
 | Field | Source | Note |
 |---|---|---|
-| name | `PlayerInfo.name` | Roboto Condensed 13, `--ink`; `--ink-faint` when dead |
+| name | `PlayerInfo.name` | Roboto Condensed 13, `--ink`; `--ink-dim` when dead, where the chip beside it says so in words — §14 rules that ink off text |
 | health | `TickTrack.health` | a 3px bar in the side colour, plus the number in Plex Mono 12 |
 | armour | **new column** | a 3px bar under health in `--ink-dim`; a helmet glyph when the flag is set |
 | money | **new column** | Plex Mono 12, `--ink-dim`, prefixed by the locale's currency rule |
@@ -1613,9 +1618,15 @@ Non-negotiable, and never announced in the UI:
 - **Fully keyboard operable**, per §9.1, including everything the hot corners reveal.
 - **Visible focus ring on every interactive element** — 2px `--focus`, never `outline: none`.
 - **Body text meets 4.5:1.** `--ink-dim` measures 7.62:1 on `--surface-0` and 7.39:1 on
-  `--glass-panel` over it. On glass over plate pixels it fails (2.67:1 at worst), which §2.2
-  resolves by ruling `--ink-dim` off those surfaces rather than by thickening the glass.
-- **`--ink-faint` never carries text.** 3.63:1 at best.
+  `--glass-panel` over it. On a **panel** over plate pixels it fails (2.67:1 at worst), which §2.2
+  resolves by ruling `--ink-dim` off those surfaces rather than by thickening the glass; on a
+  **sheet** over the same pixels it holds at 6.19:1, which is why §10.6 and §7.3's overlay may
+  spend it.
+- **`--ink-faint` never carries text.** 3.63:1 at best. Three things may sit at it and none of
+  them is text: a mark (an axis tick, a muted glyph, the audibility ring, §6.1's dead token),
+  a separator the reader never hears (the `·` between two facts, the `:` between two scores),
+  and a disabled control, which is the exemption WCAG itself makes. Anything with a reading in
+  it is `--ink-dim` or `--ink`.
 - **Side identity never relies on hue alone**: which team card the player is in, then hue, then the
   colour-blind palette in settings. §2.7 records that this revision gave up token shape and what it
   owes because of it. §7.3's round pill is the case where the second channel is **the element's own

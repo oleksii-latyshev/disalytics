@@ -89,7 +89,7 @@ export function HelpSheet({ isOpen, onDismiss }: Props) {
             ))}
           </dl>
 
-          <p className="text-13 text-ink-faint leading-prose">
+          <p className="text-13 text-ink-dim leading-prose">
             <Text path="help.keyboard.note" />
           </p>
         </section>

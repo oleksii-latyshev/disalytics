@@ -50,7 +50,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
           </m.div>
         </AnimatePresence>
 
-        <p className="mt-6 text-12 text-ink-faint leading-prose">
+        <p className="mt-6 text-12 text-ink-dim leading-prose">
           <Text path="common.privacyNote" />
         </p>
       </div>
