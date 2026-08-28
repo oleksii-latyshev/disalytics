@@ -240,7 +240,8 @@ pub struct Grenade {
     /// `None` when the round ended before it went off.
     pub detonation_tick: Option<Tick>,
     pub detonation_position: Option<WorldPoint>,
-    /// Smoke and fire only: when the cloud faded or the flames burned out.
+    /// Areas only — smoke, fire and the decoy: when the cloud faded, the flames burned out, or the
+    /// decoy popped. A mark rather than an area has none.
     pub expiry_tick: Option<Tick>,
     pub trajectory: GrenadeTrajectory,
 }

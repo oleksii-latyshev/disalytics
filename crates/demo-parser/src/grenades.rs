@@ -16,6 +16,12 @@ const REUSE_GAP_TICKS: Tick = 8;
 /// ordering slack between the entity leaving the world and the event that says why.
 const DETONATION_SLACK_TICKS: Tick = 64;
 
+/// A cloud is gone the tick after its projectile stops being sampled. Measured rather than assumed:
+/// on the fixture demo every one of the 125 smokes that carries a `smokegrenade_expired` has it
+/// exactly here, and the 11 that carry none were deleted by the round's own cleanup, which fires no
+/// event at all (`docs/PARSER.md` §19).
+const AREA_END_TICKS_AFTER_LAST_SAMPLE: Tick = 1;
+
 struct Flight {
     thrower: u64,
     class: String,
@@ -236,23 +242,26 @@ fn detonation_ending(
     let detonation = detonation_event_name(grenade_type)
         .and_then(|name| matching_event(passes, name, entity, flight, spent));
 
-    let expiry = if matches!(grenade_type, GrenadeType::SmokeGrenade) {
-        passes
-            .events
-            .game_events
-            .iter()
-            .filter(|event| event.name == "smokegrenade_expired")
-            .filter(|event| integer(event, "entityid") == Some(i64::from(entity)))
-            .map(|event| event.tick)
-            .find(|tick| *tick >= flight.last_tick())
-    } else {
-        None
-    };
-
     Ending {
         detonation_tick: detonation.map(|(tick, _)| tick),
         detonation_position: detonation.and_then(|(_, position)| position),
-        expiry_tick: expiry,
+        expiry_tick: area_expiry(grenade_type, flight),
+    }
+}
+
+/// When an area grenade's cloud is gone, taken from the projectile's own samples rather than from
+/// the event that announces it.
+///
+/// The event is the less complete of the two sources, not the more authoritative one: a smoke still
+/// up when the round is cleaned up is deleted without a `smokegrenade_expired`, and reading the
+/// absence as "it never bloomed" left 8% of the fixture's smokes off the plate entirely. The
+/// projectile stops being sampled at the same moment either way.
+fn area_expiry(grenade_type: GrenadeType, flight: &Flight) -> Option<Tick> {
+    match grenade_type {
+        GrenadeType::SmokeGrenade | GrenadeType::Decoy => {
+            Some(flight.last_tick() + AREA_END_TICKS_AFTER_LAST_SAMPLE)
+        }
+        _ => None,
     }
 }
 
@@ -324,7 +333,9 @@ const fn detonation_event_name(grenade_type: GrenadeType) -> Option<&'static str
         GrenadeType::HeGrenade => Some("hegrenade_detonate"),
         GrenadeType::Flashbang => Some("flashbang_detonate"),
         GrenadeType::SmokeGrenade => Some("smokegrenade_detonate"),
-        GrenadeType::Decoy => Some("decoy_detonate"),
+        // The decoy's *start*: `decoy_detonate` is the pop that ends it, one tick past the
+        // projectile's last sample, so taking that as the beginning gives an area with no life.
+        GrenadeType::Decoy => Some("decoy_started"),
         GrenadeType::Molotov | GrenadeType::IncGrenade => None,
     }
 }
@@ -339,7 +350,10 @@ fn position_of(event: &parser::second_pass::game_events::GameEvent) -> Option<Wo
 
 #[cfg(test)]
 mod tests {
-    use super::{DETONATION_SLACK_TICKS, Flight, REUSE_GAP_TICKS, detonation_event_name};
+    use super::{
+        AREA_END_TICKS_AFTER_LAST_SAMPLE, DETONATION_SLACK_TICKS, Flight, REUSE_GAP_TICKS,
+        area_expiry, detonation_event_name,
+    };
     use crate::schema::{DEFAULT_SAMPLE_HZ, GrenadeType};
 
     fn flight_over(ticks: &[i32]) -> Flight {
@@ -398,5 +412,50 @@ mod tests {
     #[test]
     fn the_reuse_gap_is_shorter_than_the_detonation_slack() {
         const { assert!(REUSE_GAP_TICKS < DETONATION_SLACK_TICKS) }
+    }
+
+    #[test]
+    fn an_area_ends_the_tick_after_its_projectile_stops_being_sampled() {
+        let flight = flight_over(&[64, 128, 1_500]);
+
+        assert_eq!(
+            area_expiry(GrenadeType::SmokeGrenade, &flight),
+            Some(1_500 + AREA_END_TICKS_AFTER_LAST_SAMPLE)
+        );
+        assert_eq!(
+            area_expiry(GrenadeType::Decoy, &flight),
+            Some(1_500 + AREA_END_TICKS_AFTER_LAST_SAMPLE)
+        );
+    }
+
+    #[test]
+    fn an_area_ends_whether_or_not_an_event_says_so() {
+        let cleaned_up_by_the_round = flight_over(&[64, 128]);
+
+        assert!(area_expiry(GrenadeType::SmokeGrenade, &cleaned_up_by_the_round).is_some());
+    }
+
+    #[test]
+    fn a_grenade_that_is_a_mark_rather_than_an_area_has_no_expiry() {
+        let flight = flight_over(&[64, 128]);
+
+        assert_eq!(area_expiry(GrenadeType::HeGrenade, &flight), None);
+        assert_eq!(area_expiry(GrenadeType::Flashbang, &flight), None);
+    }
+
+    #[test]
+    fn fire_takes_its_ending_from_the_inferno_rather_than_from_the_projectile() {
+        let flight = flight_over(&[64, 128]);
+
+        assert_eq!(area_expiry(GrenadeType::Molotov, &flight), None);
+        assert_eq!(area_expiry(GrenadeType::IncGrenade, &flight), None);
+    }
+
+    #[test]
+    fn a_decoy_begins_where_it_starts_and_not_where_it_pops() {
+        assert_eq!(
+            detonation_event_name(GrenadeType::Decoy),
+            Some("decoy_started")
+        );
     }
 }
