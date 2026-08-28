@@ -1139,10 +1139,27 @@ backgrounds on a static frame — and §10.1 removed the thing rather than the e
 ### The one orchestrated moment
 
 When a parse completes, the interface assembles rather than appearing: the plate fades up, the four
-cards arrive from their own corners over ~400 ms, the round strip fills left to right as data lands,
-and the players take their opening positions. It runs exactly once per demo, while nothing is
-playing, so it costs nothing in the hot path — and it turns the end of a long wait into a payoff. It
-is #104 and it is still not built.
+cards arrive from their own corners over ~400 ms, and the round strip fills left to right behind
+them — ~600 ms for the whole sequence. It runs exactly once per demo, while nothing is playing, so it
+costs nothing in the hot path, and it turns the end of a long wait into a payoff.
+
+**The players do not arrive separately, and rule 3 above is the reason.** This section asked for them
+to take their opening positions until #104 built it, and the plate is a single canvas: tokens
+arriving after the map is a wall-time tween inside that canvas, which rule 3 bans at every moment.
+They are already standing at the opening frame as the plate fades up — the same reading, with
+nothing running on the wrong clock.
+
+**It is a mount transition and holds no state anywhere.** The sequence runs because the screen
+appeared, which is what makes *once per demo* a fact rather than a flag: a re-render, a resize, a
+locale change, a selection or a sheet opening cannot replay it, and opening the same demo again from
+the cache is a new screen, so it runs again. The timings are one tested helper rather than literals
+spread across the components that read them, and the strip's fill is a fixed span shared out across
+the rounds — a match with three overtimes fills in the same ~240 ms as a regulation one instead of
+running half again as long.
+
+`prefers-reduced-motion` and §10.5's motion row collapse it to the fade alone, through
+`MotionProvider`'s own answer rather than a second implementation: the travel is dropped and the
+opacity is kept, which is exactly what the global CSS reset does to a transition.
 
 No other orchestrated sequence exists.
 

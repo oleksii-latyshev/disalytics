@@ -8,8 +8,10 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
+import { m } from '@disa/ui';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { KillLine } from '@/core/events';
+import { assembly } from '@/core/motion';
 import type { CacheState } from '@/core/parsing';
 import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
@@ -57,6 +59,13 @@ type Sheet = 'settings' | 'help' | 'match';
  * viewport edges — the stage inset goes, the plate takes what it leaves. Below `split` the side
  * columns go and the two team cards merge into one strip above the timeline block, which is still
  * not over the plate.
+ *
+ * **The screen assembles as it mounts** — §8's one orchestrated moment, and the only one the product
+ * has. Each cell carries its own arrival rather than a parent orchestrating them, because the grid
+ * is what knows which edge a card lives against; `core/motion` owns the timings, and the round strip
+ * fills itself from the same place. It is a mount transition holding no state at all, so it runs
+ * once per demo and nothing short of opening another match can replay it. The clock is paused at the
+ * opening frame throughout, which is why a wall-time sequence is legitimate here and nowhere else.
  */
 export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClose }: Props) {
   const locale = useLocale();
@@ -187,7 +196,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
 
   const teamCards = (
     <>
-      <div className="min-w-0 flex-1 split:[grid-area:3/1/4/2]">
+      <m.div {...assembly('cardLeft')} className="min-w-0 flex-1 split:[grid-area:3/1/4/2]">
         <TeamCard
           demo={demo}
           side="T"
@@ -198,9 +207,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           money={money}
           onSelect={toggleSelected}
         />
-      </div>
+      </m.div>
 
-      <div className="min-w-0 flex-1 split:[grid-area:3/3/4/4]">
+      <m.div {...assembly('cardRight')} className="min-w-0 flex-1 split:[grid-area:3/3/4/4]">
         <TeamCard
           demo={demo}
           side="CT"
@@ -211,7 +220,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           money={money}
           onSelect={toggleSelected}
         />
-      </div>
+      </m.div>
     </>
   );
 
@@ -222,11 +231,14 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           padding, and type with no card behind it would sit on the glass of the window. It has no
           bottom half — the grid's own `gap-3` is already under this row, and a second 12px there
           comes out of the plate's square. */}
-      <div className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]">
+      <m.div
+        {...assembly('stage')}
+        className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]"
+      >
         <LeaveMatch onClose={onClose} />
 
         <MatchIdentity demo={demo} cache={cache} />
-      </div>
+      </m.div>
 
       {/* The cluster and, under it, §5.4's feed. Above the split this spans rows 1 and 2 of the
           right-hand column — the one cell on the stage that neither a card nor the plate is in — so
@@ -238,7 +250,10 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           Below the split there is no such cell. Row 1 is shared with the top-left corner and row 2
           *is* the plate, so a feed there would be §5.1's one rule broken; it is not drawn at those
           widths rather than drawn somewhere it does not belong. */}
-      <div className="flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4]">
+      <m.div
+        {...assembly('cardTop')}
+        className="flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4]"
+      >
         <CornerCluster
           isRaised={corners.isClusterRaised}
           isFullscreen={fullscreen.isFullscreen}
@@ -257,11 +272,14 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
             onKillHover={setHoveredKill}
           />
         </div>
-      </div>
+      </m.div>
 
       {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every
           pixel on the map, which is why the cards are beside the cell rather than over it. */}
-      <div className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/2] split:[grid-area:1/2/4/3]">
+      <m.div
+        {...assembly('stage')}
+        className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/2] split:[grid-area:1/2/4/3]"
+      >
         <MatchRadar
           demo={demo}
           transport={transport}
@@ -281,7 +299,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
             <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
           </div>
         )}
-      </div>
+      </m.div>
 
       {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two
           grid columns in the other without being written out twice. */}
@@ -290,7 +308,11 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
       {/* The cell keeps its height whether or not the block is in it — §5.1's plate is sized from
           this row, so a block that collapsed would resize the plate under the reader mid-match. The
           ref is how §9.3's hide knows to stand aside for a `Tab` that has landed inside. */}
-      <div ref={timelineRef} className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]">
+      <m.div
+        ref={timelineRef}
+        {...assembly('cardBottom')}
+        className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]"
+      >
         <TimelineBlock
           demo={demo}
           transport={transport}
@@ -300,7 +322,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           hasScoreboard={scoreboard === 'block'}
           isAway={corners.isTimelineAway}
         />
-      </div>
+      </m.div>
 
       {/* Both sheets live in the top layer, so where they sit in this grid decides nothing about where
           they paint — they are last because that is the reading order a reader who never opens one

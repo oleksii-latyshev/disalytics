@@ -1,6 +1,8 @@
 import type { Team } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
+import { m } from '@disa/ui';
 import { memo } from 'react';
+import { pillArrival } from '@/core/motion';
 import { useRovingFocus } from '@/shared/hooks';
 import { roundOutcomeKey } from '../helpers/outcome-copy';
 import { PILL_GAP_PX, type RoundCell, trackSegments } from '../helpers/round-strip';
@@ -138,8 +140,13 @@ export const RoundOutcomes = memo(function RoundOutcomes({
         return (
           // `ms-2` on top of the row's 4px gap is §7.3's 12px segment break, and the rule sits at
           // -6px, which is that break's centre line.
-          <li
+          //
+          // The pill lights in its own place in the row when the match arrives — §8's one
+          // orchestrated moment, and the only thing on this strip that is a function of wall time.
+          // It is a mount transition, so it runs when the screen does and never again.
+          <m.li
             key={cell.number}
+            {...pillArrival(index, cells.length)}
             className={`relative min-w-0 flex-1 ${cell.startsSegment ? 'ms-2' : ''}`}
           >
             {cell.startsSegment && (
@@ -190,7 +197,7 @@ export const RoundOutcomes = memo(function RoundOutcomes({
                 ahead={ahead}
               />
             </button>
-          </li>
+          </m.li>
         );
       })}
     </ol>
