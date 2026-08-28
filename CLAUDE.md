@@ -750,6 +750,18 @@ sentence, which is what `<Text>` needed a `RichTranslationValues` for; `useT` ke
 because an `aria-label` cannot hold a node. And **it wraps rather than truncating**: the Windows
 path fits no width the card has, and a path with its middle elided names nothing.
 
+**#152 gave a grenade one name whether it is held or carried.** A team row stated the same object
+twice — the weapon slot off `MatchHeader.weapons` (`High Explosive Grenade`), the utility marks
+beside it off `UTILITY_NAMES` (`HE Grenade`) — and a screen reader heard both. `weaponName` in
+`packages/demo-core` is the one name to show: utility defers to `UTILITY_NAMES` and everything else
+keeps its table entry, which is the only name it has. **The deference only runs this way round** —
+the table separates a `Molotov` from an `Incendiary Grenade` and the `grenades` bitfield cannot, so
+any answer that leaves either reading on the table still disagrees for one of them. The pair
+collapses to `Molotov`, argued in the constant's own comment: it is what both are called in play,
+where `Incendiary Grenade` names the CT's item alone. **The kill feed is deliberately untouched** —
+it states a weapon in upstream's *internal* vocabulary (`ak47`, `hegrenade`), which is the third
+vocabulary in the product and #53's to close.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
