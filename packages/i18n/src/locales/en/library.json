@@ -2,6 +2,7 @@
   "open": {
     "title": "Open a demo",
     "hint": "Drop a .dem file here, or choose one from your match history folder.",
+    "hintFolder": "Drop a .dem file here, or choose one from {folder}.",
     "action": "Open demo",
     "release": "Release to open it."
   },

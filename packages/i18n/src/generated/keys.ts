@@ -83,6 +83,7 @@ export const TRANSLATION_KEYS = [
   'library.grid.persistence',
   'library.open.action',
   'library.open.hint',
+  'library.open.hintFolder',
   'library.open.release',
   'library.open.title',
   'library.progress.cancel',
