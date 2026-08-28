@@ -197,9 +197,9 @@ makes `backdrop-filter` affordable and is a layout rule rather than a convention
 shape rather than hue. The accent moved from blue to violet (`#B07CFF`) and lost its fence, which is
 what lets the main screen have a voice at all. Optical tracking rides on the size token, so
 `text-44` cannot be written without it. Two blur filters exist under `--backdrop-*` rather than
-`--blur-*`, because that namespace would build `filter: blur(blur(24px) …)` out of them. The review
-screen has since caught up with the document, but the screens in §10 have not — **read §15 before
-assuming a component is wrong**, and expect the way in to look half-migrated until step 8 lands.
+`--blur-*`, because that namespace would build `filter: blur(blur(24px) …)` out of them. Every
+screen has since caught up with the document: §15's eleven steps are all closed, step 8 last of them
+with #236, so the document asks the code for nothing that is not built.
 
 **#136 landed §15's third step — `SCHEMA_VERSION` is 4.** `TickTrack` gained `armour`, `weapon`,
 `grenades` and `money`, helmet became a seventh `flags` bit, and `MatchHeader` gained a **per-match
@@ -525,7 +525,7 @@ rows wait for §15's step 7 to settle it at once. Two corrections ride with it �
 `AGENTS.md` §16's two frame rows carry a `320f821` baseline and a measurement at the 4× ceiling,
 both **0 over 16.7 ms across three passes of 399 frames**.
 
-**#163 put gunfire in the schema, and `SCHEMA_VERSION` is 5.** `MatchEvents.shots` is one entry
+**#163 put gunfire in the schema, and took `SCHEMA_VERSION` to 5.** `MatchEvents.shots` is one entry
 per trigger pull with a gun — tick, shooter, weapon — and the load-bearing decision is **which
 event it comes from**. Upstream carries two: `weapon_fire` (4,788 on the fixture) fires for guns,
 thrown grenades and knife swings alike and names its weapon `weapon_ak47`, which is the fifth
@@ -594,6 +594,161 @@ document rather than the issue's state. The walk and the fire were settled with 
 start of #164 and written into §6.1 in the same PR as the code, which is the standing rule for docs
 here; §15's exception is for a decision that has to be made before code, and asking is what made it
 one.
+
+**#233 opened §15's step 8 — the way in is a shell with a persistent rail.** A 17.5rem
+`--glass-panel` rail over the dimmed radar backdrop that already shipped: the product name, then
+Upload, Library and the two screens that are coming at 40px each, then settings and help in the
+foot. Three things are load-bearing. **Below `--breakpoint-split` the rail is a row above the
+content**, and its foot rides at the end of the entry line rather than under it, so the order the
+eye reads is the order `Tab` takes — `order` or a moved `grid-area` would have cost that. **The
+shell ends where the match begins**, and §5.1 is the reason rather than a preference: 280px beside
+the plate is not chrome, it is a subtraction from the plate's own axis. And **two corrections to the
+document rode with the code** — §10.1's faint labels on the unfinished entries lost to §14's ink
+floor, so a "soon" chip is what tells them apart, and the product name is the rail's alone, because
+the card two hundred pixels away leading with the same name is §5.2's lesson from #205 about what is
+on screen twice. "Show all" became a route to the Library screen rather than an expansion in place,
+and `library.saved.showFewer` is deleted in both locales.
+
+**#238 is the bug that shipped inside it, and the shape is the part worth keeping.** #233 pinned the
+view with `state.status === 'idle' ? chosenView : 'upload'`, and `failed` is not `idle` either — so
+pressing a saved demo whose cached file had gone left every rail entry inert, with nothing on the
+failure screen able to return the state to `idle`. The move is made **once, where the reader asks
+for it** now: an open switches to the upload view and then leaves the rail alone. Leaving a failure
+ends it, and a parse still running is untouched, because `close` terminates the worker and
+navigating away is not cancelling.
+
+**#234 made the library a grid of cards over the metadata #140 writes.** The thumbnail is the same
+radar asset the plate draws, in the theme §10.5 chose, so the grid adds no image to the build; it
+names the map and not the match, and the file name is what tells two Mirage demos apart. **The
+header states two storage figures from two places**, which is the thing not to collapse into one:
+the demos' own total is the exact sum of `byteLength` in the catalog against `CACHE_BYTE_LIMIT`,
+because that ceiling is what evicts, and the device's is `navigator.storage.estimate()` over the
+whole origin, padded by browsers and quoted as an estimate rather than as the limit.
+`storageEstimate()` joins `requestPersistence` in `packages/demo-store`, so `navigator.storage`
+stays behind one door. No team names — `MatchHeader` carries none, so the card promises none.
+
+**#235 made a card open into a dialog that draws its own plate**: one frame of the cached parse at
+the first round's buy, the roster by the side each slot held *that round*, and every round as a way
+in. `@disa/ui` gained `Dialog`, `features/radar` gained `PlateStill`, `features/library` gained
+`DemoDialog`. Three things are load-bearing. **The dialog is the card itself** rather than a card
+inside a full-viewport `<dialog>`, and that is what lets light dismiss be the platform's —
+`closedby="any"` fires on a press *outside the element*, and an element covering the viewport has no
+outside; Safari has no `closedby`, so it is set behind a feature test with the press-outside
+listener as the fallback. **A still has no clock**: `useCanvasLayers` already paints on a layer
+change, so nothing on this screen subscribes to a frame channel, and utility, the kill line and
+audibility are off rather than read from §10.5, because each answers a question a *moving* plate
+raises. And **the chosen round reaches the match as state rather than as a seek** —
+`ParseState.ready` carries a `roundIndex`, so the match's first painted frame is the round the
+reader picked. A stored thumbnail was rejected for the three reasons §10.2 lists, the parse being in
+the cache already.
+
+**#236 moved the parse and the failure screens inside the shell, and step 8 is complete.** Neither
+navigates and neither is a block stacked on the way-in card: both are the upload view transformed in
+place. **The progress bar is gone** — it stated the same fact as the number beside it — and
+`role="progressbar"` rides on the percentage itself, with the stage line as its *sibling*, because
+that role names its element by `aria-label` and never by its content. **There are two stages and not
+§10.3's three**: `ParsePhase` is `decompress` and `parse`, because the demo's three passes are
+upstream's and are not reported separately. The failure screen **carries no `--damage`** — §2 leaves
+that token exactly one reader, §6.1's damage flash — and it keeps the route out rather than
+apologising above an untouched "Open a demo" card.
+
+**#68 says why a parse in a hidden tab takes five times longer**, which no code here can prevent: a
+backgrounded renderer is confined to efficiency cores, and the fixture that reads in 15.3 s in front
+takes 84.9 s behind. Three things are deliberate. **The note is earned and carries no number** — it
+appears only once the tab has actually been backgrounded during that parse, and 5× is one machine
+against one fixture. **`wasHidden` is set once and never unset**, and the reducer returns the same
+state object on later trips, so a tab that leaves four times says it once and re-renders nothing.
+And **the listener lives with the parse**, registered after `parseStarted` against its own
+`AbortController` and aborted in a `finally`; it reads `document.hidden` at registration, because a
+tab already hidden when the worker starts will never fire `visibilitychange` to say so — which is
+exactly what the in-app browser pane serves.
+
+**#228 raised the stage's controls out of the hot corners, closing §15's step 7.** §9.3's two live
+regions: the top-right quadrant lifts §5.4's cluster out of `--ink-faint`, and in fullscreen the
+timeline block leaves after three seconds of stillness and the bottom 80px brings it back. Four
+things are load-bearing. **The block is taken by stillness and given back by the edge** — that is
+§9.3's rule rather than the usual one, so a nudge of the mouse in the middle of the stage does not
+flash the controls back over the match — with focus as the necessary exception, and that listener
+lives in the hook because a static element carrying `onFocus` is a Biome a11y error and the wrong
+owner besides. **It keeps its space**, because §5.1 sizes the plate out of the row it sits in and a
+collapsing block would resize the plate mid-round. **`translate` is not `transform`**: Tailwind's
+`translate-y-*` writes the individual property, so `transition-[transform,opacity]` leaves the slide
+snapping while the fade runs, and the first version of that branch had exactly that defect. And
+**opacity is what hides it**, not the slide, because the stage's bottom padding is shorter than the
+block.
+
+**#241 took `--ink-faint` off everything with a reading in it**, which §14 has forbidden since #130
+and eleven sites did not obey. Nine were words and moved to `--ink-dim`; seven keep the token
+because none of them is text — four icons whose SVG inherits it, three separators the reader never
+hears. **The dead row needed deciding rather than fixing**: §5.3 asked for a dead player's name at
+that ink, `--ink` → `--ink-dim` is the step the row already spends on its own secondary numbers, and
+the chip beside the name states the reading in words, so §5.3's table says so now. §14 gained the
+line the code can be checked against — a mark, an unvoiced separator and a disabled control may sit
+at that ink, and anything with a reading in it may not.
+
+**#244 made `bun run i18n:check` fail on a key nothing reads**, which both existing halves were
+blind to because both were about parity. A quoted string counts as a reader only when its first
+segment is one of the ten namespaces, so `catalog.json` and `disa.review.scoreboard` are not
+mistaken for keys; and **every template literal starting with a namespace becomes one regular
+expression**, its interpolations replaced by `[^.]+`. That second half is why **there is no
+exception list**: the prefix allowlist the issue offered would have needed eight prefixes covering
+43 keys, each one a licence for everything beneath it, where a pattern derived from the template's
+own literal parts covers the same 43 exactly. Two keys were unread and are deleted; both had
+outlived the components that rendered them.
+
+**#232 and #250 are the two splits the last month of marks made necessary.** `layers.ts` is
+`token-layer.ts` at 297 lines, with the vision wedge, the projection pass and the backdrop in
+modules of their own — `visionWedge()` is a **factory** rather than a function, so the gradient
+cache moves with the geometry — and both extracted modules are unit-tested, which the closures they
+came from could not be. `RadarView.tsx` is 250, with `usePlateNavigation` owning the wheel, the
+drag, the double-click reset, the `+`/`−` pair and §9.1's two keys. Three decisions there to leave
+alone: **the view box stays in `RadarView`**, because a hook that created it could not be called
+before `useCanvasLayers` needs it; **`onPointerLeave` stays on the canvas**, because the readout has
+to be cleared whether or not it is currently being fed; and **the wheel is still an effect owning
+its own listener**, because it must be non-passive and React's delegated `onWheel` cannot promise
+that. #232 also removed §10.6's stated reason for the legend not drawing the vision wedge — it is a
+choice about the swatch now, and #249 is where it gets made.
+
+**#104 assembles the interface when a parse completes — §8's one orchestrated moment.** The five
+cells of `MatchReview` are `m.div`s carrying their own `initial`/`animate` from the new
+`apps/web/src/core/motion`, and §7.3's round pills are `m.li`. Three things are load-bearing.
+**There is no orchestrating parent**, deliberately: the grid is the only thing that knows which edge
+a card is pinned to. **There is no "already played" flag**, and adding one is the mistake to avoid —
+"once per demo" holds because the screen mounts once, measured at 0 deviations over 1,499 frames
+while a sheet opened, the locale switched to `ru`, players were selected and the viewport crossed
+the split. And **the strip fills over a fixed span divided among its rounds** rather than a step per
+pill, so a match with three overtimes fills in the same time as a short one; there is a test.
+Reduced motion is `MotionProvider`'s and not a second implementation —
+`packages/ui/src/styles/motion.css` covers transitions, not `motion`'s JS animations. One §8
+correction rode with it: the players stand on the starting frame while the plate fades in, because
+"players take up their positions" as a separate movement is a wall-time twin inside a canvas, which
+rule 3 of that same section forbids.
+
+**#173 gave a smoke that detonates an ending it can be drawn with, and `SCHEMA_VERSION` is 6.**
+`area_expiry` is read off the projectile's own trajectory and `smokegrenade_expired` is not read at
+all — **which is more precise rather than less**, and reverting it to the event is the change not to
+make. On the fixture 11 of 136 smokes have no expiry event on any tick, because the engine deletes a
+cloud still standing at the round's cleanup silently; for all 125 that do have one, the difference
+between the event and the last sample is a set with a single member, `{1}`. `decoy_detonate` is
+likewise a decoy's *end* rather than its start, which is why the decoy's `detonation_tick` moved to
+`decoy_started` in the same PR — without that it gets an area of zero length and still does not
+draw. Fire needed nothing: 114 `inferno_startburn` against 114 `inferno_expire`, every one paired.
+`docs/PARSER.md` §19 carries the table. **`demo-core` is untouched on purpose** — `grenadeVisual`
+and `visibleGrenades` both discard a grenade whose `detonationTick` is `null` before they look at
+expiry, so #169's fix still holds.
+
+**#63 names the match history folder for the reader's own OS**, which is the half of §12's empty
+state #52 left. The path is chosen from what the platform reports — User-Agent Client Hints where
+the browser has them, the user agent string where it does not, and the pathless copy where neither
+names a platform that has a Steam folder. Three things to know. **`matchHistoryFolder` is given the
+report as strings** rather than reading `navigator` itself, which is what keeps the choice
+unit-tested in the node environment, and it rules out the two traps a naive sniff walks into:
+Android carries `Linux` in the same string, and an iPad asking for the desktop site calls itself a
+Macintosh, which only `maxTouchPoints` tells apart. **The path is game vocabulary** — one string in
+both locales, rendered through `<code>` rather than `<Text>` — and it is interpolated into a whole
+sentence, which is what `<Text>` needed a `RichTranslationValues` for; `useT` keeps the narrow type,
+because an `aria-label` cannot hold a node. And **it wraps rather than truncating**: the Windows
+path fits no width the card has, and a path with its middle elided names nothing.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by

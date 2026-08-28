@@ -1,12 +1,12 @@
 import { createElement, type ElementType } from 'react';
 import { useIntl } from 'react-intl';
-import type { TranslationValues } from '../config';
+import type { RichTranslationValues } from '../config';
 import type { TranslationKey } from '../generated/keys';
 
 interface Props {
   path: TranslationKey;
   as?: ElementType;
-  values?: TranslationValues;
+  values?: RichTranslationValues;
 }
 
 export function Text({ path, as = 'span', values }: Props) {
