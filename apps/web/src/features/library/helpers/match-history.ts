@@ -9,6 +9,10 @@
  *
  * Demos from FACEIT and the other third parties are downloaded rather than recorded, so they land
  * in the browser's download folder and have no stable path. Nothing here claims one for them.
+ *
+ * It is vocabulary that lives here rather than in `packages/demo-core` because it is a fact about
+ * where the game was installed and not about anything a demo carries. What §11 rules out is a path
+ * in a locale file, and that is what this avoids.
  */
 const MATCH_HISTORY_FOLDER = {
   windows: '…\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\game\\csgo\\replays',
