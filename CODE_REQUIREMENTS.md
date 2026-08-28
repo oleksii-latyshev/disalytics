@@ -352,6 +352,16 @@ Keys are semantic paths, never the source text:
 { "killedEnemies": "Убито {count, plural, one {# врага} few {# врагов} many {# врагов} other {# врага}}" }
 ```
 
+A fragment that has to *render* differently — a file path carried as game vocabulary, say — is
+still one message. `<Text>` takes a node as a value for that reason:
+
+```tsx
+<Text path="library.open.hintFolder" values={{ folder: <code>{folder}</code> }} />
+```
+
+`useT` keeps the narrower value type on purpose: an `aria-label`, a `document.title` or a toast
+cannot hold a node.
+
 Key parity between `en` and `ru` is enforced by a test, not only by the CI script — so it fails in
 the same run as everything else.
 
