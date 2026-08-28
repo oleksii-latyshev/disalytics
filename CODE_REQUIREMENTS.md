@@ -23,6 +23,7 @@ apps/web/src/
                   Knows nothing about CS2 — it draws what it is told.
     parsing/      Parse worker lifecycle, progress state machine, cancellation.
     shortcuts/    Keyboard registry and scope handling.
+    motion/       DESIGN.md §8's one orchestrated moment, as timings two slices read.
     settings/     UI preferences: playback rules, plate options, locale, palette.
                   There is no theme provider — dark is unconditional (AGENTS.md §20).
   features/       User-facing slices. May use core and other features.
