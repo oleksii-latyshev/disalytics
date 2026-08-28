@@ -72,6 +72,7 @@ export {
   utilityKindOfGrenade,
   weaponClass,
   weaponClasses,
+  weaponName,
 } from './helpers/weapons';
 export type { LocalizedMessage } from './message';
 export type { Clock } from './playback';
