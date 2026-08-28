@@ -11,8 +11,8 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, Kill, MatchHeader, ParseObserver, ParsedDemo, Shot, TickTrack,
-    WEAPON_NONE, parse_observed, parse_recording_passes,
+    DefuseOutcome, Grenade, GrenadeType, Kill, MatchHeader, ParseObserver, ParsedDemo, Shot,
+    TickTrack, WEAPON_NONE, parse_observed, parse_recording_passes,
 };
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -59,6 +59,7 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
     assert_weapon_column_indexes_the_table(&first);
     assert_shots_name_a_weapon_in_the_table(&first);
     assert_events_are_sorted_by_tick(&first);
+    assert_every_area_that_detonates_can_be_drawn(&first);
 
     let mut observed = ObservedParse::default();
     let second = parse_observed(&demo_bytes, &mut observed).expect("the fixture failed to reparse");
@@ -110,6 +111,47 @@ impl ParseObserver for ObservedParse {
     fn header_ready(&mut self, header: &MatchHeader) {
         self.reports.push(format!("header {}", header.map));
     }
+}
+
+/// An area grenade is drawn between its detonation and its expiry, so one without an expiry is on
+/// the plate for no time at all — a smoke the reader watches fly, land and never bloom.
+///
+/// This is the assertion the fixture was missing: 11 of the match's 136 smokes reached the schema
+/// with `expiry_tick: None`, because a cloud the round's own cleanup deletes fires no
+/// `smokegrenade_expired` and the absence was read as "it never bloomed" (`docs/PARSER.md` §19).
+fn assert_every_area_that_detonates_can_be_drawn(demo: &ParsedDemo) {
+    let unbounded = demo
+        .events
+        .grenades
+        .iter()
+        .filter(|grenade| is_area(grenade))
+        .filter(|grenade| grenade.detonation_tick.is_some() && grenade.expiry_tick.is_none())
+        .count();
+
+    assert_eq!(
+        unbounded, 0,
+        "an area grenade that detonates and has no expiry draws nothing at all"
+    );
+
+    let backwards = demo
+        .events
+        .grenades
+        .iter()
+        .filter_map(|grenade| Some((grenade.detonation_tick?, grenade.expiry_tick?)))
+        .filter(|(detonation, expiry)| expiry < detonation)
+        .count();
+
+    assert_eq!(backwards, 0, "an area cannot end before it begins");
+}
+
+const fn is_area(grenade: &Grenade) -> bool {
+    matches!(
+        grenade.grenade_type,
+        GrenadeType::SmokeGrenade
+            | GrenadeType::Molotov
+            | GrenadeType::IncGrenade
+            | GrenadeType::Decoy
+    )
 }
 
 fn assert_track_is_rectangular(track: &TickTrack) {

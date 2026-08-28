@@ -310,7 +310,7 @@
     }
   ],
   "grenades": {
-    "checksum": "ff10756efe0ce933",
+    "checksum": "9a0f793cec67f0ff",
     "count": 519,
     "first": [
       {
@@ -339,8 +339,8 @@
           1055.93115234375,
           1.908087968826294
         ],
-        "detonationTick": 8154,
-        "expiryTick": null,
+        "detonationTick": 7200,
+        "expiryTick": 8154,
         "throwTick": 7072,
         "thrower": 7,
         "trajectory": {

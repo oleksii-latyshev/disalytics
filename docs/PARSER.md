@@ -972,3 +972,87 @@ headed Chrome 151 over CDP against the built bundle, timed from the drop to the 
 **+0.12 s, inside the spread of either arm.** Both sit about 1.1 s above the 18.85 s §16 records
 for this input, and that is the day rather than the change — the before arm is this repository's
 own base, built and measured the same afternoon. §16's figure stands as #59 measured it.
+
+---
+
+## 19. What ends an area grenade (#173)
+
+A smoke is drawn between its detonation and its expiry, so a smoke with no expiry is on the plate
+for no time at all. **11 of the fixture's 136 smokes reached the schema that way** — the reader
+watched them fly, land, and never bloom — and the crate's answer was to look for a
+`smokegrenade_expired` event keyed on the projectile's entity index.
+
+### The event is not there, and it is not a lookup that missed it
+
+The first suspect was entity-index reuse: indices are recycled within a match, `REUSE_GAP_TICKS`
+exists for exactly that reason, and a lookup keyed on the index alone can pick the wrong one. It is
+not that. Every one of the 11 has **no `smokegrenade_expired` at any tick**, for any window, under
+its own entity index. The match carries **125 of them for 136 smokes**, and 136
+`smokegrenade_detonate` — one detonation per smoke, eleven endings missing.
+
+### What the 11 have in common
+
+Each of them has its last projectile sample on the tick *immediately before* the round is cleaned
+up: `round_officially_ended`, `round_prestart` and `round_start` all land at `last + 1`.
+
+| Entity | Detonation | Last sample | Cloud life |
+|---|---|---|---|
+| 798 | 12,333 | 12,859 | 8.2 s |
+| 764 | 19,309 | 20,341 | 16.1 s |
+| 576 | 24,362 | 25,459 | 17.1 s |
+| 80 | 43,978 | 45,113 | 17.7 s |
+| 649 | 69,427 | 70,503 | 16.8 s |
+| 978 | 74,210 | 75,380 | 18.3 s |
+| 269 | 83,495 | 84,485 | 15.5 s |
+| 464 | 89,690 | 90,244 | 8.7 s |
+| 480 | 162,882 | 163,699 | 12.8 s |
+| 212 | 167,266 | 167,858 | 9.3 s |
+| 697 | 167,308 | 167,858 | 8.6 s |
+
+Every life is short of the 22.1 s a smoke in this match runs to when nothing interrupts it, which is
+the same statement from the other side: **these are the smokes still standing when their round
+ended.** The engine deletes the cloud with the rest of the round's world and fires nothing. The last
+two are one pair — two smokes up at the same moment, deleted on the same tick, at the half.
+
+### The projectile already carries the ending, and carries it exactly
+
+For all **125** smokes that *do* have the event, the gap between the event's tick and the
+projectile's last sample is a set with a single member:
+
+```
+expired.tick − last_sample  ∈  {1}      (125 of 125)
+```
+
+So the event is a restatement of something the projectile pass already knows, and a strictly less
+complete one — it is absent exactly when the round takes the cloud away. `expiry_tick` is
+`last_sample + 1` for every area, the event lookup is gone, and the 125 known-good values are
+reproduced to the tick rather than approximated. **This is not `AGENTS.md` §21's "a nominal duration
+substituted for demo data"**: no engine constant enters the crate, and nothing is assumed about how
+long a smoke lives. It is the same demo, read off the more complete of its two sources.
+
+### The decoy: `decoy_detonate` is the end, not the beginning
+
+One decoy in this match, so this is one observation rather than a rule, and it is recorded that way.
+
+| Event | Tick | Carries |
+|---|---|---|
+| `decoy_started` | 7,200 | `entityid`, `x`, `y`, `z` |
+| `decoy_detonate` | 8,154 | `entityid`, `x`, `y`, `z` — the same position |
+
+The projectile's first sample is 7,072 and its last is 8,153, so `decoy_detonate` sits at
+`last + 1` the way a smoke's expiry does: it is the pop that *ends* the decoy, ~14.9 s after it
+starts. The crate had been reading it as the beginning, which — with no expiry either, since only
+smoke ever looked for one — gave every decoy an area with no life. `Grenade.detonation_tick` comes
+from `decoy_started` now and the expiry from the projectile, so a decoy is drawn for the time it
+actually spends on the ground.
+
+### What did not need changing
+
+Fire is joined by a different route — the inferno is its own entity, matched by thrower and time —
+and it has no gap of this kind: **114 `inferno_startburn` and 114 `inferno_expire`**, every one
+paired. HE and flash are marks rather than areas and carry no expiry by design.
+
+The fixture test asserts the outcome rather than the mechanism: **no area grenade that detonates may
+reach the schema without an expiry**, and none may end before it begins. That is the assertion the
+fixture was missing, and it is what would have caught this the day the schema first carried
+grenades.

@@ -1,9 +1,10 @@
 /**
- * Bumped on any change to the shape below. The OPFS cache is keyed on
- * `${fileHash}:${SCHEMA_VERSION}`, so an entry written by an older shape is a miss rather than
- * something to migrate.
+ * Bumped on any change to what a parse produces — the shape below, and equally the values in it.
+ * The OPFS cache is keyed on `${fileHash}:${SCHEMA_VERSION}`, so an entry written by an older
+ * parser is a miss rather than something to migrate, and a demo already on the device is corrected
+ * rather than left holding what it was stored with.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 declare const unit: unique symbol;
 
@@ -200,7 +201,10 @@ export interface Grenade {
   /** `null` when the round ended before it went off. */
   detonationTick: Tick | null;
   detonationPosition: WorldPoint | null;
-  /** Smoke and fire only: when the cloud faded or the flames burned out. */
+  /**
+   * Areas only — smoke, fire and the decoy: when the cloud faded, the flames burned out, or the
+   * decoy popped. A mark rather than an area has none.
+   */
   expiryTick: Tick | null;
   trajectory: GrenadeTrajectory;
 }
