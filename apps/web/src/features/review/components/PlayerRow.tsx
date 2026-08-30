@@ -12,6 +12,7 @@ import {
   utilityHeld,
   WEAPON_NONE,
   weaponClass,
+  weaponName,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { UtilityGlyph, WeaponGlyph } from '@/core/glyphs';
@@ -111,8 +112,10 @@ export function PlayerRow({
         {isAlive && weapon !== undefined && (
           <span className="ms-auto shrink-0 text-ink">
             {/* Game vocabulary reaches the label untranslated, and the bomb reaches nothing at
-                all: `WeaponGlyph` draws the `C4 Explosive` entry as empty — §6.4, #137. */}
-            <WeaponGlyph weapon={weaponClass(weapon)} label={weapon} />
+                all: `WeaponGlyph` draws the `C4 Explosive` entry as empty — §6.4, #137. The name
+                is `weaponName`'s rather than the table entry, so a held grenade and the marks
+                below it are one name to a screen reader instead of two. */}
+            <WeaponGlyph weapon={weaponClass(weapon)} label={weaponName(weapon)} />
           </span>
         )}
       </span>

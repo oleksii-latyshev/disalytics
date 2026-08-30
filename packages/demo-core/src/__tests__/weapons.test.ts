@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   isUtilityKind,
   killWeaponClass,
+  UTILITY_NAMES,
   utilityHeld,
   utilityKindOfGrenade,
   weaponClass,
   weaponClasses,
+  weaponName,
 } from '../helpers/weapons';
 import {
   GRENADE_DECOY,
@@ -192,5 +194,67 @@ describe('utilityHeld', () => {
 
   it('ignores a bit no kind is named for', () => {
     expect(kindsOf(1 << 7)).toEqual([]);
+  });
+});
+
+describe('weaponName', () => {
+  // The six entries of `MatchHeader.weapons` that name utility, which are the only ones a team row
+  // can state twice: the same object is also a bit of the `grenades` bitfield beside them.
+  const UTILITY_ENTRIES = [
+    'High Explosive Grenade',
+    'Flashbang',
+    'Smoke Grenade',
+    'Molotov',
+    'Incendiary Grenade',
+    'Decoy Grenade',
+  ];
+
+  it('names a held grenade the way the marks beside it name the same grenade', () => {
+    expect(weaponName('High Explosive Grenade')).toBe(UTILITY_NAMES.he);
+    expect(weaponName('Flashbang')).toBe(UTILITY_NAMES.flash);
+    expect(weaponName('Smoke Grenade')).toBe(UTILITY_NAMES.smoke);
+    expect(weaponName('Decoy Grenade')).toBe(UTILITY_NAMES.decoy);
+  });
+
+  it('gives a molotov and an incendiary one name, since the bitfield cannot tell them apart', () => {
+    expect(weaponName('Molotov')).toBe(UTILITY_NAMES.fire);
+    expect(weaponName('Incendiary Grenade')).toBe(UTILITY_NAMES.fire);
+  });
+
+  it('answers a name out of the utility vocabulary for every entry that is utility', () => {
+    const vocabulary = new Set<string>(Object.values(UTILITY_NAMES));
+
+    for (const entry of UTILITY_ENTRIES) expect(vocabulary.has(weaponName(entry))).toBe(true);
+  });
+
+  it('leaves everything that is not utility the display name the match carried', () => {
+    expect(weaponName('AK-47')).toBe('AK-47');
+    expect(weaponName('Zeus x27')).toBe('Zeus x27');
+    expect(weaponName('Knife')).toBe('Knife');
+    expect(weaponName('C4 Explosive')).toBe('C4 Explosive');
+  });
+
+  it('names a weapon this table has never heard of, rather than dropping it', () => {
+    expect(weaponName('Plasma Rifle')).toBe('Plasma Rifle');
+  });
+});
+
+describe('UTILITY_NAMES', () => {
+  it('names every kind a bitfield can hold, the defuse kit included', () => {
+    const full =
+      GRENADE_HE |
+      GRENADE_FLASH |
+      GRENADE_FLASH_SECOND |
+      GRENADE_SMOKE |
+      GRENADE_FIRE |
+      GRENADE_DECOY |
+      GRENADE_DEFUSE_KIT;
+
+    for (const held of utilityHeld(full)) expect(UTILITY_NAMES[held.kind]).toBeTruthy();
+  });
+
+  it('keeps a name for the defuse kit, which no weapon-table entry can give one', () => {
+    expect(weaponClass(UTILITY_NAMES.kit)).toBe('unknown');
+    expect(UTILITY_NAMES.kit).toBe('Defuse Kit');
   });
 });

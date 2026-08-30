@@ -224,6 +224,8 @@ export function isUtilityKind(weapon: WeaponClass): weapon is UtilityKind {
  * Canonical names for what a player is carrying — game vocabulary, never translated (`AGENTS.md`
  * §11). Molotov and incendiary share `fire` and therefore share a name; the distinction is one the
  * bitfield does not carry and one a reader deciding whether a corner is deniable does not need.
+ * `Molotov` is the half of that pair that reads as the category — it is what both are called in
+ * play, where an `Incendiary Grenade` names only the CT's own item and never the T's.
  */
 export const UTILITY_NAMES: Readonly<Record<UtilityKind, string>> = {
   he: 'HE Grenade',
@@ -233,6 +235,25 @@ export const UTILITY_NAMES: Readonly<Record<UtilityKind, string>> = {
   decoy: 'Decoy Grenade',
   kit: 'Defuse Kit',
 };
+
+/**
+ * What to call a weapon a player is holding. Utility answers `UTILITY_NAMES` rather than its own
+ * `MatchHeader.weapons` entry, so a grenade in the hands and the same grenade in the marks beside it
+ * carry one name.
+ *
+ * The deference has to run this way round. The weapon table separates a `Molotov` from an
+ * `Incendiary Grenade` and the `grenades` bitfield cannot, so as long as either reading comes off
+ * the table the two disagree for one of them — and the reading a reader hears twice in one row is
+ * the one that has to give.
+ *
+ * A gun keeps its entry, which is upstream's display name and the only name it has. Unifying that
+ * vocabulary with the one `Kill.weapon` carries is #53.
+ */
+export function weaponName(weapon: WeaponId): string {
+  const kind = weaponClass(weapon);
+
+  return isUtilityKind(kind) ? UTILITY_NAMES[kind] : weapon;
+}
 
 export interface UtilityHeld {
   /** The `GRENADE_*` bit this came from, which is what identifies it in a list of two flashbangs. */
