@@ -835,6 +835,19 @@ smoke's cloud **is** the projectile. `docs/PARSER.md` §20 carries the per-type 
 own doc comment stopped saying "flight path". Nothing in the code changed — `trajectoryClipCount`
 already clips at `detonationTick` — and `SCHEMA_VERSION` did not move.
 
+**#264 is the fourth split, and the seam is the one #172 left visible.** `grenade-state.ts` came
+out of that PR at 343 lines with its own section rules drawing the line: **where a projectile is
+while it is in the air** — `FLIGHT_SLACK_SECONDS`, `flightEndTick`, `isInFlight` and
+`trajectoryClipCount`, which are the two routes `docs/PARSER.md` §20 points a reader at — against
+**what it draws once it lands**. The first half is `helpers/grenade-flight.ts` at 61 lines and the
+second stays at 285, the barrel exports the same 135 names, and `grenade-state.test.ts` lost 59
+lines and gained none. Two things to know. **`MAX_VISUAL_SECONDS` moved and `FLIGHT_SLACK_SECONDS`
+did not** — the first was filed under the flight heading but is read only by `visibleGrenades`, so a
+constant went to the file that reads it rather than to the file that had been keeping it. And
+**nothing was re-measured**, deliberately: a move that adds one cross-module import to a function
+already called per grenade per frame is not a shape change, and §16's rows were taken against
+`7e3967f` one PR earlier.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
