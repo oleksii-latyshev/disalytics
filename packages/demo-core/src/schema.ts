@@ -182,8 +182,14 @@ export interface Shot {
 }
 
 /**
- * A projectile's flight path. Per-tick data, so typed arrays rather than one object per sample;
- * `sampleHz` records the rate the samples survive at, which is below the rate they arrive at.
+ * Where a projectile *was*, for as long as it existed — which is not the same as where it flew.
+ * A smoke's cloud is the projectile entity, so its samples run to the cloud's own expiry, and an
+ * HE's spent shell is kept for a further 5 s; a flash and a fire stop at the detonation. The schema
+ * carries no index for the end of a flight, and `docs/PARSER.md` §20 has the per-type spread and
+ * what to read instead.
+ *
+ * Per-tick data, so typed arrays rather than one object per sample; `sampleHz` records the rate the
+ * samples survive at, which is below the rate they arrive at.
  */
 export interface GrenadeTrajectory {
   sampleHz: number;

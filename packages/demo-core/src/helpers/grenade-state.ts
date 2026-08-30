@@ -115,6 +115,71 @@ export function createVisualScratch(): GrenadeVisualScratch {
 const HE_TOTAL_SECONDS = HE_EXPAND_SECONDS + HE_LINGER_SECONDS;
 
 /**
+ * An expanding mark that may leave a static glyph behind it — the HE ring and the flash mark, which
+ * differ only in whether anything lingers. A flashbang passes the same value for both bounds, so
+ * its whole visual life *is* its expansion and the linger branch can never be reached.
+ */
+function writeBurst(
+  out: GrenadeVisualScratch,
+  elapsed: number,
+  expandSeconds: number,
+  totalSeconds: number,
+): void {
+  if (elapsed < expandSeconds) {
+    out.phase = 'expand';
+    out.progress = elapsed / expandSeconds;
+  } else if (elapsed < totalSeconds) {
+    out.phase = 'linger';
+  }
+}
+
+/**
+ * An area standing on the ground until its expiry — a smoke cloud or a fire, which are the same
+ * shape and differ only in what they are drawn at. §6.2 gives fire the thinner alpha because it is
+ * read through, and that constant is the whole of the difference.
+ *
+ * The two null checks are the function's own rather than the caller's: `expiryTick` and
+ * `detonationTick` are both nullable on `Grenade`, so an area with no ending has none here either.
+ */
+function writeArea(
+  out: GrenadeVisualScratch,
+  grenade: Grenade,
+  tick: Tick,
+  tickRate: number,
+  peakAlpha: number,
+): void {
+  if (grenade.expiryTick === null || grenade.detonationTick === null) return;
+  if (tick > grenade.expiryTick) return;
+
+  const totalTicks = (grenade.expiryTick as number) - (grenade.detonationTick as number);
+  const remainingTicks = (grenade.expiryTick as number) - (tick as number);
+  const remainingSeconds = remainingTicks / tickRate;
+
+  out.phase = 'active';
+  out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
+  out.alpha =
+    remainingSeconds <= AREA_FADE_SECONDS
+      ? peakAlpha * (remainingSeconds / AREA_FADE_SECONDS)
+      : peakAlpha;
+}
+
+/** A decoy, which stands until its expiry and pulses rather than depleting. */
+function writeDecoy(
+  out: GrenadeVisualScratch,
+  grenade: Grenade,
+  tick: Tick,
+  elapsed: number,
+): void {
+  if (grenade.expiryTick === null || tick > grenade.expiryTick) return;
+
+  out.phase = 'active';
+  // Pulse phase wraps [0..1] at DECOY_PULSE_HZ, so the draw can sin(phase * 2π).
+  out.pulsePhase = (elapsed * DECOY_PULSE_HZ) % 1;
+  out.remaining = 1;
+  out.alpha = 1;
+}
+
+/**
  * Computes the visual state of a grenade at a given tick and writes it into `out`. Returns `out`
  * for convenience — no allocation.
  *
@@ -143,78 +208,25 @@ export function grenadeVisual(
   // A grenade whose detonation never arrived has no ending to draw once the flight is over.
   if (grenade.detonationTick === null) return out;
 
-  const elapsedTicks = (tick as number) - (grenade.detonationTick as number);
-  const elapsed = elapsedTicks / tickRate;
+  const elapsed = ((tick as number) - (grenade.detonationTick as number)) / tickRate;
 
   switch (grenade.type) {
-    case 'hegrenade': {
-      if (elapsed < HE_EXPAND_SECONDS) {
-        out.phase = 'expand';
-        out.progress = elapsed / HE_EXPAND_SECONDS;
-      } else if (elapsed < HE_TOTAL_SECONDS) {
-        out.phase = 'linger';
-      }
+    case 'hegrenade':
+      writeBurst(out, elapsed, HE_EXPAND_SECONDS, HE_TOTAL_SECONDS);
       break;
-    }
-
-    case 'flashbang': {
-      if (elapsed < FLASH_EXPAND_SECONDS) {
-        out.phase = 'expand';
-        out.progress = elapsed / FLASH_EXPAND_SECONDS;
-      }
+    case 'flashbang':
+      writeBurst(out, elapsed, FLASH_EXPAND_SECONDS, FLASH_EXPAND_SECONDS);
       break;
-    }
-
-    case 'smokegrenade': {
-      if (grenade.expiryTick === null) break;
-      if (tick > grenade.expiryTick) break;
-
-      const totalTicks = (grenade.expiryTick as number) - (grenade.detonationTick as number);
-      const remainingTicks = (grenade.expiryTick as number) - (tick as number);
-      const remainingSeconds = remainingTicks / tickRate;
-
-      out.phase = 'active';
-      out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
-
-      if (remainingSeconds <= AREA_FADE_SECONDS) {
-        out.alpha = SMOKE_AREA_ALPHA * (remainingSeconds / AREA_FADE_SECONDS);
-      } else {
-        out.alpha = SMOKE_AREA_ALPHA;
-      }
+    case 'smokegrenade':
+      writeArea(out, grenade, tick, tickRate, SMOKE_AREA_ALPHA);
       break;
-    }
-
     case 'molotov':
-    case 'incgrenade': {
-      if (grenade.expiryTick === null) break;
-      if (tick > grenade.expiryTick) break;
-
-      const totalTicks = (grenade.expiryTick as number) - (grenade.detonationTick as number);
-      const remainingTicks = (grenade.expiryTick as number) - (tick as number);
-      const remainingSeconds = remainingTicks / tickRate;
-
-      out.phase = 'active';
-      out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
-
-      if (remainingSeconds <= AREA_FADE_SECONDS) {
-        out.alpha = FIRE_AREA_ALPHA * (remainingSeconds / AREA_FADE_SECONDS);
-      } else {
-        out.alpha = FIRE_AREA_ALPHA;
-      }
+    case 'incgrenade':
+      writeArea(out, grenade, tick, tickRate, FIRE_AREA_ALPHA);
       break;
-    }
-
-    case 'decoy': {
-      if (grenade.expiryTick === null) break;
-      if (tick > grenade.expiryTick) break;
-
-      out.phase = 'active';
-      // Pulse phase wraps [0..1] at DECOY_PULSE_HZ, so the draw can sin(phase * 2π).
-      out.pulsePhase = (elapsed * DECOY_PULSE_HZ) % 1;
-      out.remaining = 1; // Decoy has no depleting ring.
-      out.alpha = 1;
+    case 'decoy':
+      writeDecoy(out, grenade, tick, elapsed);
       break;
-    }
   }
 
   return out;
@@ -248,6 +260,28 @@ export function trajectoryClipCount(grenade: Grenade, tick: Tick, tickRate: numb
 }
 
 // ── active grenade collection ───────────────────────────────────────────────
+
+/**
+ * Whether a grenade that has already gone off is still drawn at `tick`. The four types with an
+ * expiry answer the same question, so they answer it in one arm: an area is on the plate until the
+ * event that ends it, and a burst is on the plate for its own fixed span.
+ *
+ * Exhaustive with no `default`, so a new `GrenadeType` is a compile error rather than a grenade
+ * that silently never appears.
+ */
+function isVisibleAfterDetonation(grenade: Grenade, tick: Tick, elapsed: number): boolean {
+  switch (grenade.type) {
+    case 'hegrenade':
+      return elapsed < HE_TOTAL_SECONDS;
+    case 'flashbang':
+      return elapsed < FLASH_EXPAND_SECONDS;
+    case 'smokegrenade':
+    case 'molotov':
+    case 'incgrenade':
+    case 'decoy':
+      return grenade.expiryTick !== null && tick <= grenade.expiryTick;
+  }
+}
 
 /**
  * Which grenades are visible at `tick`, determined by type-specific rules above. Writes indices
@@ -284,37 +318,8 @@ export function visibleGrenades(
     // A grenade whose detonation never arrived has no ending to draw.
     if (g.detonationTick === null) continue;
 
-    // Post-detonation — check type-specific duration.
     const elapsed = ((tick as number) - (g.detonationTick as number)) / tickRate;
-
-    switch (g.type) {
-      case 'hegrenade': {
-        if (elapsed < HE_EXPAND_SECONDS + HE_LINGER_SECONDS) {
-          out[count++] = i;
-        }
-        break;
-      }
-      case 'flashbang': {
-        if (elapsed < FLASH_EXPAND_SECONDS) {
-          out[count++] = i;
-        }
-        break;
-      }
-      case 'smokegrenade':
-      case 'molotov':
-      case 'incgrenade': {
-        if (g.expiryTick !== null && tick <= g.expiryTick) {
-          out[count++] = i;
-        }
-        break;
-      }
-      case 'decoy': {
-        if (g.expiryTick !== null && tick <= g.expiryTick) {
-          out[count++] = i;
-        }
-        break;
-      }
-    }
+    if (isVisibleAfterDetonation(g, tick, elapsed)) out[count++] = i;
   }
 
   return count;
