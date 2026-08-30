@@ -121,82 +121,99 @@ export function weaponClasses(weapons: readonly WeaponId[]): readonly WeaponClas
   return weapons.map(weaponClass);
 }
 
-// Upstream's *internal* vocabulary, which is what `Kill.weapon` and `Damage.weapon` carry —
-// `ak47`, `m4a1_silencer`, `inferno` — and a different vocabulary from the display names
-// `MatchHeader.weapons` holds (docs/PARSER.md §17). The two tables are both here, side by side and
-// separately named, rather than merged into one lookup that would answer either: #53 is what
-// unifies them, and a merged table would hide the split it exists to close.
-const CLASS_BY_INTERNAL_NAME: Readonly<Record<string, WeaponClass>> = {
-  cz75a: 'pistol',
-  deagle: 'pistol',
-  elite: 'pistol',
-  fiveseven: 'pistol',
-  glock: 'pistol',
-  hkp2000: 'pistol',
-  p250: 'pistol',
-  revolver: 'pistol',
-  tec9: 'pistol',
-  usp_silencer: 'pistol',
+/**
+ * Upstream's *internal* vocabulary — what `Kill.weapon` and `Damage.weapon` carry — against the
+ * entry the same object has in `MatchHeader.weapons`. Two vocabularies for one weapon is
+ * `docs/PARSER.md` §17's finding, and this is the bridge rather than the unification: the tables
+ * stay separate, nothing here is canonical, and a weapon reached through this one still answers
+ * with a name upstream chose. #53 is what makes a single enumerated vocabulary out of them.
+ *
+ * A class or a name is therefore stated **once**, on the display table above. This one maps and
+ * nothing else, so the day an entry there is corrected the kill feed is corrected with it.
+ */
+const ENTRY_BY_INTERNAL_NAME: Readonly<Record<string, WeaponId>> = {
+  cz75a: 'CZ75-Auto',
+  deagle: 'Desert Eagle',
+  elite: 'Dual Berettas',
+  fiveseven: 'Five-SeveN',
+  glock: 'Glock-18',
+  hkp2000: 'P2000',
+  p250: 'P250',
+  revolver: 'R8 Revolver',
+  tec9: 'Tec-9',
+  usp_silencer: 'USP-S',
 
-  bizon: 'smg',
-  mac10: 'smg',
-  mp5sd: 'smg',
-  mp7: 'smg',
-  mp9: 'smg',
-  p90: 'smg',
-  ump45: 'smg',
+  bizon: 'PP-Bizon',
+  mac10: 'MAC-10',
+  mp5sd: 'MP5-SD',
+  mp7: 'MP7',
+  mp9: 'MP9',
+  p90: 'P90',
+  ump45: 'UMP-45',
 
-  ak47: 'rifle',
-  aug: 'rifle',
-  famas: 'rifle',
-  galilar: 'rifle',
-  m4a1: 'rifle',
-  m4a1_silencer: 'rifle',
-  sg556: 'rifle',
+  ak47: 'AK-47',
+  aug: 'AUG',
+  famas: 'FAMAS',
+  galilar: 'Galil AR',
+  m4a1: 'M4A4',
+  m4a1_silencer: 'M4A1-S',
+  sg556: 'SG 553',
 
-  awp: 'sniper',
-  g3sg1: 'sniper',
-  scar20: 'sniper',
-  ssg08: 'sniper',
+  awp: 'AWP',
+  g3sg1: 'G3SG1',
+  scar20: 'SCAR-20',
+  ssg08: 'SSG 08',
 
-  mag7: 'shotgun',
-  nova: 'shotgun',
-  sawedoff: 'shotgun',
-  xm1014: 'shotgun',
+  mag7: 'MAG-7',
+  nova: 'Nova',
+  sawedoff: 'Sawed-Off',
+  xm1014: 'XM1014',
 
-  m249: 'machinegun',
-  negev: 'machinegun',
+  m249: 'M249',
+  negev: 'Negev',
 
-  taser: 'zeus',
-  c4: 'bomb',
+  taser: 'Zeus x27',
+  c4: 'C4 Explosive',
 
-  decoy: 'decoy',
-  flashbang: 'flash',
-  hegrenade: 'he',
-  // The burning area rather than the thrown grenade: a molotov kills as `inferno`, and both the
-  // molotov and the incendiary answer `fire` for the reason `weaponClass` gives them one class.
-  inferno: 'fire',
-  incgrenade: 'fire',
-  molotov: 'fire',
-  smokegrenade: 'smoke',
+  decoy: 'Decoy Grenade',
+  flashbang: 'Flashbang',
+  hegrenade: 'High Explosive Grenade',
+  // The burning area rather than the thrown grenade: a molotov kills as `inferno`, so it is the
+  // molotov's own entry. Both it and the incendiary end up reading `Molotov` anyway — `weaponName`
+  // takes utility to `UTILITY_NAMES`, where the two share one kind.
+  inferno: 'Molotov',
+  incgrenade: 'Incendiary Grenade',
+  molotov: 'Molotov',
+  smokegrenade: 'Smoke Grenade',
 };
+
+/**
+ * The `MatchHeader.weapons` entry a kill's weapon names, or `undefined` for a weapon this
+ * repository has never seen — which is also what a kill by the world (`world`, or the empty string)
+ * answers, because the world holds nothing.
+ *
+ * Knives are matched by prefix rather than enumerated. The field carries the skin — the fixture
+ * alone holds `knife_butterfly`, `knife_cord` and `knife_m9_bayonet` — and Valve adds them faster
+ * than a table can be maintained, so a knife nobody here has heard of still reads as a knife.
+ */
+function killWeaponEntry(weapon: WeaponId): WeaponId | undefined {
+  if (weapon.startsWith('knife') || weapon === 'bayonet') return 'Knife';
+
+  return ENTRY_BY_INTERNAL_NAME[weapon];
+}
 
 /**
  * What a kill or a damage event was dealt with. A **separate vocabulary** from `weaponClass`, which
  * reads the display names on `MatchHeader.weapons`; calling that one with `ak47` answers `unknown`
  * for every kill in the match, which is the trap this function exists to close.
  *
- * Knives are matched by prefix rather than enumerated. The field carries the skin — the fixture
- * alone holds `knife_butterfly`, `knife_cord` and `knife_m9_bayonet` — and Valve adds them faster
- * than a table can be maintained, so a knife nobody here has heard of still reads as a knife.
- *
- * A kill by the world (`world`, or the empty string) has no weapon and answers `unknown`, the same
- * as a weapon this table has never seen. Both are drawn as an absence rather than as a placeholder.
+ * A weapon the bridge has never heard of, and a kill by the world, both answer `unknown` and are
+ * drawn as an absence rather than as a placeholder.
  */
 export function killWeaponClass(weapon: WeaponId): WeaponClass {
-  if (weapon.startsWith('knife') || weapon === 'bayonet') return 'knife';
+  const entry = killWeaponEntry(weapon);
 
-  return CLASS_BY_INTERNAL_NAME[weapon] ?? 'unknown';
+  return entry === undefined ? 'unknown' : weaponClass(entry);
 }
 
 /**
@@ -240,4 +257,20 @@ export function weaponName(weapon: WeaponId): string {
   const kind = weaponClass(weapon);
 
   return isUtilityKind(kind) ? UTILITY_NAMES[kind] : weapon;
+}
+
+/**
+ * What to call the weapon a kill was dealt with — the same name a team row shows for the same
+ * object, because it *is* that name: the bridge resolves the kill's internal identifier to its
+ * `MatchHeader.weapons` entry and `weaponName` answers for it, so utility defers to `UTILITY_NAMES`
+ * here for the reason it does there (#152) and a knife reads `Knife` whatever skin it carried.
+ *
+ * A weapon the bridge has never seen **names itself**. That is upstream's identifier reaching a
+ * sentence, which is the defect this closes — but a name nobody can say beats a row that says
+ * nothing, and it is the same fallback `killWeaponClass` makes when it answers `unknown`.
+ */
+export function killWeaponName(weapon: WeaponId): string {
+  const entry = killWeaponEntry(weapon);
+
+  return entry === undefined ? weapon : weaponName(entry);
 }
