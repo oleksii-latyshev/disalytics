@@ -926,6 +926,30 @@ colour snapped at the start of a 140 ms slide; it names both properties now. And
 §8's token block said `--motion-*` where the token layer has said `--duration-*` since #132** — five
 readings of a name nothing in the product answers to.
 
+**#223 made an invalid Tailwind class fail the build, and the shape is two questions rather than a
+list.** `bun run tokens:check` asks the sources what they write into a class position and asks the
+emitted stylesheet what it has a rule for; anything in the first and not the second is reported with
+every file and line that writes it. That is the only way to catch this family — an invalid candidate
+is **dropped in silence**: no build error, no lint error, no runtime warning, and the class reads as
+correct in review, which is how `text-15` shipped the settings label at its own note's size from
+#203 to #210. Five things are load-bearing. **The scan is anchored, not swept** — `className`,
+`class` and `cva` — because Tailwind's candidate grammar accepts a bare English word, so a sweep
+over the tree reports prose; a token is then only asked about if it carries `-`, `:`, `[`, `(` or
+`/`, which is what every step on a scale carries and what `flex` does not. **A template is walked
+rather than dropped**: `${selected ? 'bg-hover' : ''}` holds two class lists, and removing
+interpolations wholesale would blind the check to the half of this codebase that writes a class
+conditionally. **A `cva` variant name is not a class list** — `icon-lg` is both a size and a shape,
+and it appears as a key and again as a value under `defaultVariants` — so a name the same call uses
+as a key is skipped, which is a rule rather than an exception list. **Class names are read out of
+the CSS rather than matched against it**, because a class carries its own escapes and unescaping
+once is one rule where building the escaped selector per candidate is a rule per punctuation mark;
+the trap there is that `.glass-panel.has-brow` defines *both* halves, so only a **digit** before the
+dot means a decimal point. And **it runs after `build` in `ci.yml`**, since it has nothing to read
+until Tailwind has run — which also means a stale `dist` makes it lie, and the failure message says
+so. The `var(--…)` half is the same script and covers the stylesheets too, where 63 of the 63
+references live. On `main` at the commit that closed #134: **372 classes and 63 custom properties, 0
+unresolved**.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
@@ -1028,6 +1052,7 @@ bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity, every key read + regenerates the typed key union
 bun run errors:check   # ErrorCode parity between demo-core and crates/demo-parser
+bun run tokens:check   # every class and var(--…) resolves in the built CSS (build first)
 bun run mapdata:generate  # map constants + themed radar images; byte-stable across runs
 bun run icons:generate    # weapon outlines from apps/web/assets/weapon-icons; byte-stable
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
