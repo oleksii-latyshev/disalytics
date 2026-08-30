@@ -247,7 +247,8 @@ Otherwise GitHub concatenates every branch commit into the message and the conve
 subject is lost.
 
 Branch protection on `main` — **ready to switch on.** `.github/workflows/ci.yml` exists since #20
-and runs `typecheck` → `check` → `i18n:check` → `test` → `build` → `size` on every pull request and
+and runs `typecheck` → `check` → `i18n:check` → `test` → `build` → `tokens:check` → `size` on every
+pull request and
 every push to `main`. Once it has run green once, apply:
 
 - Required status check: **`ci`** — one job, so one check. The six commands are steps inside it, not

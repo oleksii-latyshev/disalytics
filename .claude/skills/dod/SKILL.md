@@ -17,6 +17,7 @@ say so explicitly rather than quietly omitting it.
 bun run typecheck
 bun run check          # biome; no new suppressions
 bun run i18n:check     # no missing, orphaned or unread keys in either locale
+bun run tokens:check   # no class or var(--…) the built stylesheet never defined; build first
 bun run test
 bun run build
 bun run size           # budgets in AGENTS.md §16

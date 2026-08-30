@@ -103,5 +103,10 @@ jobs:
       - name: build
         run: bun run build
 
+      # After the build on purpose: this one asks the emitted stylesheet whether a class exists, so
+      # it has nothing to read until Tailwind has run.
+      - name: tokens:check
+        run: bun run tokens:check
+
       - name: size
         run: bun run size

@@ -175,6 +175,8 @@ bun run mapdata:generate     # map constants from Valve overview files, plus the
 bun run icons:generate       # weapon outlines from Valve's icons, simplified into one table
 bun run i18n:check           # fail on a missing, orphaned or unread key; regenerate the union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
+bun run tokens:check         # fail on a class or a var(--…) the built stylesheet never defined
+                             # reads apps/web/dist, so it needs a build first
 bun run size                 # bundle + wasm sizes against budgets (§16)
 bun run preview              # build, then serve apps/web/dist through wrangler dev
 bun run smoke <url>          # assert the §13 deploy contract against a running URL
@@ -1045,8 +1047,9 @@ No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
-`errors:check` → `test` → restore-or-build the parser → `build` → `size` gate, in one job, in that
-order. Bun's install cache is keyed on `bun.lock`. `paths-ignore: crates/**`, so a parser-only
+`errors:check` → `test` → restore-or-build the parser → `build` → `tokens:check` → `size` gate, in
+one job, in that order. `tokens:check` sits after the build because it reads the stylesheet Tailwind
+emitted rather than the sources. Bun's install cache is keyed on `bun.lock`. `paths-ignore: crates/**`, so a parser-only
 commit does not run the frontend pipeline — the mirror of the rule above. Required status checks on
 the default branch: see `CONTRIBUTING.md` §5, including what `paths-ignore` costs a parser-only pull
 request.
@@ -1168,6 +1171,7 @@ that stopped treating austerity as a virtue. Rules that constrain engineering:
 1. `bun run typecheck` passes
 2. `bun run check` passes with no new suppressions
 3. `bun run i18n:check` passes — no missing, orphaned or unread keys in either locale
+   and `bun run tokens:check` passes, on a `dist` built from the branch
 4. `bun run test` passes; new logic in `demo-core` has unit tests; `cargo test` passes for crates
 5. No performance budget in §16 regressed
 6. No new runtime dependency without approval
