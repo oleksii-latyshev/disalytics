@@ -890,6 +890,24 @@ axis. And **`hasRoomForGlyphs` keeps its average**: collapsing a whole round's s
 pair is close costs twenty-four legible marks to fix two, and the press is fixed elsewhere now.
 `glyphHitHalves` is its own module beside `round-axis.ts`, which is already over the line at 307.
 
+**#258 gave a kill's weapon a name, and the shape is a bridge with exactly one column.** The feed
+said *«kills … with ak47»* in `en` and *«убивает … — hegrenade»* in `ru`, because `Kill.weapon` is
+upstream's internal vocabulary and reached the sentence unmapped. `ENTRY_BY_INTERNAL_NAME` in
+`packages/demo-core/src/helpers/weapons.ts` maps that vocabulary to the entry the same object has in
+`MatchHeader.weapons` — and **maps nothing else**, which is the decision to keep: the class was
+stated twice before this, once per table, and `killWeaponClass` now reads it off the display table
+through the bridge, so the day an entry there is corrected the kill feed is corrected with it.
+Three things follow from that shape. **Utility needs no rule of its own** — `killWeaponName` is
+`weaponName` of the bridged entry, so #152's deference to `UTILITY_NAMES` happens once and a kill by
+`inferno`, `molotov` or `incgrenade` all read `Molotov`. **This is not #53**: it is a lookup between
+two vocabularies that both still exist, not a canonical enumeration replacing them, and the name it
+answers with is still upstream's. And **an unbridged weapon names itself** — upstream's identifier
+in a sentence is the defect being closed, but a name nobody can say beats a row that says nothing,
+and it is the fallback `killWeaponClass` already makes. The test that keeps the two enumerations
+honest walks `WEAPON_ICON_IDS`: every id the product draws must resolve to a name that is not the id
+and to the same class the icon route gives it. Measured on the fixture over 424 feed rows in each
+locale — **19 identifiers before, the same 19 as names after, 0 identifiers left in either**.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

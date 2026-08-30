@@ -885,6 +885,12 @@ full survey of the five namespaces and the evidence-backed mapping between two o
 lands, `MatchHeader.weapons` and `Kill.weapon` are deliberately different vocabularies and the
 schema says so.
 
+Since #258 `packages/demo-core` carries a **bridge** between those two — `ENTRY_BY_INTERNAL_NAME` in
+`helpers/weapons.ts`, one column from `ak47` to `AK-47` — because a kill has to be stated in words
+somewhere. It changes nothing here: the crate still emits both vocabularies, the bridge is a lookup
+rather than a canonical enumeration, and the name it answers with is still upstream's. #53 is what
+replaces both tables with constants of this repository's own.
+
 ### Cost
 
 Ticks pass over the same demo, five alternating runs, `--release`, native single-threaded:
