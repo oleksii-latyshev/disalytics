@@ -908,6 +908,24 @@ honest walks `WEAPON_ICON_IDS`: every id the product draws must resolve to a nam
 and to the same class the icon route gives it. Measured on the fixture over 424 feed rows in each
 locale — **19 identifiers before, the same 19 as names after, 0 identifiers left in either**.
 
+**#134 made the shared controls name what they transition, and the surprise is that naming it made
+the interface faster.** `Button` was shadcn's `transition-all` at Tailwind's own 150 ms and
+`cubic-bezier(0.4, 0, 0.2, 1)` — neither number the product's — and `transition-all` is a loaded gun
+rather than a live defect: it animates whatever happens to change, so a variant that adjusts padding
+or a width tweens layout silently and nothing catches it. Measured on `main` it already animated
+eight properties on focus, `outline-width` and `outline-offset` among them, which nothing in
+`docs/DESIGN.md` asked for. The three controls in `packages/ui` now list their properties and take
+`--duration-micro` on `--ease-out`, and the two figures to keep are the response ones: hover on the
+accent button reaches 90% of its change in **49 ms against 100 ms** and 99% in **93 ms against
+133 ms**, three passes an arm, one headed Chrome at 1440×900 in one hour. **The old numbers were
+outside §1's 120 ms and the new ones are not**, which is the whole argument for `--ease-out` in
+`docs/DESIGN.md` §8 arriving as evidence: a *shorter* nominal duration on a strong decelerating
+curve is half done at 17 ms where Tailwind's is half done at 58 ms. Two smaller things ride with it.
+The `Switch` knob transitioned `transform` while `peer-checked:` also changed its colour, so the
+colour snapped at the start of a 140 ms slide; it names both properties now. And **`docs/DESIGN.md`
+§8's token block said `--motion-*` where the token layer has said `--duration-*` since #132** — five
+readings of a name nothing in the product answers to.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

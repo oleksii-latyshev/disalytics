@@ -1153,10 +1153,10 @@ motion override, which is also what lets it stop using `:where()` for specificit
 longer exist.
 
 ```css
---motion-instant: 90ms;    /* press */
---motion-micro:   140ms;   /* hover, focus, toggle, feed row */
---motion-base:    220ms;   /* card content, tooltip, selection */
---motion-panel:   340ms;   /* sheet, dialog, view change */
+--duration-instant: 90ms;    /* press */
+--duration-micro:   140ms;   /* hover, focus, toggle, feed row */
+--duration-base:    220ms;   /* card content, tooltip, selection */
+--duration-panel:   340ms;   /* sheet, dialog, view change */
 --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
 --ease-in:    cubic-bezier(0.4, 0, 1, 1);
 --ease-spring: linear(0, 0.42, 0.86, 1.04, 1.02, 1);
@@ -1250,7 +1250,7 @@ route to it. `=` fires the zoom in as well as `+`, because it is the same keycap
 - The plate: wheel zooms, drag pans, double-click resets, hovering a token shows the player's name
   and the pointer's own world coordinate when the debug overlay is on.
 - Feed rows and round-list cells seek. Team rows select.
-- Every hoverable element answers in `--motion-micro`, including during playback.
+- Every hoverable element answers in `--duration-micro`, including during playback.
 - Tooltips are `--glass-raised`, appear after 400 ms, and never carry information that exists
   nowhere else. Restated 16 August 2026 (#157), because the rule was being read as *a tooltip may
   not be informative*: what it forbids is a fact reachable **only** by hovering. A tooltip that
