@@ -152,9 +152,15 @@ it**, which means every blurred panel in the product has a *static* ground behin
 over a static ground is paid for once.
 
 ```css
---blur-panel: blur(24px) saturate(1.25);
---blur-sheet: blur(40px) saturate(1.1);
+--backdrop-panel: blur(24px) saturate(1.25);
+--backdrop-sheet: blur(40px) saturate(1.1);
 ```
+
+**Not `--blur-*`.** That is a Tailwind namespace: from a bare length it builds `blur-<name>` and
+`backdrop-blur-<name>`, so a *filter list* under that prefix resolves to
+`filter: blur(blur(24px) saturate(1.25))`. These are read through `var()` instead —
+`[backdrop-filter:var(--backdrop-panel)]` — and no `backdrop-blur-panel` utility exists. Every
+caller carries an opaque fallback for `@supports not (backdrop-filter: blur(1px))`.
 
 The rule, and it is enforceable by looking at the layout rather than by trusting a reviewer:
 
@@ -171,7 +177,7 @@ The rule, and it is enforceable by looking at the layout rather than by trusting
   the over-the-plate position.
 - Every blurred surface carries an opaque fallback colour for `@supports not (backdrop-filter:
   blur(1px))`, which is also what a reader with the effect disabled gets.
-- `--blur-sheet` runs only on screens where playback is stopped by definition.
+- `--backdrop-sheet` runs only on screens where playback is stopped by definition.
 
 `AGENTS.md` §16 gains an assertion for this: the review screen holds 60 fps with every card blurred,
 on the reference machine, on the 264 MB fixture. If it does not, the blur is what goes — not the
@@ -193,8 +199,11 @@ layout.
 `--ct` and `--t` measure **ΔE2000 53.00** apart, at **7.60:1** and **11.59:1** on the stage. That is
 the one pair a reader must never confuse and it is the furthest-apart pair in the palette.
 
-**`--kill` is deleted.** It measured ΔE2000 **6.47** from `--damage` — two tokens a reader cannot
-tell apart, carrying a distinction the reader does not need to make by hue. A kill is distinguished
+**`--kill` is deleted.** It measured ΔE2000 **2.37** from `--damage` — `#f04b50` against
+`#e5484d`, the two as they stood before this revision, which is the only pairing the figure can
+mean. Under the ~2.3 threshold where a difference stops being reliably visible side by side, let
+alone as two marks at opposite ends of a canvas: two tokens a reader cannot tell apart, carrying
+a distinction the reader does not need to make by hue. A kill is distinguished
 from damage by *shape*: a kill is a glyph, damage is a wash. One fewer token, one fewer lie.
 
 **`--damage` has exactly one reader left**: the token's damage flash in §6.1. §7.1's kill glyph
@@ -1291,7 +1300,7 @@ number. So the shell ends where the match begins: opening a demo replaces it ent
 corner cluster's close (§5.4) is the way back.
 
 The rail is **17.5rem wide** — the same column the team cards take, so the product has one measure
-rather than two — `--glass-panel` at `--blur-panel` over the backdrop below, which §2.3 permits
+rather than two — `--glass-panel` at `--backdrop-panel` over the backdrop below, which §2.3 permits
 because the ground behind it is a static image and a blur over static ground is paid for once.
 
 | Part | What |

@@ -1,4 +1,5 @@
-import { asTick, type Grenade, type GrenadeType, type Tick } from '../schema';
+import type { Grenade, GrenadeType, Tick } from '../schema';
+import { isInFlight } from './grenade-flight';
 
 // ── CS2 engine constants ────────────────────────────────────────────────────
 // Named approximations, same approach as `audibility.ts`. These are not published by Valve; the
@@ -37,45 +38,6 @@ export const FIRE_AREA_ALPHA = 0.25;
 
 /** Pulse frequency of a decoy mark, in Hz of match time — §6.2. */
 export const DECOY_PULSE_HZ = 2;
-
-// ── the end of a flight ─────────────────────────────────────────────────────
-
-// Ordering slack past the projectile's last sample, matching `DETONATION_SLACK_TICKS` in
-// `crates/demo-parser/src/grenades.rs`: the entity leaves the world before the event that says why.
-const FLIGHT_SLACK_SECONDS = 1;
-
-/**
- * The longest a grenade stays on the plate after its throw, used to terminate the walk in
- * [`visibleGrenades`]. The fixture's longest throw-to-expiry is 26.7 s (a smoke), so this is a
- * bound with headroom rather than a measurement.
- */
-const MAX_VISUAL_SECONDS = 45;
-
-/**
- * The tick a grenade stops being in the air.
- *
- * `detonationTick` is `null` whenever the crate could not match a detonation event to the
- * projectile, which is a normal fraction of any match and **not** a grenade that is still flying.
- * The trajectory is what bounds it in that case: the projectile stops being sampled when it stops
- * existing, so its last sample plus the crate's own ordering slack is the end.
- */
-export function flightEndTick(grenade: Grenade, tickRate: number): Tick {
-  if (grenade.detonationTick !== null) return grenade.detonationTick;
-
-  const { trajectory } = grenade;
-  const lastSampleTick =
-    trajectory.sampleCount > 0 && trajectory.sampleHz > 0
-      ? (trajectory.firstTick as number) +
-        ((trajectory.sampleCount - 1) * tickRate) / trajectory.sampleHz
-      : (grenade.throwTick as number);
-
-  return asTick(Math.ceil(lastSampleTick + FLIGHT_SLACK_SECONDS * tickRate));
-}
-
-/** Whether the projectile is in the air at `tick` — between the throw and [`flightEndTick`]. */
-export function isInFlight(grenade: Grenade, tick: Tick, tickRate: number): boolean {
-  return tick >= grenade.throwTick && tick < flightEndTick(grenade, tickRate);
-}
 
 // ── grenade visual phase ────────────────────────────────────────────────────
 
@@ -232,34 +194,14 @@ export function grenadeVisual(
   return out;
 }
 
-// ── trajectory clipping ─────────────────────────────────────────────────────
+// ── active grenade collection ───────────────────────────────────────────────
 
 /**
- * How many trajectory samples to draw for a grenade at the current tick. Returns 0 if the grenade
- * has not been thrown yet, and `trajectory.sampleCount` once it has landed.
+ * The longest a grenade stays on the plate after its throw, used to terminate the walk in
+ * [`visibleGrenades`]. The fixture's longest throw-to-expiry is 26.7 s (a smoke), so this is a
+ * bound with headroom rather than a measurement.
  */
-export function trajectoryClipCount(grenade: Grenade, tick: Tick, tickRate: number): number {
-  const { trajectory } = grenade;
-  if (trajectory.sampleCount === 0) return 0;
-  if (tick < grenade.throwTick) return 0;
-
-  // Past detonation: draw the full trajectory.
-  if (grenade.detonationTick !== null && tick >= grenade.detonationTick) {
-    return trajectory.sampleCount;
-  }
-
-  // In flight: clip to the current tick.
-  const elapsedTicks = (tick as number) - (trajectory.firstTick as number);
-  if (elapsedTicks <= 0) return 1; // At least the start point.
-
-  const samplesPerTick =
-    trajectory.sampleHz > 0 && tickRate > 0 ? trajectory.sampleHz / tickRate : 1;
-  const index = Math.ceil(elapsedTicks * samplesPerTick);
-
-  return Math.min(index + 1, trajectory.sampleCount);
-}
-
-// ── active grenade collection ───────────────────────────────────────────────
+const MAX_VISUAL_SECONDS = 45;
 
 /**
  * Whether a grenade that has already gone off is still drawn at `tick`. The four types with an
