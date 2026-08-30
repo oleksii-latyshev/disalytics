@@ -1,4 +1,4 @@
-import type { Frame, PlayerSlot, Team, WeaponClass, WeaponId } from '@disa/demo-core';
+import type { Frame, PlayerSlot, Team, WeaponClass, WeaponIconId, WeaponId } from '@disa/demo-core';
 
 /**
  * One kill, as both readers of the row need it — §5.4's feed and §7.1's tooltip on the round axis.
@@ -17,6 +17,12 @@ export interface KillRow {
   readonly victimSide: Team | undefined;
   /** From `killWeaponClass`: `Kill.weapon` is the internal vocabulary, not the display one. */
   readonly weapon: WeaponClass;
+  /**
+   * The model's own outline, where the product has one. It sits beside the class rather than
+   * replacing it because a kill by the world, by utility or by a weapon nobody has drawn still has
+   * a class to fall back on.
+   */
+  readonly weaponIcon: WeaponIconId | undefined;
   /**
    * The weapon as the demo named it, for whatever accessible name the caller builds. Game
    * vocabulary reaches a label untranslated, the way a team row's does (§5.3) — and this is the

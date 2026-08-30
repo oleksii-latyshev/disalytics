@@ -775,6 +775,28 @@ selected or not — 14 distinct hashes, 14 of 14 matching** either side of the m
 unchanged and still runs once: 47 of the arrival's 232 frames sit below full opacity, and 0 of the
 419 after it, across a sheet opened and closed, a player selected and a round seeked.
 
+**#260 gave the weapons back their names, and the shape of the answer is the part to keep.** §5.3's
+row and §5.4's feed drew one rifle for an AK, an M4A4 and an M4A1-S, which is a feed that says *a
+rifle* to a reader asking *which*. What draws there now is Valve's own outline, arriving the way the
+radar images do — extracted from the depot by
+[`Juknum/counter-strike-icons`](https://github.com/Juknum/counter-strike-icons), committed under
+`apps/web/assets/weapon-icons/`, credited in the README, and never fetched by anything here. Five
+things are load-bearing. **The icon id is the internal vocabulary**: Valve names the files `ak47`
+and `m4a1_silencer`, which is exactly what `Kill.weapon` carries, so a kill's icon is a set
+membership test and there is no fourth namespace — `killWeaponIcon` has no table at all, and only
+the display names needed one, as a second column on the table that already listed them. **The type
+is the guard.** The generated record is `Record<WeaponIconId, WeaponIcon>` against a list
+`demo-core` owns, so an id the vocabulary names and nobody shipped is a compile error rather than an
+empty glyph; no runtime check exists because none is needed. **Valve's curves do not ship** — 506 kB
+of path data, 44 kB gzipped, for 36 icons — so `bun run icons:generate` flattens them to polygons
+and simplifies at **0.3 of the icon's own 32-unit height**, which is 25 kB and is indistinguishable
+from the source at 10px and at 26px, checked icon by icon. **The plate keeps the class set**, and
+that is §6.1's own finding one size up: a model outline in a 14×7 box is a smudge, so the two sets
+are two resolutions rather than two drawings of one thing. And **an unmapped weapon still draws** —
+it falls back to its class, the way `weaponClass` answers `unknown` rather than failing, which is
+why this needed nothing from the blocked #53. What it deliberately did not touch: the feed still
+*says* `ak47` in its accessible name, which is #258.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
@@ -878,6 +900,7 @@ bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity, every key read + regenerates the typed key union
 bun run errors:check   # ErrorCode parity between demo-core and crates/demo-parser
 bun run mapdata:generate  # map constants + themed radar images; byte-stable across runs
+bun run icons:generate    # weapon outlines from apps/web/assets/weapon-icons; byte-stable
 bun run size           # gzip bundle + wasm against the budgets in AGENTS.md §16 (build first)
 bun run size --wasm    # the binary half only, without needing a built dist
 bun run wasm:build     # wasm-pack build crates/demo-parser-wasm -> pkg/

@@ -9,6 +9,7 @@ import {
   type GrenadeType,
   type WeaponId,
 } from '../schema';
+import { isWeaponIconId, type WeaponIconId } from './weapon-icons';
 
 /** The utility a player can be carrying, which is what one bit of the `grenades` bitfield means. */
 export type UtilityKind = 'he' | 'flash' | 'smoke' | 'fire' | 'decoy' | 'kit';
@@ -36,60 +37,69 @@ export type WeaponClass =
   | 'unknown'
   | UtilityKind;
 
+interface WeaponFacts {
+  readonly kind: WeaponClass;
+  /**
+   * The silhouette that names this exact model. Utility draws its own mark and the bomb draws
+   * nothing at all (`docs/DESIGN.md` §6.4), so neither of them names one.
+   */
+  readonly icon: WeaponIconId | undefined;
+}
+
 // Upstream's display-name vocabulary — a different vocabulary from `Kill.weapon`, and the one
 // `MatchHeader.weapons` carries. Knives arrive collapsed to a single `Knife` entry, so no skin
 // name reaches this table (docs/PARSER.md §17).
-const CLASS_BY_NAME: Readonly<Record<string, WeaponClass>> = {
-  'CZ75-Auto': 'pistol',
-  'Desert Eagle': 'pistol',
-  'Dual Berettas': 'pistol',
-  'Five-SeveN': 'pistol',
-  'Glock-18': 'pistol',
-  P250: 'pistol',
-  P2000: 'pistol',
-  'R8 Revolver': 'pistol',
-  'Tec-9': 'pistol',
-  'USP-S': 'pistol',
+const WEAPONS_BY_NAME: Readonly<Record<string, WeaponFacts>> = {
+  'CZ75-Auto': { kind: 'pistol', icon: 'cz75a' },
+  'Desert Eagle': { kind: 'pistol', icon: 'deagle' },
+  'Dual Berettas': { kind: 'pistol', icon: 'elite' },
+  'Five-SeveN': { kind: 'pistol', icon: 'fiveseven' },
+  'Glock-18': { kind: 'pistol', icon: 'glock' },
+  P250: { kind: 'pistol', icon: 'p250' },
+  P2000: { kind: 'pistol', icon: 'hkp2000' },
+  'R8 Revolver': { kind: 'pistol', icon: 'revolver' },
+  'Tec-9': { kind: 'pistol', icon: 'tec9' },
+  'USP-S': { kind: 'pistol', icon: 'usp_silencer' },
 
-  'MAC-10': 'smg',
-  'MP5-SD': 'smg',
-  MP7: 'smg',
-  MP9: 'smg',
-  P90: 'smg',
-  'PP-Bizon': 'smg',
-  'UMP-45': 'smg',
+  'MAC-10': { kind: 'smg', icon: 'mac10' },
+  'MP5-SD': { kind: 'smg', icon: 'mp5sd' },
+  MP7: { kind: 'smg', icon: 'mp7' },
+  MP9: { kind: 'smg', icon: 'mp9' },
+  P90: { kind: 'smg', icon: 'p90' },
+  'PP-Bizon': { kind: 'smg', icon: 'bizon' },
+  'UMP-45': { kind: 'smg', icon: 'ump45' },
 
-  'AK-47': 'rifle',
-  AUG: 'rifle',
-  FAMAS: 'rifle',
-  'Galil AR': 'rifle',
-  'M4A1-S': 'rifle',
-  M4A4: 'rifle',
-  'SG 553': 'rifle',
+  'AK-47': { kind: 'rifle', icon: 'ak47' },
+  AUG: { kind: 'rifle', icon: 'aug' },
+  FAMAS: { kind: 'rifle', icon: 'famas' },
+  'Galil AR': { kind: 'rifle', icon: 'galilar' },
+  'M4A1-S': { kind: 'rifle', icon: 'm4a1_silencer' },
+  M4A4: { kind: 'rifle', icon: 'm4a1' },
+  'SG 553': { kind: 'rifle', icon: 'sg556' },
 
-  AWP: 'sniper',
-  G3SG1: 'sniper',
-  'SCAR-20': 'sniper',
-  'SSG 08': 'sniper',
+  AWP: { kind: 'sniper', icon: 'awp' },
+  G3SG1: { kind: 'sniper', icon: 'g3sg1' },
+  'SCAR-20': { kind: 'sniper', icon: 'scar20' },
+  'SSG 08': { kind: 'sniper', icon: 'ssg08' },
 
-  'MAG-7': 'shotgun',
-  Nova: 'shotgun',
-  'Sawed-Off': 'shotgun',
-  XM1014: 'shotgun',
+  'MAG-7': { kind: 'shotgun', icon: 'mag7' },
+  Nova: { kind: 'shotgun', icon: 'nova' },
+  'Sawed-Off': { kind: 'shotgun', icon: 'sawedoff' },
+  XM1014: { kind: 'shotgun', icon: 'xm1014' },
 
-  M249: 'machinegun',
-  Negev: 'machinegun',
+  M249: { kind: 'machinegun', icon: 'm249' },
+  Negev: { kind: 'machinegun', icon: 'negev' },
 
-  Knife: 'knife',
-  'Zeus x27': 'zeus',
-  'C4 Explosive': 'bomb',
+  Knife: { kind: 'knife', icon: 'knife' },
+  'Zeus x27': { kind: 'zeus', icon: 'taser' },
+  'C4 Explosive': { kind: 'bomb', icon: undefined },
 
-  'Decoy Grenade': 'decoy',
-  Flashbang: 'flash',
-  'High Explosive Grenade': 'he',
-  'Incendiary Grenade': 'fire',
-  Molotov: 'fire',
-  'Smoke Grenade': 'smoke',
+  'Decoy Grenade': { kind: 'decoy', icon: undefined },
+  Flashbang: { kind: 'flash', icon: undefined },
+  'High Explosive Grenade': { kind: 'he', icon: undefined },
+  'Incendiary Grenade': { kind: 'fire', icon: undefined },
+  Molotov: { kind: 'fire', icon: undefined },
+  'Smoke Grenade': { kind: 'smoke', icon: undefined },
 };
 
 /**
@@ -98,7 +108,16 @@ const CLASS_BY_NAME: Readonly<Record<string, WeaponClass>> = {
  * corner is deniable.
  */
 export function weaponClass(weapon: WeaponId): WeaponClass {
-  return CLASS_BY_NAME[weapon] ?? 'unknown';
+  return WEAPONS_BY_NAME[weapon]?.kind ?? 'unknown';
+}
+
+/**
+ * The icon that names the exact model a player is holding — an M4A4 rather than a rifle. It answers
+ * `undefined` for utility, for the bomb and for a weapon this table has never seen; each of those
+ * still draws, by falling back to the class `weaponClass` gives it.
+ */
+export function weaponIcon(weapon: WeaponId): WeaponIconId | undefined {
+  return WEAPONS_BY_NAME[weapon]?.icon;
 }
 
 /**
@@ -190,6 +209,20 @@ export function killWeaponClass(weapon: WeaponId): WeaponClass {
   if (weapon.startsWith('knife') || weapon === 'bayonet') return 'knife';
 
   return CLASS_BY_INTERNAL_NAME[weapon] ?? 'unknown';
+}
+
+/**
+ * The icon that names what a kill was dealt with. It needs no table of its own: Valve's icon files
+ * are named in this same internal vocabulary, so the id a kill wants **is** the weapon's own name,
+ * and every knife skin collapses onto the one knife for `killWeaponClass`'s reason.
+ *
+ * A kill by the world, a kill by utility and a weapon nobody has drawn all answer `undefined` and
+ * fall back to their class.
+ */
+export function killWeaponIcon(weapon: WeaponId): WeaponIconId | undefined {
+  if (weapon.startsWith('knife') || weapon === 'bayonet') return 'knife';
+
+  return isWeaponIconId(weapon) ? weapon : undefined;
 }
 
 /**

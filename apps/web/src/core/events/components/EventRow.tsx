@@ -51,7 +51,7 @@ export function EventRow({ event, nameOf }: Props) {
 
       <span className="flex shrink-0 items-center gap-1 text-ink-dim">
         {/* A world kill has no weapon to draw, and the bomb draws nothing by rule — §6.4. */}
-        {event.attacker !== null && <WeaponGlyph weapon={event.weapon} />}
+        {event.attacker !== null && <WeaponGlyph weapon={event.weapon} icon={event.weaponIcon} />}
         {event.isHeadshot && <KillMark kind="headshot" />}
         {event.isWallbang && <KillMark kind="wallbang" />}
         {event.isThroughSmoke && <KillMark kind="smoke" />}
