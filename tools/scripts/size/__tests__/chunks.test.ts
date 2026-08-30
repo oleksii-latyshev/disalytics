@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkFamily, staleFamilies } from '../chunks';
+import { binaryMismatch, chunkFamily, staleFamilies } from '../chunks';
 
 const CLEAN_BUILD = [
   'index-DWy4kbDR.js',
@@ -57,5 +57,41 @@ describe('staleFamilies', () => {
     ]);
 
     expect(stale.map((entry) => entry.family)).toEqual(['en', 'index', 'ru']);
+  });
+});
+
+describe('binaryMismatch', () => {
+  const dist = { path: 'apps/web/dist/assets/x-A.wasm', size: 10, digest: 'a' };
+  const pkg = { path: 'crates/demo-parser-wasm/pkg/x.wasm', size: 10, digest: 'a' };
+
+  it('is silent when the shipped binary is the built one', () => {
+    expect(binaryMismatch([dist], pkg)).toBeUndefined();
+  });
+
+  it('is silent when nothing was built, so there is nothing to compare against', () => {
+    expect(binaryMismatch([dist], undefined)).toBeUndefined();
+  });
+
+  it('is silent when nothing shipped, which is the --wasm arm', () => {
+    expect(binaryMismatch([], pkg)).toBeUndefined();
+  });
+
+  it('reports a shipped binary that is not the built one', () => {
+    const stale = { ...dist, size: 9, digest: 'b' };
+    expect(binaryMismatch([stale], pkg)).toEqual({
+      reason: 'differs from the built parser',
+      binaries: [stale, pkg],
+    });
+  });
+
+  it('reports two binaries in dist without needing to say which is stale', () => {
+    const other = { path: 'apps/web/dist/assets/x-B.wasm', size: 9, digest: 'b' };
+    expect(binaryMismatch([dist, other], pkg)?.reason).toBe('more than one');
+  });
+
+  it('goes by content rather than by size, since two builds can weigh the same', () => {
+    expect(binaryMismatch([{ ...dist, digest: 'b' }], pkg)?.reason).toBe(
+      'differs from the built parser',
+    );
   });
 });

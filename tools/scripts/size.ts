@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { staleFamilies } from './size/chunks';
+import { type Binary, binaryMismatch, staleFamilies } from './size/chunks';
 
 // Decimal kB/MB, the unit Vite's own build report and the §16 measurements are written in.
 const JS_BUDGET_BYTES = 500_000;
@@ -118,7 +118,31 @@ async function checkJsBundle(): Promise<boolean> {
   return withinBudget;
 }
 
-async function checkWasm(): Promise<boolean> {
+async function binaries(dir: string): Promise<Binary[]> {
+  const paths = (await walk(dir)).filter((path) => path.endsWith('.wasm')).sort();
+
+  return Promise.all(
+    paths.map(async (path) => {
+      const bytes = await Bun.file(path).bytes();
+      return { path, size: bytes.length, digest: Bun.SHA256.hash(bytes, 'hex') };
+    }),
+  );
+}
+
+function reportMismatch(mismatch: NonNullable<ReturnType<typeof binaryMismatch>>): void {
+  console.error(
+    `\n  The .wasm in ${DIST_DIR} is not the one ${CRATES_DIR} holds — ${mismatch.reason}:\n`,
+  );
+  for (const binary of mismatch.binaries) {
+    console.error(`    ${binary.path}  ${binary.size.toLocaleString('en-US')} B`);
+  }
+  console.error(
+    `\n  \`rm -rf ${DIST_DIR} && bun run build\` does not settle this on its own: turbo restores`,
+  );
+  console.error('  its own cached dist without running Vite. Run `bun run build --force`.');
+}
+
+async function checkWasm(wasmOnly: boolean): Promise<boolean> {
   console.log('\nWASM binary (AGENTS.md §16)\n');
 
   if (!existsSync(CRATES_DIR)) {
@@ -126,21 +150,31 @@ async function checkWasm(): Promise<boolean> {
     return true;
   }
 
-  const candidates = [...(await walk(CRATES_DIR)), ...(await walk(DIST_DIR))].filter((path) =>
-    path.endsWith('.wasm'),
-  );
-  if (candidates.length === 0) {
+  const built = (await binaries(CRATES_DIR)).at(0);
+  // `--wasm` reads the parser build and nothing else by definition, so a dist that happens to be
+  // lying around on that arm is not this measurement's business.
+  const shipped = wasmOnly ? [] : await binaries(DIST_DIR);
+
+  const mismatch = binaryMismatch(shipped, built);
+  if (mismatch !== undefined) {
+    reportMismatch(mismatch);
+    return false;
+  }
+
+  // The shipped copy is the one the budget is about; `pkg/` speaks for it on the `--wasm` arm,
+  // where there is no dist for the two to have diverged from.
+  const binary = shipped.at(0) ?? built;
+  if (binary === undefined) {
     console.log(`  No .wasm built — run \`bun run wasm:build\` to weigh it. Budget inert.`);
     return true;
   }
 
-  const measured = (await Promise.all(candidates.map(measure))).sort((a, b) => b.raw - a.raw);
-  const heaviest = Math.max(...measured.map((entry) => entry.raw));
-  for (const entry of measured) {
-    console.log(row(entry.name, mb(entry.raw), `${mb(entry.gzip)} gz`));
-  }
+  const entry = await measure(binary.path);
+  const heaviest = entry.raw;
+  const label = shipped.length > 0 ? 'shipped binary' : 'built binary';
+  console.log(row(entry.name, mb(entry.raw), `${mb(entry.gzip)} gz`));
   console.log(
-    `\n${row('largest binary', mb(heaviest), `${((heaviest / WASM_BUDGET_BYTES) * 100).toFixed(1)}% of the ${mb(WASM_BUDGET_BYTES)} budget`)}`,
+    `\n${row(label, mb(heaviest), `${((heaviest / WASM_BUDGET_BYTES) * 100).toFixed(1)}% of the ${mb(WASM_BUDGET_BYTES)} budget`)}`,
   );
 
   if (heaviest > WASM_HARD_FAIL_BYTES) {
@@ -168,6 +202,6 @@ if (!wasmOnly && !existsSync(DIST_DIR)) {
 }
 
 const jsOk = wasmOnly || (await checkJsBundle());
-const wasmOk = await checkWasm();
+const wasmOk = await checkWasm(wasmOnly);
 
 if (!(jsOk && wasmOk)) process.exit(1);
