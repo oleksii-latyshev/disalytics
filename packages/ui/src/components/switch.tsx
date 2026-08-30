@@ -31,7 +31,7 @@ export function Switch({ className, ...props }: React.ComponentProps<'input'>) {
 
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink transition-transform duration-(--duration-micro) ease-out peer-checked:translate-x-4 peer-checked:bg-accent-ink"
+        className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink transition-[transform,background-color] duration-(--duration-micro) ease-out peer-checked:translate-x-4 peer-checked:bg-accent-ink"
       />
     </span>
   );
