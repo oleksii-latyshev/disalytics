@@ -13,7 +13,8 @@
       "!**/target",
       "!**/pkg",
       "!bun.lock",
-      "!crates/*/tests/snapshots"
+      "!crates/*/tests/snapshots",
+      "!apps/web/assets/weapon-icons"
     ]
   },
   "formatter": {

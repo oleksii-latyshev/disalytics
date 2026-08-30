@@ -605,7 +605,7 @@ Five rows per card, each row carrying, in this order:
 | health | `TickTrack.health` | a 3px bar in the side colour, plus the number in Plex Mono 12 |
 | armour | **new column** | a 3px bar under health in `--ink-dim`; a helmet glyph when the flag is set |
 | money | **new column** | Plex Mono 12, `--ink-dim`, prefixed by the locale's currency rule |
-| weapon | **new column** | the weapon glyph, `--ink`; game vocabulary, never translated; `C4 Explosive` draws empty, §6.4 |
+| weapon | **new column** | the weapon's own outline, `--ink`, 12px tall and as wide as the model is; game vocabulary, never translated; `C4 Explosive` draws empty, §6.4 |
 | grenades | **new column** | up to five 10px glyphs in each utility's own colour |
 
 Four of those six do not exist in `SCHEMA_VERSION` 3 and are the reason for the bump in §0. What the
@@ -650,7 +650,10 @@ because the next control that ships ahead of its own home will want the same exc
 Beneath the cluster, the **event feed**: the last events before the playhead, newest at the top,
 capped at eight rows and clipped to the current round. A row is *attacker · weapon glyph · victim*
 with the two names in their side colours, plus a headshot mark, a wallbang mark and a through-smoke
-mark where the schema says so. Objective events (plant, defuse) get a full-width row in
+mark where the schema says so. The weapon is **the model's own outline** — an AK-47, an M4A4 and an
+M4A1-S are three shapes here, because a row that drew one rifle for all three says *a rifle* where
+the reader is asking *which*. §11 says where those outlines come from and §6.1 says why the plate
+keeps the class silhouette instead. Objective events (plant, defuse) get a full-width row in
 `--objective`.
 
 The feed is the one place in the product where **a new item animates in while playback runs**, and
@@ -761,8 +764,11 @@ Everything in this section except §6.4 is drawable from data the parser emits o
   keeping. **The box is 14×7 and not the 8×8 this section first asked for**: a gun is a wide object,
   and the same set squeezed into a square turns every long gun into the letter T — 14px is where the
   scope on an AWP and the stock on a rifle survive the reduction from §5.3's 24px. **The shapes are
-  §5.3's own**, drawn from one table with two renderers rather than a second set drawn by hand,
-  because two sets agree on the day they are written and not a week later. And **every piece of
+  the product's own**, drawn from one table with two renderers — this canvas mark and the fallback
+  in §5.3's glyph — rather than a second set drawn by hand, because two sets agree on the day they
+  are written and not a week later. §5.3 and §5.4 draw Valve's model outlines instead since #260,
+  and that is not a second version of this set: it is the resolution a row has room for and this box
+  does not, which is the same finding as the 8×8 one size further down. And **every piece of
   utility draws one grenade**, where the team row draws the kind: a smoke, a flash and a molotov are
   three marks at 24px and one blur at 14px.
 - **Health is not on the plate.** The team card carries it. The only health state the plate shows is
@@ -1589,9 +1595,16 @@ dependency approved under hard rule 10 at roughly 30–35 kB gzipped.
 - There is nothing to vendor for the way in. The two WebGL backgrounds this bullet used to describe
   are deferred (§10.1) and the backdrop that replaced them is an image `packages/map-data` already
   generates, so no third-party component and no `ogl` chunk enters the build at all.
-- Icons come from the animated Lucide set, per icon, never as a barrel import. Weapon and utility
-  glyphs are the product's own SVG set, sized on the 4px grid, and they are game vocabulary — never
-  translated, never re-drawn per locale.
+- Icons come from the animated Lucide set, per icon, never as a barrel import. Utility glyphs, the
+  event marks and the class silhouettes §6.1 draws are the product's own SVG set, sized on the 4px
+  grid. All of them are game vocabulary — never translated, never re-drawn per locale.
+- **Weapon outlines are Valve's own**, and they arrive the way the radar images do (`AGENTS.md` §9):
+  extracted from the game depot by a third party on a schedule, committed under
+  `apps/web/assets/weapon-icons/`, credited in the README, never fetched. `bun run icons:generate`
+  is what turns them into the table the app ships — Valve's curves are 506 kB of path data, and
+  flattening them to polygons at 0.3 of the icon's own 32-unit height gives 25 kB that is
+  indistinguishable at the sizes a row draws one. They keep Valve's boxes: one height, a width per
+  weapon, which is how the game draws them and why a row sets the height and lets the width follow.
 
 ---
 

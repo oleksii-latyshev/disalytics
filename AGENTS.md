@@ -172,6 +172,7 @@ bun run wasm:build           # wasm-pack build crates/demo-parser-wasm
 bun run wasm:smoke           # call into the built binary — proves it runs, not that it compiled
                              # DISALYTICS_FIXTURE_DEMO also checks the shape it hands to JavaScript
 bun run mapdata:generate     # map constants from Valve overview files, plus the themed radars
+bun run icons:generate       # weapon outlines from Valve's icons, simplified into one table
 bun run i18n:check           # fail on a missing, orphaned or unread key; regenerate the union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
 bun run size                 # bundle + wasm sizes against budgets (§16)

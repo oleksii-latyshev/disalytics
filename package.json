@@ -12,6 +12,7 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "i18n:check": "bun tools/scripts/i18n-check.ts",
+    "icons:generate": "bun tools/scripts/weapon-icons-generate.ts",
     "mapdata:generate": "bun tools/scripts/mapdata-generate.ts",
     "errors:check": "bun tools/scripts/errors-check.ts",
     "wasm:build": "wasm-pack build crates/demo-parser-wasm --target web",

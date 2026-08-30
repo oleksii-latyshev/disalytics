@@ -156,10 +156,11 @@ are the ones to check before changing anything.
 |---|---|---|
 | [`LaihoE/demoparser`](https://github.com/LaihoE/demoparser) | MIT | The demo parser itself. **Copied** into [`vendor/`](vendor/README.md) at a pinned revision and patched, because `Instant::now()` traps on `wasm32` and both build scripts reach the network. Every deviation from upstream is listed in `vendor/README.md` and nowhere else. |
 | [`MurkyYT/cs2-map-icons`](https://github.com/MurkyYT/cs2-map-icons) | none declared | Radar images and Valve's overview coordinate data (`pos_x`, `pos_y`, `scale`), extracted from the game depot on a schedule. The map data is generated from them; the assets themselves remain Valve's. |
+| [`Juknum/counter-strike-icons`](https://github.com/Juknum/counter-strike-icons) | tooling MIT, assets Valve's | The weapon outlines under [`apps/web/assets/weapon-icons`](apps/web/assets/weapon-icons/README.md), extracted from the game depot on a schedule. `bun run icons:generate` simplifies them into the table the app ships; the outlines themselves remain Valve's. |
 | [`shadcn/ui`](https://github.com/shadcn-ui/ui) | MIT | The component source under `packages/ui/src/components`. **Copied** by the CLI, per `packages/ui/components.json` — these are files in this repository, not a dependency, and they are edited here rather than tracked upstream. |
 
-Counter-Strike 2, the `.dem` format, and the overview and radar art the map data derives from are
-the property of **Valve Corporation**. disalytics is an unofficial tool, not affiliated with or
+Counter-Strike 2, the `.dem` format, and the overview, radar and weapon art this repository derives
+from are the property of **Valve Corporation**. disalytics is an unofficial tool, not affiliated with or
 endorsed by Valve.
 
 Everything else arrives through a package manager and is recorded in `bun.lock` and `Cargo.lock`

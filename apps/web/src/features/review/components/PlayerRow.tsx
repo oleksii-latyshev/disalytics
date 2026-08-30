@@ -12,6 +12,7 @@ import {
   utilityHeld,
   WEAPON_NONE,
   weaponClass,
+  weaponIcon,
   weaponName,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
@@ -115,7 +116,11 @@ export function PlayerRow({
                 all: `WeaponGlyph` draws the `C4 Explosive` entry as empty — §6.4, #137. The name
                 is `weaponName`'s rather than the table entry, so a held grenade and the marks
                 below it are one name to a screen reader instead of two. */}
-            <WeaponGlyph weapon={weaponClass(weapon)} label={weaponName(weapon)} />
+            <WeaponGlyph
+              weapon={weaponClass(weapon)}
+              icon={weaponIcon(weapon)}
+              label={weaponName(weapon)}
+            />
           </span>
         )}
       </span>

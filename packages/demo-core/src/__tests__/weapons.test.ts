@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { isWeaponIconId, WEAPON_ICON_IDS } from '../helpers/weapon-icons';
 import {
   isUtilityKind,
   killWeaponClass,
+  killWeaponIcon,
   UTILITY_NAMES,
   utilityHeld,
   utilityKindOfGrenade,
   weaponClass,
   weaponClasses,
+  weaponIcon,
   weaponName,
 } from '../helpers/weapons';
 import {
@@ -256,5 +259,64 @@ describe('UTILITY_NAMES', () => {
   it('keeps a name for the defuse kit, which no weapon-table entry can give one', () => {
     expect(weaponClass(UTILITY_NAMES.kit)).toBe('unknown');
     expect(UTILITY_NAMES.kit).toBe('Defuse Kit');
+  });
+});
+
+describe('weaponIcon', () => {
+  it('tells the two M4s apart, which is what a class cannot do', () => {
+    expect(weaponIcon('M4A4')).toBe('m4a1');
+    expect(weaponIcon('M4A1-S')).toBe('m4a1_silencer');
+    expect(weaponIcon('AK-47')).toBe('ak47');
+    expect(weaponIcon('AWP')).toBe('awp');
+  });
+
+  it('names an icon for every weapon that is not utility or the bomb', () => {
+    for (const weapon of ['CZ75-Auto', 'PP-Bizon', 'Galil AR', 'SSG 08', 'Nova', 'Negev']) {
+      expect(weaponIcon(weapon), `${weapon} has no icon`).toBeDefined();
+    }
+  });
+
+  it('leaves utility and the bomb to the marks that draw them', () => {
+    expect(weaponIcon('Smoke Grenade')).toBeUndefined();
+    expect(weaponIcon('Molotov')).toBeUndefined();
+    expect(weaponIcon('C4 Explosive')).toBeUndefined();
+  });
+
+  it('has nothing to draw for a weapon it has never seen', () => {
+    expect(weaponIcon('Plasma Rifle')).toBeUndefined();
+  });
+});
+
+describe('killWeaponIcon', () => {
+  it('reads the kill vocabulary, which is where the icon files take their names', () => {
+    expect(killWeaponIcon('ak47')).toBe('ak47');
+    expect(killWeaponIcon('m4a1')).toBe('m4a1');
+    expect(killWeaponIcon('m4a1_silencer')).toBe('m4a1_silencer');
+    expect(killWeaponIcon('usp_silencer')).toBe('usp_silencer');
+  });
+
+  it('collapses every knife skin onto the one knife', () => {
+    expect(killWeaponIcon('knife')).toBe('knife');
+    expect(killWeaponIcon('knife_butterfly')).toBe('knife');
+    expect(killWeaponIcon('bayonet')).toBe('knife');
+  });
+
+  it('has nothing to draw for the world, for utility or for the bomb', () => {
+    expect(killWeaponIcon('world')).toBeUndefined();
+    expect(killWeaponIcon('inferno')).toBeUndefined();
+    expect(killWeaponIcon('hegrenade')).toBeUndefined();
+    expect(killWeaponIcon('c4')).toBeUndefined();
+  });
+
+  it('refuses the display vocabulary, the way killWeaponClass does', () => {
+    expect(killWeaponIcon('AK-47')).toBeUndefined();
+  });
+});
+
+describe('WEAPON_ICON_IDS', () => {
+  it('is what isWeaponIconId answers for', () => {
+    for (const id of WEAPON_ICON_IDS) expect(isWeaponIconId(id)).toBe(true);
+
+    expect(isWeaponIconId('flashbang')).toBe(false);
   });
 });
