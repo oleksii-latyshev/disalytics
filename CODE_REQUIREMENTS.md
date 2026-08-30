@@ -219,13 +219,16 @@ type ParseState =
 Never swallow one. No empty `catch`, no `catch { console.log(e) }` as a resting state.
 
 ```ts
-type ParseErrorCode =
-  | 'unsupported-pov-demo' | 'corrupt-file' | 'unsupported-game-version'
-  | 'out-of-memory' | 'cancelled';
+// The vocabulary itself is `ERROR_CODES` in `packages/demo-core/src/errors.ts`, one identifier per
+// variant of the Rust enum and kept in step with it by `bun run errors:check`. Never restate it.
+import type { ErrorCode } from '@disa/demo-core';
 
-class ParseError extends Error {
-  constructor(readonly code: ParseErrorCode, message: string, readonly cause?: unknown) {
-    super(message);
+class DemoParseError extends Error {
+  readonly code: ErrorCode;
+
+  constructor(code: ErrorCode) {
+    super(code);
+    this.code = code;
   }
 }
 ```
@@ -233,6 +236,12 @@ class ParseError extends Error {
 The UI maps `code` to translated copy. It never string-matches on `message` and never shows a raw
 exception. Throw for programmer errors; return a result for expected failures. A corrupt demo is
 expected; a mis-indexed typed array is not.
+
+`ErrorCode` says what a demo turned out to be, and nothing else belongs in it. **Cancellation is not
+a code** — an aborted parse terminates its worker and sends no message at all (`AGENTS.md` §7.3),
+and out-of-memory is the tab dying rather than a value anything gets to return. A failure that is
+the app's rather than the parser's — a saved demo whose cached file has gone — is a union of the
+app's own, and `OpenFailure` in `apps/web/src/core/parsing` is what that looks like.
 
 ---
 
@@ -376,14 +385,17 @@ formatted number inside a translated string.
 code without copy is a compile error:
 
 ```ts
-function errorKeyFor(code: ParseErrorCode): ErrorKey {
+function errorTitleKey(code: ErrorCode): TranslationKey {
   switch (code) {
-    case 'unsupported-pov-demo': return 'errors.povDemo';
-    case 'corrupt-file':         return 'errors.corruptFile';
+    case 'POV_DEMO_UNSUPPORTED': return 'errors.povDemo.title';
+    case 'MALFORMED_DEMO':       return 'errors.malformed.title';
     // no default — exhaustiveness is the point
   }
 }
 ```
+
+`apps/web/src/features/library/helpers/error-copy.ts` is the whole of it, and it switches on the
+stem rather than on the key so the title and the hint cannot name two different codes.
 
 ### Game vocabulary
 
