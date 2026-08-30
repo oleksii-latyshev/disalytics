@@ -63,16 +63,15 @@ export {
   slotSampleIndex,
   tickAtFrame,
 } from './helpers/selectors';
+export type { UtilityHeld, UtilityKind } from './helpers/utility';
+export { UTILITY_NAMES, utilityHeld, utilityKindOfGrenade } from './helpers/utility';
 export type { WeaponIconId } from './helpers/weapon-icons';
 export { isWeaponIconId, WEAPON_ICON_IDS } from './helpers/weapon-icons';
-export type { UtilityHeld, UtilityKind, WeaponClass } from './helpers/weapons';
+export type { WeaponClass } from './helpers/weapons';
 export {
   isUtilityKind,
   killWeaponClass,
   killWeaponIcon,
-  UTILITY_NAMES,
-  utilityHeld,
-  utilityKindOfGrenade,
   weaponClass,
   weaponClasses,
   weaponIcon,

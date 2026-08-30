@@ -797,6 +797,20 @@ it falls back to its class, the way `weaponClass` answers `unknown` rather than 
 why this needed nothing from the blocked #53. What it deliberately did not touch: the feed still
 *says* `ak47` in its accessible name, which is #258.
 
+**#261 is the fourth of those splits, and what moved is a vocabulary rather than a concern.**
+`packages/demo-core/src/helpers/weapons.ts` had grown to 313 lines holding two things that never
+ask each other anything: **what a weapon is** — the two vocabulary tables, the class, the icon — and
+**what utility is** — `UtilityKind`, `utilityKindOfGrenade`, `UTILITY_NAMES` and the `grenades`
+bitfield. The second half is `helpers/utility.ts` now, and the barrel exports exactly what it
+exported before, so no consumer moved. Two things to know. **The dependency runs one way and had to
+be made to** — `isUtilityKind` stayed with the weapon half, because it narrows a `WeaponClass` and a
+`WeaponClass` is a weapon-half type; moving it would have put an import back the other way and
+closed the loop the split exists to open. And **`UTILITY_KINDS` is derived from `UTILITY_NAMES`
+rather than restated**, which is the one line here that is not a move: a literal list of the six
+kinds in `weapons.ts` would have been the enumeration living in the file that no longer owns it. The
+tests moved with the code — `__tests__/utility.test.ts` is `utilityKindOfGrenade`, `utilityHeld` and
+`UTILITY_NAMES` — and `demo-core` is 208 tests either side, none of them edited.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
