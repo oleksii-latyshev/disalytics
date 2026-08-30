@@ -811,6 +811,30 @@ kinds in `weapons.ts` would have been the enumeration living in the file that no
 tests moved with the code — `__tests__/utility.test.ts` is `utilityKindOfGrenade`, `utilityHeld` and
 `UTILITY_NAMES` — and `demo-core` is 208 tests either side, none of them edited.
 
+**#172 took the last three complexity warnings off the tree, and one of them was a real duplicate.**
+`bun run check` reports nothing at all now, for the first time since #168 shipped them.
+`grenadeVisual` is `writeBurst`, `writeArea` and `writeDecoy` — the smoke and molotov arms were the
+same fifteen lines with a different alpha constant, which is what the warning was pointing at — and
+`visibleGrenades` hands its type dispatch to `isVisibleAfterDetonation`, where the four types with an
+expiry answer in one arm rather than in two identical ones. The utility layer's closure held **two
+decisions**, the phase and the type; `drawGrenade`, `drawFlight` and `drawDetonation` are
+module-level now and take one `UtilityDraw` **allocated once per demo and rewritten in place**,
+which is the part not to undo — an options literal per grenade per frame is exactly the allocation
+`AGENTS.md` §9 keeps out of a draw. Nothing else changed: 208 `demo-core` tests pass unmodified, and
+§16's two rows were re-measured against a `7e3967f` baseline in the same hour — **0 over 16.7 ms in
+every playback pass on both arms**, and one 16.8 ms scrub frame that appears once on each arm in a
+different pass.
+
+**#176 rode with it, and the finding is bigger than the doc fix.** A `GrenadeTrajectory` is where the
+projectile *was* for as long as it existed, never where it flew — measured over all 519 grenades of
+the fixture, a smoke's trajectory runs a **median 22.0 s past its detonation** and an HE's runs
+**5.0 s in 153 cases out of 153**, while a flash and a fire stop at the detonation to within 0.1 s.
+The molotov half is the answer #176 asked to be measured rather than assumed: the projectile really
+does die on impact, because the fire is a *different entity* (§19's `inferno_startburn`), where a
+smoke's cloud **is** the projectile. `docs/PARSER.md` §20 carries the per-type table, and the schema's
+own doc comment stopped saying "flight path". Nothing in the code changed — `trajectoryClipCount`
+already clips at `detonationTick` — and `SCHEMA_VERSION` did not move.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

@@ -1056,3 +1056,67 @@ The fixture test asserts the outcome rather than the mechanism: **no area grenad
 reach the schema without an expiry**, and none may end before it begins. That is the assertion the
 fixture was missing, and it is what would have caught this the day the schema first carried
 grenades.
+
+---
+
+## 20. A trajectory is the projectile's whole life, not its flight (#176)
+
+`GrenadeTrajectory` answers *where was this entity*, and never *where did it fly*. `flights()` in
+`crates/demo-parser/src/grenades.rs` samples an entity for as long as it exists, and for three of the
+six grenade types the entity outlives the detonation by a long way. The field's own doc comment said
+"a projectile's flight path" from the day the schema first carried grenades, and reading it that way
+is what the fix for #169 assumed.
+
+### The snapshot's first grenade says it on its own
+
+`crates/demo-parser/tests/snapshots/parsed-demo.json`, a smoke: `throwTick` 6920, `detonationTick`
+7217, `expiryTick` 8629, and `trajectory.sampleCount` **428** at `sampleHz` 16. The flight is 297
+ticks — **4.6 s**. The trajectory is 427 samples at 16 Hz — **26.7 s**, which is throw to expiry to
+the tick.
+
+### The whole fixture, by type
+
+519 grenades, 516 of which carry a detonation. "Tail" is the last trajectory sample minus
+`detonationTick`, in seconds at the demo's 64 tick rate.
+
+| type | n | no detonation | tail min | tail median | tail max | tails > 0.5 s |
+|---|---:|---:|---:|---:|---:|---:|
+| `smokegrenade` | 136 | 0 | 8.2 | **22.0** | 22.1 | 136/136 |
+| `hegrenade` | 153 | 0 | 4.9 | **5.0** | 5.0 | 153/153 |
+| `decoy` | 1 | 0 | 14.9 | 14.9 | 14.9 | 1/1 |
+| `flashbang` | 112 | 0 | −0.1 | 0.0 | 0.0 | 0/112 |
+| `molotov` | 68 | 1 | −0.1 | −0.0 | 0.0 | 0/67 |
+| `incgrenade` | 49 | 2 | −0.1 | −0.0 | 0.0 | 0/47 |
+
+Over all 516: median **5.0 s**, longest **22.1 s**, and 203 whose last sample is at or before the
+detonation.
+
+Three readings matter more than the spread.
+
+**Smoke is the obvious one and the reason this exists.** The cloud *is* the projectile entity, so the
+trajectory runs to the cloud's own expiry — §19 measured the same thing from the other side, where
+`area_expiry` is read off the trajectory precisely because the entity is still there to be sampled.
+
+**A molotov's projectile does die on impact, and that is measured rather than assumed.** 67 of 67
+molotovs and 47 of 47 incendiaries have their last sample within 0.1 s of the detonation, because
+the fire is a *different entity* — §19's `inferno_startburn`, matched by thrower and time. Flash is
+the same: a mark rather than an area, 0 of 112 sampled past 0.1 s.
+
+**An HE's tail is 5.0 s in 153 cases out of 153**, with a spread of one tenth of a second across the
+whole match. That is a fixed engine lifetime for the spent projectile and not a visual of any kind:
+nothing in the product draws an HE for five seconds, and §6.2 gives it 1.2.
+
+### The schema carries no index for the end of a flight
+
+There is no field that says which sample is the last one in the air, and adding one would be a
+schema change this does not need. A reader has two routes and both are already in
+`packages/demo-core/src/helpers/grenade-state.ts`:
+
+- **`trajectoryClipCount`** clips the drawn path at `detonationTick`, which is why `docs/DESIGN.md`
+  §6.2's trajectory does not extend across a smoke's whole life on screen.
+- **`flightEndTick`** falls back to the last sample *only* when `detonationTick` is `null`. That
+  bound is never shorter than the real flight and can be very generous — up to 22 s for a smoke —
+  but on this fixture the three grenades without a detonation are all fire, whose projectiles die on
+  impact, so the generosity is theoretical rather than something that has been drawn.
+
+Neither `SCHEMA_VERSION` nor the crate moves for this. What was wrong was the description.
