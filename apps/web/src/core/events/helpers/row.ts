@@ -1,4 +1,4 @@
-import type { Frame, PlayerSlot, Team, WeaponClass, WeaponIconId, WeaponId } from '@disa/demo-core';
+import type { Frame, PlayerSlot, Team, WeaponClass, WeaponIconId } from '@disa/demo-core';
 
 /**
  * One kill, as both readers of the row need it — §5.4's feed and §7.1's tooltip on the round axis.
@@ -24,11 +24,12 @@ export interface KillRow {
    */
   readonly weaponIcon: WeaponIconId | undefined;
   /**
-   * The weapon as the demo named it, for whatever accessible name the caller builds. Game
-   * vocabulary reaches a label untranslated, the way a team row's does (§5.3) — and this is the
-   * *kill* vocabulary, so it reads `ak47` where a team row reads `AK-47` until #53 makes them one.
+   * What to call the weapon, for whatever accessible name the caller builds. Game vocabulary
+   * reaches a label untranslated, the way a team row's does (§5.3) — and it is the *same* name a
+   * team row shows for the same object, because `killWeaponName` resolves the kill's internal
+   * identifier to that row's own entry before naming it (#258).
    */
-  readonly weaponName: WeaponId;
+  readonly weaponName: string;
   readonly isHeadshot: boolean;
   readonly isWallbang: boolean;
   readonly isThroughSmoke: boolean;

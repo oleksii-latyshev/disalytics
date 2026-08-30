@@ -70,6 +70,7 @@ export {
   isUtilityKind,
   killWeaponClass,
   killWeaponIcon,
+  killWeaponName,
   weaponClass,
   weaponClasses,
   weaponIcon,

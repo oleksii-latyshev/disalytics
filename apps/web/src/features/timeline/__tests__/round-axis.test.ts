@@ -191,7 +191,8 @@ describe('axisGlyphs', () => {
       attackerSide: 'CT',
       victimSide: 'T',
       weapon: 'sniper',
-      weaponName: 'awp',
+      // The row states the name a team row would, not the `awp` the demo carries — #258.
+      weaponName: 'AWP',
       isHeadshot: true,
       isWallbang: true,
       isThroughSmoke: true,

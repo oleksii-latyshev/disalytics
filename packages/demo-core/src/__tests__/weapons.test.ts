@@ -5,6 +5,7 @@ import {
   isUtilityKind,
   killWeaponClass,
   killWeaponIcon,
+  killWeaponName,
   weaponClass,
   weaponClasses,
   weaponIcon,
@@ -174,6 +175,55 @@ describe('weaponName', () => {
 
   it('names a weapon this table has never heard of, rather than dropping it', () => {
     expect(weaponName('Plasma Rifle')).toBe('Plasma Rifle');
+  });
+});
+
+describe('killWeaponName', () => {
+  it('states a gun in the words a team row uses for the same gun', () => {
+    expect(killWeaponName('ak47')).toBe('AK-47');
+    expect(killWeaponName('m4a1')).toBe('M4A4');
+    expect(killWeaponName('m4a1_silencer')).toBe('M4A1-S');
+    expect(killWeaponName('usp_silencer')).toBe('USP-S');
+    expect(killWeaponName('hkp2000')).toBe('P2000');
+    expect(killWeaponName('taser')).toBe('Zeus x27');
+  });
+
+  it('gives utility the name the marks beside a team row give it', () => {
+    expect(killWeaponName('hegrenade')).toBe(UTILITY_NAMES.he);
+    expect(killWeaponName('flashbang')).toBe(UTILITY_NAMES.flash);
+    expect(killWeaponName('smokegrenade')).toBe(UTILITY_NAMES.smoke);
+    expect(killWeaponName('decoy')).toBe(UTILITY_NAMES.decoy);
+  });
+
+  it('reads the burning area, the molotov and the incendiary as one thing', () => {
+    expect(killWeaponName('inferno')).toBe(UTILITY_NAMES.fire);
+    expect(killWeaponName('molotov')).toBe(UTILITY_NAMES.fire);
+    expect(killWeaponName('incgrenade')).toBe(UTILITY_NAMES.fire);
+  });
+
+  it('collapses every knife skin onto the one entry the weapon table holds', () => {
+    expect(killWeaponName('knife')).toBe('Knife');
+    expect(killWeaponName('knife_butterfly')).toBe('Knife');
+    expect(killWeaponName('bayonet')).toBe('Knife');
+  });
+
+  it('names the bomb, which the plate draws as nothing but a sentence still states', () => {
+    expect(killWeaponName('c4')).toBe('C4 Explosive');
+  });
+
+  it('lets a weapon nobody enumerated name itself rather than vanish', () => {
+    expect(killWeaponName('portalgun')).toBe('portalgun');
+  });
+
+  it('resolves every weapon the product draws, and to the class it drew it as', () => {
+    // The bridge and the icon set are two enumerations of the same internal vocabulary, so an id in
+    // one and not the other is an identifier reaching a sentence — which is the whole defect.
+    for (const icon of WEAPON_ICON_IDS) {
+      const name = killWeaponName(icon);
+
+      expect(name).not.toBe(icon);
+      expect(weaponClass(name)).toBe(killWeaponClass(icon));
+    }
   });
 });
 
