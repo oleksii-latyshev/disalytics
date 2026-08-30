@@ -894,6 +894,26 @@ The strip between play/pause and the speed control shows **one round**, from `st
   cutter for the defuse in `--objective`, a small utility glyph per grenade in its own colour.
   Below a threshold density the glyphs collapse to marks; the round is 1:55 and this is the one
   timeline in the product with room for symbols.
+- **A glyph's target is centred on its mark and never overlaps its neighbour's.** Positions on the
+  axis are honest — a glyph sits where its event happened and is never nudged to make room — so
+  where a round's events cluster the *marks* draw over one another. The *target* may not: a glyph is
+  pressable 16px either side of its mark, or half the distance to its nearest neighbour, whichever
+  is less, and never narrower than one whole pixel. That tiles the axis wherever there is room to
+  tile, which is what puts a glyph's own centre inside its own box, and the glyph under the pointer
+  raises above the rest, so a mark covered by a later sibling shows itself when it is aimed at.
+  Below the floor the *pointer* has run out of resolution rather than the layout: hit testing works
+  in whole pixels — the point is rounded and the box is snapped — so two events a pixel apart are
+  one target, the nearer mark takes the press, and the arrow keys are what reach the other. The
+  floor is there because a slot narrower than a pixel is a mark with no target at all, which is
+  worse than two marks sharing one. The collapse threshold above is deliberately not doing this work
+  and stays an average of the whole axis: one close pair is no reason to take a round's other two
+  dozen symbols down to marks.
+
+  Measured over CDP at 1440×900 on the 30-round `de_dust2` fixture, 751 glyphs, pressing each one at
+  the centre of its own box (#268): **413 of them were taken by a different glyph, one as far as
+  16.43px away**, and afterwards **47 are, none further than 0.97px** — every press lands on a mark
+  within a pixel of the point pressed, and none falls through to the axis. The residue is the
+  rounding, not the layout: 18 pairs on that fixture share a centre exactly.
 - **The skull is tinted by the side of the player who died** — `--ct` or `--t`, keyed on the
   victim's side *in that round* and never on `PlayerInfo.team`, which is read at the end of the
   match and is wrong for half of them. The question a reader asks of a round axis is not *was there

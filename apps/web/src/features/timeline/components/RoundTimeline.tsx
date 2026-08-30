@@ -13,12 +13,7 @@ import {
   useFrameReadout,
   useFrameSink,
 } from '@/core/playback';
-import {
-  axisGlyphs,
-  hasRoomForGlyphs,
-  positionInSegment,
-  timelineSegment,
-} from '../helpers/round-axis';
+import { axisGlyphs, positionInSegment, timelineSegment } from '../helpers/round-axis';
 import { namesBySlot } from '../helpers/spine';
 import { EventGlyphs } from './EventGlyphs';
 
@@ -53,8 +48,9 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
   const isScrubbingRef = useRef(false);
   const wasPlayingRef = useRef(false);
 
-  // A resize decides whether the glyphs are symbols or marks, so unlike the width the frame sink
-  // reads it has to reach React. It changes on a window resize and nowhere else.
+  // A resize decides whether the glyphs are symbols or marks and how wide each one's target is, so
+  // unlike the width the frame sink reads it has to reach React. It changes on a resize and nowhere
+  // else.
   const [widthPx, setWidthPx] = useState(0);
 
   const format = useMemo(() => createClockFormat(locale), [locale]);
@@ -197,7 +193,7 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
         glyphs={glyphs}
         names={names}
         selectedSlot={selectedSlot}
-        hasRoom={hasRoomForGlyphs(glyphs.length, widthPx)}
+        widthPx={widthPx}
         transport={transport}
       />
     </div>
