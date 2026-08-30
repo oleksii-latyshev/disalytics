@@ -1,12 +1,13 @@
 import { type PlayerSlot, type Team, UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EventRow } from '@/core/events';
 import { EventGlyph, UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { Transport } from '@/core/playback';
 import { useRovingFocus } from '@/shared/hooks';
+import { GLYPH_HIT_HALF_PX, glyphHitHalves } from '../helpers/glyph-hits';
 import { defuseOutcomeKey } from '../helpers/outcome-copy';
-import { type AxisEvent, type AxisGlyph, namedKill } from '../helpers/round-axis';
+import { type AxisEvent, type AxisGlyph, hasRoomForGlyphs, namedKill } from '../helpers/round-axis';
 import { anchorAtFraction } from '../helpers/round-strip';
 
 /** The band the glyphs occupy, centred on the axis — 24px of mark plus the room to rise into. */
@@ -19,8 +20,8 @@ interface Props {
   glyphs: readonly AxisGlyph[];
   names: readonly (string | undefined)[];
   selectedSlot: PlayerSlot | null;
-  /** Whether the axis is wide enough for symbols, or narrow enough that they collapse to marks. */
-  hasRoom: boolean;
+  /** The axis's own width, which decides both the glyphs' form and how wide each one's target is. */
+  widthPx: number;
   transport: Transport;
 }
 
@@ -66,12 +67,15 @@ export const EventGlyphs = memo(function EventGlyphs({
   glyphs,
   names,
   selectedSlot,
-  hasRoom,
+  widthPx,
   transport,
 }: Props) {
   const t = useT();
   const roving = useRovingFocus(glyphs.length);
   const dwellRef = useRef(0);
+
+  const hasRoom = hasRoomForGlyphs(glyphs.length, widthPx);
+  const halves = useMemo(() => glyphHitHalves(glyphs, widthPx), [glyphs, widthPx]);
 
   const [namedId, setNamedId] = useState<string | null>(null);
 
@@ -161,20 +165,31 @@ export const EventGlyphs = memo(function EventGlyphs({
                   roving.select(index);
                   transport.seek(glyph.frame);
                 }}
-                style={{ left: `${glyph.fraction * 100}%` }}
-                // The target a pointer hits is the `::before`, wider than the mark it carries. The
-                // descendant selector is what mutes a `UtilityGlyph`, which owns its colour class:
-                // between two single-class rules the stylesheet's order would decide instead.
-                className={`-translate-x-1/2 pointer-events-auto absolute inset-y-0 flex items-center justify-center transition-transform duration-(--duration-micro) ease-out before:absolute before:-inset-x-1 before:inset-y-0 before:content-[''] focus-visible:z-10 ${
+                // The button *is* the target — §7.1's hit slot, centred on the mark and stopping
+                // half way to the nearest neighbour, so a cluster's marks overlap and its targets
+                // never do (#268). The mark itself is laid out over the slot rather than inside it,
+                // or a 24px symbol in a 3px button would be squeezed to fit.
+                style={{
+                  left: `${glyph.fraction * 100}%`,
+                  width: `${(halves.at(index) ?? GLYPH_HIT_HALF_PX) * 2}px`,
+                }}
+                // The descendant selector is what mutes a `UtilityGlyph`, which owns its colour
+                // class: between two single-class rules the stylesheet's order would decide instead.
+                className={`-translate-x-1/2 pointer-events-auto absolute inset-y-0 transition-transform duration-(--duration-micro) ease-out focus-visible:z-10 hover:z-10 ${
                   muted ? 'text-ink-faint [&_svg]:text-ink-faint' : inkFor(glyph.event)
                 } ${raised ? '-translate-y-1' : ''}`}
               >
-                {hasRoom ? (
-                  <Glyph event={glyph.event} />
-                ) : (
-                  // A mark keeps the position and the colour and loses only the shape — §7.1.
-                  <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
-                )}
+                {/* The mark overhangs the slot, so it must not be a target itself: a 24px symbol
+                    taking pointer events would reach across its neighbours exactly the way the
+                    button used to. */}
+                <span className="-translate-x-1/2 pointer-events-none absolute inset-y-0 left-1/2 flex items-center justify-center">
+                  {hasRoom ? (
+                    <Glyph event={glyph.event} />
+                  ) : (
+                    // A mark keeps the position and the colour and loses only the shape — §7.1.
+                    <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
+                  )}
+                </span>
               </button>
             </li>
           );

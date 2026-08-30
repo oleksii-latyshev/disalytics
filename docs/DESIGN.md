@@ -894,6 +894,17 @@ The strip between play/pause and the speed control shows **one round**, from `st
   cutter for the defuse in `--objective`, a small utility glyph per grenade in its own colour.
   Below a threshold density the glyphs collapse to marks; the round is 1:55 and this is the one
   timeline in the product with room for symbols.
+- **A glyph's target is centred on its mark and never overlaps its neighbour's.** Positions on the
+  axis are honest — a glyph sits where its event happened and is never nudged to make room — so
+  where a round's events cluster the *marks* draw over one another. The *target* may not: a glyph is
+  pressable 16px either side of its mark, or half the distance to its nearest neighbour, whichever
+  is less. That tiles the axis, which is what puts every glyph's own centre inside its own box, and
+  the glyph under the pointer raises above the rest, so a mark covered by a later sibling shows
+  itself when it is aimed at. Two events on the same pixel are one target and the arrow keys are
+  what reach the second. The collapse threshold above is deliberately not doing this work and stays
+  an average of the whole axis: one close pair is no reason to take a round's other two dozen
+  symbols down to marks. Measured 30 August 2026 (#268), where a press at the centre of one glyph's
+  own box was delivered to a later sibling drawn over it.
 - **The skull is tinted by the side of the player who died** — `--ct` or `--t`, keyed on the
   victim's side *in that round* and never on `PlayerInfo.team`, which is read at the end of the
   match and is wrong for half of them. The question a reader asks of a round axis is not *was there
