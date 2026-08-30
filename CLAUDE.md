@@ -762,6 +762,19 @@ where `Incendiary Grenade` names the CT's item alone. **The kill feed is deliber
 it states a weapon in upstream's *internal* vocabulary (`ak47`, `hegrenade`), which is the third
 vocabulary in the product and #53's to close.
 
+**#253 is the third of those splits, and the seam it *refused* is the point.** `MatchReview.tsx` is
+253 lines: §9.1's whole binding table moved to `use-review-shortcuts`, which also reads the two
+settings the arrow row obeys — once the table lives there, a key binding is read where it is obeyed
+like every other row of §10.5 — and the surfaces that cover the stage moved to `use-review-sheets`
+and `ReviewSheets`, with the open sheet the only thread back to the bindings. **The grid did not
+move.** Five cells and their `grid-area`s in one file is what makes §5.1 checkable by reading, and
+splitting them into components puts that proof in five places. Two things measured rather than
+asserted, both arms on one parse: the plate is **716 at 1440×900 and 459 at 1040×800**, unchanged
+and matching §5.1's table, and the plate is pixel-identical across **14 states — 7 rounds × a player
+selected or not — 14 distinct hashes, 14 of 14 matching** either side of the move. The assembly is
+unchanged and still runs once: 47 of the arrival's 232 frames sit below full opacity, and 0 of the
+419 after it, across a sheet opened and closed, a player selected and a round seeked.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

@@ -1,6 +1,5 @@
 import {
   type ParsedDemo,
-  type PlayerInfo,
   type PlayerSlot,
   playersOnSide,
   roundIndexAtFrame,
@@ -15,25 +14,18 @@ import { assembly } from '@/core/motion';
 import type { CacheState } from '@/core/parsing';
 import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
-import {
-  CT_ROW_KEYS,
-  type ShortcutAction,
-  type ShortcutPress,
-  T_ROW_KEYS,
-  useShortcuts,
-} from '@/core/shortcuts';
 import { MatchRadar } from '@/features/radar';
-import { MatchOverlay } from '@/features/timeline';
 import { useFullscreen } from '@/shared/hooks';
 import { createMoneyFormat } from '../helpers/money';
 import { useHotCorners } from '../hooks/use-hot-corners';
+import { useReviewSheets } from '../hooks/use-review-sheets';
+import { useReviewShortcuts } from '../hooks/use-review-shortcuts';
 import { CornerCluster } from './CornerCluster';
 import { EventFeed } from './EventFeed';
-import { HelpSheet } from './HelpSheet';
 import { LeaveMatch } from './LeaveMatch';
 import { MatchIdentity } from './MatchIdentity';
+import { ReviewSheets } from './ReviewSheets';
 import { Scoreboard } from './Scoreboard';
-import { SettingsSheet } from './SettingsSheet';
 import { TeamCard } from './TeamCard';
 import { TimelineBlock } from './TimelineBlock';
 
@@ -44,9 +36,6 @@ interface Props {
   roundIndex: number;
   onClose: () => void;
 }
-
-/** What can cover the stage. §7.3's match overlay is one of these in every way that matters here. */
-type Sheet = 'settings' | 'help' | 'match';
 
 /**
  * The stage — DESIGN.md §5. A plate in the middle and four cards around it, and the grid is what
@@ -93,28 +82,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   const [scoreboard] = useSetting('scoreboard');
   const [isBuyPhaseSkipped] = useSetting('isBuyPhaseSkipped');
 
-  // §9.1's two arrow-key rows, and the only settings on this screen that are neither read where they
-  // are obeyed nor drawn: a key binding is the stage's, because the stage is what holds the table.
-  const [seekStepSeconds] = useSetting('seekStepSeconds');
-  const [heldArrowRate] = useSetting('heldArrowRate');
-
   useBuyPhaseSkip(transport, demo, isBuyPhaseSkipped);
 
-  // Which full-screen surface covers the screen, if any. All three stop playback while they are
-  // open, which is what makes covering the plate legitimate rather than an exception to principle 4
-  // — §5.1 allows it exactly when the plate is not the thing being read. The same state suspends
-  // §9.1's bindings, because `Esc` belongs to the dialog while a dialog is up.
-  const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
-
-  const showSheet = useCallback(
-    (sheet: Sheet) => {
-      transport.pause();
-      setOpenSheet(sheet);
-    },
-    [transport],
-  );
-
-  const dismissSheet = useCallback(() => setOpenSheet(null), []);
+  const { openSheet, showSheet, dismissSheet } = useReviewSheets(transport);
 
   const toggleSelected = useCallback((slot: PlayerSlot) => {
     setSelectedSlot((current) => (current === slot ? null : slot));
@@ -129,70 +99,18 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   const t = useMemo(() => playersOnSide(demo.header.players, sides, 'T'), [demo, sides]);
   const money = useMemo(() => createMoneyFormat(locale), [locale]);
 
-  const jumpRounds = useCallback(
-    (rounds: number) => {
-      const current = roundIndexAtFrame(demo, transport.clock.frame);
-      const wanted = current === undefined ? 0 : current + rounds;
-      const last = demo.events.rounds.length - 1;
-
-      transport.seek(roundOpeningFrame(demo, Math.max(Math.min(wanted, last), 0)));
-    },
-    [demo, transport],
-  );
-
-  // DESIGN.md §9.1's arrow row, both halves of it. A tap seeks by the configured step; the
-  // keyboard's own repeat is what turns the same key into a hold, and a hold is a *rate* the
-  // transport owns rather than a stream of seeks — releasing it puts back the rate and the play
-  // state it interrupted.
-  const seekBy = useCallback(
-    (direction: 1 | -1, press: ShortcutPress) => {
-      if (press.isRepeat) {
-        transport.holdScrub(direction * heldArrowRate);
-        return;
-      }
-
-      transport.seek(transport.clock.frame + direction * seekStepSeconds * demo.track.sampleHz);
-    },
-    [demo, transport, seekStepSeconds, heldArrowRate],
-  );
-
-  const releaseAction = useCallback(
-    (action: ShortcutAction) => {
-      if (action === 'seekBack' || action === 'seekForward') transport.releaseScrub();
-    },
-    [transport],
-  );
-
-  const selectRow = useCallback(
-    (players: readonly PlayerInfo[], keys: readonly string[], press: ShortcutPress) => {
-      const player = players[keys.indexOf(press.key)];
-
-      if (player !== undefined) toggleSelected(player.slot);
-    },
-    [toggleSelected],
-  );
-
-  // DESIGN.md §9's accessibility floor: the match is operable without a pointer. Which key reaches
-  // which action is `core/shortcuts`' table, so the help sheet lists exactly what is bound here.
-  // The plate's own two keys are bound where the view they move lives, not here.
-  useShortcuts(
-    {
-      playPause: transport.toggle,
-      seekBack: (press) => seekBy(-1, press),
-      seekForward: (press) => seekBy(1, press),
-      stepBack: () => transport.step(-1),
-      stepForward: () => transport.step(1),
-      previousRound: () => jumpRounds(-1),
-      nextRound: () => jumpRounds(1),
-      selectTRow: (press) => selectRow(t, T_ROW_KEYS, press),
-      selectCtRow: (press) => selectRow(ct, CT_ROW_KEYS, press),
-      clearSelection: () => setSelectedSlot(null),
-      fullscreen: fullscreen.toggle,
-      matchOverlay: () => showSheet('match'),
-      help: () => showSheet('help'),
-    },
-    { isSuspended: openSheet !== null, onRelease: releaseAction },
-  );
+  useReviewShortcuts({
+    demo,
+    transport,
+    ct,
+    t,
+    isSuspended: openSheet !== null,
+    onToggleSelected: toggleSelected,
+    onClearSelection: () => setSelectedSlot(null),
+    onFullscreenToggle: fullscreen.toggle,
+    onMatchOverlay: () => showSheet('match'),
+    onHelp: () => showSheet('help'),
+  });
 
   const teamCards = (
     <>
@@ -324,18 +242,11 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         />
       </m.div>
 
-      {/* Both sheets live in the top layer, so where they sit in this grid decides nothing about where
-          they paint — they are last because that is the reading order a reader who never opens one
-          gets from the DOM. */}
-      <SettingsSheet isOpen={openSheet === 'settings'} onDismiss={dismissSheet} />
-
-      <HelpSheet isOpen={openSheet === 'help'} onDismiss={dismissSheet} />
-
-      <MatchOverlay
+      <ReviewSheets
         demo={demo}
-        isOpen={openSheet === 'match'}
-        onDismiss={dismissSheet}
+        openSheet={openSheet}
         roundIndex={roundIndex}
+        onDismiss={dismissSheet}
       />
     </div>
   );
