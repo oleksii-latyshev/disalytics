@@ -872,6 +872,24 @@ assert the viewport and `visibilityState` inside the run, kill the browser by it
 never by the binary name, delete the profile because its OPFS holds a parsed copy of the demo, and
 ask for the demo again every session.
 
+**#268 made the axis glyph a hit slot, and the thing that decided the shape is the browser rather
+than the layout.** A glyph button was shrink-wrapped to its 24px mark with a 4px overrun, so where a
+round's events cluster a later sibling covered an earlier one's centre and took every press aimed at
+it — 413 of the fixture's 751 glyphs, one press landing on a mark **16.43px** away. The button is
+the *target* now: centred on the mark, stopping half way to the nearest neighbour, and the mark is
+laid over it with `pointer-events-none` rather than sitting inside it. Four things are load-bearing.
+**The mark must not be a target** — the first version of this branch set the width and left the
+24px symbol taking pointer events, which reproduced the original bug exactly and measured no better
+than `main`. **There is a one-pixel floor**, and it exists because hit testing works in whole
+pixels: Blink rounds the point and snaps the box, so a sub-pixel slot is a mark the pointer cannot
+address at all — mapped in the page by sweeping `elementsFromPoint` across a pair at 0.25px. That
+floor is also why the remaining 47 misses are misses: they are neighbours **within 0.97px**, and 18
+pairs on the fixture share a centre exactly. **Positions stay honest** — spreading a cluster was
+the rejected alternative, because a glyph moved off its own moment is a lie about time on a time
+axis. And **`hasRoomForGlyphs` keeps its average**: collapsing a whole round's symbols because one
+pair is close costs twenty-four legible marks to fix two, and the press is fixed elsewhere now.
+`glyphHitHalves` is its own module beside `round-axis.ts`, which is already over the line at 307.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
