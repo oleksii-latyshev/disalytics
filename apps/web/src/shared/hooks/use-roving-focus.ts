@@ -1,11 +1,15 @@
 import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
+import { type ItemRefs, itemRefs } from './helpers/item-refs';
 
 const STEPS: Readonly<Record<string, number>> = { ArrowLeft: -1, ArrowRight: 1 };
 
 export interface RovingFocus {
   /** The item that holds the group's single tab stop. */
   tabStop: number;
-  /** Ref callback for the item at `index`, so the group can move focus itself. */
+  /**
+   * Ref callback for the item at `index`, so the group can move focus itself. Stable per index:
+   * a ref whose identity changes is detached and reattached on every render of the group.
+   */
   register: (index: number) => (node: HTMLButtonElement | null) => void;
   /** Arrow keys walk the group; `Home` and `End` jump to its ends. */
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
@@ -22,7 +26,11 @@ export interface RovingFocus {
  * leave the tab stop on an item that no longer exists and drop the whole group out of the tab order.
  */
 export function useRovingFocus(count: number): RovingFocus {
-  const itemsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  // Created once for the life of the hook rather than per render, which is the whole point of it:
+  // the callbacks it hands out have to outlive the renders that ask for them.
+  const registryRef = useRef<ItemRefs<HTMLButtonElement> | null>(null);
+  registryRef.current ??= itemRefs<HTMLButtonElement>();
+  const items = registryRef.current;
   const [activeIndex, setActiveIndex] = useState(0);
 
   const focusAt = useCallback(
@@ -30,16 +38,9 @@ export function useRovingFocus(count: number): RovingFocus {
       const wanted = Math.min(Math.max(index, 0), count - 1);
 
       setActiveIndex(wanted);
-      itemsRef.current[wanted]?.focus();
+      items.nodes[wanted]?.focus();
     },
-    [count],
-  );
-
-  const register = useCallback(
-    (index: number) => (node: HTMLButtonElement | null) => {
-      itemsRef.current[index] = node;
-    },
-    [],
+    [count, items],
   );
 
   // The index comes from the item the key arrived on rather than from state, so two keys inside one
@@ -64,7 +65,7 @@ export function useRovingFocus(count: number): RovingFocus {
 
   return {
     tabStop: Math.min(activeIndex, Math.max(count - 1, 0)),
-    register,
+    register: items.callbackFor,
     onKeyDown,
     select: setActiveIndex,
   };

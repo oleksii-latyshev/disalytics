@@ -848,6 +848,30 @@ constant went to the file that reads it rather than to the file that had been ke
 already called per grenade per frame is not a shape change, and §16's rows were taken against
 `7e3967f` one PR earlier.
 
+**#215 gave `useRovingFocus` a ref callback that keeps its identity, and the shape is a registry
+rather than a memo.** `register` was memoised but it is a *factory*: the closure it returned was a
+new function every call, and React treats a ref whose identity changed as a different ref — it calls
+the old one with `null` and the new one with the node. Both consumers are groups of tens of items
+that re-render for reasons unrelated to refs, so a hover over `EventGlyphs` was detaching and
+reattaching every glyph in the round. `shared/hooks/helpers/item-refs.ts` is a `Map<number,
+callback>` behind a lazily-created ref, and it is a **separate module on purpose**: `apps/web`'s
+vitest runs in the `node` environment over `*.test.ts` only, so a hook cannot be rendered in a test
+here and the stability claim would have been unprovable inside the closure. It is five unit tests
+now. Two things to know. **The callbacks read no `count`**, which is what keeps the hook's own note
+about a shorter match true — they write one slot and nothing else. And **the map only grows**, the
+way the node array always did; an index the group shrank past keeps a `null` React already wrote
+there.
+
+**#126 rode with it and is the reason a screenshot criterion is now satisfiable.**
+`CONTRIBUTING.md` §4 has an **Evidence for screen work** section: attaching an image to a pull
+request needs the GitHub web UI and there is no `gh` or REST path for it, so a criterion saying "in
+the pull request" is read as "to the owner". The **review screen is never attachable at all** —
+ten real names and SteamIDs — and the section lists what stands in for a picture along with the CDP
+capture recipe, so the next screen issue does not rewrite it. Four lines there each cost a session:
+assert the viewport and `visibilityState` inside the run, kill the browser by its profile path and
+never by the binary name, delete the profile because its OPFS holds a parsed copy of the demo, and
+ask for the demo again every session.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

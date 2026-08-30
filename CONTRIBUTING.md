@@ -157,6 +157,61 @@ The intermediate JSON step allocated ~1.2 GB on a 300 MB demo and blocked the wo
 - Golden snapshot unchanged
 ```
 
+### Evidence for screen work
+
+An acceptance criterion asking for a screenshot has to be satisfiable from a branch, and one of them
+is not: **attaching an image to a pull request needs the GitHub web UI.** There is no `gh` or REST
+path for it. So the division is fixed rather than negotiable.
+
+**Who does what.** Whoever does the work captures the images and hands them to the owner as files in
+the chat. The owner attaches them, if they are attachable at all. A pull request body never links to
+an image it cannot carry, and a criterion phrased as "screenshots in the pull request" is read as
+"screenshots to the owner" — that is what satisfies it.
+
+**The review screen is never attachable.** It carries ten real players' names and SteamIDs
+(`AGENTS.md` §18), so its screenshots may not go into an issue, a pull request, or anything else that
+leaves this machine. Screen work on it is evidenced by measurement instead, and these are the forms
+that have stood in for a picture:
+
+- **Measured geometry** at a named viewport — `docs/DESIGN.md` §5.1's plate table is the model, and
+  it is a claim with a setup: state the viewport *height*, and which of §5.1's preconditions were on.
+- **An overflow sweep** over `document.querySelectorAll('*')`, not over a list of known classes. Walk
+  `overflow` on each hit's ancestors, or every `sr-only` label reports as overflow.
+- **Computed styles** read off the elements themselves, which is what settles a token question.
+- **An `sr-only` or `aria-label` text dump**, which says what a screen reader hears without saying
+  who is playing.
+- **Frame counts** over a few hundred frames, per `AGENTS.md` §16.
+
+**The in-app browser pane is not a capture tool.** Its screenshots are downscaled to an 800px cap and
+it can return a stale frame after a navigation, so the same page shot twice gives two layouts. It is
+fine for reading the DOM and for driving a click; it is not evidence.
+
+**The recipe, so the next screen issue does not rewrite it.** Headless or headed Chrome over CDP,
+driven by Bun's built-in `WebSocket` — no new dependency, which is what `AGENTS.md` §2 rule 10 asks
+of it.
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 --user-data-dir="$SCRATCH/chrome-profile" \
+  --no-first-run --no-default-browser-check --window-size=1440,1000 \
+  --disable-backgrounding-occluded-windows --disable-renderer-backgrounding \
+  --disable-features=CalculateNativeWinOcclusion about:blank
+```
+
+Then over the socket from `http://localhost:9222/json`:
+`Emulation.setDeviceMetricsOverride` for the CSS viewport, `Page.captureScreenshot` with
+`deviceScaleFactor: 2` for an honest 2× PNG, and `Runtime.evaluate` for everything measured.
+
+Four things about that run are load-bearing and each has cost a session:
+
+- **Assert `innerWidth`, `innerHeight` and `document.visibilityState` inside the run.** A figure
+  taken without them is a figure for an unknown viewport, or for a tab whose rAF was suspended.
+- **Kill the browser by its profile path**, `pkill -f "user-data-dir=$SCRATCH/chrome-profile"` —
+  never by the binary name, which matches the everyday browser and closes its tabs.
+- **Delete the profile directory afterwards.** It is ~150 MB and its OPFS holds a parsed copy of the
+  demo, which carries the ten players out of the app and into a temp directory.
+- **Ask before using a real demo, every session.** That permission does not carry over.
+
 ---
 
 ## 5. Repository Setup
