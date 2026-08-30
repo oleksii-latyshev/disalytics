@@ -75,7 +75,8 @@ so `wasm.yml` now writes that directory to a cache keyed on the parser's inputs 
 `deploy.yml` restore it rather than installing Rust. That is how §15's "never rebuild the parser on
 a frontend-only commit" survives the SPA depending on the binary. `deploy.yml` also triggers on
 `wasm`, or a parser-only commit would never reach production. The `wasm content-type` assertion in
-the deploy smoke test is green: 12 passed, 0 failed, 0 skipped.
+the deploy smoke test is green — and since #144 it names the binary the deployed page references
+rather than the local build's, which is what makes it green off CI as well.
 
 `packages/map-data` exists since #70 and opens Phase 3: Valve's overview constants for the seven
 active duty maps, the §9 transform, and the radar images themselves — `vanilla` as extracted, plus
@@ -949,6 +950,29 @@ until Tailwind has run — which also means a stale `dist` makes it lie, and the
 so. The `var(--…)` half is the same script and covers the stylesheets too, where 63 of the 63
 references live. On `main` at the commit that closed #134: **372 classes and 63 custom properties, 0
 unresolved**.
+
+**#144, #65 and #139 are one family in three scripts: the artifact you measure is not always the
+artifact that shipped.** The smoke test now takes every hashed path from the **deployed page** —
+`index.html` names the entry chunk, the chunk names the parse worker, the worker names the binary,
+and the stylesheet names the fonts, which is the only walk that reaches a `.wasm` whose name appears
+nowhere in the document. Five things are load-bearing. **A local asset name and a deployed one can
+never agree**, so this was never a staleness a rebuild could fix: a macOS `wasm-pack` build and the
+Linux one `deploy.yml` ships are the same size from the same source under the same pinned 0.15.0 and
+are not the same bytes. **The script needs no build at all now** — the radar images are read from
+`packages/map-data/assets/radar`, where they are committed and unhashed, which is what makes a local
+listing honest for them and for nothing else. **One request per asset**, so the caching and
+content-type assertions can no longer disagree about one URL: on `main` `immutable .wasm` *passed*
+on a shell that `wasm content-type` then failed, because `_headers` grants `immutable` by path and
+was answering for a file that was not being served. **The propagation wait has one deadline for all
+four assets**, not one each — the lag is a single event at the edge, and four private two-minute
+budgets would spend eight. And **`bun run size` weighs the binary in `dist` and refuses to weigh
+anything when that is not the one `pkg/` holds**, because `rm -rf apps/web/dist && bun run build`
+restores turbo's cached dist without running Vite, which is why the failure asks for
+`bun run build --force`. Measured against production the same hour: `main` reported
+`fail wasm content-type … BG3eib1d.wasm → 200, text/html` where the branch reads
+`ok … LtgUjUur.wasm → 200, application/wasm` — the binary production actually serves. Twelve
+assertions rather than thirteen; the one that went is `immutable .map`, and a source map is not part
+of §13.
 
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
