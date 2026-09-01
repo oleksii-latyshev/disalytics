@@ -17,8 +17,10 @@ export const SILHOUETTE_HEIGHT = 12;
  * day they were written and not a week later, which is the drift §10.6's legend exists to prevent
  * and the same argument applied one level down.
  *
- * Drawn by class and never by model: at either size an AK and an M4 are the same shape, and what a
- * reader needs at a glance is rifle against AWP against pistol. The exact model is on the team card.
+ * Drawn by class and never by model, because this is the **fallback**: Valve's own outline names
+ * the exact weapon wherever the match's table names one, and what is left is a weapon nobody here
+ * has drawn. An unknown weapon is still a weapon, so it gets the shape of its class rather than an
+ * empty box.
  */
 export const SILHOUETTE_PATHS: Readonly<Record<SilhouetteClass, readonly string[]>> = {
   pistol: ['M6 3h10v3h-4.6l-1 4.4H7.3L8.4 6H6Z'],
@@ -33,13 +35,3 @@ export const SILHOUETTE_PATHS: Readonly<Record<SilhouetteClass, readonly string[
   // kind of thing and the canvas renderer needs no second branch to read it.
   unknown: ['M12 3.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 1 0 0-5.2Z'],
 };
-
-/**
- * One grenade for every kind of utility, which is what the plate can carry — a smoke, a flash and
- * a molotov are three distinguishable marks at §5.3's 12px and one blur at §6.1's. The team row
- * draws `UtilityGlyph` instead, where there is room for the distinction.
- */
-export const GRENADE_SILHOUETTE: readonly string[] = [
-  'M10.6 1.4h2.8v2.2h-2.8Z',
-  'M12 3.2a4 4 0 1 0 0 8 4 4 0 1 0 0-8Z',
-];

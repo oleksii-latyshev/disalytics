@@ -109,6 +109,19 @@ export function weaponIcon(weapon: WeaponId): WeaponIconId | undefined {
 }
 
 /**
+ * The model every entry of `MatchHeader.weapons` names an icon for, in the order `TickTrack.weapon`
+ * and `Shot.weapon` index them — `weaponClasses`' pair, derived once per demo and read by index for
+ * the same reason.
+ *
+ * An entry with no icon of its own holds `undefined`, which is the answer utility, the bomb and a
+ * weapon this repository has never drawn all give: each of them falls back to the class beside it
+ * in `weaponClasses`, rather than leaving a reader with an empty box.
+ */
+export function weaponIcons(weapons: readonly WeaponId[]): readonly (WeaponIconId | undefined)[] {
+  return weapons.map(weaponIcon);
+}
+
+/**
  * What class every entry of `MatchHeader.weapons` belongs to, in the order `TickTrack.weapon` and
  * `Shot.weapon` index them. Derived once per demo and read by index afterwards: the plate resolves
  * a class per player per animation frame, and a string lookup per token per frame is the walk

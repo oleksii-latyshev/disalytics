@@ -24,9 +24,9 @@ interface Props {
 const ICON_HEIGHT = 12;
 
 /**
- * Silhouettes drawn by class rather than by model — the resolution §6.1's 14×7 mark on the plate
- * needs, where a model outline is a smudge. The shapes live in `helpers/silhouettes`, because that
- * mark draws the same set onto a canvas.
+ * Silhouettes drawn by class rather than by model — the fallback for a weapon this product has no
+ * outline of. The shapes live in `helpers/silhouettes`, because §6.1's plate mark falls back to the
+ * same set on a canvas.
  */
 function Silhouette({ weapon }: { weapon: SilhouetteClass }) {
   return (

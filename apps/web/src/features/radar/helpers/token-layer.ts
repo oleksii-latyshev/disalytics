@@ -15,6 +15,7 @@ import {
   sampleAt,
   type Team,
   weaponClasses,
+  weaponIcons,
 } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { positionScratch, readPositions } from '@/core/playback';
@@ -89,10 +90,12 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const deathProgress = new Float32Array(track.slotCount);
   const gunfire = new Float32Array(track.slotCount);
 
-  // The per-match weapon table resolved to classes once, so a token reads its class by index rather
+  // The per-match weapon table resolved once, so a token reads what it is holding by index rather
   // than by name — `MatchHeader.weapons` is a different lookup for every demo, and a string lookup
-  // per player per animation frame is the walk that does not belong in a draw.
+  // per player per animation frame is the walk that does not belong in a draw. Two tables because
+  // the label draws the model where there is one and falls back to the class where there is not.
   const classByWeapon = weaponClasses(demo.header.weapons);
+  const iconByWeapon = weaponIcons(demo.header.weapons);
 
   // The frame's own scalars, set once per draw and read by every pass below.
   let base = 0;
@@ -119,6 +122,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     // `WEAPON_NONE` falls off the end of the table, which is the answer for a slot no sample ever
     // saw holding anything — a different thing from `unknown`, and drawn as nothing at all.
     weapon: (slot) => classByWeapon[sampleAt(track.weapon, base + slot)] ?? null,
+    icon: (slot) => iconByWeapon[sampleAt(track.weapon, base + slot)],
     // The round goes under one name and only one: the reader asked about this player by selecting
     // them, and ten labels each carrying four numbers is a plate nobody can read.
     detail: (slot) => (slot === selectedSlot ? detail : null),

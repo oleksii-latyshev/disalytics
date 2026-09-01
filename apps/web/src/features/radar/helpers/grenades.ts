@@ -1,7 +1,38 @@
-import { type GrenadeTrajectory, type PlayerSlot, sampleAt } from '@disa/demo-core';
+import {
+  type GrenadeTrajectory,
+  type GrenadeType,
+  type PlayerSlot,
+  sampleAt,
+} from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
 import { radarX, radarY } from '@disa/map-data';
 import type { TrajectoryVisibility } from '@/core/settings';
+import type { RadarColors } from './colors';
+
+/**
+ * What colour a grenade is drawn in, wherever it is drawn — the mark it leaves on the ground and the
+ * object itself while it is still in the air. Stated once so the two cannot disagree: a smoke on its
+ * way and the cloud it becomes are the same reading, and a flash borrows `blind` because what a
+ * flashbang leaves behind is on the players rather than on the map.
+ *
+ * Exhaustive with no `default`, so a new `GrenadeType` is a compile error rather than a colourless
+ * mark.
+ */
+export function grenadeColor(type: GrenadeType, colors: RadarColors): string {
+  switch (type) {
+    case 'smokegrenade':
+      return colors.nadeSmoke;
+    case 'molotov':
+    case 'incgrenade':
+      return colors.nadeMolotov;
+    case 'hegrenade':
+      return colors.nadeHe;
+    case 'flashbang':
+      return colors.blind;
+    case 'decoy':
+      return colors.nadeDecoy;
+  }
+}
 
 // ── trajectory ──────────────────────────────────────────────────────────────
 

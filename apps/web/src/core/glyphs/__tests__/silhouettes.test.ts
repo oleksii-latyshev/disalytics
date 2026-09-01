@@ -1,12 +1,7 @@
 import type { WeaponClass } from '@disa/demo-core';
 import { isUtilityKind } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import {
-  GRENADE_SILHOUETTE,
-  SILHOUETTE_HEIGHT,
-  SILHOUETTE_PATHS,
-  SILHOUETTE_WIDTH,
-} from '../helpers/silhouettes';
+import { SILHOUETTE_HEIGHT, SILHOUETTE_PATHS, SILHOUETTE_WIDTH } from '../helpers/silhouettes';
 
 /**
  * Every class `weaponClass` can answer. Written out rather than derived, so adding one to
@@ -47,14 +42,8 @@ describe('SILHOUETTE_PATHS', () => {
     expect(named.has('bomb'), 'the bomb is a rendering rule, not a shape — §6.4').toBe(false);
     for (const weapon of EVERY_CLASS) {
       if (!isUtilityKind(weapon)) continue;
-      expect(named.has(weapon), `${weapon} belongs to UtilityGlyph and GRENADE_SILHOUETTE`).toBe(
-        false,
-      );
+      expect(named.has(weapon), `${weapon} is drawn by Valve's own equipment icon`).toBe(false);
     }
-  });
-
-  it('gives utility one grenade, because five shapes are one blur at plate scale', () => {
-    expect(GRENADE_SILHOUETTE.length).toBeGreaterThan(0);
   });
 
   it('keeps the box 2:1, which is what the plate mark scales from', () => {

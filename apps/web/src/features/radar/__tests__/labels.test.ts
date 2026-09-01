@@ -1,4 +1,9 @@
-import { asPlayerSlot, type PlayerInfo, type WeaponClass } from '@disa/demo-core';
+import {
+  asPlayerSlot,
+  type PlayerInfo,
+  type WeaponClass,
+  type WeaponIconId,
+} from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import { labelPlacer } from '../helpers/label-placer';
 import { LABEL_HEIGHT_PX, labelPass, labelsBySlot } from '../helpers/labels';
@@ -136,6 +141,7 @@ function subjectAt(
   y: number,
   weapon: WeaponClass | null = 'rifle',
   detail: string | null = null,
+  icon: WeaponIconId | undefined = undefined,
 ) {
   return {
     isNamed: () => true,
@@ -143,6 +149,7 @@ function subjectAt(
     y: (slot: number) => (slot === 0 ? 320 : y),
     alpha: () => 1,
     weapon: () => weapon,
+    icon: () => icon,
     // The round goes under the selected player's name, which for these fixtures is the first slot.
     detail: (slot: number) => (slot === 0 ? detail : null),
   };
@@ -208,6 +215,28 @@ describe('labelPass', () => {
     expect(withNothing.marks).toEqual([]);
     expect(withBomb.textX).toEqual(withRifle.textX);
     expect(withNothing.textX).toEqual(withRifle.textX);
+  });
+
+  it('leaves the name where it is whatever the mark inside the box turns out to be', () => {
+    const withClass = newDrawn();
+    const withModel = newDrawn();
+    const withUtility = newDrawn();
+
+    pass().draw(newContext(withClass), PLATE, subjectAt(400, 400), TOKEN_RADIUS);
+    pass().draw(
+      newContext(withModel),
+      PLATE,
+      subjectAt(400, 400, 'rifle', null, 'ak47'),
+      TOKEN_RADIUS,
+    );
+    pass().draw(newContext(withUtility), PLATE, subjectAt(400, 400, 'smoke'), TOKEN_RADIUS);
+
+    // An AK is three times the width of a smoke canister and both are drawn, so the box is what the
+    // name is measured from rather than the mark that happens to be in it.
+    expect(withModel.marks.length).toBe(withClass.marks.length);
+    expect(withUtility.marks.length).toBe(withClass.marks.length);
+    expect(withModel.textX).toEqual(withClass.textX);
+    expect(withUtility.textX).toEqual(withClass.textX);
   });
 });
 
