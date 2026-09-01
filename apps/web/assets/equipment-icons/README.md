@@ -36,7 +36,9 @@ box is the wider mark rather than a scaling problem.
 opposite of what the weapon set does. Two things depend on it: §7.1's round axis spaces its symbols
 on a `GLYPH_PITCH_PX` that *is* one glyph's width, and a team row's run of marks is laid out the same
 way. `UtilityGlyph` centres each outline in a square viewBox for that reason, so a wide icon loses
-air rather than the layout losing its pitch.
+air rather than the layout losing its pitch. The plate fits the same outlines into boxes of its own —
+24×10 beside a name and 12×12 at the head of a trajectory (`features/radar/helpers/equipment-marks`)
+— which is the same rule against a different box, not a second way of drawing them.
 
 **Changing them:** replace an asset and run `bun run icons:generate`, which rewrites both generated
 tables. The generator is deterministic and offline — running it twice must leave the tree untouched.

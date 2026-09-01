@@ -1,8 +1,8 @@
 /**
  * `Path2D` is a browser global and the suite runs in node, so a helper that compiles a path — the
- * weapon mark in `weapon-marks.ts` — has nothing to compile against. This is the smallest stub the
- * two tests that reach it need: they record the *colours* a mark paints and the geometry it traces,
- * and neither reads a path back.
+ * marks in `equipment-marks.ts` — has nothing to compile against. This is the smallest stub the
+ * three tests that reach it need: they record the outline a mark fills, the colours it paints and
+ * the geometry it traces, and none of them reads a compiled path back.
  */
 let constructed = 0;
 
