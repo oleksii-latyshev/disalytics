@@ -3,7 +3,7 @@ interface Props {
 }
 
 /**
- * A `<span>` rather than a `<p>`: both the saved row and §10.2's card put this inside the button
+ * A `<span>` rather than a `<p>`: both the saved row and the library card put this inside the button
  * that opens the demo, and a button admits phrasing content only.
  */
 export function DemoFileName({ fileName }: Props) {

@@ -983,6 +983,59 @@ restores turbo's cached dist without running Vite, which is why the failure asks
 assertions rather than thirteen; the one that went is `immutable .map`, and a source map is not part
 of §13.
 
+**#277 redressed the way in, and the biggest thing in it is that `Dialog` and `Sheet` are no longer
+a native `<dialog>`.** Both are Base UI's dialog through animate-ui's primitive now, which supersedes
+what #203 and #235 recorded above. The argument that put them on the platform was a good one — the
+top layer, the focus trap, the `Esc` close request and `closedby="any"` light dismiss are all the
+platform's — and it loses to the one thing the platform will not do: **let a dialog leave.**
+`close()` is immediate, so an exit animation off a native `<dialog>` means holding the element open
+on a timer and racing its own state. Everything the native version was kept for, Base UI also does,
+and it was measured rather than assumed: focus trapped inside and **restored to the control that
+opened it** (`Esc` on the settings sheet returns focus to the settings button), page scroll locked,
+`Esc` and an outside press both closing, and the exit actually running — a popup caught at opacity
+**0.32** a frame after the press, and gone after it. Six things ride with that.
+
+**The scrims stopped being `::backdrop`.** `.surface-sheet` and `.dialog-scrim` are element classes
+now, which is what lets the scrim fade rather than appear, and is the whole reason for the move.
+**`DemoDialog` is mounted whether or not it is open** — an exit animation belongs to an element that
+still exists — and it holds the last demo it was given across the exit so the card fades out with its
+content; the parse is still released the moment `saved` goes, verified as 0 canvases left behind.
+**The registry's popup arrives with a `filter: blur(4px)` and a 20° `rotateX`**, and both are
+overridden from the call site rather than edited upstream, because the primitive spreads the caller's
+props over its defaults. A blur animation over a full-viewport surface is what §17 rule 1 exists to
+refuse.
+
+**The rail is a column against the app's own ground with one hairline**, not a card: 280px with a
+right edge at 1440, a full-width row with a bottom edge at 1024, and the current entry is
+animate-ui's `Highlight` in `children` mode — one `layoutId` shared by every seat, so `motion` moves
+the same pill between them on `transform` alone. Two things there are load-bearing. **The effect
+writes `aria-selected` onto whatever it wraps**, and a `listitem` may not carry it, so the
+`HighlightItem` passes it `undefined` — props are spread after the effect's own attributes, which is
+what makes the override possible without an edit. And **`RailEntry` is `relative`**: the pill is an
+absolutely positioned sibling at `z-index: 0`, and a static button's own text paints *below* a
+positioned sibling however late it comes in the DOM.
+
+**`ParseProgress` has a bar again**, which #236 removed as a second statement of the same fact — the
+reversal is #277's own decision, and the reason is that a percentage says how far and a bar says how
+far *of the whole*. It is Base UI's `progressbar` with `aria-valuenow` and an `Intl`-formatted
+`aria-valuetext`, named by a `ProgressLabel` rather than an asserted `aria-label`, with animate-ui's
+`CountingNumber` counting the digits underneath at `aria-hidden`. **The fill scales, it does not
+resize** — `transform: scaleX()` — which is why the barrel exports `Progress` from the *primitive*
+layer: the registry's styled track renders an indicator that animates `width`. And **the per-cent
+sign moved into the message catalogue**, `42%` against `42 %`, because `CountingNumber` writes
+`textContent` and cannot carry a suffix, and that space is what `Intl` produces for `ru`.
+
+Measured at 1440×900 and 1024×800 with `innerWidth`/`innerHeight` asserted inside the run, in `en`
+and in `ru`: **0 elements overflowing** on every screen at every width, over
+`document.querySelectorAll('*')` with each hit's ancestors walked for `overflow`; **0
+`backdrop-filter`s and 0 `.glass-*` classes** anywhere on the way in; the library grid at **4 columns
+of 261px at 1440 and 3 of 317px at 1024**, so the `auto-fill` floor still refuses two stretched
+columns. The bundle is the one budget this moved: **195.08 → 218.87 kB gz, 39.0% → 43.8%** of the
+500 kB, and it is Base UI's dialog, progress and highlight rather than `motion` — the lazy
+`motion-features` chunk was already 0.16 kB on `main`, so that split point had collapsed before this
+branch.
+
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

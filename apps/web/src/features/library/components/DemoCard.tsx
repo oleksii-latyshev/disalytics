@@ -29,7 +29,7 @@ function MapThumbnail({ map, theme }: { map: string; theme: RadarTheme }) {
           src={`${import.meta.env.BASE_URL}${radarAssetPath(level, theme)}`}
           alt=""
           loading="lazy"
-          className="size-full scale-105 object-cover opacity-80 transition-opacity duration-(--duration-micro) ease-out group-hover:opacity-100"
+          className="size-full scale-105 object-cover opacity-60 transition-[opacity,transform] duration-(--duration-base) ease-out group-hover:scale-110 group-hover:opacity-90"
         />
       )}
     </span>
@@ -37,8 +37,8 @@ function MapThumbnail({ map, theme }: { map: string; theme: RadarTheme }) {
 }
 
 /**
- * One demo the device holds — `docs/DESIGN.md` §10.2. Pressing it opens the demo from the cache
- * with no file involved, which is the whole point of the feature.
+ * One demo the device holds. Pressing it opens the demo from the cache with no file involved, which
+ * is the whole point of the feature.
  *
  * **The score is by the side each team started on.** `Round.winner` is a side and sides swap at
  * halftime, so a card reading `CT 13 – T 11` would be wrong for half of every match — #141 is that
@@ -58,7 +58,7 @@ export function DemoCard({ demo, theme, onOpen, onRemove }: Props) {
         type="button"
         onClick={() => onOpen(demo)}
         aria-label={t('library.saved.open', { map: demo.map })}
-        className="group flex w-full flex-col overflow-hidden rounded-card border border-line bg-surface-1 text-left transition-colors duration-(--duration-micro) ease-out hover:bg-hover"
+        className="group flex w-full flex-col overflow-hidden rounded-card border border-line bg-surface-1 text-left transition-colors duration-(--duration-micro) ease-out hover:border-line-strong hover:bg-hover"
       >
         <MapThumbnail map={demo.map} theme={theme} />
 
@@ -96,7 +96,7 @@ export function DemoCard({ demo, theme, onOpen, onRemove }: Props) {
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute top-2 right-2 bg-surface-1/80 text-ink-dim hover:text-ink"
+        className="absolute top-2 right-2 bg-surface-0/70 text-ink-dim hover:bg-surface-0 hover:text-ink"
         aria-label={t('library.saved.remove', { fileName: demo.fileName })}
         onClick={() => onRemove(demo.key)}
       >

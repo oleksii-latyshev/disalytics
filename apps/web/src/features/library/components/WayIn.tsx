@@ -18,17 +18,16 @@ interface Props {
   onClose: () => void;
 }
 
-/** Settings and help are the way in's too, and they are §10.5's and §10.6's own sheets, not copies. */
+/** Settings and help are the way in's too, and they are the review screen's own sheets, not copies. */
 type Sheet = 'settings' | 'help';
 
 /**
- * The way in — DESIGN.md §10.1. A shell with a persistent rail and one view inside it, and the drop
- * target is the whole viewport rather than a box inside it: `useFileDrop` already listens on the
- * window, so what this adds is the screen *acknowledging* the drag instead of a dashed rectangle
- * doing it alone.
+ * The way in. A shell with a persistent rail and one view inside it, and the drop target is the
+ * whole viewport rather than a box inside it: `useFileDrop` already listens on the window, so what
+ * this adds is the screen *acknowledging* the drag instead of a dashed rectangle doing it alone.
  *
- * **The shell ends where the match begins.** `App` swaps it for the review screen entirely, and
- * §5.1 is the reason rather than a preference: the plate is `min(100cqi, 100cqb)` of the cell the
+ * **The shell ends where the match begins.** `App` swaps it for the review screen entirely, and the
+ * reason is the plate rather than a preference: the plate is `min(100cqi, 100cqb)` of the cell the
  * stage leaves it, so a rail is not chrome beside the plate — it is a subtraction from the plate's
  * own axis, and 280px of it is nearly half the 616px the plate measures at 1280.
  */
@@ -37,7 +36,7 @@ export function WayIn({ state, onFile, onEnter, onClose }: Props) {
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
   // An open lands the reader on the upload view wherever they were, because that is the view that
-  // reports it — §10.3. It is a move made once, at the moment they ask for it, rather than a rule
+  // reports it. It is a move made once, at the moment they ask for it, rather than a rule
   // that holds them there: a parse they started is not a screen they cannot leave, and a failure is
   // terminal, so a rule keyed on "not idle" would strand them on it with nothing to press.
   const openFile = useCallback(

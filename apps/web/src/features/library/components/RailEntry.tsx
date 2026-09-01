@@ -8,34 +8,41 @@ interface Props {
 }
 
 /**
- * One entry in §10.1's rail: 40px, §4's larger control height, a `--selected` fill and `--ink`
- * when it is the current one and `--ink-dim` when it is not.
+ * One entry in the rail: 40px, the taller of the two control heights, `--ink` when it is the current
+ * one and `--ink-dim` when it is not.
  *
- * **An unfinished entry is told apart by its chip rather than by its ink.** §10.1 asks for
- * `--ink-faint` on the two that are not built, and §14 rules `--ink-faint` off text at 3.63:1 —
- * the floor wins, so the label stays at `--ink-dim` and the chip carries the reading.
+ * **It draws no background of its own.** The mark for the current entry is the pill `SideRail` slides
+ * between entries, and a fill here would be a second one appearing under it. What is left is the ink
+ * step and `aria-current`, which is the reading either way.
+ *
+ * `relative` is load-bearing rather than habit: the pill is an absolutely positioned sibling with
+ * `z-index: 0`, and a static button's text paints *below* a positioned sibling however late it comes
+ * in the DOM. Positioning the button is what puts its own label back on top of the pill that marks
+ * it.
+ *
+ * **An unfinished entry is told apart by its chip rather than by its ink.** `--ink-faint` is under
+ * 4.5:1 on every surface in the product and so never carries text; the label stays at `--ink-dim`
+ * and the chip says the rest.
  */
 export function RailEntry({ section, isCurrent, onSelect }: Props) {
   return (
-    <li>
-      <button
-        type="button"
-        aria-current={isCurrent ? 'page' : undefined}
-        onClick={onSelect}
-        className={`flex h-10 w-full items-center gap-2 rounded-card px-3 text-left text-14 transition-colors duration-(--duration-micro) ease-out hover:bg-hover ${
-          isCurrent ? 'bg-selected text-ink' : 'text-ink-dim'
-        }`}
-      >
-        <span className="truncate">
-          <Text path={section.labelPath} />
-        </span>
+    <button
+      type="button"
+      aria-current={isCurrent ? 'page' : undefined}
+      onClick={onSelect}
+      className={`relative flex h-10 w-full items-center gap-2 rounded-card px-3 text-left text-14 transition-colors duration-(--duration-micro) ease-out ${
+        isCurrent ? 'text-ink' : 'text-ink-dim hover:bg-hover hover:text-ink'
+      }`}
+    >
+      <span className="truncate">
+        <Text path={section.labelPath} />
+      </span>
 
-        {section.isSoon && (
-          <span className="label-dense ml-auto shrink-0 rounded-chip border border-line px-1.5 py-0.5 text-ink-dim">
-            <Text path="library.shell.soon" />
-          </span>
-        )}
-      </button>
-    </li>
+      {section.isSoon && (
+        <span className="label-dense ml-auto shrink-0 rounded-chip border border-line px-1.5 py-0.5 text-ink-dim">
+          <Text path="library.shell.soon" />
+        </span>
+      )}
+    </button>
   );
 }

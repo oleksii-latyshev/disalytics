@@ -1,8 +1,7 @@
 import { DEFAULT_RADAR_THEME, getMapOverview, radarAssetPath } from '@disa/map-data';
 
-// The material of the product rather than an illustration — DESIGN.md §5. One plate, fixed, because
-// this screen has no demo yet and so no map of its own to show; Mirage is the one most readers can
-// name at a glance.
+// The material of the product rather than an illustration. One plate, fixed, because this screen has
+// no demo yet and so no map of its own to show; Mirage is the one most readers can name at a glance.
 const BACKDROP_MAP = 'de_mirage';
 
 /**

@@ -11,9 +11,9 @@ interface Props {
 }
 
 /**
- * The way to a file, wherever the card happens to be. It is its own component because §10.4's
- * failure screen is the same card in the same place and has to offer the same route out — and a
- * second copy of `OpenDemo` there would put its heading on screen under the error's.
+ * The way to a file, wherever the card happens to be. It is its own component because the failure
+ * screen is the same card in the same place and has to offer the same route out — and a second copy
+ * of `OpenDemo` there would put its heading on screen under the error's.
  */
 export function ChooseDemo({ onFile }: Props) {
   const picker = useRef<HTMLInputElement>(null);

@@ -86,28 +86,30 @@ pre {
   box-shadow: 0 0 0 1px var(--color-line-strong);
 }
 
-/* Settings, help, and the ground behind the demo dialog. The only `backdrop-filter` left in the
-   product, and the only surface whose job is to push back the *whole* screen rather than to sit on
-   it. `.dialog-scrim` is the same grade reached through `::backdrop` alone: there the card is its
-   own surface and only the ground around it is being pushed back.
+/* Settings, help, the match overlay, and the ground behind the demo dialog. The only
+   `backdrop-filter` left in the product, and the only surfaces whose job is to push back the *whole*
+   screen rather than to sit on it. `.surface-sheet` is a sheet's own ground; `.dialog-scrim` is the
+   same grade under a card that is not covering the screen, where the card is its own surface and
+   only the ground around it is being pushed back.
 
-   All three are open only while playback is stopped, so nothing repaints behind any of them.
+   All of them are open only while playback is stopped, so nothing repaints behind any of them.
+
+   Both were written against `::backdrop` until #277, because both surfaces were a native
+   `<dialog>`. They are Base UI popups now, so the scrim is an element of its own — which is what
+   lets it fade rather than appear, and is the whole reason for the move.
 
    The fallback is opaque rather than a cheaper blur: with `backdrop-filter` unavailable there is
    nothing lifting the ground, and a translucent sheet over a match reads as a half-drawn screen
-   rather than as a surface. `::backdrop` carries the same colour so the top-layer ground matches the
-   sheet on the one frame the two are painted separately. */
+   rather than as a surface. */
 .surface-sheet,
-.surface-sheet::backdrop,
-.dialog-scrim::backdrop {
+.dialog-scrim {
   background-color: rgb(5 5 5 / 0.72);
   backdrop-filter: var(--backdrop-sheet);
 }
 
 @supports not (backdrop-filter: blur(1px)) {
   .surface-sheet,
-  .surface-sheet::backdrop,
-  .dialog-scrim::backdrop {
+  .dialog-scrim {
     background-color: var(--color-surface-0);
   }
 }

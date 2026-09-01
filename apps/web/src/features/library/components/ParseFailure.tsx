@@ -20,21 +20,20 @@ function copyFor(failure: OpenFailure): { title: TranslationKey; hint: Translati
 }
 
 /**
- * The failure — DESIGN.md §10.4. **The same card in the same place**, so it is the card's whole
- * content rather than a box stacked above the way in: what happened, what to do, and the route to
- * doing it.
+ * The failure. **The same card in the same place**, so it is the card's whole content rather than a
+ * box stacked above the way in: what happened, what to do, and the route to doing it.
  *
- * It carries no `--damage`. §2 leaves that token exactly one reader — the token's damage flash in
- * §6.1 — and a tinted border here would be it standing in for *something bad happened*, which is
- * the use that section rules out. The copy is what says an open failed, in the interface's voice
- * and without apologising.
+ * It carries no `--damage`. The token layer leaves that colour exactly one reader — the damage flash
+ * on a player token — and a tinted border here would be it standing in for *something bad
+ * happened*, which is the use the palette rules out. The copy is what says an open failed, in the
+ * interface's voice and without apologising.
  */
 export function ParseFailure({ failure, fileName, onFile }: Props) {
   const copy = copyFor(failure);
 
   return (
     <section role="alert" className="flex flex-col items-start gap-4">
-      <h2 className="font-ui text-20 leading-dense">
+      <h2 className="font-ui font-medium text-20 leading-dense">
         <Text path={copy.title} />
       </h2>
 

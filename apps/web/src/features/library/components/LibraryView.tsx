@@ -12,20 +12,19 @@ interface Props {
 }
 
 /**
- * Every demo this device holds — §10.2. The way-in card keeps the five most recent; this screen is
- * where all of them live, **as a grid of cards rather than a list of rows**: a row is a filing
- * cabinet, and a card can carry the map, which is how a reader recognises a match they downloaded a
- * week ago.
+ * Every demo this device holds. The way-in card keeps the five most recent; this screen is where all
+ * of them live, **as a grid of cards rather than a list of rows**: a row is a filing cabinet, and a
+ * card can carry the map, which is how a reader recognises a match they downloaded a week ago.
  *
  * The track floor is what keeps the grid honest at both ends — one column on a phone, and never the
- * two columns at 1024 that §10.1 turns the rail into a row to avoid.
+ * two columns at 1024 that the rail turns into a row to avoid.
  *
  * An entry with no metadata, a stale `SCHEMA_VERSION` or a file that has gone never reaches here:
  * the store drops all three, so a card that cannot be opened is never drawn.
  *
- * **A press opens the dialog rather than the match** (§10.2). The dialog is mounted only while it is
- * open, which is what releases the parse it read, and it is owned here rather than by the shell
- * because a read that finds no file has to take the card with it — and `forget` is the list's.
+ * **A press opens the dialog rather than the match.** The dialog holds a parse only while it is open,
+ * and it is owned here rather than by the shell because a read that finds no file has to take the
+ * card with it — and `forget` is the list's.
  */
 export function LibraryView({ onEnter }: Props) {
   const { demos, forget } = useSavedDemos();
@@ -35,8 +34,11 @@ export function LibraryView({ onEnter }: Props) {
   return (
     <section className="mx-auto flex w-full max-w-[72rem] flex-col gap-4">
       <header className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-ui text-20 leading-dense">
+        {/* The count sits beside the title rather than at the far edge of the column. Pushed right
+            it is a figure a thousand pixels from the thing it counts, and on a one-card library it
+            reads as a stray. */}
+        <div className="flex items-baseline gap-3">
+          <h2 className="font-ui font-medium text-20 leading-dense">
             <Text path="library.shell.library" />
           </h2>
 
@@ -77,14 +79,14 @@ export function LibraryView({ onEnter }: Props) {
           </>
         ))}
 
-      {opened !== null && (
-        <DemoDialog
-          saved={opened}
-          onEnter={onEnter}
-          onDismiss={() => setOpened(null)}
-          onGone={forget}
-        />
-      )}
+      {/* Mounted whether or not it is open — an exit animation needs an element that still exists.
+          It holds no parse while it is closed; `DemoDialog` drops it as `saved` goes. */}
+      <DemoDialog
+        saved={opened}
+        onEnter={onEnter}
+        onDismiss={() => setOpened(null)}
+        onGone={forget}
+      />
     </section>
   );
 }

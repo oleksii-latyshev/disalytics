@@ -39,8 +39,23 @@ upstream catches up.
 
 ## What is deliberately not re-exported
 
-`src/index.ts` is the package's only entrance, and it leaves out the registry's `Dialog`, `Switch`
-and `Button`. Ours are a native `<dialog>` opened with `showModal()` and a plain checkbox — the top
-layer, the focus trap, the `Esc` close request, `Space`, the label association and the checked state
-are all the platform's that way, and none of it has to be re-implemented in order to be styled. The
-files are still here and still update from the CLI; a screen that wants one exports it then.
+`src/index.ts` is the package's only entrance, and it leaves out the registry's styled `Dialog`,
+`Switch` and `Button`.
+
+The dialog's story changed in #277 and is worth stating, because the file below it is now load-
+bearing. `Dialog` and `Sheet` were a native `<dialog>` opened with `showModal()` until then, on the
+argument that the top layer, the focus trap and the `Esc` close request are the platform's and need
+no re-implementation. They are built on `primitives/base/dialog.tsx` — Base UI's dialog — now, for
+the one thing the platform will not do: **let a dialog leave.** `close()` is immediate, so an exit
+animation off a native `<dialog>` means holding it open on a timer and racing the element's own
+state. Everything the native version was kept for, Base UI also does. What stays unexported is the
+*styled* dialog above the primitive, which brings its own header, footer and close button.
+
+`Switch` is ours for a different reason: it is a plain checkbox, which is what gives it `Space`, the
+label association and the checked state assistive technology reads for free. Its file is still here
+and still updates from the CLI; a screen that wants it exports it then.
+
+Two components are taken from the primitive layer rather than the styled one — `Progress` and the
+effects and numbers — because what those give is behaviour and the styling is ours. `Progress` has a
+second reason and it is a hard rule: the styled track renders an indicator that animates `width`,
+and a bar in this product scales rather than resizes.

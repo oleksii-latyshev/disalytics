@@ -11,7 +11,7 @@
       "decompress": "Unpacking the file",
       "parse": "Reading the demo"
     },
-    "percent": "{percent, number, percent}",
+    "percent": "{percent}%",
     "label": "Reading progress",
     "hiddenTab": "This tab spent time in the background. Browsers give a hidden tab far less processor time, so reading a demo there takes several times longer — keep this tab in front until it finishes.",
     "cancel": "Cancel parse"

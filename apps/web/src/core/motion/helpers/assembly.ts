@@ -1,7 +1,4 @@
-import type { TargetAndTransition, Transition } from '@disa/ui';
-
-/** DESIGN.md §8's `--ease-out`, which the token layer states in CSS and nothing can read from it. */
-const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
+import { EASE_OUT, type TargetAndTransition, type Transition } from '@disa/ui';
 
 const STAGE_FADE_SECONDS = 0.34;
 const CARD_DELAY_SECONDS = 0.06;
