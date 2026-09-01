@@ -30,6 +30,11 @@
     "kills": "Убийства",
     "deaths": "Смерти",
     "damage": "Урон",
-    "equipment": "Снаряжение"
+    "equipment": "Снаряжение",
+    "abbr": {
+      "kills": "У",
+      "deaths": "С",
+      "damage": "УР"
+    }
   }
 }

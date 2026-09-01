@@ -14,7 +14,8 @@
       "!**/pkg",
       "!bun.lock",
       "!crates/*/tests/snapshots",
-      "!apps/web/assets/weapon-icons"
+      "!apps/web/assets/weapon-icons",
+      "!apps/web/assets/equipment-icons"
     ]
   },
   "formatter": {

@@ -35,6 +35,8 @@ const MAX_LABEL_CHARS = 14;
 
 export interface LabelStyle {
   readonly font: string;
+  /** One rank down for the round's numbers, so the name stays the label's first reading. */
+  readonly detailFont: string;
 }
 
 /** Behind the name rather than around it: a halo, not the chip #111 shipped — DESIGN.md §6.1. */
@@ -43,8 +45,17 @@ export interface LabelColors {
   readonly ink: string;
 }
 
+/** The detail is set in the mono face, because every number in the product is tabular. */
+const DETAIL_SIZE_PX = 9;
+
+/** How far the round's line sits under the name it belongs to. */
+const DETAIL_LEAD_PX = 10;
+
 export function readLabelStyle(): LabelStyle {
-  return { font: `${LABEL_SIZE_PX}px ${readCssToken('--font-ui')}` };
+  return {
+    font: `${LABEL_SIZE_PX}px ${readCssToken('--font-ui')}`,
+    detailFont: `${DETAIL_SIZE_PX}px ${readCssToken('--font-mono')}`,
+  };
 }
 
 /**
@@ -85,6 +96,12 @@ export interface LabelSubject {
   alpha(slot: number): number;
   /** What the slot is holding this frame, or `null` where no sample ever saw it holding anything. */
   weapon(slot: number): WeaponClass | null;
+  /**
+   * The round's numbers for this slot, already formatted and translated, or `null` for every slot
+   * that is not the selected one. It arrives as a finished string because a canvas cannot reach the
+   * message catalogue and a draw may not allocate one.
+   */
+  detail(slot: number): string | null;
 }
 
 export interface LabelPass {
@@ -126,12 +143,20 @@ export function labelPass(
   const placer = labelPlacer(slotCount, LABEL_HEIGHT_PX);
   const widths = new Float32Array(slotCount);
 
+  /* The detail's width, cached against the string it was measured from. It cannot join `widths`
+     above — those are measured once per demo, and this changes every round — and it may not be
+     measured per frame either, because `measureText` returns a `TextMetrics` and this runs inside a
+     draw. Measuring on change is once a round for one label. */
+  let detailText: string | null = null;
+  let detailWidth = 0;
+
   /** One placed label: the mark it leads with, then the name, both over the same halo. */
   function write(
     context: CanvasRenderingContext2D,
     label: string,
     weapon: WeaponClass | null,
     alpha: number,
+    detail: string | null,
   ): void {
     const x = placer.x + LABEL_HALO_PX;
     const y = placer.y + LABEL_HEIGHT_PX / 2;
@@ -146,6 +171,68 @@ export function labelPass(
 
     context.fillStyle = colors.ink;
     context.fillText(label, x + WEAPON_BOX_PX, y);
+
+    if (detail === null) return;
+
+    // The round, under the name that owns it. It is set in the mono face and one rank down, so the
+    // name is still what the label reads as — and it goes through the same halo, because the ground
+    // under it is a map rather than a surface.
+    context.font = style.detailFont;
+    context.strokeText(detail, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX);
+    context.fillText(detail, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX);
+    context.font = style.font;
+  }
+
+  /**
+   * How wide the round's line is, measured on the frame the string changes on and cached after it.
+   * `measureText` returns a `TextMetrics`, so measuring per frame would allocate inside a draw —
+   * and this string changes once a round, for one player.
+   */
+  function measuredDetail(context: CanvasRenderingContext2D, detail: string): number {
+    if (detail !== detailText) {
+      context.font = style.detailFont;
+      detailText = detail;
+      detailWidth = context.measureText(detail).width + WEAPON_BOX_PX + 2 * LABEL_HALO_PX;
+      context.font = style.font;
+    }
+
+    return detailWidth;
+  }
+
+  /**
+   * One slot's whole label: whether it gets one at all, how big its box is, and where the placer
+   * put it. It is its own function rather than the body of the loop below because the decision has
+   * five arms — unnamed, unmeasured, off the plate, with a round and without — and `draw` is what
+   * the frame budget is read against, so it stays a loop and a call.
+   */
+  function place(
+    context: CanvasRenderingContext2D,
+    slot: number,
+    bounds: PlateBounds,
+    subject: LabelSubject,
+    tokenRadius: number,
+  ): void {
+    if (!subject.isNamed(slot)) return;
+
+    const label = labelBySlot[slot];
+    const width = sampleAt(widths, slot);
+    if (label === undefined || width === 0) return;
+
+    // A name belongs to a token the reader can see. Without this the placer clamps the label of a
+    // player the zoom has left off the plate to the nearest edge, and a panned plate grows a row of
+    // names along it — DESIGN.md §6.1 puts the label beside its token or nowhere.
+    const tokenX = subject.x(slot);
+    const tokenY = subject.y(slot);
+    if (!isOnPlate(tokenX, tokenY, bounds)) return;
+
+    // The selected player's label is two lines and as wide as the wider of them, so the placer
+    // keeps its neighbours clear of the round underneath rather than of the name alone.
+    const detail = subject.detail(slot);
+    const boxWidth = detail === null ? width : Math.max(width, measuredDetail(context, detail));
+    const boxHeight = detail === null ? LABEL_HEIGHT_PX : LABEL_HEIGHT_PX + DETAIL_LEAD_PX;
+
+    placer.place(tokenX, tokenY, tokenRadius, boxWidth, bounds, boxHeight);
+    write(context, label, subject.weapon(slot), subject.alpha(slot), detail);
   }
 
   return {
@@ -173,21 +260,7 @@ export function labelPass(
       placer.reset();
 
       for (let slot = 0; slot < slotCount; slot++) {
-        if (!subject.isNamed(slot)) continue;
-
-        const label = labelBySlot[slot];
-        const width = sampleAt(widths, slot);
-        if (label === undefined || width === 0) continue;
-
-        // A name belongs to a token the reader can see. Without this the placer clamps the label
-        // of a player the zoom has left off the plate to the nearest edge, and a panned plate grows
-        // a row of names along it — DESIGN.md §6.1 puts the label beside its token or nowhere.
-        const tokenX = subject.x(slot);
-        const tokenY = subject.y(slot);
-        if (!isOnPlate(tokenX, tokenY, bounds)) continue;
-
-        placer.place(tokenX, tokenY, tokenRadius, width, bounds);
-        write(context, label, subject.weapon(slot), subject.alpha(slot));
+        place(context, slot, bounds, subject, tokenRadius);
       }
     },
   };

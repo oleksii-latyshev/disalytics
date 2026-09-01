@@ -16,7 +16,7 @@ import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback'
 import { useSetting } from '@/core/settings';
 import { MatchRadar } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
-import { createMoneyFormat } from '../helpers/money';
+import { createMoneyFormat, moneyShape } from '../helpers/money';
 import { useHotCorners } from '../hooks/use-hot-corners';
 import { useReviewSheets } from '../hooks/use-review-sheets';
 import { useReviewShortcuts } from '../hooks/use-review-shortcuts';
@@ -98,6 +98,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   const ct = useMemo(() => playersOnSide(demo.header.players, sides, 'CT'), [demo, sides]);
   const t = useMemo(() => playersOnSide(demo.header.players, sides, 'T'), [demo, sides]);
   const money = useMemo(() => createMoneyFormat(locale), [locale]);
+  // The locale's currency placement and thousands separator, taken apart once: `SlidingNumber`
+  // writes digits and nothing else, so the symbol has to sit outside it.
+  const shape = useMemo(() => moneyShape(money), [money]);
 
   useReviewShortcuts({
     demo,
@@ -123,6 +126,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           roundIndex={roundIndex}
           selectedSlot={selectedSlot}
           money={money}
+          shape={shape}
           onSelect={toggleSelected}
         />
       </m.div>
@@ -136,6 +140,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           roundIndex={roundIndex}
           selectedSlot={selectedSlot}
           money={money}
+          shape={shape}
           onSelect={toggleSelected}
         />
       </m.div>

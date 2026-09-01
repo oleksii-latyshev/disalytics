@@ -1,6 +1,6 @@
 import type { ParsedDemo, PlayerInfo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { m } from '@disa/ui';
+import { DURATION_MICRO_SECONDS, EASE_OUT, m } from '@disa/ui';
 import { useEffect, useMemo } from 'react';
 import { EventRow, type KillLine, type RowEvent } from '@/core/events';
 import type { Transport } from '@/core/playback';
@@ -113,7 +113,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onKillH
               type="button"
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: DURATION_MICRO_SECONDS, ease: EASE_OUT }}
               aria-label={labelFor(row.event)}
               onClick={() => transport.seek(row.frame)}
               onPointerEnter={() => onKillHover(killLineOf(row))}

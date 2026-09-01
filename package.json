@@ -12,7 +12,7 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "i18n:check": "bun tools/scripts/i18n-check.ts",
-    "icons:generate": "bun tools/scripts/weapon-icons-generate.ts",
+    "icons:generate": "bun tools/scripts/icons-generate.ts",
     "mapdata:generate": "bun tools/scripts/mapdata-generate.ts",
     "errors:check": "bun tools/scripts/errors-check.ts",
     "tokens:check": "bun tools/scripts/tokens-check.ts",

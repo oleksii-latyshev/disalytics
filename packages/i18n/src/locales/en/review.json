@@ -30,6 +30,11 @@
     "kills": "Kills",
     "deaths": "Deaths",
     "damage": "Damage",
-    "equipment": "Equipment"
+    "equipment": "Equipment",
+    "abbr": {
+      "kills": "K",
+      "deaths": "D",
+      "damage": "DMG"
+    }
   }
 }

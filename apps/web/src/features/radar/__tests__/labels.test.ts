@@ -127,17 +127,24 @@ function newContext(drawn: Drawn): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D;
 }
 
-const STYLE = { font: `10px sans-serif` };
+const STYLE = { font: `10px sans-serif`, detailFont: `9px monospace` };
 const COLORS = { halo: '#halo', ink: '#ink' };
 
 /** Two players, the second of them wherever the caller puts it. */
-function subjectAt(x: number, y: number, weapon: WeaponClass | null = 'rifle') {
+function subjectAt(
+  x: number,
+  y: number,
+  weapon: WeaponClass | null = 'rifle',
+  detail: string | null = null,
+) {
   return {
     isNamed: () => true,
     x: (slot: number) => (slot === 0 ? 320 : x),
     y: (slot: number) => (slot === 0 ? 320 : y),
     alpha: () => 1,
     weapon: () => weapon,
+    // The round goes under the selected player's name, which for these fixtures is the first slot.
+    detail: (slot: number) => (slot === 0 ? detail : null),
   };
 }
 
@@ -201,5 +208,76 @@ describe('labelPass', () => {
     expect(withNothing.marks).toEqual([]);
     expect(withBomb.textX).toEqual(withRifle.textX);
     expect(withNothing.textX).toEqual(withRifle.textX);
+  });
+});
+
+describe("the selected player's round", () => {
+  const pass = () => {
+    const built = labelPass(['s1mple', 'ropz'], 2, STYLE, COLORS);
+    built.measure(newContext(newDrawn()));
+
+    return built;
+  };
+
+  it('writes the round under the name it belongs to and under no other', () => {
+    const drawn = newDrawn();
+
+    pass().draw(
+      newContext(drawn),
+      PLATE,
+      subjectAt(400, 400, 'rifle', 'K 1  D 0  DMG 165'),
+      TOKEN_RADIUS,
+    );
+
+    expect(drawn.text).toEqual(['s1mple', 'K 1  D 0  DMG 165', 'ropz']);
+  });
+
+  it('sets it at the same left edge as the name above it', () => {
+    const drawn = newDrawn();
+
+    pass().draw(newContext(drawn), PLATE, subjectAt(400, 400, 'rifle', 'K 1'), TOKEN_RADIUS);
+
+    // Name, then its round, then the other player's name.
+    expect(drawn.textX[1]).toBe(drawn.textX[0]);
+  });
+
+  it('draws nothing extra while nobody is selected', () => {
+    const drawn = newDrawn();
+
+    pass().draw(newContext(drawn), PLATE, subjectAt(400, 400), TOKEN_RADIUS);
+
+    expect(drawn.text).toEqual(['s1mple', 'ropz']);
+  });
+
+  it('measures the round once per string rather than once per frame', () => {
+    let measured = 0;
+    const drawn = newDrawn();
+    const context = newContext(drawn);
+    const spied = new Proxy(context, {
+      get(target, key) {
+        if (key === 'measureText') {
+          return (text: string) => {
+            measured += 1;
+
+            return { width: text.length * 6 };
+          };
+        }
+
+        return Reflect.get(target, key);
+      },
+    }) as CanvasRenderingContext2D;
+
+    const built = labelPass(['s1mple', 'ropz'], 2, STYLE, COLORS);
+    built.measure(spied);
+    const afterNames = measured;
+
+    const subject = subjectAt(400, 400, 'rifle', 'K 1  D 0');
+    built.draw(spied, PLATE, subject, TOKEN_RADIUS);
+    built.draw(spied, PLATE, subject, TOKEN_RADIUS);
+    built.draw(spied, PLATE, subject, TOKEN_RADIUS);
+
+    // Three frames of the same round cost one measurement, not three: `measureText` allocates a
+    // `TextMetrics`, and this runs inside a draw.
+    expect(measured - afterNames).toBe(1);
   });
 });

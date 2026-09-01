@@ -70,6 +70,9 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
       teamBySlot,
       labelBySlot,
       selectedSlot: null,
+      // A still has no selection to carry a round for — nothing on this screen is selected, and
+      // the dialog states the roster beside the plate rather than on it.
+      detail: null,
       isAudibilityShown: false,
       colors,
       labelStyle,
