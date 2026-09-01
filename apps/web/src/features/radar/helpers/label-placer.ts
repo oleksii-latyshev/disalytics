@@ -19,6 +19,8 @@ export interface LabelPlacer {
     tokenRadius: number,
     width: number,
     bounds: PlateBounds,
+    /** This label's own box height, for the one label that is taller than a name. */
+    height?: number,
   ): void;
 }
 
@@ -34,6 +36,11 @@ function clamp(value: number, min: number, max: number): number {
  * The box height arrives as an argument rather than as an import from `labels`, which is where it
  * is defined: the label pass reaches for the placer, so the placer reaching back would be a cycle
  * between two siblings. Nothing here knows what a label is made of — only how tall its box is.
+ *
+ * The constructor's height is the ordinary one and `place` may override it for a single label. The
+ * per-entry height was already stored — a placed box has always carried its own — so what this adds
+ * is the *candidate* being allowed to differ, which is what lets the selected player's label carry
+ * its round underneath the name without the labels around it overlapping the extra lines.
  */
 export function labelPlacer(capacity: number, height: number): LabelPlacer {
   // x, y, width, height per label already placed this frame.
@@ -41,7 +48,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
   const candidates = new Float32Array(CANDIDATE_COUNT * 2);
   let count = 0;
 
-  function overlapsPlaced(x: number, y: number, width: number): boolean {
+  function overlapsPlaced(x: number, y: number, width: number, boxHeight: number): boolean {
     for (let index = 0; index < count; index++) {
       const offset = index * 4;
       const otherX = sampleAt(placed, offset);
@@ -51,7 +58,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
         x < otherX + sampleAt(placed, offset + 2) &&
         x + width > otherX &&
         y < otherY + sampleAt(placed, offset + 3) &&
-        y + height > otherY
+        y + boxHeight > otherY
       ) {
         return true;
       }
@@ -68,20 +75,20 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
       count = 0;
     },
 
-    place(tokenX, tokenY, tokenRadius, width, bounds): void {
+    place(tokenX, tokenY, tokenRadius, width, bounds, boxHeight = height): void {
       const half = width / 2;
       const gap = tokenRadius + LABEL_GAP_PX;
       const maxX = bounds.left + Math.max(bounds.width - width, 0);
-      const maxY = bounds.top + Math.max(bounds.height - height, 0);
+      const maxY = bounds.top + Math.max(bounds.height - boxHeight, 0);
 
       candidates[0] = tokenX - half;
       candidates[1] = tokenY + gap;
       candidates[2] = tokenX - half;
-      candidates[3] = tokenY - gap - height;
+      candidates[3] = tokenY - gap - boxHeight;
       candidates[4] = tokenX + gap;
-      candidates[5] = tokenY - height / 2;
+      candidates[5] = tokenY - boxHeight / 2;
       candidates[6] = tokenX - gap - width;
-      candidates[7] = tokenY - height / 2;
+      candidates[7] = tokenY - boxHeight / 2;
 
       let chosenX = 0;
       let chosenY = 0;
@@ -95,7 +102,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
           chosenY = y;
         }
 
-        if (!overlapsPlaced(x, y, width)) {
+        if (!overlapsPlaced(x, y, width, boxHeight)) {
           chosenX = x;
           chosenY = y;
           break;
@@ -107,7 +114,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
         placed[offset] = chosenX;
         placed[offset + 1] = chosenY;
         placed[offset + 2] = width;
-        placed[offset + 3] = height;
+        placed[offset + 3] = boxHeight;
         count++;
       }
 

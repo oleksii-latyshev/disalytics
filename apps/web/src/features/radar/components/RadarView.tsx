@@ -1,10 +1,11 @@
 import {
   type ParsedDemo,
   type PlayerSlot,
+  playerRoundStats,
   roundIndexAtFrame,
   sidesBySlotAtRound,
 } from '@disa/demo-core';
-import { Text, useT } from '@disa/i18n';
+import { Text, useLocale, useT } from '@disa/i18n';
 import { type MapOverview, type RadarPoint, radarAssetPath } from '@disa/map-data';
 import { Button } from '@disa/ui';
 import { Minus, Plus } from 'lucide-react';
@@ -72,6 +73,36 @@ export function RadarView({
   // rails read this too, and the two disagreeing for half a match is the failure this prevents.
   const roundIndex = roundIndexAtFrame(demo, frame);
   const teamBySlot = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
+
+  /* The selected player's round, under their own name on the plate — the four numbers a team row
+     used to grow to show. It is built here rather than inside the layer for two reasons: a canvas
+     cannot reach the message catalogue, and a draw may not allocate a string. It changes once a
+     round for one player, which is the same cadence as `teamBySlot` beside it, so it costs the
+     layer array one rebuild it was already making. */
+  const locale = useLocale();
+  // Built once per locale rather than once per round, the way every other formatter in the product
+  // is: a round change is not a reason to construct an `Intl.NumberFormat`.
+  const money = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }),
+    [locale],
+  );
+  const detail = useMemo(() => {
+    if (selectedSlot === null) return null;
+
+    const stats = playerRoundStats(demo, roundIndex, selectedSlot);
+
+    return [
+      `${t('review.player.abbr.kills')} ${stats.kills}`,
+      `${t('review.player.abbr.deaths')} ${stats.deaths}`,
+      `${t('review.player.abbr.damage')} ${stats.damage}`,
+      money.format(stats.equipmentValue),
+    ].join('  ');
+  }, [demo, roundIndex, selectedSlot, money, t]);
   const colors = radarColors(palette);
   const labelStyle = useMemo(readLabelStyle, []);
 
@@ -108,6 +139,7 @@ export function RadarView({
       teamBySlot,
       labelBySlot,
       selectedSlot,
+      detail,
       isAudibilityShown,
       colors,
       labelStyle,
@@ -144,6 +176,7 @@ export function RadarView({
     teamBySlot,
     labelBySlot,
     selectedSlot,
+    detail,
     isAudibilityShown,
     trajectories,
     colors,

@@ -55,6 +55,11 @@ export interface PlayerTokensOptions {
   readonly teamBySlot: readonly (Team | undefined)[];
   readonly labelBySlot: readonly string[];
   readonly selectedSlot: PlayerSlot | null;
+  /**
+   * The selected player's round, formatted and translated by the caller, or `null` where nobody is
+   * selected. A canvas cannot reach the message catalogue, and a draw may not build a string.
+   */
+  readonly detail: string | null;
   readonly isAudibilityShown: boolean;
   readonly colors: RadarColors;
   readonly labelStyle: LabelStyle;
@@ -68,7 +73,7 @@ export interface PlayerTokensOptions {
  */
 export function playerTokens(options: PlayerTokensOptions): Layer {
   const { demo, clock, overview, levelIndex, teamBySlot, colors, view } = options;
-  const { labelBySlot, selectedSlot, isAudibilityShown, labelStyle } = options;
+  const { labelBySlot, selectedSlot, detail, isAudibilityShown, labelStyle } = options;
   const { track } = demo;
 
   const positions = positionScratch(track);
@@ -114,6 +119,9 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     // `WEAPON_NONE` falls off the end of the table, which is the answer for a slot no sample ever
     // saw holding anything — a different thing from `unknown`, and drawn as nothing at all.
     weapon: (slot) => classByWeapon[sampleAt(track.weapon, base + slot)] ?? null,
+    // The round goes under one name and only one: the reader asked about this player by selecting
+    // them, and ten labels each carrying four numbers is a plate nobody can read.
+    detail: (slot) => (slot === selectedSlot ? detail : null),
   };
 
   /** Whether the selected player is on the plate to be given one, and where their cone points. */

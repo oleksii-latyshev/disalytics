@@ -6,9 +6,10 @@ import {
   type Team,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
+import type { MoneyShape } from '../helpers/money';
 import { PlayerRow } from './PlayerRow';
 
-/** DESIGN.md §5.3 — a side is five rows, and an absent player leaves the row rather than the card. */
+/** A side is five rows, and an absent player leaves the row rather than the card. */
 const ROWS_PER_SIDE = 5;
 
 interface Props {
@@ -19,16 +20,23 @@ interface Props {
   roundIndex: number | undefined;
   selectedSlot: PlayerSlot | null;
   money: Intl.NumberFormat;
+  shape: MoneyShape;
   onSelect: (slot: PlayerSlot) => void;
 }
 
 /**
- * One side's five rows — DESIGN.md §5.3. **T is bottom-left and CT is bottom-right**, and which
- * card a player is listed in is one of the two carriers of side identity the plate has left
- * (§2.7), so it is fixed and never configurable.
+ * One side's five rows. **T is bottom-left and CT is bottom-right**, and which card a player is
+ * listed in is one of the two carriers of side identity the plate has left, so it is fixed and
+ * never configurable.
  *
  * Rows are ordered by slot and never re-sorted while the match plays: a list that re-orders itself
  * under the reader's cursor during playback is the worst thing a live scoreboard can do.
+ *
+ * **Nothing here changes size when a row is selected**, which is what lets the plate be sized from
+ * this card at all. The row expanded in place for one build and the strip carried a reserved footer
+ * below the split to keep the plate still; both are gone — the round's numbers are drawn beside the
+ * selected player's own token on the plate, so a selection costs this card no height and the plate
+ * measures the same in every state.
  */
 export function TeamCard({
   demo,
@@ -38,10 +46,18 @@ export function TeamCard({
   roundIndex,
   selectedSlot,
   money,
+  shape,
   onSelect,
 }: Props) {
   const t = useT();
   const seats = Array.from({ length: ROWS_PER_SIDE }, (_, index) => players.at(index));
+
+  // Computed for the selected row only, and once for the card rather than once per seat: walking a
+  // round's damage for four rows nobody asked about is a cost with no reader.
+  const selected =
+    selectedSlot !== null && players.some((player) => player.slot === selectedSlot)
+      ? playerRoundStats(demo, roundIndex, selectedSlot)
+      : undefined;
 
   return (
     <section
@@ -52,9 +68,12 @@ export function TeamCard({
       <h2 className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</h2>
 
       {/* Below the split the two cards are one strip above the timeline block, so the five seats
-          run across it rather than down it — DESIGN.md §5.1. A stacked card there would leave the
-          plate a hundred pixels tall, which is the one thing the layout may not do. */}
-      <ul className="flex min-w-0 gap-1 split:flex-col split:gap-0">
+          run across it rather than down it. A stacked card there would leave the plate a hundred
+          pixels tall, which is the one thing the layout may not do. */}
+      {/* A 2px gap above the split rather than none: the seats were flush, and five adjacent
+          health washes with no gap between them fuse into one filled rectangle instead of reading
+          as five rows. The gap is what the row's own `rounded-card` needs to be seen at all. */}
+      <ul className="flex min-w-0 gap-1 split:flex-col split:gap-0.5">
         {seats.map((player, index) => (
           <li
             // An empty seat has no slot to name it with, and a filled one never moves between
@@ -74,14 +93,9 @@ export function TeamCard({
                 weapons={demo.header.weapons}
                 frame={frame}
                 isSelected={selectedSlot === player.slot}
-                // Only the expanded row shows them, and only one row is ever expanded — walking a
-                // round's events for four rows nobody asked about is a cost with no reader.
-                stats={
-                  selectedSlot === player.slot
-                    ? playerRoundStats(demo, roundIndex, player.slot)
-                    : undefined
-                }
+                stats={selectedSlot === player.slot ? selected : undefined}
                 money={money}
+                shape={shape}
                 onSelect={onSelect}
               />
             )}

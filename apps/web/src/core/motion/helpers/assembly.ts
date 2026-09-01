@@ -1,12 +1,22 @@
-import { EASE_OUT, type TargetAndTransition, type Transition } from '@disa/ui';
+import {
+  DURATION_MICRO_SECONDS,
+  DURATION_PANEL_SECONDS,
+  EASE_OUT,
+  type TargetAndTransition,
+  type Transition,
+} from '@disa/ui';
 
-const STAGE_FADE_SECONDS = 0.34;
+/* The durations are the token layer's, read through `@disa/ui` rather than restated as numbers —
+   `--duration-panel` is what a surface arriving takes and `--duration-micro` is what a mark
+   lighting takes, and the assembly is made of exactly those two things. The delays and the travel
+   are this sequence's own and belong to nothing else. */
+const STAGE_FADE_SECONDS = DURATION_PANEL_SECONDS;
 const CARD_DELAY_SECONDS = 0.06;
-const CARD_ARRIVAL_SECONDS = 0.34;
+const CARD_ARRIVAL_SECONDS = DURATION_PANEL_SECONDS;
 const CARD_TRAVEL_PX = 16;
 const STRIP_DELAY_SECONDS = 0.2;
 const STRIP_FILL_SECONDS = 0.24;
-const PILL_FADE_SECONDS = 0.14;
+const PILL_FADE_SECONDS = DURATION_MICRO_SECONDS;
 
 /**
  * What a piece of the review screen does when the match arrives — DESIGN.md §8. `stage` is the plate

@@ -1,5 +1,6 @@
 import { type ParsedDemo, roundClockAtFrame, sideScoreAtFrame } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
+import { SlidingNumber } from '@disa/ui';
 import { useMemo } from 'react';
 import { createClockFormat, formatClock } from '@/core/playback';
 
@@ -71,18 +72,25 @@ export function Scoreboard({ demo, frame, locale, position }: Props) {
       aria-label={t('review.scoreboard')}
       className={`numeric flex items-center ${type.chrome}`}
     >
-      <p className={`flex items-baseline gap-1.5 ${type.value}`}>
-        <span className="sr-only">
-          <Text path="review.score" />{' '}
-        </span>
+      {/* The reading, once, in words. Everything below it is `aria-hidden`: a rolling digit is ten
+          absolutely-positioned copies of every place, so the accessible text of the score would be
+          the digits rather than the number. */}
+      <span className="sr-only">
+        <Text path="review.score" /> CT {score.CT} T {score.T}
+      </span>
+      <p className={`flex items-center gap-1.5 ${type.value}`} aria-hidden="true">
         <span className={`text-ct ${type.side}`}>CT</span>
-        <span className="text-ct">{score.CT}</span>
+        <span className="text-ct">
+          <SlidingNumber number={score.CT} initiallyStable={true} />
+        </span>
         {/* A separator rather than a word — hidden from the reader, so §14's floor for text does
             not reach it. */}
         <span aria-hidden="true" className="text-ink-faint">
           :
         </span>
-        <span className="text-t">{score.T}</span>
+        <span className="text-t">
+          <SlidingNumber number={score.T} initiallyStable={true} />
+        </span>
         <span className={`text-t ${type.side}`}>T</span>
       </p>
 

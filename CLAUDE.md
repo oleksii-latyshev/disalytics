@@ -1036,6 +1036,73 @@ columns. The bundle is the one budget this moved: **195.08 → 218.87 kB gz, 39.
 branch.
 
 
+**#278 redressed the stage, and the change with the most in it is that a player row stopped being a
+list.** The row was three stacked lines with the third conditional on holding utility, so a card had
+two row heights and the two sides measured 278px and 321.5px for the same five seats; it is two
+fixed lines now, and every row is the same height in both cards and both locales — 48.25px at
+1440×900, 66.25px below the split. Five things are load-bearing.
+
+**Health is the row's own ground rather than a rule across it.** There were two full-width bars per
+row — twenty saturated rules across the stage, all of them at 100% for the whole buy phase — and
+§17 rule 5 says colour is data, which a constant is not. As a wash scaled with `transform: scaleX()`
+the same number is readable across all five rows at once, so a card answers *how much of this side
+is left* without being read row by row, and a dead player is an empty row rather than a word alone.
+It carries no transition: this is written ten times a second and a tween on it would be motion on
+the reading channel. **Armour spent one build as a 16px track beside the health figure and read as
+an em-dash** — `100 —` — then one build as a 1px rule along the row's bottom edge, which the owner
+read as a stray white line under the health. It is `sr-only` now and the helmet pip is the only
+armour mark left on screen.
+
+**Selecting a row does not resize anything, and that is the owner's call over the issue's own
+acceptance criterion.** #278 asked for animate-ui's `AutoHeight` so the round grows into place; it
+was built, measured and then removed, because the reading of it on a real match was that the card
+jumps. The round's four numbers are drawn under the selected player's **own name on the plate**
+instead — `LabelSubject.detail`, one line of the mono face a rank under the name, through the same
+halo — which is where the reader is already looking. Two consequences. **`labelPlacer.place` takes a
+per-label height now**, so the taller label keeps its neighbours clear of the round underneath and
+not of the name alone; the placer already stored a per-entry height, so what was added is the
+*candidate* being allowed to differ. And **the string is built in `RadarView` and never in the
+draw**: a canvas cannot reach the message catalogue, and its width is measured on the frame it
+changes and cached after it, because `measureText` returns a `TextMetrics` and this runs inside a
+draw. There is a test that three frames of one round cost one measurement.
+
+**The plate stopped moving when a player is selected.** Below the split the strip and the plate are
+two rows of one grid, so anything the strip grew the plate lost: measured on the fixture at
+1024×800, selecting one player took the plate from **459 to 376**. It is **473 in every state**
+now, and 716 at 1440×900 either way — above the split the plate's cell spans the rows the card
+steals from, so its size was never affected there. A reserved footer was built first, at the owner's
+direction, and deleted when the expand went; the row keeping one height is what actually fixes it.
+**A 1.25px version of the same bug outlived the first fix** — `DEAD` is `.label-dense` at 11px
+against 12px type and 12px glyphs, so a row measured 64.25px alive and 63px dead, which is a plate
+that grows under the reader as a side is wiped out. The state line is a fixed 16px for that reason.
+
+**#218's wrap was reintroduced and then re-fixed, and the sweep is why it was nearly missed.** A
+seat below the split is 93.2px of content box and the money figure runs **15.7px past it in `en` and
+23px in `ru`** — but the row has `overflow-hidden`, so #199's viewport sweep reports **0 overflowing
+elements** with the figure clipped in silence. The probe that catches it measures every child
+against its *seat's* padding box, and it has to skip absolutely positioned marks or the health wash
+and the side rule report as overflow on every row by design. Money takes a line of its own below the
+split **by rule rather than by fit**, or a dead row carrying two short words would not wrap where the
+live row beside it did.
+
+**`SlidingNumber` is kept, and it was checked rather than assumed.** Money and the score roll; the
+round clock deliberately does not, because it is a 10 Hz readout. It writes digits and nothing else,
+so `moneyShape` takes the locale's prefix, suffix and group separator off `Intl.formatToParts` once
+per locale and the digits sit between them — `$4,200` and `4 200 $` both stay correct. The roller is
+`aria-hidden` and a plain `sr-only` figure is what is read, because ten absolutely-positioned copies
+of every place is not a number to a screen reader; the same reasoning made the scoreboard's own
+score one `sr-only` reading with everything under it hidden. **The cost is DOM rather than frames**:
+the review screen goes 1,143 → 1,654 elements, 451 of them the roller's, and §16's two rows measured
+0 over 16.7 ms across three passes each with `main` indistinguishable beside it.
+
+The four full-length stat keys survive the expand's deletion because the row still carries them
+`sr-only` — moving the round to a canvas would otherwise have made a selected player's numbers
+unavailable to a screen reader, which is the one direction this screen may not move in. Three
+abbreviations were added for the plate (`K`/`D`/`DMG`, `У`/`С`/`УР`). The scoreboard, the feed, the
+corner cluster and `MatchIdentity` keep their behaviour; the feed's arrival and §8's assembly read
+`DURATION_MICRO_SECONDS` and `DURATION_PANEL_SECONDS` from the token layer rather than restating
+0.14 and 0.34.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
