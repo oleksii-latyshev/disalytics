@@ -33,7 +33,7 @@ export function MatchIdentity({ demo, cache }: Props) {
 
   return (
     <section className="flex flex-col items-start">
-      <p className="font-narrow text-12 text-ink-dim">
+      <p className="text-12 text-ink-dim">
         <span className="sr-only">
           <Text path="review.map" />{' '}
         </span>

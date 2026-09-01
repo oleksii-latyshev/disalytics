@@ -5,7 +5,8 @@ import { labelPlacer } from './label-placer';
 import type { PlateBounds } from './view';
 import { drawWeaponMark, WEAPON_MARK_PX } from './weapon-marks';
 
-/** DESIGN.md §6.1 — Roboto Condensed 10px, which is what `--font-narrow` resolves to. */
+/** 10px of the interface face. The product had a narrow face for labels until the redesign; it
+ * has one face now, and a name on the plate is set in it like every other name. */
 const LABEL_SIZE_PX = 10;
 
 /**
@@ -43,7 +44,7 @@ export interface LabelColors {
 }
 
 export function readLabelStyle(): LabelStyle {
-  return { font: `${LABEL_SIZE_PX}px ${readCssToken('--font-narrow')}` };
+  return { font: `${LABEL_SIZE_PX}px ${readCssToken('--font-ui')}` };
 }
 
 /**

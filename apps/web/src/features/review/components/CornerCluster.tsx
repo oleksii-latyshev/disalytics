@@ -44,7 +44,7 @@ export function CornerCluster({
 
   return (
     <div
-      className={`glass-panel flex items-center gap-1 rounded-float p-1 transition-colors duration-(--duration-micro) ease-out focus-within:text-ink hover:text-ink ${
+      className={`surface-card flex items-center gap-1 rounded-float p-1 transition-colors duration-(--duration-micro) ease-out focus-within:text-ink hover:text-ink ${
         isRaised ? 'text-ink' : 'text-ink-faint'
       }`}
     >

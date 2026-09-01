@@ -45,7 +45,7 @@ export function readSpineColors(): SpineColors {
     side: { CT: readCssToken('--color-ct'), T: readCssToken('--color-t') },
     hairline: readCssToken('--color-line'),
     density: readCssToken('--color-ink-dim'),
-    edge: readCssToken('--color-glass-edge'),
+    edge: readCssToken('--color-line'),
   };
 }
 

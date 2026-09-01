@@ -29,6 +29,7 @@
     "@types/pngjs": "^6.0.5",
     "lefthook": "^2.1.10",
     "pngjs": "^7.0.0",
+    "shadcn": "^4.19.1",
     "turbo": "^2.10.7",
     "typescript": "5.9.2",
     "vitest": "^4.1.10",

@@ -97,8 +97,12 @@ const SELECTION_EDGE_WIDTH_PX = 1;
 
 /**
  * The one stroke a token may carry. It is drawn twice because it has to stay legible against both
- * side colours *and* against the plate: white outside, `--accent` on its inner edge — DESIGN.md
- * §6.1.
+ * side colours *and* against the plate: white outside, the app's own ground on its inner edge.
+ *
+ * The inner edge used to be the product's violet accent. There is no accent any more — colour on
+ * this canvas means something the demo said — and a dark hairline inside a white ring is the better
+ * answer regardless: it separates the ring from a bright plate pixel without adding a hue that a
+ * reader has to learn does not mean anything.
  */
 export function drawSelectionRing(
   context: CanvasRenderingContext2D,

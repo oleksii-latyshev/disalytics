@@ -26,7 +26,7 @@ function isPressOutside(dialog: HTMLDialogElement, event: MouseEvent): boolean {
 }
 
 /**
- * A card in the top layer — DESIGN.md §10.2's demo dialog. Native `<dialog>` opened with
+ * A card in the top layer. Native `<dialog>` opened with
  * `showModal()`, for the reason `Sheet` is: the top layer, the focus trap and the `Esc` close
  * request are the platform's, and a dialog from the component registry would ship a second focus
  * manager to arrive at the same behaviour.
@@ -81,11 +81,11 @@ export function Dialog({ isOpen, onDismiss, className, children, ...props }: Dia
       ref={ref}
       onClose={onDismiss}
       className={cn(
-        // `--shadow-float` is DESIGN.md §4's one exception to elevation-by-hairline, and it names
-        // this surface by name: a card that has escaped the layout entirely.
+        // `--shadow-float` is the one shadow in the product, and it names this surface by name: a
+        // card that has escaped the layout entirely.
         // `m-auto` is what centres a modal `<dialog>`, and it is written here because Tailwind's
         // preflight zeroes the margin the UA stylesheet sets for exactly this purpose.
-        'glass-panel dialog-scrim m-auto rounded-sheet border-0 p-0 text-ink shadow-float',
+        'surface-card dialog-scrim m-auto rounded-sheet border-0 p-0 text-ink shadow-float',
         className,
       )}
       {...props}

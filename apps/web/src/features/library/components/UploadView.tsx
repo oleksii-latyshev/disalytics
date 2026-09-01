@@ -26,7 +26,7 @@ interface Props {
 export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDraggedOver }: Props) {
   return (
     <div className="flex min-h-full items-center justify-center">
-      <div className="relative w-full max-w-[36rem] rounded-float border border-line bg-surface-1 p-8 shadow-raised">
+      <div className="relative w-full max-w-[36rem] rounded-float border border-line bg-surface-1 p-8">
         {/* The card transforms in place rather than navigating — §10.3. The body crossfades on
             `status` alone, so filling in the map and the player count mid-parse does not restart
             it. Opacity and transform only, per §8. */}

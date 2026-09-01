@@ -6,7 +6,7 @@
 > Companion documents — read the relevant one before working in that area:
 > - `CONTRIBUTING.md` — issue/branch/PR workflow, labels, `gh` CLI commands
 > - `CODE_REQUIREMENTS.md` — code style, structure, naming, comment policy, i18n patterns
-> - `docs/DESIGN.md` — visual system, tokens, motion rules
+> - `packages/ui/src/styles/tokens.css` — the visual system: tokens, measured ratios, motion rules
 > - `docs/PARSER.md` — parser internals and the WASM bridge (written during Phase 0)
 
 ---
@@ -49,7 +49,7 @@ Violating any of these is a bug, not a trade-off.
    changes on a canvas is a function of `clock.frame`, computed in the draw the frame was already
    going to do; the test is which clock it reads, because match time is drawing and wall time is
    animating. Everything else may animate whenever it likes, including while the match runs, and
-   the 60 fps budget in §16 is the enforcement. See §17 and `docs/DESIGN.md` §8.
+   the 60 fps budget in §16 is the enforcement. See §17.
 10. **New runtime dependencies require human approval.** Bundle size is a product constraint.
 11. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no browser-only APIs,
     no `@/` alias, no I/O.
@@ -140,7 +140,7 @@ tools/
 .github/
   workflows/            # ci.yml, wasm.yml, deploy.yml
   ISSUE_TEMPLATE/
-docs/                   # DESIGN.md, PARSER.md, TOOLING.md
+docs/                   # PARSER.md, TOOLING.md
 ```
 
 **Dependency direction is one-way:** `apps/*` → `packages/*`. Packages never import from apps.
@@ -279,8 +279,8 @@ eviction: it drops that entry and saves the catalog, because the alternative is 
 can never open.
 
 **The catalog also names what it holds** — file name, map, score and round count, and when it was
-stored. `docs/DESIGN.md` §10.2 puts that on the way in as five recent rows and on the library screen
-as a grid of cards, each reopening without a file. It is written **at the moment the demo is stored and at no other**, which is what keeps the
+stored. The way in lists the five most recent; the library screen shows every one of them as a grid
+of cards, each reopening without a file. It is written **at the moment the demo is stored and at no other**, which is what keeps the
 paragraph above true: a read still writes nothing. An entry from before the metadata existed opens
 like any other and is simply not listed — a row that cannot be named is worse than no row — and one
 whose metadata is malformed loses its name rather than its demo.
@@ -465,7 +465,7 @@ Rounds are found by binary search over the sorted `events.rounds` — `roundInde
 of `frameForTick` and is what lets a frame be compared against a round's ticks without the caller
 re-deriving the conversion.
 
-`docs/DESIGN.md` §9's keys are bound in `apps/web/src/core/shortcuts`: space toggles, `,` and `.`
+§17 rule 9's keys are bound in `apps/web/src/core/shortcuts`: space toggles, `,` and `.`
 step, `[` and `]` jump rounds. A binding never fires when the event target consumes the key itself —
 text entry for any key, and buttons and links for space and Enter.
 
@@ -473,7 +473,7 @@ text entry for any key, and buttons and links for space and Enter.
 
 The bottom of the screen is a 96px card carrying two strips, and neither of them is a canvas.
 
-**`RoundTimeline` is the round axis** — `docs/DESIGN.md` §7.1, scoped to one round since #182. The
+**`RoundTimeline` is the round axis**, scoped to one round since #182. The
 buy phase is a region of its own, the round's events are glyphs on the axis, the scrubber under them
 is the uncontrolled range input above, and the playhead is the only thing on either strip that moves
 per frame. The glyphs are 24px and `GLYPH_PITCH_PX` is 24 with them: the threshold is one glyph's
@@ -481,7 +481,7 @@ width, so a row too tight for symbols collapses to marks rather than drawing the
 
 **`RoundList` is the strip beneath it** — §7.3, since #183. One equal-width cell per round tinted by
 its winner at α0.14, carrying the round number and the winning side's survivor count, lit by a 1px
-`--glass-edge` frame while it plays, seeking to `freezeTimeEndTick` when pressed. Nothing on it is a
+`--color-line` frame while it plays, seeking to `freezeTimeEndTick` when pressed. Nothing on it is a
 playhead; that is the axis's job. Which of §7.3's three degradation rows it renders is one division
 against the measured strip width, so it is decided for the list rather than per cell.
 
@@ -547,15 +547,18 @@ touch React or start an animation** — that half was always the real rule and i
 channel split above, not by CSS. **Nothing may animate a property that triggers layout**, at every
 moment rather than during playback, which is a review question. And the rest is a budget: §16's
 60 fps assertion for the review screen with everything on is what decides whether the motion in
-`docs/DESIGN.md` §8 survives, and when it fails the motion is what goes.
+§17 rule 1 survives, and when it fails the motion is what goes.
 
-A JavaScript-driven tween is still stopped by not starting one, which is what the `strict`
-`LazyMotion` in `@disa/ui`'s `MotionProvider` is for — under it only the `m` component exists, and
-`motion.*` throws. The `prefers-reduced-motion` reset in `motion.css` is now the only global motion
+A JavaScript-driven tween is still stopped by not starting one. The `LazyMotion` in `@disa/ui`'s
+`MotionProvider` used to enforce that with `strict`, which leaves only the `m` component and makes
+the full `motion.*` throw. **#276 turned `strict` off**: every animate-ui primitive imports `motion`,
+so under it a component added by `shadcn add` would compile, pass review, and throw the first time a
+reader opened it. `LazyMotion` and its split point stay, `m` stays the preference for anything
+written here, and §16's assertion is what actually holds the rule. The `prefers-reduced-motion` reset in `motion.css` is now the only global motion
 override in the product, and it no longer needs `:where()`: it had that to lose a specificity race
 against the playing-flag rule, and there is nothing left to race.
 
-**Where it all sits — #110.** `docs/DESIGN.md` §5's layout: a 56px top bar, two player rails beside a
+**Where it all sits — #110.** The layout of the day: a 56px top bar, two player rails beside a
 stage that takes the rest, and a 96px spine band. Measured at 1280×800 against the Phase 0 fixture,
 the radar goes from **471px to 648px** — the same `min(100cqi,100cqb)` rule, 37% more map, because
 the stage cell finally has the shape the rule assumes. The 205px the bottom slab used to spend on a
@@ -615,7 +618,7 @@ Credits section says so, and the generator never reaches the network.
 Radar images ship **per theme**, keyed in the data rather than branched on in the renderer:
 
 - `vanilla` — the image exactly as Valve draws it.
-- `blue` — the same image flattened onto the blue-shifted graphite ramp in `docs/DESIGN.md`,
+- `blue` — the same image flattened onto the blue-shifted graphite ramp,
   produced by `tools/scripts/mapdata/recolor.ts`. It is **ours**, generated from Valve's art, not
   anyone else's radar pack. It stays desaturated deliberately: CT is `#4A90D9`, and a saturated
   blue map would compete with the one colour that has to read as a side. Pixels above 0.75
@@ -665,11 +668,11 @@ debug overlay of §9 above **verifies** an entry — map, frame, altitude band, 
 coordinates under the pointer, with a manual level override — and deliberately cannot edit `posX`,
 `posY` or `scale`.
 
-Side identity never rests on hue alone (`docs/DESIGN.md` §2). The silhouettes that used to carry it
+Side identity never rests on hue alone (§17 rule 5). The silhouettes that used to carry it
 are gone — #154 draws both sides as one filled circle — so what carries it now is hue plus which
 team card the player is listed in, and the two colours are read out of the `--color-ct` /
 `--color-t` tokens at draw time rather than written into the renderer. **The colour-blind variant of
-those tokens exists since #202** and is selected in §10.5's settings sheet; `docs/DESIGN.md` §2.4
+those tokens exists since #202** and is selected in the settings sheet; `tokens.css`
 carries its values and the dichromat simulation they were measured with.
 
 ### Who is on the plate — #111
@@ -690,12 +693,12 @@ first that clears every chip already placed this frame; if all four collide it k
 reset per frame, so placement is a function of the frame and not of history.
 
 **The needle is a direction and the wedge is an area, and only one wedge is ever drawn.** Ten cones
-is a fog — `docs/DESIGN.md` §7 — so the wedge follows the selection and the needles carry everyone
+is a fog, so the wedge follows the selection and the needles carry everyone
 else. The wedge is drawn before the tokens, so it tints the plate rather than the players in it.
 
 **The selected player is React state in `features/review`**, not clock state — `§8`'s split, and the
 rails are what set it. A canvas hit test would have made the one interaction on this screen that a
-keyboard cannot reach, which `docs/DESIGN.md` §12 rules out; the rail seat is a button and gets the
+keyboard cannot reach, which §17 rules out; the rail seat is a button and gets the
 focus ring, `aria-pressed` and the `--selected` fill for free.
 
 ### What is happening to them — #112
@@ -704,7 +707,7 @@ Four states join the plate: a `--damage` flash on a token that was just hit, a f
 for as long as its player is blinded, an objective-coloured progress arc for a plant or a defuse, and
 a 1px audibility ring at the distance the player can currently be heard from.
 
-**All four read match time, and none reads wall time.** That is `docs/DESIGN.md` §8's test for
+**All four read match time, and none reads wall time.** That is §17 rule 2's test for
 whether something is a draw or an animation, and it is the whole reason these are allowed to move
 while `clock.isPlaying` is true. The flash decays over `DAMAGE_FLASH_SECONDS` **of match time**, so it
 is slow at 0.5× and a blink at 4×, and scrubbing backwards through a hit shows it again — the state
@@ -725,7 +728,7 @@ asks for. Changing the numbers is a change to one file and its test.
 
 **The ring is the one thing on the plate the reader switches off, and it starts off.** It is the
 largest mark there and it moves every frame, so it competes with the players it is describing —
-`docs/DESIGN.md` §7 records the decision. The toggle is in the top bar and the answer survives the
+#101 records the decision. The toggle is in the top bar and the answer survives the
 session in `localStorage` under `disa.radar.audibility`, which is what `§2` rule 5 permits for an
 interface preference and forbids for anything parsed. `useStoredFlag` in `shared/hooks` treats a
 browser that refuses storage as a session-only preference rather than as an error: a screen that will
@@ -1168,17 +1171,33 @@ CI assertions where possible. A regression here is a blocker.
 | Parse a 300 MB demo | < 15 s | Set from Phase 0 and **measured properly by #59**: in a foreground Chrome tab, off disk, drop to summary, three runs per input on an idle machine. The shipped `-Oz` binary takes **15.29 s** on the 353 MB raw fixture and **18.85 s** on the 264 MB `.dem.zst` — over budget on both, and the container is what most people have. `-O3` takes **11.11 s** and **14.19 s** for 0.40 MB more binary, which is the only configuration measured where this budget and the WASM one hold at once; **#66 makes that the shipped profile** and the 15 s stands as written. Measure from the drop: worker spawn plus `init()` is 0.08 s cold. Two things this number does *not* cover — a tab the user switches away from, which is 5× slower because Chrome backgrounds the renderer, and genuinely slow hardware, which `docs/PARSER.md` §11 keeps open. Full method and breakdown in `docs/PARSER.md` §16; the earlier native, Bun and blob-fed figures are §9, §14 and §15. **Re-measured on schema 5's shot array** (#163): three browser runs each side of the change on one machine, **19.94 s before and 20.06 s after** — inside the spread of either arm, so 3,500 more events cost nothing measurable, and the native three-pass parse moved 16.31 s → 16.09 s the other way. Both browser arms sit ~1.1 s above the 18.85 s above, which is the day and not the change; the figure in this row stands as #59 measured it. |
 | Peak tab memory during parse | < 1.5 GB | 663 MB of WASM linear memory measured, ~1.0 GB estimated whole-tab. True tab memory cannot be measured without cross-origin isolation, which §13 forbids. A container adds a second copy while it is expanded — 264 MB compressed beside 353 MB expanded, **617 MB**, under what the parse itself reaches. It stays a transient because the compressed file is freed before the passes rather than after them (`docs/PARSER.md` §15). |
 | Timeline scrubbing | 60 fps sustained | **Held with room to spare** — 399 frames dragging the scrubber across the whole match on the §5 layout: **0 over 16.7 ms**, median 8.3 ms, p95 9.2 ms, worst 9.3 ms. Headed Chrome over CDP against the built bundle at 1440×900 on the 264 MB fixture, `document.visibilityState` asserted inside the run; the median is the panel's own 120 Hz rather than a ceiling this hits. Measured by the layout issue. Re-measured on §6.1's plate states (#153): median 8.3 ms and p95 9.3 ms unchanged, with **0–1 frames over 16.7 ms per pass on the branch and the same on `main`** — a single worst-frame figure is noise at this resolution, and the count across a few hundred frames is the number that survives. **Re-measured on the scoreboard brow** (#196, the first re-measurement since #147, so it also carries #182's and #184's timeline work): three passes of 399 frames, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, the panel at 120 Hz in all three. What is dragged is no longer the same control: since #182 the scrubber is §7.1's *round* axis, so a pass is one round end to end rather than the whole match. **Re-measured on §5.4's event feed** (#159): three passes of 399 frames driving that axis end to end with the feed live, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.3 ms, worst 9.3–9.4 ms, the panel at 120 Hz in all three. **Re-baselined on `320f821`** (24 August 2026, no PR of its own): three passes of 399 frames driving the axis end to end, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–9.3 ms, worst 16.6 ms, 120 Hz. That is the first measurement covering #199 through #221 — the settings store, the plate legend, the match overlay and the round strip — and it moved nothing. **Re-measured on §6.1's three new token marks** (#164 — a weapon silhouette beside every name, a hollow for a walking player, a spur for a shot): three passes of 399 frames, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–11.4 ms, worst 9.7–14.2 ms, 120 Hz. A `main` (`3b29b62`) baseline taken the same hour with the identical script read 0 over, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4–9.5 ms — so the one pass with an 11.4 ms p95 is the noise this row has always said a single figure is, and the marks cost nothing measurable. **Re-measured on §8's assembly** (#104): three passes of 399 frames driving the axis end to end, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.3 ms, worst 9.4 ms, 120 Hz, with the scrubber's own `value` sampled every frame so each pass records the span it dragged (1242 → 2339, one round end to end, in all three) rather than only the clock it started and finished on. A `main` (`d7c311b`) baseline the same hour with the identical script read the same figures across three passes, p95 9.1–9.3 ms. **Re-measured on the three grenade functions** (#172): three passes of 399 frames driving the axis end to end, **0, 0 and 1 frame over 16.7 ms**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4/9.4/16.8 ms, 120 Hz, with the span recorded per pass (1822 → 2343, 2343 → 3215, 3215 → 5086). A `main` (`7e3967f`) baseline the same hour with the identical script threw the same single 16.8 ms frame in a *different* pass — 1, 0 and 0 over — across those same three spans, which is this row's own standing point about what a single worst-frame figure is worth. |
-| Review screen, playing, everything on | 60 fps sustained | The assertion `docs/DESIGN.md` §2.3 and §8 are written against, and the thing that decides whether the material in that document survives contact with the loop. **Held** — 399 frames of playback on the §5 layout with all four cards under `backdrop-filter` and ten tokens with names on the plate: **1 over 16.7 ms**, median 8.3 ms, p95 9.2 ms, worst 17.0 ms. Same method as the scrub row above. **Re-measured on §6.1's plate states** (#153 — 16px tokens for both sides, a blind countdown disc, a death that shrinks, a selection ring, and names stroked with a halo instead of filled behind a chip): 0–1 over 16.7 ms across two passes, median 8.3 ms, p95 9.3 ms — and `main` measured with the identical script the same afternoon threw the same occasional single frame, so the states cost nothing measurable. **Re-measured on the scoreboard brow** (#196): three passes of 399 frames of playback against the built bundle, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.1–9.3 ms, worst 9.3–9.4 ms, 120 fps, with the clock read from the scrubber's `aria-valuetext` (01:43 → 01:58 across the three) to prove playback was actually running. That pass covers §6.2's utility and #182's and #184's timeline, none of which had been measured. It also changes what the row asserts: with the brow as the default position there is **no `backdrop-filter` over the plate at all**, so the exception §2.3 grants the scoreboard chip is now spent only by readers who ask for it — and #187 had already found that exception indistinguishable from no blur across nine arms. **Re-measured on §5.4's event feed** (#159), which was the last thing this row did not cover: three passes of 399 frames of playback against the built bundle, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, 120 fps, with the clock read from the scrubber's `aria-valuetext` (02:18 → 02:29 across the three) to prove playback was running. A fourth pass sampled the feed's own row count every twentieth frame *during* the arm rather than after it — 2 rows rising to 4 as they arrived — because a pass that happens to end on a round change reads an empty feed and says nothing about what was on screen while it was measured; that is the arrival animation running inside the budget rather than beside it. When it does fail, the blur is the first thing to go, then the feed's motion; the layout is not what gets cut, because the layout is what makes the blur affordable in the first place (§5.1). **Re-measured on §6.3's zoom** (#114): three passes of 399 frames of playback **at the 4× ceiling**, where the backdrop is being enlarged and the tokens are at their 20px maximum, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (11:04 → 11:14 across the three) to prove playback was running. A `320f821` baseline taken the same day with the identical script read the same figures at 1×, so the zoom costs nothing measurable: it multiplies one scalar per layer per frame and translates the context, and the number of marks drawn does not change with it. **Re-measured on §6.1's three new token marks** (#164), which is the change this row exists for — three marks per token is exactly what spends a plate's budget: three passes of 399 frames of playback, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.1–9.3 ms, worst 9.4–9.6 ms, 120 fps, the clock read off the scrubber (03:19 → 03:30 across the three) to prove playback was running. A `main` (`3b29b62`) baseline the same hour: 0 over, median 8.3 ms, p95 9.3 ms, worst 9.5–9.8 ms, 02:25 → 02:36. The two arms are indistinguishable. What keeps them so is that all three marks are conditionals inside a loop that already ran: the weapon silhouettes are compiled to `Path2D` once per class per session, the gunfire lookup is `damageFlashBySlot`'s own shape into the layer's own array, and the hollow is one more `arc`. **Re-measured on §9.3's hot corners** (#246), which put a `pointermove` listener on a path that fires while the match plays: three passes of 399 frames of playback **with the pointer sweeping the stage all the way through each pass**, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (01:43 → 01:54 across the three) to prove playback was running. A `main` (`0aa9d03`) baseline the same hour with the identical script and the same sweep: 0 over, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, the same 01:43 → 01:54. The two arms are indistinguishable, which is what a handler of four comparisons and three ref writes should look like — the listener sets React state on a *boundary crossing* and never on a move, and the stillness check is one 500 ms interval rather than a `setTimeout` reset per event. **Re-measured on §8's one orchestrated moment** (#104 — the plate fading up, the four cards arriving from the edges they live against, and §7.3's strip filling left to right): three passes of 399 frames of playback, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (01:44 → 01:55 across the three) and its frame span recorded per pass, so a pass that measured a paused screen could not pass for one that measured playback. A `main` (`d7c311b`) baseline the same hour with the identical script: the same figures and the same 01:44 → 01:55. The sequence itself cannot reach this row — it is a mount transition, over 600 ms before anything plays, on a clock that is paused throughout — and what outlives it is 30 `m.li` in the round strip that reconcile once a round rather than once a frame, and inline `opacity: 1` / `transform: none` with no `will-change` left behind on any of the 57 elements the run swept. The plate measured **716 in both arms** at 1440×900, so the arrivals cost §5.1 nothing either. **Re-measured on the three grenade functions** (#172), which is the change this row exists to catch — the utility layer's draw loop hands each grenade to a module-level function now, taking one `UtilityDraw` allocated per demo instead of closing over eleven values: three passes of 399 frames of playback, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.0–9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (01:43 → 01:53 across the three) to prove playback was running. A `main` (`7e3967f`) baseline the same hour: the same figures and the same 01:43 → 01:53, plate **716 in both arms**. The two arms are indistinguishable, which is what a shape change with no behaviour in it should look like. |
+| Review screen, playing, everything on | 60 fps sustained | The assertion §17 rules 1 and 3 are written against, and the thing that decides whether the material in that document survives contact with the loop. **Held** — 399 frames of playback on the §5 layout with all four cards under `backdrop-filter` and ten tokens with names on the plate: **1 over 16.7 ms**, median 8.3 ms, p95 9.2 ms, worst 17.0 ms. Same method as the scrub row above. **Re-measured on §6.1's plate states** (#153 — 16px tokens for both sides, a blind countdown disc, a death that shrinks, a selection ring, and names stroked with a halo instead of filled behind a chip): 0–1 over 16.7 ms across two passes, median 8.3 ms, p95 9.3 ms — and `main` measured with the identical script the same afternoon threw the same occasional single frame, so the states cost nothing measurable. **Re-measured on the scoreboard brow** (#196): three passes of 399 frames of playback against the built bundle, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.1–9.3 ms, worst 9.3–9.4 ms, 120 fps, with the clock read from the scrubber's `aria-valuetext` (01:43 → 01:58 across the three) to prove playback was actually running. That pass covers §6.2's utility and #182's and #184's timeline, none of which had been measured. It also changes what the row asserts: with the brow as the default position there is **no `backdrop-filter` over the plate at all**, so the exception §2.3 grants the scoreboard chip is now spent only by readers who ask for it — and #187 had already found that exception indistinguishable from no blur across nine arms. **Re-measured on §5.4's event feed** (#159), which was the last thing this row did not cover: three passes of 399 frames of playback against the built bundle, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, 120 fps, with the clock read from the scrubber's `aria-valuetext` (02:18 → 02:29 across the three) to prove playback was running. A fourth pass sampled the feed's own row count every twentieth frame *during* the arm rather than after it — 2 rows rising to 4 as they arrived — because a pass that happens to end on a round change reads an empty feed and says nothing about what was on screen while it was measured; that is the arrival animation running inside the budget rather than beside it. When it does fail, the blur is the first thing to go, then the feed's motion; the layout is not what gets cut, because the layout is what makes the blur affordable in the first place (§5.1). **Re-measured on §6.3's zoom** (#114): three passes of 399 frames of playback **at the 4× ceiling**, where the backdrop is being enlarged and the tokens are at their 20px maximum, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (11:04 → 11:14 across the three) to prove playback was running. A `320f821` baseline taken the same day with the identical script read the same figures at 1×, so the zoom costs nothing measurable: it multiplies one scalar per layer per frame and translates the context, and the number of marks drawn does not change with it. **Re-measured on §6.1's three new token marks** (#164), which is the change this row exists for — three marks per token is exactly what spends a plate's budget: three passes of 399 frames of playback, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.1–9.3 ms, worst 9.4–9.6 ms, 120 fps, the clock read off the scrubber (03:19 → 03:30 across the three) to prove playback was running. A `main` (`3b29b62`) baseline the same hour: 0 over, median 8.3 ms, p95 9.3 ms, worst 9.5–9.8 ms, 02:25 → 02:36. The two arms are indistinguishable. What keeps them so is that all three marks are conditionals inside a loop that already ran: the weapon silhouettes are compiled to `Path2D` once per class per session, the gunfire lookup is `damageFlashBySlot`'s own shape into the layer's own array, and the hollow is one more `arc`. **Re-measured on §9.3's hot corners** (#246), which put a `pointermove` listener on a path that fires while the match plays: three passes of 399 frames of playback **with the pointer sweeping the stage all the way through each pass**, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (01:43 → 01:54 across the three) to prove playback was running. A `main` (`0aa9d03`) baseline the same hour with the identical script and the same sweep: 0 over, median 8.3 ms, p95 9.2–9.3 ms, worst 9.4 ms, the same 01:43 → 01:54. The two arms are indistinguishable, which is what a handler of four comparisons and three ref writes should look like — the listener sets React state on a *boundary crossing* and never on a move, and the stillness check is one 500 ms interval rather than a `setTimeout` reset per event. **Re-measured on §8's one orchestrated moment** (#104 — the plate fading up, the four cards arriving from the edges they live against, and §7.3's strip filling left to right): three passes of 399 frames of playback, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (01:44 → 01:55 across the three) and its frame span recorded per pass, so a pass that measured a paused screen could not pass for one that measured playback. A `main` (`d7c311b`) baseline the same hour with the identical script: the same figures and the same 01:44 → 01:55. The sequence itself cannot reach this row — it is a mount transition, over 600 ms before anything plays, on a clock that is paused throughout — and what outlives it is 30 `m.li` in the round strip that reconcile once a round rather than once a frame, and inline `opacity: 1` / `transform: none` with no `will-change` left behind on any of the 57 elements the run swept. The plate measured **716 in both arms** at 1440×900, so the arrivals cost §5.1 nothing either. **Re-measured on the three grenade functions** (#172), which is the change this row exists to catch — the utility layer's draw loop hands each grenade to a module-level function now, taking one `UtilityDraw` allocated per demo instead of closing over eleven values: three passes of 399 frames of playback, **0 over 16.7 ms in every one**, median 8.3 ms, p95 9.0–9.3 ms, worst 9.4 ms, 120 fps, the clock read off the scrubber (01:43 → 01:53 across the three) to prove playback was running. A `main` (`7e3967f`) baseline the same hour: the same figures and the same 01:43 → 01:53, plate **716 in both arms**. The two arms are indistinguishable, which is what a shape change with no behaviour in it should look like. |
 | Cached-demo load (second visit) | < 3 s to interactive | **0.02 s, measured by #51** — the 264 MB `.dem.zst` fixture, foreground headed Chrome 151 over CDP, timed from the file landing on the input to the summary screen, three runs. The cache entry is **11.04 MB**, a 24× reduction on the container. With OPFS deleted before any application script runs, the IndexedDB fallback answers in **0.03 s** off the same key. The cold visit that fills the cache costs **18.60 s** (OPFS) and **18.48 s** (IndexedDB) against the 18.85 s #59 measured for the same input without a cache, so **storing a demo costs nothing measurable on top of parsing it**. `navigator.storage.persist()` returned `false` on this profile, which is the ordinary Chrome answer (§6.4). Storing runs **after** the demo is interactive and takes **0.39 s** for 11.04 MB, persistence request included — so a reader who leaves the moment the summary appears loses the entry and pays the parse again. That is the cost of not blocking the screen on a write, and it is the right way round. |
-| JS bundle, excl. WASM | < 500 kB gzip | single locale only. **183.08 kB, 36.6% of budget** — measured on a forced clean build (`rm -rf apps/web/dist && bun run build --force && bun run size`) at #134. The row had read **148.41 kB** since §6.1's plate states and was a figure for no tree in between: the 34 kB is every screen from #159's event feed to #262's weapon icons, and #174 is the issue that says a stale figure on this line is a defect rather than a lag. The largest single move inside it is measured — **170.85 kB → 182.53 kB** across #260, which is Valve's weapon outlines as 25 kB of polygon data, flattened at 0.3 of the icon's own 32-unit height; 0.6 would have been 16.7 kB of data and a 179.25 kB bundle, and one `TOLERANCE` in `tools/scripts/weapon-icons-generate.ts` is the whole difference. 182.61 kB at #261, 182.76 kB at #172, 182.75 kB at #264, 182.81 kB at #215, 182.91 kB at #268, 183.05 kB at #258 and 183.08 kB at #134 — so splitting a module costs about 0.1 kB when it adds functions (#172) and nothing at all when it only moves them (#264), a helper plus a per-glyph inline width costs the same 0.1 kB again, #258's 43-row bridge table costs 0.14 kB, and naming five transition properties where a class said `transition-all` costs 0.03 kB. Six consecutive changes inside 0.5 kB is the resolution this line has: quote it to two decimals, but do not read a story into the second one. **148.41 kB** since §6.1's plate states — 148.16 kB before them, and the 0.25 kB is what a blind disc, a death shrink, a selection ring, a stroked halo and the `LabelPass` seam they were split behind cost, which is what "the plate draws it, so nothing new is imported" looks like on this line. Measured on a forced clean build (`rm -rf apps/web/dist && bun run build --force`): #154 first recorded 148.31 kB here, which was the bundle one commit earlier — `bun run size` reports whatever `dist` currently holds, and nothing makes it notice that the tree moved underneath it (#155, #139). 148.16 kB since the §5 layout — 144.26 kB before it, and the 3.90 kB is `lucide-react`'s five corner icons plus the four cards, the glyph set and the ribbon. `lucide-react` is a runtime dependency approved under hard rule 10 on 12 August 2026; it is imported by name rather than through the per-icon deep paths `docs/DESIGN.md` §11 asks for, because the package ships ESM with `sideEffects: false` and the deep files carry no declarations — this number is what holds that claim to its word. **101.22 kB, 20.2% of budget** since #51 — the 3.56 kB is `@disa/demo-store`, which adds no runtime dependency: the container codec, the fingerprint and the two tiers are all platform APIs. 97.66 kB since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. Since #93 it **refuses to report** when `apps/web/dist` holds two chunks of one family, because a Turborepo cache hit restores the directory without emptying it and never runs Vite, so a branch built there earlier leaves chunks that would be summed on top of the real ones — locally that read 206.31 kB against a true 108.87 kB. The fix it prints, `rm -rf apps/web/dist && bun run build`, is still a cache hit. |
+| JS bundle, excl. WASM | < 500 kB gzip | single locale only. **195.08 kB, 39.0% of budget** — measured on a forced clean build (`rm -rf apps/web/dist && bun run build --force && bun run size`) at #134. The row had read **148.41 kB** since §6.1's plate states and was a figure for no tree in between: the 34 kB is every screen from #159's event feed to #262's weapon icons, and #174 is the issue that says a stale figure on this line is a defect rather than a lag. The largest single move inside it is measured — **170.85 kB → 182.53 kB** across #260, which is Valve's weapon outlines as 25 kB of polygon data, flattened at 0.3 of the icon's own 32-unit height; 0.6 would have been 16.7 kB of data and a 179.25 kB bundle, and one `TOLERANCE` in `tools/scripts/weapon-icons-generate.ts` is the whole difference. 182.61 kB at #261, 182.76 kB at #172, 182.75 kB at #264, 182.81 kB at #215, 182.91 kB at #268, 183.05 kB at #258 and 183.08 kB at #134 — so splitting a module costs about 0.1 kB when it adds functions (#172) and nothing at all when it only moves them (#264), a helper plus a per-glyph inline width costs the same 0.1 kB again, #258's 43-row bridge table costs 0.14 kB, and naming five transition properties where a class said `transition-all` costs 0.03 kB. Six consecutive changes inside 0.5 kB is the resolution this line has: quote it to two decimals, but do not read a story into the second one. **148.41 kB** since §6.1's plate states — 148.16 kB before them, and the 0.25 kB is what a blind disc, a death shrink, a selection ring, a stroked halo and the `LabelPass` seam they were split behind cost, which is what "the plate draws it, so nothing new is imported" looks like on this line. Measured on a forced clean build (`rm -rf apps/web/dist && bun run build --force`): #154 first recorded 148.31 kB here, which was the bundle one commit earlier — `bun run size` reports whatever `dist` currently holds, and nothing makes it notice that the tree moved underneath it (#155, #139). 148.16 kB since the §5 layout — 144.26 kB before it, and the 3.90 kB is `lucide-react`'s five corner icons plus the four cards, the glyph set and the ribbon. `lucide-react` is a runtime dependency approved under hard rule 10 on 12 August 2026; it is imported by name rather than through the per-icon deep paths the design system asks for, because the package ships ESM with `sideEffects: false` and the deep files carry no declarations — this number is what holds that claim to its word. **101.22 kB, 20.2% of budget** since #51 — the 3.56 kB is `@disa/demo-store`, which adds no runtime dependency: the container codec, the fingerprint and the two tiers are all platform APIs. 97.66 kB since #52 — 81.20 kB at the end of #22 plus the library screens. Of the 16.46 kB it added, 10 or so are `tailwind-merge` (105 kB raw), which arrives with the first `cn()` on screen and not again; the parse worker's own chunk, glue included, is 2.60 kB. Asserted by `bun run size`, which counts every non-locale chunk plus the heaviest locale chunk, gzip level 6, decimal kB — the unit Vite's build report uses. Since #93 it **refuses to report** when `apps/web/dist` holds two chunks of one family, because a Turborepo cache hit restores the directory without emptying it and never runs Vite, so a branch built there earlier leaves chunks that would be summed on top of the real ones — locally that read 206.31 kB against a true 108.87 kB. The fix it prints, `rm -rf apps/web/dist && bun run build`, is still a cache hit. |
 | WASM binary | < 4 MB (CI fails above 24 MB) | tight gate as regression guard. Asserted by `wasm.yml` since #44. **`bun run size` weighs the binary in `dist` and refuses to weigh anything when that is not the one `crates/demo-parser-wasm/pkg/` holds** — the generated `pkg/` is not part of `@disa/web#build`'s cache key, so a rebuilt parser leaves the previous binary in `dist` under its old content hash and `rm -rf apps/web/dist && bun run build` restores it from the turbo cache without ever running Vite; measured on 12 August 2026, this row read 2.22 MB for a branch whose binary was 2.25 MB. The failure names both paths and both byte counts and asks for `bun run build --force`. `bun run size --wasm` reads `pkg/` alone by definition and does not compare. **2.22 MB, 55.5% of budget** — rising to 2.62 MB, 65.6%, when #66 switches the profile to `-O3`, which is what buys the parse-time budget above with the real parser inside, measured after `bun run wasm:smoke` called into the binary — a size taken from an artifact that has never run is worthless (`docs/PARSER.md` §8). 2.00 MB before #50; the 0.13 MB is the `js-sys` marshalling that hands the parsed demo over as JavaScript objects. 2.13 MB before #48; the 0.09 MB is the two container decoders (`docs/PARSER.md` §15). Phase 0 measured 2.18 MB at `-O`; that difference is this repository's `-Oz` and `panic = "abort"`. |
 
 ---
 
 ## 17. Design
 
-Full system in **`docs/DESIGN.md`**, rewritten in full by #130 — the third revision, and the one
-that stopped treating austerity as a virtue. Rules that constrain engineering:
+**There is no design document.** `docs/DESIGN.md` was deleted on 1 September 2026 along with the
+system it described, at the owner's word, and the redesign (#276 and the four issues after it) built
+a new one in its place. What carries the system now is
+**`packages/ui/src/styles/tokens.css`** and the three stylesheets beside it: the tokens are the
+vocabulary, and their comments state the measured contrast ratios and the reasons. A screen decision
+is recorded in the pull request that makes it.
+
+The system in one line: a near-black neutral ground, structure carried by white hairlines, one
+geometric sans, and **chroma reserved entirely for data**.
+
+**Roughly a hundred code comments still cite `DESIGN.md` by section**, and they are left alone on
+purpose. Almost every one of them is about *behaviour* — the clock, the radar's marks, the shortcut
+table, the store — which the redesign does not touch, so the citation is stale and the sentence is
+not. They are rewritten as #277–#280 reach the files they are in, which is the same rule the
+repository already follows for documentation: a doc change rides in the pull request that motivates
+it, rather than in a sweep nobody can review.
+
+Rules that constrain engineering:
 
 1. **Nothing on the frame channel animates, and nothing animates a property that triggers layout.**
    `transform` and `opacity` only, always. No animation library driving React state per frame.
@@ -1187,13 +1206,16 @@ that stopped treating austerity as a virtue. Rules that constrain engineering:
    stopped responding during the activity the product exists for.
 2. **What changes on a canvas is a function of `clock.frame`**, computed in the draw the frame was
    already going to do. Match time is drawing; wall time is animating.
-3. **`backdrop-filter` is allowed only where nothing behind the surface repaints per frame.** The
-   review layout sizes the plate so no floating card overlaps it, which is what makes the blur
-   affordable — a layout rule, not a convention (`docs/DESIGN.md` §2.3, §5.1).
+3. **`backdrop-filter` exists on the two full-screen sheets and the dialog scrim, and nowhere
+   else.** Every other surface is opaque with a hairline. Those three cover a stopped screen, so
+   nothing repaints behind them and the blur is paid for once. Before #276 the whole review layout
+   was arranged to make a blur affordable — the plate was sized so no floating card could overlap
+   it; that is now a **legibility** preference a screen is allowed to spend, not a frame budget.
 4. **All numbers use tabular figures.** Non-negotiable.
-5. **Colour carries meaning.** Team and event colours are semantic tokens with colour-blind-safe
-   variants; interaction is expressed in luminance, not hue. The accent is violet and deliberately
-   far from every data colour, so it is not fenced off the main screen.
+5. **Colour carries meaning, and nothing else.** Team and event colours are semantic tokens with
+   colour-blind-safe variants; interaction is expressed in luminance, not hue. **The chrome has no
+   hue at all** — there is no `--color-accent`, and the primary action, the focus ring and the drag
+   acknowledgement are white. A reader who sees colour is looking at something the demo said.
 6. `prefers-reduced-motion` respected everywhere, including by the WebGL backgrounds on the landing
    and parse screens.
 7. **Layouts must survive Russian text**, which runs 15–30% longer than English. No fixed-width
@@ -1201,7 +1223,7 @@ that stopped treating austerity as a virtue. Rules that constrain engineering:
 8. Empty states, parse progress and error states are designed screens. They are what every user
    sees first.
 9. **Keyboard is the primary interface, the pointer is the fallback.** Every control has a binding
-   and the help sheet is generated from the same table (`docs/DESIGN.md` §9).
+   and the help sheet is generated from the same table.
 
 ---
 
@@ -1302,7 +1324,7 @@ proves worth it.
   than raising the global rate
 - Multi-demo comparison is out of scope for v1
 - **The design system is rebuilt around a stage rather than an instrument.** Decided 12 August 2026
-  and written up as `docs/DESIGN.md` revision 3 (#130), after three revisions drew the same verdict
+  and written up as revision 3 of the design document (#130), after three revisions drew the same verdict
   from the owner. Four sub-decisions came with it: the player rails get live armour, weapon,
   grenades and money (`SCHEMA_VERSION` 3 → 4); `ogl` is approved as a runtime dependency for two
   WebGL backgrounds on the landing and parse screens only; hard rule 9 becomes a frame budget; and
@@ -1315,7 +1337,7 @@ proves worth it.
 - [x] Peak memory with the whole demo in WASM linear memory (§7.2) — 663 MB, `docs/PARSER.md` §9.
 - [ ] A cheap way to read a demo header — `only_header` costs a full pass (`docs/PARSER.md` §8)
 - [x] **Is there a light theme?** No. Decided 12 August 2026 with #130: a second palette would
-      double the token layer, re-open every contrast measurement in `docs/DESIGN.md` §2 and need a
+      double the token layer, re-open every contrast measurement in `tokens.css` and need a
       third radar plate. `@custom-variant dark (&)` stays unconditional and the `core/theme/`
       provider is dropped from `CODE_REQUIREMENTS.md` rather than built. The day a light palette is
       designed, that variant becomes a real selector again.

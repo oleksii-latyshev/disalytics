@@ -29,7 +29,12 @@
       "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsole": { "level": "error", "options": { "allow": ["warn", "error"] } }
+        "noConsole": {
+          "level": "error",
+          "options": {
+            "allow": ["warn", "error"]
+          }
+        }
       },
       "style": {
         "noNonNullAssertion": "error",
@@ -40,7 +45,9 @@
       "complexity": {
         "noExcessiveCognitiveComplexity": {
           "level": "warn",
-          "options": { "maxAllowedComplexity": 15 }
+          "options": {
+            "maxAllowedComplexity": 15
+          }
         }
       }
     }
@@ -65,6 +72,22 @@
   },
   "overrides": [
     {
+      "includes": [
+        "packages/ui/src/components/animate-ui/**",
+        "packages/ui/src/hooks/**",
+        "packages/ui/src/lib/get-strict-context.tsx"
+      ],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
+    },
+    {
       "includes": ["packages/ui/src/styles/motion.css"],
       "linter": {
         "rules": {
@@ -83,7 +106,7 @@
       }
     },
     {
-      "includes": ["tools/**"],
+      "includes": ["tools/**", "**/tools/**"],
       "linter": {
         "rules": {
           "suspicious": {

@@ -104,7 +104,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onKillH
   return (
     <section
       aria-label={t('review.feed.label')}
-      className="glass-panel flex flex-col gap-0.5 rounded-float p-2"
+      className="surface-card flex flex-col gap-0.5 rounded-float p-2"
     >
       <ul className="flex min-w-0 flex-col gap-0.5">
         {visible.map((row) => (

@@ -156,7 +156,7 @@ export function RoundStrip({ demo, transport }: Props) {
         <div
           aria-hidden="true"
           style={naming.anchor}
-          className="pointer-events-none absolute bottom-full z-10 mb-1 flex items-baseline gap-1.5 whitespace-nowrap rounded-chip bg-glass-raised px-2 py-1 text-12 shadow-raised ring-1 ring-glass-hair"
+          className="pointer-events-none absolute bottom-full z-10 mb-1 flex items-baseline gap-1.5 whitespace-nowrap rounded-chip bg-surface-3 px-2 py-1 text-12 shadow-float"
         >
           <span className="text-ink">
             {t(roundOutcomeKey(naming.cell.reason), {

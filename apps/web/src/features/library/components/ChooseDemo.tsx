@@ -20,7 +20,7 @@ export function ChooseDemo({ onFile }: Props) {
 
   return (
     <>
-      <Button type="button" variant="accent" size="lg" onClick={() => picker.current?.click()}>
+      <Button type="button" variant="primary" size="lg" onClick={() => picker.current?.click()}>
         <Text path="library.open.action" />
       </Button>
 

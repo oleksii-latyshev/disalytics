@@ -52,7 +52,8 @@ gh issue develop <N> --checkout --base main
 Never create the branch by hand. The recorded issue↔branch link is the entire point of using this
 command.
 
-Before writing code, re-read `CODE_REQUIREMENTS.md`, and `docs/DESIGN.md` if the work is visual.
+Before writing code, re-read `CODE_REQUIREMENTS.md`, and `packages/ui/src/styles/tokens.css` if
+the work is visual.
 
 ## 3. Commit
 

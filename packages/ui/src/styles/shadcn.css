@@ -1,12 +1,13 @@
-/* The bridge between the design system and shadcn's vocabulary.
+/* The bridge between the design system and the vocabulary shadcn and animate-ui components are
+   written in.
 
-   shadcn primitives read a fixed set of variable names. Rather than rename our tokens to match
-   them — which would lose the meaning DESIGN.md §2 gives to surfaces and ink — every shadcn
-   variable is defined here in terms of ours. Our tokens stay the source of truth, and a freshly
-   added shadcn component inherits the palette without being touched.
+   Those components read a fixed set of variable names. Rather than rename our tokens to match them —
+   which would lose the meaning the token layer gives to surfaces and ink — every one of their
+   variables is defined here in terms of ours. Our tokens stay the source of truth, and a component
+   added by the CLI inherits the palette without being touched.
 
-   CODE_REQUIREMENTS.md §8: colour and radius come from here. Size does not — the components are
-   owned rather than tracked upstream, so their heights live in the size variants themselves. */
+   Colour and radius come from here. Size does not: the components are owned rather than tracked
+   upstream, so their heights live in the size variants themselves. */
 
 :root {
   --background: var(--color-surface-0);
@@ -15,12 +16,14 @@
   --card: var(--color-surface-1);
   --card-foreground: var(--color-ink);
 
-  --popover: var(--color-surface-2);
+  --popover: var(--color-surface-3);
   --popover-foreground: var(--color-ink);
 
-  /* Not a hue. DESIGN.md §1 reserves saturation for data, so a branded primary would collide with
-     --color-ct on the same screen: blue chrome against blue Counter-Terrorists. Interaction is
-     luminance, so the primary action is ink on graphite. */
+  /* Not a hue, and now not one anywhere in the chrome. Saturation is reserved for data, so a branded
+     primary would collide with `--color-ct` on the same screen: blue chrome against blue
+     Counter-Terrorists. Interaction is luminance, so the primary action is the ground in ink. It is
+     also the highest-contrast pair the palette can make — 19.53:1 — which is the right answer for
+     the one control on a screen that the reader is meant to find first. */
   --primary: var(--color-ink);
   --primary-foreground: var(--color-surface-0);
 
@@ -30,10 +33,12 @@
   --muted: var(--color-surface-2);
   --muted-foreground: var(--color-ink-dim);
 
-  /* There is deliberately no `--accent` bridge. shadcn's accent is a subtle hover surface, and
-     DESIGN.md §2.5 gives that name to the product's violet, so `bg-accent` resolves to the accent
-     and §2.5's one remaining boundary — never a fill on a player, a side, a weapon or an event —
-     decides whether a component may have it. A hover surface is `--color-hover`. */
+  /* This bridge did not exist before the redesign, and its absence was a real cost: `--color-accent`
+     was the product's violet, so `bg-accent` in an unedited upstream component resolved to a brand
+     fill where the component meant a hover surface. There is no violet any more, so `accent` can
+     mean what every component that reads it thinks it means. */
+  --accent: var(--color-surface-2);
+  --accent-foreground: var(--color-ink);
 
   --destructive: var(--color-damage);
   --destructive-foreground: var(--color-ink);
@@ -62,6 +67,8 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -73,9 +80,8 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* shadcn primitives select a radius by four names and DESIGN.md §4 now has four steps, so the
-     mapping is one-to-one. A component copied in later lands inside the scale without being
-     edited. */
+  /* Four names upstream, four steps here, and the mapping is one-to-one. A component copied in later
+     lands inside the scale without being edited. */
   --radius-sm: var(--radius-chip);
   --radius-md: var(--radius-card);
   --radius-lg: var(--radius-float);

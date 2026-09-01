@@ -204,7 +204,7 @@ export function DemoDialog({ saved, onEnter, onDismiss, onGone }: Props) {
           <footer className="flex justify-end">
             <Button
               type="button"
-              variant="accent"
+              variant="primary"
               onClick={() => onEnter(saved, SHOWN_ROUND_INDEX)}
             >
               <Text path="library.dialog.open" />

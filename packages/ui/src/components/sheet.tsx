@@ -9,7 +9,7 @@ interface SheetProps extends Omit<React.ComponentProps<'dialog'>, 'open' | 'onCl
 }
 
 /**
- * DESIGN.md §10.5 and §10.6's full-screen sheet: a native `<dialog>` opened with `showModal()`, not a
+ * The full-screen sheet behind settings and help: a native `<dialog>` opened with `showModal()`, not a
  * dialog from the component registry. The platform gives the top layer, the focus trap and the `Esc`
  * close request; the registry's version would ship a second focus manager to arrive at the same
  * behaviour. There is no light-dismiss to build either — the sheet covers the screen, so `::backdrop`
@@ -17,7 +17,7 @@ interface SheetProps extends Omit<React.ComponentProps<'dialog'>, 'open' | 'onCl
  *
  * `Esc` is the platform's rather than ours, which is why `core/shortcuts` suspends itself while a
  * sheet is open: a global handler calling `preventDefault()` on `Escape` cancels the close request
- * and traps the reader inside §9.1's own binding.
+ * and traps the reader inside the sheet's own binding.
  */
 export function Sheet({ isOpen, onDismiss, className, children, ...props }: SheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -39,7 +39,7 @@ export function Sheet({ isOpen, onDismiss, className, children, ...props }: Shee
       ref={ref}
       onClose={onDismiss}
       className={cn(
-        'glass-sheet fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 p-0 text-ink',
+        'surface-sheet fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 p-0 text-ink',
         className,
       )}
       {...props}

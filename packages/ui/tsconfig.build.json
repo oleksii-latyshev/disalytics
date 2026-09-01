@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Declarations only, and no JavaScript: the bundler reads this package's TypeScript directly
+    // through `exports.default`, so the emit exists for one consumer — `tsc` in `apps/web`.
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    // Declaration emit has to be told where the tree starts, or the output nests a `src` inside
+    // `dist` and every path in `package.json` gains a level.
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

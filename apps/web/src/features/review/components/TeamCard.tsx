@@ -46,7 +46,7 @@ export function TeamCard({
   return (
     <section
       aria-label={t('review.team', { side })}
-      className="glass-panel flex min-w-0 flex-col gap-1 rounded-float p-3"
+      className="surface-card flex min-w-0 flex-col gap-1 rounded-float p-3"
     >
       {/* A side's name is game vocabulary — never translated, AGENTS.md §11. */}
       <h2 className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</h2>

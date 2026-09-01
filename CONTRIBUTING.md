@@ -173,8 +173,8 @@ an image it cannot carry, and a criterion phrased as "screenshots in the pull re
 leaves this machine. Screen work on it is evidenced by measurement instead, and these are the forms
 that have stood in for a picture:
 
-- **Measured geometry** at a named viewport — `docs/DESIGN.md` §5.1's plate table is the model, and
-  it is a claim with a setup: state the viewport *height*, and which of §5.1's preconditions were on.
+- **Measured geometry** at a named viewport, and it is a claim with a setup: state the viewport
+  *height*, and which of the layout's preconditions were on.
 - **An overflow sweep** over `document.querySelectorAll('*')`, not over a list of known classes. Walk
   `overflow` on each hit's ancestors, or every `sr-only` label reports as overflow.
 - **Computed styles** read off the elements themselves, which is what settles a token question.

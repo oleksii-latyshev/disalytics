@@ -195,7 +195,7 @@ export function RadarView({
           slack on each axis plus the stage inset. Colour and a hairline, never `.glass-panel` —
           §2.3 grants the one `backdrop-filter` over the live plate to the scoreboard and to nothing
           else. */}
-      <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-glass-panel p-1">
+      <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1">
         <Button
           type="button"
           variant="ghost"
@@ -229,7 +229,7 @@ export function RadarView({
           plate — which is what a §5.1 overlap sweep walking every element sees. */}
       <div className="pointer-events-none absolute inset-x-4 top-4 flex flex-wrap items-start gap-3">
         {image.status === 'failed' && (
-          <p className="rounded-float border border-line bg-glass-panel px-3 py-2 text-13 text-ink leading-prose shadow-raised">
+          <p className="rounded-float border border-line bg-surface-1 px-3 py-2 text-13 text-ink leading-prose">
             <Text path="radar.imageUnavailable" />
           </p>
         )}

@@ -73,12 +73,14 @@ export function WayIn({ state, onFile, onEnter, onClose }: Props) {
     <div className="app-shell relative grid grid-rows-[auto_minmax(0,1fr)] bg-surface-0 split:h-dvh split:grid-cols-[17.5rem_minmax(0,1fr)] split:grid-rows-1">
       <PlateBackdrop isLifted={isDraggedOver} />
 
-      {/* The acknowledgement is the screen's, not the card's. Accent rather than focus white: §2
-          gives the accent to this screen precisely because it carries no side data. */}
+      {/* The acknowledgement is the screen's, not the card's. It is white, like every other thing
+          in the product that is the interface talking rather than the demo — there is no accent hue
+          left to reach for, and on a screen with no side data on it there is nothing white could be
+          confused with. */}
       <div
         aria-hidden="true"
         className={`pointer-events-none fixed inset-3 z-20 rounded-float border-2 transition-opacity duration-(--duration-micro) ease-out ${
-          isDraggedOver ? 'border-accent opacity-100' : 'border-transparent opacity-0'
+          isDraggedOver ? 'border-ink opacity-100' : 'border-transparent opacity-0'
         }`}
       />
 

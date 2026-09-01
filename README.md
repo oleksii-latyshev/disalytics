@@ -72,7 +72,7 @@ packages/
 tools/
   probes/               # Phase 0 Rust probes behind docs/PARSER.md
   scripts/              # i18n key check, label and milestone sync (run with bun)
-docs/                   # DESIGN.md, PARSER.md
+docs/                   # PARSER.md
 ```
 
 Workspace packages are named `@disa/<folder>`, and the folder name always matches.
@@ -128,7 +128,7 @@ Planned, once the phases that need them land: `wasm:build`, `mapdata:generate`, 
 | [`AGENTS.md`](AGENTS.md) | any non-trivial task — it is the operating contract |
 | [`CODE_REQUIREMENTS.md`](CODE_REQUIREMENTS.md) | writing any code |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | creating an issue, branch, or PR |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | any visual or component work |
+| [`packages/ui/src/styles/tokens.css`](packages/ui/src/styles/tokens.css) | any visual or component work — the token layer replaced `docs/DESIGN.md` on 1 September 2026 |
 | [`docs/PARSER.md`](docs/PARSER.md) | parser or WASM work |
 | [`CLAUDE.md`](CLAUDE.md) | the condensed entry point for AI agents |
 

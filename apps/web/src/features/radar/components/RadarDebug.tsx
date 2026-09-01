@@ -49,7 +49,7 @@ export function RadarDebug({
   const level = levelAt(overview, levelIndex);
 
   return (
-    <div className="pointer-events-auto flex flex-col gap-3 rounded-float border border-line bg-glass-panel p-4 text-ink shadow-raised">
+    <div className="pointer-events-auto flex flex-col gap-3 rounded-float border border-line bg-surface-1 p-4 text-ink">
       <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-6 gap-y-1 text-13">
         <dt className="label-dense text-ink">
           <Text path="radar.debug.map" />
