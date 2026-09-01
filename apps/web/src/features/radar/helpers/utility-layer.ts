@@ -11,12 +11,14 @@ import {
   type Tick,
   tickAtFrame,
   trajectoryClipCount,
+  utilityKindOfGrenade,
   visibleGrenades,
 } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { TrajectoryVisibility } from '@/core/settings';
 import type { RadarColors } from './colors';
+import { drawGrenadeMark } from './equipment-marks';
 import {
   drawDecoyPulse,
   drawFlashMark,
@@ -24,6 +26,7 @@ import {
   drawMolotovArea,
   drawSmokeCloud,
   drawTrajectory,
+  grenadeColor,
   isTrajectoryDrawn,
 } from './grenades';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
@@ -61,13 +64,20 @@ interface UtilityDraw {
   index: number;
 }
 
-/** A projectile still in the air, for which §10.5 decides whether a trajectory is drawn at all. */
+/**
+ * A projectile still in the air: the path it has taken, and the grenade itself at the head of it —
+ * §6.2. The object obeys §10.5's trajectories row along with the line, because the two are one
+ * drawing of one thing and a grenade with no path under it is a mark with no explanation.
+ *
+ * The head is the last sample the clip reaches, so the whole drawing is a function of `clock.frame`
+ * and scrubbing backwards flies the grenade back to the hand that threw it.
+ */
 function drawFlight(context: CanvasRenderingContext2D, grenade: Grenade, draw: UtilityDraw): void {
   const clipCount = isTrajectoryDrawn(draw.trajectories, grenade.thrower, draw.selectedSlot)
     ? trajectoryClipCount(grenade, draw.tick, draw.tickRate)
     : 0;
 
-  if (clipCount < 2) return;
+  if (clipCount < 1) return;
 
   drawTrajectory(
     context,
@@ -76,6 +86,15 @@ function drawFlight(context: CanvasRenderingContext2D, grenade: Grenade, draw: U
     draw.overview,
     draw.scale,
     draw.colors.trajectory,
+  );
+
+  const head = clipCount - 1;
+  drawGrenadeMark(
+    context,
+    radarX(draw.overview, sampleAt(grenade.trajectory.x, head)) * draw.scale,
+    radarY(draw.overview, sampleAt(grenade.trajectory.y, head)) * draw.scale,
+    utilityKindOfGrenade(grenade.type),
+    grenadeColor(grenade.type, draw.colors),
   );
 }
 
@@ -89,20 +108,15 @@ function drawDetonation(
   grenade: Grenade,
   draw: UtilityDraw,
 ): void {
-  const { visual, colors, markX, markY } = draw;
+  const { visual, markX, markY } = draw;
   const radiusPx = (grenadeRadiusUnits(grenade.type) / draw.overview.scale) * draw.scale;
+  // One reading of the colour for both halves of a grenade's life — `grenadeColor` is where the
+  // mark on the ground and the object in the air agree, rather than in two switches on one type.
+  const color = grenadeColor(grenade.type, draw.colors);
 
   switch (grenade.type) {
     case 'smokegrenade':
-      drawSmokeCloud(
-        context,
-        markX,
-        markY,
-        radiusPx,
-        visual.alpha,
-        visual.remaining,
-        colors.nadeSmoke,
-      );
+      drawSmokeCloud(context, markX, markY, radiusPx, visual.alpha, visual.remaining, color);
       break;
 
     case 'molotov':
@@ -114,7 +128,7 @@ function drawDetonation(
         radiusPx,
         visual.alpha,
         visual.remaining,
-        colors.nadeMolotov,
+        color,
         draw.index,
       );
       break;
@@ -127,16 +141,16 @@ function drawDetonation(
         visual.progress,
         radiusPx,
         visual.phase === 'linger',
-        colors.nadeHe,
+        color,
       );
       break;
 
     case 'flashbang':
-      drawFlashMark(context, markX, markY, visual.progress, colors.blind);
+      drawFlashMark(context, markX, markY, visual.progress, color);
       break;
 
     case 'decoy':
-      drawDecoyPulse(context, markX, markY, visual.pulsePhase, colors.nadeDecoy);
+      drawDecoyPulse(context, markX, markY, visual.pulsePhase, color);
       break;
   }
 }
@@ -153,7 +167,7 @@ function drawGrenade(
   grenadeVisual(grenade, draw.tick, draw.tickRate, visual);
   if (visual.phase === null) return;
 
-  // In flight: only the trajectory, no area.
+  // In flight: the projectile and its path, no area.
   if (visual.phase === 'flight') {
     drawFlight(context, grenade, draw);
     return;

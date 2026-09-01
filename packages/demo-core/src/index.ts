@@ -74,6 +74,7 @@ export {
   weaponClass,
   weaponClasses,
   weaponIcon,
+  weaponIcons,
   weaponName,
 } from './helpers/weapons';
 export type { LocalizedMessage } from './message';

@@ -1,4 +1,6 @@
 import type { UtilityKind } from '@disa/demo-core';
+import { EQUIPMENT_ICONS } from '../generated/equipment-icons';
+import { UTILITY_ICON } from '../helpers/equipment';
 import { GLYPH_SIZE_CLASS, type GlyphSize } from '../helpers/size';
 
 interface Props {
@@ -23,58 +25,38 @@ export const UTILITY_INK: Readonly<Record<UtilityKind, string>> = {
   kit: 'text-ink-dim',
 };
 
-function Mark({ kind }: { kind: UtilityKind }) {
-  switch (kind) {
-    case 'he':
-      return (
-        <>
-          <rect x="4.9" y="1.4" width="2.2" height="2.2" rx="0.6" />
-          <circle cx="6" cy="7.2" r="3.4" />
-        </>
-      );
-    case 'flash':
-      return (
-        <>
-          <rect x="4.6" y="1.2" width="2.8" height="4" rx="1.4" />
-          <circle cx="6" cy="8" r="3" />
-        </>
-      );
-    case 'smoke':
-      return <rect x="3.1" y="1.6" width="5.8" height="8.8" rx="2.9" />;
-    case 'fire':
-      return <path d="M6 1.2c2.6 3.2 3.6 4.8 3.6 6.5a3.6 3.6 0 0 1-7.2 0c0-1.7 1-3.3 3.6-6.5Z" />;
-    case 'decoy':
-      return (
-        <>
-          <rect x="4.9" y="1.4" width="2.2" height="2.2" rx="0.6" />
-          <circle cx="6" cy="7.2" r="2.7" fill="none" stroke="currentColor" strokeWidth="1.3" />
-        </>
-      );
-    case 'kit':
-      return (
-        <>
-          <path d="M4.4 4.2V3.1h3.2v1.1" fill="none" stroke="currentColor" strokeWidth="1.2" />
-          <rect x="1.8" y="4.4" width="8.4" height="5.8" rx="1.2" />
-        </>
-      );
-  }
-}
-
 /**
- * One piece of utility, from the product's own set rather than an icon library — DESIGN.md §11.
- * Drawn in a 12-unit box and rendered at whichever of the two sizes its caller has room for, so the
- * same mark reads beside a name in a row and on a round axis.
+ * One piece of utility, in Valve's own outline — the same art Counter-Strike draws in its buy menu,
+ * arriving the way the weapon icons and the armour do. It replaced a set drawn here: six shapes that
+ * said *a grenade of some kind* where a reader looking at a buy is asking *which*.
+ *
+ * **The box stays square and the icon is fitted inside it.** Valve draws these to one height and many
+ * widths — a smoke is 15 units wide against the defuser's 36 — and two things in this product depend
+ * on a utility mark being as wide as it is tall: §7.1's round axis spaces its symbols on a
+ * `GLYPH_PITCH_PX` that *is* one glyph's width, and a team row's run of marks is laid out on the same
+ * assumption. Letterboxing inside a square viewBox keeps both true, and costs a wide icon nothing but
+ * the air above and below it.
+ *
+ * The colour is still `UTILITY_INK`'s: the outline says which object, the hue says which kind, and
+ * neither is doing the other's job.
  */
 export function UtilityGlyph({ kind, label, size = 'row' }: Props) {
+  const icon = EQUIPMENT_ICONS[UTILITY_ICON[kind]];
+  // A square window centred on the icon's own box, so the mark keeps its proportions and the box
+  // keeps its width. `preserveAspectRatio` does the fitting; nothing here scales a path.
+  const side = Math.max(icon.width, icon.height);
+  const viewBox = `${(icon.width - side) / 2} ${(icon.height - side) / 2} ${side} ${side}`;
+
   return (
     <svg
-      viewBox="0 0 12 12"
+      viewBox={viewBox}
       role={label === undefined ? 'presentation' : 'img'}
       aria-label={label}
       fill="currentColor"
+      fillRule="evenodd"
       className={`${GLYPH_SIZE_CLASS[size]} shrink-0 ${UTILITY_INK[kind]}`}
     >
-      <Mark kind={kind} />
+      <path d={icon.d} />
     </svg>
   );
 }

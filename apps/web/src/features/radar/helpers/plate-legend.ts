@@ -1,5 +1,6 @@
 import { FIRE_AREA_ALPHA, SMOKE_AREA_ALPHA, UTILITY_NAMES } from '@disa/demo-core';
 import type { RadarColors } from './colors';
+import { drawGrenadeMark, drawWeaponMark } from './equipment-marks';
 import {
   drawDecoyPulse,
   drawFlashMark,
@@ -23,7 +24,6 @@ import {
   drawWalkHollow,
   TOKEN_RADIUS_PX,
 } from './tokens';
-import { drawWeaponMark, WEAPON_MARK_PX } from './weapon-marks';
 
 /**
  * The swatch every mark is drawn in, in CSS pixels. Wide enough for two tokens with their needles
@@ -43,8 +43,8 @@ const RIGHT_X = 42;
 /** Up and to the right, so a needle fits the swatch's height as well as its width. */
 const NEEDLE_ANGLE = -Math.PI / 4;
 
-/** Where the name would begin, which is where the weapon mark sits on the plate. */
-const WEAPON_STRIP_X = TOKEN_RADIUS_PX + 6 + WEAPON_MARK_PX / 2;
+/** The left edge of the mark's box, which is where the plate reserves it beside a token. */
+const WEAPON_STRIP_X = TOKEN_RADIUS_PX + 6;
 
 /** Radii the swatch chooses, where on the plate the map's own scale does — everything else is the renderer's. */
 const AUDIBLE_RADIUS_PX = 12;
@@ -113,10 +113,10 @@ export const PLATE_MARKS: readonly PlateMark[] = [
       drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
 
       // One mark, where the name would start — the arrangement the plate actually draws. Which
-      // class it is, is the sentence's job: three silhouettes in a 56px swatch is a row of shapes
+      // weapon it is, is the sentence's job: three outlines in a 56px swatch is a row of shapes
       // with no token beside them, which is not what a reader sees.
       haloStroke(context, colors.label.halo);
-      drawWeaponMark(context, LEFT_X + WEAPON_STRIP_X, CENTRE_Y, 'rifle', colors.label.ink);
+      drawWeaponMark(context, LEFT_X + WEAPON_STRIP_X, CENTRE_Y, 'rifle', 'ak47', colors.label.ink);
     },
   },
   {
@@ -194,6 +194,10 @@ export const PLATE_MARKS: readonly PlateMark[] = [
       context.moveTo(8, MARK_HEIGHT_PX - 6);
       context.quadraticCurveTo(CENTRE_X, -6, MARK_WIDTH_PX - 8, CENTRE_Y - 2);
       context.stroke();
+
+      // The grenade at the head of it, which is the other half of the mark: a smoke on its way is
+      // legible as a smoke before it lands.
+      drawGrenadeMark(context, MARK_WIDTH_PX - 8, CENTRE_Y - 2, 'smoke', colors.nadeSmoke);
     },
   },
   {

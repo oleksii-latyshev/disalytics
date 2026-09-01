@@ -1,9 +1,9 @@
-import type { PlayerInfo, WeaponClass } from '@disa/demo-core';
+import type { PlayerInfo, WeaponClass, WeaponIconId } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
 import { readCssToken } from '@/shared/lib';
+import { drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { labelPlacer } from './label-placer';
 import type { PlateBounds } from './view';
-import { drawWeaponMark, WEAPON_MARK_PX } from './weapon-marks';
 
 /** 10px of the interface face. The product had a narrow face for labels until the redesign; it
  * has one face now, and a name on the plate is set in it like every other name. */
@@ -97,6 +97,11 @@ export interface LabelSubject {
   /** What the slot is holding this frame, or `null` where no sample ever saw it holding anything. */
   weapon(slot: number): WeaponClass | null;
   /**
+   * The model of what it is holding, where the match's own weapon table names one. Utility, the
+   * bomb and a weapon nobody here has drawn all answer `undefined` and are drawn by their class.
+   */
+  icon(slot: number): WeaponIconId | undefined;
+  /**
    * The round's numbers for this slot, already formatted and translated, or `null` for every slot
    * that is not the selected one. It arrives as a finished string because a canvas cannot reach the
    * message catalogue and a draw may not allocate one.
@@ -155,6 +160,7 @@ export function labelPass(
     context: CanvasRenderingContext2D,
     label: string,
     weapon: WeaponClass | null,
+    icon: WeaponIconId | undefined,
     alpha: number,
     detail: string | null,
   ): void {
@@ -163,9 +169,9 @@ export function labelPass(
 
     context.globalAlpha = alpha;
 
-    // The mark leads the name rather than trailing it, so ten labels down the left of the plate
-    // still line their weapons up in one column — DESIGN.md §6.1.
-    if (weapon !== null) drawWeaponMark(context, x + WEAPON_MARK_PX / 2, y, weapon, colors.ink);
+    // The mark leads the name rather than trailing it, and is right-aligned in a box the name
+    // always starts after, so ten labels line their weapons up in one column — DESIGN.md §6.1.
+    if (weapon !== null) drawWeaponMark(context, x, y, weapon, icon, colors.ink);
 
     context.strokeText(label, x + WEAPON_BOX_PX, y);
 
@@ -232,7 +238,7 @@ export function labelPass(
     const boxHeight = detail === null ? LABEL_HEIGHT_PX : LABEL_HEIGHT_PX + DETAIL_LEAD_PX;
 
     placer.place(tokenX, tokenY, tokenRadius, boxWidth, bounds, boxHeight);
-    write(context, label, subject.weapon(slot), subject.alpha(slot), detail);
+    write(context, label, subject.weapon(slot), subject.icon(slot), subject.alpha(slot), detail);
   }
 
   return {

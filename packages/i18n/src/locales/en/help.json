@@ -33,7 +33,7 @@
   "legend": {
     "title": "On the plate",
     "player": "A player, in their side's colour. The needle is where they are looking, and it grows longer while they are scoped in.",
-    "weapon": "What a player is holding, beside the name that says who they are. The class only — a rifle, an AWP, a pistol. The team card names the model.",
+    "weapon": "What a player is holding, beside the name that says who they are. Counter-Strike's own outline, so an AK-47 and an M4A4 are two shapes; a weapon with no outline of its own is drawn by its class.",
     "walking": "A player holding shift: slower, and quiet enough that the audibility ring goes with it.",
     "firing": "A trigger pull, down the line the player is facing. It fades over match time, so scrubbing back through a burst plays it again.",
     "selected": "The player you have selected. They also get the cone of what they can see.",

@@ -1122,6 +1122,38 @@ corner cluster and `MatchIdentity` keep their behaviour; the feed's arrival and 
 `DURATION_MICRO_SECONDS` and `DURATION_PANEL_SECONDS` from the token layer rather than restating
 0.14 and 0.34.
 
+**#286 put Valve's own vocabulary on the plate, and what moved is the box rather than the art.**
+Six hand-drawn utility marks said *a grenade of some kind* where a reader looking at a buy is asking
+*which*, and the mark beside a name on the plate said *a rifle* where they are asking *which rifle*.
+All of it is Valve's now, from the `Juknum/counter-strike-icons` extraction the weapon outlines and
+the armour came from. Six things are load-bearing. **#164's finding is revised rather than
+ignored**: that PR measured a model outline in a 14×7 box as a smudge and drew class silhouettes for
+that reason, and the box is what was wrong — 24×10 draws an AK-47, an M4A1-S and a knife as three
+shapes, and it costs the label's lead **17px → 27px** against a name of sixty to eighty. **The icon
+is fitted inside that box and right-aligned against the name**, so the slack a narrow object leaves
+falls on the outer edge where the map is rather than between the mark and the word it leads, the
+2px halo closes a 3px gap into one shape where it could not close fourteen, and the name starts at
+the same offset whatever is in the box — which is what §6.1 means by a name that never twitches.
+`GRENADE_SILHOUETTE` is deleted with the last reader of it, and the class silhouettes stay as the
+fallback for a weapon nobody here has drawn. **A grenade in the air is drawn at the head of its own
+trajectory**, in the utility's colour, obeying §10.5's trajectories row along with the line under it
+— the two are one drawing of one thing — and its position is the last sample the clip reaches, so it
+is a function of `clock.frame` and #175 still holds: `detonationTick === null` means the ending is
+unknown, never that the grenade is still flying. **A mark set belongs to one box**, and
+`equipment-marks.ts` (`weapon-marks.ts` until this) holds three tables rather than one map, because
+the *names* collide — `knife` is a model in Valve's vocabulary and a class in this product's, and
+they are two different drawings. Each is compiled to a `Path2D` at its own box's scale the first
+time anybody holds that thing, which is the bargain #164 struck and the reason a second size is a
+second compilation rather than a transform at draw time. **Valve's outlines fill even-odd and the
+silhouettes fill non-zero**: a trigger guard is a hole in the first and the second is overlapping
+parts of one object, so one rule for both punches the knife inside out. And **`flashbang.svg` is
+upstream's `flashbang_assist` turned upright** — the only place Valve's art is altered in this
+repository, declared as data in `ROTATIONS`, rotated about the centre and re-boxed afterwards, with
+five tests and the reasoning in `apps/web/assets/equipment-icons/README.md`. Two numbers: the plate
+is **716 at 1440×900 with a player selected, unchanged**, and the bundle is 222.16 → 223.44 kB gz,
+of which 0.96 kB is the six utility outlines as polygon data and 0.32 kB is everything else — the
+weapon table has shipped since #260 for a team row, and this only gave the plate a reader for it.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

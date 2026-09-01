@@ -1,3 +1,5 @@
+import type { UtilityKind } from '@disa/demo-core';
+
 /**
  * The two armour states Counter-Strike draws, and the ids of the assets that draw them.
  *
@@ -8,7 +10,33 @@
  * decides, so its names belong to the interface. Hard rule 11 keeps `demo-core` free of anything
  * only a screen needs.
  */
-export type EquipmentIconId = 'armor' | 'armor_helmet';
+export type EquipmentIconId =
+  | 'armor'
+  | 'armor_helmet'
+  | 'decoy'
+  | 'defuser'
+  | 'flashbang'
+  | 'hegrenade'
+  | 'molotov'
+  | 'smokegrenade';
+
+/**
+ * Each kind of utility as Counter-Strike draws it. The names on the right are Valve's own file
+ * names, which are the internal vocabulary — the same one `Kill.weapon` carries — so this table is
+ * a mapping between two vocabularies rather than a set of labels.
+ *
+ * **`fire` has one icon and not two.** The `grenades` bitfield cannot tell a Molotov from an
+ * Incendiary, which is the same reason #152 gave both of them one name, and an icon that claimed
+ * the distinction would be wrong for half the readings it made.
+ */
+export const UTILITY_ICON: Readonly<Record<UtilityKind, EquipmentIconId>> = {
+  he: 'hegrenade',
+  flash: 'flashbang',
+  smoke: 'smokegrenade',
+  fire: 'molotov',
+  decoy: 'decoy',
+  kit: 'defuser',
+};
 
 /**
  * Which of the two a player is wearing, or `null` for no armour at all — the same three-way answer

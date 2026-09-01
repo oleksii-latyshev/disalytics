@@ -1,5 +1,6 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { simplifyIconPath } from './weapon-icons/simplify';
+import { rotateIconPath } from './icons/rotate';
+import { simplifyIconPath } from './icons/simplify';
 
 /**
  * The two sets, and they are two because their *ids* answer to different things. A weapon icon is
@@ -44,6 +45,15 @@ const SETS = [
 const TOLERANCE = 0.3;
 const DECIMALS = 1;
 
+/**
+ * The one place Valve's art is altered, and it is a rotation rather than a redraw. `flashbang.svg`
+ * is upstream's `flashbang_assist` — the flashbang's own outline — which is drawn lying on a
+ * diagonal while the grenade, the canister and the bottle beside it stand up. Upstream's other
+ * flashbang asset is the *flash* rather than the object: a burst with a hole through it, which at
+ * the 12px a team row gives a mark is a smudge. See `rotate.ts`.
+ */
+const ROTATIONS: Readonly<Record<string, number>> = { flashbang: -45 };
+
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
@@ -82,9 +92,15 @@ async function readIcon(assetDir: string, file: string): Promise<{ id: string; e
   const id = file.replace(/\.svg$/, '');
   const source = await readFile(`${assetDir}/${file}`, 'utf8');
 
-  const { width, height } = viewBox(source, id);
-  const d = simplifyIconPath(allPaths(source, id), TOLERANCE, DECIMALS);
-  if (d === '') fail(`${id}: the outline simplified to nothing`);
+  const box = viewBox(source, id);
+  const simplified = simplifyIconPath(allPaths(source, id), TOLERANCE, DECIMALS);
+  if (simplified === '') fail(`${id}: the outline simplified to nothing`);
+
+  const turn = ROTATIONS[id];
+  const { d, width, height } =
+    turn === undefined
+      ? { d: simplified, ...box }
+      : rotateIconPath(simplified, turn, box.width, box.height, DECIMALS);
 
   return {
     id,

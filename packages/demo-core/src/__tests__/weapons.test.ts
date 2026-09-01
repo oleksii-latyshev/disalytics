@@ -9,6 +9,7 @@ import {
   weaponClass,
   weaponClasses,
   weaponIcon,
+  weaponIcons,
   weaponName,
 } from '../helpers/weapons';
 import { WEAPON_NONE } from '../schema';
@@ -249,6 +250,27 @@ describe('weaponIcon', () => {
 
   it('has nothing to draw for a weapon it has never seen', () => {
     expect(weaponIcon('Plasma Rifle')).toBeUndefined();
+  });
+});
+
+describe('weaponIcons', () => {
+  it("answers in the order the match's own table is indexed", () => {
+    expect(weaponIcons(['AK-47', 'C4 Explosive', 'Smoke Grenade', 'AWP'])).toEqual([
+      'ak47',
+      undefined,
+      undefined,
+      'awp',
+    ]);
+  });
+
+  it('lines up with the classes beside it, which is what a mark falls back to', () => {
+    const weapons = ['AK-47', 'Portal Gun', 'Flashbang'];
+
+    expect(weaponIcons(weapons).length).toBe(weaponClasses(weapons).length);
+  });
+
+  it('falls off the end of the table for a slot no sample saw holding anything', () => {
+    expect(weaponIcons(['AK-47'])[WEAPON_NONE]).toBeUndefined();
   });
 });
 
