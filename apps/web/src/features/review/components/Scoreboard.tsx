@@ -18,12 +18,12 @@ interface Props {
  */
 const POSITIONS = {
   brow: {
-    chrome: 'glass-brow h-8 rounded-t-card px-4',
+    chrome: 'surface-brow h-8 rounded-t-card px-4',
     side: 'text-12',
     value: 'text-20',
   },
   plate: {
-    chrome: 'glass-hud rounded-card px-3 py-1.5',
+    chrome: 'surface-hud rounded-card px-3 py-1.5',
     side: 'text-11',
     value: 'text-16',
   },

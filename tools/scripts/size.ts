@@ -97,7 +97,7 @@ async function checkJsBundle(): Promise<boolean> {
   const total = counted.reduce((sum, entry) => sum + entry.gzip, 0);
   const withinBudget = total <= JS_BUDGET_BYTES;
 
-  console.log('JS bundle — excluding WASM, single locale (AGENTS.md §16)\n');
+  console.log('JS bundle — excluding WASM, single locale (ROADMAP.md, constraints)\n');
   for (const entry of shared.sort((a, b) => b.gzip - a.gzip)) {
     console.log(row(entry.name, `${kb(entry.gzip)} gz`, `${kb(entry.raw)} raw`));
   }
@@ -143,7 +143,7 @@ function reportMismatch(mismatch: NonNullable<ReturnType<typeof binaryMismatch>>
 }
 
 async function checkWasm(wasmOnly: boolean): Promise<boolean> {
-  console.log('\nWASM binary (AGENTS.md §16)\n');
+  console.log('\nWASM binary (ROADMAP.md, constraints)\n');
 
   if (!existsSync(CRATES_DIR)) {
     console.log(`  ${CRATES_DIR}/ does not exist — nothing to weigh, budget inert.`);

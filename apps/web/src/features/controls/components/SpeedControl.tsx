@@ -13,7 +13,7 @@ export function SpeedControl({ transport }: Props) {
   const speed = usePlaybackSpeed(transport);
   const scrub = usePlaybackScrub(transport);
 
-  // DESIGN.md §7.2. The pressed entry stays on the speed the reader *chose* — a held arrow is a
+  // The pressed entry stays on the speed the reader *chose* — a held arrow is a
   // rate the transport owns for as long as the key is down, and a temporary rate that lit a button
   // here would read as a setting nobody changed. The mark keeps its box while nothing is held, or
   // the row would move under the pointer at the moment the reader starts scrubbing.
@@ -24,7 +24,7 @@ export function SpeedControl({ transport }: Props) {
           <Button
             key={option}
             type="button"
-            variant={option === speed ? 'default' : 'outline'}
+            variant={option === speed ? 'secondary' : 'outline'}
             aria-pressed={option === speed}
             onClick={() => transport.setSpeed(option)}
           >
@@ -35,7 +35,7 @@ export function SpeedControl({ transport }: Props) {
 
       <span
         aria-hidden="true"
-        className="flex size-4 shrink-0 items-center justify-center text-accent"
+        className="flex size-4 shrink-0 items-center justify-center text-ink"
       >
         {scrub !== null &&
           (scrub < 0 ? <ChevronsLeft className="size-4" /> : <ChevronsRight className="size-4" />)}

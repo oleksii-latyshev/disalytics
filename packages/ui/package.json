@@ -4,29 +4,38 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
     "./styles": "./src/styles/index.css",
-    "./lib/utils": "./src/lib/utils.ts"
-  },
-  "imports": {
-    "#components/*": "./src/components/*",
-    "#hooks/*": "./src/hooks/*",
-    "#lib/*": "./src/lib/*"
+    "./lib/utils": {
+      "types": "./dist/lib/utils.d.ts",
+      "default": "./src/lib/utils.ts"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json && bun tools/declaration-specifiers.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@base-ui-components/react": "^1.0.0-rc.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "^1.38.0",
     "motion": "^13.1.0",
-    "radix-ui": "^1.6.7",
     "react": "^19.2.0",
+    "react-use-measure": "^2.1.7",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@disa/tsconfig": "*",
     "@types/react": "19.2.2",
     "typescript": "5.9.2"
+  },
+  "imports": {
+    "#components/*": "./src/components/*",
+    "#hooks/*": "./src/hooks/*",
+    "#lib/*": "./src/lib/*"
   }
 }

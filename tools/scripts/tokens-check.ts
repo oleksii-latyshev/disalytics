@@ -9,7 +9,12 @@ const CLASS_SOURCE = /\.tsx?$/;
 // live — but they hold no classes, so they are not scanned for one.
 const TOKEN_SOURCE = /\.(?:tsx?|css)$/;
 // A class in a test is an assertion about this check, not a class the product ships.
-const NOT_A_SOURCE = /\/(?:node_modules|dist)\/|\/__tests__\/|\.test\.tsx?$/;
+// The vendored animate-ui tree goes with them. It is upstream's code, it is not edited here, and it
+// writes classes this check cannot reason about — `group/toggle-group` is a valid Tailwind named
+// group that emits no rule of its own, and reporting it is a false positive nobody can act on. The
+// same boundary is drawn in `biome.json` and in `packages/ui/tsconfig.json`.
+const NOT_A_SOURCE =
+  /\/(?:node_modules|dist)\/|\/__tests__\/|\.test\.tsx?$|packages\/ui\/src\/components\/animate-ui\//;
 
 const CSS_DIR = 'apps/web/dist/assets';
 
@@ -105,7 +110,8 @@ const unknownProperties = [...properties.values()].filter(
 const failed =
   report(unknownClasses, 'Classes the stylesheet has no rule for:', [
     'An invalid Tailwind candidate is dropped in silence, so the class reads as correct and',
-    'renders as nothing. Name a step that exists — docs/DESIGN.md §3 and §4 are closed sets —',
+    'renders as nothing. Name a step that exists — the type and radius scales in tokens.css are',
+    'closed sets —',
     'or write `duration-(--duration-micro)` where a theme name will not do.',
     'If the class is new and correct, the stylesheet is the stale half: rebuild and run again.',
   ]) ||

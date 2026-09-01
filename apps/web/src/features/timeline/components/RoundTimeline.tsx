@@ -170,9 +170,9 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
       )}
 
       <div ref={playheadRef} className="absolute inset-y-0 left-0 w-px bg-playhead">
-        {/* §7.1's glow, and shadowless the way §2.5 asks: a 3px accent bar behind a 1px white
+        {/* The playhead's glow, and shadowless: a 3px bar of dimmed white behind a 1px white
             line, not a blur. The playhead stays the brightest thing on the screen. */}
-        <span aria-hidden="true" className="-left-px absolute inset-y-0 w-[3px] bg-accent/40" />
+        <span aria-hidden="true" className="-left-px absolute inset-y-0 w-[3px] bg-ink/25" />
       </div>
 
       <input

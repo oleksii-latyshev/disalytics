@@ -1,4 +1,29 @@
 {
   "extends": "@disa/tsconfig/react-app.json",
+  "compilerOptions": {
+    // Six settings, all of them here for one reason: a component added by `shadcn add` has to
+    // compile without being hand-edited. That is what tracking a registry buys over copying from a
+    // website, and it is #121. Every one of these is off for **this package only** — `demo-core`,
+    // the parser packages, the store, the i18n package and the app keep the repository's full
+    // strictness, which is where it does the most work.
+    //
+    // There is no way to scope a compiler option to a subdirectory: a file reached by an import is
+    // compiled under the importing project's options whatever `exclude` says, and our own components
+    // wrap the vendored ones. So the choice is this package or hand-patching every upstream file on
+    // every update, and eighteen edits that come back each time is not a boundary anyone maintains.
+    //
+    //   allowImportingTsExtensions  the registry writes `#lib/utils.ts` with the extension on
+    //   exactOptionalPropertyTypes  upstream passes `foo={maybeUndefined}` to `foo: boolean`
+    //   noUnusedLocals              upstream files import React under `react-jsx`
+    //   noImplicitReturns           upstream effect callbacks return a cleanup on some paths only
+    //   noUncheckedIndexedAccess    upstream indexes string splits without a guard
+    //   verbatimModuleSyntax        upstream imports types without the `type` keyword
+    "allowImportingTsExtensions": true,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noImplicitReturns": false,
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false
+  },
   "include": ["src"]
 }

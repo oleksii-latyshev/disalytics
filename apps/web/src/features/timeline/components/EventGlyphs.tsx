@@ -208,7 +208,7 @@ export const EventGlyphs = memo(function EventGlyphs({
         <div
           aria-hidden="true"
           style={anchorAtFraction(named.fraction)}
-          className="pointer-events-none absolute bottom-1/2 z-20 mb-4 flex items-center whitespace-nowrap rounded-chip bg-glass-raised px-2 py-1 text-12 shadow-raised ring-1 ring-glass-hair"
+          className="pointer-events-none absolute bottom-1/2 z-20 mb-4 flex items-center whitespace-nowrap rounded-chip bg-surface-3 px-2 py-1 text-12 shadow-float"
         >
           <EventRow event={named.event} nameOf={nameOf} />
         </div>

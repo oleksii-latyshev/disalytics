@@ -23,7 +23,7 @@ apps/web/src/
                   Knows nothing about CS2 — it draws what it is told.
     parsing/      Parse worker lifecycle, progress state machine, cancellation.
     shortcuts/    Keyboard registry and scope handling.
-    motion/       DESIGN.md §8's one orchestrated moment, as timings two slices read.
+    motion/       The one orchestrated moment, as timings two slices read.
     settings/     UI preferences: playback rules, plate options, locale, palette.
                   There is no theme provider — dark is unconditional (AGENTS.md §20).
   features/       User-facing slices. May use core and other features.
@@ -89,7 +89,7 @@ One-way flow: `features → core → shared`, never the reverse.
   radar, controls, settings are leaves
   ```
 
-  There is no `inspector/` slice. `docs/DESIGN.md` §5.6 removed the column and the drawer both —
+  There is no `inspector/` slice. #113 removed the column and the drawer both —
   selecting a player expands that player's row inside its team card — so what the slice held now
   lives on the cards in `review/`, and the event feed §5.4 still owes the screen lands there too.
 
@@ -275,9 +275,9 @@ app's own, and `OpenFailure` in `apps/web/src/core/parsing` is what that looks l
   `demo-core` and is imported.
 - Components live in `packages/ui/src/components` and are imported from `@disa/ui` — never from a
   deep path, `AGENTS.md` §2 rule 13. They started as shadcn copies and are **owned** now, so
-  edit them there; `DESIGN.md` §9 is why. **Colour and radius still come from the token layer**, and
+  edit them there. **Colour and radius still come from the token layer**, and
   a component that hardcodes either is a defect. Size is the exception the ownership buys: `Button`
-  and `Input` carry the two heights `DESIGN.md` §4 allows and no caller sets a height of its own.
+  and `Input` carry the two heights `tokens.css` allows and no caller sets a height of its own.
 
 ---
 

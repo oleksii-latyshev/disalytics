@@ -74,9 +74,7 @@ export function TimelineBlock({
         </div>
       )}
 
-      <section
-        className={`glass-panel flex flex-col rounded-float ${hasScoreboard ? 'has-brow' : ''}`}
-      >
+      <section className="surface-card flex flex-col rounded-float">
         <RoundStrip demo={demo} transport={transport} />
 
         {/* 64px: the 40px primary button plus 12px either side, which is §5.5's control row and has

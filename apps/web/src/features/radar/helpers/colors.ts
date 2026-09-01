@@ -49,7 +49,7 @@ function readRadarColors(): RadarColors {
     team: { CT: readCssToken('--color-ct'), T: readCssToken('--color-t') },
     dead: readCssToken('--color-ink-faint'),
     selectionRing: readCssToken('--color-ink'),
-    selectionEdge: readCssToken('--color-accent'),
+    selectionEdge: readCssToken('--color-surface-0'),
     label: { halo: readCssToken('--color-surface-0'), ink: readCssToken('--color-ink-dim') },
     hollow: readCssToken('--color-surface-0'),
     gunfire: readCssToken('--color-ink'),

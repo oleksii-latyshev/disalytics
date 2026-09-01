@@ -187,7 +187,7 @@ export const RoundOutcomes = memo(function RoundOutcomes({
               // and the padding would push the number off the pill's centre line.
               className={`relative flex size-full cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-chip px-0.5 leading-none transition-colors duration-(--duration-micro) ease-out hover:bg-hover ${
                 isExpanded ? 'pb-1.5' : ''
-              } ${lit ? 'bg-ink/10 ring-1 ring-glass-edge ring-inset' : ''}`}
+              } ${lit ? 'bg-ink/10 ring-1 ring-line ring-inset' : ''}`}
             >
               <PillFace
                 cell={cell}

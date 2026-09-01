@@ -26,7 +26,7 @@ export function SideRail({ view, onView, onSettingsOpen, onHelpOpen }: Props) {
   const t = useT();
 
   return (
-    <aside className="glass-panel relative z-10 flex flex-col gap-3 p-3 split:h-dvh split:gap-6 split:p-4">
+    <aside className="surface-card relative z-10 flex flex-col gap-3 p-3 split:h-dvh split:gap-6 split:p-4">
       <header className="flex flex-col gap-1">
         {/* The product name is a name, not copy — AGENTS.md §11 keeps this kind of vocabulary out
             of the message catalogue in both locales. */}

@@ -17,7 +17,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Every number in the product uses tabular figures — AGENTS.md §17.3, DESIGN.md §3. */
+/* Every number in the product uses tabular figures. A score, a clock, a money column and a round
+   index all change while the reader is looking at them, and digits that change width while they do
+   are digits that cannot be compared. */
 .numeric,
 code,
 kbd,
@@ -28,116 +30,83 @@ pre {
   font-feature-settings: "tnum" 1;
 }
 
-/* Type only, no colour: a panel floating over the radar plate has to carry its labels at `--ink`
-   rather than `--ink-dim` — DESIGN.md §2 — and this class is unlayered, so a `text-ink` utility
-   next to it would lose. The ink level is the caller's, and every caller states one. */
+/* A section label: the smallest type in the product, and the only place it is set in capitals.
+
+   It carries no face of its own any more — there is one face, and Onest at 500 in capitals on
+   `--tracking-label` is what the condensed family used to be here for. It carries no colour either,
+   and that is deliberate: the class is unlayered, so a `text-ink-dim` utility beside it would lose a
+   specificity argument it should never be having. The ink level is the caller's, and every caller
+   states one. */
 .label-dense {
-  font-family: var(--font-narrow);
   font-size: var(--text-11);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
 }
 
-/* A card floating over the stage — DESIGN.md §2.2 and §4. Elevation is a 1px `--glass-hair` outer
-   edge plus a 1px `--glass-edge` inner top rim over a blurred ground, and never a drop shadow.
+/* A card. The whole elevation model is here: an opaque ground one step up from what it sits on, and
+   a 1px hairline of white at 10%. No shadow, no inner rim, no blur.
 
-   The blur is affordable for exactly one reason: §5.1 sizes the plate so that no card overlaps it,
-   so every one of these has a *static* ground behind it and the blur is paid for once. A surface
-   that does end up over the live canvas uses alpha alone and carries `--ink` only (§2.2).
+   That last one is the redesign's biggest structural saving. The class this replaces was
+   translucent over a 24px backdrop blur, which is affordable exactly while nothing behind it
+   repaints — so the whole review screen had to be laid out to guarantee that no card ever overlapped
+   the radar plate. An opaque card can sit anywhere, and the layout keeps that constraint only where
+   it earns its place on legibility. */
+.surface-card {
+  background-color: var(--color-surface-1);
+  box-shadow: 0 0 0 1px var(--color-line);
+}
+
+/* The scoreboard's lip, rising from the centre of the timeline block's top edge as a tab of that
+   card rather than a card on it.
+
+   Three hairlines and no fourth: the bottom edge is where the two shapes meet and there is nothing
+   to draw there. The block's own ring runs in the 1px row directly above its top edge — which is
+   this element's last row — and an opaque background is what covers it, so the outline reads as one
+   shape stepping up around the lip with no seam across the join. The old glass version could not do
+   that: at 0.62 alpha the block's ring came through the lip at a third of its strength, and a
+   second class on the block existed purely to suppress it. Opacity deleted both problems. */
+.surface-brow {
+  background-color: var(--color-surface-1);
+  box-shadow:
+    inset 0 1px 0 0 var(--color-line),
+    inset 1px 0 0 0 var(--color-line),
+    inset -1px 0 0 0 var(--color-line);
+}
+
+/* The one surface allowed to sit over the live radar plate — the scoreboard chip, in the position
+   the reader can choose instead of the brow.
+
+   It is `--surface-2` rather than `--surface-1` because what is behind it is an image rather than
+   the app's ground, and a chip that matched a card would read as a hole in the plate. It carries no
+   `backdrop-filter`: it used to, at half the panel's radius, and that was the single exception the
+   old system made to its own rule. There is no rule left to except it from. */
+.surface-hud {
+  background-color: var(--color-surface-2);
+  box-shadow: 0 0 0 1px var(--color-line-strong);
+}
+
+/* Settings, help, and the ground behind the demo dialog. The only `backdrop-filter` left in the
+   product, and the only surface whose job is to push back the *whole* screen rather than to sit on
+   it. `.dialog-scrim` is the same grade reached through `::backdrop` alone: there the card is its
+   own surface and only the ground around it is being pushed back.
+
+   All three are open only while playback is stopped, so nothing repaints behind any of them.
 
    The fallback is opaque rather than a cheaper blur: with `backdrop-filter` unavailable there is
-   nothing lifting the ground, and 0.62 alpha over whatever is behind is the contrast case §2.2
-   rules out. */
-.glass-panel {
-  background-color: var(--color-glass-panel);
-  backdrop-filter: var(--backdrop-panel);
-  box-shadow:
-    inset 0 1px 0 0 var(--color-glass-edge),
-    0 0 0 1px var(--color-glass-hair);
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-panel {
-    background-color: var(--color-surface-1);
-  }
-}
-
-/* The scoreboard brow — DESIGN.md §5.2, and the default position since 16 August 2026. A tab of the
-   timeline block rather than a card on it: `--glass-panel` like the block, `--radius-card` above,
-   square where the two meet, and **no `backdrop-filter`** — it is over the stage, not over the
-   plate, and §2.3 does not pay for a blur with nothing moving behind it.
-
-   The hair runs on three sides only, and `.glass-panel.has-brow` drops the block's lit top rim, so
-   the outline reads as one shape stepping up around the lip. Both halves are needed: §5.2 asks for
-   no seam and no hairline across the join, and a translucent brow cannot hide a line drawn under
-   it — at 0.62 alpha the block's rim would still come through at a third of its strength.
-
-   The fallback matches `.glass-panel`'s rather than staying translucent: without `backdrop-filter`
-   the block goes opaque, and a lip that did not would read as a different surface. */
-.glass-brow {
-  background-color: var(--color-glass-panel);
-  box-shadow:
-    inset 0 1px 0 0 var(--color-glass-edge),
-    0 -1px 0 0 var(--color-glass-hair),
-    -1px 0 0 0 var(--color-glass-hair),
-    1px 0 0 0 var(--color-glass-hair);
-}
-
-.glass-panel.has-brow {
-  box-shadow: 0 0 0 1px var(--color-glass-hair);
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-brow {
-    background-color: var(--color-surface-1);
-  }
-}
-
-/* The scoreboard chip — DESIGN.md §5.2. The one surface in the product that sits over the live
-   plate and still carries a blur, which §5.1 grants it by name and §2.3's rule otherwise forbids.
-   It is the **other** position now, chosen by the reader (§10.5); the brow above is the default and
-   spends neither the blur nor §5.1's overlap exception.
-
-   It is not `.glass-panel` at a smaller radius: what makes this affordable is the *area*. A chip
-   that fits a map name, a score and a clock is a couple of percent of the plate, and the
-   compositor re-blurs that rather than a 280px card. Two things follow, and both are DESIGN.md §2.2
-   over-plate rules rather than taste — every string on it is `--ink`, secondary by size and never
-   by ink level, and it stays narrow. */
-.glass-hud {
-  background-color: var(--color-glass-panel);
-  backdrop-filter: var(--backdrop-hud);
-  box-shadow:
-    inset 0 1px 0 0 var(--color-glass-edge),
-    0 0 0 1px var(--color-glass-hair);
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-hud {
-    background-color: var(--color-surface-1);
-  }
-}
-
-/* Settings and help — DESIGN.md §10.5 and §10.6, and the ground behind §10.2's demo dialog. The
-   deepest grade and the widest blur, because what this one has to let through is the whole screen.
-   `.dialog-scrim` is the same grade reached through `::backdrop` alone: there the card is its own
-   surface and only the ground around it is being pushed back. §2.3 permits the blur unconditionally
-   for all three: the sheets are open only while playback is stopped, and the dialog belongs to the
-   way in, so there is nothing repainting behind any of them.
-
-   The fallback is opaque for a stronger reason than the panel's: 0.88 alpha over a match reads as a
-   half-drawn screen rather than as a surface. `::backdrop` carries the same colour so the top-layer
-   ground matches the sheet on the one frame the two are painted separately. */
-.glass-sheet,
-.glass-sheet::backdrop,
+   nothing lifting the ground, and a translucent sheet over a match reads as a half-drawn screen
+   rather than as a surface. `::backdrop` carries the same colour so the top-layer ground matches the
+   sheet on the one frame the two are painted separately. */
+.surface-sheet,
+.surface-sheet::backdrop,
 .dialog-scrim::backdrop {
-  background-color: var(--color-glass-sheet);
+  background-color: rgb(5 5 5 / 0.72);
   backdrop-filter: var(--backdrop-sheet);
 }
 
 @supports not (backdrop-filter: blur(1px)) {
-  .glass-sheet,
-  .glass-sheet::backdrop,
+  .surface-sheet,
+  .surface-sheet::backdrop,
   .dialog-scrim::backdrop {
     background-color: var(--color-surface-0);
   }

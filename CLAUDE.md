@@ -9,7 +9,7 @@ alone.
 | `AGENTS.md` | any non-trivial task — it is the operating contract |
 | `CODE_REQUIREMENTS.md` | writing any code |
 | `CONTRIBUTING.md` | creating an issue, branch, or PR |
-| `docs/DESIGN.md` | any visual or component work |
+| `packages/ui/src/styles/tokens.css` | any visual or component work — it replaced `DESIGN.md` |
 | `docs/PARSER.md` | parser or WASM work (written during Phase 0) |
 
 ---
@@ -29,6 +29,15 @@ smoothness conflict, favour smoothness and label the approximation in the UI.
 ---
 
 ## Repository state
+
+> **The visual system was replaced on 1 September 2026.** `DESIGN.md` is deleted; #276 built a
+> new token layer in its place and #277–#280 apply it screen by screen. Everything below this line
+> is a **record of what each pull request did**, and where it describes a surface — glass cards, the
+> violet accent, `backdrop-filter` over the plate, three type families, the layout rule that kept
+> cards off the radar — it is describing what was there, not what is there. For the current system
+> read `packages/ui/src/styles/tokens.css` and `AGENTS.md` §17. What survives unchanged is
+> everything about *behaviour*: the clock, the frame channel, the worker protocol, the store, the
+> keyboard bindings and the parsing rules.
 
 **Active work is Phase 5 — the review screen.** What follows is in the order things landed rather
 than in order of importance, so the paragraphs that matter most to a change you are making now are
@@ -98,11 +107,11 @@ time on one frame and forgets its last timestamp on `visibilitychange` — a hid
 and 46 s away used to arrive as 46 s of match in a single step.
 
 #83 added the spine: `features/timeline` is the scrubber and the round picker, and
-`core/shortcuts` binds `docs/DESIGN.md` §9's keys. The scrubber is an **uncontrolled** range input —
+`core/shortcuts` binds `DESIGN.md` §9 (deleted — see the note above)'s keys. The scrubber is an **uncontrolled** range input —
 React never owns its value — and the playhead moves with `transform` only. What #83 left was a bare
 strip: hairlines and a playhead, nothing about the match itself.
 
-#87 put those panels into the `docs/DESIGN.md` §4 layout. An opened demo is no longer a block in the
+#87 put those panels into the `DESIGN.md` §4 layout. An opened demo is no longer a block in the
 reading column: `App` hands the whole viewport to `features/review`, which is a three-row grid —
 match strip, radar beside the inspector, spine along the bottom. `features/inspector` exists but is
 a column with an empty state; Phase 5 fills it. Two things there are load-bearing: **the radar sizes
@@ -166,7 +175,7 @@ any of it.
 #112 added what is happening to those people: a `--damage` flash on a token that was just hit, a
 facing needle dropped while its player is blinded, a progress arc for a plant or a defuse, and a 1px
 audibility ring from `speed`. **All four are functions of match time and none of wall time** — that
-is `docs/DESIGN.md` §8's test for what may move while playback runs, and it is why scrubbing
+is `DESIGN.md` §8's test for what may move while playback runs, and it is why scrubbing
 backwards through a hit shows the flash again. **The rules live in `packages/demo-core`**:
 `helpers/audibility.ts` is the model, `helpers/player-state.ts` is `damageFlashBySlot`,
 `blindedBySlot` and `bombProgressAt`, and both are unit-tested there rather than eyeballed on a
@@ -177,7 +186,7 @@ than by the match. The audibility numbers are a named approximation of an unpubl
 largest mark on the plate and it competed with the players. Read `AGENTS.md` §9 before changing any
 of it.
 
-**#130 rewrote `docs/DESIGN.md` from the ground up, and most of the UI described above is now
+**#130 rewrote `DESIGN.md` from the ground up, and most of the UI described above is now
 scheduled to be replaced.** It is the third revision and the first that is not an amendment: three
 revisions had drawn the same verdict from the owner — dated, unsurprising — which is evidence the
 rules were wrong rather than their execution. Four decisions came with it, each an `AGENTS.md` §21
@@ -189,7 +198,7 @@ carries the round**, with the whole-match spine re-scaled rather than discarded 
 until #157, which keeps the decision and changes the form.
 The review screen loses its top bar, its rails and its inspector column: a plate in the middle,
 four floating glass cards around it, sized so **no card ever overlaps the plate** — which is what
-makes `backdrop-filter` affordable and is a layout rule rather than a convention. `docs/DESIGN.md`
+makes `backdrop-filter` affordable and is a layout rule rather than a convention. `DESIGN.md`
 §15 lists the nine issues that owe it code, in dependency order.
 
 **#132 landed the first of them — the token layer.** `packages/ui/src/styles/tokens.css` is now
@@ -213,7 +222,7 @@ nothing and says nothing; `inventory_as_bitmask` is broken for every knife becau
 by a definition index that reaches 526; and `item_equip.item` cannot tell an M4A4 from an M4A1-S.
 Knives collapse to one `Knife` entry, argued from data in #53. `MatchHeader.weapons` is upstream's
 display-name vocabulary and so **a different vocabulary from `Kill.weapon`** — #53 is what unifies
-them. The table also contains `C4 Explosive`, and #137 rewrote `docs/DESIGN.md` §6.4 around that:
+them. The table also contains `C4 Explosive`, and #137 rewrote `DESIGN.md` §6.4 around that:
 the bomb stays off the screen as a **rendering rule** rather than for want of data. The prop reports
 the bomb only while it is *held*, never while it is stowed, so a carrier indicator would be right
 for a moment and quietly wrong for the rest of the round. A `weapon` sample pointing at that entry
@@ -265,7 +274,7 @@ death that shrinks to 8px and stays where it fell, and names as haloed text rath
 The T diamond and the per-token outline are gone and that is the owner's call, not an omission.
 Three things are load-bearing. **The selection ring reads `--ink`, not a literal white** —
 `--color-focus` and `--color-playhead` are both `#ffffff` and neither is this ring, and minting a
-token for it is a change to `docs/DESIGN.md` §2 that belongs to that document's own issue. **The
+token for it is a change to `DESIGN.md` §2 that belongs to that document's own issue. **The
 needle lengths finally mean what §6.1 says**: they were 13px and 22px measured from the token's
 *centre*, so 8 and 17 of them were ever visible. And `blindRemainingBySlot` and
 `deathProgressBySlot` sit in `packages/demo-core` beside `damageFlashBySlot`, write into the
@@ -274,7 +283,7 @@ duration — because they run inside a draw. The label pass moved out to
 `features/radar/helpers/labels.ts` when the layer reached 330
 lines, and the plate measures pixel-identical either side of that move.
 
-**#166 corrected three sections of `docs/DESIGN.md` from owner feedback of 13 August 2026.** §5.2
+**#166 corrected three sections of `DESIGN.md` from owner feedback of 13 August 2026.** §5.2
 splits the old top-left card in two — a centered scoreboard chip at the plate's top edge carrying
 map, score and clock, and a round card reduced to the number and the phase — and §5.1 gains that
 chip as its **one permitted overlap exception**, with the reasoning attached. §6.1 gained the 8×8
@@ -303,7 +312,7 @@ footprint no longer depends on whether the label says "Pause" or "Воспрои
 it used to move on every press. The strings did not go anywhere: `controls.play` and
 `controls.pause` are the `aria-label` now.
 
-**#157 rewrote `docs/DESIGN.md` §7, as PR #178.** It replaced the 14px `MatchRibbon` described above
+**#157 rewrote `DESIGN.md` §7, as PR #178.** It replaced the 14px `MatchRibbon` described above
 with a 32px **list of rounds** — equal-width cells, winner tint, round number, survivor count —
 moved #90/#91's economy band and density trace behind the full-height overlay rather than deleting
 them, tinted §7.1's kill glyph by the side of the player who died, and added a §15 step 10 for the
@@ -352,11 +361,11 @@ and the phase and nothing else. Three things came with it. **`roundClockAtFrame`
 post-round holds. **`sideScoreAtFrame` stopped counting `Round.winner` by side** — the halftime bug
 — and now tracks which slots opened on CT, which is what #141 was. And **`--backdrop-hud` is the one
 `backdrop-filter` in the product over a ground that repaints every frame**; it is 12px against the
-panel's 24 for that reason, and it is an exception granted by name in `docs/DESIGN.md` §5.1 rather
+panel's 24 for that reason, and it is an exception granted by name in `DESIGN.md` §5.1 rather
 than a third blur token to reach for. That chip is the reader's *other* scoreboard position since
 #197, and the default spends neither the blur nor the overlap.
 
-**#190 rewrote `docs/DESIGN.md` §7.3 and moved §5.2's scoreboard, and #193 corrected it before the
+**#190 rewrote `DESIGN.md` §7.3 and moved §5.2's scoreboard, and #193 corrected it before the
 code arrived.** The round strip became separated pills — a 4px gap, no hairlines, no tint, the round
 number as the only text, the winner as a 2px bar on the bottom edge, survivor counts behind a
 disclosure — and the halves and overtimes became a gap and a dotted rule derived from the rounds
@@ -394,7 +403,7 @@ pointer events**, so the canvas is the hit target §9.2's readout needs there, a
 **margin rather than padding**, so with both children silent it is a zero-height box instead of 32px
 of nothing over the plate.
 
-**#200 rewrote `docs/DESIGN.md` §10 around a sidebar shell and a library of cards.** §10.1 is a
+**#200 rewrote `DESIGN.md` §10 around a sidebar shell and a library of cards.** §10.1 is a
 persistent 17.5rem rail — the same measure as a team card, so the product has one — that **never
 appears on the review screen**, with §5.1 as the stated reason: the plate is sized from the
 viewport, so a rail is a subtraction from the plate's own axis. §10.2 is a grid of cards over the
@@ -440,7 +449,7 @@ the survivor tracks (−16), a selected player (−81, and nothing at all above 
 scoreboard over the plate (+32, because the brow leaves the block). The locale, the audibility rings
 and the debug overlay move nothing. The storage notice in §5.2's corner is a fourth: it is a line of
 type in row 1 whenever it speaks, so a run measuring while the demo is still being written reads 459
-where a run measuring after it reads 476. `docs/DESIGN.md` §5.1 carries the measured table, the row
+where a run measuring after it reads 476. `DESIGN.md` §5.1 carries the measured table, the row
 arithmetic and the preconditions list; read it before quoting a plate size, and state the viewport
 **height** — three of the four widths are height-bound and "the plate at 1040" on its own says
 nothing.
@@ -503,7 +512,7 @@ to **1.79** (`--nade-decoy` against `--objective` under deuteranopia). Two findi
 violet accent and CT blue are one colour to a deuteranope — and this palette does not fix it,
 because the accent is §2.5's rather than a data colour; what saves the selection ring is that the
 ring itself is `--ink`. And **`--nade-flash` sits 3.3 from `--ink` in ordinary vision**, which is
-not a deficiency at all: both are white on purpose. `docs/DESIGN.md` §2.4 carries the values, the
+not a deficiency at all: both are white on purpose. `DESIGN.md` §2.4 carries the values, the
 method and both exclusions.
 
 **#114 closed §15's step 6 — the plate can be zoomed and panned.** The wheel zooms anchored on the
@@ -563,7 +572,7 @@ returns on `event.defaultPrevented`, which is what stops a roving-focus group's 
 the focus and seeking the match, and `input[type="range"]` keeps its own arrow keys by name. And
 **`0` is the last CT seat**: the row keys are a contiguous range and cannot give up their last
 member, while `−` held down reaches 1× where the pan is pinned — so the floor of the zoom *is* the
-reset, and `docs/DESIGN.md` §9.1 records that rather than leaving the collision open. The zoom's two
+reset, and `DESIGN.md` §9.1 records that rather than leaving the collision open. The zoom's two
 keys are bound in `features/radar` from a second `useShortcuts` call, whose suspension arrives as a
 prop; nothing new is on the frame path, so §16's rows were not re-measured.
 
@@ -574,7 +583,7 @@ the needle on the frame a trigger was pulled — §6.1's last three states, and 
 out of `WeaponGlyph` into `core/glyphs/helpers/silhouettes.ts` because the set has two renderers,
 and the canvas compiles each class to a `Path2D` **once per session at plate scale** rather than
 scaling the context — `context.scale` shrinks the stroke with the shape and would halo a mark more
-faintly than the name beside it. **The box is 14×7 and `docs/DESIGN.md` §6.1 says 8×8 no longer**:
+faintly than the name beside it. **The box is 14×7 and `DESIGN.md` §6.1 says 8×8 no longer**:
 the square was specified before anything was drawn, and the same set squeezed into it turned every
 long gun into the letter T — that was found by looking at it, which is the only way it could have
 been. **The mark's box is reserved whether or not a mark goes in it**, so a name never twitches
@@ -915,15 +924,15 @@ the interface faster.** `Button` was shadcn's `transition-all` at Tailwind's own
 rather than a live defect: it animates whatever happens to change, so a variant that adjusts padding
 or a width tweens layout silently and nothing catches it. Measured on `main` it already animated
 eight properties on focus, `outline-width` and `outline-offset` among them, which nothing in
-`docs/DESIGN.md` asked for. The three controls in `packages/ui` now list their properties and take
+`DESIGN.md` asked for. The three controls in `packages/ui` now list their properties and take
 `--duration-micro` on `--ease-out`, and the two figures to keep are the response ones: hover on the
 accent button reaches 90% of its change in **49 ms against 100 ms** and 99% in **93 ms against
 133 ms**, three passes an arm, one headed Chrome at 1440×900 in one hour. **The old numbers were
 outside §1's 120 ms and the new ones are not**, which is the whole argument for `--ease-out` in
-`docs/DESIGN.md` §8 arriving as evidence: a *shorter* nominal duration on a strong decelerating
+`DESIGN.md` §8 arriving as evidence: a *shorter* nominal duration on a strong decelerating
 curve is half done at 17 ms where Tailwind's is half done at 58 ms. Two smaller things ride with it.
 The `Switch` knob transitioned `transform` while `peer-checked:` also changed its colour, so the
-colour snapped at the start of a 140 ms slide; it names both properties now. And **`docs/DESIGN.md`
+colour snapped at the start of a 140 ms slide; it names both properties now. And **`DESIGN.md`
 §8's token block said `--motion-*` where the token layer has said `--duration-*` since #132** — five
 readings of a name nothing in the product answers to.
 
