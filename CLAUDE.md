@@ -1095,6 +1095,25 @@ score one `sr-only` reading with everything under it hidden. **The cost is DOM r
 the review screen goes 1,143 → 1,654 elements, 451 of them the roller's, and §16's two rows measured
 0 over 16.7 ms across three passes each with `main` indistinguishable beside it.
 
+**Armour is Valve's own icon, and the set it came from grew a second half.** A hand-drawn helmet pip
+stated *helmet* and nothing about the vest; `apps/web/assets/equipment-icons/` now holds
+`armor.svg` and `armor_helmet.svg` from the same `Juknum/counter-strike-icons` extraction the weapon
+outlines came from, so the row draws the vest alone or the vest with the helmet beside it — the two
+states Counter-Strike itself has, and a helmet without a vest is not one of them. Four things to
+know. **The ids live in `core/glyphs` rather than in `demo-core`**, because armour is not in any demo
+vocabulary — a weapon icon's id *is* one, which is what lets `WEAPON_ICON_IDS` hold that table to its
+word, while armour is `TickTrack.armour` and the `FLAG_HELMET` bit read together and so belongs to
+the interface that draws it (hard rule 11). **`icons:generate` builds both tables now** and the
+script is `tools/scripts/icons-generate.ts`; its "exactly one path" rule became "one or more, joined
+as subpaths", because Valve draws the vest and the helmet as two siblings in one 48.75-wide box — the
+old rule would have rejected that asset, and what it did instead on a two-path asset was take the
+first and silently lose the rest. **The weapon table is byte-identical across that change**, which is
+what says the join is safe for the set that already shipped. And **the glyph takes its ink as a
+prop rather than through a wrapper**: a wrapper is an element whether or not the glyph draws, and an
+empty one still takes a share of its parent's `gap` — measured on the fixture's pistol round, the
+three players with no vest each carried 6px of space where the mark would have been. The value is
+not lost with the bar: the row states `armour` and, when it applies, `helmet` as `sr-only` text.
+
 The four full-length stat keys survive the expand's deletion because the row still carries them
 `sr-only` — moving the round to a canvas would otherwise have made a selected player's numbers
 unavailable to a screen reader, which is the one direction this screen may not move in. Three

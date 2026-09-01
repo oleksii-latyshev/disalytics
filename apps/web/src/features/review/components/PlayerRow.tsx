@@ -15,8 +15,8 @@ import {
   weaponIcon,
   weaponName,
 } from '@disa/demo-core';
-import { Text, useT } from '@disa/i18n';
-import { UtilityGlyph, WeaponGlyph } from '@/core/glyphs';
+import { Text } from '@disa/i18n';
+import { ArmourGlyph, UtilityGlyph, WeaponGlyph } from '@/core/glyphs';
 import type { MoneyShape } from '../helpers/money';
 import { Money } from './Money';
 
@@ -106,8 +106,6 @@ export function PlayerRow({
   shape,
   onSelect,
 }: Props) {
-  const t = useT();
-
   const index = slotSampleIndex(track, frame, player.slot);
   const flags = sampleAt(track.flags, index);
   const isAlive = (flags & FLAG_ALIVE) !== 0;
@@ -179,21 +177,23 @@ export function PlayerRow({
                   {health}
                 </span>
 
+                {/* Valve's own outline: the vest, or the vest with the helmet beside it — the
+                    two states Counter-Strike itself draws. The number behind it is the `sr-only`
+                    reading, so a vest worn down to 34 still states 34 to a screen reader. */}
                 <span className="sr-only">
                   <Text path="review.player.armour" /> {armour}
+                  {(flags & FLAG_HELMET) !== 0 && (
+                    <>
+                      . <Text path="review.player.helmet" />
+                    </>
+                  )}
                 </span>
 
-                {(flags & FLAG_HELMET) !== 0 && (
-                  <svg
-                    viewBox="0 0 12 12"
-                    role="img"
-                    aria-label={t('review.player.helmet')}
-                    fill="currentColor"
-                    className="size-3 shrink-0 text-ink-dim"
-                  >
-                    <path d="M6 1.6a4.4 4.4 0 0 0-4.4 4.4v2.2h2.2V6a2.2 2.2 0 0 1 4.4 0v2.2h2.2V6A4.4 4.4 0 0 0 6 1.6Z" />
-                  </svg>
-                )}
+                <ArmourGlyph
+                  armour={armour}
+                  hasHelmet={(flags & FLAG_HELMET) !== 0}
+                  className="text-ink-dim"
+                />
 
                 {/* Each mark names itself, and the names are game vocabulary — never translated. Two
                   flashbangs are two marks rather than a counted one, so the bit each came from is
