@@ -13,13 +13,13 @@ interface Props {
 }
 
 /**
- * The five most recent demos this device holds, on the way-in card — `docs/DESIGN.md` §10.2.
- * Nothing is drawn when there are none: an empty list would be a promise the product has not kept
- * yet, and the way in says enough on its own.
+ * The five most recent demos this device holds, on the way-in card. Nothing is drawn when there are
+ * none: an empty list would be a promise the product has not kept yet, and the way in says enough on
+ * its own.
  *
  * **The rest are a screen rather than a disclosure.** They expanded in place until the shell had a
- * Library entry to send them to (§10.1); keeping both would have been the same list in two states
- * one press apart.
+ * Library entry to send them to; keeping both would have been the same list in two states one press
+ * apart.
  */
 export function SavedDemos({ onEnter, onShowAll }: Props) {
   const { demos, forget } = useSavedDemos();
@@ -49,14 +49,14 @@ export function SavedDemos({ onEnter, onShowAll }: Props) {
         <Text path="library.saved.note" />
       </p>
 
-      {opened !== null && (
-        <DemoDialog
-          saved={opened}
-          onEnter={onEnter}
-          onDismiss={() => setOpened(null)}
-          onGone={forget}
-        />
-      )}
+      {/* Mounted whether or not it is open — an exit animation needs an element that still exists.
+          It holds no parse while it is closed; `DemoDialog` drops it as `saved` goes. */}
+      <DemoDialog
+        saved={opened}
+        onEnter={onEnter}
+        onDismiss={() => setOpened(null)}
+        onGone={forget}
+      />
     </section>
   );
 }

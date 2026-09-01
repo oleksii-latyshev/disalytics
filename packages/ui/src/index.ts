@@ -60,12 +60,6 @@ export {
   PopoverTitle,
   PopoverTrigger,
 } from './components/animate-ui/components/base/popover';
-export {
-  Progress,
-  ProgressLabel,
-  ProgressTrack,
-  ProgressValue,
-} from './components/animate-ui/components/base/progress';
 export { Radio, RadioGroup } from './components/animate-ui/components/base/radio';
 export {
   Tabs,
@@ -88,16 +82,29 @@ export {
   TooltipPanel,
   TooltipTrigger,
 } from './components/animate-ui/components/base/tooltip';
+/* The progress parts come from the primitive layer for the reason the effects below do — what they
+   give is behaviour, and the styling is the caller's. There is a second reason here and it is a
+   rule: the registry's styled `ProgressTrack` renders its own indicator, and that indicator animates
+   `width`. A bar in this product **scales, it does not resize** — `transform: scaleX()` — because
+   `width` triggers layout at every moment of the animation, which hard rule 9 forbids. The
+   indicator is the caller's element for that reason and no other. */
+export {
+  Progress,
+  ProgressLabel,
+  ProgressTrack,
+  ProgressValue,
+} from './components/animate-ui/primitives/base/progress';
 
-/* The registry's `Dialog` and `Switch` are deliberately not re-exported, and neither is its own
-   `Button`.
+/* The registry's styled `Dialog`, `Switch` and `Button` are still not re-exported, and the reason is
+   now different for each of the three.
 
-   `Dialog` and `Sheet` above are a native `<dialog>` opened with `showModal()`: the top layer, the
-   focus trap and the `Esc` close request are the platform's, and the registry's version would ship a
-   second focus manager to arrive at the same behaviour. `Switch` above is a plain checkbox, which is
-   what gives it `Space`, the label association and the checked state assistive technology reads for
-   free. Both files are still on disk and still update from the CLI; a screen that wants one exports
-   it here with the screen in front of it. */
+   **`Dialog` changed hands in #277.** `Dialog` and `Sheet` above are built on the registry's dialog
+   *primitive* — Base UI's dialog, one implementation for both surfaces — rather than on the native
+   `<dialog>` they were until then. What is not re-exported is the styled component on top of it,
+   which arrives with its own header, footer, close button and a `filter: blur()` on the way in.
+   `Switch` above is a plain checkbox, which is what gives it `Space`, the label association and the
+   checked state assistive technology reads for free. Both files are still on disk and still update
+   from the CLI; a screen that wants one exports it here with the screen in front of it. */
 
 // Effects and numbers, taken from the registry's primitive layer rather than its styled one: what
 // these give is behaviour, and the styling is the caller's.
@@ -112,6 +119,12 @@ export { SlidingNumber } from './components/animate-ui/primitives/texts/sliding-
 
 // --- Motion -----------------------------------------------------------------------------------
 
+export {
+  DURATION_BASE_SECONDS,
+  DURATION_MICRO_SECONDS,
+  DURATION_PANEL_SECONDS,
+  EASE_OUT,
+} from './motion/easing';
 export { MotionProvider } from './motion/provider';
 export type { TargetAndTransition, Transition } from './motion/re-export';
 export { AnimatePresence, m, motion } from './motion/re-export';

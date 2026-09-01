@@ -20,7 +20,7 @@ export function SavedDemoRow({ demo, onOpen, onRemove }: Props) {
         type="button"
         onClick={() => onOpen(demo)}
         aria-label={t('library.saved.open', { map: demo.map })}
-        className="flex min-w-0 flex-1 flex-col gap-1 rounded-card border border-line bg-surface-2 px-3 py-2 text-left transition-colors duration-(--duration-micro) ease-out hover:bg-hover"
+        className="flex min-w-0 flex-1 flex-col gap-1 rounded-card border border-line bg-surface-2 px-3 py-2 text-left transition-colors duration-(--duration-micro) ease-out hover:border-line-strong hover:bg-hover"
       >
         <span className="flex items-baseline justify-between gap-3">
           {/* A map name is game vocabulary and stays as the demo wrote it — AGENTS.md §11. */}

@@ -39,7 +39,7 @@ export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDrag
           onCancel={onClose}
         />
       );
-    // §10.4 is the same card in the same place, so the failure replaces the way in rather than
+    // The failure is the same card in the same place, so it replaces the way in rather than
     // sitting above a copy of it. What it keeps is the route out — its own file picker, and the
     // demos this device already holds.
     case 'failed':
