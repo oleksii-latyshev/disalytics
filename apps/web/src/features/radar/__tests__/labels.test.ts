@@ -65,6 +65,26 @@ describe('labelPlacer', () => {
     expect(overlaps(first, second)).toBe(false);
   });
 
+  it('finds a free box for eight labels on one point, rather than burying the fifth', () => {
+    // A buy phase is five players on one spawn, and with four candidate positions the fifth label
+    // fell back to the first one and drew a name on top of a name. Measured on the fixture, that
+    // buried 7 of 10 labels at 1024×800; the corners and the second row below and above are what
+    // this asserts, and the count is what they are worth.
+    const placer = labelPlacer(8, LABEL_HEIGHT_PX);
+    const boxes: Label[] = [];
+
+    for (let index = 0; index < 8; index++) {
+      placer.place(320, 320, TOKEN_RADIUS, LABEL_WIDTH, PLATE);
+      boxes.push({ x: placer.x, y: placer.y });
+    }
+
+    for (const [index, box] of boxes.entries()) {
+      for (const other of boxes.slice(index + 1)) {
+        expect(overlaps(box, other), `two of the eight sit on ${box.x},${box.y}`).toBe(false);
+      }
+    }
+  });
+
   it('keeps a label inside the plate at either edge', () => {
     const placer = labelPlacer(1, LABEL_HEIGHT_PX);
 

@@ -43,8 +43,14 @@ const RIGHT_X = 42;
 /** Up and to the right, so a needle fits the swatch's height as well as its width. */
 const NEEDLE_ANGLE = -Math.PI / 4;
 
-/** The left edge of the mark's box, which is where the plate reserves it beside a token. */
-const WEAPON_STRIP_X = TOKEN_RADIUS_PX + 6;
+/**
+ * The weapon swatch draws its token further left than the pair above it does, because the mark's box
+ * is 31px wide and the swatch is 56: at `LEFT_X` the box would run 3px past the right edge and the
+ * legend would be showing a clipped outline of a weapon. `WEAPON_STRIP_X` is the box's left edge,
+ * which is where the plate reserves it beside a token.
+ */
+const WEAPON_TOKEN_X = 10;
+const WEAPON_STRIP_X = WEAPON_TOKEN_X + TOKEN_RADIUS_PX + 6;
 
 /** Radii the swatch chooses, where on the plate the map's own scale does — everything else is the renderer's. */
 const AUDIBLE_RADIUS_PX = 12;
@@ -110,13 +116,13 @@ export const PLATE_MARKS: readonly PlateMark[] = [
   {
     id: 'weapon',
     draw: (context, colors) => {
-      drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+      drawToken(context, WEAPON_TOKEN_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
 
       // One mark, where the name would start — the arrangement the plate actually draws. Which
       // weapon it is, is the sentence's job: three outlines in a 56px swatch is a row of shapes
       // with no token beside them, which is not what a reader sees.
       haloStroke(context, colors.label.halo);
-      drawWeaponMark(context, LEFT_X + WEAPON_STRIP_X, CENTRE_Y, 'rifle', 'ak47', colors.label.ink);
+      drawWeaponMark(context, WEAPON_STRIP_X, CENTRE_Y, 'rifle', 'ak47', colors.label.ink);
     },
   },
   {

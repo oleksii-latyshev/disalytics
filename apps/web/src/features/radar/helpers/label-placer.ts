@@ -24,7 +24,22 @@ export interface LabelPlacer {
   ): void;
 }
 
-const CANDIDATE_COUNT = 4;
+/**
+ * Where a label may sit, in three rings: the four a reader expects — under the token, over it,
+ * either side — then the four corners, then a second and third row above and below. **The order is
+ * the point**: the cardinal four are tried first, so a label that could be placed before this is
+ * placed in exactly the same box, and the outer rings are reached only by a label that would
+ * otherwise have been drawn on top of another one.
+ *
+ * They exist because a buy phase is five players standing on one spawn point, where every cardinal
+ * box of every label overlaps a neighbour's. With four positions the fifth label fell back to the
+ * first and a name was drawn over a name: measured on the fixture, a buy phase buried **40% of its
+ * labels at 1440×900 and 70% at 1024×800** under more than a quarter of their own area, and with
+ * twelve it is **0% in every window measured**, at both viewports, with a player selected and
+ * without. The rows are what does most of that work — a cluster has room above and below it and
+ * almost none to either side.
+ */
+const CANDIDATE_COUNT = 12;
 
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;
@@ -89,6 +104,22 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
       candidates[5] = tokenY - boxHeight / 2;
       candidates[6] = tokenX - gap - width;
       candidates[7] = tokenY - boxHeight / 2;
+      candidates[8] = tokenX + gap;
+      candidates[9] = tokenY + gap;
+      candidates[10] = tokenX - gap - width;
+      candidates[11] = tokenY + gap;
+      candidates[12] = tokenX + gap;
+      candidates[13] = tokenY - gap - boxHeight;
+      candidates[14] = tokenX - gap - width;
+      candidates[15] = tokenY - gap - boxHeight;
+      candidates[16] = tokenX - half;
+      candidates[17] = tokenY + gap + boxHeight;
+      candidates[18] = tokenX - half;
+      candidates[19] = tokenY - gap - 2 * boxHeight;
+      candidates[20] = tokenX - half;
+      candidates[21] = tokenY + gap + 2 * boxHeight;
+      candidates[22] = tokenX - half;
+      candidates[23] = tokenY - gap - 3 * boxHeight;
 
       let chosenX = 0;
       let chosenY = 0;

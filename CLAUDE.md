@@ -1154,6 +1154,30 @@ is **716 at 1440×900 with a player selected, unchanged**, and the bundle is 222
 of which 0.96 kB is the six utility outlines as polygon data and 0.32 kB is everything else — the
 weapon table has shipped since #260 for a team row, and this only gave the plate a reader for it.
 
+**#282 set a plate name at the size the product reads it at, and the finding is in the placer
+rather than in the type.** A nickname beside a token was 10px against the 13 the same nickname is
+set at in a team row, and the owner could not tell one player from another at 100% zoom without
+leaning in. The name is §3's 13 now, the mark box is 24×10 → **31×13** — the invariant being that
+the mark is exactly as tall as the name it leads, so the two stay one label — and the round under a
+selected name is 9 → 12, one rank down the same scale. Five things are load-bearing. **The old issue
+body was wrong about what a wider label costs**: `labelPlacer` never drops a label, it tries four
+candidate boxes and falls back to the first one, so the cost is *overlap* and every named living
+player is always drawn. **The metric is how much of a label is covered**, not whether two boxes
+touch: a kiss at the edge is not an illegible name, and counting any contact reported 50% where a
+quarter-covered box reported 27%. **The placer had the real defect, and it predates this branch** —
+a buy phase is five players on one spawn point, where every cardinal box overlaps a neighbour's, and
+at four positions a buy phase buried **40% of its labels at 1440×900 and 70% at 1024×800** under
+more than a quarter of their own area, with the *small* type. Twelve positions — the cardinal four
+first so a label that could be placed still goes where it went, then the four corners, then a second
+and third row above and below — take that to **0% in every one of eight windows**, two rounds × a
+buy phase and a mid-round × both viewports × a player selected and not. **The halo stays 2px** by
+decision: it holds a glyph off a bright plate pixel rather than being a proportion of the type, and
+a 4px stroke under 13px text leaves the counters further open than it did under 10px. And **§3's
+optical tracking is still not applied on this canvas**, which is now recorded rather than left to be
+rediscovered: the step asks 0.005em here, 0.9px across the longest name this draws, where at 10px
+the same rule asked four times as much. §16's two rows are unmoved against an `aad966e` baseline and
+the bundle is 223.44 → 223.50 kB.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
