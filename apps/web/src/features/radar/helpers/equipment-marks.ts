@@ -19,19 +19,24 @@ import {
  * The box a weapon mark is drawn in, whose **left edge** and vertical middle the caller gives.
  *
  * #164 measured a model outline in a 14×7 box as a smudge and drew class silhouettes there for that
- * reason. The finding held for the box rather than for the art: §5.3's row draws the same models
- * legibly at 12px of height, and 10px is where an AK's magazine and an AWP's scope survive. So the
- * box moved instead of the drawing — 24×10 against 14×7 — and it costs the label 10px of width,
- * `WEAPON_BOX_PX` going 17 → 27 against a name of 60 to 80.
+ * reason. The finding held for the box rather than for the art, so #286 moved the box to 24×10 —
+ * and 10 was the type size beside it. **The mark is exactly as tall as the name it leads**, which
+ * is the invariant to keep: the two are one label, so they are one size, and raising the name to
+ * §3's 13 raises this with it. The width follows at the same 2.4:1, which is where an AWP fits by
+ * its width and a rifle nearly fills the height.
  *
- * The icon is **fitted** inside it and **right-aligned** against the name. Valve draws these to one
- * height and many widths — an AWP is three times its own height where a P2000 is square — so a box
- * wide enough for the longest gun leaves a pistol slack, and the slack goes on the outer edge where
- * the map is rather than between the mark and the word it leads. That also keeps the halo one shape:
- * a gap of `WEAPON_GAP_PX` closes under a 2px stroke, and a gap of fourteen does not.
+ * The number is stated here and again as `LABEL_SIZE_PX` in `labels.ts` because that module reaches
+ * for this one, and importing back would close the loop — the same reason `labelPlacer` takes its
+ * box height as an argument.
+ *
+ * The icon is **fitted** inside the box and **right-aligned** against the name. Valve draws these to
+ * one height and many widths — an AWP is three times its own height where a P2000 is square — so a
+ * box wide enough for the longest gun leaves a pistol slack, and the slack goes on the outer edge
+ * where the map is rather than between the mark and the word it leads. That also keeps the halo one
+ * shape: a gap of `WEAPON_GAP_PX` closes under a 2px stroke, and a gap of fourteen does not.
  */
-export const WEAPON_MARK_PX = 24;
-export const WEAPON_MARK_HEIGHT_PX = 10;
+export const WEAPON_MARK_HEIGHT_PX = 13;
+export const WEAPON_MARK_PX = Math.round(WEAPON_MARK_HEIGHT_PX * 2.4);
 
 /**
  * The grenade drawn at the head of a projectile still in the air — §6.2. Square, because every
