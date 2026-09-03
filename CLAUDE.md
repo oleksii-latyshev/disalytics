@@ -1230,6 +1230,61 @@ The bundle is **223.50 → 229.21 kB gz**, all of it Base UI's toggle group and 
 §16's two frame rows are unmoved against a `1e749fd` baseline taken the same hour.
 
 
+**#280 closed the redesign, and the two defects it found are both a transition naming a property its
+own element never sets.** The settings table is five sections the reader can close rather than
+thirteen rows of equal weight, a choice row is the round strip's toggle group at another size, and
+the help legend's seventeen marks stand on the plate's own ground. Six things are load-bearing.
+
+**The accordion comes from the primitive layer, and the second reason is a rule.** The registry's
+styled trigger is `transition-all` at Tailwind's own `duration-200` — the loaded gun #134 took off
+the shared controls — and the primitive's panel animates `height` from 0 to `auto`, which hard rule 9
+forbids at *every* moment rather than during playback. The panel spreads the caller's props over its
+defaults, so `SettingGroup` names its own `initial`/`animate`/`exit` and replaces the height tween
+instead of adding to it: opening fades over `--duration-micro`, **closing is instant**, and the height
+change is a change rather than an animation in both directions. Closing carries no fade because an
+exit is what blocks the unmount — fading a panel out and *then* collapsing it moves every row beneath
+it after the reader has stopped looking at the thing that moved.
+
+**`transition-[transform, …]` is a working animation to every check that samples the two ends**, and
+two of them shipped. Tailwind v4's `translate-x-4` and `scale-110` write the **individual** `translate`
+and `scale` properties, so an arbitrary list naming `transform` transitions a property the element
+never sets — the `transition-transform` *utility* is fine, because it expands to all four names, and
+only a hand-written list can miss. `Switch`'s knob jumped while its colour tweened and `DemoCard`'s
+thumbnail jumped while its opacity did. Measured per frame at 120 Hz, both directions: **16
+intermediate frames on the branch against 0 on `main`** for the knob, **24 against 0** for the
+thumbnail. That is the whole of the motion pass's defect list — every other transition in the product
+already named its properties, took `--duration-*` and `--ease-out`, and no reachable file lists `all`
+(the registry's styled components do, and none of them is imported).
+
+**`--duration-instant` is deleted.** 90ms, carried over from the system the redesign replaced, and
+read by nothing in any screen it built; a fourth step nobody can choose correctly is worse than three.
+`--ease-in` and `--ease-spring` stay unspent on purpose — `@theme static` exists so a token can
+precede its first caller — but a duration the *old* system chose is what this issue asked to be
+re-chosen or dropped.
+
+**The contrast table is finished rather than started.** `packages/ui/src/styles/tokens.css` already
+carried the twelve ink pairings and the interaction composites; #280 added the nine data colours on
+`--color-surface-0` **and** `--color-surface-1`, in the default palette and again under
+`:root[data-palette="colour-blind"]`. Thirty-six pairings, floor **5.03** (`--color-objective` on a
+card), and every figure already in the file reproduced to the last decimal — the script is still the
+comment on #133 and still not committed, which is what **#123 is restated around** rather than closed:
+its old body was written against `docs/DESIGN.md` §2/§12 and against glass over the plate, and the
+radar images stopped being an input to it the day no text was set over them.
+
+**A legend swatch stands on `--color-surface-0` now**, in a hairline tile, and that is not decoration:
+a mark's halo and the hollow in a walking token are both drawn in that colour, so a specimen floating
+on a sheet — 72% of it over a blurred screen — draws its own background as a dark shape. On the ground
+it was drawn for, a halo disappears the way it does on the plate.
+
+**The reduced-motion contract was measured rather than assumed**, in all six combinations of the
+device's `prefers-reduced-motion` and the sheet's three answers: `data-motion-reduce` reads
+`null`/`on`/`off`, the reset takes a 220 ms transition to `1e-05s` and forces `transition-property` to
+`opacity`, and **`Full` overrides a device asking for reduced** as well as the other way round. Two
+numbers: the bundle is **229.21 → 232.95 kB gz, 46.6%**, all 3.74 kB of it Base UI's accordion, and
+§16's two frame rows are unmoved against a `9d95208` baseline taken the same hour — 0 frames over
+16.7 ms in all twelve passes across both arms, with the plate at 716 either way.
+
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

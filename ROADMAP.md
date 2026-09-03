@@ -27,7 +27,7 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | A backgrounded tab parses ~5× slower | fixed | **hard** — Chrome confines it to efficiency cores | 15.3 s in front, 84.9 s behind, on one machine. No code here can prevent it; the parse screen says so instead (#68). |
 | `navigator.storage.persist()` may return `false` | fixed | **hard** — the browser's call | Cached parses are best-effort. Eviction is designed for, not prevented. |
 | OS file-handling (`launchQueue`) | Chromium desktop only | **hard** — browser support | Drag-and-drop and the picker must keep working everywhere. |
-| JS bundle, excluding WASM | < 500 kB gzip (at 195 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. The figure moved 183 → 195 in #276, which is the redesign's one new runtime dependency (`@base-ui-components/react`) against two font families deleted. |
+| JS bundle, excluding WASM | < 500 kB gzip (at 233 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. **232.95 kB, 46.6% of budget** at the close of the redesign (#280), against 229.21 kB for `main` at `9d95208` on a clean build the same hour — the 3.74 kB is Base UI's accordion, arriving with the settings sheet's first caller for it. The redesign added exactly one runtime dependency in total, `@base-ui-components/react` in #276, against two font families deleted; everything since is that package being spent screen by screen. |
 | WASM binary | < 4 MB (CI fails > 24 MB) | **chosen** — a regression guard | The platform allows 25 MiB. 4 MB is a line we drew so a size regression is noticed the day it happens. |
 | Parse a 300 MB demo | < 15 s | **chosen** — set from Phase 0's real number | The promise the parse screen makes. #66 is what keeps it true for compressed demos. |
 | Peak tab memory during parse | < 1.5 GB | **chosen** | Headroom on ordinary laptops with the whole demo in linear memory. |
@@ -87,13 +87,20 @@ One visual system, built once and then applied screen by screen. The owner asked
 with a near-black neutral ground. `docs/DESIGN.md` was deleted rather than rewritten — the token
 layer's own comments carry what it used to say, and #276's issue body carries the decisions.
 
+**Closed on 3 September 2026 with #280.** All five rows landed; the constraints table above carries
+the closing bundle figure and `AGENTS.md` §16 carries the closing frame counts. Two constraints this
+milestone created are stated on that table rather than here — no chromatic accent in the chrome, and
+`backdrop-filter` on the two full-screen sheets and nowhere else — and both survived the last row
+unchanged. What did not survive is `--duration-instant`: a fourth duration step the new system never
+spent, deleted in #280 rather than left for a caller to rediscover.
+
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
 | #276 | Rebuild the token layer and the component kit | One system: neutral near-black surfaces, hairline structure, Onest, and the registry's components behind three boundaries. Closes #121 and #222. | **P0** | L |
 | #277 | Redress the way in | The rail, the drop target, the library, the parse and failure states. | P1 | M |
 | #278 | Redress the stage | The plate's surround, the team cards, the feed, the scoreboard, the corner controls. | P1 | L |
 | #279 | Redress the timeline block and the transport | The round strip, the timeline, the transport, the match overlay. Closes #271. | P1 | L |
-| #280 | Redress the sheets and land the motion pass | Settings, help, one pass over every transition, and the measurements that close the redesign. Settles #123. | P1 | M |
+| #280 | Redress the sheets and land the motion pass | Settings, help, one pass over every transition, and the measurements that close the redesign. Restated #123 rather than closing it — the figures are all measured and recorded now, and turning that into a CI check is that issue's own work. | P1 | M |
 
 ## M4 — Phase 5's two unbuilt features
 
