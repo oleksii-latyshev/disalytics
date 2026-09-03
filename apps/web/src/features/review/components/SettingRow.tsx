@@ -9,8 +9,8 @@ interface Props {
 
 /**
  * One setting: what it is, what choosing it costs, and the control. The note is not decoration —
- * every row in §10.5 that has a real cost says so, and the scoreboard's is the clearest case in the
- * product, since choosing the plate is what spends §2.3's one blur exception.
+ * every row in the table that has a real cost says so, and the scoreboard's is the clearest case
+ * in the product, since choosing the plate is what puts a card over the map.
  */
 export function SettingRow({ labelPath, notePath, control }: Props) {
   return (

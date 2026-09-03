@@ -29,7 +29,7 @@ function MapThumbnail({ map, theme }: { map: string; theme: RadarTheme }) {
           src={`${import.meta.env.BASE_URL}${radarAssetPath(level, theme)}`}
           alt=""
           loading="lazy"
-          className="size-full scale-105 object-cover opacity-60 transition-[opacity,transform] duration-(--duration-base) ease-out group-hover:scale-110 group-hover:opacity-90"
+          className="size-full scale-105 object-cover opacity-60 transition-[opacity,scale] duration-(--duration-base) ease-out group-hover:scale-110 group-hover:opacity-90"
         />
       )}
     </span>

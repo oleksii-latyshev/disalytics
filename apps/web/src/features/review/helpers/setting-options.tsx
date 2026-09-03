@@ -15,7 +15,7 @@ import {
 import type { ChoiceOption } from '../components/SettingChoice';
 
 /**
- * What each choosing row in `docs/DESIGN.md` §10.5 offers, in the order the table writes it. The
+ * What each choosing row of the settings table offers, in the order the sheet lays them out. The
  * sheet is where they are laid out; this is what they say.
  */
 export const SEEK_STEP_OPTIONS: readonly ChoiceOption<SeekStepSeconds>[] = SEEK_STEPS.map(
@@ -34,7 +34,7 @@ export const HELD_ARROW_OPTIONS: readonly ChoiceOption<HeldArrowRate>[] = HELD_A
 
 // Map and theme names are game vocabulary — AGENTS.md §11 — so `blue` and `vanilla` reach the
 // screen as they are rather than through a key that would have to be translated twice. The default
-// leads, the way §10.5 writes the row, rather than in whatever order the package declares them.
+// leads, the way the row is written, rather than in whatever order the package declares them.
 export const THEME_OPTIONS: readonly ChoiceOption<RadarTheme>[] = [
   DEFAULT_RADAR_THEME,
   ...RADAR_THEMES.filter((theme) => theme !== DEFAULT_RADAR_THEME),
