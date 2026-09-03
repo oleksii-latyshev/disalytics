@@ -15,8 +15,11 @@ import { cn } from '../lib/utils';
  * is true in some engines and not others. A sibling is the same two nodes with none of that doubt.
  *
  * The on state is `--color-ink` and the knob inverts to the ground on it — interaction is
- * luminance, and there is no chromatic accent left to fill it with. The knob moves by `transform`
- * and never by `left`.
+ * luminance, and there is no chromatic accent left to fill it with. The knob moves by `translate`
+ * and never by `left` — and the transition **names `translate`**, because Tailwind's `translate-x-4`
+ * writes that property rather than the `transform` shorthand, and an arbitrary list naming
+ * `transform` transitions a property this element never sets: the colour tweened while the knob
+ * jumped, which is a working animation to every check that samples the two ends.
  */
 export function Switch({ className, ...props }: React.ComponentProps<'input'>) {
   return (
@@ -33,7 +36,7 @@ export function Switch({ className, ...props }: React.ComponentProps<'input'>) {
 
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink transition-[transform,background-color] duration-(--duration-micro) ease-out peer-checked:translate-x-4 peer-checked:bg-surface-0"
+        className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink transition-[translate,background-color] duration-(--duration-micro) ease-out peer-checked:translate-x-4 peer-checked:bg-surface-0"
       />
     </span>
   );

@@ -66,10 +66,30 @@
 
      `--color-ct` and `--color-t` are fixed vocabulary — a reader who plays this game knows what
      blue and amber mean before the interface says anything, so the redesign pinned both. The rest
-     were carried across unchanged and re-measured against the new ground rather than re-picked: on
-     `surface-0` they read 7.78 / 11.86 / 5.41 / 9.93 / 18.83 / 6.72 / 7.19 / 5.48 / 5.18, every one
-     of them clear of 4.5:1, and their worst separation is ΔE2000 6.09 between smoke and decoy. A
-     palette that already holds is not improved by being redrawn.
+     were carried across unchanged and re-measured against the new ground rather than re-picked, and
+     their worst separation is ΔE2000 6.09 between smoke and decoy. A palette that already holds is
+     not improved by being redrawn.
+
+     Measured on the two grounds a data colour is ever set on — `surface-0` is the stage and the
+     sheet, `surface-1` is a card — in both palettes, because the colour-blind variant is a token
+     swap and a swap that lost a ratio would say nothing about itself:
+
+                        default              colour-blind
+                    surface-0  surface-1   surface-0  surface-1
+       ct               7.78       7.56        8.10       7.87
+       t               11.86      11.52       15.37      14.93
+       damage           5.41       5.26        5.81       5.64
+       nade-he          9.93       9.64        9.72       9.44
+       nade-flash      18.83      18.29       18.83      18.29
+       nade-smoke       6.72       6.53        7.30       7.10
+       nade-molotov     7.19       6.98        5.24       5.09
+       nade-decoy       5.48       5.32       10.68      10.38
+       objective        5.18       5.03        5.24       5.09
+
+     The floor across all thirty-six is **5.03**, `--color-objective` on a card, so every mark in
+     the product clears 4.5:1 on every ground it is drawn on with room to spare. The sheets need no
+     row of their own: `.surface-sheet` is `rgb(5 5 5 / 0.72)`, which composites to `#050505` over
+     the app's own ground, so a sheet reads the `surface-0` column exactly.
 
      There is deliberately **no `--color-accent`**. It used to be a violet, and it sat ΔE2000 0.9
      from `--color-ct` under deuteranopia — one colour to a deuteranope on a screen showing
@@ -143,7 +163,11 @@
   --breakpoint-wide: 1280px;
   --breakpoint-split: 1080px;
 
-  --duration-instant: 90ms;
+  /* Three steps, and the product spends all three: `micro` is a control answering a pointer, `base`
+     is something on the page changing, `panel` is a surface arriving or leaving. There was a fourth
+     — `--duration-instant`, 90ms — carried over from the system this replaced and read by nothing in
+     any screen the redesign built; a step nobody can choose correctly is a step, so it went with
+     #280 rather than being left for a caller to rediscover. */
   --duration-micro: 140ms;
   --duration-base: 220ms;
   --duration-panel: 340ms;

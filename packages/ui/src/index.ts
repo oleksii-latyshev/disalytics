@@ -23,12 +23,6 @@ export { cn } from './lib/utils';
 // --- The registry's ---------------------------------------------------------------------------
 
 export {
-  Accordion,
-  AccordionItem,
-  AccordionPanel,
-  AccordionTrigger,
-} from './components/animate-ui/components/base/accordion';
-export {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -74,6 +68,21 @@ export {
   TooltipPanel,
   TooltipTrigger,
 } from './components/animate-ui/components/base/tooltip';
+/* The accordion comes from the primitive layer for the reason `Progress` and the toggle group do —
+   what it gives is behaviour, and the styling is the caller's — and there is a second reason here
+   that is a rule rather than a preference. The registry's styled trigger is `transition-all` at
+   Tailwind's own `duration-200`, which is the loaded gun #134 took off the shared controls; and the
+   primitive's panel animates `height` from 0 to `auto`, which hard rule 9 forbids at every moment
+   rather than during playback. A caller overrides the second by passing its own `initial`/`animate`
+   /`exit`, because the panel spreads the caller's props over its defaults — `SettingGroup` is where
+   that is done and why. */
+export {
+  Accordion,
+  AccordionHeader,
+  AccordionItem,
+  AccordionPanel,
+  AccordionTrigger,
+} from './components/animate-ui/primitives/base/accordion';
 /* The progress parts come from the primitive layer for the reason the effects below do — what they
    give is behaviour, and the styling is the caller's. There is a second reason here and it is a
    rule: the registry's styled `ProgressTrack` renders its own indicator, and that indicator animates
