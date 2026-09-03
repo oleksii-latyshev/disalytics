@@ -4,7 +4,7 @@
  * parser is a miss rather than something to migrate, and a demo already on the device is corrected
  * rather than left holding what it was stored with.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 declare const unit: unique symbol;
 
@@ -232,6 +232,14 @@ export interface BombPlant {
    * polygons in `map-data` — the demo carries no name, and `m_iBombSite` reads 0 on every plant.
    */
   siteEntityId: number;
+  /**
+   * When this bomb went off — `null` when it never did, whether it was defused or the round simply
+   * ended first.
+   *
+   * `mp_c4timer` is not among the convars a recording carries, so the interval between a plant and
+   * its own detonation is the only measurement of the bomb's timer the demo offers.
+   */
+  detonationTick: Tick | null;
 }
 
 /** `interrupted` is a defuse that neither finished nor was let go of — the defuser died. */
@@ -267,6 +275,14 @@ export interface Round {
   endTick: Tick;
   winner: Team;
   reason: RoundWinReason;
+  /**
+   * How long the round was given, read from the engine's own `m_iRoundTime` at freeze-time end.
+   *
+   * `null` where the demo does not carry that prop, which is a clock that cannot count down rather
+   * than a parse failure. It is per round because a config change between halves or into overtime
+   * moves it, and reading it once for the match would then be wrong for half of them.
+   */
+  roundTimeSeconds: number | null;
   /** Read at freeze-time end, one entry per slot. */
   economy: readonly PlayerEconomy[];
 }

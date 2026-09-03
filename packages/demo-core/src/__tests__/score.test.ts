@@ -42,6 +42,7 @@ function newDemo(specs: readonly RoundSpec[]): ParsedDemo {
     endTick: asTick(index * 1000 + 900),
     winner: spec.winner,
     reason: spec.winner === 'CT' ? 'all-t-eliminated' : 'all-ct-eliminated',
+    roundTimeSeconds: null,
     economy: economy(spec.ctSlots ?? [], spec.tSlots ?? []),
   }));
 

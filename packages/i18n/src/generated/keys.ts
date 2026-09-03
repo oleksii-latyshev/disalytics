@@ -128,6 +128,7 @@ export const TRANSLATION_KEYS = [
   'radar.unknownMap.title',
   'radar.zoomIn',
   'radar.zoomOut',
+  'review.bombClock',
   'review.close',
   'review.feed.defuse',
   'review.feed.headshot',

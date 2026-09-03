@@ -2,7 +2,8 @@
   "map": "Map",
   "score": "Score",
   "scoreboard": "Match score",
-  "roundClock": "Time in round",
+  "roundClock": "Round time",
+  "bombClock": "Bomb timer",
   "close": "Open another demo",
   "team": "{side} players",
   "feed": {

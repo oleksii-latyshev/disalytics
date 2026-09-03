@@ -15,6 +15,7 @@ const round: Round = {
   endTick: asTick(900),
   winner: 'CT',
   reason: 'all-t-eliminated',
+  roundTimeSeconds: null,
   economy: [
     { slot: first, money: 1200, equipmentValue: 4700, buyType: 'full-buy', team: 'CT' },
     { slot: enemy, money: 800, equipmentValue: 1400, buyType: 'eco', team: 'T' },

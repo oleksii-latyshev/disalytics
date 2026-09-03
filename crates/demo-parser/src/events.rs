@@ -148,7 +148,15 @@ fn blinds(passes: &Passes<'_>, samples: &BTreeMap<(Tick, PlayerSlot), Sample>) -
     blinds
 }
 
+/// The detonation is joined by time and never by the round it fell in: on the Phase 0 fixture one
+/// of the three explosions lands 29 ticks *after* its own `round_end`, because the last CT died
+/// while the bomb was still ticking. A join through the round would have dropped it.
+///
+/// The next plant is the boundary instead — a bomb cannot be down twice at once — so an explosion
+/// belongs to the last plant before it.
 fn plants(passes: &Passes<'_>) -> Vec<BombPlant> {
+    let detonations = passes.ticks_of("bomb_exploded");
+
     let mut plants: Vec<BombPlant> = passes
         .named("bomb_planted")
         .filter_map(|event| {
@@ -156,10 +164,18 @@ fn plants(passes: &Passes<'_>) -> Vec<BombPlant> {
                 tick: event.tick,
                 planter: passes.slot(event, "user_steamid")?,
                 site_entity_id: narrow(integer(event, "site")),
+                detonation_tick: None,
             })
         })
         .collect();
     plants.sort_by_key(|plant| plant.tick);
+
+    let boundaries: Vec<Tick> = plants.iter().skip(1).map(|plant| plant.tick).collect();
+    for (index, plant) in plants.iter_mut().enumerate() {
+        let next_plant = boundaries.get(index).copied().unwrap_or(Tick::MAX);
+        plant.detonation_tick =
+            first_at_or_after(&detonations, plant.tick).filter(|tick| *tick < next_plant);
+    }
     plants
 }
 

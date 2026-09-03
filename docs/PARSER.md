@@ -1126,3 +1126,95 @@ schema change this does not need. A reader has two routes and both are already i
   impact, so the generosity is theoretical rather than something that has been drawn.
 
 Neither `SCHEMA_VERSION` nor the crate moves for this. What was wrong was the description.
+
+---
+
+## 21. Where a round's own length comes from (#295)
+
+`roundClockAtFrame` counted *up* until 3 September 2026, and its doc comment gave the reason: a
+countdown needs the round's length, and §13 above records that "`sv_tickrate` is not among the
+convars a GOTV recording carries". That was read for a year as *the convars are not there*. They
+are. Everything below is measured on the same fixture §2 describes.
+
+### The convars arrive as a game event, and `DemoOutput.convars` is dead
+
+`parse_demo::DemoOutput` has a `convars: AHashMap<String, String>` field. It is initialised at three
+places in the vendored tree and **written at none of them** — a probe with `only_convars: true`
+returns a map of length 0. What upstream actually does with `net_SetConVar` is
+`create_custom_event_parse_convars`, which pushes one `server_cvar` **game event** per variable,
+with `name`, `value` and `tick` fields — and it returns early unless `wanted_events` contains
+`server_cvar` or `all`. So the route is the events pass, and a reader looking at the field named
+after the thing it wants finds nothing and concludes the demo does not carry it.
+
+87 such events on the fixture, 72 distinct variables. Ten of them bear on the clock:
+
+| variable | value | tick |
+|---|---|---|
+| `mp_roundtime` | 1.92 | −1 |
+| `mp_roundtime_hostage` | 1.92 | −1 |
+| `mp_roundtime_defuse` | **2** | −1 |
+| `mp_roundtime_defuse` | **1.92** | **4296** |
+| `mp_freezetime` | 20 | −1 |
+| `mp_maxrounds` | 24 | −1 |
+| `mp_halftime` | true | 4296 |
+| `mp_overtime_enable` | true | −1 |
+| `mp_give_player_c4` | false → true | −1, 4296 |
+| `mp_c4timer` | **absent** | — |
+
+Two traps are visible in that table. **A variable is set more than once**, and the tick-4296 block is
+the match configuration landing just before the first round opens at 4950 — a reader taking the
+first occurrence of `mp_roundtime_defuse` gets 120 s where the match ran 115. And **which of the
+three `mp_roundtime*` applies depends on the map type**, which is a rule about Counter-Strike rather
+than about this demo, and exactly the kind of thing `AGENTS.md` keeps out of anything above the
+crate.
+
+### `m_iRoundTime` is the better source, and it needs no arithmetic
+
+`CCSGameRulesProxy.CCSGameRules.m_iRoundTime` is a `PropType::Rules` prop upstream already maps. It
+resolves through `wanted_other_props` — a channel `crates/demo-parser` passed `vec![]` on every pass
+until this — and reads **115** for the whole match, with 120 and 999 appearing only in warmup. That
+is the number the engine itself computed, in whole seconds, from whichever variable was in force. It
+is read at each round's freeze-time end and stored per round, because a config change between halves
+or into overtime moves it and a single figure for the match would then be wrong for half of them.
+
+A `Rules` prop is written onto every player row, so the tick pass was already reading that row and
+the value costs one more column read per sample. It is deliberately **not** in `TICK_PROPS`, which
+`Ticks::of` requires column by column: a demo that does not carry it parses, and the round it
+describes gets `round_time_seconds: None` rather than the whole file failing.
+
+### The tick rate's cross-check in §13 was circular; `mp_freezetime` is the honest one
+
+§13 derives the constant 64 from "the one round that ended on the clock — 7,360 ticks over a
+115-second round is 64.0". The 115 was the assumption, not an independent reading, so that check
+proves only that 7,360/115 is 64. **`mp_freezetime = 20` against a measured 1,280-tick buy phase is
+the confirmation that does not assume its own answer**, and it also reads 64.0. Both are consistent
+and the constant stands; what changes is that there is now a second, independent measurement of it.
+
+The buy phase measures 20.00 s in 26 of the 30 rounds and 26.50 s in rounds 1, 13, 25 and 28 — the
+opening round and the three half and overtime boundaries, where the side-swap intermission is
+inside the same window.
+
+### The bomb's timer has no convar and one event
+
+`mp_c4timer` is not broadcast at all, so there is nothing to read. What there is instead is a
+`bomb_exploded` game event, which the crate had only ever seen as a `round_end` **reason string**.
+Its three occurrences sit **exactly 2,624 ticks — 41.00 s at 64 tick — after their own
+`bomb_planted`**, three times out of three with no spread. So the interval between a plant and its
+own detonation is the measurement, and `BombPlant.detonation_tick` is where it is carried.
+
+That interval is 41 rather than the engine's documented `mp_c4timer` default of 40. The difference
+is not explained here and is deliberately not modelled: what the schema states is what the demo
+shows, and a bomb drawn counting down to the tick it actually went off is right about this recording
+whatever the variable read.
+
+**The detonation is joined by time and never by the round it fell in.** One of the three lands 29
+ticks *after* its own `round_end` — the last CT died while the bomb was still ticking, so the round
+ended by elimination and the bomb went off anyway. A join through the round would have dropped it.
+The boundary is the next plant instead, since a bomb cannot be down twice at once.
+
+### What it cost
+
+Nothing measurable. The three-pass native parse over the 264 MB `.dem.zst`, three runs an arm on one
+machine within the hour: **16.81 / 16.54 / 16.55 s** before, **15.41 / 15.31 / 16.31 s** after. The
+two arms overlap, and the branch reading lower is the spread rather than a gain from adding a
+column. `SCHEMA_VERSION` moved 6 → 7, so every demo already in a cache is a miss once.

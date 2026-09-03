@@ -53,6 +53,7 @@ export function newRound(
     endTick: asTick(startTick + 6400),
     winner,
     reason: 'all-t-eliminated',
+    roundTimeSeconds: 115,
     economy,
   };
 }
@@ -129,7 +130,12 @@ export function newGrenade(throwTick: number, overrides: Partial<Grenade> = {}):
 }
 
 export function newPlant(tick: number, planter = 0): BombPlant {
-  return { tick: asTick(tick), planter: asPlayerSlot(planter), siteEntityId: 0 };
+  return {
+    tick: asTick(tick),
+    planter: asPlayerSlot(planter),
+    siteEntityId: 0,
+    detonationTick: null,
+  };
 }
 
 export function newDefuse(startTick: number, outcome: DefuseOutcome): BombDefuse {

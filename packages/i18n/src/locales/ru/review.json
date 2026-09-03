@@ -3,6 +3,7 @@
   "score": "Счёт",
   "scoreboard": "Счёт матча",
   "roundClock": "Время раунда",
+  "bombClock": "Таймер бомбы",
   "close": "Открыть другое демо",
   "team": "Игроки {side}",
   "feed": {

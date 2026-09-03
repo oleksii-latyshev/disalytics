@@ -980,111 +980,133 @@
   ],
   "plants": [
     {
+      "detonationTick": null,
       "planter": 6,
       "siteEntityId": 301,
       "tick": 8870
     },
     {
+      "detonationTick": null,
       "planter": 1,
       "siteEntityId": 309,
       "tick": 12513
     },
     {
+      "detonationTick": null,
       "planter": 0,
       "siteEntityId": 309,
       "tick": 18619
     },
     {
+      "detonationTick": null,
       "planter": 6,
       "siteEntityId": 301,
       "tick": 28511
     },
     {
+      "detonationTick": null,
       "planter": 0,
       "siteEntityId": 309,
       "tick": 38025
     },
     {
+      "detonationTick": null,
       "planter": 3,
       "siteEntityId": 301,
       "tick": 49555
     },
     {
+      "detonationTick": null,
       "planter": 6,
       "siteEntityId": 309,
       "tick": 64304
     },
     {
+      "detonationTick": null,
       "planter": 0,
       "siteEntityId": 309,
       "tick": 74447
     },
     {
+      "detonationTick": null,
       "planter": 7,
       "siteEntityId": 309,
       "tick": 79872
     },
     {
+      "detonationTick": null,
       "planter": 9,
       "siteEntityId": 301,
       "tick": 84243
     },
     {
+      "detonationTick": null,
       "planter": 4,
       "siteEntityId": 309,
       "tick": 90141
     },
     {
+      "detonationTick": null,
       "planter": 4,
       "siteEntityId": 309,
       "tick": 94527
     },
     {
+      "detonationTick": null,
       "planter": 4,
       "siteEntityId": 309,
       "tick": 104605
     },
     {
+      "detonationTick": 113893,
       "planter": 7,
       "siteEntityId": 301,
       "tick": 111269
     },
     {
+      "detonationTick": 121180,
       "planter": 4,
       "siteEntityId": 301,
       "tick": 118556
     },
     {
+      "detonationTick": null,
       "planter": 8,
       "siteEntityId": 309,
       "tick": 127281
     },
     {
+      "detonationTick": null,
       "planter": 7,
       "siteEntityId": 309,
       "tick": 132813
     },
     {
+      "detonationTick": null,
       "planter": 4,
       "siteEntityId": 301,
       "tick": 153190
     },
     {
+      "detonationTick": null,
       "planter": 4,
       "siteEntityId": 309,
       "tick": 167476
     },
     {
+      "detonationTick": null,
       "planter": 3,
       "siteEntityId": 301,
       "tick": 179367
     },
     {
+      "detonationTick": 188263,
       "planter": 5,
       "siteEntityId": 309,
       "tick": 185639
     },
     {
+      "detonationTick": null,
       "planter": 1,
       "siteEntityId": 309,
       "tick": 193474
@@ -1168,6 +1190,7 @@
       "freezeTimeEndTick": 6646,
       "number": 1,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 4950,
       "winner": "T"
     },
@@ -1248,6 +1271,7 @@
       "freezeTimeEndTick": 10652,
       "number": 2,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 9372,
       "winner": "T"
     },
@@ -1328,6 +1352,7 @@
       "freezeTimeEndTick": 14140,
       "number": 3,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 12860,
       "winner": "T"
     },
@@ -1408,6 +1433,7 @@
       "freezeTimeEndTick": 21622,
       "number": 4,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 20342,
       "winner": "T"
     },
@@ -1488,6 +1514,7 @@
       "freezeTimeEndTick": 26740,
       "number": 5,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 25460,
       "winner": "T"
     },
@@ -1568,6 +1595,7 @@
       "freezeTimeEndTick": 32024,
       "number": 6,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 30744,
       "winner": "T"
     },
@@ -1648,6 +1676,7 @@
       "freezeTimeEndTick": 41737,
       "number": 7,
       "reason": "all-t-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 40457,
       "winner": "CT"
     },
@@ -1728,6 +1757,7 @@
       "freezeTimeEndTick": 46394,
       "number": 8,
       "reason": "bomb-defused",
+      "roundTimeSeconds": 115,
       "startTick": 45114,
       "winner": "CT"
     },
@@ -1808,6 +1838,7 @@
       "freezeTimeEndTick": 53726,
       "number": 9,
       "reason": "all-t-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 52446,
       "winner": "CT"
     },
@@ -1888,6 +1919,7 @@
       "freezeTimeEndTick": 61858,
       "number": 10,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 60578,
       "winner": "T"
     },
@@ -1968,6 +2000,7 @@
       "freezeTimeEndTick": 67589,
       "number": 11,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 66309,
       "winner": "T"
     },
@@ -2048,6 +2081,7 @@
       "freezeTimeEndTick": 71784,
       "number": 12,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 70504,
       "winner": "T"
     },
@@ -2128,6 +2162,7 @@
       "freezeTimeEndTick": 77077,
       "number": 13,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 75381,
       "winner": "T"
     },
@@ -2208,6 +2243,7 @@
       "freezeTimeEndTick": 82112,
       "number": 14,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 80832,
       "winner": "T"
     },
@@ -2288,6 +2324,7 @@
       "freezeTimeEndTick": 85766,
       "number": 15,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 84486,
       "winner": "T"
     },
@@ -2368,6 +2405,7 @@
       "freezeTimeEndTick": 91525,
       "number": 16,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 90245,
       "winner": "T"
     },
@@ -2448,6 +2486,7 @@
       "freezeTimeEndTick": 98132,
       "number": 17,
       "reason": "bomb-defused",
+      "roundTimeSeconds": 115,
       "startTick": 96852,
       "winner": "CT"
     },
@@ -2528,6 +2567,7 @@
       "freezeTimeEndTick": 108149,
       "number": 18,
       "reason": "bomb-exploded",
+      "roundTimeSeconds": 115,
       "startTick": 106869,
       "winner": "T"
     },
@@ -2608,6 +2648,7 @@
       "freezeTimeEndTick": 115621,
       "number": 19,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 114341,
       "winner": "T"
     },
@@ -2688,6 +2729,7 @@
       "freezeTimeEndTick": 122879,
       "number": 20,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 121599,
       "winner": "T"
     },
@@ -2768,6 +2810,7 @@
       "freezeTimeEndTick": 130882,
       "number": 21,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 129602,
       "winner": "T"
     },
@@ -2848,6 +2891,7 @@
       "freezeTimeEndTick": 134857,
       "number": 22,
       "reason": "all-t-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 133577,
       "winner": "CT"
     },
@@ -2928,6 +2972,7 @@
       "freezeTimeEndTick": 140008,
       "number": 23,
       "reason": "time-expired",
+      "roundTimeSeconds": 115,
       "startTick": 138728,
       "winner": "CT"
     },
@@ -3008,6 +3053,7 @@
       "freezeTimeEndTick": 149096,
       "number": 24,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 147816,
       "winner": "T"
     },
@@ -3088,6 +3134,7 @@
       "freezeTimeEndTick": 156330,
       "number": 25,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 154634,
       "winner": "T"
     },
@@ -3168,6 +3215,7 @@
       "freezeTimeEndTick": 164980,
       "number": 26,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 163700,
       "winner": "T"
     },
@@ -3248,6 +3296,7 @@
       "freezeTimeEndTick": 169139,
       "number": 27,
       "reason": "all-t-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 167859,
       "winner": "CT"
     },
@@ -3328,6 +3377,7 @@
       "freezeTimeEndTick": 174489,
       "number": 28,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 172793,
       "winner": "T"
     },
@@ -3408,6 +3458,7 @@
       "freezeTimeEndTick": 181994,
       "number": 29,
       "reason": "bomb-exploded",
+      "roundTimeSeconds": 115,
       "startTick": 180714,
       "winner": "T"
     },
@@ -3488,6 +3539,7 @@
       "freezeTimeEndTick": 189991,
       "number": 30,
       "reason": "all-ct-eliminated",
+      "roundTimeSeconds": 115,
       "startTick": 188711,
       "winner": "T"
     }

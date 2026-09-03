@@ -36,23 +36,27 @@ export {
   deathProgressBySlot,
   GUNFIRE_SPUR_SECONDS,
   gunfireBySlot,
-  lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
+export type { RoundClock, RoundPhase } from './helpers/round-clock';
+export {
+  bombTimerTicks,
+  DEFAULT_BOMB_TIMER_SECONDS,
+  roundClockAtFrame,
+} from './helpers/round-clock';
 export type { PlayerRoundStats, SideSurvivors } from './helpers/round-stats';
 export { playerRoundStats, roundSurvivors } from './helpers/round-stats';
 export type { MatchScore, SideScore } from './helpers/score';
 export { matchScore, sideScoreAtFrame } from './helpers/score';
 export type { MatchSegment } from './helpers/segments';
 export { matchSegments } from './helpers/segments';
-export type { RoundClock, RoundPhase } from './helpers/selectors';
 export {
   buyPhaseSkipFrame,
   frameForTick,
   lastFrame,
+  lastIndexAtOrBefore,
   openingFrame,
   playersOnSide,
-  roundClockAtFrame,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,

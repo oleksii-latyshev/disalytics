@@ -51,6 +51,14 @@ pub(crate) const TICK_PROPS: [&str; 20] = [
     prop::INVENTORY_IDS,
 ];
 
+/// Props that belong to the world rather than to a player, requested through upstream's separate
+/// `wanted_other_props` channel.
+///
+/// Deliberately **not** in [`TICK_PROPS`], which `Ticks::of` requires column by column: a demo that
+/// does not carry `m_iRoundTime` still parses, and the round it describes gets no length rather
+/// than no parse.
+pub(crate) const RULES_PROPS: [&str; 1] = [prop::ROUND_TIME];
+
 pub(crate) mod prop {
     pub(crate) const X: &str = "X";
     pub(crate) const Y: &str = "Y";
@@ -80,6 +88,12 @@ pub(crate) mod prop {
     /// shifts out of the `u64`.
     pub(crate) const INVENTORY_IDS: &str = "inventory_as_ids";
 
+    /// The round's length in whole seconds, as the engine computed it from whichever
+    /// `mp_roundtime*` applies. `docs/PARSER.md` §21: it is the source to prefer over the convar,
+    /// which arrives in minutes, arrives twice, and needs the map type to say which of the three
+    /// variables is in force.
+    pub(crate) const ROUND_TIME: &str = "CCSGameRulesProxy.CCSGameRules.m_iRoundTime";
+
     pub(crate) const TICK: &str = "tick";
     pub(crate) const STEAM_ID: &str = "steamid";
     pub(crate) const NAME: &str = "name";
@@ -94,6 +108,7 @@ pub(crate) mod prop {
 fn inputs(
     huffman_lookup_table: &Vec<(u8, u8)>,
     wanted_player_props: Vec<String>,
+    wanted_other_props: Vec<String>,
     wanted_events: Vec<String>,
     parse_projectiles: bool,
 ) -> ParserInputs<'_> {
@@ -101,7 +116,7 @@ fn inputs(
         real_name_to_og_name: AHashMap::default(),
         wanted_players: vec![],
         wanted_player_props,
-        wanted_other_props: vec![],
+        wanted_other_props,
         wanted_prop_states: AHashMap::default(),
         wanted_ticks: vec![],
         wanted_events,
@@ -144,7 +159,13 @@ pub(crate) fn events_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
-        inputs(&huffman_lookup_table, vec![], owned(&["all"]), false),
+        inputs(
+            &huffman_lookup_table,
+            vec![],
+            vec![],
+            owned(&["all"]),
+            false,
+        ),
     )
 }
 
@@ -152,7 +173,13 @@ pub(crate) fn ticks_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
-        inputs(&huffman_lookup_table, owned(&TICK_PROPS), vec![], false),
+        inputs(
+            &huffman_lookup_table,
+            owned(&TICK_PROPS),
+            owned(&RULES_PROPS),
+            vec![],
+            false,
+        ),
     )
 }
 
@@ -160,7 +187,7 @@ pub(crate) fn projectiles_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseErr
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
-        inputs(&huffman_lookup_table, vec![], vec![], true),
+        inputs(&huffman_lookup_table, vec![], vec![], vec![], true),
     )
 }
 

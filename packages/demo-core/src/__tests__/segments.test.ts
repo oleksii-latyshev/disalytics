@@ -34,6 +34,7 @@ function newRound(number: number, sides: readonly (Team | null)[]): Round {
     endTick: asTick(start + 900),
     winner: 'CT',
     reason: 'all-t-eliminated',
+    roundTimeSeconds: null,
     economy: economy(sides),
   };
 }

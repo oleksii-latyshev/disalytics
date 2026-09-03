@@ -11,6 +11,36 @@ import {
 } from '../schema';
 
 /**
+ * The last event at or before `tick`, by binary search over a tick-sorted array — `-1` when every
+ * event is still ahead. Events are plain objects in sorted arrays (`AGENTS.md` §2 rule 3), and this
+ * is the lookup that makes them cheap to read from a draw.
+ */
+export function lastIndexAtOrBefore(ticks: readonly { tick: Tick }[], tick: Tick): number {
+  let low = 0;
+  let high = ticks.length - 1;
+  let found = -1;
+
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+    const candidate = ticks[middle];
+
+    if (candidate === undefined) {
+      throw new RangeError(`event ${middle} is outside an array of ${ticks.length}`);
+    }
+
+    if (candidate.tick <= tick) {
+      found = middle;
+      low = middle + 1;
+      continue;
+    }
+
+    high = middle - 1;
+  }
+
+  return found;
+}
+
+/**
  * One value out of a `TickTrack` buffer. `noUncheckedIndexedAccess` types every buffer read as
  * possibly undefined, and the track's invariant — `frameCount * slotCount` values in each buffer —
  * is not something the type system carries, so an out-of-range read is a mis-indexed caller rather
@@ -94,55 +124,6 @@ export function buyPhaseSkipFrame(demo: ParsedDemo, frame: number): Frame | null
   const opening = frameForTick(demo.track, round.freezeTimeEndTick);
 
   return opening > frame ? opening : null;
-}
-
-/** Which part of a round a sample position stands in — `docs/DESIGN.md` §5.2's three phases. */
-export type RoundPhase = 'freeze' | 'live' | 'post';
-
-export interface RoundClock {
-  phase: RoundPhase;
-  /** Whole seconds the phase puts on the clock, already rounded the way its direction wants. */
-  seconds: number;
-}
-
-/**
- * The round clock at a sample position — `undefined` during warmup, which no round covers.
- *
- * Three phases, three readings, and each one is answerable from the data the demo carries:
- *
- * - **freeze** counts *down* to zero, over `startTick` → `freezeTimeEndTick`. The buy phase has a
- *   length the demo states, so this is measured rather than assumed.
- * - **live** counts *up* from `0:00`. It cannot count down: that needs the round length, and no
- *   `mp_roundtime` reaches the demo any more than a tick rate or a bombsite name does
- *   (`docs/PARSER.md` §13). Counting down from an assumed 1:55 would be wrong on every server
- *   running anything else, and wrong quietly.
- * - **post** holds the time the round ended on, because the five to seven seconds after `endTick`
- *   are not round time and a clock that keeps running through them says they are.
- *
- * A countdown rounds up and a count-up rounds down, so each one shows the second it is *in* rather
- * than the one it has finished: a freeze phase opens on its full length and reaches `0:00` as it
- * ends, which is the opposite of what flooring both would do.
- */
-export function roundClockAtFrame(demo: ParsedDemo, frame: number): RoundClock | undefined {
-  const roundIndex = roundIndexAtFrame(demo, frame);
-  if (roundIndex === undefined) return undefined;
-
-  const round = demo.events.rounds.at(roundIndex);
-  if (round === undefined || demo.track.tickRate === 0) return undefined;
-
-  const tick = tickAtFrame(demo.track, frame);
-  const { tickRate } = demo.track;
-
-  if (tick < round.freezeTimeEndTick) {
-    return { phase: 'freeze', seconds: Math.ceil((round.freezeTimeEndTick - tick) / tickRate) };
-  }
-
-  const played = Math.min(tick, round.endTick) - round.freezeTimeEndTick;
-
-  return {
-    phase: tick > round.endTick ? 'post' : 'live',
-    seconds: Math.max(Math.floor(played / tickRate), 0),
-  };
 }
 
 /**

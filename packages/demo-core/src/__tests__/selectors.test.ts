@@ -3,9 +3,9 @@ import {
   buyPhaseSkipFrame,
   frameForTick,
   lastFrame,
+  lastIndexAtOrBefore,
   openingFrame,
   playersOnSide,
-  roundClockAtFrame,
   roundIndexAtFrame,
   roundOpeningFrame,
   sampleAt,
@@ -34,10 +34,26 @@ function newRound(overrides: Partial<Round> = {}): Round {
     endTick: asTick(0),
     winner: 'CT',
     reason: 'all-t-eliminated',
+    roundTimeSeconds: null,
     economy: [],
     ...overrides,
   };
 }
+
+describe('lastIndexAtOrBefore', () => {
+  const events = [{ tick: asTick(10) }, { tick: asTick(20) }, { tick: asTick(30) }];
+
+  it('finds the last event at or before the tick', () => {
+    expect(lastIndexAtOrBefore(events, asTick(25))).toBe(1);
+    expect(lastIndexAtOrBefore(events, asTick(30))).toBe(2);
+    expect(lastIndexAtOrBefore(events, asTick(1000))).toBe(2);
+  });
+
+  it('answers -1 when every event is still ahead', () => {
+    expect(lastIndexAtOrBefore(events, asTick(9))).toBe(-1);
+    expect(lastIndexAtOrBefore([], asTick(9))).toBe(-1);
+  });
+});
 
 describe('sampleAt', () => {
   it('reads the value at the index', () => {
@@ -285,49 +301,6 @@ describe('slotSampleIndex', () => {
     atFrame(track, asFrame(1), asPlayerSlot(1), { money: 4200 });
 
     expect(sampleAt(track.money, slotSampleIndex(track, 1, 1))).toBe(4200);
-  });
-});
-
-describe('roundClockAtFrame', () => {
-  const track = newTrack({ tickRate: 64, sampleHz: 16, frameCount: 2000 });
-
-  function newDemo(rounds: readonly Round[]): ParsedDemo {
-    return { header, track, events: { ...newEvents(), rounds } };
-  }
-
-  const round = newRound({
-    startTick: asTick(640),
-    freezeTimeEndTick: asTick(1280),
-    endTick: asTick(4480),
-  });
-
-  const demo = newDemo([round]);
-
-  it('counts the buy phase down to zero', () => {
-    // frame 200 is tick 800 at 64/16 — 480 ticks, seven and a half seconds, short of the freeze end.
-    expect(roundClockAtFrame(demo, 200)).toEqual({ phase: 'freeze', seconds: 8 });
-  });
-
-  it('opens the buy phase on its full length rather than one second below it', () => {
-    expect(roundClockAtFrame(demo, 160)).toEqual({ phase: 'freeze', seconds: 10 });
-  });
-
-  it('counts up from the end of the freeze time', () => {
-    // frame 400 is tick 1600, which is 320 ticks — five seconds — past the freeze end.
-    expect(roundClockAtFrame(demo, 400)).toEqual({ phase: 'live', seconds: 5 });
-  });
-
-  it('holds the ending time through the post-round rather than counting on', () => {
-    // The round ran 3200 ticks, fifty seconds, and frame 1200 is well past its last tick.
-    expect(roundClockAtFrame(demo, 1200)).toEqual({ phase: 'post', seconds: 50 });
-  });
-
-  it('has no answer during warmup, which no round covers', () => {
-    expect(roundClockAtFrame(demo, 0)).toBeUndefined();
-  });
-
-  it('has no answer for a match with no rounds', () => {
-    expect(roundClockAtFrame(newDemo([]), 400)).toBeUndefined();
   });
 });
 

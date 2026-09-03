@@ -275,6 +275,11 @@ pub struct BombPlant {
     pub planter: PlayerSlot,
     /// The bombsite trigger's entity index. The demo carries no name for it.
     pub site_entity_id: i32,
+    /// When this bomb went off. `None` when it never did — defused, or the round ended first.
+    ///
+    /// `mp_c4timer` is not among the convars a recording carries, so the interval between a plant
+    /// and its own detonation is the only measurement of the bomb's timer the demo offers.
+    pub detonation_tick: Option<Tick>,
 }
 
 /// `Interrupted` is a defuse that neither finished nor was let go of — the defuser died.
@@ -313,6 +318,12 @@ pub struct Round {
     pub end_tick: Tick,
     pub winner: Team,
     pub reason: RoundWinReason,
+    /// How long the round was given, read from the engine's own `m_iRoundTime` at freeze-time end.
+    ///
+    /// `None` where the demo does not carry that prop, which is a clock that cannot count down
+    /// rather than a parse failure. It is per round because a config change between halves or into
+    /// overtime moves it, and reading it once for the match would then be wrong for half of them.
+    pub round_time_seconds: Option<u32>,
     /// Read at freeze-time end, one entry per slot.
     pub economy: Vec<PlayerEconomy>,
 }

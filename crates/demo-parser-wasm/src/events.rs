@@ -31,6 +31,7 @@ fn round(round: &Round) -> JsValue {
     set(&out, "endTick", round.end_tick);
     set(&out, "winner", round.winner.as_str());
     set(&out, "reason", round.reason.as_str());
+    set(&out, "roundTimeSeconds", optional(round.round_time_seconds));
     set(&out, "economy", array(&round.economy, economy));
 
     out.into()
@@ -137,6 +138,7 @@ fn plant(plant: &BombPlant) -> JsValue {
     set(&out, "tick", plant.tick);
     set(&out, "planter", plant.planter);
     set(&out, "siteEntityId", plant.site_entity_id);
+    set(&out, "detonationTick", optional(plant.detonation_tick));
 
     out.into()
 }

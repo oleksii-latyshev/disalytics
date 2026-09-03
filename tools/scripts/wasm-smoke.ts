@@ -77,6 +77,20 @@ function numberField(owner: unknown, name: string): number {
   return value;
 }
 
+/**
+ * A field the schema types as `T | null`. `numberField` cannot stand in: `null` is the whole point
+ * of these two, and a boundary that dropped the key entirely would still read as `undefined` here.
+ */
+function nullableNumberField(owner: unknown, name: string): number | null {
+  const value = field(owner, name);
+
+  if (value !== null && typeof value !== 'number') {
+    fail(`${name} is ${String(value)} rather than a number or null.`);
+  }
+
+  return value;
+}
+
 function arrayField(owner: unknown, name: string): unknown[] {
   const value = field(owner, name);
 
@@ -244,9 +258,17 @@ bufferField(track, 'money', Uint16Array, cells);
 const events = field(parsed, 'events');
 const grenades = arrayField(events, 'grenades');
 
-for (const name of ['rounds', 'kills', 'damage', 'blinds', 'plants', 'defuses'] as const) {
+for (const name of ['kills', 'damage', 'blinds', 'defuses'] as const) {
   arrayField(events, name);
 }
+
+// The round's own length and the bomb's detonation are what the clock counts down from, and both
+// are nullable, so the boundary has to be asked for them by name rather than left to a walk.
+const rounds = arrayField(events, 'rounds');
+const timed = rounds.filter((round) => nullableNumberField(round, 'roundTimeSeconds') !== null);
+
+const plants = arrayField(events, 'plants');
+const detonated = plants.filter((plant) => nullableNumberField(plant, 'detonationTick') !== null);
 
 const shots = arrayField(events, 'shots');
 
@@ -268,5 +290,7 @@ for (const grenade of grenades) {
 console.log(
   `${map}: ${cells} track cells, ${grenades.length} grenades and ${shots.length} shots ` +
     `in ${seconds.toFixed(2)}s, ` +
+    `${timed.length} of ${rounds.length} rounds stating their length ` +
+    `and ${detonated.length} of ${plants.length} bombs their detonation, ` +
     'every buffer owned by JavaScript.',
 );

@@ -304,6 +304,7 @@ fn snapshot_of(demo: &ParsedDemo, passes: &[&str]) -> Value {
             "tick": plant.tick,
             "planter": plant.planter,
             "siteEntityId": plant.site_entity_id,
+            "detonationTick": plant.detonation_tick,
         })).collect::<Vec<_>>(),
         "defuses": events.defuses.iter().map(|defuse| json!({
             "startTick": defuse.start_tick,
@@ -443,6 +444,7 @@ fn round_json(round: &demo_parser::Round) -> Value {
         "endTick": round.end_tick,
         "winner": round.winner.as_str(),
         "reason": round.reason.as_str(),
+        "roundTimeSeconds": round.round_time_seconds,
         "economy": round.economy.iter().map(|entry| json!({
             "slot": entry.slot,
             "money": entry.money,
