@@ -183,7 +183,9 @@ impl<'a> Ticks<'a> {
                     money: narrow(money.at(row)),
                     equipment_value: narrow(equipment.at(row)),
                     flash_duration: float_at(flash, row).unwrap_or_default(),
-                    round_time_seconds: round_time.at(row).and_then(|value| u32::try_from(value).ok()),
+                    round_time_seconds: round_time
+                        .at(row)
+                        .and_then(|value| u32::try_from(value).ok()),
                 },
             );
         }

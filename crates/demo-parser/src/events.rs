@@ -170,11 +170,11 @@ fn plants(passes: &Passes<'_>) -> Vec<BombPlant> {
         .collect();
     plants.sort_by_key(|plant| plant.tick);
 
-    for index in 0..plants.len() {
-        let next_plant = plants.get(index + 1).map_or(Tick::MAX, |plant| plant.tick);
-        let plant = &plants[index];
-        let detonation = first_at_or_after(&detonations, plant.tick).filter(|tick| *tick < next_plant);
-        plants[index].detonation_tick = detonation;
+    let boundaries: Vec<Tick> = plants.iter().skip(1).map(|plant| plant.tick).collect();
+    for (index, plant) in plants.iter_mut().enumerate() {
+        let next_plant = boundaries.get(index).copied().unwrap_or(Tick::MAX);
+        plant.detonation_tick =
+            first_at_or_after(&detonations, plant.tick).filter(|tick| *tick < next_plant);
     }
     plants
 }

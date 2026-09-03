@@ -1285,6 +1285,63 @@ numbers: the bundle is **229.21 → 232.95 kB gz, 46.6%**, all 3.74 kB of it Bas
 16.7 ms in all twelve passes across both arms, with the plate at 716 either way.
 
 
+**#295 turned the round clock around, and the thing worth keeping is that the reason it counted up
+was a misreading rather than a limit.** `roundClockAtFrame` refused the countdown in its own doc
+comment, and the refusal was well argued: a countdown needs the round's length, and `docs/PARSER.md`
+§13 says no `mp_roundtime` reaches a demo any more than a tick rate or a bombsite name does.
+Measured, that premise is false in two directions at once. Six things are load-bearing.
+
+**The convars are in the demo and `DemoOutput.convars` is dead** — upstream initialises that map at
+three places and writes it at none, pushing each `net_SetConVar` into `game_events` as a
+`server_cvar` instead, and only when `wanted_events` names it. So a reader looking at the field
+named after the thing they want finds an empty map and concludes the recording does not carry it.
+72 variables arrive that way, and two traps are visible in them: **`mp_roundtime_defuse` is set
+twice**, `2` at tick −1 and `1.92` at tick 4,296 where the match configuration lands, so taking the
+first occurrence reads 120 s for a match that ran 115; and *which* of the three `mp_roundtime*`
+applies depends on the map type, which is a rule about Counter-Strike rather than about this demo.
+
+**So the convar is not what is read.** `CCSGameRules.m_iRoundTime` is the engine's own answer in
+whole seconds — 115 across this whole match — and it arrives through `wanted_other_props`, a channel
+every pass here passed `vec![]` on until now. It is stored **per round**, read at freeze-time end,
+because a config change between halves or into overtime moves it and one figure for the match would
+then be wrong for half of them. It is deliberately **not** in `TICK_PROPS`, which `Ticks::of`
+requires column by column: a demo without it parses and gets `roundTimeSeconds: null`, and that
+round's clock counts up the way every round did before this.
+
+**§13's cross-check of the tick rate was circular and there is an honest one now.** That section
+derives 64 from "7,360 ticks over a 115-second round", where the 115 was the assumption being
+checked. `mp_freezetime = 20` against a measured 1,280-tick buy phase reads 64.0 without assuming
+its own answer. The constant is unchanged; what it now has is a second, independent measurement.
+
+**The bomb has no convar and one event.** `mp_c4timer` is not broadcast at all, and `bomb_exploded`
+had only ever been seen here as a `round_end` reason string. Its three occurrences sit **exactly
+2,624 ticks — 41.00 s — after their own plant**, three of three with no spread, so `BombPlant`
+carries a `detonationTick` and the interval is the measurement. **The join is by time and never by
+the round**: one of the three lands 29 ticks *after* its own `round_end`, because the last CT died
+while the bomb was ticking, and a join through the round would have dropped it. A match in which no
+bomb ever exploded falls back to **40 s** — the owner's decision, taken over the objection that it
+is the same quiet assumption 1:55 would have been, and recorded rather than argued in the code.
+
+**`RoundPhase` gained `bomb`, and the scoreboard is all that reads it.** Freeze counts down as it
+did; live counts down from the round's own length; the bomb phase replaces the round's clock the
+moment the bomb goes down, the way the game's HUD does, and takes `--color-objective` with a
+different accessible name — the colour is not the only carrier. **`post` holds whatever the clock
+read as the round ended**, so a defuse with three seconds left reads `0:03`, and it stays `post`
+rather than becoming a fifth state: what the number means is already said by the round strip and
+the feed. Two numbers from the built bundle at 1440×900: the clock's box is **58.5px in every phase
+and both locales**, so the row cannot move, and the whole match walks 1:55 → 0:00 with **0 readings
+below zero and 0 above 2:10** over 6,000 samples.
+
+**Two moves came with it and neither is tidying.** `lastIndexAtOrBefore` went from `player-state`
+to `selectors` because the clock needed it and `player-state` already imports `selectors`, so
+leaving it where it was would have closed the cycle. And `selectors.ts` crossed 300 lines on this
+branch — 226 → 332 — so the clock is `helpers/round-clock.ts` at 126 and `selectors.ts` is back at
+207; the seam is the one the change itself made visible, since everything left in `selectors` is
+*where in the track am I* and nothing else in it asks the clock anything. `SCHEMA_VERSION` is **7** and every cached demo is a miss once; the native parse
+is 16.81/16.54/16.55 s before against 15.41/15.31/16.31 s after, which is one spread rather than two.
+`docs/PARSER.md` §21 carries the convar table, the two traps and the bomb's numbers.
+
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

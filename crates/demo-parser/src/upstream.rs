@@ -159,7 +159,13 @@ pub(crate) fn events_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
-        inputs(&huffman_lookup_table, vec![], vec![], owned(&["all"]), false),
+        inputs(
+            &huffman_lookup_table,
+            vec![],
+            vec![],
+            owned(&["all"]),
+            false,
+        ),
     )
 }
 

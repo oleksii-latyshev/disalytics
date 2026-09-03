@@ -87,9 +87,11 @@ pub(crate) fn build(
 
         // A `Rules` prop is the same value on every row of a tick, so the first slot that carried
         // one at freeze-time end answers for the round.
-        let round_time_seconds = slots
-            .iter()
-            .find_map(|slot| samples.get(&(frame.freeze_time_end_tick, *slot))?.round_time_seconds);
+        let round_time_seconds = slots.iter().find_map(|slot| {
+            samples
+                .get(&(frame.freeze_time_end_tick, *slot))?
+                .round_time_seconds
+        });
 
         let economy = slots
             .iter()
