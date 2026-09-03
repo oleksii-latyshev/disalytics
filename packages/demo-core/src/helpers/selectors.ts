@@ -183,7 +183,11 @@ export interface RoundClock {
  *   `detonationTick`; one that was defused or outlived by the round falls back to
  *   [`bombTimerTicks`].
  * - **post** holds the reading the round ended on, because the five to seven seconds after
- *   `endTick` are not round time and a clock that kept moving through them would say they are.
+ *   `endTick` are not round time and a clock that kept moving through them would say they are. A
+ *   round that ended with the bomb down holds the *bomb's* remainder there — a defuse with three
+ *   seconds left reads `0:03` — and it is deliberately still `post` rather than a fifth state: what
+ *   the number means is already said by the round strip and the feed, and a phase minted to colour
+ *   a number that has stopped moving would be a state nothing else could use.
  *
  * A countdown rounds **up** and the count-up fallback rounds **down**, so each shows the second it
  * is *in* rather than the one it has finished: a round opens on its full length and reaches `0:00`
