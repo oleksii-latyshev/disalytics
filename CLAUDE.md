@@ -1178,6 +1178,58 @@ rediscovered: the step asks 0.005em here, 0.9px across the longest name this dra
 the same rule asked four times as much. §16's two rows are unmoved against an `aad966e` baseline and
 the bundle is 223.44 → 223.50 kB.
 
+**#279 redressed the bottom of the screen, and the thing that cost the most to find is a
+vendored one-liner.** The round strip is a toggle group with the highlight effect carrying the round
+being played, the survivor tracks are drawn inside the pill, a crowded axis glyph collapses on its
+own, and the speed control is a toggle group that is still a `fieldset`. Six things are
+load-bearing.
+
+**A motion component never receives Base UI's composite ref**, and animate-ui's toggle item is a
+`motion.button`. Base UI's toggle group walks its items by calling `.focus()` on the node it was
+handed, so with an empty list an arrow key moved the group's *tab stop* and left the focus where it
+was — and the group calls `stopPropagation` on the keys it takes, so the press did not fall through
+to §9.1's seek either. It did nothing at all. Measured three ways over CDP: with upstream's element
+the tab stop went 4 → 5 while `document.activeElement` did not move and
+`HTMLElement.prototype.focus` was never called; through Base UI's render-*function* form, passing
+the ref explicitly, identically; with a plain `<button>` the focus walks the group. That is
+`UPSTREAM.md`'s third deviation, and it takes upstream's `whileTap` scale with it — which costs this
+product nothing, because interaction here is luminance rather than movement. **The arrival fade
+moved to the seat** for the same reason: a plain button takes no motion props.
+
+**The block is one height in every state.** Asking for the survivors used to take the strip from
+28px to 44 and the block from 92 to 108 — and the plate is measured from that row, so a preference
+about what a pill *says* took 16px off the map for as long as it was on: `main` measures **700 at
+1440×900 with the tracks showing and 716 without**, where the branch is **716 in both**, 473 in both
+at 1024×800, and 124 with the scoreboard brow against 92 without it. The tracks are 3px rows inside
+the pill now, above the winner bar rather than under the number.
+
+**#271 closes on a local collapse, and the average threshold is deleted rather than tuned.** A glyph
+draws its symbol when the nearest mark is at least one glyph's width away and falls back to a tick
+when it is not — `hasRoomForSymbol` off the same hit slot #268 tiled the axis with, so **the
+instrument that decides the press decides the form**. Over 751 glyphs in 30 rounds on the fixture,
+which is #271's own count: `main` draws **711 symbols with 29 of the 30 rounds overlapping**, and
+the one round it does collapse is the densest — the axis-wide average took all 40 of that round's
+shapes at once, which is precisely the instrument being wrong rather than mistuned. The branch draws
+**98 symbols, 0 rounds with two symbols closer than 24px**, and that densest round keeps 3. A
+collapsed glyph keeps its position and its hue and loses only its shape; nothing is nudged, because
+a mark moved off its own moment is a lie about time on a time axis. 47 presses still land on a
+neighbour and they are the sub-pixel pairs #268 measured and explained.
+
+**The winner bar stays on the pill that is playing.** It used to drop for a fill, which was how a
+strip with no other mark for *here* said it; the highlight says it now, and a bar that vanished
+under it would blink out of one pill and into another every time the round turned over. The lit
+pill's fill is `--color-selected` on a shared `layoutId`, so it slides between seats on `transform`.
+
+**The brow is a border**, not three inset shadows standing in for one, and `.surface-brow` is that
+one line. Two smaller things: `aria-selected` is dropped from the seat the effect writes it onto — a
+generic element may not carry it and the reading is the button's own `aria-pressed` — and the
+segment break's dashed rule is the seat's `::before`, because the highlight takes exactly one child
+and a wrapper is what would have been handed that attribute.
+
+The bundle is **223.50 → 229.21 kB gz**, all of it Base UI's toggle group and composite. `AGENTS.md`
+§16's two frame rows are unmoved against a `1e749fd` baseline taken the same hour.
+
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
