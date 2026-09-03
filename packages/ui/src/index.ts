@@ -69,14 +69,6 @@ export {
   TabsTab,
 } from './components/animate-ui/components/base/tabs';
 export { Toggle, toggleVariants } from './components/animate-ui/components/base/toggle';
-// Upstream names the item inside a group `Toggle` as well, which is the same word for the standalone
-// control above. The alias is this barrel's, not an edit to the file: a caller writing
-// `<ToggleGroup><ToggleGroupItem/></ToggleGroup>` reads correctly, and re-adding either component
-// from the CLI still overwrites cleanly.
-export {
-  Toggle as ToggleGroupItem,
-  ToggleGroup,
-} from './components/animate-ui/components/base/toggle-group';
 export {
   Tooltip,
   TooltipPanel,
@@ -94,6 +86,21 @@ export {
   ProgressTrack,
   ProgressValue,
 } from './components/animate-ui/primitives/base/progress';
+/* The toggle group comes from the primitive layer for the reason `Progress` does — what it gives is
+   behaviour, and the styling is the caller's. The styled group over it fixes three things a caller
+   cannot reach: its highlight fill (`bg-accent`), its `w-fit` width and its own gap. The round strip
+   is thirty equal-width pills with a wider break at every half, and its lit pill is the product's
+   own `--color-selected`; none of those is a class name away from what the styled component draws.
+
+   Upstream names the item inside a group `Toggle`, which is the same word as the standalone control
+   above, and the highlight parts after the effect they drive. Both aliases are this barrel's rather
+   than an edit to the file, so re-adding either component from the CLI still overwrites cleanly. */
+export {
+  Toggle as ToggleGroupItem,
+  ToggleGroup,
+  ToggleGroupHighlight,
+  ToggleHighlight as ToggleGroupItemHighlight,
+} from './components/animate-ui/primitives/base/toggle-group';
 
 /* The registry's styled `Dialog`, `Switch` and `Button` are still not re-exported, and the reason is
    now different for each of the three.

@@ -18,25 +18,23 @@ import {
 import type { KillRow } from '@/core/events';
 
 /**
- * How much room one glyph needs before a row of them stops being a row of symbols — DESIGN.md §7.1's
- * collapse threshold. Measured against the average pitch rather than the narrowest gap on the axis:
- * two kills in the same second are a double kill and happen in most rounds, and letting one pair
- * decide the form would put a whole round's axis back to marks for a reason nobody can see.
+ * One glyph's width, and so the room one needs before it is drawn over its neighbour. The symbols
+ * are 24px since the owner read the built axis as unreadably small, and every rule about crowding on
+ * this axis is stated in terms of this number rather than in pixels of its own.
  *
- * It is one glyph's width, so it moves with the glyph: the symbols are 24px since the owner read the
- * built axis as unreadably small, and a threshold left at the old 12px box would have drawn them
- * overlapping instead of collapsing.
+ * Who reads it is `glyph-hits.ts`: the width of a glyph's hit slot is capped by it, and since #271 a
+ * slot narrower than it is what collapses that glyph to a mark.
  */
 export const GLYPH_PITCH_PX = 24;
 
 /**
  * The stretch of match the timeline is scoped to — one round, or the warm-up before the first one.
  *
- * It runs to where the *next* round starts rather than to `Round.endTick`, and that is a deliberate
- * departure from §7.1's letter. The two are five to seven seconds apart, the clock passes through
- * them at the end of every round, and a strip that stops at `endTick` parks its playhead against the
- * right edge for all of it — once per round. The round's own close is drawn on the axis instead, and
- * glyphs still stop at `endTick`, so the tail is time the reader can reach rather than round.
+ * It runs to where the *next* round starts rather than to `Round.endTick`, and that is deliberate.
+ * The two are five to seven seconds apart, the clock passes through them at the end of every round,
+ * and a strip that stops at `endTick` parks its playhead against the right edge for all of it — once
+ * per round. The round's own close is drawn on the axis instead, and glyphs still stop at `endTick`,
+ * so the tail is time the reader can reach rather than round.
  */
 export interface TimelineSegment {
   /** `null` during warm-up, which no round covers. */
@@ -50,7 +48,8 @@ export interface TimelineSegment {
 }
 
 /**
- * A kill on the axis is the same `KillRow` §5.4's feed draws, because §7.1's tooltip draws that row.
+ * A kill on the axis is the same `KillRow` the event feed draws, because the axis's tooltip draws
+ * that row.
  * `victimSide` is what tints the skull; the rest of it is the tooltip's, and none of it costs
  * anything at the readout — `axisGlyphs` runs once per round.
  */
@@ -130,14 +129,6 @@ export function positionInSegment(
   widthPx: number,
 ): number {
   return fractionOf(frame, segment.startFrame, segment.endFrame - segment.startFrame) * widthPx;
-}
-
-/**
- * Whether the glyphs have room to be symbols. Below it they collapse to marks — §7.1 — which keeps
- * every event on the axis and loses only the shape that says which kind it was.
- */
-export function hasRoomForGlyphs(count: number, widthPx: number): boolean {
-  return count === 0 || widthPx / count >= GLYPH_PITCH_PX;
 }
 
 /** The tick a defuse is marked at: where it finished, or where it began when it never did. */
@@ -253,7 +244,8 @@ function grenadeGlyphs(demo: ParsedDemo, window: RoundWindow): AxisGlyph[] {
  * draw or a render running at the readout's rate (#91).
  *
  * The window closes at `Round.endTick` rather than at the segment's end: the seconds after a round
- * belong to the next buy, and the kills in them are the post-round kills §7.3 refuses to count.
+ * belong to the next buy, and the kills in them are the post-round kills the strip refuses to
+ * count.
  */
 export function axisGlyphs(
   demo: ParsedDemo,
@@ -281,17 +273,17 @@ export function axisGlyphs(
   ].sort((a, b) => a.frame - b.frame || a.id.localeCompare(b.id));
 }
 
-/** What §7.1's tooltip needs of a glyph: where to hang, and the row to draw there. */
+/** What the axis's tooltip needs of a glyph: where to hang, and the row to draw there. */
 export interface NamedKill {
   readonly fraction: number;
   readonly event: Extract<AxisEvent, { kind: 'kill' }>;
 }
 
 /**
- * The glyph a tooltip is owed, which is a kill and only a kill — §7.1.
+ * The glyph a tooltip is owed, which is a kill and only a kill.
  *
- * §9.2 is what draws the line rather than taste: the tooltip is permitted because §5.4's feed draws
- * the same row, and pressing a glyph seeks to it, so the row is always reachable without hovering. A
+ * The rule draws the line rather than taste: a tooltip is permitted because the event feed draws the
+ * same row, and pressing a glyph seeks to it, so the row is always reachable without hovering. A
  * grenade is on no feed at all, and an aborted or interrupted defuse is on the axis alone, so a
  * tooltip for either would be the only route to its own fact.
  *

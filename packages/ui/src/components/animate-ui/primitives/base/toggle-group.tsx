@@ -46,11 +46,13 @@ function ToggleGroup(props: ToggleGroupProps) {
   );
 }
 
+/* NOT UPSTREAM'S — see UPSTREAM.md. The element below is a plain button rather than a
+   `motion.button`, so what it accepts is a button's props. */
 type ToggleProps = Omit<
   React.ComponentProps<typeof TogglePrimitive>,
   'render'
 > &
-  HTMLMotionProps<'button'>;
+  React.ComponentProps<'button'>;
 
 function Toggle({
   value,
@@ -69,13 +71,10 @@ function Toggle({
       defaultPressed={defaultPressed}
       onPressedChange={onPressedChange}
       nativeButton={nativeButton}
-      render={
-        <motion.button
-          data-slot="toggle"
-          whileTap={{ scale: 0.95 }}
-          {...props}
-        />
-      }
+      /* NOT UPSTREAM'S — see UPSTREAM.md. Upstream renders a `motion.button` with a
+         `whileTap` scale here, and a motion component never receives the composite item's ref:
+         the group then moves its tab stop on an arrow key and leaves the focus behind. */
+      render={<button data-slot="toggle" {...props} />}
     />
   );
 }

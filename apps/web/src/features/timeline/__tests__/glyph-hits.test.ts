@@ -1,7 +1,12 @@
 import { asFrame, asPlayerSlot } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { GLYPH_HIT_FLOOR_PX, GLYPH_HIT_HALF_PX, glyphHitHalves } from '../helpers/glyph-hits';
-import type { AxisGlyph } from '../helpers/round-axis';
+import {
+  GLYPH_HIT_FLOOR_PX,
+  GLYPH_HIT_HALF_PX,
+  glyphHitHalves,
+  hasRoomForSymbol,
+} from '../helpers/glyph-hits';
+import { type AxisGlyph, GLYPH_PITCH_PX } from '../helpers/round-axis';
 
 const WIDTH_PX = 1000;
 
@@ -65,5 +70,44 @@ describe('glyphHitHalves', () => {
 
   it('has nothing to size on an empty axis', () => {
     expect(glyphHitHalves([], WIDTH_PX)).toEqual([]);
+  });
+});
+
+describe('hasRoomForSymbol', () => {
+  it('draws the symbol while the nearest mark is a whole glyph away', () => {
+    // 240px apart, and then exactly one glyph apart, which is where two symbols meet and stop.
+    expect(halvesAt(0.2, 0.44).every(hasRoomForSymbol)).toBe(true);
+    expect(halvesAt(0.5, 0.5 + GLYPH_PITCH_PX / WIDTH_PX).every(hasRoomForSymbol)).toBe(true);
+  });
+
+  it('collapses a glyph whose neighbour is closer than that', () => {
+    expect(halvesAt(0.5, 0.51).some(hasRoomForSymbol)).toBe(false);
+  });
+
+  it('collapses the crowded glyphs and leaves the rest of the axis alone (#271)', () => {
+    // The shape of the fixture's densest round: a cluster of three inside 10px, and three events
+    // with the axis to themselves. The old axis-wide average kept all six as symbols and drew the
+    // cluster on top of itself.
+    const halves = halvesAt(0.05, 0.3, 0.5, 0.505, 0.51, 0.9);
+
+    expect(halves.map(hasRoomForSymbol)).toEqual([true, true, false, false, false, true]);
+  });
+
+  it('leaves no two symbols overlapping, whatever the round holds', () => {
+    const fractions = [0.02, 0.1, 0.104, 0.3, 0.32, 0.33, 0.6, 0.9, 0.9001];
+    const halves = halvesAt(...fractions);
+
+    fractions.forEach((fraction, index) => {
+      const next = fractions.at(index + 1);
+      if (next === undefined) return;
+      if (!hasRoomForSymbol(halves.at(index) ?? 0)) return;
+      if (!hasRoomForSymbol(halves.at(index + 1) ?? 0)) return;
+
+      expect((next - fraction) * WIDTH_PX).toBeGreaterThanOrEqual(GLYPH_PITCH_PX);
+    });
+  });
+
+  it('keeps every symbol on an axis that has not been measured yet', () => {
+    expect(glyphHitHalves([glyphAt(0.5), glyphAt(0.5)], 0).every(hasRoomForSymbol)).toBe(true);
   });
 });

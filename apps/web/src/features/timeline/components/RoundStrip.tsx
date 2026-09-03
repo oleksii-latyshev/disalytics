@@ -8,7 +8,6 @@ import { useSettingToggle } from '@/core/settings';
 import { roundOutcomeKey } from '../helpers/outcome-copy';
 import {
   hasRoomForNumbers,
-  ROUND_STRIP_EXPANDED_HEIGHT_PX,
   ROUND_STRIP_HEIGHT_PX,
   type RoundCell,
   roundCells,
@@ -22,7 +21,7 @@ interface Props {
   transport: Transport;
 }
 
-/** §9.2's dwell: a tooltip answers a pointer that stayed, never one that passed through. */
+/** The dwell: a tooltip answers a pointer that stayed, never one that passed through. */
 const HOVER_DWELL_MS = 400;
 
 interface Naming {
@@ -39,13 +38,17 @@ function namingOf(cells: readonly RoundCell[], index: number | null): Naming | u
 }
 
 /**
- * The match as a strip of rounds — `docs/DESIGN.md` §7.3. The timeline block's **top row**, directly
- * above §7.1's axis: the reader's path is *pick a round, then watch it*, and the strip spent #157 to
- * #190 on the far side of the controls from the axis it feeds.
+ * The match as a strip of rounds. The timeline block's **top row**, directly above the round axis:
+ * the reader's path is *pick a round, then watch it*, and the strip spent #157 to #190 on the far
+ * side of the controls from the axis it feeds.
  *
- * Nothing here is a playhead. That is on §7.1, and this strip carries no per-frame work at all: the
- * lit round turns over once a round and rides the 10 Hz readout, and the cells are derived once per
- * demo.
+ * Nothing here is a playhead. That is the axis's, and this strip carries no per-frame work at all:
+ * the lit round turns over once a round and rides the 10 Hz readout, and the cells are derived once
+ * per demo.
+ *
+ * **It is one height** since #279. Asking for the survivors used to grow the row from 28px to 44px,
+ * and the block's row is what the plate is measured against — so a preference about what a pill says
+ * took 16px off the map for as long as it was on. The tracks are drawn inside the pill now.
  */
 export function RoundStrip({ demo, transport }: Props) {
   const t = useT();
@@ -111,9 +114,7 @@ export function RoundStrip({ demo, transport }: Props) {
   return (
     <div
       className="relative flex shrink-0 items-stretch gap-2 px-4"
-      style={{
-        height: `${isExpanded ? ROUND_STRIP_EXPANDED_HEIGHT_PX : ROUND_STRIP_HEIGHT_PX}px`,
-      }}
+      style={{ height: `${ROUND_STRIP_HEIGHT_PX}px` }}
     >
       <div ref={rowRef} className="min-w-0 flex-1">
         <RoundOutcomes
@@ -128,11 +129,11 @@ export function RoundStrip({ demo, transport }: Props) {
       </div>
 
       {/* The disclosure is the survivors' own control, which is why they need no bridge in the
-          corner cluster the way the audibility rings do — §7.3.
+          corner cluster the way the audibility rings do.
 
-          §4's dense control height, 32px, in a 28px row: the hit area overruns the strip by 2px
+          The dense control height, 32px, in a 28px row: the hit area overruns the strip by 2px
           either side and lands in the block's own padding, which is the right way round. Minting a
-          24px height to make it fit would be a third control size, and §4 has two. */}
+          24px height to make it fit would be a third control size, and the product has two. */}
       <Button
         type="button"
         variant="ghost"
@@ -146,13 +147,13 @@ export function RoundStrip({ demo, transport }: Props) {
       </Button>
 
       {naming !== undefined && (
-        // Aria-hidden because the pill's own name already says all of this — §9.2 permits the
-        // tooltip as a shortcut to what is reachable without a pointer, not as a second voice.
-        // That is also what leaves the two `:` at `--ink-faint`: a separator the reader never
-        // hears is a mark, and §14's floor is about text.
+        // Aria-hidden because the pill's own name already says all of this: the tooltip is a
+        // shortcut to what is reachable without a pointer, not a second voice. That is also what
+        // leaves the two `:` at `--ink-faint` — a separator the reader never hears is a mark, and
+        // the ink floor is about text.
         //
-        // `--glass-raised` without a blur behind it: §2.3 pays for a `backdrop-filter` only where
-        // the ground is static, and §7.1's playhead is moving under this one every frame.
+        // `--surface-3` and no `backdrop-filter`: what has left the layout casts the one shadow the
+        // product has, and the axis's playhead is moving under this one every frame.
         <div
           aria-hidden="true"
           style={naming.anchor}

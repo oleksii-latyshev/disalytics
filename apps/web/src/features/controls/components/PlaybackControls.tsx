@@ -25,17 +25,16 @@ export function PlaybackControls({ track, transport }: Props) {
 
   const format = useMemo(() => createClockFormat(locale), [locale]);
 
-  // The speed control is a sibling rather than a child: DESIGN.md §5.5 puts the timeline between
-  // the two, so the block that owns the layout is what places them.
+  // The speed control is a sibling rather than a child: the round timeline runs between the two, so
+  // the block that owns the layout is what places them.
   return (
     <section className="flex shrink-0 items-center gap-3">
       <div className="flex items-center gap-1">
         <StepButton transport={transport} samples={-1} />
 
-        {/* DESIGN.md §5.5's "40px, primary" is a square, and the square is the point: a labelled
-            button was as wide as its own string, so "Воспроизвести" against "Пауза" moved every
-            control right of it on each press. The glyphs are filled to read as transport beside
-            `StepButton`'s arrows. */}
+        {/* The one control at `--height-control-lg`, and a square: a labelled button was as wide as
+            its own string, so "Воспроизвести" against "Пауза" moved every control right of it on
+            each press. The glyphs are filled to read as transport beside `StepButton`'s arrows. */}
         <Button
           type="button"
           size="icon-lg"
