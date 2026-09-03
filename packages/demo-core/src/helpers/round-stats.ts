@@ -1,6 +1,5 @@
 import type { ParsedDemo, PlayerSlot, Round, Team, Tick } from '../schema';
-import { lastIndexAtOrBefore } from './player-state';
-import { sidesBySlotAtRound } from './selectors';
+import { lastIndexAtOrBefore, sidesBySlotAtRound } from './selectors';
 
 export interface PlayerRoundStats {
   kills: number;

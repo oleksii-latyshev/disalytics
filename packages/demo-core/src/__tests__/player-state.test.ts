@@ -10,7 +10,6 @@ import {
   deathProgressBySlot,
   GUNFIRE_SPUR_SECONDS,
   gunfireBySlot,
-  lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from '../helpers/player-state';
 import {
@@ -55,21 +54,6 @@ function newDemo(
 function atSecond(seconds: number): number {
   return seconds * DEFAULT_SAMPLE_HZ;
 }
-
-describe('lastIndexAtOrBefore', () => {
-  const events = [{ tick: asTick(10) }, { tick: asTick(20) }, { tick: asTick(30) }];
-
-  it('finds the last event at or before the tick', () => {
-    expect(lastIndexAtOrBefore(events, asTick(25))).toBe(1);
-    expect(lastIndexAtOrBefore(events, asTick(30))).toBe(2);
-    expect(lastIndexAtOrBefore(events, asTick(1000))).toBe(2);
-  });
-
-  it('answers -1 when every event is still ahead', () => {
-    expect(lastIndexAtOrBefore(events, asTick(9))).toBe(-1);
-    expect(lastIndexAtOrBefore([], asTick(9))).toBe(-1);
-  });
-});
 
 describe('damageFlashBySlot', () => {
   const demo = newDemo(withDamage(newEvents(), { tick: asTick(TICK_RATE * 2), victim: VICTIM }));

@@ -85,6 +85,12 @@ pub(crate) fn build(
         let is_half_start = frame.number == 1 || swapped >= HALF_SWAP_MAJORITY;
         previous_teams = teams;
 
+        // A `Rules` prop is the same value on every row of a tick, so the first slot that carried
+        // one at freeze-time end answers for the round.
+        let round_time_seconds = slots
+            .iter()
+            .find_map(|slot| samples.get(&(frame.freeze_time_end_tick, *slot))?.round_time_seconds);
+
         let economy = slots
             .iter()
             .map(|slot| {
@@ -109,6 +115,7 @@ pub(crate) fn build(
             end_tick: frame.end_tick,
             winner: frame.winner,
             reason: frame.reason,
+            round_time_seconds,
             economy,
         });
     }

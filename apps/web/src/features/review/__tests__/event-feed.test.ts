@@ -49,6 +49,7 @@ function newRound(number: number, startTick: number): Round {
     endTick: asTick(startTick + 6400),
     winner: 'CT',
     reason: 'all-t-eliminated',
+    roundTimeSeconds: 115,
     economy: [
       { slot: asPlayerSlot(0), money: 0, equipmentValue: 0, buyType: 'full-buy', team: 'CT' },
       { slot: asPlayerSlot(1), money: 0, equipmentValue: 0, buyType: 'full-buy', team: 'T' },
@@ -75,7 +76,7 @@ function newKill(tick: number, overrides: Partial<Kill> = {}): Kill {
 }
 
 function newPlant(tick: number): BombPlant {
-  return { tick: asTick(tick), planter: asPlayerSlot(1), siteEntityId: 0 };
+  return { tick: asTick(tick), planter: asPlayerSlot(1), siteEntityId: 0, detonationTick: null };
 }
 
 function newDefuse(startTick: number, outcome: DefuseOutcome): BombDefuse {

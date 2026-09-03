@@ -36,7 +36,6 @@ export {
   deathProgressBySlot,
   GUNFIRE_SPUR_SECONDS,
   gunfireBySlot,
-  lastIndexAtOrBefore,
   PLANT_SECONDS,
 } from './helpers/player-state';
 export type { PlayerRoundStats, SideSurvivors } from './helpers/round-stats';
@@ -47,9 +46,12 @@ export type { MatchSegment } from './helpers/segments';
 export { matchSegments } from './helpers/segments';
 export type { RoundClock, RoundPhase } from './helpers/selectors';
 export {
+  bombTimerTicks,
   buyPhaseSkipFrame,
+  DEFAULT_BOMB_TIMER_SECONDS,
   frameForTick,
   lastFrame,
+  lastIndexAtOrBefore,
   openingFrame,
   playersOnSide,
   roundClockAtFrame,

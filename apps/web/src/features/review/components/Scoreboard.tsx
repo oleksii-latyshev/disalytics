@@ -51,9 +51,17 @@ const POSITIONS = {
  * **A side letter takes its side's colour rather than `--ink`.** It binds the letter to the number
  * beside it, so `CT 9` is one token instead of two things that happen to be adjacent, and it is the
  * same exception §2.2 already makes for the score itself — the letters are also what keeps the pair
- * off hue alone, which is why they are here rather than implied by position. Nothing else on the row
- * is coloured: the clock and the separator hold `--ink` and `--ink-faint`, and the hairline between
- * them is what the old 16px gap was trying to be.
+ * off hue alone, which is why they are here rather than implied by position. The separator holds
+ * `--ink-faint`, and the hairline between the two readings is what the old 16px gap was trying to
+ * be.
+ *
+ * **The clock counts down, and once the bomb is down it counts the bomb.** That is the reading CS2
+ * itself gives and the one the round it describes was played against; the phase is
+ * `roundClockAtFrame`'s to decide, so all this row does is name it and colour it. The bomb phase is
+ * the only state in which the clock is not `--ink`: it takes `--color-objective`, the token the
+ * plant and the defuse already carry everywhere else on this screen, because *which* countdown is
+ * running is the thing a reader has to be able to tell at a glance. Colour is not the only carrier
+ * — the accessible name changes with it.
  *
  * The demo carries no match ID (`MatchHeader` has a map, a tick rate, a roster and a weapon table),
  * so §5.2's optional second line has nothing to render and the row stands alone.
@@ -100,9 +108,9 @@ export function Scoreboard({ demo, frame, locale, position }: Props) {
               than the space it takes to hold them apart by distance alone. */}
           <span aria-hidden="true" className="mx-3 h-3 w-px bg-line" />
 
-          <p className={type.value}>
+          <p className={`${type.value} ${clock.phase === 'bomb' ? 'text-objective' : ''}`}>
             <span className="sr-only">
-              <Text path="review.roundClock" />{' '}
+              <Text path={clock.phase === 'bomb' ? 'review.bombClock' : 'review.roundClock'} />{' '}
             </span>
             {formatClock(format, clock.seconds)}
           </p>

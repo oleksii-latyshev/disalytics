@@ -6,7 +6,7 @@ import {
   type Tick,
   type TickTrack,
 } from '../schema';
-import { sampleAt, secondsAtFrame, tickAtFrame } from './selectors';
+import { lastIndexAtOrBefore, sampleAt, secondsAtFrame, tickAtFrame } from './selectors';
 
 /** How long a hit stays visible on the token, in **match** seconds — `docs/DESIGN.md` §7. */
 export const DAMAGE_FLASH_SECONDS = 0.25;
@@ -30,36 +30,6 @@ export const GUNFIRE_SPUR_SECONDS = 0.15;
 export const PLANT_SECONDS = 3.2;
 export const DEFUSE_SECONDS = 10;
 export const DEFUSE_WITH_KIT_SECONDS = 5;
-
-/**
- * The last event at or before `tick`, by binary search over a tick-sorted array — `-1` when every
- * event is still ahead. Events are plain objects in sorted arrays (`AGENTS.md` §2 rule 3), and this
- * is the lookup that makes them cheap to read from a draw.
- */
-export function lastIndexAtOrBefore(ticks: readonly { tick: Tick }[], tick: Tick): number {
-  let low = 0;
-  let high = ticks.length - 1;
-  let found = -1;
-
-  while (low <= high) {
-    const middle = (low + high) >> 1;
-    const candidate = ticks[middle];
-
-    if (candidate === undefined) {
-      throw new RangeError(`event ${middle} is outside an array of ${ticks.length}`);
-    }
-
-    if (candidate.tick <= tick) {
-      found = middle;
-      low = middle + 1;
-      continue;
-    }
-
-    high = middle - 1;
-  }
-
-  return found;
-}
 
 /**
  * How brightly each slot is still flashing from a hit — 1 at the moment of the damage, 0 once

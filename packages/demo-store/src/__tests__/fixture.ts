@@ -61,6 +61,7 @@ function newEvents(): MatchEvents {
         endTick: asTick(1000),
         winner: 'CT',
         reason: 'all-t-eliminated',
+        roundTimeSeconds: 115,
         economy: [
           {
             slot: asPlayerSlot(0),
@@ -96,7 +97,14 @@ function newEvents(): MatchEvents {
     ],
     grenades: [newGrenade()],
     blinds: [],
-    plants: [{ tick: asTick(300), planter: asPlayerSlot(0), siteEntityId: 41 }],
+    plants: [
+      {
+        tick: asTick(300),
+        planter: asPlayerSlot(0),
+        siteEntityId: 41,
+        detonationTick: asTick(2924),
+      },
+    ],
     defuses: [],
   };
 }

@@ -49,6 +49,9 @@ pub(crate) struct Sample {
     pub(crate) money: i32,
     pub(crate) equipment_value: i32,
     pub(crate) flash_duration: f32,
+    /// A world value rather than this player's, carried here because upstream writes a `Rules` prop
+    /// onto every player row and this scan is already reading that row.
+    pub(crate) round_time_seconds: Option<u32>,
 }
 
 pub(crate) struct Ticks<'a> {
@@ -159,6 +162,7 @@ impl<'a> Ticks<'a> {
         let money = self.columns.integers(prop::MONEY);
         let equipment = self.columns.integers(prop::EQUIPMENT_VALUE);
         let flash = self.columns.floats(prop::FLASH_DURATION);
+        let round_time = self.columns.integers(prop::ROUND_TIME);
 
         let mut samples = BTreeMap::new();
         for row in 0..self.row_count() {
@@ -179,6 +183,7 @@ impl<'a> Ticks<'a> {
                     money: narrow(money.at(row)),
                     equipment_value: narrow(equipment.at(row)),
                     flash_duration: float_at(flash, row).unwrap_or_default(),
+                    round_time_seconds: round_time.at(row).and_then(|value| u32::try_from(value).ok()),
                 },
             );
         }
