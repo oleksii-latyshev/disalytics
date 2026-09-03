@@ -24,9 +24,9 @@ interface Props {
 }
 
 /**
- * The strip between play/pause and the speed control, scoped to one round — DESIGN.md §7.1. The buy
- * phase is a region of its own, the round's events are glyphs on the axis, and the scrubber under
- * them spans the round rather than the match.
+ * The strip between play/pause and the speed control, scoped to one round. The buy phase is a region
+ * of its own, the round's events are glyphs on the axis, and the scrubber under them spans the round
+ * rather than the match.
  *
  * The range input is **uncontrolled** — React never owns its value (#83) — and the playhead moves
  * with `transform` only, which is what keeps playback off the main thread.
@@ -137,8 +137,8 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
       ref={stripRef}
       className="relative h-10 min-w-0 flex-1 has-[input:focus-visible]:rounded-card has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus"
     >
-      {/* §7.1's buy phase: a region rather than a mark, because it is a stretch of the round in
-          which nothing the axis draws can happen. */}
+      {/* The buy phase: a region rather than a mark, because it is a stretch of the round in which
+          nothing the axis draws can happen. */}
       {segment.buyEndFraction !== null && (
         <div
           aria-hidden="true"
@@ -148,7 +148,7 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
       )}
 
       {/* The axis the glyphs and the playhead are read against. `--line-soft` because it is an
-          internal divider on a card rather than the card's own edge — DESIGN.md §2.1. */}
+          internal divider on a card rather than the card's own edge. */}
       <div aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px bg-line-soft" />
 
       {segment.buyEndFraction !== null && (

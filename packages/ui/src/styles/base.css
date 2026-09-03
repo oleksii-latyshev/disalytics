@@ -60,18 +60,19 @@ pre {
 /* The scoreboard's lip, rising from the centre of the timeline block's top edge as a tab of that
    card rather than a card on it.
 
-   Three hairlines and no fourth: the bottom edge is where the two shapes meet and there is nothing
-   to draw there. The block's own ring runs in the 1px row directly above its top edge — which is
-   this element's last row — and an opaque background is what covers it, so the outline reads as one
-   shape stepping up around the lip with no seam across the join. The old glass version could not do
-   that: at 0.62 alpha the block's ring came through the lip at a third of its strength, and a
-   second class on the block existed purely to suppress it. Opacity deleted both problems. */
+   Three edges and no fourth: the bottom edge is where the two shapes meet and there is nothing to
+   draw there. That is one border with its bottom side dropped rather than the three inset shadows it
+   was until #279 — a shadow standing in for a border is a shape the reader cannot tell apart from
+   one, and this element has an ordinary box to put an ordinary edge on. The block's own ring runs in
+   the 1px row directly above its top edge, which is this element's last row, and an opaque
+   background is what covers it: the outline reads as one shape stepping up around the lip with no
+   seam across the join. The old glass version could not do that — at 0.62 alpha the block's ring
+   came through the lip at a third of its strength, and a second class on the block existed purely to
+   suppress it. Opacity deleted both problems. */
 .surface-brow {
   background-color: var(--color-surface-1);
-  box-shadow:
-    inset 0 1px 0 0 var(--color-line),
-    inset 1px 0 0 0 var(--color-line),
-    inset -1px 0 0 0 var(--color-line);
+  border: 1px solid var(--color-line);
+  border-block-end: 0;
 }
 
 /* The one surface allowed to sit over the live radar plate — the scoreboard chip, in the position

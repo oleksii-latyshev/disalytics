@@ -9,9 +9,16 @@ import {
   type Team,
 } from '@disa/demo-core';
 
-/** The strip's two heights — `docs/DESIGN.md` §7.3, the timeline block's top row. */
+/**
+ * The strip's height, and it has exactly one.
+ *
+ * It had two until #279 — 28px, and 44px with the survivor tracks showing — and the second one was a
+ * plate that resized under the reader: the block's row is what the plate's square is measured
+ * against, so asking for the tracks took 16px off the map for as long as they were on. The tracks
+ * are drawn inside the pill now, so the preference changes what a pill says and never what the
+ * screen is shaped like.
+ */
 export const ROUND_STRIP_HEIGHT_PX = 28;
-export const ROUND_STRIP_EXPANDED_HEIGHT_PX = 44;
 
 /** Between two pills of the same segment. Space is the separation; there are no hairlines. */
 export const PILL_GAP_PX = 4;

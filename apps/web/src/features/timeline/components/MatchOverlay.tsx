@@ -39,12 +39,22 @@ interface Props {
   roundIndex: number | undefined;
 }
 
+/**
+ * A legend mark, in a box of one width. The four readings are four different shapes — a pair of
+ * rules, a pair of fields, a skyline, a gap either side of a centre line — and a fixed box is what
+ * puts their sentences on one left edge instead of ranging with the mark.
+ */
 function Swatch({ children }: { children: React.ReactNode }) {
   return (
     <span aria-hidden="true" className="flex h-4 w-8 shrink-0 items-center justify-center gap-0.5">
       {children}
     </span>
   );
+}
+
+/** One reading of the chart: what the mark looks like, and the sentence that says what it means. */
+function Legend({ children }: { children: React.ReactNode }) {
+  return <li className="flex items-center gap-3 text-12 text-ink-dim leading-prose">{children}</li>;
 }
 
 /**
@@ -68,8 +78,8 @@ function MatchFigure({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: numbe
 
   const layers = useMemo(
     () => [
-      // Every round keeps its tint here, the lit one included. Dropping it is §7.3's device for a
-      // 14px ribbon whose bands touch; on a chart this tall the rounds are separated by the seconds
+      // Every round keeps its tint here, the lit one included. Dropping it is a device for a 14px
+      // ribbon whose bands touch; on a chart this tall the rounds are separated by the seconds
       // between them, which are bare ground already, and a round with no tint reads as one of those
       // gaps rather than as *here*. The frame below is the only mark that says where the reader is.
       outcomeBands(bands, colors, undefined),
@@ -86,7 +96,9 @@ function MatchFigure({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: numbe
 
   return (
     <figure className="m-0 flex min-h-0 flex-1 flex-col gap-6">
-      <div className="min-h-0 flex-1 rounded-card bg-surface-1">
+      {/* The chart is a card on the sheet rather than a panel of its own: opaque, one step up from
+          the ground it sits on, and a hairline. */}
+      <div className="surface-card min-h-0 flex-1 rounded-card">
         <canvas
           ref={canvasRef}
           role="img"
@@ -95,36 +107,36 @@ function MatchFigure({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: numbe
         />
       </div>
 
-      {/* The legend is what §7.3 makes the difference between this and the strip the owner rejected:
-          a chart nobody can read is what was deleted, not the chart. */}
+      {/* The legend is the difference between this and the strip the owner rejected: a chart nobody
+          can read is what was deleted, not the chart. */}
       <figcaption className="flex flex-col gap-3">
         <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
-          <li className="flex items-center gap-3 text-13 text-ink-dim leading-prose">
+          <Legend>
             <Swatch>
               <span className="h-4 w-0.5 bg-ct" />
               <span className="h-4 w-0.5 bg-t" />
             </Swatch>
             <Text path="timeline.match.legend.kills" />
-          </li>
+          </Legend>
 
-          <li className="flex items-center gap-3 text-13 text-ink-dim leading-prose">
+          <Legend>
             <Swatch>
               <span className="h-4 flex-1 bg-ct/30" />
               <span className="h-4 flex-1 bg-t/30" />
             </Swatch>
             <Text path="timeline.match.legend.rounds" />
-          </li>
+          </Legend>
 
-          <li className="flex items-center gap-3 text-13 text-ink-dim leading-prose">
+          <Legend>
             <Swatch>
               <span className="h-1.5 w-2 self-end bg-ink-dim/30" />
               <span className="h-4 w-2 self-end bg-ink-dim/30" />
               <span className="h-2.5 w-2 self-end bg-ink-dim/30" />
             </Swatch>
             <Text path="timeline.match.legend.density" />
-          </li>
+          </Legend>
 
-          <li className="flex items-center gap-3 text-13 text-ink-dim leading-prose">
+          <Legend>
             <Swatch>
               <span className="flex h-4 w-6 flex-col justify-center">
                 <span className="h-1.5 bg-ct/40" />
@@ -133,18 +145,18 @@ function MatchFigure({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: numbe
               </span>
             </Swatch>
             <Text path="timeline.match.legend.economy" />
-          </li>
+          </Legend>
         </ul>
 
-        <p className="text-13 text-ink-dim leading-prose">
+        <p className="text-12 text-ink-dim leading-prose">
           <Text path="timeline.match.caption" />
         </p>
       </figcaption>
 
       {/* The canvas says a picture exists and nothing about what it shows (#92), and a modal makes
-          the strip behind it inert — so the reading §7.3 keeps on the round strip cannot be borrowed
-          from there while this is up, and the overlay owes its own. The density trace stays unvoiced:
-          it is an aggregate, and there is no sentence in it. */}
+          the strip behind it inert — so the reading the round strip carries cannot be borrowed from
+          there while this is up, and the overlay owes its own. The density trace stays unvoiced: it
+          is an aggregate, and there is no sentence in it. */}
       <ol className="sr-only" aria-label={t('timeline.outcomes')}>
         {cells.map((cell) => (
           <li key={cell.number}>
@@ -165,22 +177,27 @@ function MatchFigure({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: numbe
 }
 
 /**
- * `docs/DESIGN.md` §7.3's full-height match overlay — `M` raises it, and `M` is the whole way in
- * since §5.2 took the round number out of the top-left corner.
+ * The full-height match overlay — `M` raises it, and `M` is the whole way in since the round number
+ * left the top-left corner.
  *
- * It is where #90's economy gap, #91's density trace and #92's `EconomyGaps` live: §7.3 moved them
- * here rather than deleting them when the ribbon became a list of rounds. The reading that condemned
- * them was about a 14px strip that is always on screen with nothing to explain it, and none of that
- * is true of a full-height view the reader opened on purpose.
+ * It is where #90's economy gap, #91's density trace and #92's `EconomyGaps` live: they moved here
+ * rather than being deleted when the ribbon became a list of rounds. The reading that condemned them
+ * was about a 14px strip that is always on screen with nothing to explain it, and none of that is
+ * true of a full-height view the reader opened on purpose.
  *
- * **It covers the plate, and it pauses playback to earn that** — the same rule §10.5's sheets follow
- * and for the same reason: §5.1 lets a surface cover the plate only when the plate is not the thing
- * being read, and a match that keeps running behind a chart is a plate still being read. It also
- * settles `AGENTS.md` §16 without an argument, because a paused plate repaints nothing underneath.
+ * **It is a `Sheet`**, which is Base UI's dialog under animate-ui's primitive with the one
+ * `backdrop-filter` the product still spends: the top layer, the focus trap and `Esc` are the
+ * library's, and the surface can be animated out as well as in.
  *
- * Nothing here is a playhead and nothing here seeks. §7.3 puts the playhead on §7.1's axis and the
- * way to a round on the strip; this is the match as a picture, and the frame around the current
- * round is the only thing on it that knows where the reader is.
+ * **It covers the plate, and it pauses playback to earn that** — the same rule the settings and help
+ * sheets follow and for the same reason: a surface may cover the plate only when the plate is not
+ * the thing being read, and a match that keeps running behind a chart is a plate still being read.
+ * It also settles `AGENTS.md` §16 without an argument, because a paused plate repaints nothing
+ * underneath, which is what pays for the blur.
+ *
+ * Nothing here is a playhead and nothing here seeks. The playhead is on the round axis and the way
+ * to a round is on the strip; this is the match as a picture, and the frame around the current round
+ * is the only thing on it that knows where the reader is.
  */
 export function MatchOverlay({ demo, isOpen, onDismiss, roundIndex }: Props) {
   const t = useT();

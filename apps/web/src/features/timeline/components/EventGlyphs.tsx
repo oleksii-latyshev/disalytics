@@ -5,15 +5,15 @@ import { EventRow } from '@/core/events';
 import { EventGlyph, UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { Transport } from '@/core/playback';
 import { useRovingFocus } from '@/shared/hooks';
-import { GLYPH_HIT_HALF_PX, glyphHitHalves } from '../helpers/glyph-hits';
+import { GLYPH_HIT_HALF_PX, glyphHitHalves, hasRoomForSymbol } from '../helpers/glyph-hits';
 import { defuseOutcomeKey } from '../helpers/outcome-copy';
-import { type AxisEvent, type AxisGlyph, hasRoomForGlyphs, namedKill } from '../helpers/round-axis';
+import { type AxisEvent, type AxisGlyph, namedKill } from '../helpers/round-axis';
 import { anchorAtFraction } from '../helpers/round-strip';
 
 /** The band the glyphs occupy, centred on the axis — 24px of mark plus the room to rise into. */
 const GLYPH_BAND_PX = 28;
 
-/** §9.2's dwell, the same one §7.3's pills answer on: a tooltip answers a pointer that stayed. */
+/** The dwell, the same one the strip's pills answer on: a tooltip answers a pointer that stayed. */
 const HOVER_DWELL_MS = 400;
 
 interface Props {
@@ -56,9 +56,15 @@ function Glyph({ event }: { event: AxisEvent }) {
 }
 
 /**
- * §7.1's glyphs: one symbol per event on the round's own axis, tinted by what it was. They share one
- * tab stop and are walked with the arrow keys, because a busy round holds thirty of them and tabbing
- * through to reach the speed control is not an interface.
+ * The axis's glyphs: one symbol per event on the round's own axis, tinted by what it was. They share
+ * one tab stop and are walked with the arrow keys, because a busy round holds thirty of them and
+ * tabbing through to reach the speed control is not an interface.
+ *
+ * **A glyph decides its own form** (#271). Where the nearest mark is a whole glyph away it is drawn
+ * as a symbol; where it is closer than that, that glyph — and only that glyph — falls back to a
+ * mark, so a cluster reads as the several events it is rather than as a smear of icons drawn over
+ * one another. Nothing is nudged: a mark on a time axis that has been moved off its own moment is a
+ * lie about time.
  *
  * Memoised for the reason `KillMarkers` was: the timeline above re-renders off the 10 Hz readout, so
  * without it every glyph reconciles ten times a second for a list that turns over once a round.
@@ -74,7 +80,6 @@ export const EventGlyphs = memo(function EventGlyphs({
   const roving = useRovingFocus(glyphs.length);
   const dwellRef = useRef(0);
 
-  const hasRoom = hasRoomForGlyphs(glyphs.length, widthPx);
   const halves = useMemo(() => glyphHitHalves(glyphs, widthPx), [glyphs, widthPx]);
 
   const [namedId, setNamedId] = useState<string | null>(null);
@@ -130,7 +135,7 @@ export const EventGlyphs = memo(function EventGlyphs({
     }
   }
 
-  // §7.1: the strip goes quiet around the one question a reader asked. Only a kill *by* the selected
+  // The strip goes quiet around the one question a reader asked. Only a kill *by* the selected
   // player rises — a kill *of* them is still someone else's work.
   function isRaised(event: AxisEvent): boolean {
     return selectedSlot !== null && event.kind === 'kill' && event.attacker === selectedSlot;
@@ -148,6 +153,7 @@ export const EventGlyphs = memo(function EventGlyphs({
         {glyphs.map((glyph, index) => {
           const raised = isRaised(glyph.event);
           const muted = selectedSlot !== null && !raised;
+          const halfPx = halves.at(index) ?? GLYPH_HIT_HALF_PX;
 
           return (
             <li key={glyph.id}>
@@ -165,13 +171,13 @@ export const EventGlyphs = memo(function EventGlyphs({
                   roving.select(index);
                   transport.seek(glyph.frame);
                 }}
-                // The button *is* the target — §7.1's hit slot, centred on the mark and stopping
-                // half way to the nearest neighbour, so a cluster's marks overlap and its targets
-                // never do (#268). The mark itself is laid out over the slot rather than inside it,
-                // or a 24px symbol in a 3px button would be squeezed to fit.
+                // The button *is* the target — the hit slot, centred on the mark and stopping half
+                // way to the nearest neighbour, so a cluster's targets never overlap (#268). The
+                // mark itself is laid out over the slot rather than inside it, or a 24px symbol in a
+                // 3px button would be squeezed to fit.
                 style={{
                   left: `${glyph.fraction * 100}%`,
-                  width: `${(halves.at(index) ?? GLYPH_HIT_HALF_PX) * 2}px`,
+                  width: `${halfPx * 2}px`,
                 }}
                 // The descendant selector is what mutes a `UtilityGlyph`, which owns its colour
                 // class: between two single-class rules the stylesheet's order would decide instead.
@@ -183,10 +189,10 @@ export const EventGlyphs = memo(function EventGlyphs({
                     taking pointer events would reach across its neighbours exactly the way the
                     button used to. */}
                 <span className="-translate-x-1/2 pointer-events-none absolute inset-y-0 left-1/2 flex items-center justify-center">
-                  {hasRoom ? (
+                  {hasRoomForSymbol(halfPx) ? (
                     <Glyph event={glyph.event} />
                   ) : (
-                    // A mark keeps the position and the colour and loses only the shape — §7.1.
+                    // A mark keeps the position and the colour and loses only the shape.
                     <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
                   )}
                 </span>
@@ -196,14 +202,14 @@ export const EventGlyphs = memo(function EventGlyphs({
         })}
       </ul>
 
-      {/* §7.1's kill row, and §2.3's tooltip case: `--glass-raised` and no `backdrop-filter`, because
-          the playhead and the glyphs are moving under it every frame. It hangs above the axis and
-          over the round strip — the block does not clip its overflow, and below the axis is the
-          bottom of the window. Anchored by the edge nearer its end of the axis, so the row grows
-          inward and the last kill of a round is not drawn off the screen.
+      {/* The kill row: `--surface-3` and no `backdrop-filter`, because the playhead and the glyphs
+          are moving under it every frame. It hangs above the axis and over the round strip — the
+          block does not clip its overflow, and below the axis is the bottom of the window. Anchored
+          by the edge nearer its end of the axis, so the row grows inward and the last kill of a
+          round is not drawn off the screen.
 
           `aria-hidden` because it restates the glyph's own accessible name, which is the whole
-          reason §9.2 lets it exist. */}
+          reason it is allowed to exist. */}
       {named !== undefined && (
         <div
           aria-hidden="true"

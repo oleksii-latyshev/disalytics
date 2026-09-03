@@ -1,12 +1,6 @@
 import { asPlayerSlot, asTick } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import {
-  axisGlyphs,
-  hasRoomForGlyphs,
-  namedKill,
-  positionInSegment,
-  timelineSegment,
-} from '../helpers/round-axis';
+import { axisGlyphs, namedKill, positionInSegment, timelineSegment } from '../helpers/round-axis';
 import { newBuy, newDefuse, newDemo, newGrenade, newKill, newPlant, newRound } from './helpers';
 
 // The fixtures run at 64 ticks and 16 samples, so a frame is a tick over four. `newRound` opens the
@@ -79,22 +73,6 @@ describe('positionInSegment', () => {
     const empty = timelineSegment(newDemo(4001, { rounds: ROUNDS }), undefined);
 
     expect(positionInSegment(12, empty, 500)).toBe(0);
-  });
-});
-
-describe('hasRoomForGlyphs', () => {
-  it('has room when nothing is on the axis', () => {
-    expect(hasRoomForGlyphs(0, 0)).toBe(true);
-  });
-
-  it('has room while the average pitch clears the threshold', () => {
-    expect(hasRoomForGlyphs(10, 500)).toBe(true);
-    expect(hasRoomForGlyphs(10, 240)).toBe(true);
-  });
-
-  it('collapses to marks below it', () => {
-    expect(hasRoomForGlyphs(10, 239)).toBe(false);
-    expect(hasRoomForGlyphs(60, 500)).toBe(false);
   });
 });
 

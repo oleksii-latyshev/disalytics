@@ -21,7 +21,7 @@ Three boundaries exist so that "left as it arrives" is true rather than aspirati
 | Linter | `biome.json` | Formatter, linter and assist off for this directory, `src/hooks/` and `src/lib/get-strict-context.tsx`. Reformatting upstream would make every re-add a diff. |
 | Declarations | `tsconfig.build.json`, `tools/declaration-specifiers.ts` | `bun run build` emits `dist/**/*.d.ts` and `package.json`'s `exports` points consumers at them. With `skipLibCheck` on repository-wide, no consumer ever typechecks these sources — which is what lets the compiler boundary above be one package wide instead of leaking into the app. |
 
-## The two lines that are not upstream's
+## The three lines that are not upstream's
 
 Both are marked in place. Re-apply them if `shadcn add` overwrites the file; delete them once
 upstream catches up.
@@ -36,6 +36,19 @@ upstream catches up.
    `exports` entry, so there is no specifier `tsc` can write for it (TS2742) and **this package
    cannot publish its types at all** — which would take the declaration boundary with it. Naming the
    two halves directly says the same thing.
+
+3. **`primitives/base/toggle-group.tsx`** — the item is a plain `<button>` where upstream renders
+   a `motion.button` with a `whileTap` scale. **A motion component never receives the composite
+   item's ref**, and Base UI's toggle group is a composite: it walks its items by calling `.focus()`
+   on the node it was handed, so with nothing in that list an arrow key moves the group's tab stop
+   and leaves the focus where it was. Measured over CDP on the review screen, three forms of the
+   same press: with upstream's element the tab stop went 4 → 5 and `document.activeElement` did not
+   move, and `HTMLElement.prototype.focus` was never called at all; passing the ref explicitly
+   through Base UI's render-*function* form measured identically; with a plain button the focus
+   walks the group as it should. The group also calls `stopPropagation` on the keys it takes, so the
+   failure is not a press that falls through to something else — it is a press that does nothing.
+   The `whileTap` scale goes with it, which costs this product nothing: interaction here is
+   luminance rather than movement, and no other control in the kit scales under a press.
 
 ## What is deliberately not re-exported
 
