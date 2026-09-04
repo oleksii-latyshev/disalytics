@@ -72,8 +72,8 @@ export {
    what it gives is behaviour, and the styling is the caller's — and there is a second reason here
    that is a rule rather than a preference. The registry's styled trigger is `transition-all` at
    Tailwind's own `duration-200`, which is the loaded gun #134 took off the shared controls; and the
-   primitive's panel animates `height` from 0 to `auto`, which hard rule 9 forbids at every moment
-   rather than during playback. A caller overrides the second by passing its own `initial`/`animate`
+   primitive's panel animates `height` from 0 to `auto`, which lays out every row beneath it on
+   every frame of the open. A caller overrides the second by passing its own `initial`/`animate`
    /`exit`, because the panel spreads the caller's props over its defaults — `SettingGroup` is where
    that is done and why. */
 export {
@@ -87,7 +87,7 @@ export {
    give is behaviour, and the styling is the caller's. There is a second reason here and it is a
    rule: the registry's styled `ProgressTrack` renders its own indicator, and that indicator animates
    `width`. A bar in this product **scales, it does not resize** — `transform: scaleX()` — because
-   `width` triggers layout at every moment of the animation, which hard rule 9 forbids. The
+   `width` triggers layout at every moment of the animation, over the whole of a parse. The
    indicator is the caller's element for that reason and no other. */
 export {
   Progress,

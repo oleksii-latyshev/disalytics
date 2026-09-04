@@ -57,8 +57,9 @@ const WEAPON_SLOT = 'flex h-3 w-9 shrink-0 items-center justify-end';
  * which is the state the old design needed a word for. The word is still there; the wash is not
  * doing the job alone.
  *
- * It scales, it does not resize: `transform` on `origin-left`, which is what hard rule 9 requires of
- * anything that moves with the readout. It carries no transition for the same reason — this is
+ * It scales, it does not resize: `transform` on `origin-left`, because this is ten rows written ten
+ * times a second and `width` would lay out the card each time. It carries no transition for the
+ * same reason — this is
  * written ten times a second, and a tween on it would be motion on the reading channel.
  */
 function HealthWash({ value, side }: { value: number; side: Team }) {

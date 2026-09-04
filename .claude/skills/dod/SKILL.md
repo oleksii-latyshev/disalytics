@@ -62,8 +62,9 @@ from memory of what you intended to write.
 - [ ] Every effect, worker, listener and rAF cleaned up?
 - [ ] Any `useEffect` computing derived state?
 - [ ] Every user-facing error mapped to translated copy, not a raw exception?
-- [ ] Any animation that could run during playback? Anything animating other than
-      `transform`/`opacity`?
+- [ ] Anything subscribed to the frame channel touching React? Any animation heavy enough that
+      §16's 60 fps assertion needs re-measuring — a layout-triggering property, a filter, or a
+      mark multiplied across the plate?
 
 **Contract**
 - [ ] Parser output still deterministic? Golden snapshot change intentional and hand-reviewed?

@@ -3,10 +3,11 @@
    wherever they are declared, and a reset that loses to specificity is not a reset.
 
    What used to sit above it — a `[data-playing]` rule that took every transition and animation on
-   the page to zero while the match ran — is gone, and stays gone. The rule that matters is narrower
-   and always on: no motion on the frame channel, and no motion of a property that triggers layout. A
-   global kill switch cannot express either half of that, and what it did express was an interface
-   that stopped answering the reader during the activity the product exists for.
+   the page to zero while the match ran — is gone, and stays gone. What replaced it is a budget
+   rather than a prohibition (`AGENTS.md` §2 rule 9): the interface may animate while the match
+   runs, and §16's 60 fps assertion is what holds it to account. A global kill switch cannot express
+   a budget, and what it did express was an interface that stopped answering the reader during the
+   activity the product exists for.
 
    Opacity keeps its transition so fades still read as intentional rather than as a flicker.
 

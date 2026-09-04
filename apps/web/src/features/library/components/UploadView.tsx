@@ -33,7 +33,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
       <div className="surface-card relative w-full max-w-[36rem] rounded-float p-8">
         {/* The card transforms in place rather than navigating. The body crossfades on `status`
             alone, so filling in the map and the player count mid-parse does not restart it. Opacity
-            and transform only, per hard rule 9. */}
+            and transform only, over a card the size of this one. */}
         <AnimatePresence initial={false} mode="wait">
           <m.div
             key={state.status}

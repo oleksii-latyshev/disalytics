@@ -53,7 +53,8 @@ export function TimelineBlock({
   return (
     // The fullscreen auto-hide, and it **keeps its space**: the cell's height is what the plate's
     // axis is short of, so a block that collapsed would resize the plate under the reader in the
-    // middle of a round. It leaves by `translate` and `opacity` and by nothing else — hard rule 9,
+    // middle of a round. It leaves by `translate` and `opacity` and by nothing else — it slides
+    // over a running match, which is where §16's budget is measured —
     // and `translate` is the individual transform property Tailwind's `translate-y-*` actually
     // writes: naming `transform` in the transition list leaves the slide to snap while the fade
     // runs, which looks like a working animation until it is measured. The stage clips the box it

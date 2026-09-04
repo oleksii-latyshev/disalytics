@@ -17,7 +17,7 @@ interface Props {
 }
 
 /* The panel's own motion, and it is an override rather than a preference. The primitive animates
-   `height` from 0 to `auto`, which hard rule 9 forbids at every moment rather than during playback,
+   `height` from 0 to `auto`, which lays out every row beneath it on every frame of the open,
    and the panel spreads the caller's props over its defaults — so naming these here is what replaces
    the height tween instead of adding to it.
 
