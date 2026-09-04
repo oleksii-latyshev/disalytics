@@ -1,8 +1,8 @@
 import type { ParsedDemo, PlayerInfo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { DURATION_MICRO_SECONDS, EASE_OUT, m } from '@disa/ui';
+import { DURATION_MICRO_SECONDS, EASE_OUT, motion } from '@disa/ui';
 import { useEffect, useMemo } from 'react';
-import { EventRow, type KillLine, type RowEvent } from '@/core/events';
+import { EventRow, type KillLine, killName, type RowEvent } from '@/core/events';
 import type { Transport } from '@/core/playback';
 import { killLineOf, roundFeed, visibleFeed } from '../helpers/event-feed';
 
@@ -66,39 +66,18 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onKillH
     return names[slot] ?? t('review.feed.unknownPlayer');
   }
 
-  function marksOf(event: RowEvent): readonly string[] {
-    if (event.kind !== 'kill') return [];
-
-    const marks: string[] = [];
-    if (event.isHeadshot) marks.push(t('review.feed.headshot'));
-    if (event.isWallbang) marks.push(t('review.feed.wallbang'));
-    if (event.isThroughSmoke) marks.push(t('review.feed.throughSmoke'));
-
-    return marks;
-  }
-
-  function sentenceOf(event: RowEvent): string {
+  // One accessible name for the whole row: the marks are `aria-hidden` glyphs inside a button, and
+  // a label on the button is what a reader hears instead of them. The kill's own sentence is
+  // `core/events`' rather than this file's, because §7.1's axis names the same kill (#214).
+  function labelFor(event: RowEvent): string {
     switch (event.kind) {
       case 'kill':
-        return event.attacker === null
-          ? t('review.feed.killByWorld', { victim: nameOf(event.victim) })
-          : t('review.feed.kill', {
-              attacker: nameOf(event.attacker),
-              victim: nameOf(event.victim),
-              // Game vocabulary reaches a label untranslated, the way a team row's weapon does.
-              weapon: event.weaponName,
-            });
+        return killName(event, nameOf, t);
       case 'plant':
-        return t('review.feed.plant', { planter: nameOf(event.planter) });
+        return t('events.plant', { planter: nameOf(event.planter) });
       case 'defuse':
-        return t('review.feed.defuse', { defuser: nameOf(event.defuser) });
+        return t('events.defuse.completed', { defuser: nameOf(event.defuser) });
     }
-  }
-
-  // One accessible name for the whole row: the marks are `aria-hidden` glyphs inside a button, and
-  // a label on the button is what a reader hears instead of them.
-  function labelFor(event: RowEvent): string {
-    return [sentenceOf(event), ...marksOf(event)].join('. ');
   }
 
   return (
@@ -109,7 +88,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onKillH
       <ul className="flex min-w-0 flex-col gap-0.5">
         {visible.map((row) => (
           <li key={row.id} className="min-w-0">
-            <m.button
+            <motion.button
               type="button"
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -123,7 +102,7 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onKillH
               className="flex w-full min-w-0 rounded-chip px-1.5 py-0.5 text-left text-13 text-ink transition-colors duration-(--duration-micro) ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <EventRow event={row.event} nameOf={nameOf} />
-            </m.button>
+            </motion.button>
           </li>
         ))}
       </ul>

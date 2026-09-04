@@ -4,6 +4,7 @@ import { flattenResources } from '../helpers/flatten-messages';
 
 const resources = {
   common: { tagline: 'Tagline' },
+  events: {},
   library: {},
   review: {},
   controls: {},

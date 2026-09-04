@@ -1,6 +1,6 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
-import { AnimatePresence, DURATION_BASE_SECONDS, EASE_OUT, m } from '@disa/ui';
+import { AnimatePresence, DURATION_BASE_SECONDS, EASE_OUT, motion } from '@disa/ui';
 import type { ParseState } from '@/core/parsing';
 import { DemoLibrary } from './DemoLibrary';
 
@@ -35,7 +35,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
             alone, so filling in the map and the player count mid-parse does not restart it. Opacity
             and transform only, over a card the size of this one. */}
         <AnimatePresence initial={false} mode="wait">
-          <m.div
+          <motion.div
             key={state.status}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -51,7 +51,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
               onShowAll={onShowAll}
               isDraggedOver={isDraggedOver}
             />
-          </m.div>
+          </motion.div>
         </AnimatePresence>
 
         <p className="mt-6 text-12 text-ink-dim leading-prose">

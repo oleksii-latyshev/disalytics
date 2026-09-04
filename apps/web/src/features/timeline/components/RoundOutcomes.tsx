@@ -1,7 +1,7 @@
 import type { Team } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import {
-  m,
+  motion,
   ToggleGroup,
   ToggleGroupHighlight,
   ToggleGroupItem,
@@ -213,7 +213,7 @@ export const RoundOutcomes = memo(function RoundOutcomes({
           // `ms-2` on top of the row's 4px gap is the 12px segment break, and the rule sits at
           // -6px, which is that break's centre line. It is a `::before` rather than an element,
           // because the highlight below takes exactly one child.
-          <m.div
+          <motion.div
             key={cell.number}
             {...pillArrival(index, cells.length)}
             className={`relative min-w-0 flex-1 ${
@@ -251,7 +251,7 @@ export const RoundOutcomes = memo(function RoundOutcomes({
                 onReveal={onReveal}
               />
             </ToggleGroupItemHighlight>
-          </m.div>
+          </motion.div>
         ))}
       </ToggleGroupHighlight>
     </ToggleGroup>

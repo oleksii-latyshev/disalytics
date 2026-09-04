@@ -8,13 +8,6 @@
   "team": "Игроки {side}",
   "feed": {
     "label": "Лента событий",
-    "kill": "{attacker} убивает {victim} — {weapon}",
-    "killByWorld": "{victim} погибает",
-    "plant": "{planter} ставит бомбу",
-    "defuse": "{defuser} обезвреживает бомбу",
-    "headshot": "В голову",
-    "wallbang": "Сквозь стену",
-    "throughSmoke": "Сквозь дым",
     "unknownPlayer": "Неизвестный игрок"
   },
   "fullscreen": {

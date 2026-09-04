@@ -7,7 +7,7 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
-import { m } from '@disa/ui';
+import { motion } from '@disa/ui';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { KillLine } from '@/core/events';
 import { assembly } from '@/core/motion';
@@ -117,7 +117,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
 
   const teamCards = (
     <>
-      <m.div {...assembly('cardLeft')} className="min-w-0 flex-1 split:[grid-area:3/1/4/2]">
+      <motion.div {...assembly('cardLeft')} className="min-w-0 flex-1 split:[grid-area:3/1/4/2]">
         <TeamCard
           demo={demo}
           side="T"
@@ -129,9 +129,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           shape={shape}
           onSelect={toggleSelected}
         />
-      </m.div>
+      </motion.div>
 
-      <m.div {...assembly('cardRight')} className="min-w-0 flex-1 split:[grid-area:3/3/4/4]">
+      <motion.div {...assembly('cardRight')} className="min-w-0 flex-1 split:[grid-area:3/3/4/4]">
         <TeamCard
           demo={demo}
           side="CT"
@@ -143,7 +143,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           shape={shape}
           onSelect={toggleSelected}
         />
-      </m.div>
+      </motion.div>
     </>
   );
 
@@ -154,14 +154,14 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           padding, and type with no card behind it would sit on the glass of the window. It has no
           bottom half — the grid's own `gap-3` is already under this row, and a second 12px there
           comes out of the plate's square. */}
-      <m.div
+      <motion.div
         {...assembly('stage')}
         className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]"
       >
         <LeaveMatch onClose={onClose} />
 
         <MatchIdentity demo={demo} cache={cache} />
-      </m.div>
+      </motion.div>
 
       {/* The cluster and, under it, §5.4's feed. Above the split this spans rows 1 and 2 of the
           right-hand column — the one cell on the stage that neither a card nor the plate is in — so
@@ -173,7 +173,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           Below the split there is no such cell. Row 1 is shared with the top-left corner and row 2
           *is* the plate, so a feed there would be §5.1's one rule broken; it is not drawn at those
           widths rather than drawn somewhere it does not belong. */}
-      <m.div
+      <motion.div
         {...assembly('cardTop')}
         className="flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4]"
       >
@@ -195,11 +195,11 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
             onKillHover={setHoveredKill}
           />
         </div>
-      </m.div>
+      </motion.div>
 
       {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every
           pixel on the map, which is why the cards are beside the cell rather than over it. */}
-      <m.div
+      <motion.div
         {...assembly('stage')}
         className="relative grid min-h-0 min-w-0 [grid-area:2/1/3/2] split:[grid-area:1/2/4/3]"
       >
@@ -222,7 +222,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
             <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
           </div>
         )}
-      </m.div>
+      </motion.div>
 
       {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two
           grid columns in the other without being written out twice. */}
@@ -231,7 +231,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
       {/* The cell keeps its height whether or not the block is in it — §5.1's plate is sized from
           this row, so a block that collapsed would resize the plate under the reader mid-match. The
           ref is how §9.3's hide knows to stand aside for a `Tab` that has landed inside. */}
-      <m.div
+      <motion.div
         ref={timelineRef}
         {...assembly('cardBottom')}
         className="[grid-area:4/1/5/2] split:[grid-area:4/1/5/4]"
@@ -245,7 +245,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           hasScoreboard={scoreboard === 'block'}
           isAway={corners.isTimelineAway}
         />
-      </m.div>
+      </motion.div>
 
       <ReviewSheets
         demo={demo}

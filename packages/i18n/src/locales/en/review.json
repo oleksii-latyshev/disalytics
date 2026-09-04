@@ -8,13 +8,6 @@
   "team": "{side} players",
   "feed": {
     "label": "Event feed",
-    "kill": "{attacker} kills {victim} with {weapon}",
-    "killByWorld": "{victim} dies",
-    "plant": "{planter} plants the bomb",
-    "defuse": "{defuser} defuses the bomb",
-    "headshot": "Headshot",
-    "wallbang": "Through a wall",
-    "throughSmoke": "Through smoke",
     "unknownPlayer": "Unknown player"
   },
   "fullscreen": {

@@ -1,0 +1,15 @@
+{
+  "kill": {
+    "byPlayer": "{attacker} убивает {victim} — {weapon}",
+    "byWorld": "{victim} погибает",
+    "headshot": "В голову",
+    "wallbang": "Сквозь стену",
+    "throughSmoke": "Сквозь дым"
+  },
+  "plant": "{planter} ставит бомбу",
+  "defuse": {
+    "completed": "{defuser} обезвреживает бомбу",
+    "aborted": "{defuser} прекращает разминирование",
+    "interrupted": "{defuser} погибает при разминировании"
+  }
+}

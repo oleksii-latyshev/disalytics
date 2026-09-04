@@ -1,7 +1,5 @@
-import { LazyMotion, MotionConfig, type MotionConfigProps } from 'motion/react';
+import { MotionConfig, type MotionConfigProps } from 'motion/react';
 import type * as React from 'react';
-
-const loadDomAnimation = () => import('./motion-features').then((features) => features.default);
 
 interface Props {
   children: React.ReactNode;
@@ -16,23 +14,19 @@ interface Props {
 /**
  * The one place `motion` enters the tree.
  *
- * **`strict` is off, and that is a decision the redesign made rather than an oversight.** It used to
- * be on, which makes the full `motion.*` components throw and leaves `m` as the only way to animate
- * anything — a good rule while every animated surface in the product was written here. Every
- * animate-ui primitive imports `motion`, so under `strict` a component added by `shadcn add` would
- * compile, pass review, and throw the first time a reader opened it. A rule that turns a supported
- * workflow into a runtime crash is the wrong rule, and the preference it encoded is worth less than
- * the registry it was blocking.
+ * **There is no `LazyMotion` here and no `m`, and #284 is where both went.** The split point they
+ * existed for had stopped deferring anything: every animate-ui primitive imports `motion` directly,
+ * so the whole feature set is in the entry chunk whatever this file does, and the `motion-features`
+ * chunk was measured at **157 bytes** — a re-export of three symbols the entry chunk already holds.
+ * Keeping it meant the next reader would reach for `m` believing it bought a deferred download.
  *
- * `LazyMotion` stays, and so does the split point: our own surfaces still use `m` and still get the
- * feature bundle lazily. What changes is that a surface built on the registry pulls the full set in
- * instead, which is a bundle cost rather than a correctness one — `bun run size` is what holds it to
- * its word.
+ * Making the split real is the alternative that was rejected, and it is not available: the boundary
+ * can only defer what nothing else pulls in eagerly, and the registry's components are not something
+ * this repository chooses to stop importing.
+ *
+ * `strict` went with #276, for a reason that outlives this: under it a component added by
+ * `shadcn add` would compile, pass review, and throw the first time a reader opened it.
  */
 export function MotionProvider({ children, reducedMotion = 'user' }: Props) {
-  return (
-    <LazyMotion features={loadDomAnimation}>
-      <MotionConfig reducedMotion={reducedMotion}>{children}</MotionConfig>
-    </LazyMotion>
-  );
+  return <MotionConfig reducedMotion={reducedMotion}>{children}</MotionConfig>;
 }

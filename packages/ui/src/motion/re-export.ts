@@ -1,7 +1,6 @@
-// `m` for anything written in this repository: it is the mini component, and it is what the
-// `LazyMotion` split point in `provider.tsx` exists for. `motion` is re-exported too because the
-// animate-ui primitives under `components/animate-ui` import it directly and there stays exactly one
-// path from this repository into the library.
+// The one path from this repository into `motion`. `m` is deliberately not re-exported: it only
+// animates under a `LazyMotion`, which #284 removed once the split point it fed was measured as
+// empty, and an `m.div` with no provider above it renders and quietly never moves.
 
 export type { TargetAndTransition, Transition } from 'motion/react';
-export { AnimatePresence, m, motion } from 'motion/react';
+export { AnimatePresence, motion } from 'motion/react';

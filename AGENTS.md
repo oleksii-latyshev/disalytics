@@ -585,14 +585,19 @@ it fails, the motion is what goes. A property that triggers layout is still the 
 it does fail, and is still the wrong default — but it is a review note now, not a rule, and the
 measurement is what settles an argument about one.
 
-A JavaScript-driven tween is still stopped by not starting one. The `LazyMotion` in `@disa/ui`'s
-`MotionProvider` used to enforce that with `strict`, which leaves only the `m` component and makes
-the full `motion.*` throw. **#276 turned `strict` off**: every animate-ui primitive imports `motion`,
-so under it a component added by `shadcn add` would compile, pass review, and throw the first time a
-reader opened it. `LazyMotion` and its split point stay, `m` stays the preference for anything
-written here, and §16's assertion is what actually holds the rule. The `prefers-reduced-motion` reset in `motion.css` is now the only global motion
-override in the product, and it no longer needs `:where()`: it had that to lose a specificity race
-against the playing-flag rule, and there is nothing left to race.
+**`motion` enters the tree through one `MotionProvider` in `@disa/ui`, and there is nothing else
+in it.** It used to be a `strict` `LazyMotion`, which leaves only the `m` component and makes the
+full `motion.*` throw; **#276 turned `strict` off**, because every animate-ui primitive imports
+`motion` and under it a component added by `shadcn add` would compile, pass review, and throw the
+first time a reader opened it. **#284 removed `LazyMotion` itself**, and `m` with it: the split
+point was measured at 157 bytes — a re-export of symbols the entry chunk already held — because
+those same primitives pull the whole feature set in eagerly, so the boundary could not defer
+anything and `m` bought a deferred download that did not exist. Write `motion.*`; `@disa/ui`
+exports no `m` to reach for. §16's assertion is what actually holds the rule.
+
+The `prefers-reduced-motion` reset in `motion.css` is the only global motion override in the
+product, and it no longer needs `:where()`: it had that to lose a specificity race against the
+playing-flag rule, and there is nothing left to race.
 
 **Where it all sits — #110.** The layout of the day: a 56px top bar, two player rails beside a
 stage that takes the rest, and a 96px spine band. Measured at 1280×800 against the Phase 0 fixture,
@@ -829,9 +834,12 @@ Two locales: **English (`en`, source) and Russian (`ru`)**. Patterns and example
 ### Structure
 
 `packages/i18n` owns resources, the typed key union, and the `<Text>` / `useT` API. Namespaces:
-`common`, `library`, `timeline`, `filters`, `radar`, `settings`, `errors`. Only the active locale is
-loaded —
-locales are dynamic imports, never bundled together.
+`common`, `events`, `library`, `review`, `controls`, `timeline`, `filters`, `radar`, `settings`,
+`help`, `errors` — one JSON file each per locale, and `Namespace` in `config.ts` is the list a new
+one has to be added to. **A namespace is a slice, not a screen**: `events` exists because §5.4's
+feed and §7.1's axis draw the same kill, and a sentence two features say belongs to the slice they
+both import (`core/events`) rather than to whichever of them was written first (#214). Only the
+active locale is loaded — locales are dynamic imports, never bundled together.
 
 ### Keys are typed
 
