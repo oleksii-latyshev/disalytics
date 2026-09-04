@@ -70,7 +70,9 @@ gh pr ready            # when it is
 gh pr merge --squash --delete-branch --auto
 ```
 
-`--auto` merges as soon as required checks pass, so there is no waiting and no forgetting.
+`--auto` merges as soon as required checks pass, so there is no waiting and no forgetting. It is
+only true while `main` carries branch protection with checks marked required — §5 is what applies
+it, and #298 merged under two pending runs because it did not.
 
 ### Useful
 
@@ -246,23 +248,28 @@ Settings → General → Pull Requests (also available via `gh repo edit` flags 
 Otherwise GitHub concatenates every branch commit into the message and the conventional-commit
 subject is lost.
 
-Branch protection on `main` — **ready to switch on.** `.github/workflows/ci.yml` exists since #20
-and runs `typecheck` → `check` → `i18n:check` → `test` → `build` → `tokens:check` → `size` on every
-pull request and
-every push to `main`. Once it has run green once, apply:
+Branch protection on `main` — **applied in #301.** Until then `main` had none at all, which is why
+`gh pr merge --auto` was a silent no-op: it waits for *required* checks and there were none, so #298
+merged forty seconds after it opened with `ci` and `wasm` both still running. What is applied:
 
-- Required status check: **`ci`** — one job, so one check. The six commands are steps inside it, not
-  separate checks; a red step fails `ci` and names itself in the log.
-- Require branches to be up to date before merging
-- No direct pushes, no force pushes
+- Required status checks: **`ci`** and **`wasm`** — one job each, so one check each. The steps are
+  inside them, not separate checks; a red step fails its check and names itself in the log.
+- Admins included, so a direct push to `main` is refused for everyone.
+- Force pushes and deletions refused.
+- **Branches are not required to be up to date.** This repository merges by squash and reruns both
+  checks on `main` afterwards; requiring it would mean one rebase per merge for a queue of one.
 
-One caveat to know before turning the check on: `ci.yml` carries `paths-ignore: ['crates/**']`, so a
-pull request that touches **only** `crates/**` never starts it, and a required check that never
-starts stays pending forever. That is deliberate — a frontend workflow has no business rebuilding
-the parser (`AGENTS.md` §15) — but it means parser-only pull requests wait on `wasm.yml` and need
-`ci` marked required-but-not-blocking, or an admin merge, until that workflow exists.
+The caveat that used to sit here is closed rather than accepted. `ci.yml` and `wasm.yml` filter each
+other's work by path, and a workflow a path filter skips never starts, so its required check stays
+pending for ever. Both now take every pull request and decide in a `scope` job instead — a skipped
+*job* reports success where a skipped *workflow* reports nothing. `AGENTS.md` §15 has the shape.
 
-Until protection is applied the rules above are held by discipline, not by the platform.
+To read or change it:
+
+```bash
+gh api repos/oleksii-latyshev/disalytics/branches/main/protection
+gh api -X DELETE repos/oleksii-latyshev/disalytics/branches/main/protection   # to lift it
+```
 
 ### Git hooks
 

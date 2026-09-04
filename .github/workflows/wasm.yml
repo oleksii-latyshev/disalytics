@@ -1,24 +1,23 @@
 name: wasm
 
+# The pull_request trigger carries no path filter, for the reason ci.yml states at the same place:
+# a workflow skipped by a path filter never creates its check run, so a required context stays
+# pending for ever, while a job skipped by an `if` reports success. The filter is the `scope` job.
 on:
   push:
     branches: [main]
     paths:
       - 'crates/**'
+      - 'vendor/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
       - '.github/workflows/wasm.yml'
   pull_request:
-    paths:
-      - 'crates/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'rust-toolchain.toml'
-      - '.github/workflows/wasm.yml'
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: wasm-${{ github.workflow }}-${{ github.ref }}
@@ -29,7 +28,46 @@ env:
   WASM_PACK_VERSION: 0.15.0
 
 jobs:
+  # The `paths` list above, restated for pull requests in the one grammar that can be read without a
+  # checkout. Keep the two saying the same thing.
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - name: Decide whether this pull request touches the parser
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != 'pull_request' ]; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --paginate --jq '.[].filename')
+          # `case` rather than a regular expression, so the patterns below are the same grammar as
+          # the `paths` list above and can be compared to it by eye.
+          run=false
+          while IFS= read -r file; do
+            case "$file" in
+              crates/* | vendor/*) run=true ;;
+              Cargo.toml | Cargo.lock | rust-toolchain.toml) run=true ;;
+              .github/workflows/wasm.yml) run=true ;;
+            esac
+          done <<EOF
+          $files
+          EOF
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          if [ "$run" = 'false' ]; then
+            echo 'No Rust in this pull request — ci.yml is what covers it.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   wasm:
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -49,10 +87,14 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # ci.yml carries paths-ignore: crates/**, so a change to the Rust error vocabulary alone
-      # never reaches the copy of this check that runs there.
+      # Both parity checks run here as well as in ci.yml, because neither workflow sees both halves
+      # of either contract on its own: a change to the Rust side alone never reaches the copy that
+      # runs there — ci.yml's own scope job skips a parser-only pull request.
       - name: errors:check
         run: bun run errors:check
+
+      - name: bitfields:check
+        run: bun run bitfields:check
 
       # rustup reads rust-toolchain.toml, so the channel, components and wasm target all come from
       # the pinned file rather than from whatever the runner image ships.

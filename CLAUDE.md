@@ -1342,6 +1342,26 @@ is 16.81/16.54/16.55 s before against 15.41/15.31/16.31 s after, which is one sp
 `docs/PARSER.md` §21 carries the convar table, the two traps and the bomb's numbers.
 
 
+**#301 and #60 gave the two rules this repository states about merging something that enforces
+them.** `gh pr merge --auto` had been a silent no-op for the life of the project — `main` carried no
+protection at all, so there were no *required* checks to wait for, and #298 merged forty seconds
+after it opened with `ci` and `wasm` both still running. Three things are load-bearing. **A workflow
+a path filter skips never creates its check run**, so marking `ci` and `wasm` required on top of
+today's filters would have left every pull request pending for ever in one direction or the other —
+a frontend one waiting on `wasm`, a parser-only one waiting on `ci`. A *job* skipped by an `if`
+reports success, so the filter moved off the `pull_request` trigger and into a `scope` job that asks
+the pull request for its own file list; `push` keeps its filter, and the two are one list in two
+grammars. **The check is not a fake green**: no second workflow reports a context it did not earn,
+which is the documented alternative and cannot be made unambiguous here — a pull request touching
+both arms would trigger the real workflow and its stand-in at once. And **`bun run bitfields:check`
+is `errors:check`'s shape for the other contract copied by hand**: `FLAG_*` and `GRENADE_*` are
+written in Rust and read in TypeScript, both files said "must stay in sync with" the other, and
+nothing enforced it — a bit that means *scoped* on one side and *defusing* on the other draws a
+plate that is wrong rather than broken. It compares name **and** shift, in order, and it runs in
+both workflows for the reason `errors:check` does. `SCHEMA_VERSION` is deliberately not checked: the
+crate owns no copy of it, and that is written in the script rather than left implicit.
+
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key
@@ -1462,6 +1482,7 @@ bun run check          # biome — lint + format (check:fix to apply)
 bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity, every key read + regenerates the typed key union
 bun run errors:check   # ErrorCode parity between demo-core and crates/demo-parser
+bun run bitfields:check   # FLAG_* / GRENADE_* parity between the same two files
 bun run tokens:check   # every class and var(--…) resolves in the built CSS (build first)
 bun run mapdata:generate  # map constants + themed radar images; byte-stable across runs
 bun run icons:generate    # weapon outlines from apps/web/assets/weapon-icons; byte-stable
