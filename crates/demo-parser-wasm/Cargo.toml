@@ -34,10 +34,12 @@ workspace = true
 # Every flag must exist in the *older* binaryen wasm-pack downloads when none is on PATH, not only
 # in a current local one: `--enable-bulk-memory-opt` is rejected there, and is redundant anyway
 # because `--enable-bulk-memory` already covers `memory.copy` and `memory.fill`.
-# `-Oz` rather than wasm-pack's default `-O` because the 4 MB cap in AGENTS.md §16 is a budget.
+# `-O3` rather than wasm-pack's default `-O`, and matching `opt-level` in the root `Cargo.toml`:
+# #59 measured the two settings against both §16 budgets at once and `-O3` is the only one that
+# meets the parse-time budget, for 0.40 MB of a 4 MB cap that had 45% of itself unused (#66).
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [
-  "-Oz",
+  "-O3",
   "--enable-bulk-memory",
   "--enable-mutable-globals",
   "--enable-multivalue",
