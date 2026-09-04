@@ -506,10 +506,23 @@ Phase 3, so the parser emits `siteEntityId` and `demo-core` lost `BombSite`/`BOM
 
 ### The demo does not report its tick rate
 
-The header has no field for it, `sv_tickrate` is not among the convars a GOTV recording carries, and
-`m_fRoundStartTime` drifts against the tick counter badly enough to derive **59** from it. The rate
-is the constant 64, cross-checked against the one round that ended on the clock: 140,008 to 147,368
-is 7,360 ticks over a 115-second round, which is 64.0 exactly.
+The header has no field for it, **`sv_tickrate` specifically** is not among the convars a GOTV
+recording broadcasts, and `m_fRoundStartTime` drifts against the tick counter badly enough to derive
+**59** from it. The rate is the constant 64.
+
+**That sentence has been misread as "a demo carries no convars", and it cost a year.** It carries 72
+of them — `mp_freezetime`, `mp_roundtime_defuse` and the rest — through `server_cvar` game events
+rather than through the `DemoOutput.convars` field named after them, which upstream writes at no
+point at all. §21 has the route, the table and the two traps in reading it, and the round clock
+counted *up* until #295 because this paragraph was read as the broad claim rather than the narrow
+one.
+
+The cross-check on 64 is §21's as well, and for the same reason. The one this section used to
+give — 140,008 to 147,368 is 7,360 ticks over a 115-second round, so 64.0 exactly — takes the
+115 s as given, which was the assumption being checked rather than an independent reading.
+**`mp_freezetime = 20` against a measured 1,280-tick buy phase reads 64.0 without assuming its own
+answer**, and that is the confirmation to quote. The constant is unmoved; what changed is that it is
+now measured twice.
 
 ### The fixture plays 30 rounds, not the 32 §2 records
 
@@ -525,7 +538,7 @@ sides too and open on $10,000, and every player at round 28 is holding 5,100 or 
 | build | three passes + columnar write |
 |---|---|
 | `opt-level = 3` | **6.82 s** |
-| `opt-level = "z"` — what this repository ships | **11.5–12.3 s** |
+| `opt-level = "z"` — what this repository shipped until #66 | **11.5–12.3 s** |
 
 §9 measured 6.66 s for the three passes alone, natively single-threaded, on a normal release build.
 So the whole of the columnar write, the event mapping and the trajectory grouping costs roughly
@@ -1159,9 +1172,11 @@ Neither `SCHEMA_VERSION` nor the crate moves for this. What was wrong was the de
 ## 21. Where a round's own length comes from (#295)
 
 `roundClockAtFrame` counted *up* until 3 September 2026, and its doc comment gave the reason: a
-countdown needs the round's length, and §13 above records that "`sv_tickrate` is not among the
-convars a GOTV recording carries". That was read for a year as *the convars are not there*. They
-are. Everything below is measured on the same fixture §2 describes.
+countdown needs the round's length, and §13 above read "`sv_tickrate` is not among the convars a
+GOTV recording carries". That was taken for a year as *the convars are not there*. They are — and
+§13 says which of the two claims it is making since #297, because the sentence stayed where a reader
+lands long after this section corrected it. Everything below is measured on the same fixture §2
+describes.
 
 ### The convars arrive as a game event, and `DemoOutput.convars` is dead
 
