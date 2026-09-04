@@ -1237,8 +1237,8 @@ the help legend's seventeen marks stand on the plate's own ground. Six things ar
 
 **The accordion comes from the primitive layer, and the second reason is a rule.** The registry's
 styled trigger is `transition-all` at Tailwind's own `duration-200` — the loaded gun #134 took off
-the shared controls — and the primitive's panel animates `height` from 0 to `auto`, which hard rule 9
-forbids at *every* moment rather than during playback. The panel spreads the caller's props over its
+the shared controls — and the primitive's panel animates `height` from 0 to `auto`, which the hard rule 9
+of that day forbade at *every* moment rather than during playback. The panel spreads the caller's props over its
 defaults, so `SettingGroup` names its own `initial`/`animate`/`exit` and replaces the height tween
 instead of adding to it: opening fades over `--duration-micro`, **closing is instant**, and the height
 change is a change rather than an animation in both directions. Closing carries no fade because an
@@ -1342,6 +1342,29 @@ is 16.81/16.54/16.55 s before against 15.41/15.31/16.31 s after, which is one sp
 `docs/PARSER.md` §21 carries the convar table, the two traps and the bomb's numbers.
 
 
+**#275 took the property list out of hard rule 9, and #73 brought the README up to the product it
+describes.** The rule read "`transform` and `opacity` only, at every moment", and **the product had
+already outvoted it**: interaction here is expressed in luminance (§17 rule 5), which is a colour
+change, so the shipped `Button`, `Input` and `Switch` were all in breach on the day #134 named their
+property lists — and #134's own issue body was written from the strict reading, for a control whose
+only hover feedback is a background colour. The owner's call was to drop the prohibition rather than
+carve exceptions into it: **rule 9 is the 60 fps budget and nothing else**, measured by `AGENTS.md`
+§16 with everything on, and when it fails the motion is what goes. Three things to know. **The
+architectural half moved rather than went** — nothing subscribed to the frame channel may touch
+React, which is hard rule 4's business and is enforced by the channel split, not by CSS; and what
+changes on a *canvas* is still a function of `clock.frame`, which is a statement about which clock
+is read rather than about which property is written. **Nothing in the product changed shape**: eight
+code comments cited the rule as a prohibition, every one of them for a decision that is still right
+— `scaleX` over `width` on the progress bar and the health wash, `translate` over `top` on the
+timeline block, a fade over a `height` tween on the settings accordion — so each now states the cost
+it avoids instead of the rule it obeyed. **A property that triggers layout is a review note now, not
+a rule**, and §16 is what settles an argument about one. The README, meanwhile, had been telling
+readers since Phase 1 that nothing was deployed; it links the live app, states the phase, and
+**quotes no measurement at all** — every number it used to carry was wrong by then, so the sections
+that would carry one link `AGENTS.md` §16 and `docs/PARSER.md` instead. Two of #73's own bullets
+were stale in the other direction and are worth knowing about as a habit: `tools/probes/` is in the
+tree, and `packages/demo-store` is no longer "arriving in a later phase".
+
 **#301 and #60 gave the two rules this repository states about merging something that enforces
 them.** `gh pr merge --auto` had been a silent no-op for the life of the project — `main` carried no
 protection at all, so there were no *required* checks to wait for, and #298 merged forty seconds
@@ -1407,7 +1430,8 @@ Full text in `AGENTS.md` §2. Condensed:
 2. **Parsing runs in a Web Worker.** The main thread never opens, decompresses, or parses a demo.
 3. **Per-tick data lives in typed arrays (columnar/SoA), never arrays of objects.** Events are the
    opposite — plain sorted arrays of objects, binary-searched by tick.
-4. **`clock.frame` never lives in React state, Zustand, or signals.** Plain mutable object + rAF.
+4. **`clock.frame` never lives in React state, Zustand, or signals**, and nothing subscribed to the
+   frame channel writes into React. Plain mutable object + rAF.
 5. **No `localStorage`/`sessionStorage` for parsed data.** OPFS first, IndexedDB fallback.
    UI preferences (locale, theme) are fine there.
 6. **No `any`.** No `@ts-expect-error` without a comment and a linked issue. No `!`, no silencing
@@ -1415,10 +1439,11 @@ Full text in `AGENTS.md` §2. Condensed:
 7. **No hardcoded user-facing strings.** Everything through i18n, `en` *and* `ru` together.
    `demo-core` and the parser emit `{ key, params }`, never display text.
 8. **Parsing is deterministic.** Same bytes + same `SCHEMA_VERSION` → byte-identical output.
-9. **Nothing on the frame channel animates, and nothing animates a property that triggers layout.**
-   `transform`/`opacity` only, always. Everything else may animate during playback; the 60 fps
-   assertion in `AGENTS.md` §16 is the enforcement. Rewritten by #130 — the old blanket ban on DOM
-   motion during playback is gone, and so is the `data-playing` kill switch that implemented it.
+9. **Playback and scrub hold 60 fps, and that budget is the whole of the rule.** No property is
+   banned by name and no moment is off limits — the interface may animate while the match runs.
+   What changes on a *canvas* is still a function of `clock.frame`. `AGENTS.md` §16's assertion is
+   the enforcement, and when it fails the motion is what goes. Twice narrowed: #130 dropped the ban
+   on DOM motion during playback, #275 dropped `transform`/`opacity` only.
 10. **New runtime dependencies require human approval.** Bundle size is a product constraint.
 11. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no I/O, no `@/` alias.
 12. **`crates/demo-parser` contains no `wasm-bindgen`**, `js-sys`, or `web-sys`. That is what keeps

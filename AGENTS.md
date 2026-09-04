@@ -35,7 +35,8 @@ Violating any of these is a bug, not a trade-off.
    no telemetry containing demo contents. The app works fully offline after first load.
 2. **Parsing runs in a Web Worker.** The main thread never opens, decompresses, or parses a demo.
 3. **Per-tick data lives in typed arrays (columnar / SoA), never arrays of objects.** See §6.
-4. **`clock.frame` never lives in React state, Zustand, or signals.** See §8.
+4. **`clock.frame` never lives in React state, Zustand, or signals**, and nothing subscribed to
+   the frame channel writes into React. See §8.
 5. **No `localStorage` / `sessionStorage` for parsed data.** OPFS first, IndexedDB as fallback.
    (Small UI preferences — locale, theme — are fine there.)
 6. **No `any`.** No `@ts-expect-error` without a comment explaining why and a linked issue.
@@ -44,12 +45,13 @@ Violating any of these is a bug, not a trade-off.
    `{ key, params }` data and rendered by the client.
 8. **Parsing is deterministic.** Same demo bytes + same `SCHEMA_VERSION` → byte-identical output.
    The OPFS cache key and the golden snapshots both depend on it.
-9. **Nothing on the frame channel animates, and nothing anywhere animates a property that triggers
-   layout.** `transform` and `opacity` only, at every moment — not only during playback. What
-   changes on a canvas is a function of `clock.frame`, computed in the draw the frame was already
-   going to do; the test is which clock it reads, because match time is drawing and wall time is
-   animating. Everything else may animate whenever it likes, including while the match runs, and
-   the 60 fps budget in §16 is the enforcement. See §17.
+9. **Playback and scrub hold 60 fps, and that budget is the whole of the rule.** No property is
+   forbidden by name and nothing is forbidden by moment: the interface may animate what it likes,
+   whenever it likes, including while the match runs. **What changes on a canvas is still a
+   function of `clock.frame`**, computed in the draw the frame was already going to do — the test
+   is which clock it reads, because match time is drawing and wall time is animating. Everything
+   else is decided by §16's measurement with everything on, and when that fails the motion is what
+   goes. See §17.
 10. **New runtime dependencies require human approval.** Bundle size is a product constraint.
 11. **`packages/demo-core` stays platform-agnostic** — no DOM, no React, no browser-only APIs,
     no `@/` alias, no I/O.
@@ -557,19 +559,31 @@ count reads too** — `roundSurvivors` in `demo-core` counts the winning side ou
 and takes off the deaths between `startTick` and `endTick`, and a slot the round recorded no side for
 is on neither, so a four-man side reads a maximum of four.
 
-**What enforces rule 9 — #108, then #132.** #108 built the enforcement the old rule needed:
-`bindPlayingFlag` mirrored play and pause onto `data-playing` on the document element, and one rule
-in `packages/ui/src/styles/motion.css` took every transition and animation beneath it to zero.
-**Both are gone since #132.** Rule 9 no longer bans DOM motion during playback, so a switch that
-bans all of it enforces a rule the product does not have — and what it shipped was an interface
+**What enforces rule 9 — #108, then #132, then #275.** #108 built the enforcement the rule of the
+day needed: `bindPlayingFlag` mirrored play and pause onto `data-playing` on the document element,
+and one rule in `packages/ui/src/styles/motion.css` took every transition and animation beneath it
+to zero. **Both are gone since #132**, which stopped banning DOM motion during playback — a switch
+that bans all of it enforces a rule the product does not have, and what it shipped was an interface
 where hovering a button while the match ran did nothing.
 
-What is left is narrower and does not need a switch. **Nothing subscribed to the frame channel may
-touch React or start an animation** — that half was always the real rule and it is enforced by the
-channel split above, not by CSS. **Nothing may animate a property that triggers layout**, at every
-moment rather than during playback, which is a review question. And the rest is a budget: §16's
-60 fps assertion for the review screen with everything on is what decides whether the motion in
-§17 rule 1 survives, and when it fails the motion is what goes.
+**#275 took the rest of the prohibition out, and the reason is that the product had already
+outvoted it.** What was left read "`transform` and `opacity` only, at every moment", and taken
+literally that forbids every hover state on every screen: interaction here is expressed in
+luminance (§17 rule 5), which is a colour change, and neither of those two properties can say it.
+It had already misled a reader — #134's own issue body was written from the strict reading, for a
+control whose only hover feedback is a background colour — and a rule that the shipped `Button`,
+`Input` and `Switch` all break is not a rule, it is a note about what somebody once preferred. The
+owner's call on 4 September 2026 was to drop it rather than to carve exceptions into it: motion is
+part of how this product should feel, there is no measured frame problem to point at, and the place
+to find one is §16 rather than a list of property names.
+
+What is left is one architectural clause and one budget. **Nothing subscribed to the frame channel
+may touch React** — that half was always the real rule, it belongs to hard rule 4, and it is
+enforced by the channel split above rather than by CSS. And **§16's 60 fps assertion for the review
+screen with everything on** is what decides whether any of the motion in §17 rule 1 survives; when
+it fails, the motion is what goes. A property that triggers layout is still the first suspect when
+it does fail, and is still the wrong default — but it is a review note now, not a rule, and the
+measurement is what settles an argument about one.
 
 A JavaScript-driven tween is still stopped by not starting one. The `LazyMotion` in `@disa/ui`'s
 `MotionProvider` used to enforce that with `strict`, which leaves only the `m` component and makes
@@ -1236,11 +1250,13 @@ it, rather than in a sweep nobody can review.
 
 Rules that constrain engineering:
 
-1. **Nothing on the frame channel animates, and nothing animates a property that triggers layout.**
-   `transform` and `opacity` only, always. No animation library driving React state per frame.
-   Everything else may animate during playback; the 60 fps assertion in §16 is what enforces it.
-   This replaced a blanket ban on DOM motion during playback, which shipped an interface that
-   stopped responding during the activity the product exists for.
+1. **The frame budget is the constraint, and nothing else is.** No animation library drives React
+   state per frame, and nothing subscribed to the frame channel touches React — that is hard
+   rule 4. Past it, a screen may animate what it likes, including while the match runs, and §16's
+   60 fps assertion is what holds it to account. Two prohibitions used to stand here — DOM motion
+   during playback, removed by #130 because it shipped an interface that stopped responding during
+   the activity the product exists for, and `transform`/`opacity` only, removed by #275 because
+   interaction is expressed in luminance and neither property can express that.
 2. **What changes on a canvas is a function of `clock.frame`**, computed in the draw the frame was
    already going to do. Match time is drawing; wall time is animating.
 3. **`backdrop-filter` exists on the two full-screen sheets and the dialog scrim, and nowhere

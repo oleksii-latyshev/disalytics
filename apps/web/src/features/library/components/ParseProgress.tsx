@@ -31,7 +31,7 @@ interface Props {
  * Three things are load-bearing.
  *
  * **The bar scales, it does not resize.** `transform: scaleX()` on the fill, because `width`
- * triggers layout at every moment of the animation — hard rule 9. It is why the registry's own
+ * triggers layout at every moment of the animation, over a whole parse. It is why the registry's own
  * `ProgressTrack`, which renders an indicator animating `width`, is not what the barrel exports.
  *
  * **The semantics are Base UI's and the words are ours.** `Progress` is the `progressbar`, with

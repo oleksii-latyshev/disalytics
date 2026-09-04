@@ -51,8 +51,8 @@ const CARD_ARRIVAL: Readonly<
  * sequence runs because the screen appeared, so a re-render, a resize or a locale change cannot
  * replay it, and there is no state anywhere saying whether it has run.
  *
- * `opacity` and `transform` only, which is hard rule 9, and the reduced-motion answer is already
- * built: `MotionProvider` drops the travel and keeps the fade, so this stays one implementation
+ * `opacity` and `transform` only — the cheapest pair there is, on the one screen that assembles
+ * five cells at once — and the reduced-motion answer is already built: `MotionProvider` drops the travel and keeps the fade, so this stays one implementation
  * rather than growing a second one behind a media query.
  */
 export function assembly(part: AssemblyPart): Arrival {
