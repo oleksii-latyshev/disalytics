@@ -58,8 +58,6 @@ closed it — what is left here is the parser's other promises.
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
 | #73 | Bring the README up to the repository | The front door stops saying "nothing is deployed" about a product that is live. | P1 | S |
-| #75 | Cover both cache tiers without a browser | The IndexedDB half of the store is covered by the suite rather than by remembering to open a browser. Everything M6 and M7 persist rides on that store. | P1 | M |
-| #297 | Stop saying a demo carries no convars | Two places `CLAUDE.md` sends readers still state what #295 disproved. A wrong fact in a landing spot costs the next session a day. | P1 | XS |
 | #60 | Fail CI when the `flags` bitfield drifts | A bit layout stated in two languages cannot silently disagree — the same guard `errors:check` already gives the error union. | P2 | S |
 | #53 | Canonical weapon vocabulary | One enumeration behind the five vocabularies a demo carries, so a missing icon or a bad filter is a type error. **Blocked**: needs evidence one demo cannot supply. | P2 | L |
 
