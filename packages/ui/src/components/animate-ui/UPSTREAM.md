@@ -21,9 +21,9 @@ Three boundaries exist so that "left as it arrives" is true rather than aspirati
 | Linter | `biome.json` | Formatter, linter and assist off for this directory, `src/hooks/` and `src/lib/get-strict-context.tsx`. Reformatting upstream would make every re-add a diff. |
 | Declarations | `tsconfig.build.json`, `tools/declaration-specifiers.ts` | `bun run build` emits `dist/**/*.d.ts` and `package.json`'s `exports` points consumers at them. With `skipLibCheck` on repository-wide, no consumer ever typechecks these sources — which is what lets the compiler boundary above be one package wide instead of leaking into the app. |
 
-## The three lines that are not upstream's
+## The four lines that are not upstream's
 
-Both are marked in place. Re-apply them if `shadcn add` overwrites the file; delete them once
+Each is marked in place. Re-apply them if `shadcn add` overwrites the file; delete them once
 upstream catches up.
 
 1. **`components/base/tooltip.tsx`** — `@base-ui-components/react` moved `delay` off `Tooltip.Root`
@@ -49,6 +49,17 @@ upstream catches up.
    failure is not a press that falls through to something else — it is a press that does nothing.
    The `whileTap` scale goes with it, which costs this product nothing: interaction here is
    luminance rather than movement, and no other control in the kit scales under a press.
+
+4. **`primitives/effects/highlight.tsx`** — the decorative pill no longer spreads
+   `dataAttributes`. That set is `data-active`, `data-value`, `data-disabled`, `data-highlight` and
+   **`aria-selected`**, and it is there to identify the *item*: the pill is the fill drawn behind
+   one. `aria-selected` is not an attribute a generic element may carry, so every screen with a
+   highlight on it shipped one — the rail, the round strip and each of the settings sheet's seven
+   choice rows. Nothing reads the `data-*` half off that element, here or upstream: the one
+   `querySelector` for `[data-value][data-highlight="true"]` runs in `parent` mode, where the pill
+   never had them. The two remaining spreads — the item container and the clone — are untouched,
+   and a call site answers those the way `RoundPill` and `ChoiceButton` do, by taking its props by
+   name.
 
 ## What is deliberately not re-exported
 

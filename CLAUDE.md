@@ -1418,6 +1418,29 @@ both workflows for the reason `errors:check` does. `SCHEMA_VERSION` is deliberat
 crate owns no copy of it, and that is written in the script rather than left implicit.
 
 
+**#292 and #294 took `aria-selected` off everything a role does not allow it on, and the two halves
+needed two different answers.** animate-ui's highlight spreads one `dataAttributes` set — which
+carries `aria-selected` — over three elements: the seat, the child it clones, and the `motion.div`
+that draws the pill. The seat and the child are answerable from the call site and were already
+answered; the pill is inside the vendored file and is not, so it is `UPSTREAM.md`'s **fourth marked
+deviation** and the spread is gone from it. Three things are load-bearing. **The whole set went
+rather than `aria-hidden` going on beside it** — the attributes identify the *item* and the pill is
+the fill behind one, nothing here or upstream reads the `data-*` half off that element, and the one
+`querySelector` for `[data-value][data-highlight="true"]` runs in `parent` mode where the pill never
+had them; an added `aria-hidden` would also have left the sweep reporting it. **`SettingChoice` is
+`RoundPill`'s answer at the other call site**: `ChoiceButton` takes `index` and `label` by name, so
+the clone's props land on a component that spreads nothing and die there — which is also what gives
+those eighteen buttons back their own `data-slot="toggle"`, and why the button carries `relative`
+itself, the clone having been what stood it above the pill. And **the seat's own `relative` went
+with it**, because the pill is positioned against the highlight's item container and never against
+that span. Measured over `document.querySelectorAll('*')` at 1440×900 in `en` and in `ru`: the way
+in **1 → 0**, the review screen **1 → 0**, and the settings sheet with all five groups open
+**26 → 0** — 18 buttons and 8 pills before, none of either after — with `aria-pressed` still one per
+group, the arrow keys still walking each group, and the strip's pill still sliding on `transform`
+(571px → 1094px across eight sampled frames of translation). Neither `Enter` nor `Space` activates a
+focused option in the Browser pane, on this branch **and on `main`**, and the same keys do nothing
+on a plain close button there either: it is the pane's key injection, not the product.
+
 `packages/demo-store` exists since #51 and closes Phase 2's storage half: a demo parsed once is read
 back in **0.02 s** instead of 18.6 s, from OPFS or from IndexedDB when OPFS is missing, chosen by
 feature detection. Two things there are deliberate and easy to "fix" into bugs — **the cache key

@@ -549,7 +549,9 @@ function HighlightItem<T extends React.ElementType>({
                       (exitDelay ?? contextExitDelay ?? 0) / 1000,
                   },
                 }}
-                {...dataAttributes}
+                /* NOT UPSTREAM'S — see UPSTREAM.md. Upstream spreads `dataAttributes` here, and
+                   `aria-selected` is in that set: this element is the fill behind an item, not the
+                   item, and a generic element may not carry it. */
               />
             )}
           </AnimatePresence>
@@ -611,7 +613,9 @@ function HighlightItem<T extends React.ElementType>({
                     (exitDelay ?? contextExitDelay ?? 0) / 1000,
                 },
               }}
-              {...dataAttributes}
+              /* NOT UPSTREAM'S — see UPSTREAM.md. Upstream spreads `dataAttributes` here, and
+                 `aria-selected` is in that set: this element is the fill behind an item, not the
+                 item, and a generic element may not carry it. */
             />
           )}
         </AnimatePresence>
