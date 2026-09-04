@@ -88,13 +88,15 @@ Closes #42
 ## 5. Merge
 
 ```bash
-gh pr merge --squash --delete-branch --auto
+gh pr view 42 --json mergeStateStatus   # BLOCKED while a check runs, CLEAN once they pass
+gh pr merge --squash --delete-branch
 ```
 
-`--auto` merges once required checks pass, so waiting for CI is never a judgement call — but only
-while `main` is protected and `ci` and `wasm` are marked required, which is what #301 applied. With
-no protection the flag is a silent no-op and the pull request merges immediately: check with
-`gh api repos/oleksii-latyshev/disalytics/branches/main/protection` if a merge ever lands too fast.
+**Do not reach for `--auto`** — the repository's `allow_auto_merge` is `false`, so the flag is
+refused outright and queues nothing (read on 4 September 2026 while merging #305). Protection is a
+separate setting and is on since #301, so a merge before `ci` and `wasm` pass is refused: wait for
+`CLEAN` rather than judging it. If a merge ever lands too fast, check
+`gh api repos/oleksii-latyshev/disalytics/branches/main/protection` — a 404 means it was lifted.
 Never merge your own PR without green CI.
 
 ## Rules that have no exceptions
