@@ -1,14 +1,19 @@
 name: ci
 
+# A pull request never filters this workflow out by path, and that is what makes `ci` usable as a
+# required status check. A workflow skipped by a path filter never creates its check run, so the
+# context stays pending for ever and branch protection can never be satisfied — while a *job*
+# skipped by an `if` reports success. So the filtering moved from the trigger into the `scope` job
+# below. `push` keeps its filter: nothing on main is waiting on a check.
 on:
   push:
     branches: [main]
     paths-ignore: ['crates/**']
   pull_request:
-    paths-ignore: ['crates/**']
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -20,7 +25,47 @@ env:
   WASM_PACK_VERSION: 0.15.0
 
 jobs:
+  # The `paths-ignore` above, restated for pull requests in the one grammar that can be read without
+  # a checkout. Keep the two saying the same thing: everything outside `crates/` is this workflow's,
+  # and a pull request holding nothing else has nothing here to check.
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - name: Decide whether this pull request has frontend work in it
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != 'pull_request' ]; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --paginate --jq '.[].filename')
+          # `case` rather than a regular expression, so the patterns below are the same grammar as
+          # the `paths-ignore` above and can be compared to it by eye.
+          run=false
+          while IFS= read -r file; do
+            case "$file" in
+              '' | crates/*) ;;
+              *) run=true ;;
+            esac
+          done <<EOF
+          $files
+          EOF
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          if [ "$run" = 'false' ]; then
+            echo 'Only crates/ changed — wasm.yml is what covers this pull request.' \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   ci:
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,6 +96,9 @@ jobs:
 
       - name: errors:check
         run: bun run errors:check
+
+      - name: bitfields:check
+        run: bun run bitfields:check
 
       - name: test
         run: bun run test

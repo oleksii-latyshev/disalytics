@@ -91,8 +91,11 @@ Closes #42
 gh pr merge --squash --delete-branch --auto
 ```
 
-`--auto` merges once required checks pass, so waiting for CI is never a judgement call. Never merge
-your own PR without green CI.
+`--auto` merges once required checks pass, so waiting for CI is never a judgement call — but only
+while `main` is protected and `ci` and `wasm` are marked required, which is what #301 applied. With
+no protection the flag is a silent no-op and the pull request merges immediately: check with
+`gh api repos/oleksii-latyshev/disalytics/branches/main/protection` if a merge ever lands too fast.
+Never merge your own PR without green CI.
 
 ## Rules that have no exceptions
 

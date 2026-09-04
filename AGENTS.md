@@ -175,6 +175,7 @@ bun run mapdata:generate     # map constants from Valve overview files, plus the
 bun run icons:generate       # weapon outlines from Valve's icons, simplified into one table
 bun run i18n:check           # fail on a missing, orphaned or unread key; regenerate the union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
+bun run bitfields:check      # fail when the FLAG_* / GRENADE_* bits disagree between the two
 bun run tokens:check         # fail on a class or a var(--…) the built stylesheet never defined
                              # reads apps/web/dist, so it needs a build first
 bun run size                 # bundle + wasm sizes against budgets (§16)
@@ -1102,26 +1103,35 @@ rather than in a browser.
 path dependencies and `vendor/` is upstream code (`vendor/README.md`). A new crate under `crates/`
 has to be added to that command by hand.
 
-It triggers on `crates/**` **and** on `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` and the
-workflow file. A lockfile bump or a toolchain change alters the binary without touching a crate, so
-`crates/**` alone would let exactly the riskiest changes through ungated.
+A push to `main` triggers it on `crates/**`, `vendor/**`, `Cargo.toml`, `Cargo.lock`,
+`rust-toolchain.toml` and the workflow file. A lockfile bump, a vendored patch or a toolchain change
+alters the binary without touching a crate, so `crates/**` alone would let exactly the riskiest
+changes through ungated.
 
-It asserts the §16 binary budget itself rather than leaving it to `ci.yml`. `ci.yml` carries the
-mirrored `paths-ignore: crates/**`, so on a parser-only pull request it does not run at all — the
-`--wasm` flag exists so the budget can be checked without building the SPA to reach it. The same
-mirror is why `errors:check` runs in both workflows: the two halves of the `ErrorCode` vocabulary
-live on opposite sides of that `paths-ignore`, so neither workflow alone sees every change to it.
+**A pull request carries no path filter at all, and that is what makes `wasm` a usable required
+check** (#301). A workflow a path filter skips never creates its check run, so the context stays
+pending for ever and branch protection can never be satisfied — while a *job* an `if` skips reports
+success. So each workflow opens with a `scope` job that asks the pull request for its own file list
+and answers one boolean, and the real job is `needs: scope, if: …`. The push filter and the `scope`
+regex are the same list in two grammars; changing one means changing the other.
+
+It asserts the §16 binary budget itself rather than leaving it to `ci.yml`, whose scope job skips a
+parser-only pull request — the `--wasm` flag exists so the budget can be checked without building
+the SPA to reach it. The same split is why `errors:check` and `bitfields:check` run in **both**
+workflows: each guards a contract whose two halves live on opposite sides of that split, so neither
+workflow alone sees every change to it.
 
 No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
-`errors:check` → `test` → restore-or-build the parser → `build` → `tokens:check` → `size` gate, in
-one job, in that order. `tokens:check` sits after the build because it reads the stylesheet Tailwind
-emitted rather than the sources. Bun's install cache is keyed on `bun.lock`. `paths-ignore: crates/**`, so a parser-only
-commit does not run the frontend pipeline — the mirror of the rule above. Required status checks on
-the default branch: see `CONTRIBUTING.md` §5, including what `paths-ignore` costs a parser-only pull
-request.
+`errors:check` → `bitfields:check` → `test` → restore-or-build the parser → `build` →
+`tokens:check` → `size` gate, in one job, in that order. `tokens:check` sits after the build because
+it reads the stylesheet Tailwind emitted rather than the sources. Bun's install cache is keyed on
+`bun.lock`. A push to `main` carries `paths-ignore: crates/**`, so a parser-only commit does not run
+the frontend pipeline; a pull request reaches the same answer through the `scope` job above. `ci`
+and `wasm` are both required status checks on `main` — `CONTRIBUTING.md` §5 has what is applied and
+how to change it.
 
 **`deploy.yml`** — **exists since #23.** Triggered by `workflow_run` on `ci` **and on `wasm`**, so
 it is strictly downstream of a green pipeline instead of racing one. It holds **one job**: a
