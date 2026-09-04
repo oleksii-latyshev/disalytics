@@ -67,12 +67,17 @@ gh pr ready            # when it is
 ### Merge
 
 ```bash
-gh pr merge --squash --delete-branch --auto
+gh pr view 42 --json mergeStateStatus   # BLOCKED while a check runs, CLEAN once they pass
+gh pr merge --squash --delete-branch
 ```
 
-`--auto` merges as soon as required checks pass, so there is no waiting and no forgetting. It is
-only true while `main` carries branch protection with checks marked required — §5 is what applies
-it, and #298 merged under two pending runs because it did not.
+**`--auto` is refused in this repository** and adding it queues nothing: the repository's own
+`allow_auto_merge` is `false` — `gh api repos/oleksii-latyshev/disalytics --jq .allow_auto_merge`,
+read on 4 September 2026 while merging #305 — so the flag answers `GraphQL: Auto merge is not
+allowed for this repository (enablePullRequestAutoMerge)`. That is a different setting from branch
+protection, which §5 applies and which *is* on: merging before the required checks pass is refused
+rather than merely discouraged. So waiting is still not a judgement call, but it is waiting — read
+`mergeStateStatus` and come back, or turn the repository setting on, which is the owner's to do.
 
 ### Useful
 
@@ -248,9 +253,8 @@ Settings → General → Pull Requests (also available via `gh repo edit` flags 
 Otherwise GitHub concatenates every branch commit into the message and the conventional-commit
 subject is lost.
 
-Branch protection on `main` — **applied in #301.** Until then `main` had none at all, which is why
-`gh pr merge --auto` was a silent no-op: it waits for *required* checks and there were none, so #298
-merged forty seconds after it opened with `ci` and `wasm` both still running. What is applied:
+Branch protection on `main` — **applied in #301.** Until then `main` had none at all, so #298 merged
+forty seconds after it opened with `ci` and `wasm` both still running. What is applied:
 
 - Required status checks: **`ci`** and **`wasm`** — one job each, so one check each. The steps are
   inside them, not separate checks; a red step fails its check and names itself in the log.
@@ -361,4 +365,5 @@ naming the boundary up front prevents it.
 - If the work turns out to need a decision listed in `AGENTS.md` §21, stop and comment on the issue
   instead of choosing. `gh issue comment 42 --body "..."`.
 - If the scope grows, open a follow-up issue and link it — do not widen the current PR.
-- Never merge your own PR without CI green. `--auto` exists so this is never a judgement call.
+- Never merge your own PR without CI green. Branch protection refuses it, so this is not a
+  judgement call — read `mergeStateStatus` rather than guessing.
