@@ -11,9 +11,14 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// CS2 servers run at 64 tick with subtick inputs, and upstream's own game-time helper divides by
 /// 64 unconditionally. Nothing in the demo reports the rate: the header has no field for it,
-/// `m_fRoundStartTime` drifts against the tick counter, and `sv_tickrate` is not among the convars
-/// a GOTV recording carries. Cross-checked on the Phase 0 fixture against the one round that ended
-/// on the clock — 7,360 ticks over a 115-second round is 64.0.
+/// `m_fRoundStartTime` drifts against the tick counter, and `sv_tickrate` *specifically* is not
+/// among the convars a GOTV recording broadcasts. It broadcasts 72 others, as `server_cvar` game
+/// events — `docs/PARSER.md` §21 — so this is a fact about one variable and not about convars, and
+/// reading it as the second kept the round clock counting up for a year.
+///
+/// Cross-checked on the Phase 0 fixture by `mp_freezetime = 20` against a measured 1,280-tick buy
+/// phase, which is 64.0. The older check — 7,360 ticks over a 115-second round — assumed the 115 s
+/// it was testing.
 pub(crate) const TICK_RATE: u32 = 64;
 
 /// Engine team numbers. 0 is unassigned and 1 is the spectator slot; neither reaches a roster.
