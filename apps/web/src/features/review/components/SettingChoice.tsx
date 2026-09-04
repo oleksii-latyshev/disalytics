@@ -15,6 +15,30 @@ export interface ChoiceOption<T> {
 const HIGHLIGHT_TRANSITION = { type: 'spring', stiffness: 420, damping: 38 } as const;
 
 /**
+ * One answer, as the toggle it is.
+ *
+ * **It takes its props by name**, which is the whole of what it is for: the highlight around it
+ * clones its child to inject `aria-selected` and a `data-*` set, and a component that spreads
+ * nothing drops all of it on the way in — `aria-selected` is not an attribute a `button` role
+ * allows, and the reading is the group's own `aria-pressed` regardless. `RoundPill` on the round
+ * strip is the same answer to the same effect.
+ *
+ * What the clone also carried was `position: relative`, so this stands on its own layer instead:
+ * the highlight is an absolutely positioned sibling at `z-index: 0`, and a static button's own text
+ * paints below one however late it comes in the DOM.
+ */
+function ChoiceButton({ index, label }: { index: number; label: ReactNode }) {
+  return (
+    <ToggleGroupItem
+      value={String(index)}
+      className="relative flex h-control cursor-pointer items-center justify-center rounded-chip px-2.5 text-13 text-ink-dim transition-colors duration-(--duration-micro) ease-out hover:text-ink aria-pressed:text-ink"
+    >
+      {label}
+    </ToggleGroupItem>
+  );
+}
+
+/**
  * A setting with named answers rather than two states — half the table is written that way, and a
  * switch would not say which answer it left.
  *
@@ -61,9 +85,7 @@ export function SettingChoice<T extends string | number>({
     >
       <ToggleGroupHighlight className="rounded-chip bg-selected" transition={HIGHLIGHT_TRANSITION}>
         {options.map((option, index) => (
-          // The seat is `relative` so the button's own text paints above the highlight, which is an
-          // absolutely positioned sibling at `z-index: 0`.
-          <span key={option.value} className="relative">
+          <span key={option.value}>
             <ToggleGroupItemHighlight
               value={String(index)}
               // The effect writes `aria-selected` onto the seat as well as onto what it wraps, and a
@@ -71,12 +93,7 @@ export function SettingChoice<T extends string | number>({
               aria-selected={undefined}
               className="size-full"
             >
-              <ToggleGroupItem
-                value={String(index)}
-                className="flex h-control cursor-pointer items-center justify-center rounded-chip px-2.5 text-13 text-ink-dim transition-colors duration-(--duration-micro) ease-out hover:text-ink aria-pressed:text-ink"
-              >
-                {option.label}
-              </ToggleGroupItem>
+              <ChoiceButton index={index} label={option.label} />
             </ToggleGroupItemHighlight>
           </span>
         ))}
