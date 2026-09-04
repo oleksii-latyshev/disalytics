@@ -1350,6 +1350,24 @@ is a miss rather than an error**. Both are argued in `AGENTS.md` §6.4, which is
 eviction policy and the `storage.persist()` answer live. Every package `AGENTS.md` §4 names now
 exists.
 
+**#75 put both tiers of that store under the suite, and the answer is two different means for two
+different risks.** IndexedDB runs against **`fake-indexeddb`** — a dev dependency the owner approved
+on 4 September 2026, 676 kB with no transitive dependencies and no reader outside one test file —
+because what breaks silently there is the platform's semantics rather than ours: the promise
+wrappers around `IDBRequest` and `IDBTransaction`, the `Blob` round trip, and the object store that
+exists only because `onupgradeneeded` created it. **OPFS gets a hand-written double because Node has
+no OPFS at all**, and the alternative was a browser in the suite on every commit, which
+`AGENTS.md` §16 refuses; the double is defensible there and would not have been for IndexedDB, since
+what those tests assert is the backend's own behaviour — a `NotFoundError` answering `null` on a
+read and swallowed on a remove, any other failure coming back out, a failed write aborting its
+stream rather than closing a half-written file. Two things to keep. **The tests are held to biting
+by a mutation sweep** — nine changes to the two backends, run one at a time — and **the two that
+survived the first draft were both the test's fault**: the hook emptying the store between runs was
+creating the object store itself, so the upgrade path was never under test, and neither wrapper's
+rejection arm was reachable, because IndexedDB queues its transactions and a write that never awaits
+completion still reads back. Aborting a transaction under the backend is what produces the
+abandonment those wrappers exist for.
+
 The app is live at **https://disalytics.disa-67b.workers.dev** — an assets-only Cloudflare Worker,
 `wrangler.jsonc` at the root, `deploy.yml` running downstream of a green `ci`. Every deploy is
 checked by `bun run smoke` against the contract in `AGENTS.md` §13 and recorded as a GitHub

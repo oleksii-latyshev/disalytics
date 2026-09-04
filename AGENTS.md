@@ -301,6 +301,27 @@ the screen. **Chrome declines it on a site with no engagement and no installatio
 is the ordinary answer rather than the exceptional one** — the copy says the demo is saved and the
 browser may still clear it, instead of promising something the browser did not grant.
 
+**Both tiers are covered by the suite since #75, and by two different means on purpose.** The
+IndexedDB tier runs against `fake-indexeddb` — a dev dependency approved by the owner on 4 September
+2026 under hard rule 10, 676 kB with no transitive dependencies, imported by one test file and so
+worth nothing on the bundle line in §16 — because what breaks silently there is the platform's own
+semantics: the promise wrappers around `IDBRequest` and `IDBTransaction`, the `Blob` round trip, and
+the object store that exists only because `onupgradeneeded` created it. A double written to satisfy
+this code could only have agreed with it. **OPFS gets that double anyway, because there is nothing
+else to give it**: Node has no OPFS, so the alternative was a browser in the suite on every commit,
+which §16 refuses. It is defensible there and not for IndexedDB — the surface is five calls with
+simple semantics, and what the tests assert is the backend's own behaviour on top of them, a
+`NotFoundError` answering `null` on a read and swallowed on a remove, any other failure coming back
+out, and a failed write aborting its stream rather than closing a half-written file.
+
+The tests are held to biting by a mutation sweep rather than by their own passing: nine changes to
+the two backends were made one at a time and the suite was run against each. **Two survived the
+first draft and both were the test's fault** — the hook that emptied the store between runs was
+creating the object store itself, so the upgrade path was never under test, and neither promise
+wrapper's rejection arm was reachable, because IndexedDB queues its transactions and a write that
+never awaits completion still reads back. Aborting a transaction under the backend is what produces
+the abandonment those wrappers exist for. All nine fail on the branch as it stands.
+
 ---
 
 ## 7. Parsing Pipeline
