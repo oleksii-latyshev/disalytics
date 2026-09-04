@@ -1,12 +1,11 @@
 import { type PlayerSlot, type Team, UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EventRow } from '@/core/events';
+import { defuseOutcomeKey, EventRow, killName } from '@/core/events';
 import { EventGlyph, UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { Transport } from '@/core/playback';
 import { useRovingFocus } from '@/shared/hooks';
 import { GLYPH_HIT_HALF_PX, glyphHitHalves, hasRoomForSymbol } from '../helpers/glyph-hits';
-import { defuseOutcomeKey } from '../helpers/outcome-copy';
 import { type AxisEvent, type AxisGlyph, namedKill } from '../helpers/round-axis';
 import { anchorAtFraction } from '../helpers/round-strip';
 
@@ -116,15 +115,13 @@ export const EventGlyphs = memo(function EventGlyphs({
 
   function labelFor(event: AxisEvent): string {
     switch (event.kind) {
+      // The weapon and the three marks come with it, and below `--breakpoint-split` this is the
+      // only place they are said at all: §5.4's feed is not drawn there, so the tooltip that
+      // restates this name has nothing behind it to restate (#214).
       case 'kill':
-        return event.attacker === null
-          ? t('timeline.killByWorld', { victim: nameOf(event.victim) })
-          : t('timeline.kill', {
-              attacker: nameOf(event.attacker),
-              victim: nameOf(event.victim),
-            });
+        return killName(event, nameOf, t);
       case 'plant':
-        return t('timeline.plant', { planter: nameOf(event.planter) });
+        return t('events.plant', { planter: nameOf(event.planter) });
       case 'defuse':
         return t(defuseOutcomeKey(event.status), { defuser: nameOf(event.defuser) });
       case 'grenade':
@@ -209,7 +206,11 @@ export const EventGlyphs = memo(function EventGlyphs({
           round is not drawn off the screen.
 
           `aria-hidden` because it restates the glyph's own accessible name, which is the whole
-          reason it is allowed to exist. */}
+          reason it is allowed to exist — and since #214 that is true rather than nearly true. The
+          row draws a weapon and up to three marks; until the name carried them too, a tooltip was
+          the only place they were said, and below `--breakpoint-split` §5.4's feed is not drawn, so
+          there was no second route to them at all. A tooltip may shorten a route; it may not be
+          one. */}
       {named !== undefined && (
         <div
           aria-hidden="true"

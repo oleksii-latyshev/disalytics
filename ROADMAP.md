@@ -33,7 +33,7 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | A backgrounded tab parses ~5× slower | fixed | **hard** — Chrome confines it to efficiency cores | 15.3 s in front, 84.9 s behind, on one machine. No code here can prevent it; the parse screen says so instead (#68). |
 | `navigator.storage.persist()` may return `false` | fixed | **hard** — the browser's call | Cached parses are best-effort. Eviction is designed for, not prevented. **Anything a coach draws is subject to it too** — see M6. |
 | OS file-handling (`launchQueue`) | Chromium desktop only | **hard** — browser support | Drag-and-drop and the picker must keep working everywhere. |
-| JS bundle, excluding WASM | < 500 kB gzip (at 233 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. **233.16 kB, 46.6%** at `7789f7b`. The redesign added exactly one runtime dependency in total, `@base-ui-components/react` in #276, against two font families deleted. A charting library, a drawing library or a physics-shaped smoke model would each be the next such decision. |
+| JS bundle, excluding WASM | < 500 kB gzip (at 233 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. **232.74 kB, 46.5%** at `9c58662` + #284, which deleted the empty `motion-features` chunk. The redesign added exactly one runtime dependency in total, `@base-ui-components/react` in #276, against two font families deleted. A charting library, a drawing library or a physics-shaped smoke model would each be the next such decision. |
 | WASM binary | < 4 MB (CI fails > 24 MB) | **chosen** — a regression guard | The platform allows 25 MiB. 4 MB is a line we drew so a size regression is noticed the day it happens. **2.66 MB, 66.5%** since #66 spent 0.41 MB of it on the parse-time row above. |
 | Parse a 300 MB demo | < 15 s | **chosen** — set from Phase 0's real number | The promise the parse screen makes. **Met since #66 built the binary at `-O3`** — 14.19 s on the 264 MB container against `-Oz`'s 18.85 s — and met with no headroom: the same build read 17.23 s on the slowest run of an hour on a machine 15% slower than the one #59 measured on. The room left is inside each pass, which is M7's row. |
 | Peak tab memory during parse | < 1.5 GB | **chosen** | Headroom on ordinary laptops with the whole demo in linear memory. |
@@ -57,9 +57,11 @@ closed it — what is left here is the parser's other promises.
 
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
-| #73 | Bring the README up to the repository | The front door stops saying "nothing is deployed" about a product that is live. | P1 | S |
-| #60 | Fail CI when the `flags` bitfield drifts | A bit layout stated in two languages cannot silently disagree — the same guard `errors:check` already gives the error union. | P2 | S |
 | #53 | Canonical weapon vocabulary | One enumeration behind the five vocabularies a demo carries, so a missing icon or a bad filter is a type error. **Blocked**: needs evidence one demo cannot supply. | P2 | L |
+
+**Closed on 4 September 2026**: #73 (the README describes the live product) and #60
+(`bun run bitfields:check`, in both workflows for the reason `errors:check` is). One blocked row is
+all that is left of this milestone.
 
 ## M2 — Close Phase 3: the radar's unfinished corners
 
@@ -78,13 +80,18 @@ The redesign is closed (below). What is left here is defects and decisions on th
 | #292, #294 | The highlight effect writes `aria-selected` where it may not | Two places where a decorative element and a plain button carry an attribute their role does not allow. One vendored primitive, two call sites. | P1 | S each |
 | #290 | Decide what a label two rows from its token belongs to | #289's twelve candidate boxes buried 0% of labels, at the cost of a name that can sit far from the token it names. | P1 | S |
 | #287 | A hit shows what it took | A token flashes for damage and says nothing about how much, which is the difference between a trade and a whiff. | P1 | M |
-| #284 | Decide whether the `LazyMotion` split point is real | A 130-byte chunk defers nothing. Either the boundary earns itself or it goes. | P2 | S |
 | #123 | Fail CI when a documented contrast ratio drifts | The 36 pairings `tokens.css` now states stay true without anyone re-running the maths by hand. | P2 | M |
 | #115 | Let the reader choose the radar plate | The reader who wants the game's own map colours can have them. | P2 | M |
 | #249 | Decide whether the legend draws the vision wedge | Draw it or record why not — the reason it was not drawn no longer holds. | P2 | S |
-| #275, #214, #170 | Three documentation corrections | Rule 9 and colour transitions; what §9.2 permits where no feed is drawn; §6.2 restated for utility that reads as smoke and fire. **#170 should be answered by M4's smoke and fire row rather than before it.** | P2 | XS each |
+| #170 | Restate §6.2 for utility that reads as smoke and fire | **Answered by M4's smoke and fire row rather than before it.** | P2 | XS |
 | #230 | Measure a shotgun's shot count | Whether nine pellets are one `fire_bullets` event or nine. **Blocked** on a demo that fires one. | P3 | S |
-| #116, #118 | Re-check, then likely close | Both name screens that no longer exist — the density trace lives in the match overlay and the round picker was replaced by the round strip. | P3 | XS |
+
+**Closed on 4 September 2026**: #275 — hard rule 9 is the 60 fps budget and bans no property by
+name, which is the owner's call rather than a reading of the old wording; #214 — the axis glyph's
+accessible name carries the weapon and the three marks, out of an `events` namespace both surfaces
+own; #284 — `LazyMotion` and `m` are deleted, because the split point measured 157 bytes and could
+not be made real; #116 — the density trace has drawn `--ink-dim` at α0.30 since the match overlay
+was built; #118 — the round picker it names was replaced by the round strip.
 
 ---
 

@@ -1,0 +1,15 @@
+{
+  "kill": {
+    "byPlayer": "{attacker} kills {victim} with {weapon}",
+    "byWorld": "{victim} dies",
+    "headshot": "Headshot",
+    "wallbang": "Through a wall",
+    "throughSmoke": "Through smoke"
+  },
+  "plant": "{planter} plants the bomb",
+  "defuse": {
+    "completed": "{defuser} defuses the bomb",
+    "aborted": "{defuser} stops defusing",
+    "interrupted": "{defuser} is killed while defusing"
+  }
+}

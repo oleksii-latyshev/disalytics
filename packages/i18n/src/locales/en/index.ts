@@ -2,6 +2,7 @@ import type { LocaleResources } from '../../config';
 import common from './common.json';
 import controls from './controls.json';
 import errors from './errors.json';
+import events from './events.json';
 import filters from './filters.json';
 import help from './help.json';
 import library from './library.json';
@@ -12,6 +13,7 @@ import timeline from './timeline.json';
 
 export default {
   common,
+  events,
   library,
   review,
   controls,

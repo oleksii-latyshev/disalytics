@@ -33,14 +33,6 @@
     "draw": "Раунд {round, number}, ничья"
   },
   "events": "События раунда",
-  "kill": "{attacker} убивает {victim}",
-  "killByWorld": "{victim} погибает",
-  "plant": "{planter} ставит бомбу",
-  "defuse": {
-    "completed": "{defuser} обезвреживает бомбу",
-    "aborted": "{defuser} прекращает разминирование",
-    "interrupted": "{defuser} погибает при разминировании"
-  },
   "grenade": "{thrower} бросает {utility}",
   "unknownPlayer": "Неизвестный игрок"
 }

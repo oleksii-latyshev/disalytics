@@ -154,8 +154,8 @@ readers, alongside `SPINE_AXIS_FRACTION`.
 `packages/ui/src/styles/motion.css` taking every transition beneath it to zero. **#132 removed both**
 — rule 9 stopped banning DOM motion during playback, so a global kill switch enforces a rule the
 product no longer has. `motion` is installed and enters the tree through exactly one
-`MotionProvider` in `@disa/ui`, a `strict` `LazyMotion`, so `motion.*` throws and `m` is the only way
-to animate. Animate UI's registry is configured in `packages/ui/components.json`, and its aliases are
+`MotionProvider` in `@disa/ui`, at the time a `strict` `LazyMotion`, so `motion.*` threw and `m` was
+the only way to animate — `strict` went in #276 and `LazyMotion` itself in #284. Animate UI's registry is configured in `packages/ui/components.json`, and its aliases are
 **package.json `imports`** (`#components`, `#lib`, `#hooks`) because a package-local `@/` is
 impossible here and that is what makes the shadcn CLI resolve inside `packages/ui`. Read `AGENTS.md`
 §8 before changing any of it.
@@ -1341,6 +1341,39 @@ branch — 226 → 332 — so the clock is `helpers/round-clock.ts` at 126 and `
 is 16.81/16.54/16.55 s before against 15.41/15.31/16.31 s after, which is one spread rather than two.
 `docs/PARSER.md` §21 carries the convar table, the two traps and the bomb's numbers.
 
+
+**#214 gave a kill's marks a reading a pointer is not needed for, and #284 deleted a split point
+that had never split anything.** Both are on the same branch and neither is about the other.
+
+**#214.** §5.4's feed named a kill *with the weapon and the three marks* — headshot, wallbang,
+through smoke — and §7.1's axis glyph named the same kill with neither. Below
+`--breakpoint-split` the feed **is not drawn at all**, so at those widths the weapon and the marks
+existed on a hover tooltip and nowhere else: not on the keyboard, not to a screen reader, not to
+anyone who pressed the glyph. The owner's answer was the one that adds the reading rather than the
+one that documents its absence. Four things are load-bearing. **`killName` lives in `core/events`**,
+which is where `EventRow` already lives for the same reason — two features draw one kill, and
+`timeline` may not import from `review`. **The strings moved to an `events` namespace**, which is
+new and is the eleventh: `events.kill.*`, `events.plant` and `events.defuse.*` are the row's whole
+vocabulary, and a sentence two surfaces say belongs to the slice they both import rather than to
+whichever of them was written first. That took the repeated-string count between the feed and the
+axis from four to **one** — `unknownPlayer`, which `row.ts` keeps per-namespace by decision.
+**`defuseOutcomeKey` moved with its strings** and `roundOutcomeKey` did not; the second names
+`timeline.outcome.*`, which no other feature says. And **a mark is its own sentence** —
+`[sentence, ...marks].join('. ')`, the shape the feed already had — because a message naming all
+three would need eight forms of itself in each locale. The tooltip's own comment claimed it merely
+restated the glyph's accessible name, and that claim is true now rather than nearly true: a tooltip
+may shorten a route, it may not *be* one.
+
+**#284.** `LazyMotion`'s split point was a **157-byte** chunk — `var r={renderer:t,...e,...n}`, a
+re-export of three symbols the entry chunk already held — and `provider.tsx` carried a doc comment
+saying the opposite, which is the part that cost something: the next reader reaches for `m` over
+`motion` believing it buys a deferred download. It cannot be made real, and that is the finding
+rather than a preference: every animate-ui primitive imports `motion` directly, so the feature set
+is in the entry chunk whatever the provider does, and the only way to defer it is to stop importing
+the registry. So `LazyMotion`, `motion-features.ts` and **`m` itself** are gone — `m` most of all,
+because an `m.div` with no `LazyMotion` above it renders and quietly never moves, which is a defect
+no type can catch. Four call sites became `motion.*`. The bundle went **233.14 → 232.74 kB gz**,
+entry chunk 217.96 → 217.74, and the chunk count dropped by one.
 
 **#275 took the property list out of hard rule 9, and #73 brought the README up to the product it
 describes.** The rule read "`transform` and `opacity` only, at every moment", and **the product had
