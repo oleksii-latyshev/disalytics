@@ -832,8 +832,35 @@ against these numbers. The 15 s budget stands as written; the profile moves to m
 **#66** rather than part of this measurement, because a profile that decides both budgets deserves
 its own diff.
 
-Until #66 lands, the shipped `-Oz` build is over budget on the raw demo by 0.3 s and on the container
-by 3.9 s.
+### #66 landed it, and re-measured the container arm
+
+4 September 2026, on the built bundle served by `wrangler dev`, same method as above — the demo
+staged into OPFS and handed over as the `File` `getFile()` returns, `document.visibilityState`
+asserted `visible` inside every run, the interval being the drop to the review screen. The arms were
+built and measured **interleaved** — `-Oz`, `-O3`, `-O3`, `-Oz` — because a single before-and-after
+pair cannot tell a profile from an afternoon.
+
+| pass | `-Oz` | `-O3` |
+|---|---|---|
+| first | 20.96, 24.42, 20.39 → **21.92 s** | 15.76, 14.48, 14.48 → **14.91 s** |
+| second | 21.07, 21.44, 21.61 → **21.37 s** | 16.03, 17.23, 15.30 → **16.19 s** |
+| six runs | **21.65 s** | **15.55 s** |
+
+Every one of the twelve runs produced 30 rounds and a review screen, and the two `-O3` builds — one
+before the baseline was put back and one after — were byte-identical, so the arms differ by the
+profile and nothing else.
+
+Three things this says. **The machine is slower than #59's day and not drifting through the hour**:
+the `-Oz` baseline reproduced itself to 0.55 s across four passes with the other arm's builds in
+between, while sitting 2.8 s above the 18.85 s §16 records. **The profile's effect is #59's again** —
+28% here against 25% there — and the best `-O3` pass, 14.48 / 14.48 s, reproduces #59's 14.19 s
+within the day. And **the budget is met with no headroom**: the same binary read 17.23 s on the
+slowest run of that hour, so a machine a little slower than this one is over it. That is a fact about
+the budget rather than about the profile — `-Oz` never came within five seconds of it on any run.
+
+The binary is **2.25 MB → 2.66 MB**, 56.3% → 66.5% of the 4 MB cap. `cargo test -p demo-parser`
+reproduced the committed snapshot unchanged against the fixture, which is hard rule 8: the profile
+changes the binary and not the output.
 
 ---
 

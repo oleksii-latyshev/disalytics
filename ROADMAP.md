@@ -34,8 +34,8 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | `navigator.storage.persist()` may return `false` | fixed | **hard** — the browser's call | Cached parses are best-effort. Eviction is designed for, not prevented. **Anything a coach draws is subject to it too** — see M6. |
 | OS file-handling (`launchQueue`) | Chromium desktop only | **hard** — browser support | Drag-and-drop and the picker must keep working everywhere. |
 | JS bundle, excluding WASM | < 500 kB gzip (at 233 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. **233.16 kB, 46.6%** at `7789f7b`. The redesign added exactly one runtime dependency in total, `@base-ui-components/react` in #276, against two font families deleted. A charting library, a drawing library or a physics-shaped smoke model would each be the next such decision. |
-| WASM binary | < 4 MB (CI fails > 24 MB) | **chosen** — a regression guard | The platform allows 25 MiB. 4 MB is a line we drew so a size regression is noticed the day it happens. |
-| Parse a 300 MB demo | < 15 s | **chosen** — set from Phase 0's real number | The promise the parse screen makes, and **the shipped build does not meet it** — #66 is why. |
+| WASM binary | < 4 MB (CI fails > 24 MB) | **chosen** — a regression guard | The platform allows 25 MiB. 4 MB is a line we drew so a size regression is noticed the day it happens. **2.66 MB, 66.5%** since #66 spent 0.41 MB of it on the parse-time row above. |
+| Parse a 300 MB demo | < 15 s | **chosen** — set from Phase 0's real number | The promise the parse screen makes. **Met since #66 built the binary at `-O3`** — 14.19 s on the 264 MB container against `-Oz`'s 18.85 s — and met with no headroom: the same build read 17.23 s on the slowest run of an hour on a machine 15% slower than the one #59 measured on. The room left is inside each pass, which is M7's row. |
 | Peak tab memory during parse | < 1.5 GB | **chosen** | Headroom on ordinary laptops with the whole demo in linear memory. |
 | Scrub and playback | 60 fps sustained | **chosen** — enforced by measurement | This is the product: review, not replay. It is what pays for hard rules 3, 4 and 9, and what decides an argument between accuracy and smoothness. Every new mark on the plate — a tracer, a smoke cloud, a coach's drawing — is measured against it. |
 | Cached demo reopen | < 3 s (at 0.02 s) | **chosen** | Second visit must feel instant, or the cache is not worth its complexity. |
@@ -52,11 +52,11 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 
 ## M1 — Close Phase 2: the parser keeps its promises
 
-The parse-time budget is the one number on the constraints table the shipped build does not meet.
+The parse-time budget was the one number on the constraints table the shipped build missed, and #66
+closed it — what is left here is the parser's other promises.
 
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
-| #66 | Ship the binary at `-O3` | Opening a demo finishes inside 15 s for the compressed file most people actually have, not only a raw one. Costs 0.40 MB of a half-spent budget. **The first half of M7's "make the parse faster".** | **P0** | S |
 | #73 | Bring the README up to the repository | The front door stops saying "nothing is deployed" about a product that is live. | P1 | S |
 | #75 | Cover both cache tiers without a browser | The IndexedDB half of the store is covered by the suite rather than by remembering to open a browser. Everything M6 and M7 persist rides on that store. | P1 | M |
 | #297 | Stop saying a demo carries no convars | Two places `CLAUDE.md` sends readers still state what #295 disproved. A wrong fact in a landing spot costs the next session a day. | P1 | XS |
