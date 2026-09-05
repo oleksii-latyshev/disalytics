@@ -1499,6 +1499,31 @@ true while a round is fought is a new `TickTrack` column and a `SCHEMA_VERSION` 
 this is text at the 10 Hz readout and a ten-entry sum per card, and nothing new reaches the frame
 channel.
 
+**#310 made a grenade a row in the feed, and the load-bearing part is that the row expires.** §5.4
+said *who killed whom* and §7.1's axis said *who threw what*, so a cloud on the plate had no author
+anywhere a reader could reach. A fourth `RowEvent` kind fixes that, and five things ride with it.
+**`grenadeEndTick` in `packages/demo-core` is one definition of a grenade's life** — `visibleGrenades`
+was carrying it inside a per-tick predicate, and the feed needed the same answer as a window, so the
+predicate is expressed in terms of it rather than beside it; a row is on screen exactly while its
+mark is on the plate. **That window is what makes the row affordable**, and it was measured rather
+than argued: on the fixture a grenade row costs the eight `FEED_ROW_LIMIT` holds a kill on **8.88%**
+of 44,004 frames and **never the round's most recent kill** — 0 of the 24,435 frames that had one —
+where the same rows with no window read **34.77%** and lose the newest kill 348 times. `ROADMAP.md`
+carries both numbers, and **`FEED_ROW_LIMIT` was deliberately not touched**: tuning eight to make
+room for utility is a different decision from adding the row. **`timeline.grenade` is
+`events.grenade` now**, which is #214's rule arriving for the fifth string rather than a tidy-up — a
+sentence two surfaces say belongs to the slice they both import, and this is the moment the axis
+stopped being its only speaker. **Hovering or focusing a row draws that grenade's own path**, in the
+utility's colour rather than §6.2's white, because a plate mid-round holds several paths and the hue
+is what says which row asked; it is **not** gated on §10.5's trajectories row, for the reason the
+kill line is not, and it is **still clipped by `clock.frame`**, so a grenade caught in the air draws
+only as far as it has flown. And **`namedKill` still refuses a grenade a tooltip** — the reason it
+gave ("a grenade is on no feed at all") stopped being true here, so the comment says why the refusal
+is now a question about the axis rather than about the feed. Two numbers: the plate is **716 at
+1440×900 and 473 at 1024×800** in both locales, unchanged, and the bundle is 232.85 →
+**233.09 kB gz**. `AGENTS.md` §16's two frame rows were re-measured against a `9992173` baseline —
+0 frames over 16.7 ms out of 399, three passes an arm, both arms.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
