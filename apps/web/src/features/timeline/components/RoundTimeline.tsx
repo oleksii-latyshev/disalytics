@@ -13,8 +13,10 @@ import {
   useFrameReadout,
   useFrameSink,
 } from '@/core/playback';
+import { filterGlyphs } from '../helpers/axis-filter';
 import { axisGlyphs, positionInSegment, timelineSegment } from '../helpers/round-axis';
 import { namesBySlot } from '../helpers/spine';
+import { useAxisFilter } from '../hooks/use-axis-filter';
 import { EventGlyphs } from './EventGlyphs';
 
 interface Props {
@@ -30,6 +32,10 @@ interface Props {
  *
  * The range input is **uncontrolled** — React never owns its value (#83) — and the playhead moves
  * with `transform` only, which is what keeps playback off the main thread.
+ *
+ * **What the axis draws is the reader's choice**, through `AxisFilters` in the row above: the glyphs
+ * are filtered before their hit slots are measured, so a round thinned by hand comes back with its
+ * symbols rather than with the ticks #271 collapses a crowd to.
  */
 export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
   const t = useT();
@@ -57,6 +63,13 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
   const segment = useMemo(() => timelineSegment(demo, roundIndex), [demo, roundIndex]);
   const glyphs = useMemo(() => axisGlyphs(demo, roundIndex, segment), [demo, roundIndex, segment]);
   const names = useMemo(() => namesBySlot(demo.header.players), [demo.header.players]);
+
+  // The filter runs here rather than inside `EventGlyphs`, and before the hit slots are measured:
+  // a slot is half the way to the nearest *drawn* mark, so taking a facet away is what widens the
+  // survivors and hands them back the symbols #271 collapsed. Deriving it once per round keeps it
+  // off the readout the way `axisGlyphs` is kept off it.
+  const filter = useAxisFilter(selectedSlot);
+  const shown = useMemo(() => filterGlyphs(glyphs, filter), [glyphs, filter]);
 
   const syncPlayhead = useCallback(() => {
     const playhead = playheadRef.current;
@@ -190,7 +203,7 @@ export function RoundTimeline({ demo, transport, selectedSlot }: Props) {
       />
 
       <EventGlyphs
-        glyphs={glyphs}
+        glyphs={shown}
         names={names}
         selectedSlot={selectedSlot}
         widthPx={widthPx}

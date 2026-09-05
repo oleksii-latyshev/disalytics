@@ -1,1 +1,10 @@
-{}
+{
+  "axis": {
+    "label": "Show on the round axis",
+    "kills": "Kills",
+    "utility": "Grenades",
+    "objectives": "The bomb",
+    "subject": "Only the selected player",
+    "noSubject": "Select a player to show only theirs"
+  }
+}

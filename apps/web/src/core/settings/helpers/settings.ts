@@ -21,6 +21,13 @@ export type HeldArrowRate = 2 | 4;
 /**
  * Every preference `docs/DESIGN.md` §10.5 names, except the locale: that one is read before React
  * starts and owned by `@disa/i18n`, which is the package that reads its storage key at boot.
+ *
+ * The four `Axis` flags are the exception in the other direction — §10.5's table does not name them
+ * and the settings sheet does not draw them. They are the round axis's filter, and a filter is
+ * flipped while looking at what it changes: a sheet that covers the screen is the wrong place for a
+ * control whose whole feedback is on the screen behind it. What they share with the table is where
+ * they are *kept*, which is this file, because a preference that outlives a session is a preference
+ * however it is reached.
  */
 export interface Settings {
   readonly isBuyPhaseSkipped: boolean;
@@ -32,6 +39,10 @@ export interface Settings {
   readonly trajectories: TrajectoryVisibility;
   readonly scoreboard: ScoreboardPosition;
   readonly areSurvivorsShown: boolean;
+  readonly areAxisKillsShown: boolean;
+  readonly isAxisUtilityShown: boolean;
+  readonly areAxisObjectivesShown: boolean;
+  readonly isAxisSelectedOnly: boolean;
   readonly palette: Palette;
   readonly motion: MotionPreference;
   readonly isDebugShown: boolean;
@@ -107,6 +118,10 @@ const DESCRIPTORS: { readonly [K in SettingKey]: Descriptor<Settings[K]> } = {
   trajectories: choice('disa.radar.trajectories', TRAJECTORY_VISIBILITIES, 'flight'),
   scoreboard: choice('disa.review.scoreboard', SCOREBOARD_POSITIONS, 'block'),
   areSurvivorsShown: flag('disa.timeline.survivors', false),
+  areAxisKillsShown: flag('disa.timeline.axis.kills', true),
+  isAxisUtilityShown: flag('disa.timeline.axis.utility', true),
+  areAxisObjectivesShown: flag('disa.timeline.axis.objectives', true),
+  isAxisSelectedOnly: flag('disa.timeline.axis.selectedOnly', false),
   palette: choice('disa.palette', PALETTES, 'default'),
   motion: choice('disa.motion', MOTION_PREFERENCES, 'system'),
   isDebugShown: flag('disa.radar.debug', false),
@@ -128,6 +143,10 @@ export const DEFAULT_SETTINGS: Settings = {
   trajectories: DESCRIPTORS.trajectories.fallback,
   scoreboard: DESCRIPTORS.scoreboard.fallback,
   areSurvivorsShown: DESCRIPTORS.areSurvivorsShown.fallback,
+  areAxisKillsShown: DESCRIPTORS.areAxisKillsShown.fallback,
+  isAxisUtilityShown: DESCRIPTORS.isAxisUtilityShown.fallback,
+  areAxisObjectivesShown: DESCRIPTORS.areAxisObjectivesShown.fallback,
+  isAxisSelectedOnly: DESCRIPTORS.isAxisSelectedOnly.fallback,
   palette: DESCRIPTORS.palette.fallback,
   motion: DESCRIPTORS.motion.fallback,
   isDebugShown: DESCRIPTORS.isDebugShown.fallback,
@@ -160,6 +179,10 @@ export function settingsFrom(read: StoredValues): Settings {
     trajectories: readOne('trajectories', read),
     scoreboard: readOne('scoreboard', read),
     areSurvivorsShown: readOne('areSurvivorsShown', read),
+    areAxisKillsShown: readOne('areAxisKillsShown', read),
+    isAxisUtilityShown: readOne('isAxisUtilityShown', read),
+    areAxisObjectivesShown: readOne('areAxisObjectivesShown', read),
+    isAxisSelectedOnly: readOne('isAxisSelectedOnly', read),
     palette: readOne('palette', read),
     motion: readOne('motion', read),
     isDebugShown: readOne('isDebugShown', read),

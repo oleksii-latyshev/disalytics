@@ -1,4 +1,9 @@
-import { type ParsedDemo, roundIndexAtFrame, roundOpeningFrame } from '@disa/demo-core';
+import {
+  type ParsedDemo,
+  type PlayerSlot,
+  roundIndexAtFrame,
+  roundOpeningFrame,
+} from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -14,11 +19,13 @@ import {
   type TooltipAnchor,
   tooltipAnchor,
 } from '../helpers/round-strip';
+import { AxisFilters } from './AxisFilters';
 import { RoundOutcomes } from './RoundOutcomes';
 
 interface Props {
   demo: ParsedDemo;
   transport: Transport;
+  selectedSlot: PlayerSlot | null;
 }
 
 /** The dwell: a tooltip answers a pointer that stayed, never one that passed through. */
@@ -49,8 +56,15 @@ function namingOf(cells: readonly RoundCell[], index: number | null): Naming | u
  * **It is one height** since #279. Asking for the survivors used to grow the row from 28px to 44px,
  * and the block's row is what the plate is measured against — so a preference about what a pill says
  * took 16px off the map for as long as it was on. The tracks are drawn inside the pill now.
+ *
+ * **The axis's filter rides at the end of this row**, which is the block's only spare width. The row
+ * below it is 40px of primary control, the axis and the speed control with no slack in it, and the
+ * one thing that may not pay for the filter is the axis: shortening it is exactly what the filter
+ * exists to undo. So the two controls at this end belong to two different rows — the disclosure to
+ * the pills beside it, the switches to the axis beneath — and each still sits next to what it
+ * changes.
  */
-export function RoundStrip({ demo, transport }: Props) {
+export function RoundStrip({ demo, transport, selectedSlot }: Props) {
   const t = useT();
 
   const frame = useFrameReadout(transport);
@@ -145,6 +159,8 @@ export function RoundStrip({ demo, transport }: Props) {
       >
         {isExpanded ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
       </Button>
+
+      <AxisFilters selectedSlot={selectedSlot} />
 
       {naming !== undefined && (
         // Aria-hidden because the pill's own name already says all of this: the tooltip is a

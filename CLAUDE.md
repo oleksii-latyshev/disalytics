@@ -1524,6 +1524,38 @@ is now a question about the axis rather than about the feed. Two numbers: the pl
 **233.09 kB gz**. `AGENTS.md` §16's two frame rows were re-measured against a `9992173` baseline —
 0 frames over 16.7 ms out of 399, three passes an arm, both arms.
 
+**#313 gave the round axis a filter, and the measurement says the collapse was never the thing to
+fix.** #271 lets a glyph fall back to a tick when its neighbour is closer than one glyph's width,
+and on the fixture at 1440×900 that leaves **98 symbols out of 751** with **46 of 212 kills** drawn —
+which is #271's own count reproduced, and is what a rule for a simultaneous pair does to a round
+where **518 of the 751 glyphs are grenades**. Six things are load-bearing. **The filter runs before
+`glyphHitHalves`**, which is the whole mechanism rather than an ordering detail: a slot is half the
+way to the nearest *drawn* mark, so taking utility away widens the survivors and the same untouched
+rule hands them their symbols back — 233 glyphs, **130 symbols, 116 of 212 kills**, and 41 → 82 at
+1024×800. `GLYPH_PITCH_PX` and `hasRoomForSymbol` are not retuned and the collapse stays as the floor
+for what no filter can separate. **The axis is not shorter for the control**, measured on both arms:
+886.55px at 1440 and 518.55px at 1024, identical, because the switches sit at the end of the round
+strip's row — the control row below is 40px of primary control, the axis and the speed control with
+no slack, and the one thing that may not pay for a filter is the axis it exists to un-crowd. What it
+costs is the strip: a pill goes 39.59 → 35.06px at 1440 and 27.33 → 22.80px at 1024, and all 30 keep
+their numbers down to a **940px** viewport. **The state is on the screen rather than behind a
+button**, and that is why there is no popover and no settings row: these preferences outlive the
+session, and a filter the reader cannot see they left on is a match quietly missing its marks the
+next morning — `packages/i18n`'s `filters` namespace, declared and empty since the redesign, is
+where the strings went, and this is its first tenant. **The subject is the fourth switch and it is
+disabled with nobody selected**, naming the precondition instead of looking broken; the preference is
+remembered while it is unreachable, and `isBySubject` counts a kill for its attacker, which is the
+rule `EventGlyphs` already applied when it raised the selected player's marks. Measured over a real
+round: the ten seats' counts under that switch are **5, 6, 4, 1, 2, 1, 3, 0, 1, 6 — 29, the round's
+whole event set**, partitioned with nothing lost or double-counted. And **`AxisFilter` deliberately
+stays in `features/timeline`**: `ROADMAP.md` M5 calls this the filter system's first caller, and
+promoting a facets-plus-subject interface to `core/` with one caller to check it against is guessing
+rather than learning. Two smaller things ride with it — `GlyphSize` gains `control` (16px, which is
+`Button`'s own icon size and not a fourth drawing scale), and `UtilityGlyph` gains `hasOwnInk`,
+because a `ghost` control is dimmed by the row it sits in and a colour the component sets last is one
+that row cannot beat. The bundle is 233.09 → **233.97 kB gz** and §16's two rows were re-measured
+against a `3e20603` baseline the same hour.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
