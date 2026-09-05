@@ -218,10 +218,17 @@ export function RadarView({
     onHover: isDebugShown ? setPointer : undefined,
   });
 
-  // A zoomed plate is a bigger window onto the map rather than a different map — #315. The cell it
-  // is given grows because the reading cards leave it, and the canvas takes all of that cell; the
-  // *scale* still comes off the short axis, so the width the expansion wins shows more map and
-  // nothing measured in device pixels changes size.
+  // A zoomed plate is a bigger window onto the map rather than a different map — #315. The stage
+  // gives the cell the whole of its width and the canvas takes all of it; the *scale* still comes
+  // off the short axis, so the width that wins is more map and nothing measured in device pixels
+  // changes size.
+  //
+  // It leaves the flow to do it, and it is sized twice on purpose. A canvas carries an intrinsic
+  // size from its backing store, which is a trap at both ends: in the grid, `height: 100%` resolved
+  // against a row the canvas's own ratio had already sized — a 1392×657 cell holding a 1392×1392
+  // canvas, clipped by an ancestor and so invisible to a sweep that only walks the viewport — and
+  // out of it, a replaced element with `inset: 0` keeps its intrinsic width rather than stretching
+  // to the four edges, which is 716 of a 1392px cell. `inset-0` places it and `size-full` sizes it.
   const isExpanded = navigation.zoom > MIN_ZOOM;
 
   useEffect(() => onExpandedChange(isExpanded), [isExpanded, onExpandedChange]);
@@ -237,25 +244,24 @@ export function RadarView({
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
         className={`touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
-          isExpanded ? 'size-full cursor-grab' : 'aspect-square w-[min(100cqi,100cqb)]'
+          isExpanded
+            ? 'absolute inset-0 size-full cursor-grab'
+            : 'aspect-square w-[min(100cqi,100cqb)]'
         }`}
         {...navigation.canvasProps}
         onPointerLeave={() => setPointer(null)}
       />
 
-      {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and at rest the plate is not the
-          cell: the cell is wider than the square it centres, so the offset is half the slack on
-          each axis plus the stage inset. Expanded there is no slack to cross — the canvas *is* the
-          cell — and the same formula would push the pair off the corner it names. Colour and a
-          hairline, never `.glass-panel` — §2.3 grants the one `backdrop-filter` over the live plate
-          to the scoreboard and to nothing else. */}
-      <div
-        className={`absolute flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1 ${
-          isExpanded
-            ? 'right-4 bottom-4'
-            : 'right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)]'
-        }`}
-      >
+      {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
+          the cell is wider than the square it centres, so the offset is half the slack on each axis
+          plus the stage inset. **The same formula is what keeps the pair reachable expanded**, and
+          that is the whole reason it is not written against the cell: `min(100cqi,100cqb)` is the
+          map's own square either way, so the pair stays on the map rather than travelling out to a
+          corner the team card is over — measured at 1440×900, a pair pinned to the expanded cell
+          landed under the CT card and the reader lost both controls. Colour and a hairline, never
+          `.glass-panel` — §2.3 grants the one `backdrop-filter` over the live plate to the
+          scoreboard and to nothing else. */}
+      <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1">
         <Button
           type="button"
           variant="ghost"
