@@ -1,14 +1,7 @@
 import { FIRE_AREA_ALPHA, SMOKE_AREA_ALPHA, UTILITY_NAMES } from '@disa/demo-core';
 import type { RadarColors } from './colors';
 import { drawGrenadeMark, drawWeaponMark } from './equipment-marks';
-import {
-  drawDecoyPulse,
-  drawFlashMark,
-  drawHeRing,
-  drawMolotovArea,
-  drawSmokeCloud,
-  trajectoryStroke,
-} from './grenades';
+import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
 import { haloStroke } from './labels';
 import {
@@ -25,6 +18,13 @@ import {
   TOKEN_RADIUS_PX,
 } from './tokens';
 import { tracerStart, tracerStroke } from './tracer';
+import { bodyParts, drawFireBody, drawSmokeBody } from './utility-body';
+
+/**
+ * The two bodies the legend draws, laid out by the plate's own function so a swatch cannot show a
+ * shape the map never draws. Index 0 is the smoke and index 1 the fire — the order is the argument.
+ */
+const LEGEND_BODIES = bodyParts([{ type: 'smokegrenade' }, { type: 'molotov' }]);
 
 /** One instance for the sheet, for the reason the layer holds one: the gradient is cached in it. */
 const tracer = tracerStroke();
@@ -72,9 +72,6 @@ const AREA_RADIUS_PX = 11;
 
 /** Part-way through, so a mark that counts something down is shown counting rather than full. */
 const PART_WAY = 0.6;
-
-/** The one seed the molotov's jittered edge is drawn with here; on the plate it is the grenade's. */
-const MOLOTOV_SEED = 3;
 
 export type PlateMarkId =
   | 'player'
@@ -242,21 +239,22 @@ export const PLATE_MARKS: readonly PlateMark[] = [
     draw: (context, colors) => {
       // Its brightest moment is its earliest, and the mark is faint here for the reason it is faint
       // on the plate: what a flashbang leaves behind is on the players, not on the ground (§6.2).
-      drawFlashMark(context, CENTRE_X, CENTRE_Y, 0.5, colors.blind);
+      drawFlashMark(context, CENTRE_X, CENTRE_Y, 0.5, AREA_RADIUS_PX * 2, colors.blind);
     },
   },
   {
     id: 'smoke',
     vocabulary: UTILITY_NAMES.smoke,
     draw: (context, colors) => {
-      drawSmokeCloud(
+      drawSmokeBody(
         context,
         CENTRE_X,
         CENTRE_Y,
         AREA_RADIUS_PX,
         SMOKE_AREA_ALPHA,
-        PART_WAY,
         colors.nadeSmoke,
+        LEGEND_BODIES,
+        0,
       );
     },
   },
@@ -264,15 +262,15 @@ export const PLATE_MARKS: readonly PlateMark[] = [
     id: 'fire',
     vocabulary: UTILITY_NAMES.fire,
     draw: (context, colors) => {
-      drawMolotovArea(
+      drawFireBody(
         context,
         CENTRE_X,
         CENTRE_Y,
         AREA_RADIUS_PX,
         FIRE_AREA_ALPHA,
-        PART_WAY,
         colors.nadeMolotov,
-        MOLOTOV_SEED,
+        LEGEND_BODIES,
+        1,
       );
     },
   },

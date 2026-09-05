@@ -18,5 +18,8 @@
     "pointerValue": "мир {worldX, number}, {worldY, number} · радар {radarX, number}, {radarY, number}",
     "levelOverride": "Рисовать уровень",
     "levelAuto": "Авто"
+  },
+  "utility": {
+    "secondsUnit": "с"
   }
 }

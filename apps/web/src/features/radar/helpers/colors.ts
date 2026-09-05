@@ -24,6 +24,13 @@ export interface RadarColors {
   /** The spur past a needle's tip on the frame a trigger was pulled — §6.1, and white like §6.2's
    * trajectory: gunfire belongs to no side's colour and to no piece of utility. */
   readonly gunfire: string;
+  /**
+   * The seconds a smoke or a fire has left, in its own middle. The palette's white rather than the
+   * `--color-ink-dim` a player's name is set in: a name sits on the plate's ground with nothing
+   * behind it, and this sits *inside* a body drawn over the map, so it needs the step the name
+   * gives up.
+   */
+  readonly countdown: string;
   /** The hit a token carries for a moment of match time after its player is hit. */
   readonly damage: string;
   /** What is left of a flashbang, counted down on the token it blinded. */
@@ -53,6 +60,7 @@ function readRadarColors(): RadarColors {
     label: { halo: readCssToken('--color-surface-0'), ink: readCssToken('--color-ink-dim') },
     hollow: readCssToken('--color-surface-0'),
     gunfire: readCssToken('--color-ink'),
+    countdown: readCssToken('--color-ink'),
     damage: readCssToken('--color-damage'),
     blind: readCssToken('--color-nade-flash'),
     objective: readCssToken('--color-objective'),

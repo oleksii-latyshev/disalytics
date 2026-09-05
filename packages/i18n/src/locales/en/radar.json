@@ -18,5 +18,8 @@
     "pointerValue": "world {worldX, number}, {worldY, number} · radar {radarX, number}, {radarY, number}",
     "levelOverride": "Draw level",
     "levelAuto": "Auto"
+  },
+  "utility": {
+    "secondsUnit": "s"
   }
 }

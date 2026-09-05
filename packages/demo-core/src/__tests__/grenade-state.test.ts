@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  AREA_FADE_SECONDS,
-  createVisualScratch,
+  FLASH_RADIUS_UNITS,
   grenadeEndTick,
   grenadeRadiusUnits,
-  grenadeVisual,
-  HE_EXPAND_SECONDS,
   HE_RADIUS_UNITS,
   MOLOTOV_RADIUS_UNITS,
   SMOKE_RADIUS_UNITS,
@@ -33,185 +30,6 @@ function smokeAt(throwTick: number, detonationTick: number, expiryTick: number) 
   });
 }
 
-describe('grenadeVisual', () => {
-  const scratch = createVisualScratch();
-
-  it('returns null before throw', () => {
-    const events = withGrenade(newEvents(), {
-      type: 'hegrenade',
-      throwTick: asTick(100),
-      detonationTick: asTick(200),
-      detonationPosition: { x: 0, y: 0, z: 0 },
-    });
-    grenadeVisual(firstGrenade(events), asTick(50), TICK_RATE, scratch);
-    expect(scratch.phase).toBeNull();
-  });
-
-  it('returns flight between throw and detonation', () => {
-    const events = withGrenade(newEvents(), {
-      type: 'hegrenade',
-      throwTick: asTick(100),
-      detonationTick: asTick(200),
-      detonationPosition: { x: 0, y: 0, z: 0 },
-    });
-    grenadeVisual(firstGrenade(events), asTick(150), TICK_RATE, scratch);
-    expect(scratch.phase).toBe('flight');
-  });
-
-  describe('a grenade whose detonation never arrived', () => {
-    // The crate emits `detonationTick: null` whenever it cannot match a detonation event to the
-    // projectile. That is an unknown ending, not a grenade that is still in the air (#169).
-    const events = withGrenade(newEvents(), {
-      type: 'smokegrenade',
-      throwTick: asTick(100),
-      detonationTick: null,
-      detonationPosition: null,
-      trajectory: {
-        sampleHz: 16,
-        firstTick: asTick(100),
-        sampleCount: 33, // two seconds of samples at 16 Hz
-        x: new Float32Array(33),
-        y: new Float32Array(33),
-        z: new Float32Array(33),
-      },
-    });
-
-    it('flies while the projectile is still being sampled', () => {
-      grenadeVisual(firstGrenade(events), asTick(150), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('flight');
-    });
-
-    it('leaves the plate once the trajectory and its slack are past', () => {
-      grenadeVisual(firstGrenade(events), asTick(300), TICK_RATE, scratch);
-      expect(scratch.phase).toBeNull();
-    });
-
-    it('is gone a whole round later rather than drawn for the rest of the match', () => {
-      grenadeVisual(firstGrenade(events), asTick(100 + 115 * TICK_RATE), TICK_RATE, scratch);
-      expect(scratch.phase).toBeNull();
-    });
-  });
-
-  describe('HE grenade', () => {
-    const events = withGrenade(newEvents(), {
-      type: 'hegrenade',
-      throwTick: asTick(0),
-      detonationTick: asTick(100),
-      detonationPosition: { x: 0, y: 0, z: 0 },
-    });
-
-    it('shows expanding ring right after detonation', () => {
-      // 0.1s after detonation = 6.4 ticks
-      grenadeVisual(firstGrenade(events), asTick(106), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('expand');
-      expect(scratch.progress).toBeCloseTo(0.1 / HE_EXPAND_SECONDS, 1);
-    });
-
-    it('shows linger after expansion', () => {
-      // HE_EXPAND_SECONDS = 0.2s = 12.8 ticks, so at tick 113 = 0.203s
-      grenadeVisual(firstGrenade(events), asTick(114), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('linger');
-    });
-
-    it('is null after linger period', () => {
-      // HE_EXPAND_SECONDS + HE_LINGER_SECONDS = 1.2s = 76.8 ticks
-      grenadeVisual(firstGrenade(events), asTick(200), TICK_RATE, scratch);
-      expect(scratch.phase).toBeNull();
-    });
-  });
-
-  describe('flashbang', () => {
-    const events = withGrenade(newEvents(), {
-      type: 'flashbang',
-      throwTick: asTick(0),
-      detonationTick: asTick(100),
-      detonationPosition: { x: 0, y: 0, z: 0 },
-    });
-
-    it('shows expanding mark briefly after detonation', () => {
-      grenadeVisual(firstGrenade(events), asTick(104), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('expand');
-      expect(scratch.progress).toBeGreaterThan(0);
-      expect(scratch.progress).toBeLessThan(1);
-    });
-
-    it('is null after expand period', () => {
-      // FLASH_EXPAND_SECONDS = 0.15s = 9.6 ticks
-      grenadeVisual(firstGrenade(events), asTick(115), TICK_RATE, scratch);
-      expect(scratch.phase).toBeNull();
-    });
-  });
-
-  describe('smoke grenade', () => {
-    // 18s smoke: detonation at tick 100, expiry at tick 100 + 18*64 = 1252
-    const events = smokeAt(0, 100, 1252);
-
-    it('shows active disc at full alpha during lifetime', () => {
-      // 5 seconds after detonation
-      grenadeVisual(firstGrenade(events), asTick(420), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('active');
-      expect(scratch.alpha).toBeCloseTo(0.3);
-      expect(scratch.remaining).toBeGreaterThan(0);
-      expect(scratch.remaining).toBeLessThan(1);
-    });
-
-    it('fades alpha in the last 2 seconds', () => {
-      // 1 second before expiry (remaining = 1s out of AREA_FADE_SECONDS=2s)
-      const tickBeforeEnd = 1252 - TICK_RATE; // 1s before expiry
-      grenadeVisual(firstGrenade(events), asTick(tickBeforeEnd), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('active');
-      expect(scratch.alpha).toBeCloseTo(0.3 * (1 / AREA_FADE_SECONDS), 1);
-    });
-
-    it('is null after expiry', () => {
-      grenadeVisual(firstGrenade(events), asTick(1253), TICK_RATE, scratch);
-      expect(scratch.phase).toBeNull();
-    });
-  });
-
-  describe('molotov', () => {
-    const events = withGrenade(newEvents(), {
-      type: 'molotov',
-      throwTick: asTick(0),
-      detonationTick: asTick(100),
-      detonationPosition: { x: 0, y: 0, z: 0 },
-      expiryTick: asTick(580), // ~7.5s
-    });
-
-    it('shows active area at 0.25 alpha', () => {
-      grenadeVisual(firstGrenade(events), asTick(200), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('active');
-      expect(scratch.alpha).toBeCloseTo(0.25);
-    });
-
-    it('fades in the last 2 seconds', () => {
-      // 0.5s before expiry
-      const tickBeforeEnd = 580 - TICK_RATE / 2;
-      grenadeVisual(firstGrenade(events), asTick(tickBeforeEnd), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('active');
-      expect(scratch.alpha).toBeLessThan(0.25);
-      expect(scratch.alpha).toBeGreaterThan(0);
-    });
-  });
-
-  describe('decoy', () => {
-    const events = withGrenade(newEvents(), {
-      type: 'decoy',
-      throwTick: asTick(0),
-      detonationTick: asTick(100),
-      detonationPosition: { x: 0, y: 0, z: 0 },
-      expiryTick: asTick(1380), // ~20s
-    });
-
-    it('shows active with pulsePhase cycling', () => {
-      grenadeVisual(firstGrenade(events), asTick(200), TICK_RATE, scratch);
-      expect(scratch.phase).toBe('active');
-      expect(scratch.pulsePhase).toBeGreaterThanOrEqual(0);
-      expect(scratch.pulsePhase).toBeLessThan(1);
-    });
-  });
-});
-
 describe('grenadeEndTick', () => {
   it('ends an area at its expiry', () => {
     const events = smokeAt(100, 200, 1_400);
@@ -228,8 +46,9 @@ describe('grenadeEndTick', () => {
     const he = firstGrenade(events);
     const end = grenadeEndTick(he, TICK_RATE);
 
-    // The bound is 1.2 s at 64 ticks, which is 76.8 ticks and so lands mid-tick.
-    expect(end).toBe(276);
+    // The bound is 1.0 s at 64 ticks — the ring's 0.35 s of opening and its 0.65 s of fading — and
+    // this is the last tick still inside it rather than the first one outside.
+    expect(end).toBe(263);
 
     const out = new Int32Array(1);
     expect(visibleGrenades([he], end, TICK_RATE, out)).toBe(1);
@@ -367,7 +186,9 @@ describe('grenadeRadiusUnits', () => {
     expect(grenadeRadiusUnits('molotov')).toBe(MOLOTOV_RADIUS_UNITS);
     expect(grenadeRadiusUnits('incgrenade')).toBe(MOLOTOV_RADIUS_UNITS);
     expect(grenadeRadiusUnits('hegrenade')).toBe(HE_RADIUS_UNITS);
-    expect(grenadeRadiusUnits('flashbang')).toBe(0);
+    // A flashbang has a radius since its wash stopped being a flat 12px and started following the
+    // zoom like every other mark. A decoy still has none: its pulse is a mark, not an area.
+    expect(grenadeRadiusUnits('flashbang')).toBe(FLASH_RADIUS_UNITS);
     expect(grenadeRadiusUnits('decoy')).toBe(0);
   });
 });

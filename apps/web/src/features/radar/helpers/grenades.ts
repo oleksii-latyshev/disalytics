@@ -99,110 +99,18 @@ export function drawTrajectory(
   context.restore();
 }
 
-// ── smoke cloud ─────────────────────────────────────────────────────────────
-
-/**
- * A soft disc with a 1px depleting ring that shows how much life remains. The ring sweeps clockwise
- * from 12 o'clock, so a full ring is a fresh smoke and no ring is about to expire — §6.2.
- */
-export function drawSmokeCloud(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radiusPx: number,
-  alpha: number,
-  remaining: number,
-  color: string,
-): void {
-  // Soft disc.
-  context.save();
-  context.globalAlpha = alpha;
-  context.fillStyle = color;
-  context.beginPath();
-  context.arc(x, y, radiusPx, 0, Math.PI * 2);
-  context.fill();
-
-  // Depleting ring: 1px, same colour, full alpha relative to the disc.
-  if (remaining > 0) {
-    context.globalAlpha = Math.min(alpha + 0.15, 0.6);
-    context.strokeStyle = color;
-    context.lineWidth = 1;
-    context.beginPath();
-    const start = -Math.PI / 2;
-    context.arc(x, y, radiusPx, start, start + remaining * Math.PI * 2);
-    context.stroke();
-  }
-
-  context.restore();
-}
-
-// ── molotov / incendiary area ───────────────────────────────────────────────
-
-/** How many angular slices the jittered edge uses. More looks softer. */
-const MOLOTOV_EDGE_SEGMENTS = 24;
-/** Max jitter as a fraction of radius. */
-const MOLOTOV_JITTER = 0.15;
-
-/**
- * A fire area with a "soft irregular edge" — radius jittered per angle, seeded by `seed` so the
- * shape is deterministic for the same grenade. Same depleting ring as smoke — §6.2.
- */
-export function drawMolotovArea(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radiusPx: number,
-  alpha: number,
-  remaining: number,
-  color: string,
-  seed: number,
-): void {
-  context.save();
-  context.globalAlpha = alpha;
-  context.fillStyle = color;
-  context.beginPath();
-
-  // Jittered polygon — seed drives a simple deterministic hash per segment.
-  for (let i = 0; i <= MOLOTOV_EDGE_SEGMENTS; i++) {
-    const angle = (i / MOLOTOV_EDGE_SEGMENTS) * Math.PI * 2;
-    // Simple hash: sin of seed + segment gives stable per-segment jitter.
-    const jitter = 1 + Math.sin(seed * 127.1 + i * 311.7) * MOLOTOV_JITTER;
-    const r = radiusPx * jitter;
-    const px = x + Math.cos(angle) * r;
-    const py = y + Math.sin(angle) * r;
-    if (i === 0) {
-      context.moveTo(px, py);
-    } else {
-      context.lineTo(px, py);
-    }
-  }
-
-  context.closePath();
-  context.fill();
-
-  // Depleting ring.
-  if (remaining > 0) {
-    context.globalAlpha = Math.min(alpha + 0.15, 0.6);
-    context.strokeStyle = color;
-    context.lineWidth = 1;
-    context.beginPath();
-    const start = -Math.PI / 2;
-    context.arc(x, y, radiusPx, start, start + remaining * Math.PI * 2);
-    context.stroke();
-  }
-
-  context.restore();
-}
-
 // ── HE grenade ring ─────────────────────────────────────────────────────────
 
 const HE_RING_WIDTH_PX = 2;
-const HE_GLYPH_RADIUS_PX = 4;
+const HE_RING_ALPHA = 0.75;
 
 /**
- * HE: an expanding ring that reaches the effective radius over ~200ms, then a small static glyph
- * for ~1s — §6.2. `progress` goes 0→1 during expansion; when `isLinger` is true, the glyph
- * replaces the ring.
+ * An HE: a ring that opens to the blast's own radius and then fades where it stopped — #170.
+ *
+ * **It is a ring at every moment of its life**, and that is what tells it from a flashbang's filled
+ * wash without either of them relying on its colour. It was a ring for 0.2 s and then a 4px dot for
+ * a second, which is two marks where one was needed and a dot that said nothing about the blast.
+ * The dot is gone; what lingers is the ring, at the size the explosion actually reached.
  */
 export function drawHeRing(
   context: CanvasRenderingContext2D,
@@ -213,45 +121,46 @@ export function drawHeRing(
   isLinger: boolean,
   color: string,
 ): void {
+  // Open, then hold: the ring stops growing when the blast does, and only its ink moves after that.
+  const radius = isLinger ? radiusPx : radiusPx * progress;
+  const alpha = HE_RING_ALPHA * (isLinger ? 1 - progress : 1);
+  if (radius <= 0 || alpha <= 0) return;
+
   context.save();
-
-  if (isLinger) {
-    // Static glyph: a small filled circle.
-    context.globalAlpha = 0.5;
-    context.fillStyle = color;
-    context.beginPath();
-    context.arc(x, y, HE_GLYPH_RADIUS_PX, 0, Math.PI * 2);
-    context.fill();
-  } else {
-    // Expanding ring.
-    const currentRadius = radiusPx * progress;
-    context.globalAlpha = 0.6 * (1 - progress * 0.3); // Fade slightly as it expands.
-    context.strokeStyle = color;
-    context.lineWidth = HE_RING_WIDTH_PX;
-    context.beginPath();
-    context.arc(x, y, currentRadius, 0, Math.PI * 2);
-    context.stroke();
-  }
-
+  context.globalAlpha = alpha;
+  context.strokeStyle = color;
+  context.lineWidth = HE_RING_WIDTH_PX;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.stroke();
   context.restore();
 }
 
 // ── flashbang mark ──────────────────────────────────────────────────────────
 
-const FLASH_MARK_MAX_RADIUS_PX = 12;
+const FLASH_PEAK_ALPHA = 0.55;
 
 /**
- * A brief expanding mark — no lingering area. What lingers is on the affected players (§6.1) — §6.2.
+ * A flashbang: a filled wash that opens and goes — #170, and the shape an HE is not.
+ *
+ * Two things changed with it. It **fills** where the HE strokes, so the pair is told apart by shape
+ * rather than by hue, which matters to a reader who cannot separate the two colours at all. And its
+ * radius is the grenade's own in world units instead of a flat 12px, so it covers the same ground at
+ * every zoom the way every other mark on this plate does.
+ *
+ * Nothing lingers, because what a flash leaves behind is on the players it caught (§6.1).
  */
 export function drawFlashMark(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
   progress: number,
+  radiusPx: number,
   color: string,
 ): void {
-  const radius = FLASH_MARK_MAX_RADIUS_PX * progress;
-  const alpha = 0.6 * (1 - progress);
+  const radius = radiusPx * progress;
+  const alpha = FLASH_PEAK_ALPHA * (1 - progress);
+  if (radius <= 0 || alpha <= 0) return;
 
   context.save();
   context.globalAlpha = alpha;

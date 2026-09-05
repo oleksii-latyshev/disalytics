@@ -1375,3 +1375,73 @@ The arms overlap and the branch reading lower is spread rather than a gain: the 
 walked every field of every `fire_bullets` to find the definition index, so this reads one more from
 a list that was in hand. `SCHEMA_VERSION` moved 7 → 8, so every demo already in a cache is a miss
 once.
+
+---
+
+## 23. Smoke and fire carry no shape, and no spread (#320)
+
+`ROADMAP.md`'s M4 asked for smoke and fire "drawn as they spread", and #170 asked for a body rather
+than a disc. The first question either owes is whether the recording says anything about either.
+**It does not**, and everything below is what was measured before any of it was drawn — same fixture
+as §2, events pass and projectiles pass, `ParsingMode::ForceSingleThreaded`.
+
+### The fire's own entity reports one position and never moves
+
+`inferno_startburn` and `inferno_expire` both carry `x/y/z`, present on **114 of 114**. Paired in
+time — by the first expire at or after each start, because entity ids are reused across a match —
+the distance between a fire's start and its end is:
+
+| | p50 | p90 | max |
+|---|---|---|---|
+| distance moved | **0.00 units** | **0.00** | **0.00** |
+
+Burn time runs 1.12 s to 7.03 s with a median of **7.02 s**. So a molotov is one point and one
+interval. There is no per-flame anything, and nothing that says a fire crept.
+
+### A settled smoke cloud does not move either
+
+The cloud *is* the projectile (§20), so its position is sampled for its whole life — 1,754 samples
+over 27.4 s on the fixture's first one. Once it stops travelling, every remaining sample is
+identical to the last **to 0.0 units**, for 20-odd seconds.
+
+**An aggregate first said otherwise, and it was the instrument.** A sweep over all clouds reported a
+162-unit median drift after settling, which is more than a smoke's own 144-unit radius. The settle
+detector assumed 16 Hz samples where the projectile pass gives one per tick, so it marked a grenade
+that was still rolling — moving under 8 units per *tick* — as settled. Individual trails printed
+sample by sample are what showed it, and they are what any claim of this shape should be checked
+against.
+
+### So the body and the growth are both modelled
+
+`AREA_START_EXTENT`, `SMOKE_FILL_SECONDS`, `FIRE_SPREAD_SECONDS`, `SMOKE_END_EXTENT` and
+`FIRE_END_EXTENT` in `packages/demo-core/src/helpers/grenade-state.ts` are named approximations in
+the sense `audibility.ts` uses, and `bodyParts` in
+`apps/web/src/features/radar/helpers/utility-body.ts` is where the shape comes from — derived once
+per grenade from a deterministic hash, so a cloud is the same cloud on every frame and every replay.
+That is a rule this product states, not a reading of the demo, and it is recorded here so nobody
+goes looking for the field it came from.
+
+### What it may cost: how many areas stand at once
+
+Smoke detonation to expiry and fire start to expire, paired in time, over 48,538 sampled frames:
+
+| | p50 | p90 | p99 | max | frames with none |
+|---|---|---|---|---|---|
+| areas standing | 0 | 3 | 5 | **8** | 27,750 (**57.2%**) |
+
+The worst frame of the match is tick 87,252 — frame 21,813 — and it holds eight. That frame is what
+`AGENTS.md` §16's third row is measured over on this branch rather than near it.
+
+### What a body has to fit inside
+
+From each type's radius and the map's own scale, at the two viewports the product is measured at:
+
+| | 1440×900 (plate 716) | 1024×800 (plate 473) | at 4× |
+|---|---|---|---|
+| smoke, r=144u | 22.9px | **15.1px** | 91.5px |
+| molotov, r=180u | 28.6px | 18.9px | 114.4px |
+| HE, r=350u | 55.6px | 36.7px | 222.5px |
+
+The 15.1px is the number `COUNTDOWN_MIN_RADIUS_PX` is set against: at the smallest viewport a
+full-size cloud is just over the line, so a cloud states its remaining seconds once it has filled
+and not before.

@@ -23,12 +23,18 @@ import {
   drawDecoyPulse,
   drawFlashMark,
   drawHeRing,
-  drawMolotovArea,
-  drawSmokeCloud,
   drawTrajectory,
   grenadeColor,
   isTrajectoryDrawn,
 } from './grenades';
+import {
+  bodyParts,
+  countdownLabels,
+  drawFireBody,
+  drawRemainingSeconds,
+  drawSmokeBody,
+  resolveCountdownFont,
+} from './utility-body';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 export interface UtilityLayerOptions {
@@ -45,6 +51,12 @@ export interface UtilityLayerOptions {
   readonly hovered: { readonly current: number | null };
   /** Read at draw time, not captured — DESIGN.md §6.3's zoom is view state, never layer state. */
   readonly view: { readonly current: PlateView };
+  /**
+   * The letter a body's countdown is suffixed with, translated by the caller. A canvas cannot reach
+   * the message catalogue and a draw may not build a string, so it arrives already made — the same
+   * rule #278 wrote for a selected player's round.
+   */
+  readonly secondsUnit: string;
 }
 
 /**
@@ -60,6 +72,12 @@ interface UtilityDraw {
   readonly tickRate: number;
   /** The phase scratch, itself written in place by `grenadeVisual`. */
   readonly visual: GrenadeVisualScratch;
+  /** Every grenade's body shape, laid out once per demo — a draw invents no geometry. */
+  readonly parts: Float32Array;
+  /** The countdown's face, resolved once for the reason the colours are: a draw reads no CSS. */
+  readonly countdownFont: string;
+  /** Every reading it can show, composed once so a draw allocates no string. */
+  readonly countdownLabels: readonly string[];
   /** Rewritten once per frame. */
   tick: Tick;
   scale: number;
@@ -158,23 +176,20 @@ function drawDetonation(
   // mark on the ground and the object in the air agree, rather than in two switches on one type.
   const color = grenadeColor(grenade.type, draw.colors);
 
+  // A body is drawn at the extent it has reached rather than at its full radius: that is the whole
+  // of "it arrives rather than appears", and it is a function of the tick like everything else here.
+  const bodyPx = radiusPx * visual.extent;
+
   switch (grenade.type) {
     case 'smokegrenade':
-      drawSmokeCloud(context, markX, markY, radiusPx, visual.alpha, visual.remaining, color);
+      drawSmokeBody(context, markX, markY, bodyPx, visual.alpha, color, draw.parts, draw.index);
+      drawCountdown(context, draw, bodyPx);
       break;
 
     case 'molotov':
     case 'incgrenade':
-      drawMolotovArea(
-        context,
-        markX,
-        markY,
-        radiusPx,
-        visual.alpha,
-        visual.remaining,
-        color,
-        draw.index,
-      );
+      drawFireBody(context, markX, markY, bodyPx, visual.alpha, color, draw.parts, draw.index);
+      drawCountdown(context, draw, bodyPx);
       break;
 
     case 'hegrenade':
@@ -190,13 +205,36 @@ function drawDetonation(
       break;
 
     case 'flashbang':
-      drawFlashMark(context, markX, markY, visual.progress, color);
+      drawFlashMark(context, markX, markY, visual.progress, radiusPx, color);
       break;
 
     case 'decoy':
       drawDecoyPulse(context, markX, markY, visual.pulsePhase, color);
       break;
   }
+}
+
+/**
+ * The seconds a body has left, over its own middle. Drawn after the body rather than under it.
+ *
+ * In the plate's own label ink rather than in the body's colour, which is what it was first built
+ * with: a fire's digits in `--nade-molotov` over a fire read weakly next to a smoke's over a smoke,
+ * and the two numbers are one reading and must not be two strengths. Nothing is lost by dropping
+ * the hue — the number stands *inside* the body it belongs to, so its position already says whose
+ * it is, and the colour is spent on being legible instead.
+ */
+function drawCountdown(context: CanvasRenderingContext2D, draw: UtilityDraw, bodyPx: number): void {
+  drawRemainingSeconds(
+    context,
+    draw.markX,
+    draw.markY,
+    bodyPx,
+    draw.visual.remainingSeconds,
+    draw.countdownLabels,
+    draw.colors.countdown,
+    draw.colors.label.halo,
+    draw.countdownFont,
+  );
 }
 
 /** The phase dispatch: what a single visible grenade is doing at this tick, and what that draws. */
@@ -260,6 +298,9 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
     selectedSlot,
     tickRate: track.tickRate,
     visual: createVisualScratch(),
+    parts: bodyParts(grenades),
+    countdownFont: resolveCountdownFont(),
+    countdownLabels: countdownLabels(options.secondsUnit),
     tick: tickAtFrame(track, clock.frame),
     scale: 1,
     hovered: -1,
