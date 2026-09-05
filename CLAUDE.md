@@ -1556,6 +1556,46 @@ because a `ghost` control is dimmed by the row it sits in and a colour the compo
 that row cannot beat. The bundle is 233.09 → **233.97 kB gz** and §16's two rows were re-measured
 against a `3e20603` baseline the same hour.
 
+**#315 let a zoomed plate take the whole stage, and the answer the owner gave is not one of the two
+the question offered.** `ROADMAP.md` had been holding a decision since the redesign — may a zoomed
+plate go under the cards, or only fill its own cell — and the answer is the whole stage **with every
+card still on it and every reading still on the card**. The plate's cell takes the stage's width
+while the reader is zoomed in, the map runs behind the cards, and nothing is hidden, moved or made
+unreachable. Six things are load-bearing. **The map is fitted to the plate's short axis**, which is
+the one line that makes this an expansion rather than a magnification: the width the plate wins shows
+*more map*, and a needle, a halo, a hairline and a token are the same size in both states.
+`features/radar/helpers/view.ts` is the only seam it needed — `plateExtent` and `offsetOn` are read by
+the scale, by the pan clamp and by the pointer inverse, so the four layers changed nothing and the
+backdrop stopped being the one place that derived its own geometry. **An axis the map does not reach
+across centres it and pins it**, which is the rest plate's own rule arrived at from the other side: a
+wide plate at 1.25× has the whole map's width on screen and pans vertically only, and the offsets are
+clamped *as they are read*, so a shape change under a stale pan cannot put the map off the plate for a
+frame. **A canvas is not sized like a `div`, and it is wrong in both directions.** It carries an
+intrinsic ratio from its backing store: in the grid, `height: 100%` resolved against a row that ratio
+had already sized — a 1392×657 cell holding a **1392×1392** canvas, clipped by an ancestor and so
+invisible to #199's viewport sweep — and out of the grid, a replaced element with `inset: 0` keeps its
+intrinsic width rather than stretching to the four edges, which is 716 of a 1392px cell. `inset-0`
+places it and `size-full` sizes it. **The cards have to name a layer.** An expanded plate is a
+positioned grid cell, and a positioned cell paints over every static sibling whatever the DOM order
+says, so the two team cards and the cluster column carry `z-10` — without it half the stage would have
+been under the map and half over it. They also stop swallowing the map around them: the column that
+holds the cluster and the feed is a full-height box with nothing in most of it, and `pointer-events`
+is what gives the drags back to the plate showing through. **The zoom controls must not follow the
+cell** — pinned to the expanded plate's own bottom-right they landed under the CT card and the reader
+lost both of them; §6.3's original formula is written against `min(100cqi,100cqb)`, which is the map's
+own square in either state, so leaving it alone is what keeps the pair on the map. And **below the
+split the grid does not change at all**: the strip there runs the full width of the stage, so a plate
+that took its row would have put every pixel it gained behind an opaque card and its own controls
+under one — what the reader gains at those widths is the letterbox the square used to leave, 1024
+across against 473. Measured on the fixture in `en` and in `ru`, branch against `main` at `2615053`:
+the plate is **716 at 1440×900 and 473 at 1024×800 at rest on both arms** — 1× is untouched, which was
+the owner's constraint — and **1392×657** and **1024×473** zoomed, with the team cards, the timeline
+block and the corner at the same rects in every state and **0 elements overflowing**. The bundle is
+233.97 → **234.14 kB gz** and §16's two rows were re-measured with the plate expanded, which is 1.78×
+the canvas: 0 frames over 16.7 ms in every playback pass on all three arms, and on scrub the single
+frame this row has always warned about lands on `main` in three passes of three, at rest in two, and
+expanded in one.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

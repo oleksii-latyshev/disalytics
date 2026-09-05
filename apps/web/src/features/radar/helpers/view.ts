@@ -44,17 +44,29 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Pan far enough that the map leaves the plate and the reader is looking at nothing. The map covers
- * `extent * zoom`, so the corner may travel from `extent * (1 - zoom)` — the far edge flush with the
- * plate's — up to zero, and at 1× that range collapses and the map is pinned.
+ * The map's own side on the canvas. The map is square whatever the plate is, so the plate's short
+ * axis is what fits it — and that is what keeps the scale continuous when a zoomed plate takes the
+ * whole stage: the axis that was binding the square is the axis it keeps.
  */
-function clampPan(pan: number, extent: number, zoom: number): number {
-  return clamp(pan, extent * (1 - zoom), 0);
+function plateExtent(size: CanvasSize, zoom: number): number {
+  return Math.min(size.width, size.height) * zoom;
+}
+
+/**
+ * Where the map's corner sits on one axis. A map longer than the plate may travel until its far
+ * edge is flush with the plate's; one that does not reach across the axis is centred on it and the
+ * reader cannot move it — the rule that pins a plate at rest, arrived at from the other side. An
+ * expanded plate is in the second case on its long axis until the zoom has filled it.
+ */
+function offsetOn(pan: number, length: number, extent: number): number {
+  return extent >= length ? clamp(pan, length - extent, 0) : (length - extent) / 2;
 }
 
 export function panBy(view: PlateView, dx: number, dy: number, size: CanvasSize): void {
-  view.panX = clampPan(view.panX + dx, size.width, view.zoom);
-  view.panY = clampPan(view.panY + dy, size.height, view.zoom);
+  const extent = plateExtent(size, view.zoom);
+
+  view.panX = offsetOn(view.panX + dx, size.width, extent);
+  view.panY = offsetOn(view.panY + dy, size.height, extent);
 }
 
 /**
@@ -66,9 +78,11 @@ export function zoomAbout(view: PlateView, factor: number, x: number, y: number,
   const next = clamp(view.zoom * factor, MIN_ZOOM, MAX_ZOOM);
   const ratio = next / view.zoom;
 
+  const extent = plateExtent(size, next);
+
   view.zoom = next;
-  view.panX = clampPan(x - (x - view.panX) * ratio, size.width, next);
-  view.panY = clampPan(y - (y - view.panY) * ratio, size.height, next);
+  view.panX = offsetOn(x - (x - view.panX) * ratio, size.width, extent);
+  view.panY = offsetOn(y - (y - view.panY) * ratio, size.height, extent);
 }
 
 /** Zoom on the plate's own centre, which is what a keypress and the `+`/`−` pair have to use. */
@@ -90,11 +104,12 @@ export function radarPointAt(
   size: CanvasSize,
   radarImageSize: number,
 ): { x: number; y: number } {
-  const pixelsPerRadarPixel = (size.width / radarImageSize) * view.zoom;
+  const extent = plateExtent(size, view.zoom);
+  const pixelsPerRadarPixel = extent / radarImageSize;
 
   return {
-    x: (x - view.panX) / pixelsPerRadarPixel,
-    y: (y - view.panY) / pixelsPerRadarPixel,
+    x: (x - offsetOn(view.panX, size.width, extent)) / pixelsPerRadarPixel,
+    y: (y - offsetOn(view.panY, size.height, extent)) / pixelsPerRadarPixel,
   };
 }
 
@@ -122,9 +137,14 @@ export function readPlateGeometry(
   radarImageSize: number,
   out: PlateGeometry,
 ): void {
-  out.scale = (size.width / radarImageSize) * view.zoom;
-  out.offsetX = view.panX;
-  out.offsetY = view.panY;
+  const extent = plateExtent(size, view.zoom);
+
+  // The offsets are read through the same clamp the pan is written through, so a plate that changed
+  // shape under a stale pan — a window resized while zoomed, an expansion — draws the map where it
+  // belongs on the axis it now has rather than where the last drag left it.
+  out.scale = extent / radarImageSize;
+  out.offsetX = offsetOn(view.panX, size.width, extent);
+  out.offsetY = offsetOn(view.panY, size.height, extent);
   out.tokenRadius = clamp(TOKEN_RADIUS_PX * view.zoom, TOKEN_MIN_RADIUS_PX, TOKEN_MAX_RADIUS_PX);
 }
 

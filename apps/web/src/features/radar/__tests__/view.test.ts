@@ -19,6 +19,12 @@ import {
 const PLATE: CanvasSize = { width: 640, height: 640 };
 const RADAR_SIZE = 1024;
 
+// The plate at 1440×900, at rest and expanded — §5.1's own figures, so a reading here is a reading
+// of the screen rather than of a round number. Expanded it keeps the height that was binding the
+// square and takes the width the reading cards leave.
+const AT_REST: CanvasSize = { width: 716, height: 716 };
+const EXPANDED: CanvasSize = { width: 1392, height: 716 };
+
 /** Where a radar-image coordinate lands on the canvas under a given view. */
 function project(view: { zoom: number; panX: number; panY: number }, radar: number): number {
   const out = plateGeometry();
@@ -202,5 +208,91 @@ describe('radarPointAt', () => {
 
     expect(point.x).toBeGreaterThan(RADAR_SIZE);
     expect(point.y).toBeLessThan(0);
+  });
+});
+
+describe('an expanded plate', () => {
+  // #315. The canvas stops being square when the reader zooms in, and everything below turns on one
+  // choice: the map is fitted to the plate's *short* axis, so the width the expansion wins is more
+  // map rather than a bigger one.
+  it('draws the map at the same scale as the square it grew out of', () => {
+    const atRest = plateGeometry();
+    const expanded = plateGeometry();
+
+    readPlateGeometry(plateView(), AT_REST, RADAR_SIZE, atRest);
+    readPlateGeometry(plateView(), EXPANDED, RADAR_SIZE, expanded);
+
+    expect(expanded.scale).toBe(atRest.scale);
+  });
+
+  it('centres the map on an axis it does not reach across, and pins it there', () => {
+    const view = { zoom: 1.25, panX: 0, panY: 0 };
+    const out = plateGeometry();
+    // 895px of map across 1392px of plate: there is nothing off screen to pan to.
+    const centred = (EXPANDED.width - EXPANDED.height * view.zoom) / 2;
+
+    readPlateGeometry(view, EXPANDED, RADAR_SIZE, out);
+    expect(out.offsetX).toBeCloseTo(centred, 9);
+
+    panBy(view, -400, 0, EXPANDED);
+    readPlateGeometry(view, EXPANDED, RADAR_SIZE, out);
+    expect(out.offsetX).toBeCloseTo(centred, 9);
+  });
+
+  it('still pans the axis the map does overflow, at the same zoom', () => {
+    const view = { zoom: 1.25, panX: 0, panY: 0 };
+
+    panBy(view, 0, -5000, EXPANDED);
+
+    expect(view.panY).toBeCloseTo(EXPANDED.height - EXPANDED.height * view.zoom, 9);
+  });
+
+  it('lets the long axis pan once the zoom has filled it', () => {
+    const view = { zoom: 2, panX: 0, panY: 0 };
+
+    panBy(view, -5000, 0, EXPANDED);
+
+    // 1432px of map across 1392px of plate, so the far edge comes flush and stops.
+    expect(view.panX).toBeCloseTo(EXPANDED.width - EXPANDED.height * view.zoom, 9);
+  });
+
+  it('reads a pointer through the same geometry it drew with', () => {
+    const views = [
+      { zoom: MIN_ZOOM, panX: 0, panY: 0 },
+      { zoom: 1.25, panX: -80, panY: -40 },
+      { zoom: MAX_ZOOM, panX: -1200, panY: -900 },
+    ];
+
+    const geometry = plateGeometry();
+
+    for (const view of views) {
+      readPlateGeometry(view, EXPANDED, RADAR_SIZE, geometry);
+
+      for (const radar of [0, 137, 512, 1024]) {
+        const point = radarPointAt(
+          view,
+          radar * geometry.scale + geometry.offsetX,
+          radar * geometry.scale + geometry.offsetY,
+          EXPANDED,
+          RADAR_SIZE,
+        );
+
+        expect(point.x, `x at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
+        expect(point.y, `y at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
+      }
+    }
+  });
+
+  it('draws where the plate is now rather than where the last drag left it', () => {
+    // A pan taken on the expanded plate, read back on the square it returns to: the offsets are
+    // clamped as they are read, so a stale box cannot put the map off the plate for a frame.
+    const view = { zoom: 1.25, panX: 0, panY: 0 };
+    const out = plateGeometry();
+
+    panBy(view, 0, -300, EXPANDED);
+    readPlateGeometry(view, AT_REST, RADAR_SIZE, out);
+
+    expect(out.offsetY).toBeGreaterThanOrEqual(AT_REST.height - AT_REST.height * view.zoom);
+    expect(out.offsetY).toBeLessThanOrEqual(0);
   });
 });

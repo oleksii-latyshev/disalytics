@@ -37,9 +37,19 @@ interface Props {
   selectedSlot: PlayerSlot | null;
   focus: RowFocus | null;
   isSuspended: boolean;
+  /** That the reader has zoomed in, which is the stage's business rather than the plate's — #315. */
+  onExpandedChange: (isExpanded: boolean) => void;
 }
 
-export function RadarView({ demo, overview, transport, selectedSlot, focus, isSuspended }: Props) {
+export function RadarView({
+  demo,
+  overview,
+  transport,
+  selectedSlot,
+  focus,
+  isSuspended,
+  onExpandedChange,
+}: Props) {
   const t = useT();
 
   // Everything on the plate the reader gets a say over — DESIGN.md §10.5. These are read here
@@ -204,28 +214,43 @@ export function RadarView({ demo, overview, transport, selectedSlot, focus, isSu
     onHover: isDebugShown ? setPointer : undefined,
   });
 
-  // The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller of
-  // the two axes the cell offers it, which is what the container units read. Everything else on the
-  // stage floats over it: a row of its own would come straight out of the map's short axis, which
-  // is the whole thing #110 set out to stop.
+  const isExpanded = navigation.zoom > MIN_ZOOM;
+
+  useEffect(() => {
+    onExpandedChange(isExpanded);
+  }, [isExpanded, onExpandedChange]);
+
+  // The radar is never cropped or letterboxed — DESIGN.md §4 — so at rest the canvas takes the
+  // smaller of the two axes the cell offers it, which is what the container units read. Everything
+  // else on the stage floats over it: a row of its own would come straight out of the map's short
+  // axis, which is the whole thing #110 set out to stop.
+  //
+  // Zoomed it fills the cell the stage has grown for it (#315), and it leaves the flow to do that.
+  // A canvas carries an intrinsic size from its backing store, and that is a trap at both ends: in
+  // the grid it sized the row `height: 100%` then resolved against, giving a 1392×1392 canvas in a
+  // 1392×657 cell; out of it, `inset: 0` alone leaves a replaced element at its intrinsic width.
   return (
     <div className="relative grid min-h-0 min-w-0 place-items-center [container-type:size]">
       <canvas
         ref={canvasRef}
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
-        className={`aspect-square w-[min(100cqi,100cqb)] touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
-          navigation.zoom > MIN_ZOOM ? 'cursor-grab' : ''
+        className={`touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
+          isExpanded
+            ? 'absolute inset-0 size-full cursor-grab'
+            : 'aspect-square w-[min(100cqi,100cqb)]'
         }`}
         {...navigation.canvasProps}
         onPointerLeave={() => setPointer(null)}
       />
 
       {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
-          above the split the cell is wider than the square it centres, so the offset is half the
-          slack on each axis plus the stage inset. Colour and a hairline, never `.glass-panel` —
-          §2.3 grants the one `backdrop-filter` over the live plate to the scoreboard and to nothing
-          else. */}
+          the cell is wider than the square it centres, so the offset is half the slack on each axis
+          plus the stage inset. **Written against the cell instead, it lands under the CT card when
+          the plate is expanded** (#315) — `min(100cqi,100cqb)` is the map's own square either way,
+          which is what keeps the pair on the map in both states. Colour and a hairline, never
+          `.glass-panel` — §2.3 grants the one `backdrop-filter` over the live plate to the
+          scoreboard and to nothing else. */}
       <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1">
         <Button
           type="button"
