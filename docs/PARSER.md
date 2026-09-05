@@ -1445,3 +1445,34 @@ From each type's radius and the map's own scale, at the two viewports the produc
 The 15.1px is the number `COUNTDOWN_MIN_RADIUS_PX` is set against: at the smallest viewport a
 full-size cloud is just over the line, so a cloud states its remaining seconds once it has filled
 and not before.
+
+---
+
+## 24. `dmg_health` is what the shot did, not what the player lost (#287)
+
+`Damage.healthDamage` is upstream's `dmg_health`, and the reading it carries is the **raw damage of
+the hit** rather than the health actually removed. Measured over the fixture by summing it per
+victim over a 1.5 s window:
+
+| | |
+|---|---|
+| largest figure anywhere | **452** — one AWP headshot |
+| largest figure on a player still alive | **98** |
+| frames carrying one at all, victim alive | 6,465 of 48,635 (**13.29%**) |
+| frames carrying more than one | 1,575 (**3.24%**) |
+| most on the plate at once | **4**, on 41 frames (0.08%) |
+
+Two consequences, and the first is the one that surprises.
+
+**A single hit can read four and a half times a player's health**, because the engine reports what
+the weapon did and clamps nothing: an AWP headshot on an unhelmeted player is 459 in Counter-Strike's
+own tables and 452 here. Anything that shows this number to a reader either says so or draws it only
+while the victim is alive — the second is what the plate does, and it is why the figure on a living
+player never exceeded 98 over thirty rounds.
+
+**A hit can read zero.** An armour-only hit reaches the schema with `healthDamage: 0` and a non-zero
+`armorDamage`, and the fixture holds those: a window sum of exactly 0 is a real hit that took no
+health, not the absence of one.
+
+Both figures are per *victim*, whoever fired: damage from a teammate is damage taken, and the
+attribution question `playerRoundStats` answers is a different one.
