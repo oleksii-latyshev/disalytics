@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { playerRoundStats, roundSurvivors } from '../helpers/round-stats';
+import { playerRoundStats, roundEquipment, roundSurvivors } from '../helpers/round-stats';
 import { asPlayerSlot, asTick, type MatchEvents, type ParsedDemo, type Round } from '../schema';
 import { newEvents, newTrack, withDamage, withKill } from './helpers';
 
@@ -67,6 +67,43 @@ describe('roundSurvivors', () => {
 
   it('has nothing to say for a round that does not exist', () => {
     expect(roundSurvivors(newDemo(newEvents()), 7)).toEqual({ CT: 0, T: 0 });
+  });
+});
+
+describe('roundEquipment', () => {
+  it('sums what each side bought, by the side the round recorded', () => {
+    expect(roundEquipment(newDemo(newEvents()), 0)).toEqual({ CT: 7800, T: 1400 });
+  });
+
+  it('adds a slot with no side to neither side', () => {
+    const withStranger: Round = {
+      ...round,
+      economy: [
+        ...round.economy,
+        { slot: stranger, money: 0, equipmentValue: 5200, buyType: 'full-buy', team: null },
+      ],
+    };
+
+    expect(roundEquipment(newDemo(newEvents(), [withStranger]), 0)).toEqual({ CT: 7800, T: 1400 });
+  });
+
+  it('reads the side the round held rather than the end-of-match roster', () => {
+    // The same three slots after the halves swap. Nothing outside the round's own economy says so,
+    // which is the whole reason this reads `economy[].team`.
+    const afterHalftime: Round = {
+      ...round,
+      economy: round.economy.map((entry) => ({
+        ...entry,
+        team: entry.team === 'CT' ? 'T' : 'CT',
+      })),
+    };
+
+    expect(roundEquipment(newDemo(newEvents(), [afterHalftime]), 0)).toEqual({ CT: 1400, T: 7800 });
+  });
+
+  it('has nothing to say for a round that does not exist, or for no round at all', () => {
+    expect(roundEquipment(newDemo(newEvents()), 7)).toEqual({ CT: 0, T: 0 });
+    expect(roundEquipment(newDemo(newEvents()), undefined)).toEqual({ CT: 0, T: 0 });
   });
 });
 

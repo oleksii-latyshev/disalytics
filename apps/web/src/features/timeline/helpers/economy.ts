@@ -1,4 +1,10 @@
-import { frameForTick, lastFrame, type ParsedDemo, type Round, type Team } from '@disa/demo-core';
+import {
+  frameForTick,
+  lastFrame,
+  type ParsedDemo,
+  roundEquipment,
+  type Team,
+} from '@disa/demo-core';
 
 /** What one round's buy looked like, as the distance between the two sides rather than two totals. */
 export interface EconomyStep {
@@ -15,23 +21,6 @@ export interface EconomyStep {
 }
 
 /**
- * Equipment on each side at freeze-time end. The side comes from the round's own economy rather
- * than from `PlayerInfo.team`, which reads the end of the match and so has the halves swapped for
- * everything before the break.
- */
-function totalsFor(round: Round): Readonly<Record<Team, number>> {
-  const totals: Record<Team, number> = { CT: 0, T: 0 };
-
-  for (const entry of round.economy) {
-    if (entry.team === null) continue;
-
-    totals[entry.team] += entry.equipmentValue;
-  }
-
-  return totals;
-}
-
-/**
  * Derived once per demo, like every other series the spine draws: the rounds are walked here so
  * that nothing has to walk them in a draw.
  */
@@ -39,8 +28,11 @@ export function economySteps(demo: ParsedDemo): readonly EconomyStep[] {
   const end = lastFrame(demo.track);
   if (end === 0) return [];
 
-  const gaps = demo.events.rounds.map((round) => {
-    const totals = totalsFor(round);
+  // `roundEquipment` is the rule, and it is `demo-core`'s: the team card states the same sum for
+  // one side, and two implementations of "what did this side buy" would drift on the day one of
+  // them was corrected.
+  const gaps = demo.events.rounds.map((round, index) => {
+    const totals = roundEquipment(demo, index);
 
     return { round, gap: totals.CT - totals.T };
   });
