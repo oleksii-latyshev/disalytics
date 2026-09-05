@@ -168,7 +168,7 @@ function newContext(drawn: Drawn): CanvasRenderingContext2D {
 const STYLE = {
   font: `10px sans-serif`,
   detailFont: `9px monospace`,
-  damageFont: `10px monospace`,
+  damageFont: `9px monospace`,
 };
 const COLORS = { halo: '#halo', ink: '#ink', damage: '#damage' };
 
@@ -362,7 +362,7 @@ describe('the figure a hit leaves', () => {
   /** The box a reading was written into, from where the pass put its text. */
   function boxOf(drawn: Drawn, index: number) {
     const text = drawn.text[index] ?? '';
-    const isFigure = /^\d+$/.test(text);
+    const isFigure = /^\u2212\d+$/.test(text);
     const width = isFigure ? text.length * 6 + 4 : WEAPON_BOX_WIDTH + text.length * 6 + 4;
 
     return {
@@ -382,17 +382,31 @@ describe('the figure a hit leaves', () => {
       TOKEN_RADIUS,
     );
 
-    expect(drawn.text).toEqual(['s1mple', 'ropz', '42']);
+    expect(drawn.text).toEqual(['s1mple', 'ropz', '\u221242']);
     expect(drawn.ink.at(-1)).toBe('#damage');
   });
 
   it('says nothing for a slot that has taken nothing, and nothing about a hit that has gone', () => {
     const drawn = newDrawn();
 
+    // An armour-only hit reaches the plate as 0 health, and 0 is not a reading.
     pass().draw(
       newContext(drawn),
       PLATE,
       subjectAt(400, 400, 'rifle', null, undefined, [0, 0]),
+      TOKEN_RADIUS,
+    );
+
+    expect(drawn.text).toEqual(['s1mple', 'ropz']);
+  });
+
+  it('says nothing rather than building a string for a total past its table', () => {
+    const drawn = newDrawn();
+
+    pass().draw(
+      newContext(drawn),
+      PLATE,
+      subjectAt(400, 400, 'rifle', null, undefined, [0, 1000]),
       TOKEN_RADIUS,
     );
 
@@ -411,7 +425,7 @@ describe('the figure a hit leaves', () => {
       TOKEN_RADIUS,
     );
 
-    expect(drawn.text).toEqual(['s1mple', 'ropz', '17', '89']);
+    expect(drawn.text).toEqual(['s1mple', 'ropz', '\u221217', '\u221289']);
 
     for (let a = 0; a < drawn.text.length; a++) {
       for (let b = a + 1; b < drawn.text.length; b++) {

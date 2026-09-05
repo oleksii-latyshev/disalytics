@@ -7,23 +7,31 @@
 const MAX_DAMAGE_FIGURE = 999;
 
 /**
- * Every figure a hit can show, composed once at module scope — `0`, `1`, … — because the alternative
- * is a template literal per hit per frame and `AGENTS.md` §9 keeps allocation out of a draw.
+ * What the figure leads with — the typographic minus (U+2212) rather than a hyphen, because this is
+ * a signed quantity and the mono face sets it on the digits' own width.
  *
- * It carries no unit. The countdown over a smoke needed one because a bare number over a cloud does
- * not say what it counts; this one is beside the token it belongs to, in the colour that token is
- * flashing, and §10.6's legend draws it.
+ * It carries no unit and it does carry this: the owner's reading on 5 September 2026 is that a bare
+ * number beside a token says *something happened* where the sentence is *this much health went*. The
+ * countdown over a smoke reached the same conclusion from the other direction and took a letter.
+ */
+export const DAMAGE_FIGURE_PREFIX = '\u2212';
+
+/**
+ * Every figure a hit can show, composed once at module scope — `−1`, `−2`, … — because the
+ * alternative is a template literal per hit per frame and `AGENTS.md` §9 keeps allocation out of a
+ * draw. Index 0 is unreachable by design: a hit that took no health says nothing at all, which is
+ * what an armour-only hit is, and the fixture holds those.
  */
 const DAMAGE_FIGURES: readonly string[] = Array.from(
   { length: MAX_DAMAGE_FIGURE + 1 },
-  (_, value) => String(value),
+  (_, value) => `${DAMAGE_FIGURE_PREFIX}${value}`,
 );
 
 /** The reading for a total, or `undefined` where there is nothing to say — 0, or past the table. */
 export function damageFigure(total: number): string | undefined {
-  const text = DAMAGE_FIGURES[Math.round(total)];
+  const rounded = Math.round(total);
 
-  return text === '0' ? undefined : text;
+  return rounded === 0 ? undefined : DAMAGE_FIGURES[rounded];
 }
 
 /**

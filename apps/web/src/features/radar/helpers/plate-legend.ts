@@ -1,6 +1,6 @@
 import { FIRE_AREA_ALPHA, SMOKE_AREA_ALPHA, UTILITY_NAMES } from '@disa/demo-core';
 import type { RadarColors } from './colors';
-import { drawDamageFigure } from './damage-figure';
+import { damageFigure, drawDamageFigure } from './damage-figure';
 import { drawGrenadeMark, drawWeaponMark } from './equipment-marks';
 import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
@@ -82,7 +82,7 @@ const PART_WAY = 0.6;
  */
 const HIT_TOKEN_X = 18;
 const HIT_FIGURE_X = HIT_TOKEN_X + TOKEN_RADIUS_PX + 6;
-const HIT_FIGURE = '89';
+const HIT_FIGURE = damageFigure(89) ?? '';
 
 export type PlateMarkId =
   | 'player'

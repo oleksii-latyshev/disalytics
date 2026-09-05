@@ -1,7 +1,7 @@
 import type { PlayerInfo, WeaponClass, WeaponIconId } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
 import { readCssToken } from '@/shared/lib';
-import { damageFigure, drawDamageFigure } from './damage-figure';
+import { DAMAGE_FIGURE_PREFIX, damageFigure, drawDamageFigure } from './damage-figure';
 import { drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { labelPlacer } from './label-placer';
 import type { PlateBounds } from './view';
@@ -65,8 +65,11 @@ export interface LabelStyle {
   /** One rank down for the round's numbers, so the name stays the label's first reading. */
   readonly detailFont: string;
   /**
-   * The hit's figure, at the name's own size in the mono face: every number in the product is
-   * tabular, and this one is read at a glance beside a token rather than under a name.
+   * The hit's figure. The mono face because every number in the product is tabular, and the round's
+   * own size rather than the name's — one rank down §3's scale, so the name beside it stays the
+   * label's first reading. It resolves to the same string as `detailFont` today and is named
+   * separately because the two would be changed for different reasons: that one is a line under a
+   * name, this one is a mark of its own beside a token.
    */
   readonly damageFont: string;
 }
@@ -92,7 +95,7 @@ export function readLabelStyle(): LabelStyle {
   return {
     font: `${LABEL_SIZE_PX}px ${readCssToken('--font-ui')}`,
     detailFont: `${DETAIL_SIZE_PX}px ${readCssToken('--font-mono')}`,
-    damageFont: `${LABEL_SIZE_PX}px ${readCssToken('--font-mono')}`,
+    damageFont: `${DETAIL_SIZE_PX}px ${readCssToken('--font-mono')}`,
   };
 }
 
@@ -193,10 +196,13 @@ export function labelPass(
   const placer = labelPlacer(slotCount * 2, LABEL_HEIGHT_PX);
   const widths = new Float32Array(slotCount);
 
-  /* The figure's face is tabular, so a width is its digit count rather than a measurement: one
-     `measureText` in `measure` below answers for all thousand readings, where measuring each would
-     have been a thousand `TextMetrics` for a number that is three characters long. */
+  /* The figure's face is tabular, so a width is its character count rather than a measurement: two
+     `measureText` calls in `measure` below answer for all thousand readings, where measuring each
+     would have been a thousand `TextMetrics` for a number three characters long. The sign is
+     measured beside the digit rather than assumed to share its width, because a face without
+     U+2212 falls back to one that sets it differently. */
   let digitWidth = 0;
+  let signWidth = 0;
 
   /* The detail's width, cached against the string it was measured from. It cannot join `widths`
      above — those are measured once per demo, and this changes every round — and it may not be
@@ -319,7 +325,7 @@ export function labelPass(
     const tokenY = subject.y(slot);
     if (!isOnPlate(tokenX, tokenY, bounds)) return;
 
-    const width = text.length * digitWidth + 2 * LABEL_HALO_PX;
+    const width = signWidth + (text.length - 1) * digitWidth + 2 * LABEL_HALO_PX;
     placer.place(tokenX, tokenY, tokenRadius, width, bounds);
 
     // The figure fades over match time along with the token's own flash, so scrubbing backwards
@@ -351,6 +357,7 @@ export function labelPass(
 
       context.font = style.damageFont;
       digitWidth = context.measureText('0').width;
+      signWidth = context.measureText(DAMAGE_FIGURE_PREFIX).width;
       context.font = style.font;
     },
 

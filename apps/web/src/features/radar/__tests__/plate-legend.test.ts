@@ -99,7 +99,7 @@ function newContext(painted: string[]): CanvasRenderingContext2D {
 }
 
 /** The plate's own faces, stubbed: a swatch reads them off the caller rather than off the document. */
-const STYLE = { font: '13px ui', detailFont: '12px mono', damageFont: '13px mono' };
+const STYLE = { font: '13px ui', detailFont: '12px mono', damageFont: '12px mono' };
 
 function paint(id: PlateMarkId): readonly string[] {
   const mark = PLATE_MARKS.find((candidate) => candidate.id === id);
