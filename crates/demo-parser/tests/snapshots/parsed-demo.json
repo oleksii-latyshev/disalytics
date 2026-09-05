@@ -3545,90 +3545,106 @@
     }
   ],
   "shots": {
-    "checksum": "80bbd2f30dd50c8b",
+    "checksum": "15be9e1649d80279",
     "count": 3500,
     "first": [
       {
         "shooter": 5,
         "tick": 4637,
-        "weapon": 16
+        "weapon": 16,
+        "yaw": -3874
       },
       {
         "shooter": 5,
         "tick": 4651,
-        "weapon": 16
+        "weapon": 16,
+        "yaw": -3890
       },
       {
         "shooter": 5,
         "tick": 4730,
-        "weapon": 26
+        "weapon": 26,
+        "yaw": -1710
       },
       {
         "shooter": 8,
         "tick": 4774,
-        "weapon": 11
+        "weapon": 11,
+        "yaw": -314
       },
       {
         "shooter": 8,
         "tick": 4797,
-        "weapon": 11
+        "weapon": 11,
+        "yaw": -340
       },
       {
         "shooter": 8,
         "tick": 4819,
-        "weapon": 11
+        "weapon": 11,
+        "yaw": -338
       },
       {
         "shooter": 8,
         "tick": 4840,
-        "weapon": 11
+        "weapon": 11,
+        "yaw": -339
       },
       {
         "shooter": 8,
         "tick": 4852,
-        "weapon": 11
+        "weapon": 11,
+        "yaw": -340
       }
     ],
     "last": [
       {
         "shooter": 9,
         "tick": 193764,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": 4319
       },
       {
         "shooter": 1,
         "tick": 193768,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": -13739
       },
       {
         "shooter": 9,
         "tick": 193770,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": 4255
       },
       {
         "shooter": 9,
         "tick": 193776,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": 4185
       },
       {
         "shooter": 9,
         "tick": 193783,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": 4229
       },
       {
         "shooter": 9,
         "tick": 193789,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": 4243
       },
       {
         "shooter": 9,
         "tick": 193796,
-        "weapon": 15
+        "weapon": 15,
+        "yaw": 4318
       },
       {
         "shooter": 3,
         "tick": 194127,
-        "weapon": 2
+        "weapon": 2,
+        "yaw": 16040
       }
     ]
   },

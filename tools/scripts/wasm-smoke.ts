@@ -272,10 +272,21 @@ const detonated = plants.filter((plant) => nullableNumberField(plant, 'detonatio
 
 const shots = arrayField(events, 'shots');
 
+let aimedOutsideRange = 0;
+
 for (const shot of shots) {
   numberField(shot, 'tick');
   numberField(shot, 'shooter');
   numberField(shot, 'weapon');
+
+  // The event's own angle overshoots -180 on a handful of shots and the parser wraps it —
+  // `docs/PARSER.md` §22 — so this is where the wrap is proved to survive the boundary rather
+  // than only the crate's own tests.
+  if (Math.abs(numberField(shot, 'yaw')) > 180 * 100) aimedOutsideRange++;
+}
+
+if (aimedOutsideRange > 0) {
+  throw new Error(`${aimedOutsideRange} shots name a yaw outside the range the schema states`);
 }
 
 for (const grenade of grenades) {
@@ -289,6 +300,7 @@ for (const grenade of grenades) {
 
 console.log(
   `${map}: ${cells} track cells, ${grenades.length} grenades and ${shots.length} shots ` +
+    "all aiming inside the schema's own range, " +
     `in ${seconds.toFixed(2)}s, ` +
     `${timed.length} of ${rounds.length} rounds stating their length ` +
     `and ${detonated.length} of ${plants.length} bombs their detonation, ` +

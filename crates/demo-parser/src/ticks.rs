@@ -359,8 +359,16 @@ fn cell_of(frame: usize, slot: PlayerSlot, slot_count: usize, frame_count: usize
     Some(frame * slot_count + slot)
 }
 
-fn scaled_angle(degrees: Option<f32>) -> i16 {
-    let scaled = degrees.unwrap_or_default() * ANGLE_SCALE;
+/// Degrees to the schema's own [`ANGLE_SCALE`] encoding. Shared with the events pass, where a
+/// shot carries the angle it was fired at: one encoding for both, so a reader needs one rule.
+///
+/// The wrap is for the event half and is a no-op for the entity props. Measured on the fixture in
+/// `docs/PARSER.md` §22: the `yaw` prop stays inside -180..180 on all 1,945,210 rows, while
+/// `fire_bullets.angles_y` runs past it on 12 shots of 3,500 — all just under -180, the furthest at
+/// -183.33. Both name the same direction, so this is about the range the schema states rather than
+/// about a mark being drawn wrong.
+pub(crate) fn scaled_angle(degrees: Option<f32>) -> i16 {
+    let scaled = wrapped_degrees(degrees.unwrap_or_default()) * ANGLE_SCALE;
     if !scaled.is_finite() {
         return 0;
     }
@@ -373,6 +381,19 @@ fn scaled_angle(degrees: Option<f32>) -> i16 {
             .clamp(f32::from(i16::MIN), f32::from(i16::MAX))
             .round() as i16
     }
+}
+
+/// Into -180..180, the half-open way the engine's own props report an angle: -180 stays and 180
+/// becomes -180. A value that is not finite is left alone for the caller's own guard to catch.
+fn wrapped_degrees(degrees: f32) -> f32 {
+    if !degrees.is_finite() {
+        return degrees;
+    }
+
+    // `rem_euclid` can land on the modulus itself for an input a hair under -180, so the closed
+    // end is folded back rather than left as the +180 that would read as the other direction.
+    let wrapped = (degrees + 180.0).rem_euclid(360.0) - 180.0;
+    if wrapped >= 180.0 { -180.0 } else { wrapped }
 }
 
 fn clamp_health(health: Option<i64>) -> u8 {
@@ -440,10 +461,39 @@ mod tests {
     }
 
     #[test]
-    fn an_angle_outside_the_engine_range_saturates_rather_than_wrapping() {
-        assert_eq!(scaled_angle(Some(1_000.0)), i16::MAX);
-        assert_eq!(scaled_angle(Some(-1_000.0)), i16::MIN);
+    fn an_angle_past_the_range_names_the_direction_it_actually_points() {
+        // The event half overshoots -180 rather than wrapping — 12 shots of 3,500 on the fixture,
+        // the furthest at -183.33 — and -183.33 and 176.67 are one direction, not two.
+        assert_eq!(scaled_angle(Some(-183.33)), 17_667);
+        assert_eq!(scaled_angle(Some(-180.11)), 17_989);
+        assert_eq!(scaled_angle(Some(1_000.0)), -8_000);
+        assert_eq!(scaled_angle(Some(-1_000.0)), 8_000);
+    }
+
+    #[test]
+    fn the_range_boundary_is_half_open_the_way_the_engine_reports_it() {
+        assert_eq!(scaled_angle(Some(180.0)), -18_000);
+        assert_eq!(scaled_angle(Some(-180.0)), -18_000);
+    }
+
+    #[test]
+    fn an_angle_that_is_not_a_number_reads_as_nothing_rather_than_as_a_direction() {
         assert_eq!(scaled_angle(Some(f32::NAN)), 0);
+        assert_eq!(scaled_angle(Some(f32::INFINITY)), 0);
+        assert_eq!(scaled_angle(None), 0);
+    }
+
+    #[test]
+    fn every_finite_angle_lands_inside_the_encoding() {
+        let mut degrees = -3_600.0_f32;
+        while degrees <= 3_600.0 {
+            let scaled = scaled_angle(Some(degrees));
+            assert!(
+                (-18_000..=18_000).contains(&i32::from(scaled)),
+                "{degrees} scaled to {scaled}, outside the range the schema states"
+            );
+            degrees += 0.5;
+        }
     }
 
     #[test]

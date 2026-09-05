@@ -223,6 +223,17 @@ fn assert_shots_name_a_weapon_in_the_table(demo: &ParsedDemo) {
             .all(|shot| (shot.shooter as usize) < demo.track.slot_count),
         "a shot names a slot the track does not have"
     );
+    let outside = demo
+        .events
+        .shots
+        .iter()
+        .filter(|shot| i32::from(shot.yaw).abs() > 180 * 100)
+        .count();
+    assert_eq!(
+        outside, 0,
+        "a shot's yaw left the -180..180 the ANGLE_SCALE encoding is sized for"
+    );
+
     eprintln!(
         "shots: {} ({unnamed} naming no weapon in the table)",
         demo.events.shots.len()
@@ -359,6 +370,7 @@ fn shot_json(shot: &Shot) -> Value {
         "tick": shot.tick,
         "shooter": shot.shooter,
         "weapon": shot.weapon,
+        "yaw": shot.yaw,
     })
 }
 

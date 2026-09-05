@@ -1260,3 +1260,118 @@ Nothing measurable. The three-pass native parse over the 264 MB `.dem.zst`, thre
 machine within the hour: **16.81 / 16.54 / 16.55 s** before, **15.41 / 15.31 / 16.31 s** after. The
 two arms overlap, and the branch reading lower is the spread rather than a gain from adding a
 column. `SCHEMA_VERSION` moved 6 → 7, so every demo already in a cache is a miss once.
+
+---
+
+## 22. Where a bullet went, and where it did not (#318)
+
+`ROADMAP.md` carried the question as a fork: either upstream's impact events come into the parse, or
+the plate draws a fixed-length ray and labels it as the approximation it is. Measured, **neither arm
+survives as it was written** — the first is closed by absence and the second turns out not to be a
+compromise. Everything below is over the same fixture §2 describes: 3,500 `fire_bullets` in a
+25-round match, events pass with `wanted_events: ["all"]` and `ParsingMode::ForceSingleThreaded`,
+which is what the crate itself runs.
+
+### There is no `bullet_impact` to import
+
+Upstream fills `game_events_counter` from the event **descriptor**, once per occurrence and *before*
+the wanted filter, so it is the honest census of what a recording carried rather than of what a
+reader asked for. The fixture declares **54** names there and collects 52. `bullet_impact` is in
+neither list.
+
+It is not being dropped on the way through. `REMOVEDEVENTS` in upstream's
+`second_pass/game_events.rs` holds exactly two names — `server_cvar` and `player_connect` — and the
+two names the fixture declares without collecting are `item_sold` and `rank_update`. So the
+recording never carried an impact, and no flag, prop list or pass structure here can produce one.
+
+**This is one demo, and it is the strongest claim it can support.** A GOTV recording is not obliged
+to carry every event a client sees, so the finding is *this class of demo does not*, which is the
+same shape as §18's unfired shotgun.
+
+### `fire_bullets` carries the aim, exactly
+
+Every field, present on **3,500 of 3,500** with no gaps:
+
+| field | what it is |
+|---|---|
+| `angles_x` / `angles_y` / `angles_z` | pitch, yaw and roll at the trigger pull |
+| `origin_x` / `origin_y` / `origin_z` | the muzzle |
+| `ent_origin_x` / `ent_origin_y` / `ent_origin_z` | the player |
+
+`Shot.yaw` is `angles_y` and nothing else is carried. The other two were measured and left out, and
+the numbers are the argument rather than the taste:
+
+- **The muzzle is the player, on a 2D plate.** `origin` differs from `ent_origin` in x/y by at most
+  **8.48 units** across the match — 1.35px at 1440×900, 5.39px at 4× — so a tracer leaves the token
+  the reader is already looking at, and a second origin would move the mark off the player for no
+  reading. In z the two differ by a median 62.59 units, which is eye height and is not a plan view's
+  business.
+- **Pitch is level.** p50 **0.6°**, 90% inside ±7.3°, and **6 shots of 3,500** steeper than 30°.
+
+### The 16 Hz sample was close, and the schema carries the angle anyway
+
+The plate already holds a yaw per player per frame, so the question is what the exact one buys.
+Rebuilding the product's own track — the first row in each bucket wins, `tick / (tickRate /
+sampleHz)` — and comparing each shot's `angles_y` against the sample the plate would have drawn
+with. All **3,500 matched, none missing**:
+
+| | p50 | p90 | p99 | max |
+|---|---|---|---|---|
+| angular error | 0.16° | 1.48° | 4.29° | **15.68°** |
+| miss at the end of a 512-unit ray, plate px at 1440×900 | 0.23 | 2.10 | 6.09 | 21.99 |
+| the same at 4× | 0.91 | 8.41 | 24.35 | 87.96 |
+
+21 shots (0.60%) are over 5°, six (0.17%) over 10°, and **none over 20°**. So the sampled yaw would
+have drawn a mark that is right nearly always and never absurd; carrying the exact angle is the
+owner's decision of 5 September 2026, taken with these figures in front of it, and it is what
+`SCHEMA_VERSION` 8 is for. The measurement is recorded because the next reader will want the
+argument, not the conclusion: this bought exactness rather than rescuing a broken mark.
+
+### The event's angle leaves the range the props stay inside
+
+The two sources do not agree about normalisation, and only one of them was ever encoded:
+
+| source | rows | outside −180..180 |
+|---|---|---|
+| the `yaw` **prop**, which `TickTrack` reads | 1,945,210 | **0** |
+| `fire_bullets.angles_y` | 3,500 | **12**, all just under −180, furthest **−183.33** |
+
+−183.33 and 176.67 are one direction, so nothing was ever going to be drawn wrong — but `ANGLE_SCALE`
+is documented as holding −180..180 and a schema that states a range should mean it. `scaled_angle`
+wraps into that range for both halves now, which is a no-op for every one of the 1,945,210 prop rows
+and is why the track's own checksums in the golden snapshot did not move on the branch that added
+this. The one behaviour it changes is at the far edge: an angle of 1000° used to saturate to
+`i16::MAX`, a direction nothing was pointing in, and now reads as the −80° it actually is.
+
+### What it costs to draw
+
+The tracer's window is `GUNFIRE_TRACER_SECONDS`, the 0.15 s the spur it replaces already used.
+Counting how many shots fall inside it at each of the match's 48,532 sampled frames:
+
+| window | frames carrying any | p50 | p99 | max |
+|---|---|---|---|---|
+| **0.15 s** | 4,752 of 48,532 (9.8%) | 0 | 3 | **8** |
+| 0.30 s | 6,209 (12.8%) | 0 | 6 | 13 |
+| 0.50 s | 7,551 (15.6%) | 0 | 9 | 18 |
+| 1.00 s | 10,180 (21.0%) | 0 | 15 | 32 |
+
+So `ROADMAP.md`'s worry — "drawn ten times per second per shooter, so it is measured against the
+60 fps row before it ships" — is answered by the count as well as by the measurement: nine frames in
+ten draw nothing at all, and the worst frame in a match draws eight one-pixel lines. Also measured:
+**no tick in the match has one player firing twice**, so a shot is one ray and never a stack of them.
+
+### What it cost to parse
+
+Nothing measurable. The three-pass native parse over the **decompressed** 353 MB `.dem` — a
+different input from §21's, so these figures compare only with each other — three runs an arm on one
+machine within the hour, alternating between the branch and its base:
+
+| | runs | median |
+|---|---|---|
+| before | 7.29 / 7.21 / 7.26 s | 7.26 s |
+| after | 7.16 / 7.19 / 7.22 s | 7.19 s |
+
+The arms overlap and the branch reading lower is spread rather than a gain: the events pass already
+walked every field of every `fire_bullets` to find the definition index, so this reads one more from
+a list that was in hand. `SCHEMA_VERSION` moved 7 → 8, so every demo already in a cache is a miss
+once.

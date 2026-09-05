@@ -9,11 +9,11 @@ import {
   FLAG_ALIVE,
   FLAG_SCOPED,
   FLAG_WALKING,
-  gunfireBySlot,
   type ParsedDemo,
   type PlayerSlot,
   sampleAt,
   type Team,
+  visibleShots,
   weaponClasses,
   weaponIcons,
 } from '@disa/demo-core';
@@ -29,14 +29,16 @@ import {
   drawAudibleRing,
   drawBlindDisc,
   drawDamageFlash,
-  drawGunfireSpur,
   drawNeedle,
   drawProgressArc,
   drawSelectionRing,
   drawToken,
   drawWalkHollow,
+  needleReach,
   screenAngle,
+  screenAngleOf,
 } from './tokens';
+import { tracerLength, tracerStroke } from './tracer';
 import {
   type PlateBounds,
   type PlateGeometry,
@@ -69,6 +71,13 @@ export interface PlayerTokensOptions {
 }
 
 /**
+ * How many shots the plate will draw at once. `docs/PARSER.md` §22 counted a whole match's worst
+ * frame at 8 over the same window, so this is that with room rather than a guess — and it is a
+ * ceiling rather than a budget: the buffers behind it are fixed for the life of the layer.
+ */
+const MAX_TRACERS = 16;
+
+/**
  * The clock is read at draw time rather than captured as a frame, which is what lets the rAF loop
  * repaint without rebuilding the layer — and so without allocating — every animation frame.
  */
@@ -88,7 +97,14 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const damageFlashes = new Float32Array(track.slotCount);
   const blindRemaining = new Float32Array(track.slotCount);
   const deathProgress = new Float32Array(track.slotCount);
-  const gunfire = new Float32Array(track.slotCount);
+
+  // A shot is drawn per trigger pull rather than per player, so these are sized by how many can be
+  // in the window at once rather than by the roster. `docs/PARSER.md` §22 measured a match's worst
+  // frame at 8 with the same window; the ceiling is what keeps the buffers fixed, and a burst past
+  // it loses its oldest ray rather than growing an array inside a draw.
+  const shotIndices = new Int32Array(MAX_TRACERS);
+  const shotLife = new Float32Array(MAX_TRACERS);
+  let shotCount = 0;
 
   // The per-match weapon table resolved once, so a token reads what it is holding by index rather
   // than by name — `MatchHeader.weapons` is a different lookup for every demo, and a string lookup
@@ -106,8 +122,9 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const geometry: PlateGeometry = plateGeometry();
   const bounds: PlateBounds = plateBounds();
 
-  // Built once, outside the draw, so its gradient is cached across frames rather than per frame.
+  // Built once, outside the draw, so their gradients are cached across frames rather than per frame.
   const wedge = visionWedge();
+  const tracer = tracerStroke();
 
   const isAlive = (slot: number) => (sampleAt(track.flags, base + slot) & FLAG_ALIVE) !== 0;
 
@@ -147,6 +164,45 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     );
   }
 
+  /**
+   * Every shot still on the plate, drawn before any token so a ray crossing the map never covers a
+   * player standing in it.
+   *
+   * The angle is the shot's own rather than the sample beside it — that is what `SCHEMA_VERSION` 8
+   * bought — so a burst whose aim walked fans out instead of collapsing onto the last direction.
+   *
+   * A pass of its own rather than a step inside the token loop, and that is what keeps two rules
+   * from the spur it replaces: a blinded player still draws one, because they still pulled the
+   * trigger even where the needle no longer claims a direction, and so does a player who has since
+   * died, because the bullet had already left when they fell.
+   */
+  function drawTracers(context: CanvasRenderingContext2D): void {
+    if (shotCount === 0) return;
+
+    const length = tracerLength(overview, scale);
+
+    for (let index = 0; index < shotCount; index++) {
+      const shot = demo.events.shots[sampleAt(shotIndices, index)];
+      if (shot === undefined) continue;
+
+      const slot = shot.shooter;
+      if (teamBySlot[slot] === undefined) continue;
+
+      const isScoped = (sampleAt(track.flags, base + slot) & FLAG_SCOPED) !== 0;
+
+      tracer(
+        context,
+        plate.x(slot),
+        plate.y(slot),
+        screenAngleOf(shot.yaw),
+        needleReach(tokenRadius, isScoped),
+        length,
+        colors.gunfire,
+        plate.alpha(slot) * sampleAt(shotLife, index),
+      );
+    }
+  }
+
   /** What sits under a living player's token: how far they can be heard, and where they look. */
   function drawUnderToken(context: CanvasRenderingContext2D, slot: number, team: Team): void {
     const sample = base + slot;
@@ -167,22 +223,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
     const angle = screenAngle(track, sample);
     const isScoped = (sampleAt(track.flags, sample) & FLAG_SCOPED) !== 0;
-    const shot = sampleAt(gunfire, slot);
-
-    // Before the blind check rather than after it: a flashed player still pulls a trigger, and the
-    // spur says where the rounds went even where the needle no longer claims a direction.
-    if (shot > 0) {
-      drawGunfireSpur(
-        context,
-        plate.x(slot),
-        plate.y(slot),
-        tokenRadius,
-        angle,
-        isScoped,
-        colors.gunfire,
-        plate.alpha(slot) * shot,
-      );
-    }
 
     // A flashed player is not looking anywhere, and the plate does not claim otherwise.
     if (sampleAt(blindRemaining, slot) > 0) return;
@@ -299,10 +339,11 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     damageFlashBySlot(demo, clock.frame, damageFlashes);
     blindRemainingBySlot(demo, clock.frame, blindRemaining);
     deathProgressBySlot(demo, clock.frame, deathProgress);
-    gunfireBySlot(demo, clock.frame, gunfire);
+    shotCount = visibleShots(demo, clock.frame, shotIndices, shotLife);
     plate.read(positions, scale);
 
     drawVision(context);
+    drawTracers(context);
     drawTokens(context);
     labels.draw(context, bounds, named, tokenRadius);
   };

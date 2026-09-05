@@ -4,7 +4,7 @@
  * parser is a miss rather than something to migrate, and a demo already on the device is corrected
  * rather than left holding what it was stored with.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 declare const unit: unique symbol;
 
@@ -179,6 +179,15 @@ export interface Shot {
    * index and the same vocabulary as `TickTrack.weapon`, which is why a shot needs no `WeaponId`.
    */
   weapon: number;
+  /**
+   * Where the shooter was looking on the tick the trigger went, in `ANGLE_SCALE` — the same
+   * encoding as `TickTrack.yaw`, so one rule reads both.
+   *
+   * A shot is an instant and the track is 16 Hz, so this is not the sample beside it: measured over
+   * a whole match the sample misses this angle by a median 0.16° and by 15.68° on the worst shot.
+   * `docs/PARSER.md` §22 has the table, and has why the muzzle and the pitch are not carried.
+   */
+  yaw: number;
 }
 
 /**

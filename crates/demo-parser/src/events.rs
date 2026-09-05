@@ -5,7 +5,7 @@ use crate::schema::{
     Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Kill, MatchEvents, PlayerSlot, Shot, Tick,
     WEAPON_NONE,
 };
-use crate::ticks::{Planting, Sample};
+use crate::ticks::{Planting, Sample, scaled_angle};
 use crate::vocabulary::hit_group_of;
 use parser::second_pass::game_events::GameEvent;
 use std::collections::{BTreeMap, BTreeSet};
@@ -102,6 +102,10 @@ fn damage(passes: &Passes<'_>) -> Vec<Damage> {
 /// index, which is what lets a shot name its weapon in the sample column's own vocabulary instead
 /// of in a fifth one. It also counts what left a barrel, so a thrown grenade and a knife swing are
 /// not in it — `docs/PARSER.md` §18 has both counts and the join between them.
+///
+/// It carries the aim as well, and `angles_y` is the only part of it read: the muzzle sits at most
+/// 8.48 units from the player's own position and the pitch is inside ±7.3° on nine shots in ten, so
+/// neither changes a mark on a 2D plate. `docs/PARSER.md` §22 has both measurements.
 fn shots(passes: &Passes<'_>, weapons: &[String]) -> Vec<Shot> {
     let mut shots: Vec<Shot> = passes
         .named("fire_bullets")
@@ -112,6 +116,7 @@ fn shots(passes: &Passes<'_>, weapons: &[String]) -> Vec<Shot> {
                 weapon: definition_index(event).map_or(WEAPON_NONE, |definition| {
                     crate::weapons::index_in(weapons, definition)
                 }),
+                yaw: scaled_angle(float(event, "angles_y")),
             })
         })
         .collect();

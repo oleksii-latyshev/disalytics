@@ -58,6 +58,17 @@ const PALETTE = new Set<string>([
 function newContext(painted: string[]): CanvasRenderingContext2D {
   const ignore = () => {};
 
+  // A gradient's stops are ink too, and a mark that fades one out reaches the canvas as an object
+  // rather than as a string — so the stops are recorded instead, or the tracer would be the one
+  // mark this test cannot see. `transparent` is the absence of ink and never a literal someone
+  // typed, so it is the one value that does not count as a colour.
+  const gradient = () =>
+    ({
+      addColorStop: (_stop: number, value: string) => {
+        if (value !== 'transparent') painted.push(value);
+      },
+    }) as unknown as CanvasGradient;
+
   return {
     save: ignore,
     restore: ignore,
@@ -66,16 +77,19 @@ function newContext(painted: string[]): CanvasRenderingContext2D {
     arc: ignore,
     rect: ignore,
     translate: ignore,
+    rotate: ignore,
     moveTo: ignore,
     lineTo: ignore,
     quadraticCurveTo: ignore,
     fill: ignore,
     stroke: ignore,
+    createLinearGradient: gradient,
+    createRadialGradient: gradient,
     set fillStyle(value: string) {
-      painted.push(value);
+      if (typeof value === 'string') painted.push(value);
     },
     set strokeStyle(value: string) {
-      painted.push(value);
+      if (typeof value === 'string') painted.push(value);
     },
   } as unknown as CanvasRenderingContext2D;
 }
