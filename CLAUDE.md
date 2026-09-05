@@ -1473,6 +1473,32 @@ checked by `bun run smoke` against the contract in `AGENTS.md` §13 and recorded
 deployment. Pull requests get no preview deployment: previews are off since #33, and `AGENTS.md`
 §15 has the one-command way to turn them back on.
 
+**#308 put the buy on the team card, and the load-bearing part is that the card did not move.**
+A side's equipment value for the round sits on the head the side letter already occupied, so a
+reader answers "can this side fight this round" without adding up five money figures — which is not
+even the same question, since those five are cash in hand. Five things to know. **The rule is
+`demo-core`'s** — `roundEquipment` beside `roundSurvivors`, reading `Round.economy[].team` rather
+than `PlayerInfo.team` for the reason every other per-round reading does: the end-of-match roster
+names the wrong side for every round before the swap. **`features/timeline/helpers/economy.ts` was
+the second copy of that sum** — written for the unbuilt match overlay, unreferenced but not dead —
+and it is a caller now, so the day one of them is corrected both are. **Everything on the head is
+one type rank**, 11px against 11px: a 12px figure beside an 11px label grows the line box, and §5.1
+sizes the plate from this card below the split, so the difference would come out of the map. Measured
+over a real parse in both locales, branch against `main` at `a72c2ae`: plate **716 at 1440×900 and
+473 at 1024×800**, card 291 and 108, head 13.75px — **identical on both arms in all four
+combinations**, 0 elements overflowing a seat by the probe that measures against the seat's own
+padding box rather than the viewport. **The word is on screen rather than `sr-only`** because every
+row below already carries a dollar figure meaning something else, and two amounts on one card with
+nothing to tell them apart is a worse reading than none. And **it does not roll** — `Money`'s
+`isSliding` is false, which is that component's own rule: a round's equipment is a fact about a
+round rather than a balance moving. Warmup states nothing at all rather than `$0`, because a zero
+there is a reading and the absence of a round is not. **The live figure is not built and that is the
+row's own boundary**: `equipmentValue` is sampled at freeze-time end only, so a total that stays
+true while a round is fought is a new `TickTrack` column and a `SCHEMA_VERSION` bump. The bundle is
+232.77 → **232.85 kB gz**, and §16's two frame rows are stated as unmoved rather than re-measured:
+this is text at the 10 Hz readout and a ten-entry sum per card, and nothing new reaches the frame
+channel.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
