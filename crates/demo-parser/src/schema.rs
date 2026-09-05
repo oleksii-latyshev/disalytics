@@ -257,6 +257,14 @@ pub struct Shot {
     /// The same index and the same vocabulary as [`TickTrack::weapon`], because both resolve
     /// through the item definition rather than through an event's own name for the weapon.
     pub weapon: u8,
+    /// Where the shooter was looking when the trigger went, in [`ANGLE_SCALE`] — the same encoding
+    /// as [`TickTrack::yaw`], so a reader needs one rule for both.
+    ///
+    /// It is here rather than sampled off the track because a shot is an instant and the track is
+    /// 16 Hz: `docs/PARSER.md` §22 measures the sample missing this angle by a median 0.16° and by
+    /// 15.68° on the worst shot of a match. Pitch and the muzzle position are in the same event and
+    /// are deliberately not carried; §22 has both figures and what they would have bought.
+    pub yaw: i16,
 }
 
 /// One affected player, not one flashbang — a single grenade produces several of these.

@@ -21,11 +21,11 @@ const BLIND_LOOKBACK_SECONDS = 6;
 export const DEATH_SHRINK_SECONDS = 0.2;
 
 /**
- * How long a shot stays on the token that fired it, in **match** seconds — `docs/DESIGN.md` §6.1.
- * Short enough that a burst reads as a burst rather than as one continuous mark, and long enough to
- * survive a frame at 4×.
+ * How long a shot stays on the plate after the trigger went, in **match** seconds —
+ * `docs/DESIGN.md` §6.1. Short enough that a burst reads as a burst rather than as one continuous
+ * mark, and long enough to survive a frame at 4×.
  */
-export const GUNFIRE_SPUR_SECONDS = 0.15;
+export const GUNFIRE_TRACER_SECONDS = 0.15;
 
 export const PLANT_SECONDS = 3.2;
 export const DEFUSE_SECONDS = 10;
@@ -62,19 +62,31 @@ export function damageFlashBySlot(demo: ParsedDemo, frame: number, out: Float32A
 }
 
 /**
- * How brightly each slot is still showing a trigger pull — 1 on the tick of the shot, 0 once
- * `GUNFIRE_SPUR_SECONDS` of match time have passed. Written into `out` rather than returned, for
- * the reason `damageFlashBySlot` is: this runs inside a draw.
+ * Which shots are still on the plate at `frame`, most recent first. Writes their indices into
+ * `outIndex` and how much of each one's life is left into `outLife` — 1 on the tick the trigger
+ * went, 0 once `GUNFIRE_TRACER_SECONDS` of match time have passed — and returns how many it wrote.
+ *
+ * Two buffers rather than a returned list for the reason `damageFlashBySlot` writes into the
+ * caller's: this runs inside a draw. The caller sizes both once per demo, and a shot past the end
+ * of them is dropped rather than growing them.
+ *
+ * Per shot rather than per slot, because a tracer carries the angle *that* trigger pull was made
+ * at: a burst whose aim walked is several rays, and collapsing it to the brightest would draw the
+ * last one's direction over all of them.
  *
  * A function of the clock's position and never of history, so scrubbing backwards through a burst
  * plays it again — `docs/DESIGN.md` §8's test. `MatchEvents.shots` counts trigger pulls with a gun,
  * so a grenade throw and a knife swing leave nothing here (`docs/PARSER.md` §18).
  */
-export function gunfireBySlot(demo: ParsedDemo, frame: number, out: Float32Array): void {
-  out.fill(0);
-
+export function visibleShots(
+  demo: ParsedDemo,
+  frame: number,
+  outIndex: Int32Array,
+  outLife: Float32Array,
+): number {
   const { track, events } = demo;
   const now = secondsAtFrame(track, frame);
+  let count = 0;
 
   for (
     let index = lastIndexAtOrBefore(events.shots, tickAtFrame(track, frame));
@@ -85,11 +97,15 @@ export function gunfireBySlot(demo: ParsedDemo, frame: number, out: Float32Array
     if (event === undefined) break;
 
     const age = now - event.tick / track.tickRate;
-    if (age > GUNFIRE_SPUR_SECONDS) break;
+    if (age > GUNFIRE_TRACER_SECONDS) break;
+    if (count >= outIndex.length) break;
 
-    const spur = age <= 0 ? 1 : 1 - age / GUNFIRE_SPUR_SECONDS;
-    if (spur > (out[event.shooter] ?? 0)) out[event.shooter] = spur;
+    outIndex[count] = index;
+    outLife[count] = age <= 0 ? 1 : 1 - age / GUNFIRE_TRACER_SECONDS;
+    count++;
   }
+
+  return count;
 }
 
 /**

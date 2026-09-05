@@ -203,6 +203,7 @@ export function withShot(events: MatchEvents, overrides: Partial<Shot> = {}): Ma
     tick: asTick(0),
     shooter: asPlayerSlot(0),
     weapon: WEAPON_NONE,
+    yaw: 0,
     ...overrides,
   };
 

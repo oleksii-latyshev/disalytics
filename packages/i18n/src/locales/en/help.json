@@ -35,7 +35,7 @@
     "player": "A player, in their side's colour. The needle is where they are looking, and it grows longer while they are scoped in.",
     "weapon": "What a player is holding, beside the name that says who they are. Counter-Strike's own outline, so an AK-47 and an M4A4 are two shapes; a weapon with no outline of its own is drawn by its class.",
     "walking": "A player holding shift: slower, and quiet enough that the audibility ring goes with it.",
-    "firing": "A trigger pull, down the line the player is facing. It fades over match time, so scrubbing back through a burst plays it again.",
+    "firing": "A trigger pull, along the line it was fired down — the angle at that moment, not the one the player is facing now. It runs a fixed distance and fades out rather than reaching anything: the recording does not say where the bullet stopped.",
     "selected": "The player you have selected. They also get the cone of what they can see.",
     "hit": "A player who has just been hit. It fades over match time, so scrubbing back through the hit shows it again.",
     "blinded": "A player under a flash, with what is left of it sweeping away. A blinded player is not looking anywhere, so the needle goes.",

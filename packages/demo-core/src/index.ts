@@ -35,9 +35,9 @@ export {
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
   deathProgressBySlot,
-  GUNFIRE_SPUR_SECONDS,
-  gunfireBySlot,
+  GUNFIRE_TRACER_SECONDS,
   PLANT_SECONDS,
+  visibleShots,
 } from './helpers/player-state';
 export type { RoundClock, RoundPhase } from './helpers/round-clock';
 export {

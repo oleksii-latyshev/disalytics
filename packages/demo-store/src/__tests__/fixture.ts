@@ -92,8 +92,8 @@ function newEvents(): MatchEvents {
     ],
     damage: [],
     shots: [
-      { tick: asTick(196), shooter: asPlayerSlot(0), weapon: 0 },
-      { tick: asTick(200), shooter: asPlayerSlot(0), weapon: 0 },
+      { tick: asTick(196), shooter: asPlayerSlot(0), weapon: 0, yaw: 4_500 },
+      { tick: asTick(200), shooter: asPlayerSlot(0), weapon: 0, yaw: -9_000 },
     ],
     grenades: [newGrenade()],
     blinds: [],

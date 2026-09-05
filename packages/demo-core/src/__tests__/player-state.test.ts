@@ -8,9 +8,9 @@ import {
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
   deathProgressBySlot,
-  GUNFIRE_SPUR_SECONDS,
-  gunfireBySlot,
+  GUNFIRE_TRACER_SECONDS,
   PLANT_SECONDS,
+  visibleShots,
 } from '../helpers/player-state';
 import {
   asFrame,
@@ -95,54 +95,79 @@ describe('damageFlashBySlot', () => {
   });
 });
 
-describe('gunfireBySlot', () => {
+describe('visibleShots', () => {
   const SHOOTER = asPlayerSlot(3);
-  const demo = newDemo(withShot(newEvents(), { tick: asTick(TICK_RATE * 2), shooter: SHOOTER }));
-  const spurs = new Float32Array(SLOTS);
+  const AIM = 4_500;
+  const demo = newDemo(
+    withShot(newEvents(), { tick: asTick(TICK_RATE * 2), shooter: SHOOTER, yaw: AIM }),
+  );
+  const indices = new Int32Array(8);
+  const life = new Float32Array(8);
 
-  it('is at its brightest on the tick of the shot', () => {
-    gunfireBySlot(demo, atSecond(2), spurs);
+  it('is at its brightest on the tick of the shot, and names the shot that made it', () => {
+    const count = visibleShots(demo, atSecond(2), indices, life);
 
-    expect(spurs[SHOOTER]).toBeCloseTo(1, 2);
+    expect(count).toBe(1);
+    expect(life[0]).toBeCloseTo(1, 2);
+    expect(demo.events.shots[indices[0] ?? -1]?.yaw).toBe(AIM);
   });
 
-  it('decays to nothing over the spur window and stays there', () => {
-    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS / 2), spurs);
-    expect(spurs[SHOOTER]).toBeCloseTo(0.5, 1);
+  it('decays to nothing over the window and stays there', () => {
+    expect(visibleShots(demo, atSecond(2 + GUNFIRE_TRACER_SECONDS / 2), indices, life)).toBe(1);
+    expect(life[0]).toBeCloseTo(0.5, 1);
 
-    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS * 2), spurs);
-    expect(spurs[SHOOTER]).toBe(0);
+    expect(visibleShots(demo, atSecond(2 + GUNFIRE_TRACER_SECONDS * 2), indices, life)).toBe(0);
   });
 
-  it('leaves every other slot alone, and shows nothing before the trigger was pulled', () => {
-    gunfireBySlot(demo, atSecond(2), spurs);
-    expect(spurs[0]).toBe(0);
-
-    gunfireBySlot(demo, atSecond(1), spurs);
-    expect(spurs[SHOOTER]).toBe(0);
+  it('shows nothing before the trigger was pulled', () => {
+    expect(visibleShots(demo, atSecond(1), indices, life)).toBe(0);
   });
 
-  it('takes the brightest of a burst landing inside one window', () => {
+  it('keeps every shot of a burst rather than the brightest of them', () => {
     const burst = newDemo(
-      withShot(withShot(newEvents(), { tick: asTick(TICK_RATE * 2), shooter: SHOOTER }), {
+      withShot(withShot(newEvents(), { tick: asTick(TICK_RATE * 2), shooter: SHOOTER, yaw: AIM }), {
         tick: asTick(TICK_RATE * 2 + TICK_RATE / 16),
         shooter: SHOOTER,
+        yaw: -AIM,
       }),
     );
 
-    gunfireBySlot(burst, atSecond(2 + 1 / 16), spurs);
+    const count = visibleShots(burst, atSecond(2 + 1 / 16), indices, life);
 
-    expect(spurs[SHOOTER]).toBeCloseTo(1, 2);
+    // Both, and the newer one first: a burst whose aim walked is two rays and not one.
+    expect(count).toBe(2);
+    expect(demo.events.shots.length).toBe(1);
+    expect(burst.events.shots[indices[0] ?? -1]?.yaw).toBe(-AIM);
+    expect(burst.events.shots[indices[1] ?? -1]?.yaw).toBe(AIM);
+    expect(life[0]).toBeCloseTo(1, 2);
+    expect(life[1]).toBeLessThan(life[0] ?? 0);
+  });
+
+  it('writes no more than the caller made room for', () => {
+    let events = newEvents();
+    for (let index = 0; index < 6; index++) {
+      // Inside the window and all already fired: the cap is what is being tested, not the walk.
+      events = withShot(events, {
+        tick: asTick(TICK_RATE * 2 - index),
+        shooter: SHOOTER,
+        yaw: AIM,
+      });
+    }
+
+    const small = new Int32Array(2);
+    const smallLife = new Float32Array(2);
+
+    expect(visibleShots(newDemo(events), atSecond(2), small, smallLife)).toBe(2);
   });
 
   it('reads the same value going backwards as going forwards', () => {
-    const forwards = new Float32Array(SLOTS);
-    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS / 2), forwards);
+    const forwards = new Float32Array(8);
+    visibleShots(demo, atSecond(2 + GUNFIRE_TRACER_SECONDS / 2), indices, forwards);
 
-    gunfireBySlot(demo, atSecond(5), spurs);
-    gunfireBySlot(demo, atSecond(2 + GUNFIRE_SPUR_SECONDS / 2), spurs);
+    visibleShots(demo, atSecond(5), indices, life);
+    visibleShots(demo, atSecond(2 + GUNFIRE_TRACER_SECONDS / 2), indices, life);
 
-    expect(spurs[SHOOTER]).toBe(forwards[SHOOTER]);
+    expect(life[0]).toBe(forwards[0]);
   });
 });
 

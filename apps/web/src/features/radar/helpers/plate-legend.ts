@@ -16,14 +16,18 @@ import {
   DEAD_RADIUS_FRACTION,
   drawAudibleRing,
   drawBlindDisc,
-  drawGunfireSpur,
   drawNeedle,
   drawProgressArc,
   drawSelectionRing,
   drawToken,
   drawWalkHollow,
+  needleReach,
   TOKEN_RADIUS_PX,
 } from './tokens';
+import { tracerStart, tracerStroke } from './tracer';
+
+/** One instance for the sheet, for the reason the layer holds one: the gradient is cached in it. */
+const tracer = tracerStroke();
 
 /**
  * The swatch every mark is drawn in, in CSS pixels. Wide enough for two tokens with their needles
@@ -51,6 +55,16 @@ const NEEDLE_ANGLE = -Math.PI / 4;
  */
 const WEAPON_TOKEN_X = 10;
 const WEAPON_STRIP_X = WEAPON_TOKEN_X + TOKEN_RADIUS_PX + 6;
+
+/**
+ * The tracer's swatch, which draws its token further left than the pair above for the same reason
+ * the weapon's does: on the plate the ray is 512 world units, which is wider than this whole box,
+ * so the swatch chooses the reach the way it chooses a radius below — the drawing is the plate's,
+ * the room is the box's. The length is derived rather than typed, or the mark runs off the edge.
+ */
+const TRACER_TOKEN_X = 8;
+const TRACER_LENGTH_PX =
+  MARK_WIDTH_PX - TRACER_TOKEN_X - tracerStart(needleReach(TOKEN_RADIUS_PX, false)) - 2;
 
 /** Radii the swatch chooses, where on the plate the map's own scale does — everything else is the renderer's. */
 const AUDIBLE_RADIUS_PX = 12;
@@ -137,9 +151,18 @@ export const PLATE_MARKS: readonly PlateMark[] = [
   {
     id: 'firing',
     draw: (context, colors) => {
-      drawToken(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawNeedle(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, 0, false, colors.team.CT);
-      drawGunfireSpur(context, LEFT_X, CENTRE_Y, TOKEN_RADIUS_PX, 0, false, colors.gunfire, 1);
+      drawToken(context, TRACER_TOKEN_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+      drawNeedle(context, TRACER_TOKEN_X, CENTRE_Y, TOKEN_RADIUS_PX, 0, false, colors.team.CT);
+      tracer(
+        context,
+        TRACER_TOKEN_X,
+        CENTRE_Y,
+        0,
+        needleReach(TOKEN_RADIUS_PX, false),
+        TRACER_LENGTH_PX,
+        colors.gunfire,
+        1,
+      );
     },
   },
   {

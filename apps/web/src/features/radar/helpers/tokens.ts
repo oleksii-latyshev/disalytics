@@ -21,11 +21,20 @@ const NEEDLE_LENGTH_PX = 10;
 const NEEDLE_SCOPED_LENGTH_PX = 18;
 
 /**
- * Where a player is looking, on the plate. World yaw counts anticlockwise from +X while radar rows
- * count downward — the same inversion `radarY` carries — so the screen angle is its negative.
+ * A yaw in the schema's own `ANGLE_SCALE`, as an angle on the plate. World yaw counts anticlockwise
+ * from +X while radar rows count downward — the same inversion `radarY` carries — so the screen
+ * angle is its negative.
+ *
+ * `TickTrack.yaw` and `Shot.yaw` are one encoding, so they are one conversion: a tracer and the
+ * needle it leaves cannot disagree about which way a player was facing.
  */
+export function screenAngleOf(scaled: number): number {
+  return (-scaled / ANGLE_SCALE) * (Math.PI / 180);
+}
+
+/** Where a player is looking at one sample of the track. */
 export function screenAngle(track: TickTrack, sample: number): number {
-  return (-sampleAt(track.yaw, sample) / ANGLE_SCALE) * (Math.PI / 180);
+  return screenAngleOf(sampleAt(track.yaw, sample));
 }
 
 function traceToken(context: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
@@ -193,6 +202,15 @@ export function drawWalkHollow(
   drawToken(context, x, y, radius * WALK_HOLE_FRACTION, color);
 }
 
+/**
+ * How far the needle reaches from the token's centre. Exported because the tracer starts past it:
+ * where a player is facing and the shot they took are two marks along one line, and the gap between
+ * them is what keeps them two.
+ */
+export function needleReach(radius: number, isScoped: boolean): number {
+  return radius + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX);
+}
+
 /** A direction rather than an area: ten translucent cones is a fog — DESIGN.md §6.1. */
 export function drawNeedle(
   context: CanvasRenderingContext2D,
@@ -203,7 +221,7 @@ export function drawNeedle(
   isScoped: boolean,
   color: string,
 ): void {
-  const length = radius + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX);
+  const length = needleReach(radius, isScoped);
   const dx = Math.cos(angle);
   const dy = Math.sin(angle);
 
@@ -214,44 +232,4 @@ export function drawNeedle(
   context.moveTo(x + dx * radius, y + dy * radius);
   context.lineTo(x + dx * length, y + dy * length);
   context.stroke();
-}
-
-/** How far past the needle's tip the spur begins, so the two read as two marks and not one line. */
-const SPUR_GAP_PX = 3;
-const SPUR_LENGTH_PX = 4;
-const SPUR_WIDTH_PX = 2;
-
-/**
- * A trigger pull, as a bright spur past the tip of the facing needle — DESIGN.md §6.1. Direction
- * and gunfire in one mark: the needle already says where the player is looking, and this says they
- * are shooting down it.
- *
- * Drawn from the same angle whether or not the needle is, because a blinded player still pulls a
- * trigger and the plate has no reason to hide it. Its opacity is the caller's and the caller reads
- * it off the clock, so a burst survives scrubbing backwards through it.
- */
-export function drawGunfireSpur(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  angle: number,
-  isScoped: boolean,
-  color: string,
-  alpha: number,
-): void {
-  const from = radius + (isScoped ? NEEDLE_SCOPED_LENGTH_PX : NEEDLE_LENGTH_PX) + SPUR_GAP_PX;
-  const dx = Math.cos(angle);
-  const dy = Math.sin(angle);
-
-  context.save();
-  context.globalAlpha = alpha;
-  context.lineWidth = SPUR_WIDTH_PX;
-  context.strokeStyle = color;
-
-  context.beginPath();
-  context.moveTo(x + dx * from, y + dy * from);
-  context.lineTo(x + dx * (from + SPUR_LENGTH_PX), y + dy * (from + SPUR_LENGTH_PX));
-  context.stroke();
-  context.restore();
 }

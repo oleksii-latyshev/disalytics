@@ -88,6 +88,7 @@ fn shot(shot: &Shot) -> JsValue {
     set(&out, "tick", shot.tick);
     set(&out, "shooter", shot.shooter);
     set(&out, "weapon", shot.weapon);
+    set(&out, "yaw", shot.yaw);
 
     out.into()
 }
