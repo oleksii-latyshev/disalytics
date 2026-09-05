@@ -15,6 +15,7 @@ export {
   DECOY_PULSE_HZ,
   FIRE_AREA_ALPHA,
   FLASH_EXPAND_SECONDS,
+  grenadeEndTick,
   grenadeRadiusUnits,
   grenadeVisual,
   HE_EXPAND_SECONDS,

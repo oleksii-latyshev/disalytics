@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AREA_FADE_SECONDS,
   createVisualScratch,
+  grenadeEndTick,
   grenadeRadiusUnits,
   grenadeVisual,
   HE_EXPAND_SECONDS,
@@ -208,6 +209,56 @@ describe('grenadeVisual', () => {
       expect(scratch.pulsePhase).toBeGreaterThanOrEqual(0);
       expect(scratch.pulsePhase).toBeLessThan(1);
     });
+  });
+});
+
+describe('grenadeEndTick', () => {
+  it('ends an area at its expiry', () => {
+    const events = smokeAt(100, 200, 1_400);
+    expect(grenadeEndTick(firstGrenade(events), TICK_RATE)).toBe(1_400);
+  });
+
+  it('ends a burst on the last tick the draw still admits', () => {
+    const events = withGrenade(newEvents(), {
+      type: 'hegrenade',
+      throwTick: asTick(100),
+      detonationTick: asTick(200),
+      detonationPosition: { x: 0, y: 0, z: 0 },
+    });
+    const he = firstGrenade(events);
+    const end = grenadeEndTick(he, TICK_RATE);
+
+    // The bound is 1.2 s at 64 ticks, which is 76.8 ticks and so lands mid-tick.
+    expect(end).toBe(276);
+
+    const out = new Int32Array(1);
+    expect(visibleGrenades([he], end, TICK_RATE, out)).toBe(1);
+    expect(visibleGrenades([he], asTick((end as number) + 1), TICK_RATE, out)).toBe(0);
+  });
+
+  it('ends a grenade with no recorded ending when its flight does', () => {
+    const events = withGrenade(newEvents(), {
+      type: 'smokegrenade',
+      throwTick: asTick(100),
+      detonationTick: null,
+    });
+    const grenade = firstGrenade(events);
+    const end = grenadeEndTick(grenade, TICK_RATE);
+
+    const out = new Int32Array(1);
+    expect(visibleGrenades([grenade], end, TICK_RATE, out)).toBe(1);
+    expect(visibleGrenades([grenade], asTick((end as number) + 1), TICK_RATE, out)).toBe(0);
+  });
+
+  it('ends an area with no expiry before its own detonation', () => {
+    const events = withGrenade(newEvents(), {
+      type: 'smokegrenade',
+      throwTick: asTick(100),
+      detonationTick: asTick(200),
+      detonationPosition: { x: 0, y: 0, z: 0 },
+      expiryTick: null,
+    });
+    expect(grenadeEndTick(firstGrenade(events), TICK_RATE)).toBe(199);
   });
 });
 

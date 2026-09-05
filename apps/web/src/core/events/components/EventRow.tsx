@@ -1,5 +1,5 @@
 import type { Team } from '@disa/demo-core';
-import { EventGlyph, KillMark, WeaponGlyph } from '@/core/glyphs';
+import { EventGlyph, KillMark, UtilityGlyph, WeaponGlyph } from '@/core/glyphs';
 import type { NameOfSlot, RowEvent } from '../helpers/row';
 
 interface Props {
@@ -18,7 +18,8 @@ function sideInk(side: Team | undefined): string {
 
 /**
  * One event as a line of reading — *attacker · weapon glyph · victim* for a kill, with the two names
- * in their side colours, and a single line in `--objective` for a plant or a defuse.
+ * in their side colours, a single line in `--objective` for a plant or a defuse, and *thrower ·
+ * utility glyph* for a grenade, in the thrower's side colour and the utility's own hue.
  *
  * **It lives in `core` because two features draw it**: §5.4's feed under the corner cluster and
  * §7.1's tooltip on the round axis. That is the rule rather than a convenience — `timeline` may not
@@ -30,6 +31,17 @@ function sideInk(side: Team | undefined): string {
  * `aria-hidden`, so a reader hears that name instead of a bag of symbols.
  */
 export function EventRow({ event, nameOf }: Props) {
+  if (event.kind === 'grenade') {
+    return (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className={`min-w-0 truncate ${sideInk(event.throwerSide)}`}>
+          {nameOf(event.thrower)}
+        </span>
+        <UtilityGlyph kind={event.utility} />
+      </span>
+    );
+  }
+
   if (event.kind !== 'kill') {
     return (
       <span className="flex min-w-0 items-center gap-1.5 text-objective">

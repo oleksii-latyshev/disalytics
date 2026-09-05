@@ -283,9 +283,13 @@ export interface NamedKill {
  * The glyph a tooltip is owed, which is a kill and only a kill.
  *
  * The rule draws the line rather than taste: a tooltip is permitted because the event feed draws the
- * same row, and pressing a glyph seeks to it, so the row is always reachable without hovering. A
- * grenade is on no feed at all, and an aborted or interrupted defuse is on the axis alone, so a
- * tooltip for either would be the only route to its own fact.
+ * same row, and pressing a glyph seeks to it, so the row is always reachable without hovering. An
+ * aborted or interrupted defuse is on the axis alone, so a tooltip for it would be the only route to
+ * its own fact.
+ *
+ * A grenade satisfies that rule since #310 — the feed draws its row now — and is still refused here,
+ * because whether the axis *should* raise a second tooltip is a question about the axis rather than
+ * about what the feed carries. It is its own decision and its own issue.
  *
  * It takes the glyph's id rather than its position: a round turning over replaces the whole list
  * under a held pointer, and an index into the old one names a different event in the new one.

@@ -125,7 +125,7 @@ export const EventGlyphs = memo(function EventGlyphs({
       case 'defuse':
         return t(defuseOutcomeKey(event.status), { defuser: nameOf(event.defuser) });
       case 'grenade':
-        return t('timeline.grenade', {
+        return t('events.grenade', {
           thrower: nameOf(event.thrower),
           utility: UTILITY_NAMES[event.utility],
         });

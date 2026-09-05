@@ -1,5 +1,5 @@
-import type { Grenade, GrenadeType, Tick } from '../schema';
-import { isInFlight } from './grenade-flight';
+import { asTick, type Grenade, type GrenadeType, type Tick } from '../schema';
+import { flightEndTick, isInFlight } from './grenade-flight';
 
 // ── CS2 engine constants ────────────────────────────────────────────────────
 // Named approximations, same approach as `audibility.ts`. These are not published by Valve; the
@@ -204,24 +204,39 @@ export function grenadeVisual(
 const MAX_VISUAL_SECONDS = 45;
 
 /**
- * Whether a grenade that has already gone off is still drawn at `tick`. The four types with an
- * expiry answer the same question, so they answer it in one arm: an area is on the plate until the
- * event that ends it, and a burst is on the plate for its own fixed span.
- *
- * Exhaustive with no `default`, so a new `GrenadeType` is a compile error rather than a grenade
- * that silently never appears.
+ * The last tick a burst is drawn on. `writeBurst` runs while `elapsed < seconds`, and ticks are
+ * whole numbers, so the last one it admits is that bound rounded up and stepped back off it.
  */
-function isVisibleAfterDetonation(grenade: Grenade, tick: Tick, elapsed: number): boolean {
+function burstEndTick(detonation: Tick, seconds: number, tickRate: number): Tick {
+  return asTick((detonation as number) + Math.ceil(seconds * tickRate) - 1);
+}
+
+/**
+ * The last tick a grenade is on the plate at all — the single definition of a grenade's own life,
+ * read by the draw below and by §5.4's feed, which shows a grenade's row for exactly as long as its
+ * mark is on the plate. Two rules that agree today is what this exists to avoid.
+ *
+ * A grenade whose detonation never arrived ends when its flight does (#175): `null` is an ending the
+ * demo never recorded, never a grenade still in the air. An area with no expiry is the same case one
+ * step later — nothing is drawn for it once it lands, so it ends the tick before its detonation.
+ *
+ * Exhaustive with no `default`, so a new `GrenadeType` is a compile error rather than a grenade that
+ * silently never appears.
+ */
+export function grenadeEndTick(grenade: Grenade, tickRate: number): Tick {
+  const beforeDetonation = asTick((flightEndTick(grenade, tickRate) as number) - 1);
+  if (grenade.detonationTick === null) return beforeDetonation;
+
   switch (grenade.type) {
     case 'hegrenade':
-      return elapsed < HE_TOTAL_SECONDS;
+      return burstEndTick(grenade.detonationTick, HE_TOTAL_SECONDS, tickRate);
     case 'flashbang':
-      return elapsed < FLASH_EXPAND_SECONDS;
+      return burstEndTick(grenade.detonationTick, FLASH_EXPAND_SECONDS, tickRate);
     case 'smokegrenade':
     case 'molotov':
     case 'incgrenade':
     case 'decoy':
-      return grenade.expiryTick !== null && tick <= grenade.expiryTick;
+      return grenade.expiryTick ?? beforeDetonation;
   }
 }
 
@@ -260,8 +275,7 @@ export function visibleGrenades(
     // A grenade whose detonation never arrived has no ending to draw.
     if (g.detonationTick === null) continue;
 
-    const elapsed = ((tick as number) - (g.detonationTick as number)) / tickRate;
-    if (isVisibleAfterDetonation(g, tick, elapsed)) out[count++] = i;
+    if (tick <= grenadeEndTick(g, tickRate)) out[count++] = i;
   }
 
   return count;
