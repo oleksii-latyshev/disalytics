@@ -191,6 +191,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           widths rather than drawn somewhere it does not belong. */}
       <motion.div
         {...assembly('cardTop')}
+        /* This column is a full-height box with the cluster and the feed at the top of it, so while
+           an expanded plate is under it (#315) the empty part would take every drag aimed at the
+           map showing through — the two children take their own presses back. */
         className={`relative z-10 flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4] ${
           isPlateExpanded ? 'pointer-events-none [&>*]:pointer-events-auto' : ''
         }`}
@@ -218,20 +221,12 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
       {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every
           pixel on the map, which is why the cards are beside the cell rather than over it.
 
-          Zoomed, it runs the width of the stage and under the cards — #315, and the owner's answer
-          to the question `ROADMAP.md` had been holding. **Every card stays where it is and keeps
-          every reading on it**; what changes is that the map behind them is no longer stopped at
-          the square's edge. The cell stays out of row 1 in both layouts, because the way out of the
-          match and the map's name are type on the app's own ground (#205) and there is no reading
-          of them over a radar image. The cards are lifted a layer for it — a grid item paints in
-          DOM order, and this cell comes after the corner and before the two team cards, so half of
-          them would be under the map and half over it without a stacking order said out loud.
-
-          Below the split the cell does not move, and that is a finding rather than an omission: the
-          strip there runs the full width of the stage, so a plate that took its row would put every
-          pixel it gained behind an opaque card and its own zoom controls under one. What the reader
-          gains at those widths is the letterbox the square used to leave — 1024 across against
-          473 — and the canvas takes that without the grid changing at all. */}
+          Zoomed it takes the stage's width and runs under them — #315, where the reasoning is —
+          and **every card stays where it is with every reading on it**. It keeps out of row 1 in
+          both layouts, because the way out of the match and the map's name are type on the app's
+          own ground (#205) and there is no reading of them over a radar image. Below the split it
+          does not move at all: the strip there is as wide as the stage, so taking its row would put
+          every gained pixel behind an opaque card. */}
       <motion.div
         {...assembly('stage')}
         className={`relative z-0 grid min-h-0 min-w-0 [grid-area:2/1/3/2] ${
@@ -239,12 +234,12 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         }`}
       >
         <MatchRadar
-          onExpandedChange={setPlateExpanded}
           demo={demo}
           transport={transport}
           selectedSlot={selectedSlot}
           focus={focus}
           isSuspended={openSheet !== null}
+          onExpandedChange={setPlateExpanded}
         />
 
         {/* §5.1's one permitted overlap, and since #196 the reader's own choice rather than the
@@ -262,16 +257,8 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
 
       {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two
           grid columns in the other without being written out twice. A zoomed plate runs underneath
-          them (#315) and they keep every reading they had; below the split the wrapper is a real
-          box, so while the plate is under it the 12px between the two cards stops taking the drags
-          aimed at the map showing through it. */}
-      <div
-        className={`flex gap-3 [grid-area:3/1/4/2] split:contents ${
-          isPlateExpanded ? 'pointer-events-none [&>*]:pointer-events-auto' : ''
-        }`}
-      >
-        {teamCards}
-      </div>
+          the cards (#315) and they keep every reading they had. */}
+      <div className="flex gap-3 [grid-area:3/1/4/2] split:contents">{teamCards}</div>
 
       {/* The cell keeps its height whether or not the block is in it — §5.1's plate is sized from
           this row, so a block that collapsed would resize the plate under the reader mid-match. The

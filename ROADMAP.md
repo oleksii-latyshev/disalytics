@@ -102,13 +102,16 @@ written. Nothing here has an issue yet.
 
 ## Decisions this list owes
 
-Four rows cannot be started until the owner answers something, and each answer is worth more than
-the row it unblocks.
+Three rows cannot be started until the owner answers something, and each answer is worth more than
+the row it unblocks. **The fourth was answered on 5 September 2026** — a zoomed plate may go under
+the cards, and #315 built it — and the shape of the answer is worth keeping: the plate runs under
+them and *every card stays where it is with every reading on it*, which is neither of the two
+options the question offered. It was asked as cell-or-cards and answered as "the whole stage, and
+lose nothing".
 
 | Row | The question | Why it is a decision and not a detail |
 |---|---|---|
 | M7 — a sample match in the library | What exactly ships, and whose names are on it? | The constraints table forbids committing a `.dem`, and the reason is that it is ten real people's data — a *parsed* demo carries the same names and SteamIDs, and shipping it publishes them. The choices are: ship a parse with the roster anonymised, ship it as-is with the players' consent, or ship nothing and let the front door explain itself. There is a size ceiling underneath the choice too — a single static asset is capped at 25 MiB, and a parsed 300 MB demo is not that small until it is trimmed to a few rounds. |
-| M4 — the zoomed plate fills the screen | May a zoomed plate go under the cards, or only fill its own cell? | "No card overlaps the plate" has been structural since #147: the plate is in a grid cell no card is in. Filling the cell fully is free and needs no decision. Covering the cards is a different product — the reading cards go away while the plate is zoomed, and that is the owner's call. |
 | M6 — a coach's drawing is "saved in the demo" | Saved *where*? | A `.dem` is the reader's own file and is never written to — hard rule 1 and the store's whole design. Annotations can live beside the cached parse, keyed by the same cache hash, which means they survive a reopen and are lost by an eviction the browser is allowed to make. Making them durable is what M7's export file is for. |
 | M7 — share a match as a file | What is in the file: the parse, or the reading of it? | A parsed demo is typed arrays measured in tens of megabytes; JSON of it is several times that, which is not a file anyone sends. A file holding the *annotations* — bookmarks, drawings, notes, the round they belong to — plus the hash of the demo they were made against is small, sends over any channel, and is useless without the demo. Both are defensible; they are different products. |
 
@@ -122,10 +125,33 @@ one the owner looks at every day.
 | #308 | A team card states what the side is holding | The buy total per side, so a card answers "who can afford this round" without adding up five numbers. **The round's own figure is free** — `PlayerEconomy.equipmentValue` is already read at freeze-time end. A total that stays true *during* a round is not: equipment value is sampled only at wanted ticks, so a live figure is a new `TickTrack` column and a `SCHEMA_VERSION` bump. Ship the round figure first and decide whether live is worth the bump. | **P1** | S |
 | #313 | Give the axis its glyphs back, and a filter beside it | #271 collapsed a crowded glyph to a tick because 29 of 30 rounds overlapped. The owner's answer is better: keep the marks at full size and let the reader turn kinds off — kills, utility, objectives, and the selected player — so a dense round is thinned by choice rather than by the axis. The collapse stays as the floor for what no filter can separate. Persisted where every other preference is, and read where it is obeyed. | **P1** | M |
 | #310 | A grenade is a row in the feed | The feed says who threw what, so a cloud on the plate has an author. The data is there — `Grenade` carries its thrower and its throw tick — and the work is a fourth row kind, both locales, and the same hover-to-the-plate the kill rows already have. Its window is the grenade's own life, so scrubbing backwards takes it away like every other row. | P1 | S |
-| — | A zoomed plate uses the whole stage | The zoom is capped by the square the plate is inscribed in, which wastes the width the stage actually has. Filling the plate's own cell is free of the overlap rule; going further is the decision above. Default framing is unchanged either way — that is the owner's constraint on this row. | P1 | M |
+| #315 | A zoomed plate uses the whole stage | The zoom was capped by the square the plate is inscribed in, which wasted the width the stage actually has — 92px at 1440×900 and 551px at 1024×800. Zoomed, the plate's cell is the width of the stage and runs under the cards; at 1× nothing moves at all, which was the owner's constraint on this row. | **P1** | M |
 | — | A bullet reads as a bullet | Today a shot is a white spur past the needle, which says *fired* and not *at what*. A tracer from the muzzle along the shooter's own view angle says the second thing. **Where it ends is the open question** — the schema carries no impact point, so either upstream's impact events come into the parse (a `SCHEMA_VERSION` bump) or the tracer is a fixed-length ray that fades, labelled as the approximation it is. It must be a function of match time like every other mark, and it is drawn ten times per second per shooter, so it is measured against the 60 fps row before it ships. | P2 | M |
 | — | Smoke and fire drawn as they spread | One flat disc per cloud reads as a symbol; the game's own smoke fills a volume over about a second and fire is a set of flames that spreads and dies unevenly. Drawing that as a cluster of overlapping puffs, animated **from match time and never from wall time**, is what makes a mid-round smoke legible as cover rather than as an icon. Answers #170. The frame budget is the whole difficulty: this multiplies the marks on the plate by roughly the number of puffs, so the allocation-free draw rules apply without exception. | P2 | M |
 | — | A grenade in the feed opens its lineup | Pressing a grenade shows where it was thrown from, where it landed, and the view angles at the throw — enough to stand on the same spot in the game and reproduce it. Three unknowns make this the largest row in M4: view angles are sampled at 16 Hz, so at the throw tick they are up to 31 ms stale and a lineup needs better than that (a detail window around throws, which is a `SCHEMA_VERSION` bump); whether the demo carries the buttons held at the throw — a jump-throw is a different lineup from a standing one — is unresearched; and the run-up matters as much as the angle. **Research first, then an issue.** | P2 | L |
+
+**#315 closed the zoomed-plate row on 5 September 2026, and the owner's answer is wider than the
+question that was asked.** *Decisions this list owes* offered two options — fill the cell, or go
+under the cards and lose them while the plate is zoomed — and the answer was the whole stage **with
+every card still on it**: the plate's cell takes the stage's width, the cards keep their place, their
+readings and their pointer, and the map runs behind them. Measured on the fixture, branch against
+`main` at `2615053`, in `en` and in `ru`: at rest the plate is **716 at 1440×900 and 473 at
+1024×800** on both arms — the screen at 1× is untouched, which was the constraint on this row —
+and zoomed it is **1392×657** and **1024×473**, against the 808px and 1024px cells that used to hold
+a square. The team cards, the timeline block and the corner sit at the same rects in every state and
+in both locales, with 0 elements overflowing. Three things are worth keeping. **The map is fitted to
+the plate's short axis**, which is what makes the width the expansion wins *more map* rather than a
+bigger one — a needle, a halo and a token are the same size in both states — and `view.ts` is the
+one seam it needed, so the four layers changed nothing. **A canvas is not sized like a `div`.** It
+carries an intrinsic ratio from its backing store, and that ratio sized the grid row it was in: a
+1392×657 cell held a 1392×1392 canvas, clipped by an ancestor and invisible to a sweep that only
+walks the viewport. Out of flow it goes the other way — a replaced element with `inset: 0` keeps its
+intrinsic width instead of stretching — so the canvas is placed *and* sized. And **the zoom controls
+must not follow the cell**: pinned to the expanded plate's own corner they landed under the CT card
+and the reader lost both of them, where §6.3's original formula, written against the map's square
+rather than against the cell, keeps them on the map in both states. Below the split the grid does not
+change at all: the strip there runs the full width of the stage, so a plate that took its row would
+have put every pixel it gained behind an opaque card.
 
 **#313 closed the axis row on 5 September 2026, and the numbers are what say the collapse was
 never the problem.** On the fixture at 1440×900, where the axis is 886.55px wide, `main` draws

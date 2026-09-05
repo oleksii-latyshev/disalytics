@@ -37,11 +37,7 @@ interface Props {
   selectedSlot: PlayerSlot | null;
   focus: RowFocus | null;
   isSuspended: boolean;
-  /**
-   * That the reader has zoomed in. The stage is what acts on it — the reading cards leave and the
-   * plate takes the room they were in — and the zoom that decides it lives here, so the plate
-   * reports the one boolean rather than the stage reaching in for a number nothing else needs.
-   */
+  /** That the reader has zoomed in, which is the stage's business rather than the plate's — #315. */
   onExpandedChange: (isExpanded: boolean) => void;
 }
 
@@ -218,25 +214,21 @@ export function RadarView({
     onHover: isDebugShown ? setPointer : undefined,
   });
 
-  // A zoomed plate is a bigger window onto the map rather than a different map — #315. The stage
-  // gives the cell the whole of its width and the canvas takes all of it; the *scale* still comes
-  // off the short axis, so the width that wins is more map and nothing measured in device pixels
-  // changes size.
-  //
-  // It leaves the flow to do it, and it is sized twice on purpose. A canvas carries an intrinsic
-  // size from its backing store, which is a trap at both ends: in the grid, `height: 100%` resolved
-  // against a row the canvas's own ratio had already sized — a 1392×657 cell holding a 1392×1392
-  // canvas, clipped by an ancestor and so invisible to a sweep that only walks the viewport — and
-  // out of it, a replaced element with `inset: 0` keeps its intrinsic width rather than stretching
-  // to the four edges, which is 716 of a 1392px cell. `inset-0` places it and `size-full` sizes it.
   const isExpanded = navigation.zoom > MIN_ZOOM;
 
-  useEffect(() => onExpandedChange(isExpanded), [isExpanded, onExpandedChange]);
+  useEffect(() => {
+    onExpandedChange(isExpanded);
+  }, [isExpanded, onExpandedChange]);
 
   // The radar is never cropped or letterboxed — DESIGN.md §4 — so at rest the canvas takes the
   // smaller of the two axes the cell offers it, which is what the container units read. Everything
   // else on the stage floats over it: a row of its own would come straight out of the map's short
   // axis, which is the whole thing #110 set out to stop.
+  //
+  // Zoomed it fills the cell the stage has grown for it (#315), and it leaves the flow to do that.
+  // A canvas carries an intrinsic size from its backing store, and that is a trap at both ends: in
+  // the grid it sized the row `height: 100%` then resolved against, giving a 1392×1392 canvas in a
+  // 1392×657 cell; out of it, `inset: 0` alone leaves a replaced element at its intrinsic width.
   return (
     <div className="relative grid min-h-0 min-w-0 place-items-center [container-type:size]">
       <canvas
@@ -254,11 +246,9 @@ export function RadarView({
 
       {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
           the cell is wider than the square it centres, so the offset is half the slack on each axis
-          plus the stage inset. **The same formula is what keeps the pair reachable expanded**, and
-          that is the whole reason it is not written against the cell: `min(100cqi,100cqb)` is the
-          map's own square either way, so the pair stays on the map rather than travelling out to a
-          corner the team card is over — measured at 1440×900, a pair pinned to the expanded cell
-          landed under the CT card and the reader lost both controls. Colour and a hairline, never
+          plus the stage inset. **Written against the cell instead, it lands under the CT card when
+          the plate is expanded** (#315) — `min(100cqi,100cqb)` is the map's own square either way,
+          which is what keeps the pair on the map in both states. Colour and a hairline, never
           `.glass-panel` — §2.3 grants the one `backdrop-filter` over the live plate to the
           scoreboard and to nothing else. */}
       <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1">
