@@ -134,6 +134,12 @@ export function RadarView({
   // too, and it has to exist before they are built.
   const viewRef = useRef(plateView());
 
+  // Resolved to a string here rather than passed as `t`: `useT` returns a fresh function every
+  // render, so a translator in the dependency list below would rebuild all four layers — and every
+  // grenade's body with them — on every render. A string compares by value and holds still until
+  // the locale actually moves.
+  const secondsUnit = t('radar.utility.secondsUnit');
+
   // The array is what `useCanvasLayers` repaints on, so it holds still until something other than
   // the clock moves. The clock itself is read inside the layer, once per animation frame.
   const layers = useMemo(() => {
@@ -161,6 +167,7 @@ export function RadarView({
       selectedSlot,
       hovered: hoveredGrenadeRef,
       view: viewRef,
+      secondsUnit,
     });
     const killLine = killLineLayer({
       demo,
@@ -184,6 +191,7 @@ export function RadarView({
     labelBySlot,
     selectedSlot,
     detail,
+    secondsUnit,
     isAudibilityShown,
     trajectories,
     colors,

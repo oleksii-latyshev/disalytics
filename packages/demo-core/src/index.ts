@@ -8,24 +8,32 @@ export {
   SILENT_SPEED_UNITS,
 } from './helpers/audibility';
 export { flightEndTick, isInFlight, trajectoryClipCount } from './helpers/grenade-flight';
-export type { GrenadePhase, GrenadeVisualScratch } from './helpers/grenade-state';
 export {
-  AREA_FADE_SECONDS,
-  createVisualScratch,
-  DECOY_PULSE_HZ,
-  FIRE_AREA_ALPHA,
-  FLASH_EXPAND_SECONDS,
+  FLASH_RADIUS_UNITS,
   grenadeEndTick,
   grenadeRadiusUnits,
-  grenadeVisual,
-  HE_EXPAND_SECONDS,
-  HE_LINGER_SECONDS,
   HE_RADIUS_UNITS,
   MOLOTOV_RADIUS_UNITS,
-  SMOKE_AREA_ALPHA,
   SMOKE_RADIUS_UNITS,
   visibleGrenades,
 } from './helpers/grenade-state';
+export type { GrenadePhase, GrenadeVisualScratch } from './helpers/grenade-visual';
+export {
+  AREA_FADE_SECONDS,
+  AREA_START_EXTENT,
+  createVisualScratch,
+  DECOY_PULSE_HZ,
+  FIRE_AREA_ALPHA,
+  FIRE_END_EXTENT,
+  FIRE_SPREAD_SECONDS,
+  FLASH_EXPAND_SECONDS,
+  grenadeVisual,
+  HE_EXPAND_SECONDS,
+  HE_LINGER_SECONDS,
+  SMOKE_AREA_ALPHA,
+  SMOKE_END_EXTENT,
+  SMOKE_FILL_SECONDS,
+} from './helpers/grenade-visual';
 export {
   blindRemainingBySlot,
   bombProgressAt,

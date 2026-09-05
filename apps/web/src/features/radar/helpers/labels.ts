@@ -22,7 +22,7 @@ import type { PlateBounds } from './view';
  * same rule asked for four times as much, so the size that needs the tracking least is the one the
  * plate now sets.
  */
-const LABEL_SIZE_PX = 13;
+export const LABEL_SIZE_PX = 13;
 
 /**
  * How far the halo reaches past the glyphs. It is ink like the text is, so the box the placer keeps

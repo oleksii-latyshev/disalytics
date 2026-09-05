@@ -142,6 +142,7 @@ export const TRANSLATION_KEYS = [
   'radar.title',
   'radar.unknownMap.hint',
   'radar.unknownMap.title',
+  'radar.utility.secondsUnit',
   'radar.zoomIn',
   'radar.zoomOut',
   'review.bombClock',

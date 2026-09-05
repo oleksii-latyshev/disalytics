@@ -1,5 +1,9 @@
+//! Which grenades are on the plate at a tick, and the engine radii they are drawn at. What each one
+//! looks like once it is there is `grenade-visual.ts`.
+
 import { asTick, type Grenade, type GrenadeType, type Tick } from '../schema';
 import { flightEndTick, isInFlight } from './grenade-flight';
+import { FLASH_EXPAND_SECONDS, HE_EXPAND_SECONDS, HE_LINGER_SECONDS } from './grenade-visual';
 
 // ── CS2 engine constants ────────────────────────────────────────────────────
 // Named approximations, same approach as `audibility.ts`. These are not published by Valve; the
@@ -14,185 +18,15 @@ export const MOLOTOV_RADIUS_UNITS = 180;
 /** Effective radius of an HE grenade explosion, in world units. */
 export const HE_RADIUS_UNITS = 350;
 
-// ── visual timing constants ─────────────────────────────────────────────────
-// All durations are in **match** seconds, so at 2× speed the ring expands twice as fast and at
-// 0.5× it takes twice as long — the draw is a function of `clock.frame`, not wall time.
-
-/** How long the HE expanding ring takes to reach its radius — §6.2. */
-export const HE_EXPAND_SECONDS = 0.2;
-
-/** How long the HE static glyph lingers after the ring — §6.2. */
-export const HE_LINGER_SECONDS = 1.0;
-
-/** How long the flash expanding mark takes to reach its peak — §6.2. */
-export const FLASH_EXPAND_SECONDS = 0.15;
-
-/** How long the smoke / molotov disc alpha fades before expiry — §6.2. */
-export const AREA_FADE_SECONDS = 2.0;
-
-/** What a smoke cloud is drawn at while it is not fading — §6.2. */
-export const SMOKE_AREA_ALPHA = 0.3;
-
-/** And a fire area, which is thinner because it is read through — §6.2. */
-export const FIRE_AREA_ALPHA = 0.25;
-
-/** Pulse frequency of a decoy mark, in Hz of match time — §6.2. */
-export const DECOY_PULSE_HZ = 2;
-
-// ── grenade visual phase ────────────────────────────────────────────────────
-
 /**
- * What phase a grenade is in, written into a caller-owned scratch to avoid per-frame allocation.
- * Each phase carries enough state for the draw functions in `features/radar/helpers/grenades.ts`.
- *
- * - `'flight'`  — projectile in the air, draw trajectory
- * - `'expand'`  — HE/flash expanding ring, `progress` goes 0→1
- * - `'active'`  — smoke/molotov/decoy area on the ground, `alpha` is current opacity, `remaining`
- *                 is the [0..1] fraction of life left (drives the depleting ring)
- * - `'linger'`  — HE static glyph after the ring has expanded
- * - `null`      — not visible at this tick
+ * How far a flashbang's wash reaches, in world units. Smaller than the range it can blind from on
+ * purpose: what the mark says is *a flash went off here*, and who it caught is on the players
+ * themselves (§6.1). A world radius rather than a pixel one, so it is the same ground at every zoom.
  */
-export type GrenadePhase = 'flight' | 'expand' | 'active' | 'linger';
-
-export interface GrenadeVisualScratch {
-  phase: GrenadePhase | null;
-  /** [0..1] expansion progress for HE/flash rings. */
-  progress: number;
-  /** Current opacity for smoke/molotov disc. */
-  alpha: number;
-  /** [0..1] remaining life fraction for the depleting ring. */
-  remaining: number;
-  /** [0..1] decoy pulse phase — fed to a sine curve by the draw. */
-  pulsePhase: number;
-}
-
-/** Allocate once, reuse every frame. */
-export function createVisualScratch(): GrenadeVisualScratch {
-  return { phase: null, progress: 0, alpha: 0, remaining: 0, pulsePhase: 0 };
-}
-
-// ── visual state computation ────────────────────────────────────────────────
+export const FLASH_RADIUS_UNITS = 120;
 
 /** The total visual lifetime of an HE after detonation. */
 const HE_TOTAL_SECONDS = HE_EXPAND_SECONDS + HE_LINGER_SECONDS;
-
-/**
- * An expanding mark that may leave a static glyph behind it — the HE ring and the flash mark, which
- * differ only in whether anything lingers. A flashbang passes the same value for both bounds, so
- * its whole visual life *is* its expansion and the linger branch can never be reached.
- */
-function writeBurst(
-  out: GrenadeVisualScratch,
-  elapsed: number,
-  expandSeconds: number,
-  totalSeconds: number,
-): void {
-  if (elapsed < expandSeconds) {
-    out.phase = 'expand';
-    out.progress = elapsed / expandSeconds;
-  } else if (elapsed < totalSeconds) {
-    out.phase = 'linger';
-  }
-}
-
-/**
- * An area standing on the ground until its expiry — a smoke cloud or a fire, which are the same
- * shape and differ only in what they are drawn at. §6.2 gives fire the thinner alpha because it is
- * read through, and that constant is the whole of the difference.
- *
- * The two null checks are the function's own rather than the caller's: `expiryTick` and
- * `detonationTick` are both nullable on `Grenade`, so an area with no ending has none here either.
- */
-function writeArea(
-  out: GrenadeVisualScratch,
-  grenade: Grenade,
-  tick: Tick,
-  tickRate: number,
-  peakAlpha: number,
-): void {
-  if (grenade.expiryTick === null || grenade.detonationTick === null) return;
-  if (tick > grenade.expiryTick) return;
-
-  const totalTicks = (grenade.expiryTick as number) - (grenade.detonationTick as number);
-  const remainingTicks = (grenade.expiryTick as number) - (tick as number);
-  const remainingSeconds = remainingTicks / tickRate;
-
-  out.phase = 'active';
-  out.remaining = totalTicks > 0 ? remainingTicks / totalTicks : 0;
-  out.alpha =
-    remainingSeconds <= AREA_FADE_SECONDS
-      ? peakAlpha * (remainingSeconds / AREA_FADE_SECONDS)
-      : peakAlpha;
-}
-
-/** A decoy, which stands until its expiry and pulses rather than depleting. */
-function writeDecoy(
-  out: GrenadeVisualScratch,
-  grenade: Grenade,
-  tick: Tick,
-  elapsed: number,
-): void {
-  if (grenade.expiryTick === null || tick > grenade.expiryTick) return;
-
-  out.phase = 'active';
-  // Pulse phase wraps [0..1] at DECOY_PULSE_HZ, so the draw can sin(phase * 2π).
-  out.pulsePhase = (elapsed * DECOY_PULSE_HZ) % 1;
-  out.remaining = 1;
-  out.alpha = 1;
-}
-
-/**
- * Computes the visual state of a grenade at a given tick and writes it into `out`. Returns `out`
- * for convenience — no allocation.
- *
- * The caller must check `out.phase !== null` before drawing. All math is tick arithmetic:
- * `elapsed = (tick - grenade.detonationTick) / tickRate` gives match seconds.
- */
-export function grenadeVisual(
-  grenade: Grenade,
-  tick: Tick,
-  tickRate: number,
-  out: GrenadeVisualScratch,
-): GrenadeVisualScratch {
-  out.phase = null;
-  out.progress = 0;
-  out.alpha = 0;
-  out.remaining = 0;
-  out.pulsePhase = 0;
-
-  if (tick < grenade.throwTick) return out;
-
-  if (isInFlight(grenade, tick, tickRate)) {
-    out.phase = 'flight';
-    return out;
-  }
-
-  // A grenade whose detonation never arrived has no ending to draw once the flight is over.
-  if (grenade.detonationTick === null) return out;
-
-  const elapsed = ((tick as number) - (grenade.detonationTick as number)) / tickRate;
-
-  switch (grenade.type) {
-    case 'hegrenade':
-      writeBurst(out, elapsed, HE_EXPAND_SECONDS, HE_TOTAL_SECONDS);
-      break;
-    case 'flashbang':
-      writeBurst(out, elapsed, FLASH_EXPAND_SECONDS, FLASH_EXPAND_SECONDS);
-      break;
-    case 'smokegrenade':
-      writeArea(out, grenade, tick, tickRate, SMOKE_AREA_ALPHA);
-      break;
-    case 'molotov':
-    case 'incgrenade':
-      writeArea(out, grenade, tick, tickRate, FIRE_AREA_ALPHA);
-      break;
-    case 'decoy':
-      writeDecoy(out, grenade, tick, elapsed);
-      break;
-  }
-
-  return out;
-}
 
 // ── active grenade collection ───────────────────────────────────────────────
 
@@ -293,6 +127,8 @@ export function grenadeRadiusUnits(type: GrenadeType): number {
     case 'molotov':
     case 'incgrenade':
       return MOLOTOV_RADIUS_UNITS;
+    case 'flashbang':
+      return FLASH_RADIUS_UNITS;
     default:
       return 0;
   }
