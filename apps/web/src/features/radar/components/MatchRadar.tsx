@@ -14,9 +14,18 @@ interface Props {
   focus: RowFocus | null;
   /** Something in the top layer owns the keyboard, so §6.3's two zoom keys stand down. */
   isSuspended: boolean;
+  /** That the reader has zoomed in, which is the stage's business rather than the plate's — #315. */
+  onExpandedChange: (isExpanded: boolean) => void;
 }
 
-export function MatchRadar({ demo, transport, selectedSlot, focus, isSuspended }: Props) {
+export function MatchRadar({
+  demo,
+  transport,
+  selectedSlot,
+  focus,
+  isSuspended,
+  onExpandedChange,
+}: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -34,6 +43,7 @@ export function MatchRadar({ demo, transport, selectedSlot, focus, isSuspended }
           selectedSlot={selectedSlot}
           focus={focus}
           isSuspended={isSuspended}
+          onExpandedChange={onExpandedChange}
         />
       )}
     </section>

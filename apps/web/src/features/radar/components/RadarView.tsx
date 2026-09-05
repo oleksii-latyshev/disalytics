@@ -37,9 +37,23 @@ interface Props {
   selectedSlot: PlayerSlot | null;
   focus: RowFocus | null;
   isSuspended: boolean;
+  /**
+   * That the reader has zoomed in. The stage is what acts on it — the reading cards leave and the
+   * plate takes the room they were in — and the zoom that decides it lives here, so the plate
+   * reports the one boolean rather than the stage reaching in for a number nothing else needs.
+   */
+  onExpandedChange: (isExpanded: boolean) => void;
 }
 
-export function RadarView({ demo, overview, transport, selectedSlot, focus, isSuspended }: Props) {
+export function RadarView({
+  demo,
+  overview,
+  transport,
+  selectedSlot,
+  focus,
+  isSuspended,
+  onExpandedChange,
+}: Props) {
   const t = useT();
 
   // Everything on the plate the reader gets a say over — DESIGN.md §10.5. These are read here
@@ -204,29 +218,44 @@ export function RadarView({ demo, overview, transport, selectedSlot, focus, isSu
     onHover: isDebugShown ? setPointer : undefined,
   });
 
-  // The radar is never cropped or letterboxed — DESIGN.md §4 — so the canvas takes the smaller of
-  // the two axes the cell offers it, which is what the container units read. Everything else on the
-  // stage floats over it: a row of its own would come straight out of the map's short axis, which
-  // is the whole thing #110 set out to stop.
+  // A zoomed plate is a bigger window onto the map rather than a different map — #315. The cell it
+  // is given grows because the reading cards leave it, and the canvas takes all of that cell; the
+  // *scale* still comes off the short axis, so the width the expansion wins shows more map and
+  // nothing measured in device pixels changes size.
+  const isExpanded = navigation.zoom > MIN_ZOOM;
+
+  useEffect(() => onExpandedChange(isExpanded), [isExpanded, onExpandedChange]);
+
+  // The radar is never cropped or letterboxed — DESIGN.md §4 — so at rest the canvas takes the
+  // smaller of the two axes the cell offers it, which is what the container units read. Everything
+  // else on the stage floats over it: a row of its own would come straight out of the map's short
+  // axis, which is the whole thing #110 set out to stop.
   return (
     <div className="relative grid min-h-0 min-w-0 place-items-center [container-type:size]">
       <canvas
         ref={canvasRef}
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
-        className={`aspect-square w-[min(100cqi,100cqb)] touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
-          navigation.zoom > MIN_ZOOM ? 'cursor-grab' : ''
+        className={`touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
+          isExpanded ? 'size-full cursor-grab' : 'aspect-square w-[min(100cqi,100cqb)]'
         }`}
         {...navigation.canvasProps}
         onPointerLeave={() => setPointer(null)}
       />
 
-      {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
-          above the split the cell is wider than the square it centres, so the offset is half the
-          slack on each axis plus the stage inset. Colour and a hairline, never `.glass-panel` —
-          §2.3 grants the one `backdrop-filter` over the live plate to the scoreboard and to nothing
-          else. */}
-      <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1">
+      {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and at rest the plate is not the
+          cell: the cell is wider than the square it centres, so the offset is half the slack on
+          each axis plus the stage inset. Expanded there is no slack to cross — the canvas *is* the
+          cell — and the same formula would push the pair off the corner it names. Colour and a
+          hairline, never `.glass-panel` — §2.3 grants the one `backdrop-filter` over the live plate
+          to the scoreboard and to nothing else. */}
+      <div
+        className={`absolute flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1 ${
+          isExpanded
+            ? 'right-4 bottom-4'
+            : 'right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)]'
+        }`}
+      >
         <Button
           type="button"
           variant="ghost"
