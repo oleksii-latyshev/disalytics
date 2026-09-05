@@ -3,10 +3,13 @@ import {
   blindRemainingBySlot,
   bombProgressAt,
   DAMAGE_FLASH_SECONDS,
+  DAMAGE_TALLY_FADE_SECONDS,
+  DAMAGE_TALLY_WINDOW_SECONDS,
   DEATH_SHRINK_SECONDS,
   DEFUSE_SECONDS,
   DEFUSE_WITH_KIT_SECONDS,
   damageFlashBySlot,
+  damageTallyBySlot,
   deathProgressBySlot,
   GUNFIRE_TRACER_SECONDS,
   PLANT_SECONDS,
@@ -92,6 +95,124 @@ describe('damageFlashBySlot', () => {
     damageFlashBySlot(both, atSecond(2 + 0.125), flashes);
 
     expect(flashes[VICTIM]).toBeCloseTo(1, 2);
+  });
+});
+
+describe('damageTallyBySlot', () => {
+  const OTHER = asPlayerSlot(4);
+  const totals = new Float32Array(SLOTS);
+  const life = new Float32Array(SLOTS);
+
+  /** A spray: hits at `seconds`, each carrying `healthDamage`, all on `VICTIM`. */
+  function withSpray(seconds: readonly number[], healthDamage: number): ParsedDemo {
+    let events = newEvents();
+    for (const second of seconds) {
+      events = withDamage(events, {
+        tick: asTick(Math.round(TICK_RATE * second)),
+        victim: VICTIM,
+        healthDamage,
+      });
+    }
+
+    return newDemo(events);
+  }
+
+  it('adds up the hits of one spray into a single climbing figure', () => {
+    const demo = withSpray([2, 2.1, 2.2, 2.3], 11);
+
+    damageTallyBySlot(demo, atSecond(2.1), totals, life);
+    expect(totals[VICTIM]).toBe(22);
+
+    damageTallyBySlot(demo, atSecond(2.3), totals, life);
+    expect(totals[VICTIM]).toBe(44);
+  });
+
+  it('starts the figure again when a hit lands further out than the window', () => {
+    const demo = withSpray([2, 2 + DAMAGE_TALLY_WINDOW_SECONDS + 0.1], 30);
+
+    damageTallyBySlot(demo, atSecond(2 + DAMAGE_TALLY_WINDOW_SECONDS + 0.1), totals, life);
+
+    expect(totals[VICTIM]).toBe(30);
+  });
+
+  it('holds at full strength for the window and then fades to nothing', () => {
+    const demo = withSpray([2], 42);
+
+    damageTallyBySlot(demo, atSecond(2 + DAMAGE_TALLY_WINDOW_SECONDS - 0.1), totals, life);
+    expect(life[VICTIM]).toBe(1);
+    expect(totals[VICTIM]).toBe(42);
+
+    damageTallyBySlot(
+      demo,
+      atSecond(2 + DAMAGE_TALLY_WINDOW_SECONDS + DAMAGE_TALLY_FADE_SECONDS / 2),
+      totals,
+      life,
+    );
+    expect(life[VICTIM]).toBeCloseTo(0.5, 1);
+
+    damageTallyBySlot(
+      demo,
+      atSecond(2 + DAMAGE_TALLY_WINDOW_SECONDS + DAMAGE_TALLY_FADE_SECONDS + 0.1),
+      totals,
+      life,
+    );
+    expect(life[VICTIM]).toBe(0);
+    expect(totals[VICTIM]).toBe(0);
+  });
+
+  it('runs the fade from the newest hit of a chain rather than its first', () => {
+    const demo = withSpray([2, 3, 4], 20);
+
+    damageTallyBySlot(demo, atSecond(4 + DAMAGE_TALLY_WINDOW_SECONDS - 0.1), totals, life);
+
+    expect(life[VICTIM]).toBe(1);
+    expect(totals[VICTIM]).toBe(60);
+  });
+
+  it('says nothing before the hit, and nothing about a slot it did not touch', () => {
+    const demo = withSpray([2], 42);
+
+    damageTallyBySlot(demo, atSecond(2), totals, life);
+    expect(totals[OTHER]).toBe(0);
+    expect(life[OTHER]).toBe(0);
+
+    damageTallyBySlot(demo, atSecond(1.5), totals, life);
+    expect(totals[VICTIM]).toBe(0);
+    expect(life[VICTIM]).toBe(0);
+  });
+
+  it('keeps two victims of the same exchange apart', () => {
+    const demo = newDemo(
+      withDamage(
+        withDamage(newEvents(), { tick: asTick(TICK_RATE * 2), victim: VICTIM, healthDamage: 30 }),
+        {
+          tick: asTick(TICK_RATE * 2 + 8),
+          victim: OTHER,
+          healthDamage: 70,
+        },
+      ),
+    );
+
+    damageTallyBySlot(demo, atSecond(2.2), totals, life);
+
+    expect(totals[VICTIM]).toBe(30);
+    expect(totals[OTHER]).toBe(70);
+  });
+
+  it('counts a hit from a teammate as damage the victim took', () => {
+    const demo = newDemo(
+      withDamage(newEvents(), {
+        tick: asTick(TICK_RATE * 2),
+        attacker: VICTIM,
+        victim: OTHER,
+        healthDamage: 35,
+      }),
+    );
+
+    damageTallyBySlot(demo, atSecond(2), totals, life);
+
+    expect(totals[OTHER]).toBe(35);
+    expect(totals[VICTIM]).toBe(0);
   });
 });
 

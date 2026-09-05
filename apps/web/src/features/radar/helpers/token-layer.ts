@@ -5,6 +5,7 @@ import {
   bombProgressAt,
   type Clock,
   damageFlashBySlot,
+  damageTallyBySlot,
   deathProgressBySlot,
   FLAG_ALIVE,
   FLAG_SCOPED,
@@ -95,6 +96,8 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   // Everything else a frame derives before it draws, owned by the layer for the same reason
   // `positionScratch` is: nothing on the way to the canvas allocates.
   const damageFlashes = new Float32Array(track.slotCount);
+  const damageTotals = new Float32Array(track.slotCount);
+  const damageLife = new Float32Array(track.slotCount);
   const blindRemaining = new Float32Array(track.slotCount);
   const deathProgress = new Float32Array(track.slotCount);
 
@@ -143,6 +146,11 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     // The round goes under one name and only one: the reader asked about this player by selecting
     // them, and ten labels each carrying four numbers is a plate nobody can read.
     detail: (slot) => (slot === selectedSlot ? detail : null),
+    // Every player carries their own figure, not only the selected one. Measured over the fixture,
+    // a second figure is on the plate at the same time as a first on 3.24% of a match's frames and
+    // a fourth on 0.08% — a duel is two numbers, which is the reading, and never a wall of them.
+    damage: (slot) => sampleAt(damageTotals, slot),
+    damageLife: (slot) => sampleAt(damageLife, slot),
   };
 
   /** Whether the selected player is on the plate to be given one, and where their cone points. */
@@ -337,6 +345,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     // These read the fractional clock rather than the sample under it, so a hit decays smoothly
     // between samples and does so in match time — DESIGN.md §8's test for what is a draw.
     damageFlashBySlot(demo, clock.frame, damageFlashes);
+    damageTallyBySlot(demo, clock.frame, damageTotals, damageLife);
     blindRemainingBySlot(demo, clock.frame, blindRemaining);
     deathProgressBySlot(demo, clock.frame, deathProgress);
     shotCount = visibleShots(demo, clock.frame, shotIndices, shotLife);

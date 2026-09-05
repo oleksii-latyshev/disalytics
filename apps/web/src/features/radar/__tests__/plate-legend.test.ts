@@ -15,7 +15,7 @@ const COLORS: RadarColors = {
   dead: '#dead00',
   selectionRing: '#ring00',
   selectionEdge: '#edge00',
-  label: { halo: '#halo00', ink: '#ink000' },
+  label: { halo: '#halo00', ink: '#ink000', damage: '#damage' },
   hollow: '#hollow',
   gunfire: '#gunfir',
   countdown: '#count0',
@@ -85,6 +85,8 @@ function newContext(painted: string[]): CanvasRenderingContext2D {
     quadraticCurveTo: ignore,
     fill: ignore,
     stroke: ignore,
+    strokeText: ignore,
+    fillText: ignore,
     createLinearGradient: gradient,
     createRadialGradient: gradient,
     set fillStyle(value: string) {
@@ -96,12 +98,15 @@ function newContext(painted: string[]): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D;
 }
 
+/** The plate's own faces, stubbed: a swatch reads them off the caller rather than off the document. */
+const STYLE = { font: '13px ui', detailFont: '12px mono', damageFont: '12px mono' };
+
 function paint(id: PlateMarkId): readonly string[] {
   const mark = PLATE_MARKS.find((candidate) => candidate.id === id);
   if (mark === undefined) throw new Error(`No plate mark called ${id}.`);
 
   const painted: string[] = [];
-  mark.draw(newContext(painted), COLORS);
+  mark.draw(newContext(painted), COLORS, STYLE);
 
   return painted;
 }

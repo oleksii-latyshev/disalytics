@@ -79,12 +79,14 @@ The redesign is closed (below). What is left here is defects and decisions on th
 |---|---|---|---|---|
 | #292, #294 | The highlight effect writes `aria-selected` where it may not | Two places where a decorative element and a plain button carry an attribute their role does not allow. One vendored primitive, two call sites. | P1 | S each |
 | #290 | Decide what a label two rows from its token belongs to | #289's twelve candidate boxes buried 0% of labels, at the cost of a name that can sit far from the token it names. | P1 | S |
-| #287 | A hit shows what it took | A token flashes for damage and says nothing about how much, which is the difference between a trade and a whiff. | P1 | M |
 | #123 | Fail CI when a documented contrast ratio drifts | The 36 pairings `tokens.css` now states stay true without anyone re-running the maths by hand. | P2 | M |
 | #115 | Let the reader choose the radar plate | The reader who wants the game's own map colours can have them. | P2 | M |
 | #249 | Decide whether the legend draws the vision wedge | Draw it or record why not — the reason it was not drawn no longer holds. | P2 | S |
-| #170 | Restate §6.2 for utility that reads as smoke and fire | **Answered by M4's smoke and fire row rather than before it.** | P2 | XS |
 | #230 | Measure a shotgun's shot count | Whether nine pellets are one `fire_bullets` event or nine. **Blocked** on a demo that fires one. | P3 | S |
+
+**Closed on 5 September 2026**: #287 — a hit states what it took beside the token that took it,
+which is the reading a flash alone could not carry; #170 — §6.2 was restated by M4's smoke and fire
+row, which is where that question said it would be answered.
 
 **Closed on 4 September 2026**: #275 — hard rule 9 is the 60 fps budget and bans no property by
 name, which is the owner's call rather than a reading of the old wording; #214 — the axis glyph's
@@ -126,8 +128,8 @@ one the owner looks at every day.
 | #313 | Give the axis its glyphs back, and a filter beside it | #271 collapsed a crowded glyph to a tick because 29 of 30 rounds overlapped. The owner's answer is better: keep the marks at full size and let the reader turn kinds off — kills, utility, objectives, and the selected player — so a dense round is thinned by choice rather than by the axis. The collapse stays as the floor for what no filter can separate. Persisted where every other preference is, and read where it is obeyed. | **P1** | M |
 | #310 | A grenade is a row in the feed | The feed says who threw what, so a cloud on the plate has an author. The data is there — `Grenade` carries its thrower and its throw tick — and the work is a fourth row kind, both locales, and the same hover-to-the-plate the kill rows already have. Its window is the grenade's own life, so scrubbing backwards takes it away like every other row. | P1 | S |
 | #315 | A zoomed plate uses the whole stage | The zoom was capped by the square the plate is inscribed in, which wasted the width the stage actually has — 92px at 1440×900 and 551px at 1024×800. Zoomed, the plate's cell is the width of the stage and runs under the cards; at 1× nothing moves at all, which was the owner's constraint on this row. | **P1** | M |
-| — | A bullet reads as a bullet | Today a shot is a white spur past the needle, which says *fired* and not *at what*. A tracer from the muzzle along the shooter's own view angle says the second thing. **Where it ends is the open question** — the schema carries no impact point, so either upstream's impact events come into the parse (a `SCHEMA_VERSION` bump) or the tracer is a fixed-length ray that fades, labelled as the approximation it is. It must be a function of match time like every other mark, and it is drawn ten times per second per shooter, so it is measured against the 60 fps row before it ships. | P2 | M |
-| — | Smoke and fire drawn as they spread | One flat disc per cloud reads as a symbol; the game's own smoke fills a volume over about a second and fire is a set of flames that spreads and dies unevenly. Drawing that as a cluster of overlapping puffs, animated **from match time and never from wall time**, is what makes a mid-round smoke legible as cover rather than as an icon. Answers #170. The frame budget is the whole difficulty: this multiplies the marks on the plate by roughly the number of puffs, so the allocation-free draw rules apply without exception. | P2 | M |
+| #318 | A bullet reads as a bullet | Today a shot is a white spur past the needle, which says *fired* and not *at what*. A tracer from the muzzle along the shooter's own view angle says the second thing. **Where it ends was the open question and the recording answered it**: the demo declares 54 event names and `bullet_impact` is not among them, so there is no impact point to reach for and the tracer is a fixed-length ray that fades, labelled as the approximation it is. **Closed by #319 on 5 September 2026**, at `SCHEMA_VERSION` 8 — a shot carries its own firing angle, because the 16 Hz sample beside it is a median 0.16° out and the owner bought the exact one. | P2 | M |
+| #320 | Smoke and fire drawn as they spread | One flat disc per cloud reads as a symbol; the game's own smoke fills a volume over about a second and fire is a set of flames that spreads and dies unevenly. Drawing that as a cluster of overlapping puffs, animated **from match time and never from wall time**, is what makes a mid-round smoke legible as cover rather than as an icon. Answers #170. The frame budget is the whole difficulty: this multiplies the marks on the plate by roughly the number of puffs, so the allocation-free draw rules apply without exception. **Closed by #321 on 5 September 2026** — and the shape of the answer is that neither body carries any spread in the recording at all: `inferno_startburn` and `inferno_expire` both carry a position on 114 of 114, and the entity moves **0.00 units** by p50, p90 and maximum, so what is drawn is the product's own model rather than a reading of the demo. | P2 | M |
 | — | A grenade in the feed opens its lineup | Pressing a grenade shows where it was thrown from, where it landed, and the view angles at the throw — enough to stand on the same spot in the game and reproduce it. Three unknowns make this the largest row in M4: view angles are sampled at 16 Hz, so at the throw tick they are up to 31 ms stale and a lineup needs better than that (a detail window around throws, which is a `SCHEMA_VERSION` bump); whether the demo carries the buttons held at the throw — a jump-throw is a different lineup from a standing one — is unresearched; and the run-up matters as much as the angle. **Research first, then an issue.** | P2 | L |
 
 **#315 closed the zoomed-plate row on 5 September 2026, and the owner's answer is wider than the
@@ -174,6 +176,14 @@ the type rank the head already spends so the plate measures the same either side
 deliberately did not spend is the bump: a total that stays true *while* a round is fought is still a
 `TickTrack` column and a `SCHEMA_VERSION` move, and whether the reading is worth one is a decision
 this row hands to the owner rather than an omission.
+
+**#319 and #321 closed two more rows on 5 September 2026**, leaving the lineup row as the only one
+of this milestone still open, and both found the same shape of thing: the question each row left
+open was answered by the *recording* rather than by a design choice. The tracer has no end because the demo declares no impact event —
+54 names in `game_events_counter`, `bullet_impact` not among them (`docs/PARSER.md` §22) — and the
+bodies have no spread because the entities do not move: 0.00 units by p50, p90 and maximum over 114
+of 114 fires, and a settled smoke cloud stands to within 0.0 units for the rest of its life
+(`docs/PARSER.md` §23). What is drawn in both places is the product's own model, labelled as one.
 
 ## M5 — Analysis surfaces
 

@@ -1,4 +1,5 @@
 import {
+  asTick,
   FLAG_DEFUSING,
   FLAG_PLANTING,
   type ParsedDemo,
@@ -58,6 +59,108 @@ export function damageFlashBySlot(demo: ParsedDemo, frame: number, out: Float32A
 
     const flash = age <= 0 ? 1 : 1 - age / DAMAGE_FLASH_SECONDS;
     if (flash > (out[event.victim] ?? 0)) out[event.victim] = flash;
+  }
+}
+
+/**
+ * How long a hit's figure holds at full strength beside the token, in **match** seconds — and, the
+ * same number doing both jobs, how long after a hit another hit still reads as the same exchange.
+ *
+ * It is a judgement about reading speed rather than a measurement, and the two jobs are one number
+ * on purpose: what the reader can still see is what the next bullet may be added to, so a figure
+ * never climbs after it has begun to go. 1.5 s is long enough to read three digits at 1× and short
+ * enough that two separate peeks at the same player are two readings rather than one sum.
+ */
+export const DAMAGE_TALLY_WINDOW_SECONDS = 1.5;
+
+/**
+ * How long the figure then takes to leave, in **match** seconds. Also a judgement rather than a
+ * measurement: short, because what it is fading out of the way of is the next exchange, and a
+ * number still on screen when the next one starts is the one thing this may not do.
+ */
+export const DAMAGE_TALLY_FADE_SECONDS = 0.5;
+
+/**
+ * How far back the walk below may reach. It bounds the work rather than the reading: a chain of
+ * hits none of which is `DAMAGE_TALLY_WINDOW_SECONDS` apart has no length of its own, and a player
+ * standing in a fire takes one for as long as the fire burns. Generous against that — the longest
+ * body in the product burns for about 7 s — and a chain older still loses its earliest hits rather
+ * than costing a walk that grows with the round.
+ */
+const DAMAGE_TALLY_LOOKBACK_SECONDS = 12;
+
+/**
+ * What each slot has just taken, and how much of that figure's life is left — 1 while it holds, 0
+ * once it has gone. Written into the caller's arrays rather than returned, because this runs inside
+ * a draw.
+ *
+ * Hits chain: one lands inside `DAMAGE_TALLY_WINDOW_SECONDS` of the one before it and joins its
+ * running total, so an eight-bullet spray is one figure climbing rather than eight marks. A hit
+ * further out than that starts the figure again, which is what keeps two exchanges two readings.
+ *
+ * The walk runs **forwards** over the window rather than backwards like every other lookup here,
+ * and that is what lets two arrays carry three facts: going forwards the last age written for a
+ * slot is its newest hit, so `outLife` is the chain's own state during the walk and the answer
+ * after it. Backwards it would have been the oldest, and the fade would have run from the wrong
+ * hit.
+ *
+ * The figure belongs to the **victim**, whoever caused it: damage from a teammate is damage taken,
+ * and this says what the player lost rather than who is to blame for it. `playerRoundStats` is the
+ * surface that answers the other question.
+ *
+ * A function of the clock's position and never of history, so scrubbing backwards through a spray
+ * counts it up again.
+ */
+export function damageTallyBySlot(
+  demo: ParsedDemo,
+  frame: number,
+  outTotal: Float32Array,
+  outLife: Float32Array,
+): void {
+  outTotal.fill(0);
+  // Infinity is "no hit yet" for the walk: it fails the chain test without a branch of its own, and
+  // it fails the life test below, so a slot nothing touched needs no second visit.
+  outLife.fill(Number.POSITIVE_INFINITY);
+
+  const { track, events } = demo;
+  const now = secondsAtFrame(track, frame);
+  const tick = tickAtFrame(track, frame);
+  const last = lastIndexAtOrBefore(events.damage, tick);
+  const first = lastIndexAtOrBefore(
+    events.damage,
+    asTick(tick - DAMAGE_TALLY_LOOKBACK_SECONDS * track.tickRate),
+  );
+
+  for (let index = Math.max(first + 1, 0); index <= last; index++) {
+    const event = events.damage[index];
+    if (event === undefined) break;
+
+    const age = now - event.tick / track.tickRate;
+    // Read the way `damageFlashBySlot` reads rather than through `sampleAt`: a victim outside the
+    // arrays the caller sized is a demo this cannot draw, not a draw that should throw.
+    const previous = outLife[event.victim] ?? Number.POSITIVE_INFINITY;
+    const joins = previous - age <= DAMAGE_TALLY_WINDOW_SECONDS;
+
+    outTotal[event.victim] = joins
+      ? (outTotal[event.victim] ?? 0) + event.healthDamage
+      : event.healthDamage;
+    outLife[event.victim] = age;
+  }
+
+  for (let slot = 0; slot < outLife.length; slot++) {
+    const age = sampleAt(outLife, slot);
+    const life =
+      age <= DAMAGE_TALLY_WINDOW_SECONDS
+        ? 1
+        : 1 - (age - DAMAGE_TALLY_WINDOW_SECONDS) / DAMAGE_TALLY_FADE_SECONDS;
+
+    if (life > 0) {
+      outLife[slot] = Math.min(life, 1);
+      continue;
+    }
+
+    outLife[slot] = 0;
+    outTotal[slot] = 0;
   }
 }
 
