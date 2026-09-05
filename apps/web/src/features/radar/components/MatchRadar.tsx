@@ -1,7 +1,7 @@
 import type { ParsedDemo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
-import type { KillLine } from '@/core/events';
+import type { RowFocus } from '@/core/events';
 import type { Transport } from '@/core/playback';
 import { RadarView } from './RadarView';
 import { UnknownMap } from './UnknownMap';
@@ -10,12 +10,13 @@ interface Props {
   demo: ParsedDemo;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
-  hoveredKill: KillLine | null;
+  /** The feed row the reader is on — §5.4's other half, which the plate is the other end of. */
+  focus: RowFocus | null;
   /** Something in the top layer owns the keyboard, so §6.3's two zoom keys stand down. */
   isSuspended: boolean;
 }
 
-export function MatchRadar({ demo, transport, selectedSlot, hoveredKill, isSuspended }: Props) {
+export function MatchRadar({ demo, transport, selectedSlot, focus, isSuspended }: Props) {
   const t = useT();
   const overview = getMapOverview(demo.header.map);
 
@@ -31,7 +32,7 @@ export function MatchRadar({ demo, transport, selectedSlot, hoveredKill, isSuspe
           overview={overview}
           transport={transport}
           selectedSlot={selectedSlot}
-          hoveredKill={hoveredKill}
+          focus={focus}
           isSuspended={isSuspended}
         />
       )}

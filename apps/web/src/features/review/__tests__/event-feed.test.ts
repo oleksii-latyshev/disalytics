@@ -4,6 +4,7 @@ import {
   type BombDefuse,
   type BombPlant,
   type DefuseOutcome,
+  type Grenade,
   type Kill,
   type ParsedDemo,
   type Round,
@@ -11,7 +12,7 @@ import {
   WEAPON_NONE,
 } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { FEED_ROW_LIMIT, killLineOf, roundFeed, visibleFeed } from '../helpers/event-feed';
+import { FEED_ROW_LIMIT, roundFeed, visibleFeed } from '../helpers/event-feed';
 
 // 64 ticks to 16 samples, so a frame is a tick over four. The fixture is local rather than shared
 // with `features/timeline`'s: a test reaching sideways into another feature is the import direction
@@ -83,10 +84,31 @@ function newDefuse(startTick: number, outcome: DefuseOutcome): BombDefuse {
   return { startTick: asTick(startTick), defuser: asPlayerSlot(0), hasKit: true, outcome };
 }
 
+/** A smoke, which is the type whose whole life is bounded by an expiry the demo recorded. */
+function newSmoke(throwTick: number, detonationTick: number, expiryTick: number): Grenade {
+  return {
+    thrower: asPlayerSlot(1),
+    type: 'smokegrenade',
+    throwTick: asTick(throwTick),
+    detonationTick: asTick(detonationTick),
+    detonationPosition: { x: 0, y: 0, z: 0 },
+    expiryTick: asTick(expiryTick),
+    trajectory: {
+      firstTick: asTick(throwTick),
+      sampleHz: SAMPLE_HZ,
+      sampleCount: 0,
+      x: new Float32Array(0),
+      y: new Float32Array(0),
+      z: new Float32Array(0),
+    },
+  };
+}
+
 interface Options {
   kills?: readonly Kill[];
   plants?: readonly BombPlant[];
   defuses?: readonly BombDefuse[];
+  grenades?: readonly Grenade[];
 }
 
 function newDemo(options: Options = {}): ParsedDemo {
@@ -98,7 +120,7 @@ function newDemo(options: Options = {}): ParsedDemo {
       kills: options.kills ?? [],
       damage: [],
       shots: [],
-      grenades: [],
+      grenades: options.grenades ?? [],
       blinds: [],
       plants: options.plants ?? [],
       defuses: options.defuses ?? [],
@@ -225,16 +247,19 @@ describe('visibleFeed', () => {
   });
 });
 
-describe('killLineOf', () => {
+describe("a row's focus", () => {
   it('carries both ends, both sides and the frame the kill happened on', () => {
     const row = roundFeed(newDemo({ kills: [newKill(2000)] }), 0).at(0);
 
-    expect(row !== undefined && killLineOf(row)).toEqual({
-      frame: 500,
-      attacker: 0,
-      victim: 1,
-      attackerSide: 'CT',
-      victimSide: 'T',
+    expect(row?.focus).toEqual({
+      kind: 'kill',
+      line: {
+        frame: 500,
+        attacker: 0,
+        victim: 1,
+        attackerSide: 'CT',
+        victimSide: 'T',
+      },
     });
   });
 
@@ -242,12 +267,60 @@ describe('killLineOf', () => {
     const kill = newKill(2000, { attacker: null, weapon: 'world' });
     const row = roundFeed(newDemo({ kills: [kill] }), 0).at(0);
 
-    expect(row !== undefined && killLineOf(row)).toBeNull();
+    expect(row?.focus).toBeNull();
   });
 
   it('draws no line for an objective row', () => {
     const row = roundFeed(newDemo({ plants: [newPlant(3000)] }), 0).at(0);
 
-    expect(row !== undefined && killLineOf(row)).toBeNull();
+    expect(row?.focus).toBeNull();
+  });
+
+  it('points a grenade row at the grenade itself', () => {
+    const row = roundFeed(newDemo({ grenades: [newSmoke(2000, 2100, 3000)] }), 0).at(0);
+
+    expect(row?.focus).toEqual({ kind: 'grenade', index: 0 });
+  });
+});
+
+describe('a grenade row', () => {
+  const demo = newDemo({ grenades: [newSmoke(2000, 2100, 3000)] });
+  const rows = roundFeed(demo, 0);
+
+  it('stands at the throw rather than at the detonation', () => {
+    expect(rows.at(0)?.frame).toBe(500);
+  });
+
+  it('names the thrower and the side that slot held that round', () => {
+    const event = rows.at(0)?.event;
+
+    expect(event?.kind === 'grenade' && event.thrower).toBe(1);
+    expect(event?.kind === 'grenade' && event.throwerSide).toBe('T');
+    expect(event?.kind === 'grenade' && event.utility).toBe('smoke');
+  });
+
+  it('leaves the feed when the grenade does, which no other row kind does', () => {
+    expect(visibleFeed(rows, 500).map((row) => row.id)).toEqual(['nade-0']);
+    expect(visibleFeed(rows, 750).map((row) => row.id)).toEqual(['nade-0']);
+    expect(visibleFeed(rows, 751)).toEqual([]);
+  });
+
+  it('does not push a kill that is still live out of the eight', () => {
+    const kills = Array.from({ length: 8 }, (_, index) => newKill(400 + index * 100));
+    const withUtility = newDemo({ kills, grenades: [newSmoke(2000, 2100, 2200)] });
+    const feed = roundFeed(withUtility, 0);
+
+    // The smoke is thrown after every kill and is gone by frame 551, so the eight rows the feed
+    // holds are the eight kills again rather than seven and a cloud that stopped existing.
+    expect(visibleFeed(feed, 600).map((row) => row.id)).toEqual([
+      'kill-7',
+      'kill-6',
+      'kill-5',
+      'kill-4',
+      'kill-3',
+      'kill-2',
+      'kill-1',
+      'kill-0',
+    ]);
   });
 });

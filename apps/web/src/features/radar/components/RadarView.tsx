@@ -10,7 +10,7 @@ import { type MapOverview, type RadarPoint, radarAssetPath } from '@disa/map-dat
 import { Button } from '@disa/ui';
 import { Minus, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { KillLine } from '@/core/events';
+import type { KillLine, RowFocus } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
@@ -35,18 +35,11 @@ interface Props {
   overview: MapOverview;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
-  hoveredKill: KillLine | null;
+  focus: RowFocus | null;
   isSuspended: boolean;
 }
 
-export function RadarView({
-  demo,
-  overview,
-  transport,
-  selectedSlot,
-  hoveredKill,
-  isSuspended,
-}: Props) {
+export function RadarView({ demo, overview, transport, selectedSlot, focus, isSuspended }: Props) {
   const t = useT();
 
   // Everything on the plate the reader gets a say over — DESIGN.md §10.5. These are read here
@@ -119,8 +112,11 @@ export function RadarView({
   );
 
   // The hovered row reaches the plate through a box rather than through the layer array, so a hover
-  // repaints what is already built instead of rebuilding it — see `killLineLayer`.
-  const hoveredKillRef = useRef<KillLine | null>(hoveredKill);
+  // repaints what is already built instead of rebuilding it — see `killLineLayer`. Two boxes rather
+  // than one union, because the two are read by two layers and neither has anything to say about the
+  // other's kind.
+  const hoveredKillRef = useRef<KillLine | null>(null);
+  const hoveredGrenadeRef = useRef<number | null>(null);
 
   // How the reader is looking at the plate, in a box for the same reason. Zoom is view state and
   // never playback state — DESIGN.md §6.3 — so it survives a scrub, a round jump and a pause. The
@@ -153,6 +149,7 @@ export function RadarView({
       colors,
       trajectories,
       selectedSlot,
+      hovered: hoveredGrenadeRef,
       view: viewRef,
     });
     const killLine = killLineLayer({
@@ -190,9 +187,10 @@ export function RadarView({
   // The one thing that has to repaint off a React state change rather than off the clock: while
   // playback is paused there is no frame to carry the line onto the plate.
   useEffect(() => {
-    hoveredKillRef.current = hoveredKill;
+    hoveredKillRef.current = focus?.kind === 'kill' ? focus.line : null;
+    hoveredGrenadeRef.current = focus?.kind === 'grenade' ? focus.index : null;
     repaint();
-  }, [hoveredKill, repaint]);
+  }, [focus, repaint]);
 
   // Everything the reader can do to move the plate. The coordinate readout is the only consumer of
   // a hover, so the callback is handed over only while the overlay is on — DESIGN.md §9.2. Leaving

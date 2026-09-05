@@ -11,5 +11,6 @@
     "completed": "{defuser} обезвреживает бомбу",
     "aborted": "{defuser} прекращает разминирование",
     "interrupted": "{defuser} погибает при разминировании"
-  }
+  },
+  "grenade": "{thrower} бросает {utility}"
 }

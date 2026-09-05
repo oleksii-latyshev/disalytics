@@ -1,14 +1,16 @@
 import {
   type Frame,
   frameForTick,
+  grenadeEndTick,
   killWeaponClass,
   killWeaponIcon,
   killWeaponName,
   type ParsedDemo,
   sidesBySlotAtRound,
   type Tick,
+  utilityKindOfGrenade,
 } from '@disa/demo-core';
-import type { KillLine, RowEvent } from '@/core/events';
+import type { RowEvent, RowFocus } from '@/core/events';
 
 /**
  * How many rows the feed holds — DESIGN.md §5.4. It is a cap on what is *shown*, not on what is
@@ -21,6 +23,22 @@ export interface FeedRow {
   /** Stable for the whole match, which is what identifies a row to React and to its arrival. */
   readonly id: string;
   readonly frame: Frame;
+  /**
+   * The last frame the row is shown on, or `null` for a row that has no ending.
+   *
+   * Only a grenade has one, and it is that grenade's own life: the row is on screen for exactly as
+   * long as its mark is on the plate, which is what `ROADMAP.md` means by the row's window and what
+   * keeps a buy phase's utility from holding the feed for the rest of the round. A kill, a plant and
+   * a defuse are moments rather than objects, so they leave only when the reader scrubs past them or
+   * a newer row pushes them out.
+   */
+  readonly untilFrame: Frame | null;
+  /**
+   * What the plate draws while this row is hovered or focused — §5.4's other half — or `null` for a
+   * row that points at nothing there. Derived once per round with the row rather than at the
+   * readout's rate, the way everything else on a row is.
+   */
+  readonly focus: RowFocus | null;
   readonly event: RowEvent;
 }
 
@@ -60,9 +78,10 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
   demo.events.kills.forEach((kill, index) => {
     if (!isInWindow(window, kill.tick)) return;
 
-    rows.push({
+    const row = {
       id: `kill-${index}`,
       frame: frameForTick(demo.track, kill.tick),
+      untilFrame: null,
       event: {
         kind: 'kill',
         attacker: kill.attacker,
@@ -76,7 +95,9 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
         isWallbang: kill.isWallbang,
         isThroughSmoke: kill.isThroughSmoke,
       },
-    });
+    } satisfies Omit<FeedRow, 'focus'>;
+
+    rows.push({ ...row, focus: focusOf(row) });
   });
 
   demo.events.plants.forEach((plant, index) => {
@@ -85,6 +106,8 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
     rows.push({
       id: `plant-${index}`,
       frame: frameForTick(demo.track, plant.tick),
+      untilFrame: null,
+      focus: null,
       event: { kind: 'plant', planter: plant.planter },
     });
   });
@@ -96,7 +119,29 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
     rows.push({
       id: `defuse-${index}`,
       frame: frameForTick(demo.track, defuse.outcome.tick),
+      untilFrame: null,
+      focus: null,
       event: { kind: 'defuse', defuser: defuse.defuser },
+    });
+  });
+
+  // The throw rather than the detonation: a feed row is *who threw what*, and §7.1's glyph is what
+  // hangs at the ending. The row's own window is `grenadeEndTick` — one definition of a grenade's
+  // life, shared with the plate that draws it (#310).
+  demo.events.grenades.forEach((grenade, index) => {
+    if (!isInWindow(window, grenade.throwTick)) return;
+
+    rows.push({
+      id: `nade-${index}`,
+      frame: frameForTick(demo.track, grenade.throwTick),
+      untilFrame: frameForTick(demo.track, grenadeEndTick(grenade, demo.track.tickRate)),
+      focus: { kind: 'grenade', index },
+      event: {
+        kind: 'grenade',
+        thrower: grenade.thrower,
+        throwerSide: sides[grenade.thrower],
+        utility: utilityKindOfGrenade(grenade.type),
+      },
     });
   });
 
@@ -104,43 +149,49 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
 }
 
 /**
- * The last `FEED_ROW_LIMIT` events before the playhead, newest first — DESIGN.md §5.4.
+ * The last `FEED_ROW_LIMIT` events the playhead is inside, newest first — DESIGN.md §5.4.
  *
  * A function of the playhead rather than a log that accumulates, which is what makes scrubbing
- * backwards take rows away again. It walks one round's list, which is a dozen events, so it is
+ * backwards take rows away again. It walks one round's list, which is a few dozen events, so it is
  * cheap enough to run at the readout; what it must never do is walk the match.
+ *
+ * It walks past a row rather than stopping at one, because a grenade row expires (`untilFrame`) and
+ * the row before it in time may still be live. The walk is still bounded by the round and stops as
+ * soon as the limit is filled.
  */
 export function visibleFeed(rows: readonly FeedRow[], frame: number): readonly FeedRow[] {
-  let end = rows.length;
-  while (end > 0 && (rows[end - 1]?.frame ?? 0) > frame) end -= 1;
-
-  const start = Math.max(end - FEED_ROW_LIMIT, 0);
   const visible: FeedRow[] = [];
 
-  for (let index = end - 1; index >= start; index -= 1) {
+  for (let index = rows.length - 1; index >= 0 && visible.length < FEED_ROW_LIMIT; index -= 1) {
     const row = rows[index];
-    if (row !== undefined) visible.push(row);
+    if (row === undefined) continue;
+    if (row.frame > frame) continue;
+    if (row.untilFrame !== null && frame > row.untilFrame) continue;
+
+    visible.push(row);
   }
 
   return visible;
 }
 
 /**
- * The line §5.4 draws when a row is hovered, or nothing when the row has none to draw.
- *
- * Two rows have none, and for the same reason rather than by exception: an objective row is not a
- * kill, and a kill by the world has no attacker and so no second end. Neither is a case the plate
- * has to be told about — the answer is simply no line.
+ * A kill's own line, which is the only focus that has to be *built* — a grenade already knows which
+ * grenade it is, and an objective row points at nothing on the plate. A kill by the world points at
+ * nothing either: it has no attacker and so no second end, which is not a case the plate has to be
+ * told about.
  */
-export function killLineOf(row: FeedRow): KillLine | null {
+function focusOf(row: Omit<FeedRow, 'focus'>): RowFocus | null {
   const { event } = row;
   if (event.kind !== 'kill' || event.attacker === null) return null;
 
   return {
-    frame: row.frame,
-    attacker: event.attacker,
-    victim: event.victim,
-    attackerSide: event.attackerSide,
-    victimSide: event.victimSide,
+    kind: 'kill',
+    line: {
+      frame: row.frame,
+      attacker: event.attacker,
+      victim: event.victim,
+      attackerSide: event.attackerSide,
+      victimSide: event.victimSide,
+    },
   };
 }

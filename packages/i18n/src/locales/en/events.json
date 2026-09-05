@@ -11,5 +11,6 @@
     "completed": "{defuser} defuses the bomb",
     "aborted": "{defuser} stops defusing",
     "interrupted": "{defuser} is killed while defusing"
-  }
+  },
+  "grenade": "{thrower} throws {utility}"
 }

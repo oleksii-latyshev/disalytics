@@ -33,6 +33,5 @@
     "draw": "Round {round, number}, draw"
   },
   "events": "Round events",
-  "grenade": "{thrower} throws {utility}",
   "unknownPlayer": "Unknown player"
 }

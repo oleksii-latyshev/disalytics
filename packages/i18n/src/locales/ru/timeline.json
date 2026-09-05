@@ -33,6 +33,5 @@
     "draw": "Раунд {round, number}, ничья"
   },
   "events": "События раунда",
-  "grenade": "{thrower} бросает {utility}",
   "unknownPlayer": "Неизвестный игрок"
 }

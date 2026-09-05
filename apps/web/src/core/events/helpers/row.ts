@@ -1,4 +1,11 @@
-import type { Frame, PlayerSlot, Team, WeaponClass, WeaponIconId } from '@disa/demo-core';
+import type {
+  Frame,
+  PlayerSlot,
+  Team,
+  UtilityKind,
+  WeaponClass,
+  WeaponIconId,
+} from '@disa/demo-core';
 
 /**
  * One kill, as both readers of the row need it — §5.4's feed and §7.1's tooltip on the round axis.
@@ -35,11 +42,25 @@ export interface KillRow {
   readonly isThroughSmoke: boolean;
 }
 
-/** What a row can be. The axis carries grenades too; a grenade is never a row (§7.1). */
+/**
+ * What a row can be. Four kinds, and the grenade is the one the axis had to itself until #310: the
+ * feed says who threw what, so a cloud on the plate has an author.
+ *
+ * A grenade row carries the throw and nothing about the ending, because that is the fact it states.
+ * §7.1's glyph hangs at the detonation instead — it is drawing where the utility took effect, which
+ * is the other question about the same object.
+ */
 export type RowEvent =
   | ({ readonly kind: 'kill' } & KillRow)
   | { readonly kind: 'plant'; readonly planter: PlayerSlot }
-  | { readonly kind: 'defuse'; readonly defuser: PlayerSlot };
+  | { readonly kind: 'defuse'; readonly defuser: PlayerSlot }
+  | {
+      readonly kind: 'grenade';
+      readonly thrower: PlayerSlot;
+      /** The side that slot held *that* round, the way a kill's two ends carry theirs. */
+      readonly throwerSide: Team | undefined;
+      readonly utility: UtilityKind;
+    };
 
 /**
  * How a row turns a slot into a name. It stays the caller's own because the empty answer is: the
@@ -67,3 +88,16 @@ export interface KillLine {
   readonly attackerSide: Team | undefined;
   readonly victimSide: Team | undefined;
 }
+
+/**
+ * What a hovered row points at on the plate — §5.4's other half, which is one thing at a time.
+ *
+ * It is a union rather than two independent states for exactly that reason: a kill's line and a
+ * grenade's path are answers to the same gesture, and two `useState`s could both be set. A grenade
+ * carries its index into `MatchEvents.grenades` rather than a shape to draw, because the plate is
+ * already drawing that grenade — the hover only says *which one*, and everything about how it looks
+ * stays with the layer that owns it.
+ */
+export type RowFocus =
+  | { readonly kind: 'kill'; readonly line: KillLine }
+  | { readonly kind: 'grenade'; readonly index: number };

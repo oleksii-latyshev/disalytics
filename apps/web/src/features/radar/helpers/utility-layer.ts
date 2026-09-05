@@ -38,6 +38,11 @@ export interface UtilityLayerOptions {
   readonly colors: RadarColors;
   readonly trajectories: TrajectoryVisibility;
   readonly selectedSlot: PlayerSlot | null;
+  /**
+   * The grenade §5.4's feed is pointing at, read at draw time for the reason the view is: a hover
+   * repaints the layers that already exist rather than rebuilding them.
+   */
+  readonly hovered: { readonly current: number | null };
   /** Read at draw time, not captured — DESIGN.md §6.3's zoom is view state, never layer state. */
   readonly view: { readonly current: PlateView };
 }
@@ -58,6 +63,8 @@ interface UtilityDraw {
   /** Rewritten once per frame. */
   tick: Tick;
   scale: number;
+  /** Which grenade the feed is pointing at, or -1. Rewritten once per frame. */
+  hovered: number;
   /** Rewritten once per grenade — where its detonation mark goes, and which grenade it is. */
   markX: number;
   markY: number;
@@ -69,13 +76,19 @@ interface UtilityDraw {
  * §6.2. The object obeys §10.5's trajectories row along with the line, because the two are one
  * drawing of one thing and a grenade with no path under it is a mark with no explanation.
  *
+ * A row the feed is pointing at is the exception the setting does not answer for, the way
+ * `drawHoveredPath` is once the same grenade has landed: the reader asked, so the path is drawn and
+ * takes the utility's own colour to say which row asked.
+ *
  * The head is the last sample the clip reaches, so the whole drawing is a function of `clock.frame`
  * and scrubbing backwards flies the grenade back to the hand that threw it.
  */
 function drawFlight(context: CanvasRenderingContext2D, grenade: Grenade, draw: UtilityDraw): void {
-  const clipCount = isTrajectoryDrawn(draw.trajectories, grenade.thrower, draw.selectedSlot)
-    ? trajectoryClipCount(grenade, draw.tick, draw.tickRate)
-    : 0;
+  const isHovered = draw.index === draw.hovered;
+  const clipCount =
+    isHovered || isTrajectoryDrawn(draw.trajectories, grenade.thrower, draw.selectedSlot)
+      ? trajectoryClipCount(grenade, draw.tick, draw.tickRate)
+      : 0;
 
   if (clipCount < 1) return;
 
@@ -85,7 +98,7 @@ function drawFlight(context: CanvasRenderingContext2D, grenade: Grenade, draw: U
     clipCount,
     draw.overview,
     draw.scale,
-    draw.colors.trajectory,
+    isHovered ? grenadeColor(grenade.type, draw.colors) : draw.colors.trajectory,
   );
 
   const head = clipCount - 1;
@@ -94,6 +107,37 @@ function drawFlight(context: CanvasRenderingContext2D, grenade: Grenade, draw: U
     radarX(draw.overview, sampleAt(grenade.trajectory.x, head)) * draw.scale,
     radarY(draw.overview, sampleAt(grenade.trajectory.y, head)) * draw.scale,
     utilityKindOfGrenade(grenade.type),
+    grenadeColor(grenade.type, draw.colors),
+  );
+}
+
+/**
+ * The path of the grenade the feed is pointing at, once it has landed — §5.4's other half, and the
+ * grenade's answer to a kill row's line.
+ *
+ * Two things it does not do. It is **not gated on §10.5's trajectories row**, for the reason the
+ * kill line is not: the reader asked this question of this row, the answer is one path, and it goes
+ * when the pointer does. And it is **still clipped by `clock.frame`**, so a grenade caught in the
+ * air draws only as far as it has flown — a hover may point something out, it may not show a reader
+ * where a grenade is going to land before it lands.
+ *
+ * It is drawn in the utility's own colour rather than §6.2's white, because a plate mid-round can
+ * hold several paths and the hue is what says this one is the row's.
+ */
+function drawHoveredPath(
+  context: CanvasRenderingContext2D,
+  grenade: Grenade,
+  draw: UtilityDraw,
+): void {
+  const clipCount = trajectoryClipCount(grenade, draw.tick, draw.tickRate);
+  if (clipCount < 1) return;
+
+  drawTrajectory(
+    context,
+    grenade.trajectory,
+    clipCount,
+    draw.overview,
+    draw.scale,
     grenadeColor(grenade.type, draw.colors),
   );
 }
@@ -167,6 +211,8 @@ function drawGrenade(
   grenadeVisual(grenade, draw.tick, draw.tickRate, visual);
   if (visual.phase === null) return;
 
+  draw.index = index;
+
   // In flight: the projectile and its path, no area.
   if (visual.phase === 'flight') {
     drawFlight(context, grenade, draw);
@@ -176,9 +222,12 @@ function drawGrenade(
   // Post-detonation visuals need a position.
   if (grenade.detonationPosition === null) return;
 
+  // Under the area rather than over it: the path is how the utility got here, and the mark on the
+  // ground is what the reader is being pointed at.
+  if (index === draw.hovered) drawHoveredPath(context, grenade, draw);
+
   draw.markX = radarX(draw.overview, grenade.detonationPosition.x) * draw.scale;
   draw.markY = radarY(draw.overview, grenade.detonationPosition.y) * draw.scale;
-  draw.index = index;
 
   drawDetonation(context, grenade, draw);
 }
@@ -192,7 +241,7 @@ function drawGrenade(
  * frame — no allocation in the draw loop.
  */
 export function utilityLayer(options: UtilityLayerOptions): Layer {
-  const { demo, clock, overview, colors, trajectories, selectedSlot, view } = options;
+  const { demo, clock, overview, colors, trajectories, selectedSlot, hovered, view } = options;
   const { events, track } = demo;
   const { grenades } = events;
 
@@ -213,6 +262,7 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
     visual: createVisualScratch(),
     tick: tickAtFrame(track, clock.frame),
     scale: 1,
+    hovered: -1,
     markX: 0,
     markY: 0,
     index: 0,
@@ -224,6 +274,7 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
 
     draw.scale = geometry.scale;
     draw.tick = tickAtFrame(track, clock.frame);
+    draw.hovered = hovered.current ?? -1;
 
     const count = visibleGrenades(grenades, draw.tick, track.tickRate, visibleIndices);
 

@@ -9,7 +9,7 @@ import {
 import { useLocale } from '@disa/i18n';
 import { motion } from '@disa/ui';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { KillLine } from '@/core/events';
+import type { RowFocus } from '@/core/events';
 import { assembly } from '@/core/motion';
 import type { CacheState } from '@/core/parsing';
 import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
@@ -73,8 +73,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
 
   // The feed row the pointer or the keyboard is on, and the one thing on this screen that a *hover*
   // sets — DESIGN.md §5.4. It is discrete state for the same reason the selection is, and the feed
-  // is what clears it: a row cannot report the pointer leaving once the row itself has gone.
-  const [hoveredKill, setHoveredKill] = useState<KillLine | null>(null);
+  // is what clears it: a row cannot report the pointer leaving once the row itself has gone. One
+  // state rather than one per row kind, because only one row is ever pointed at.
+  const [focus, setFocus] = useState<RowFocus | null>(null);
 
   // The brow is the default — DESIGN.md §5.2 — so this is the reader asking for the chip back over
   // the plate, which is the only thing in the product allowed to cover it (§5.1). Every other row
@@ -192,7 +193,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
             frame={frame}
             roundIndex={roundIndex}
             players={demo.header.players}
-            onKillHover={setHoveredKill}
+            onRowFocus={setFocus}
           />
         </div>
       </motion.div>
@@ -207,7 +208,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           demo={demo}
           transport={transport}
           selectedSlot={selectedSlot}
-          hoveredKill={hoveredKill}
+          focus={focus}
           isSuspended={openSheet !== null}
         />
 
