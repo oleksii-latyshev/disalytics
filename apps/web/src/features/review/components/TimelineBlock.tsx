@@ -80,7 +80,7 @@ export function TimelineBlock({
       )}
 
       <section className="surface-card flex flex-col rounded-float">
-        <RoundStrip demo={demo} transport={transport} />
+        <RoundStrip demo={demo} transport={transport} selectedSlot={selectedSlot} />
 
         {/* 64px: the 40px primary control plus 12px either side, which is the whole control row and
             has no slack left in it. */}

@@ -8,6 +8,16 @@ interface Props {
   /** An accessible name, or nothing when a list around the glyph already carries one. */
   label?: string | undefined;
   size?: GlyphSize;
+  /**
+   * Whether the glyph carries its own kind's colour, which it does everywhere it stands for a real
+   * piece of utility.
+   *
+   * A control that *names* the utility facet is the exception: it dims with the container it sits
+   * in, the way `ghost` lets a strip of icon buttons be lit and dimmed by their row, and a colour
+   * this component sets last is one that container cannot beat. It is also a hue that would be
+   * saying `smoke` where the reader is being offered all six.
+   */
+  hasOwnInk?: boolean;
 }
 
 /**
@@ -40,7 +50,7 @@ export const UTILITY_INK: Readonly<Record<UtilityKind, string>> = {
  * The colour is still `UTILITY_INK`'s: the outline says which object, the hue says which kind, and
  * neither is doing the other's job.
  */
-export function UtilityGlyph({ kind, label, size = 'row' }: Props) {
+export function UtilityGlyph({ kind, label, size = 'row', hasOwnInk = true }: Props) {
   const icon = EQUIPMENT_ICONS[UTILITY_ICON[kind]];
   // A square window centred on the icon's own box, so the mark keeps its proportions and the box
   // keeps its width. `preserveAspectRatio` does the fitting; nothing here scales a path.
@@ -54,7 +64,7 @@ export function UtilityGlyph({ kind, label, size = 'row' }: Props) {
       aria-label={label}
       fill="currentColor"
       fillRule="evenodd"
-      className={`${GLYPH_SIZE_CLASS[size]} shrink-0 ${UTILITY_INK[kind]}`}
+      className={`${GLYPH_SIZE_CLASS[size]} shrink-0 ${hasOwnInk ? UTILITY_INK[kind] : ''}`}
     >
       <path d={icon.d} />
     </svg>
