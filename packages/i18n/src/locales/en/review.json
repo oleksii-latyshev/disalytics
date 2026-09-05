@@ -6,6 +6,7 @@
   "bombClock": "Bomb timer",
   "close": "Open another demo",
   "team": "{side} players",
+  "equipment": "Equipment",
   "feed": {
     "label": "Event feed",
     "unknownPlayer": "Unknown player"

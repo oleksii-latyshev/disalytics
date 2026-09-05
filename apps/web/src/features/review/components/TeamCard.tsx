@@ -3,10 +3,12 @@ import {
   type PlayerInfo,
   type PlayerSlot,
   playerRoundStats,
+  roundEquipment,
   type Team,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import type { MoneyShape } from '../helpers/money';
+import { Money } from './Money';
 import { PlayerRow } from './PlayerRow';
 
 /** A side is five rows, and an absent player leaves the row rather than the card. */
@@ -59,13 +61,43 @@ export function TeamCard({
       ? playerRoundStats(demo, roundIndex, selectedSlot)
       : undefined;
 
+  // What the side bought, rather than what its players are carrying: five money figures added up
+  // answer a different question, and adding them up is what this card exists to save the reader.
+  // Warmup has no round and so states nothing — a `$0` there would be a reading rather than an
+  // absence.
+  const equipment = roundIndex === undefined ? undefined : roundEquipment(demo, roundIndex)[side];
+
   return (
     <section
       aria-label={t('review.team', { side })}
       className="surface-card flex min-w-0 flex-col gap-1 rounded-float p-3"
     >
-      {/* A side's name is game vocabulary — never translated, AGENTS.md §11. */}
-      <h2 className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</h2>
+      {/* The head is the side and what it is holding, and **everything on it is one type rank**.
+          §5.1 sizes the plate from this card below the split, so a 12px figure beside an 11px label
+          would grow the line box and take the difference out of the map — which is #278's own
+          finding about a row that measures differently in two states, one size up.
+
+          The word is on screen rather than `sr-only` because every row below carries a money figure
+          too: without it a reader sees two dollar amounts on one card and no way to tell equipment
+          from cash. */}
+      <div className="flex items-center gap-2">
+        {/* A side's name is game vocabulary — never translated, AGENTS.md §11. */}
+        <h2 className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</h2>
+
+        {equipment !== undefined && (
+          <p className="ms-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+            <span className="label-dense text-ink-dim">
+              <Text path="review.equipment" />
+            </span>
+
+            {/* It does not roll: this is a fact about the round rather than a balance moving, and
+                the digits change once a round on a figure nobody is watching change. */}
+            <span className="numeric text-11 text-ink">
+              <Money value={equipment} money={money} shape={shape} isSliding={false} />
+            </span>
+          </p>
+        )}
+      </div>
 
       {/* Below the split the two cards are one strip above the timeline block, so the five seats
           run across it rather than down it. A stacked card there would leave the plate a hundred

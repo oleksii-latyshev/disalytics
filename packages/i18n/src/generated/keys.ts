@@ -139,6 +139,7 @@ export const TRANSLATION_KEYS = [
   'radar.zoomOut',
   'review.bombClock',
   'review.close',
+  'review.equipment',
   'review.feed.label',
   'review.feed.unknownPlayer',
   'review.fullscreen.enter',

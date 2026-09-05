@@ -111,6 +111,40 @@ export function roundSurvivors(demo: ParsedDemo, roundIndex: number): SideSurviv
   return { CT: Math.max(alive.CT, 0), T: Math.max(alive.T, 0) };
 }
 
+/** What each side's equipment was worth at a round's freeze-time end. */
+export type SideEquipment = Record<Team, number>;
+
+/**
+ * What each side had bought by the time a round started, in the game's own dollars.
+ *
+ * This is what a side is *holding*, which is not the money its players are carrying: a side sitting
+ * on $20,000 of cash has saved rather than bought, and the reading that answers "can this side
+ * fight this round" is the equipment.
+ *
+ * Side membership is the round's own economy, read at freeze-time end, for the reason
+ * `roundSurvivors` reads it there: `PlayerInfo.team` is the end-of-match roster and names the wrong
+ * side for every round before the halftime swap. A slot the round recorded no side for stood on
+ * neither and is added to neither.
+ *
+ * The figure is a fact about the round as a whole and it is the same number for the whole of it —
+ * `equipmentValue` is sampled once, at freeze-time end, so during the buy phase this is the buy
+ * being made rather than a running total. A figure that stayed true while a round is fought would
+ * be a new `TickTrack` column and a `SCHEMA_VERSION` bump.
+ */
+export function roundEquipment(demo: ParsedDemo, roundIndex: number | undefined): SideEquipment {
+  const total: SideEquipment = { CT: 0, T: 0 };
+  const round = roundIndex === undefined ? undefined : demo.events.rounds.at(roundIndex);
+  if (round === undefined) return total;
+
+  for (const entry of round.economy) {
+    if (entry.team === null) continue;
+
+    total[entry.team] += entry.equipmentValue;
+  }
+
+  return total;
+}
+
 /**
  * What one player did in one round. The rule lives here rather than in the component that shows it:
  * a count of kills between two ticks is the kind of thing that ends up written twice and drifting.

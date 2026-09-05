@@ -44,8 +44,8 @@ export {
   DEFAULT_BOMB_TIMER_SECONDS,
   roundClockAtFrame,
 } from './helpers/round-clock';
-export type { PlayerRoundStats, SideSurvivors } from './helpers/round-stats';
-export { playerRoundStats, roundSurvivors } from './helpers/round-stats';
+export type { PlayerRoundStats, SideEquipment, SideSurvivors } from './helpers/round-stats';
+export { playerRoundStats, roundEquipment, roundSurvivors } from './helpers/round-stats';
 export type { MatchScore, SideScore } from './helpers/score';
 export { matchScore, sideScoreAtFrame } from './helpers/score';
 export type { MatchSegment } from './helpers/segments';
