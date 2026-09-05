@@ -13,6 +13,8 @@ import { stubPath2D } from './canvas-globals';
 stubPath2D();
 
 const PLATE: PlateBounds = { left: 0, top: 0, width: 640, height: 640 };
+/** The mark's reserved box plus its gap — what a name's own width is measured on top of. */
+const WEAPON_BOX_WIDTH = 34;
 const LABEL_WIDTH = 60;
 const TOKEN_RADIUS = 8;
 
@@ -112,6 +114,9 @@ describe('labelPlacer', () => {
 interface Drawn {
   readonly text: string[];
   readonly textX: number[];
+  readonly textY: number[];
+  /** The ink each reading was filled with, so a figure's colour is checkable beside its position. */
+  readonly ink: string[];
   /** Where each weapon mark was translated to, which is the only placement it has. */
   readonly markX: number[];
   /** One entry per weapon mark drawn — a `fill` taking a path, which nothing else in the pass does. */
@@ -119,12 +124,13 @@ interface Drawn {
 }
 
 function newDrawn(): Drawn {
-  return { text: [], textX: [], markX: [], marks: [] };
+  return { text: [], textX: [], textY: [], ink: [], markX: [], marks: [] };
 }
 
 /** Only what the pass touches. What it draws is recorded; the rest is a sink. */
 function newContext(drawn: Drawn): CanvasRenderingContext2D {
   const ignore = () => {};
+  let ink = '';
 
   return {
     font: '',
@@ -133,13 +139,20 @@ function newContext(drawn: Drawn): CanvasRenderingContext2D {
     lineWidth: 0,
     lineJoin: 'round',
     strokeStyle: '',
-    fillStyle: '',
+    set fillStyle(value: string) {
+      ink = value;
+    },
+    get fillStyle() {
+      return ink;
+    },
     globalAlpha: 1,
     measureText: (text: string) => ({ width: text.length * 6 }),
     strokeText: ignore,
-    fillText: (text: string, x: number) => {
+    fillText: (text: string, x: number, y: number) => {
       drawn.text.push(text);
       drawn.textX.push(x);
+      drawn.textY.push(y);
+      drawn.ink.push(ink);
     },
     save: ignore,
     restore: ignore,
@@ -152,8 +165,12 @@ function newContext(drawn: Drawn): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D;
 }
 
-const STYLE = { font: `10px sans-serif`, detailFont: `9px monospace` };
-const COLORS = { halo: '#halo', ink: '#ink' };
+const STYLE = {
+  font: `10px sans-serif`,
+  detailFont: `9px monospace`,
+  damageFont: `10px monospace`,
+};
+const COLORS = { halo: '#halo', ink: '#ink', damage: '#damage' };
 
 /** Two players, the second of them wherever the caller puts it. */
 function subjectAt(
@@ -162,6 +179,7 @@ function subjectAt(
   weapon: WeaponClass | null = 'rifle',
   detail: string | null = null,
   icon: WeaponIconId | undefined = undefined,
+  damage: readonly number[] = [],
 ) {
   return {
     isNamed: () => true,
@@ -172,6 +190,8 @@ function subjectAt(
     icon: () => icon,
     // The round goes under the selected player's name, which for these fixtures is the first slot.
     detail: (slot: number) => (slot === 0 ? detail : null),
+    damage: (slot: number) => damage[slot] ?? 0,
+    damageLife: (slot: number) => ((damage[slot] ?? 0) > 0 ? 1 : 0),
   };
 }
 
@@ -328,5 +348,115 @@ describe("the selected player's round", () => {
     // Three frames of the same round cost one measurement, not three: `measureText` allocates a
     // `TextMetrics`, and this runs inside a draw.
     expect(measured - afterNames).toBe(1);
+  });
+});
+
+describe('the figure a hit leaves', () => {
+  const pass = () => {
+    const built = labelPass(['s1mple', 'ropz'], 2, STYLE, COLORS);
+    built.measure(newContext(newDrawn()));
+
+    return built;
+  };
+
+  /** The box a reading was written into, from where the pass put its text. */
+  function boxOf(drawn: Drawn, index: number) {
+    const text = drawn.text[index] ?? '';
+    const isFigure = /^\d+$/.test(text);
+    const width = isFigure ? text.length * 6 + 4 : WEAPON_BOX_WIDTH + text.length * 6 + 4;
+
+    return {
+      left: (drawn.textX[index] ?? 0) - 2,
+      top: (drawn.textY[index] ?? 0) - LABEL_HEIGHT_PX / 2,
+      width,
+    };
+  }
+
+  it('writes what a hit took, in the damage ink, beside the token that took it', () => {
+    const drawn = newDrawn();
+
+    pass().draw(
+      newContext(drawn),
+      PLATE,
+      subjectAt(400, 400, 'rifle', null, undefined, [0, 42]),
+      TOKEN_RADIUS,
+    );
+
+    expect(drawn.text).toEqual(['s1mple', 'ropz', '42']);
+    expect(drawn.ink.at(-1)).toBe('#damage');
+  });
+
+  it('says nothing for a slot that has taken nothing, and nothing about a hit that has gone', () => {
+    const drawn = newDrawn();
+
+    pass().draw(
+      newContext(drawn),
+      PLATE,
+      subjectAt(400, 400, 'rifle', null, undefined, [0, 0]),
+      TOKEN_RADIUS,
+    );
+
+    expect(drawn.text).toEqual(['s1mple', 'ropz']);
+  });
+
+  it('gives way to the names rather than writing over one', () => {
+    const drawn = newDrawn();
+
+    // Both players on one point, both just hit: the four boxes have to share the ring of candidate
+    // positions the placer keeps, and the two names are the ones already down when the figures ask.
+    pass().draw(
+      newContext(drawn),
+      PLATE,
+      subjectAt(320, 320, 'rifle', null, undefined, [17, 89]),
+      TOKEN_RADIUS,
+    );
+
+    expect(drawn.text).toEqual(['s1mple', 'ropz', '17', '89']);
+
+    for (let a = 0; a < drawn.text.length; a++) {
+      for (let b = a + 1; b < drawn.text.length; b++) {
+        const first = boxOf(drawn, a);
+        const second = boxOf(drawn, b);
+
+        const overlapping =
+          first.left < second.left + second.width &&
+          first.left + first.width > second.left &&
+          first.top < second.top + LABEL_HEIGHT_PX &&
+          first.top + LABEL_HEIGHT_PX > second.top;
+
+        expect(overlapping, `${drawn.text[a]} overlaps ${drawn.text[b]}`).toBe(false);
+      }
+    }
+  });
+
+  it('measures the figure once for every reading rather than once a frame', () => {
+    let measured = 0;
+    const drawn = newDrawn();
+    const context = newContext(drawn);
+    const spied = new Proxy(context, {
+      get(target, key) {
+        if (key === 'measureText') {
+          return (text: string) => {
+            measured += 1;
+
+            return { width: text.length * 6 };
+          };
+        }
+
+        return Reflect.get(target, key);
+      },
+    }) as CanvasRenderingContext2D;
+
+    const built = labelPass(['s1mple', 'ropz'], 2, STYLE, COLORS);
+    built.measure(spied);
+    const afterNames = measured;
+
+    // A spray climbs: three frames, three different readings, and the face is tabular, so the width
+    // of all three is the one digit measured with the names.
+    built.draw(spied, PLATE, subjectAt(400, 400, 'rifle', null, undefined, [0, 27]), TOKEN_RADIUS);
+    built.draw(spied, PLATE, subjectAt(400, 400, 'rifle', null, undefined, [0, 54]), TOKEN_RADIUS);
+    built.draw(spied, PLATE, subjectAt(400, 400, 'rifle', null, undefined, [0, 108]), TOKEN_RADIUS);
+
+    expect(measured - afterNames).toBe(0);
   });
 });

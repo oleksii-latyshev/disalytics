@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { paintLayers } from '@/core/renderer';
 import type { RadarColors } from '../helpers/colors';
+import { readLabelStyle } from '../helpers/labels';
 import { MARK_HEIGHT_PX, MARK_WIDTH_PX, type PlateMark } from '../helpers/plate-legend';
 
 interface Props {
@@ -24,7 +25,10 @@ export function PlateMarkSwatch({ mark, colors }: Props) {
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
-    paintLayers(canvas, [(context) => mark.draw(context, colors)], {
+    // Resolved here rather than inside the draw, the way the colours are: a mark reads no CSS.
+    const style = readLabelStyle();
+
+    paintLayers(canvas, [(context) => mark.draw(context, colors, style)], {
       width: MARK_WIDTH_PX,
       height: MARK_HEIGHT_PX,
     });

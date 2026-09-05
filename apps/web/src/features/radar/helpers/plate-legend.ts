@@ -1,9 +1,10 @@
 import { FIRE_AREA_ALPHA, SMOKE_AREA_ALPHA, UTILITY_NAMES } from '@disa/demo-core';
 import type { RadarColors } from './colors';
+import { drawDamageFigure } from './damage-figure';
 import { drawGrenadeMark, drawWeaponMark } from './equipment-marks';
 import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
-import { haloStroke } from './labels';
+import { haloStroke, type LabelStyle } from './labels';
 import {
   DEAD_ALPHA,
   DEAD_RADIUS_FRACTION,
@@ -73,6 +74,16 @@ const AREA_RADIUS_PX = 11;
 /** Part-way through, so a mark that counts something down is shown counting rather than full. */
 const PART_WAY = 0.6;
 
+/**
+ * The hit's swatch: a token left of centre with its figure where the plate would place one, and a
+ * specimen big enough to read as an exchange rather than as a graze. It is a numeral rather than a
+ * message — the digits are the same reading in both locales — the way `PART_WAY` above is a phase
+ * rather than a duration.
+ */
+const HIT_TOKEN_X = 18;
+const HIT_FIGURE_X = HIT_TOKEN_X + TOKEN_RADIUS_PX + 6;
+const HIT_FIGURE = '89';
+
 export type PlateMarkId =
   | 'player'
   | 'weapon'
@@ -99,7 +110,16 @@ export interface PlateMark {
    * `demo-core` untranslated — `AGENTS.md` §11.
    */
   readonly vocabulary?: string;
-  readonly draw: (context: CanvasRenderingContext2D, colors: RadarColors) => void;
+  /**
+   * The style arrives with the colours rather than being read here, for the reason the colours do:
+   * the caller resolves the document once, outside the paint, and a mark that draws no text ignores
+   * it.
+   */
+  readonly draw: (
+    context: CanvasRenderingContext2D,
+    colors: RadarColors,
+    style: LabelStyle,
+  ) => void;
 }
 
 /**
@@ -178,9 +198,21 @@ export const PLATE_MARKS: readonly PlateMark[] = [
   },
   {
     id: 'hit',
-    draw: (context, colors) => {
-      drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.damage);
+    draw: (context, colors, style) => {
+      drawToken(context, HIT_TOKEN_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
+      drawToken(context, HIT_TOKEN_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.damage);
+
+      haloStroke(context, colors.label.halo);
+      context.textAlign = 'left';
+      context.textBaseline = 'middle';
+      drawDamageFigure(
+        context,
+        HIT_FIGURE_X,
+        CENTRE_Y,
+        HIT_FIGURE,
+        style.damageFont,
+        colors.label.damage,
+      );
     },
   },
   {

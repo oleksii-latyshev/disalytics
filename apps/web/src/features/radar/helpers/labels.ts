@@ -1,6 +1,7 @@
 import type { PlayerInfo, WeaponClass, WeaponIconId } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
 import { readCssToken } from '@/shared/lib';
+import { damageFigure, drawDamageFigure } from './damage-figure';
 import { drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { labelPlacer } from './label-placer';
 import type { PlateBounds } from './view';
@@ -63,12 +64,19 @@ export interface LabelStyle {
   readonly font: string;
   /** One rank down for the round's numbers, so the name stays the label's first reading. */
   readonly detailFont: string;
+  /**
+   * The hit's figure, at the name's own size in the mono face: every number in the product is
+   * tabular, and this one is read at a glance beside a token rather than under a name.
+   */
+  readonly damageFont: string;
 }
 
 /** Behind the name rather than around it: a halo, not the chip #111 shipped — DESIGN.md §6.1. */
 export interface LabelColors {
   readonly halo: string;
   readonly ink: string;
+  /** What a hit took, beside the token that took it — the same token the flash on it is drawn in. */
+  readonly damage: string;
 }
 
 /**
@@ -84,6 +92,7 @@ export function readLabelStyle(): LabelStyle {
   return {
     font: `${LABEL_SIZE_PX}px ${readCssToken('--font-ui')}`,
     detailFont: `${DETAIL_SIZE_PX}px ${readCssToken('--font-mono')}`,
+    damageFont: `${LABEL_SIZE_PX}px ${readCssToken('--font-mono')}`,
   };
 }
 
@@ -136,6 +145,10 @@ export interface LabelSubject {
    * message catalogue and a draw may not allocate one.
    */
   detail(slot: number): string | null;
+  /** What this slot has just taken, in whole health, or 0 where it has taken nothing lately. */
+  damage(slot: number): number;
+  /** How much of that figure's life is left — 1 while it holds, 0 once it has gone. */
+  damageLife(slot: number): number;
 }
 
 export interface LabelPass {
@@ -174,8 +187,16 @@ export function labelPass(
   style: LabelStyle,
   colors: LabelColors,
 ): LabelPass {
-  const placer = labelPlacer(slotCount, LABEL_HEIGHT_PX);
+  // Two boxes a slot, not one: a hit puts a figure beside a name, and a placer told to hold ten
+  // boxes stops keeping track after the tenth — the eleventh is then placed against nothing and
+  // lands on whatever is already there.
+  const placer = labelPlacer(slotCount * 2, LABEL_HEIGHT_PX);
   const widths = new Float32Array(slotCount);
+
+  /* The figure's face is tabular, so a width is its digit count rather than a measurement: one
+     `measureText` in `measure` below answers for all thousand readings, where measuring each would
+     have been a thousand `TextMetrics` for a number that is three characters long. */
+  let digitWidth = 0;
 
   /* The detail's width, cached against the string it was measured from. It cannot join `widths`
      above — those are measured once per demo, and this changes every round — and it may not be
@@ -270,6 +291,51 @@ export function labelPass(
     write(context, label, subject.weapon(slot), subject.icon(slot), subject.alpha(slot), detail);
   }
 
+  /**
+   * The figure beside a token that has just been hit. It is a box of its own rather than a third
+   * line under the name, and it goes through the same placer, so it can sit on whichever side of
+   * the token is free — DESIGN.md §6.1 moves a label on a collision and never the token.
+   *
+   * Every name is placed before any figure, which is what the acceptance criterion asking that it
+   * "must not cover the name" comes to in a placer: a box placed later gives way to the boxes
+   * already down, so the figure moves for the names rather than the other way round.
+   */
+  function placeDamage(
+    context: CanvasRenderingContext2D,
+    slot: number,
+    bounds: PlateBounds,
+    subject: LabelSubject,
+    tokenRadius: number,
+  ): void {
+    if (!subject.isNamed(slot)) return;
+
+    const life = subject.damageLife(slot);
+    if (life <= 0) return;
+
+    const text = damageFigure(subject.damage(slot));
+    if (text === undefined) return;
+
+    const tokenX = subject.x(slot);
+    const tokenY = subject.y(slot);
+    if (!isOnPlate(tokenX, tokenY, bounds)) return;
+
+    const width = text.length * digitWidth + 2 * LABEL_HALO_PX;
+    placer.place(tokenX, tokenY, tokenRadius, width, bounds);
+
+    // The figure fades over match time along with the token's own flash, so scrubbing backwards
+    // through a spray counts it up again rather than replaying a wall-clock animation.
+    context.globalAlpha = subject.alpha(slot) * life;
+    drawDamageFigure(
+      context,
+      placer.x + LABEL_HALO_PX,
+      placer.y + LABEL_HEIGHT_PX / 2,
+      text,
+      style.damageFont,
+      colors.damage,
+    );
+    context.font = style.font;
+  }
+
   return {
     measure(context): void {
       context.font = style.font;
@@ -282,6 +348,10 @@ export function labelPass(
             ? 0
             : WEAPON_BOX_PX + context.measureText(label).width + 2 * LABEL_HALO_PX;
       }
+
+      context.font = style.damageFont;
+      digitWidth = context.measureText('0').width;
+      context.font = style.font;
     },
 
     draw(context, bounds, subject, tokenRadius): void {
@@ -296,6 +366,10 @@ export function labelPass(
 
       for (let slot = 0; slot < slotCount; slot++) {
         place(context, slot, bounds, subject, tokenRadius);
+      }
+
+      for (let slot = 0; slot < slotCount; slot++) {
+        placeDamage(context, slot, bounds, subject, tokenRadius);
       }
     },
   };
