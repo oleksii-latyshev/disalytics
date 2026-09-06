@@ -121,6 +121,59 @@ describe('catalog metadata', () => {
     expect(parseCatalog(bytes)).toEqual([entry('a:2', 1, 2)]);
   });
 
+  // The migration this file exists to protect: a catalog written before the round shape and the
+  // duration arrived keeps every entry and every card, and states two things fewer.
+  it('reads metadata written before the later fields as metadata without them', () => {
+    const bytes = new TextEncoder().encode(
+      JSON.stringify([
+        {
+          key: 'a:2',
+          byteLength: 1,
+          lastUsedAt: 2,
+          meta: {
+            fileName: 'match.dem',
+            map: 'de_mirage',
+            roundCount: 24,
+            score: { startedCt: 13, startedT: 11 },
+            storedAt: 1_700_000_000_000,
+          },
+        },
+      ]),
+    );
+
+    expect(parseCatalog(bytes)).toEqual([{ ...entry('a:2', 1, 2), meta: meta() }]);
+  });
+
+  it('carries the round shape and the duration through a write and a read', () => {
+    const entries = [named('a:2', 1, { winners: ['ct', 't', 'ct'], durationSeconds: 1834.5 })];
+
+    expect(parseCatalog(serialiseCatalog(entries))).toEqual(entries);
+  });
+
+  // A malformed later field costs that field and nothing else — the same rule one level down.
+  it('drops a round shape it cannot read without dropping the entry', () => {
+    const bytes = new TextEncoder().encode(
+      JSON.stringify([
+        {
+          key: 'a:2',
+          byteLength: 1,
+          lastUsedAt: 2,
+          meta: {
+            fileName: 'match.dem',
+            map: 'de_mirage',
+            roundCount: 24,
+            score: { startedCt: 13, startedT: 11 },
+            storedAt: 1_700_000_000_000,
+            winners: ['ct', 'nonsense'],
+            durationSeconds: 'a while',
+          },
+        },
+      ]),
+    );
+
+    expect(parseCatalog(bytes)).toEqual([{ ...entry('a:2', 1, 2), meta: meta() }]);
+  });
+
   it('keeps the name when a read moves an entry to the front', () => {
     const entries = withUse([named('a:2', 1)], { key: 'a:2', byteLength: 20, lastUsedAt: 9 });
 

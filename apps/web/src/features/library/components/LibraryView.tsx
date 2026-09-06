@@ -16,11 +16,18 @@ interface Props {
 
 /**
  * Every demo this device holds. The way-in card keeps the five most recent; this screen is where all
- * of them live, **as a grid of cards rather than a list of rows**: a row is a filing cabinet, and a
- * card can carry the map, which is how a reader recognises a match they downloaded a week ago.
+ * of them live, **as a wall of cards rather than a list of rows**: a row is a filing cabinet, and a
+ * card can carry the map and the shape of the match, which is how a reader recognises one they
+ * opened a week ago.
  *
- * The track floor is what keeps the grid honest at both ends — one column on a phone, and never the
- * two columns at 1024 that the rail turns into a row to avoid.
+ * **The wall is a grid, because the cards are all the same height.** Each card clamps its own parts
+ * to a fixed number of lines and its strip fills the width rather than wrapping, so there is nothing
+ * for a masonry to pack: multicol was built and measured first and saved 29px of 623 on seven cards,
+ * which is not worth what it costs — the eye reads down a column before it reads across, where a
+ * list sorted by recency wants to be read the other way.
+ *
+ * The track floor is what keeps it honest at both ends — one column on a phone, and never the two
+ * stretched columns at 1024 that the rail turns into a row to avoid.
  *
  * An entry with no metadata, a stale `SCHEMA_VERSION` or a file that has gone never reaches here:
  * the store drops all three, so a card that cannot be opened is never drawn.

@@ -119,6 +119,7 @@ export const TRANSLATION_KEYS = [
   'library.samples.size',
   'library.samples.teams',
   'library.samples.title',
+  'library.saved.duration',
   'library.saved.gone.hint',
   'library.saved.gone.title',
   'library.saved.note',

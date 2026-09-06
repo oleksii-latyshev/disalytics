@@ -13,6 +13,14 @@ export function megabytesOf(byteLength: number): number {
   return byteLength / BYTES_PER_MEGABYTE;
 }
 
+/**
+ * A match's length as whole minutes. Rounded rather than truncated, and the unit belongs to the
+ * message: `min` and `мин` are different strings.
+ */
+export function minutesOf(durationSeconds: number): number {
+  return Math.round(durationSeconds / 60);
+}
+
 export function visibleDemos(demos: readonly SavedDemo[]): readonly SavedDemo[] {
   return demos.slice(0, RECENT_COUNT);
 }

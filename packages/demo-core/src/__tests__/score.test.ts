@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchScore, sideScoreAtFrame } from '../helpers/score';
+import { matchScore, roundWinners, sideScoreAtFrame } from '../helpers/score';
 import {
   asPlayerSlot,
   asTick,
@@ -52,6 +52,40 @@ function newDemo(specs: readonly RoundSpec[]): ParsedDemo {
 function half(count: number, winner: Team, sides: typeof FIRST_HALF): RoundSpec[] {
   return Array.from({ length: count }, () => ({ winner, ...sides }));
 }
+
+describe('roundWinners', () => {
+  it('is empty for a demo with no rounds', () => {
+    expect(roundWinners(newDemo([]))).toEqual([]);
+  });
+
+  it('names the team that won each round, in order', () => {
+    const demo = newDemo([
+      { winner: 'CT', ...FIRST_HALF },
+      { winner: 'T', ...FIRST_HALF },
+      { winner: 'CT', ...FIRST_HALF },
+    ]);
+
+    expect(roundWinners(demo)).toEqual(['ct', 't', 'ct']);
+  });
+
+  // The same team wins every round here, on CT and then on T. A side count would read the second
+  // half onto the other team — #141 — and the shape a card draws would change hands at halftime.
+  it('follows a team across the halftime swap', () => {
+    const demo = newDemo([...half(2, 'CT', FIRST_HALF), ...half(2, 'CT', SECOND_HALF)]);
+
+    expect(roundWinners(demo)).toEqual(['ct', 'ct', 't', 't']);
+  });
+
+  it('agrees with the score it is counted into', () => {
+    const demo = newDemo([...half(8, 'CT', FIRST_HALF), ...half(5, 'T', SECOND_HALF)]);
+    const winners = roundWinners(demo);
+    const score = matchScore(demo);
+
+    expect(winners).toHaveLength(13);
+    expect(winners.filter((winner) => winner === 'ct')).toHaveLength(score.startedCt);
+    expect(winners.filter((winner) => winner === 't')).toHaveLength(score.startedT);
+  });
+});
 
 describe('matchScore', () => {
   it('is zero to zero for a demo with no rounds', () => {

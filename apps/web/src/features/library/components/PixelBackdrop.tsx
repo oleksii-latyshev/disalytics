@@ -36,6 +36,21 @@ const READING_SCRIM =
 interface Props {
   /** The drag acknowledgement, which lifts the ground the way the plate used to be lifted. */
   isLifted: boolean;
+  /**
+   * Whether the screen showing is one the field belongs to.
+   *
+   * **It belongs to the way in and to nothing else.** The library and the two unbuilt screens are
+   * pages of text, and text on a moving field is text with no ground: measured against the shader's
+   * brightest possible cell, the library's body copy read **1.12** and its headings **2.26** against
+   * §14's floor of 4.5. A veil over the field was the first answer and the owner's is better — those
+   * screens stand on the app's own ground and the field is not drawn at all.
+   *
+   * Hidden, this makes no context, compiles no shader, fetches no texture and schedules no frame:
+   * the effect returns before any of it. Coming back costs a **median 36.6 ms** to a painted field
+   * over five passes, which is two frames of a view change nobody is waiting inside — cheaper than
+   * holding a WebGL context alive across every other screen for the session.
+   */
+  isShown: boolean;
 }
 
 /**
@@ -56,14 +71,14 @@ interface Props {
  * frame allocates**: the uniforms are the objects created at mount, written in place, which is the
  * rule the plate's own draw obeys.
  */
-export function PixelBackdrop({ isLifted }: Props) {
+export function PixelBackdrop({ isLifted, isShown }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [motion] = useSetting('motion');
 
   useEffect(() => {
     const host = hostRef.current;
     const level = getMapOverview(BACKDROP_MAP)?.levels[0];
-    if (host === null || level === undefined) return;
+    if (host === null || level === undefined || !isShown) return;
 
     // **The canvas is the renderer's own and lives as long as this effect does.** Handing `ogl` a
     // canvas from the tree looks tidier and cannot work: a canvas hands back the context it already
@@ -164,11 +179,12 @@ export function PixelBackdrop({ isLifted }: Props) {
       document.removeEventListener('visibilitychange', follow);
       release();
     };
-  }, [motion]);
+  }, [motion, isShown]);
 
   return (
     <div
       aria-hidden="true"
+      hidden={!isShown}
       className={`pointer-events-none fixed inset-0 transition-opacity duration-(--duration-panel) ease-out ${
         isLifted ? 'opacity-100' : 'opacity-90'
       }`}

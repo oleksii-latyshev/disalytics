@@ -1,4 +1,4 @@
-import type { MatchScore } from '@disa/demo-core';
+import type { MatchScore, OpeningSide } from '@disa/demo-core';
 import { schemaVersionOf } from './fingerprint';
 import { isRecord } from './guards';
 
@@ -14,6 +14,18 @@ export interface CatalogMeta {
   roundCount: number;
   score: MatchScore;
   storedAt: number;
+  /**
+   * Who won each round, in order, named by the side each team opened on — `roundWinners`, which is
+   * also what `score` is counted over, so the shape and the numbers cannot disagree.
+   *
+   * **Optional, and that is the migration.** A catalog written before this field loses a reading on
+   * its cards and keeps its entries: a demo already on the device opens exactly as it did, and the
+   * field arrives the next time that demo is stored. Making it required would have taken `isMeta`
+   * with it, and an entry that fails that guard is one the library stops listing.
+   */
+  winners?: readonly OpeningSide[];
+  /** How long the match ran, first round to last, in seconds. Optional for the same reason. */
+  durationSeconds?: number;
 }
 
 export interface CatalogEntry {
@@ -60,15 +72,53 @@ function isScore(value: unknown): value is MatchScore {
   );
 }
 
-function isMeta(value: unknown): value is CatalogMeta {
-  return (
-    isRecord(value) &&
-    typeof value.fileName === 'string' &&
-    typeof value.map === 'string' &&
-    typeof value.roundCount === 'number' &&
-    typeof value.storedAt === 'number' &&
-    isScore(value.score)
-  );
+function isOpeningSide(value: unknown): value is OpeningSide {
+  return value === 'ct' || value === 't';
+}
+
+/** Absent is valid; present and malformed is not, and costs that one field rather than the entry. */
+function winnersIn(value: unknown): readonly OpeningSide[] | undefined {
+  return Array.isArray(value) && value.every(isOpeningSide) ? value : undefined;
+}
+
+function secondsIn(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+/**
+ * The metadata an entry carries, or nothing when the five fields a card cannot do without are not
+ * all there.
+ *
+ * It is written as a reader rather than as a type guard on purpose. A guard would have to claim
+ * `winners` and `durationSeconds` are what the type says while checking neither, and the alternative
+ * — adding them to the guard — is the one thing this must not do: a field that arrived after a
+ * catalog was written would then cost that catalog every entry in it, and those entries are cached
+ * demos. Absent and malformed both normalise to absent, and a card states less.
+ */
+function toMeta(value: unknown): CatalogMeta | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.fileName !== 'string' ||
+    typeof value.map !== 'string' ||
+    typeof value.roundCount !== 'number' ||
+    typeof value.storedAt !== 'number' ||
+    !isScore(value.score)
+  ) {
+    return undefined;
+  }
+
+  const winners = winnersIn(value.winners);
+  const durationSeconds = secondsIn(value.durationSeconds);
+
+  return {
+    fileName: value.fileName,
+    map: value.map,
+    roundCount: value.roundCount,
+    score: value.score,
+    storedAt: value.storedAt,
+    ...(winners === undefined ? {} : { winners }),
+    ...(durationSeconds === undefined ? {} : { durationSeconds }),
+  };
 }
 
 /**
@@ -92,7 +142,9 @@ function toEntry(value: unknown): CatalogEntry | null {
     lastUsedAt: value.lastUsedAt,
   };
 
-  return isMeta(value.meta) ? { ...entry, meta: value.meta } : entry;
+  const meta = toMeta(value.meta);
+
+  return meta === undefined ? entry : { ...entry, meta };
 }
 
 /** A catalog that cannot be read is an empty one: the files it described are pruned as orphans. */

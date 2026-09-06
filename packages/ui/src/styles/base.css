@@ -57,6 +57,25 @@ pre {
   box-shadow: 0 0 0 1px var(--color-line);
 }
 
+/* The ground under a page of text on the way in's shell — the library, and the two screens that are
+   coming. The pixel field belongs to the upload view and is not drawn here at all, which left those
+   screens on flat `--surface-0`; this is the one mark that keeps them from reading as an empty box.
+
+   It is the *entrance's* own violet rather than a data colour, which is the same narrowing #332
+   took for `--color-pixel-1/2`: these screens show no match, so there is nothing a hue could be
+   confused with, and the review screen never sees it.
+
+   Fixed rather than absolute because the content above it scrolls: an absolutely positioned wash
+   inside the scroll container would leave the light at the top of the *document* rather than at the
+   top of the screen. */
+.surface-vignette {
+  background: radial-gradient(
+    120% 80% at 50% -10%,
+    color-mix(in srgb, var(--color-pixel-2) 16%, transparent) 0%,
+    transparent 62%
+  );
+}
+
 /* The way in's card, alive: a light travelling once around its edge.
 
    It is the only animated border in the product, and this card is the only place one belongs — every

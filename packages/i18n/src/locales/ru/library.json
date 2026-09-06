@@ -30,6 +30,7 @@
     "note": "Уже открывались и хранятся в этом браузере. Удаление стирает сохранённую копию — файл .dem на диске остаётся на месте.",
     "score": "{startedCt} : {startedT}",
     "rounds": "{count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}",
+    "duration": "{minutes} мин",
     "storedAt": "{when, date, medium}",
     "size": "{megabytes, number, ::.#} МБ",
     "open": "Показать {map}, сохранённое на этом устройстве",

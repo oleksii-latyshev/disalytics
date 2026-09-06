@@ -120,6 +120,10 @@ describe('the demo store', () => {
         map: 'de_mirage',
         roundCount: 1,
         score: { startedCt: 1, startedT: 0 },
+        // What a library card draws: who won each round, and how long the match ran. The fixture is
+        // one round of 1,000 ticks at 64, won by the side that opened on CT.
+        winners: ['ct'],
+        durationSeconds: 1000 / 64,
       }),
     ]);
     expect(catalogOf(backend)[0]?.meta?.fileName).toBe('match.dem');
