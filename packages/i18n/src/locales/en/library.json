@@ -20,7 +20,9 @@
     "restoring": "Opening from cache",
     "storing": "Saving it for the next visit.",
     "unavailable": "Not saved on this device. Opening it again will read the whole demo.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "downloading": "Downloading the match",
+    "downloadPercent": "{percent}%"
   },
   "saved": {
     "title": "On this device",
@@ -67,5 +69,16 @@
     "cacheTotal": "These demos take {used, number} MB of the {limit, number} MB this app keeps.",
     "estimate": "Your browser estimates {used, number} MB in use for this site, out of about {quota, number} MB.",
     "persistence": "The browser may clear this cache to make room. A demo it clears is read from the file again."
+  },
+  "samples": {
+    "title": "Matches to try",
+    "note": "A professional match, ready to open — no demo of your own needed. Opening one downloads it once and keeps it on this device, where you can remove it like any other.",
+    "teams": "{home} vs {away}",
+    "size": "{megabytes, number, ::.#} MB download",
+    "open": "Open {home} against {away} on {map}, downloading {megabytes, number, ::.#} MB",
+    "gone": {
+      "title": "That match could not be downloaded.",
+      "hint": "The connection dropped, or this build no longer serves it. Try again, or open a demo of your own."
+    }
   }
 }

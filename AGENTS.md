@@ -175,9 +175,12 @@ bun run wasm:smoke           # call into the built binary — proves it runs, no
                              # DISALYTICS_FIXTURE_DEMO also checks the shape it hands to JavaScript
 bun run mapdata:generate     # map constants from Valve overview files, plus the themed radars
 bun run icons:generate       # weapon outlines from Valve's icons, simplified into one table
+bun run samples:generate     # the library's sample matches, rebuilt from local .dem files
+                             # DISALYTICS_SAMPLE_DIR names the directory holding them
 bun run i18n:check           # fail on a missing, orphaned or unread key; regenerate the union
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
 bun run bitfields:check      # fail when the FLAG_* / GRENADE_* bits disagree between the two
+bun run samples:check        # fail when a committed sample container is not this SCHEMA_VERSION
 bun run tokens:check         # fail on a class or a var(--…) the built stylesheet never defined
                              # reads apps/web/dist, so it needs a build first
 bun run size                 # bundle + wasm sizes against budgets (§16)
@@ -1152,7 +1155,8 @@ No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
-`errors:check` → `bitfields:check` → `test` → restore-or-build the parser → `build` →
+`errors:check` → `bitfields:check` → `samples:check` → `test` → restore-or-build the parser →
+`build` →
 `tokens:check` → `size` gate, in one job, in that order. `tokens:check` sits after the build because
 it reads the stylesheet Tailwind emitted rather than the sources. Bun's install cache is keyed on
 `bun.lock`. A push to `main` carries `paths-ignore: crates/**`, so a parser-only commit does not run

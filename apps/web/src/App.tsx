@@ -28,7 +28,13 @@ export function App() {
           onClose={parse.close}
         />
       ) : (
-        <WayIn state={state} onFile={parse.open} onEnter={parse.openSaved} onClose={parse.close} />
+        <WayIn
+          state={state}
+          onFile={parse.open}
+          onEnter={parse.openSaved}
+          onSample={parse.openSample}
+          onClose={parse.close}
+        />
       )}
     </MotionProvider>
   );

@@ -21,11 +21,14 @@
     "wasm:smoke": "bun tools/scripts/wasm-smoke.ts",
     "size": "bun tools/scripts/size.ts",
     "repo:labels": "bun tools/scripts/labels.ts",
-    "repo:milestones": "bun tools/scripts/milestones.ts"
+    "repo:milestones": "bun tools/scripts/milestones.ts",
+    "samples:generate": "bun tools/scripts/samples-generate.ts",
+    "samples:check": "bun tools/scripts/samples-check.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
     "@disa/demo-core": "*",
+    "@disa/demo-store": "*",
     "@types/bun": "^1.3.6",
     "@types/pngjs": "^6.0.5",
     "lefthook": "^2.1.10",

@@ -27,7 +27,9 @@ export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDrag
         </div>
       );
     case 'restoring':
-      return <RestoreProgress fileName={state.fileName} onCancel={onClose} />;
+      return (
+        <RestoreProgress fileName={state.fileName} download={state.download} onCancel={onClose} />
+      );
     case 'parsing':
       return (
         <ParseProgress

@@ -25,7 +25,7 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | Constraint | Value | Kind | Why it exists |
 |---|---|---|---|
 | No server ever sees a `.dem` | absolute | **hard** — product definition | The whole promise of the product. It is also why hosting is an assets-only Worker with no `main`, and why there is no account, no upload and no telemetry over demo bytes. Everything else on this list follows from it. |
-| Static asset file size | 25 MiB | **hard** — Cloudflare, all plans | Platform ceiling on any single file we serve, the WASM binary included. It is not a free-tier limit; paying does not raise it. **M7's sample match is the first row that has to fit inside it.** |
+| Static asset file size | 25 MiB | **hard** — Cloudflare, all plans | Platform ceiling on any single file we serve, the WASM binary included. It is not a free-tier limit; paying does not raise it. **M7's sample match was the first row that had to fit inside it, and it fits with room to spare — 3.90 MiB gzipped for the largest (#330).** |
 | Static asset count | 20 000 per version | **hard** — Cloudflare free plan | Not near it. Would only bind if radar themes multiplied. |
 | Hosting cost | effectively zero | **hard** — free plan, on purpose | Static asset requests are not billed as Worker requests. A server-side feature ends that, which is a second reason `apps/api` is "Later" and not "next". |
 | No COOP/COEP headers | absolute | **hard** — follows from serving a plain SPA | Costs us cross-origin isolation: no `SharedArrayBuffer`, no WASM threads, and no way to measure true tab memory (§16's memory row is an estimate for this reason). **It is also the ceiling on M7's "make the parse faster"** — threads are not available to spend. |
@@ -45,7 +45,7 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | No chromatic accent in the chrome | decided 1 Sep 2026 (#276) | **chosen** | Colour means something the demo said. The primary action, the focus ring and the drag acknowledgement are all white. |
 | `backdrop-filter` only on the full-screen sheets | decided 1 Sep 2026 (#276) | **chosen** | Every other surface is opaque with a hairline. It is why "no card may overlap the radar plate" is now a legibility preference rather than a frame budget — which is what makes M4's zoomed plate a decision rather than a violation. |
 | Core crate free of `wasm-bindgen` | absolute | **chosen** — strategic | Keeps a native Tauri build possible without a rewrite. |
-| No `.dem` committed, ever | absolute | **hard** — it is ten real people's data | CI cannot test parsing breadth; the fixture is developer-supplied and the snapshot pins one demo. Unit tests carry the breadth instead. **M7's sample match is the first thing that asks to bend this**, and the answer is a decision, not a workaround. |
+| No `.dem` committed, ever | absolute | **hard** — it is ten real people's data | CI cannot test parsing breadth; the fixture is developer-supplied and the snapshot pins one demo. Unit tests carry the breadth instead. **M7's sample match was the first thing to ask to bend this, and #330's answer bends nothing**: what is committed is the *parse* of a public professional match, never a `.dem`. |
 | Multi-demo comparison | out of scope for v1 | **chosen** | Scope, so v1 can ship. The utility lineups screen is the one exception already agreed: it collects across demos on the device without comparing matches. |
 
 ---
@@ -112,16 +112,17 @@ written. Nothing here has an issue yet.
 
 ## Decisions this list owes
 
-Three rows cannot be started until the owner answers something, and each answer is worth more than
-the row it unblocks. **The fourth was answered on 5 September 2026** — a zoomed plate may go under
-the cards, and #315 built it — and the shape of the answer is worth keeping: the plate runs under
-them and *every card stays where it is with every reading on it*, which is neither of the two
-options the question offered. It was asked as cell-or-cards and answered as "the whole stage, and
-lose nothing".
+Two rows cannot be started until the owner answers something, and each answer is worth more than
+the row it unblocks. Two more have been answered, and both answers were larger than their question.
+**The zoomed plate, on 5 September 2026**: it may run under the cards, and #315 built it — the shape
+worth keeping is that the plate runs under them and *every card stays where it is with every reading
+on it*, which is neither of the two options the question offered. It was asked as cell-or-cards and
+answered as "the whole stage, and lose nothing". **The sample match, on 6 September 2026**, is
+struck through in the table below and #330 built it.
 
 | Row | The question | Why it is a decision and not a detail |
 |---|---|---|
-| M7 — a sample match in the library | What exactly ships, and whose names are on it? | The constraints table forbids committing a `.dem`, and the reason is that it is ten real people's data — a *parsed* demo carries the same names and SteamIDs, and shipping it publishes them. The choices are: ship a parse with the roster anonymised, ship it as-is with the players' consent, or ship nothing and let the front door explain itself. There is a size ceiling underneath the choice too — a single static asset is capped at 25 MiB, and a parsed 300 MB demo is not that small until it is trimmed to a few rounds. |
+| ~~M7 — a sample match in the library~~ | ~~What exactly ships, and whose names are on it?~~ | **Answered 6 September 2026, and #330 built it.** The names are professionals' — the IEM Atlanta 2026 series between Natus Vincere and Vitality, published by HLTV — which is a different question from shipping a private recording, and the answer neither anonymises the roster nor ships nothing. **The size ceiling turned out not to bind at all**, which is the part worth keeping: a parsed match is 10.28 and 13.15 MiB as a container and **2.89 and 3.90 MiB gzipped**, against the 25 MiB cap, so nothing had to be trimmed to a few rounds. Two of the series' three maps ship, because the cost that does bind is the repository's history: every `SCHEMA_VERSION` bump needs a regeneration, and each one lands in it again. |
 | M6 — a coach's drawing is "saved in the demo" | Saved *where*? | A `.dem` is the reader's own file and is never written to — hard rule 1 and the store's whole design. Annotations can live beside the cached parse, keyed by the same cache hash, which means they survive a reopen and are lost by an eviction the browser is allowed to make. Making them durable is what M7's export file is for. |
 | M7 — share a match as a file | What is in the file: the parse, or the reading of it? | A parsed demo is typed arrays measured in tens of megabytes; JSON of it is several times that, which is not a file anyone sends. A file holding the *annotations* — bookmarks, drawings, notes, the round they belong to — plus the hash of the demo they were made against is small, sends over any channel, and is useless without the demo. Both are defensible; they are different products. |
 
@@ -237,7 +238,7 @@ Everything a reader meets before the match and everything they take away from it
 
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
-| — | A sample match in the library | Somebody who has no demo to hand can still see what the product does. **Decision first** (above): whose data ships and how it fits under 25 MiB. Once answered, the work is a bundled parse the library lists like any other entry, restored into the store on first run, undeletable or replaceable at the reader's choice. | **P0** | M |
+| #330 | A sample match in the library | Somebody who has no demo to hand can still see what the product does. **Answered and built on 6 September 2026** — two maps of a public professional series, shipped as parses rather than demos, downloaded on a press and then an ordinary saved entry. | **P0** | M |
 | — | Make the parse faster, and honest about its progress | Two halves. The speed is #66 first, then whatever profiling says after it — three passes are upstream's and threads are not available, so the ceiling is real and the room is inside each pass. The progress readout is separate and cheaper: it steps 33 / 67 / 100 because a pass is all we are told about, and a per-pass position — ticks read against ticks in the file — would make it move continuously. That figure has to come from upstream, so it is a `vendor/` deviation and belongs in `vendor/README.md` with the two already there. | **P0** | M |
 | — | The way in earns its place | The upload screen is correct and forgettable. It should be the first thing that says this product was made carefully — minimal, one idea, and moving only where movement means something. Two constraints shape it: whatever moves has to keep moving *while a demo parses* on a machine whose cores are busy, and a background worth having may be the first spend of the `ogl` approval that has sat unspent since #200. | P1 | M |
 | — | Share a match as a file | A coach hands a reviewed match to somebody else. **Decision first** (above) on what the file holds. Either way it is an export and an import in the library, a version on the file, and a refusal that explains itself when the file does not match the demo on this device. | P2 | M |

@@ -24,7 +24,7 @@ function ready(fileName = 'match.dem'): ParseState {
 
 describe('reduceParse', () => {
   it('looks in the cache before it reads anything', () => {
-    expect(opened()).toEqual({ status: 'restoring', fileName: 'match.dem' });
+    expect(opened()).toEqual({ status: 'restoring', fileName: 'match.dem', download: null });
   });
 
   it('starts at nought percent with no header yet', () => {
@@ -178,6 +178,45 @@ describe('reduceParse', () => {
     expect(reduceParse(first, { type: 'opened', fileName: 'second.dem' })).toEqual({
       status: 'restoring',
       fileName: 'second.dem',
+      download: null,
+    });
+  });
+});
+
+describe('a sample match', () => {
+  it('reports a download only once it has one, and never on a cache read', () => {
+    expect(opened()).toMatchObject({ download: null });
+
+    const started = reduceParse(opened(), { type: 'downloading', percent: null });
+    expect(started).toMatchObject({ status: 'restoring', download: { percent: null } });
+
+    expect(reduceParse(started, { type: 'downloading', percent: 42 })).toMatchObject({
+      download: { percent: 42 },
+    });
+  });
+
+  // A sample that had to be fetched is not a cache hit: it is on screen and not yet in the store,
+  // which is what the reader is told while it is being written.
+  it('arrives the way a parse does rather than the way a restore does', () => {
+    const downloading = reduceParse(opened(), { type: 'downloading', percent: 100 });
+
+    expect(reduceParse(downloading, { type: 'succeeded', demo, caching: true })).toEqual({
+      status: 'ready',
+      fileName: 'match.dem',
+      demo,
+      cache: { status: 'storing' },
+      roundIndex: 0,
+    });
+  });
+
+  it('says the download failed rather than blaming the demo', () => {
+    const downloading = reduceParse(opened(), { type: 'downloading', percent: 12 });
+    const failure: OpenFailure = { kind: 'sampleUnreachable' };
+
+    expect(reduceParse(downloading, { type: 'failed', failure })).toEqual({
+      status: 'failed',
+      fileName: 'match.dem',
+      failure,
     });
   });
 });
