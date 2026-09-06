@@ -66,20 +66,32 @@ function prefersLessMotion(setting: string): boolean {
  * rule the plate's own draw obeys.
  */
 export function PixelBackdrop({ isLifted }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const [motion] = useSetting('motion');
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const host = hostRef.current;
     const level = getMapOverview(BACKDROP_MAP)?.levels[0];
-    if (canvas === null || level === undefined) return;
+    if (host === null || level === undefined) return;
 
+    // **The canvas is the renderer's own and lives as long as this effect does.** Handing `ogl` a
+    // canvas from the tree looks tidier and cannot work: a canvas hands back the context it already
+    // has, and this effect *releases* its context on the way out — so the second mount `StrictMode`
+    // makes gets the lost one back, every shader fails to compile with a null info log, and the
+    // throw out of the first `render()` takes the whole application off the screen rather than the
+    // background. A fresh element per mount is what makes the release and the remount both correct.
     const renderer = new Renderer({
-      canvas,
       alpha: false,
       antialias: false,
       dpr: Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO),
     });
+    const canvas = renderer.gl.canvas;
+
+    // `setSize` writes the box in CSS pixels; this is the one thing it leaves, and without it the
+    // canvas sits on a text baseline and the field is a few pixels short of the viewport.
+    canvas.style.display = 'block';
+    host.append(canvas);
+
     const colours = pixelColours(document.documentElement);
     const texture = new Texture(renderer.gl, { generateMipmaps: false });
     const program = new Program(renderer.gl, {
@@ -122,10 +134,15 @@ export function PixelBackdrop({ isLifted }: Props) {
     resize();
     window.addEventListener('resize', resize);
 
+    const release = () => {
+      canvas.remove();
+      renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
+    };
+
     if (prefersLessMotion(motion)) {
       return () => {
         window.removeEventListener('resize', resize);
-        renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
+        release();
       };
     }
 
@@ -154,7 +171,7 @@ export function PixelBackdrop({ isLifted }: Props) {
       cancelAnimationFrame(frame);
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', follow);
-      renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
+      release();
     };
   }, [motion]);
 
@@ -165,7 +182,7 @@ export function PixelBackdrop({ isLifted }: Props) {
         isLifted ? 'opacity-100' : 'opacity-90'
       }`}
     >
-      <canvas ref={canvasRef} className="size-full" />
+      <div ref={hostRef} className="size-full" />
       <div className="absolute inset-0" style={{ background: READING_SCRIM }} />
     </div>
   );
