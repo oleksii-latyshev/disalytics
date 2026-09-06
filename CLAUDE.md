@@ -1722,6 +1722,43 @@ platform: anubis is 4.32 MiB, adding it back is one row in `catalogue.ts`, and e
 after a schema bump lands in git again. Measured in both locales at 1440×900 and 1024×800: **0
 elements overflowing**, two cards in each, and the bundle is 236.33 → **237.61 kB gz, 47.5%**.
 
+**#332 gave the way in a background and a promise, and it is the only screen in the product allowed
+a colour that means nothing.** The upload screen was a correct box in the middle of an empty
+viewport with the words *Open demo* on it twice — once as a heading and once as the button under it
+— over a Mirage plate at 15% opacity that read as noise rather than as a map. What replaces it is
+`WaveBackdrop`: three colour bands drifting behind the whole shell, and the product's own sentence at
+`text-44` standing on them above a card that now holds the action alone. Two owner decisions paid
+for it, both taken on 6 September 2026. **`ogl` is spent** — approved since #200 for exactly this and
+unspent ever since — at **14.4 kB gz**, taking the bundle 237.59 → **252.00 kB, 50.4%**. And
+**`ROADMAP.md`'s "no chromatic accent in the chrome" is narrowed rather than dropped**: it governs
+the screens that show a match, the way in shows none, and the waves get `--color-wave-1` and
+`--color-wave-2` of their own so that nothing carrying a reading is reused as decoration.
+
+Six things are load-bearing. **The colours are read out of the stylesheet**, the way `radarColors`
+reads the plate's, so a token stays the one place a colour is decided rather than a literal in a
+shader nobody would check. **The buffer is capped at a device pixel ratio of 1.25**: the picture has
+no edge in it, so resolution resolves nothing, and a full-screen shader at dpr 2 quadruples the
+fragments on a laptop that is about to spend every core it has on a parse. **It keeps moving through
+a real parse** — that is `ROADMAP.md` M7's own constraint on this row, and it is measured rather than
+asserted: a 462 MB demo dropped in, and the ground still moving between two composited screenshots at
+0%. **Reduced motion draws exactly one frame**, through `@disa/ui`'s own setting rather than a second
+reading of the media query, so the sheet's three answers mean here what they mean everywhere.
+**A hidden tab is left alone and does not jump on the way back**: the clock is re-read on
+`visibilitychange`, so six seconds away moved the ground by 0.075 of a mean channel where a second of
+drift moves it 1.7. And **the hero does not move with the state** — only the card's body crossfades on
+`status`, so a parse filling in the map mid-flight does not restart the sentence above it.
+
+Three things to know if this is touched again. **The instrument for "is it still moving" is a
+screenshot, not `readPixels`**: a WebGL drawing buffer is cleared once it has been composited, so
+`readPixels` after the frame returns the same bytes for ever — it read one constant hash across
+idle, reduced *and* parsing, which looks exactly like a shader that never runs. **`Page.captureScreenshot`
+with a `clip` and a `scale` tiles the page 2×2 when the device metrics carry a `deviceScaleFactor` of
+2**; the page is fine and the picture is the artefact. And **the hero's contrast is measured against
+the ground with the text taken out of the DOM** — six moments across the drift read a worst *pixel*
+of **5.92–9.97** against `--color-ink`, which clears §14's 4.5 floor at every one of them, and the
+mean is 9.5–12.5. The tagline moved out of the rail in the same PR: it was the same sentence in two
+places, and `library.open.title` is deleted in both locales.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

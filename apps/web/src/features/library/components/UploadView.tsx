@@ -5,7 +5,7 @@ import type { ParseState } from '@/core/parsing';
 import { DemoLibrary } from './DemoLibrary';
 
 interface Props {
-  // An opened demo is the review screen's, so it never reaches here.
+  // An opened demo is the workspace's screen rather than the library's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
   onEnter: (demo: SavedDemo, roundIndex: number) => void;
@@ -15,25 +15,30 @@ interface Props {
 }
 
 /**
- * The upload view: one card, centred, with room around it. Emptiness here is confidence — feature
- * bullets would be the opposite.
+ * The way in: the promise, then the one thing to do about it.
  *
- * **It leads with the action rather than with the product name.** The name is the rail's, two
- * hundred pixels away on the same screen, and what is on screen twice is not a reading. What is left
- * here is what the reader came to do.
+ * **The hero stands on the background rather than inside the card**, and the card holds the action
+ * alone. It is the product's own sentence at `text-44` — §3's one-per-screen size, which the review
+ * screen gave up in #205 — and it is here rather than in the rail because it was in both, which is
+ * #205's own lesson about a reading that appears twice.
  *
- * The card is `.surface-card` — opaque, one step up from the ground, a hairline drawn as a shadow so
- * that it costs no layout. It was translucent over a 24px backdrop blur until the redesign, which is
- * a thing this screen can no longer be: the plate behind it is an image rather than a match, but the
- * rule that pays for a blur is the same one either way and it is not spent here.
+ * It does **not** move with the state. Only the card's body crossfades on `status`, so a parse that
+ * fills in the map and the player count mid-flight does not restart the sentence above it — and a
+ * failure replaces the card without the screen losing what the product is.
+ *
+ * The card is `.surface-card` — opaque, one step up from the ground, its hairline drawn as a shadow
+ * so it costs no layout. Opaque matters more here than it did over the plate: what is behind it is a
+ * moving gradient, and a translucent card would make every reading on it a function of which band
+ * happens to be under it.
  */
 export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDraggedOver }: Props) {
   return (
-    <div className="flex min-h-full items-center justify-center">
+    <div className="flex min-h-full flex-col items-center justify-center gap-8 py-8">
+      <h2 className="max-w-[22ch] text-balance text-center font-ui font-medium text-44 leading-tight">
+        <Text path="common.tagline" />
+      </h2>
+
       <div className="surface-card relative w-full max-w-[36rem] rounded-float p-8">
-        {/* The card transforms in place rather than navigating. The body crossfades on `status`
-            alone, so filling in the map and the player count mid-parse does not restart it. Opacity
-            and transform only, over a card the size of this one. */}
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={state.status}
