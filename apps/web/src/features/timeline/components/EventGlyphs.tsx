@@ -5,7 +5,7 @@ import { defuseOutcomeKey, EventRow, killName } from '@/core/events';
 import { EventGlyph, UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { Transport } from '@/core/playback';
 import { useRovingFocus } from '@/shared/hooks';
-import { GLYPH_HIT_HALF_PX, glyphHitHalves, hasRoomForSymbol } from '../helpers/glyph-hits';
+import { GLYPH_HIT_HALF_PX, glyphHitHalves } from '../helpers/glyph-hits';
 import { type AxisEvent, type AxisGlyph, namedRow } from '../helpers/round-axis';
 import { anchorAtFraction } from '../helpers/round-strip';
 
@@ -19,7 +19,7 @@ interface Props {
   glyphs: readonly AxisGlyph[];
   names: readonly (string | undefined)[];
   selectedSlot: PlayerSlot | null;
-  /** The axis's own width, which decides both the glyphs' form and how wide each one's target is. */
+  /** The axis's own width, which is what decides how wide each glyph's press target is. */
   widthPx: number;
   transport: Transport;
 }
@@ -184,14 +184,11 @@ export const EventGlyphs = memo(function EventGlyphs({
               >
                 {/* The mark overhangs the slot, so it must not be a target itself: a 24px symbol
                     taking pointer events would reach across its neighbours exactly the way the
-                    button used to. */}
+                    button used to. It is drawn whatever its neighbours are doing — a round too busy
+                    to read is thinned by the filter beside the axis, never by the axis deciding for
+                    the reader (#328). */}
                 <span className="-translate-x-1/2 pointer-events-none absolute inset-y-0 left-1/2 flex items-center justify-center">
-                  {hasRoomForSymbol(halfPx) ? (
-                    <Glyph event={glyph.event} />
-                  ) : (
-                    // A mark keeps the position and the colour and loses only the shape.
-                    <span aria-hidden="true" className="h-3.5 w-0.5 bg-current" />
-                  )}
+                  <Glyph event={glyph.event} />
                 </span>
               </button>
             </li>
