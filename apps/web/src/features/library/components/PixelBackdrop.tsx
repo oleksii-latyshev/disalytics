@@ -2,6 +2,7 @@ import { DEFAULT_RADAR_THEME, getMapOverview, radarAssetPath } from '@disa/map-d
 import { Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import { useEffect, useRef } from 'react';
 import { useSetting } from '@/core/settings';
+import { prefersLessMotion } from '../helpers/less-motion';
 import { coverOf, PIXEL_FRAGMENT, PIXEL_VERTEX, pixelColours } from '../helpers/pixels';
 
 /**
@@ -38,13 +39,6 @@ const READING_SCRIM =
 interface Props {
   /** The drag acknowledgement, which lifts the ground the way the plate used to be lifted. */
   isLifted: boolean;
-}
-
-function prefersLessMotion(setting: string): boolean {
-  if (setting === 'reduced') return true;
-  if (setting === 'full') return false;
-
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
