@@ -78,13 +78,15 @@ The redesign is closed (below). What is left here is defects and decisions on th
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
 | #123 | Fail CI when a documented contrast ratio drifts | The 36 pairings `tokens.css` now states stay true without anyone re-running the maths by hand. | P2 | M |
-| #115 | Let the reader choose the radar plate | The reader who wants the game's own map colours can have them. | P2 | M |
 | #249 | Decide whether the legend draws the vision wedge | Draw it or record why not — the reason it was not drawn no longer holds. | P2 | S |
 | #230 | Measure a shotgun's shot count | Whether nine pellets are one `fire_bullets` event or nine. **Blocked** on a demo that fires one. | P3 | S |
 
 **Closed on 6 September 2026**: #290 — a name the placer had to put outside the four boxes beside
 its token is joined back to it by a hairline, which is the owner's answer to the question that issue
-put; the alternative on the table was to bound the ring and give the tenth label back its burial.
+put; the alternative on the table was to bound the ring and give the tenth label back its burial;
+#115 — the plate choice has been in the settings sheet since #202 and the row was open on a
+bookkeeping lag, with the one part of it nothing had built being that the two plates named
+themselves `blue` and `vanilla` to the reader.
 
 **Closed on 5 September 2026**: #287 — a hit states what it took beside the token that took it,
 which is the reading a flash alone could not carry; #170 — §6.2 was restated by M4's smoke and fire

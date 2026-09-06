@@ -24,7 +24,9 @@
   },
   "radarTheme": {
     "label": "Radar theme",
-    "note": "Which set of map images the plate draws. Which one is better is settled by looking at ten players on top of both."
+    "note": "Which set of map images the plate draws. Which one is better is settled by looking at ten players on top of both.",
+    "blue": "Blue",
+    "vanilla": "The game's own"
   },
   "audibility": {
     "label": "Audibility rings",

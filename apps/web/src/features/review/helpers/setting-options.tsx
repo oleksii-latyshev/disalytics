@@ -32,13 +32,15 @@ export const HELD_ARROW_OPTIONS: readonly ChoiceOption<HeldArrowRate>[] = HELD_A
   }),
 );
 
-// Map and theme names are game vocabulary — AGENTS.md §11 — so `blue` and `vanilla` reach the
-// screen as they are rather than through a key that would have to be translated twice. The default
-// leads, the way the row is written, rather than in whatever order the package declares them.
+// A plate's name is product vocabulary and is translated, which is the one place §11's line falls
+// on the other side from a map's: `Mirage` is Counter-Strike's word and reaches a Russian reader
+// unchanged, where `blue` is this repository's word for a set of images it generates itself and
+// names nothing in the game. The default leads, the way the row is written, rather than in whatever
+// order the package declares them.
 export const THEME_OPTIONS: readonly ChoiceOption<RadarTheme>[] = [
   DEFAULT_RADAR_THEME,
   ...RADAR_THEMES.filter((theme) => theme !== DEFAULT_RADAR_THEME),
-].map((theme) => ({ value: theme, label: theme }));
+].map((theme) => ({ value: theme, label: <Text path={`settings.radarTheme.${theme}`} /> }));
 
 export const TRAJECTORY_OPTIONS: readonly ChoiceOption<TrajectoryVisibility>[] =
   TRAJECTORY_VISIBILITIES.map((visibility) => ({
