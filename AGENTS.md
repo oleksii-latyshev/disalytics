@@ -77,7 +77,7 @@ Violating any of these is a bug, not a trade-off.
 | UI state | Zustand (discrete state only) | decided |
 | Playback clock | plain mutable object + rAF — not a state library | decided |
 | Radar rendering | Canvas 2D (PixiJS only if measurably needed) | decided, see §9 |
-| The way in's background | **`ogl`** — one full-screen fragment shader | decided, spent in #332 |
+| The way in's background | **`ogl`** — one full-screen fragment shader over the radar plate | decided, spent in #332 |
 | Parser | **Rust — `demoparser2` (LaihoE) compiled with wasm-pack** | decided; adopted in #46, vendored and patched — see `vendor/README.md` |
 | Persistence | OPFS, IndexedDB fallback | decided |
 | Testing | Vitest + happy-dom | decided |

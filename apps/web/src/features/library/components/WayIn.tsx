@@ -6,10 +6,10 @@ import { HelpSheet, SettingsSheet } from '@/features/review';
 import type { RailView } from '../helpers/views';
 import { useFileDrop } from '../hooks/use-file-drop';
 import { LibraryView } from './LibraryView';
+import { PixelBackdrop } from './PixelBackdrop';
 import { SideRail } from './SideRail';
 import { SoonView } from './SoonView';
 import { UploadView } from './UploadView';
-import { WaveBackdrop } from './WaveBackdrop';
 
 interface Props {
   // An opened demo is the review screen's, so it never reaches here.
@@ -28,9 +28,9 @@ type Sheet = 'settings' | 'help';
  * whole viewport rather than a box inside it: `useFileDrop` already listens on the window, so what
  * this adds is the screen *acknowledging* the drag instead of a dashed rectangle doing it alone.
  *
- * The ground under all of it is `WaveBackdrop` since #332 — the one place in the product where a
- * hue means nothing a demo said, and the only screen that may have one, because this is the screen
- * with no demo on it.
+ * The ground under all of it is `PixelBackdrop` since #332 — Dust2's own plate taken apart into a
+ * grid, and the one place in the product where a hue means nothing a demo said, because this is the
+ * screen with no demo on it.
  *
  * **The shell ends where the match begins.** `App` swaps it for the review screen entirely, and the
  * reason is the plate rather than a preference: the plate is `min(100cqi, 100cqb)` of the cell the
@@ -86,7 +86,7 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
 
   return (
     <div className="app-shell relative grid grid-rows-[auto_minmax(0,1fr)] bg-surface-0 split:h-dvh split:grid-cols-[17.5rem_minmax(0,1fr)] split:grid-rows-1">
-      <WaveBackdrop isLifted={isDraggedOver} />
+      <PixelBackdrop isLifted={isDraggedOver} />
 
       {/* The acknowledgement is the screen's, not the card's. It is white, like every other thing
           in the product that is the interface talking rather than the demo — there is no accent hue
