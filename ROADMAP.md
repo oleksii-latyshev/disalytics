@@ -11,9 +11,15 @@ about its shape, and the issue is where it becomes one.
 **Priority** is P0 blocking a promise the product already makes, P1 next, P2 wanted, P3 tidy.
 
 M1–M3 are the backlog the repository already carries. **M4–M7 are the owner's list of 4 September
-2026**, which is where the product goes next; none of it has issues yet, and four rows on it need a
-decision before they can have one — those are collected under *Decisions this list owes* rather than
-buried in the tables.
+2026**, which is where the product goes next; four rows on it needed a decision before they could
+have an issue, and those are collected under *Decisions this list owes* rather than buried in the
+tables.
+
+**A second owner's list arrived on 6 September 2026**, after #329, #331, #333 and #334 closed the
+first one. Five rows, all of them about how the product looks rather than about what it can answer:
+#335, #336, #337 and #338 are in M7 because they are all things a reader meets before the match, and
+#339 is in M3 because a palette is the visual system rather than one screen. They have issues from
+the day they were asked, so nothing on this list is a `—` row.
 
 ---
 
@@ -33,8 +39,8 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | A backgrounded tab parses ~5× slower | fixed | **hard** — Chrome confines it to efficiency cores | 15.3 s in front, 84.9 s behind, on one machine. No code here can prevent it; the parse screen says so instead (#68). |
 | `navigator.storage.persist()` may return `false` | fixed | **hard** — the browser's call | Cached parses are best-effort. Eviction is designed for, not prevented. **Anything a coach draws is subject to it too** — see M6. |
 | OS file-handling (`launchQueue`) | Chromium desktop only | **hard** — browser support | Drag-and-drop and the picker must keep working everywhere. |
-| JS bundle, excluding WASM | < 500 kB gzip (at 233 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. **232.74 kB, 46.5%** at `9c58662` + #284, which deleted the empty `motion-features` chunk. The redesign added exactly one runtime dependency in total, `@base-ui-components/react` in #276, against two font families deleted. A charting library, a drawing library or a physics-shaped smoke model would each be the next such decision. **`ogl` was spent on the way in's background in #332 — 14.4 kB gz of the budget, and the second runtime dependency the redesign era has added.** |
-| WASM binary | < 4 MB (CI fails > 24 MB) | **chosen** — a regression guard | The platform allows 25 MiB. 4 MB is a line we drew so a size regression is noticed the day it happens. **2.66 MB, 66.5%** since #66 spent 0.41 MB of it on the parse-time row above. |
+| JS bundle, excluding WASM | < 500 kB gzip (at 255 kB) | **chosen** | Startup speed, not a platform or a billing limit. It is what makes a new runtime dependency a decision. **254.82 kB, 51.0%** on a clean build of `66317d5`. It read 232.74 kB at `9c58662` + #284, which deleted the empty `motion-features` chunk, and the way in is what moved it since. The redesign added exactly one runtime dependency in total, `@base-ui-components/react` in #276, against two font families deleted. A charting library, a drawing library or a physics-shaped smoke model would each be the next such decision. **`ogl` was spent on the way in's background in #332 — 14.4 kB gz of the budget, and the second runtime dependency the redesign era has added.** |
+| WASM binary | < 4 MB (CI fails > 24 MB) | **chosen** — a regression guard | The platform allows 25 MiB. 4 MB is a line we drew so a size regression is noticed the day it happens. **2.66 MB, 66.6%** since #66 spent 0.41 MB of it on the parse-time row above. |
 | Parse a 300 MB demo | < 15 s | **chosen** — set from Phase 0's real number | The promise the parse screen makes. **Met since #66 built the binary at `-O3`** — 14.19 s on the 264 MB container against `-Oz`'s 18.85 s — and met with no headroom: the same build read 17.23 s on the slowest run of an hour on a machine 15% slower than the one #59 measured on. The room left is inside each pass, which is M7's row. |
 | Peak tab memory during parse | < 1.5 GB | **chosen** | Headroom on ordinary laptops with the whole demo in linear memory. |
 | Scrub and playback | 60 fps sustained | **chosen** — enforced by measurement | This is the product: review, not replay. It is what pays for hard rules 3, 4 and 9, and what decides an argument between accuracy and smoothness. Every new mark on the plate — a tracer, a smoke cloud, a coach's drawing — is measured against it. |
@@ -42,7 +48,7 @@ away; a **chosen** row is ours, and changing it is a decision for the owner rath
 | Positional sampling | 16 Hz | **chosen** | Memory math (§6.1). If duel or lineup analysis needs more, the answer is detail windows around the moments that need them, not a higher global rate. |
 | `en` + `ru`, always together | absolute | **chosen** | Layouts are designed against the Russian string. Game vocabulary stays English by rule. |
 | No light theme | decided 12 Aug 2026, re-affirmed 1 Sep 2026 | **chosen** | Doubles the token layer, re-opens every contrast measurement, needs a third radar plate. |
-| No chromatic accent in the chrome | decided 1 Sep 2026 (#276), narrowed 6 Sep 2026 (#332) | **chosen** | Colour means something the demo said. The primary action, the focus ring and the drag acknowledgement are all white. **It governs the screens that show a match.** The way in shows none, so there is nothing there for a hue to be confused with, and #332 spends colour on its background — with two tokens of its own, `--color-pixel-1` and `--color-pixel-2`, so nothing that carries a reading is reused as decoration. |
+| No chromatic accent in the chrome | decided 1 Sep 2026 (#276), narrowed 6 Sep 2026 (#332) | **chosen** | Colour means something the demo said. The primary action, the focus ring and the drag acknowledgement are all white. **It governs the screens that show a match.** The way in shows none, so there is nothing there for a hue to be confused with, and #332 spends colour on its background — with two tokens of its own, `--color-pixel-1` and `--color-pixel-2`, so nothing that carries a reading is reused as decoration. **#339 is where widening it a second time is decided**, and that one is different in kind: a cyberpunk review screen puts a chosen hue on the one screen where a hue is a reading. |
 | `backdrop-filter` only on the full-screen sheets | decided 1 Sep 2026 (#276) | **chosen** | Every other surface is opaque with a hairline. It is why "no card may overlap the radar plate" is now a legibility preference rather than a frame budget — which is what makes M4's zoomed plate a decision rather than a violation. |
 | Core crate free of `wasm-bindgen` | absolute | **chosen** — strategic | Keeps a native Tauri build possible without a rewrite. |
 | No `.dem` committed, ever | absolute | **hard** — it is ten real people's data | CI cannot test parsing breadth; the fixture is developer-supplied and the snapshot pins one demo. Unit tests carry the breadth instead. **M7's sample match was the first thing to ask to bend this, and #330's answer bends nothing**: what is committed is the *parse* of a public professional match, never a `.dem`. |
@@ -71,13 +77,16 @@ all that is left of this milestone.
 | #58 | Name a bomb plant's site from `map-data` | A plant reads "A" rather than a coordinate. **Blocked** — the demo carries no site name. | P2 | M |
 | #86 | Verify multi-level rendering on a real Nuke demo | The two-level radar is proven rather than assumed. **Blocked** on a Nuke demo. | P2 | M |
 
-## M3 — The review screen's open defects and decisions
+## M3 — The visual system's open defects and decisions
 
-The redesign is closed (below). What is left here is defects and decisions on the screens it built.
+The redesign is closed (below). What is left here is defects and decisions on the system it built —
+the review screen it was mostly about, and the token layer underneath it, which is where #123 has
+always sat and where the third palette belongs.
 
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
 | #123 | Fail CI when a documented contrast ratio drifts | The 36 pairings `tokens.css` now states stay true without anyone re-running the maths by hand. | P2 | M |
+| #339 | A cyberpunk look as a third palette and plate | A violet map with green players on it — the product's calling card, chosen once and applied everywhere. **It is two settings and not one**: `palette` decides the data colours and `radarTheme` decides the committed plate image, and the owner's answer of 6 September 2026 is that a third value of each is chosen together as one *look*, with both settings still individually reachable. What makes it L rather than M is neither the hue nor the image: a third palette adds 18 measured contrast pairings — nine data colours on two grounds — to the 36 `tokens.css` states today, and it has to **state its dichromat floor** even where that floor is low — the colour-blind palette's 14.28 is a measured contract and a look is not held to it, but a look that quietly says two events are one colour is the defect. It also widens "no chromatic accent in the chrome" a second time, which is the owner's call rather than a continuation of #332's. | P2 | L |
 | #230 | Measure a shotgun's shot count | Whether nine pellets are one `fire_bullets` event or nine. **Blocked** on a demo that fires one. | P3 | S |
 
 **Closed on 6 September 2026**: #290 — a name the placer had to put outside the four boxes beside
@@ -112,7 +121,7 @@ written. Nothing here has an issue yet.
 
 ## Decisions this list owes
 
-Two rows cannot be started until the owner answers something, and each answer is worth more than
+Three rows cannot be started until the owner answers something, and each answer is worth more than
 the row it unblocks. Two more have been answered, and both answers were larger than their question.
 **The zoomed plate, on 5 September 2026**: it may run under the cards, and #315 built it — the shape
 worth keeping is that the plate runs under them and *every card stays where it is with every reading
@@ -123,6 +132,7 @@ struck through in the table below and #330 built it.
 | Row | The question | Why it is a decision and not a detail |
 |---|---|---|
 | ~~M7 — a sample match in the library~~ | ~~What exactly ships, and whose names are on it?~~ | **Answered 6 September 2026, and #330 built it.** The names are professionals' — the IEM Atlanta 2026 series between Natus Vincere and Vitality, published by HLTV — which is a different question from shipping a private recording, and the answer neither anonymises the roster nor ships nothing. **The size ceiling turned out not to bind at all**, which is the part worth keeping: a parsed match is 10.28 and 13.15 MiB as a container and **2.89 and 3.90 MiB gzipped**, against the 25 MiB cap, so nothing had to be trimmed to a few rounds. Two of the series' three maps ship, because the cost that does bind is the repository's history: every `SCHEMA_VERSION` bump needs a regeneration, and each one lands in it again. |
+| #339 — a cyberpunk look | ~~Is it one *look*, or two settings a reader can cross?~~ **Answered 6 September 2026: one look.** Does the chrome get a hue on the screens that show a match? | The product has two axes today — `palette` for the data colours, `radarTheme` for the committed plate image — and a third value of each is not the same offer as one look that sets both. The owner's answer is **one look that sets both, with the two settings still individually reachable**: crossing them is cheaper and no less honest, and it is precisely what a calling card cannot be, because a reader who has assembled a violet plate under the default colours is not looking at the thing the product wanted to show them. The half still open is larger: "no chromatic accent in the chrome" was narrowed on 6 September 2026 to the screens that show a match, and a cyberpunk review screen widens it again on the one screen where a hue can be confused with a reading. Neither half blocks measuring what the row costs, which is 18 more contrast pairings and a dichromat floor that has to be **stated** even where it is low. |
 | M6 — a coach's drawing is "saved in the demo" | Saved *where*? | A `.dem` is the reader's own file and is never written to — hard rule 1 and the store's whole design. Annotations can live beside the cached parse, keyed by the same cache hash, which means they survive a reopen and are lost by an eviction the browser is allowed to make. Making them durable is what M7's export file is for. |
 | M7 — share a match as a file | What is in the file: the parse, or the reading of it? | A parsed demo is typed arrays measured in tens of megabytes; JSON of it is several times that, which is not a file anyone sends. A file holding the *annotations* — bookmarks, drawings, notes, the round they belong to — plus the hash of the demo they were made against is small, sends over any channel, and is useless without the demo. Both are defensible; they are different products. |
 
@@ -241,6 +251,10 @@ Everything a reader meets before the match and everything they take away from it
 | #330 | A sample match in the library | Somebody who has no demo to hand can still see what the product does. **Answered and built on 6 September 2026** — two maps of a public professional series, shipped as parses rather than demos, downloaded on a press and then an ordinary saved entry. | **P0** | M |
 | — | Make the parse faster, and honest about its progress | Two halves. The speed is #66 first, then whatever profiling says after it — three passes are upstream's and threads are not available, so the ceiling is real and the room is inside each pass. The progress readout is separate and cheaper: it steps 33 / 67 / 100 because a pass is all we are told about, and a per-pass position — ticks read against ticks in the file — would make it move continuously. That figure has to come from upstream, so it is a `vendor/` deviation and belongs in `vendor/README.md` with the two already there. | **P0** | M |
 | #332 | The way in earns its place | **Built 6 September 2026.** Dust2's own radar plate taken apart into a grid of squares that breathe, behind the whole shell — the first and only spend of the `ogl` approval from #200 — with the product's promise as the hero above one action. Both constraints hold: it keeps moving through a real parse, measured, and it draws one still frame under reduced motion. | P1 | M |
+| #335 | The way in's pixels play a round | The field of squares behind the shell stops only breathing and shows the thing the product is for: players moving, utility blooming and fading, in the same pixels. **The decision it owes is where the movement comes from**, and #332 already answered the shape of that question — a hand-authored path is the aurora it rejected, one layer down, and the shipped sample is 2.89 MiB gz on a screen that deliberately fetches nothing before a press. The recommendation is a committed *reel*: one real round of the professional series at a low rate, about 9.6 kB before compression, generated and checked the way the sample containers are. | P2 | M |
+| #337 | A token on the card that takes a demo | The card is minimal and alive: one player token, drawn by the plate's own helpers the way #220 draws the legend's seventeen marks, facing the pointer and acknowledging a dragged file. It is the product's own material rather than a mascot, which is #332's lesson about what makes this screen worth looking at. | P2 | S |
+| #336 | The library is a wall of matches | A card carries enough of its own match to be recognised, and the layout follows from cards that differ rather than the other way round. The constraint is `CatalogEntry.meta`, written at store time only: a card that had to open its container to draw a round strip would decompress ten megabytes per card. **`gsap` is not needed for it** — the registry component's only use of it is six tweens of `top`, `left`, `width` and `height`, which is 26 kB gz to animate the properties five pull requests here have replaced with `transform`. | P2 | M |
+| #338 | The shell's navigation is a dock | The rail's 280px column stops being subtracted from every screen that is not the match. It is the one row on this list that costs nothing on the bundle line — the component's only dependency is the `motion` already installed. Two things decide its shape: §17 rule 9, because a magnifying dock is a pointer affordance in a keyboard-first product, and #233's own reason for the rail ending at the match, which a dock inherits turned ninety degrees. | P2 | M |
 | — | Share a match as a file | A coach hands a reviewed match to somebody else. **Decision first** (above) on what the file holds. Either way it is an export and an import in the library, a version on the file, and a refusal that explains itself when the file does not match the demo on this device. | P2 | M |
 
 ---

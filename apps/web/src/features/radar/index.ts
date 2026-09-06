@@ -5,3 +5,6 @@ export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';
+export { drawNeedle, drawSelectionRing, drawToken, TOKEN_RADIUS_PX } from './helpers/tokens';
+export type { VisionWedge } from './helpers/vision';
+export { visionWedge } from './helpers/vision';
