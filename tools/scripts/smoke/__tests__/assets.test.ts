@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assetPathsIn, extensionOf, isFollowable, representativesOf } from '../assets';
+import { assetPathsIn, extensionOf, isFollowable, representativesOf, sameAssets } from '../assets';
 
 describe('assetPathsIn', () => {
   it('reads a script the document names', () => {
@@ -67,5 +67,32 @@ describe('isFollowable', () => {
 
   it('does not follow a binary', () => {
     expect(isFollowable('/assets/demo_parser_wasm_bg-a.wasm')).toBe(false);
+  });
+});
+
+describe('sameAssets', () => {
+  it('is true for the same document read twice', () => {
+    expect(sameAssets(['/assets/a.js', '/assets/b.css'], ['/assets/a.js', '/assets/b.css'])).toBe(
+      true,
+    );
+  });
+
+  // The torn window #317 is about: the shell is unchanged and the entry chunk is a different file,
+  // so the retry has to move onto the new one rather than wait out the deadline on the old.
+  it('is false when one hashed name moved', () => {
+    expect(
+      sameAssets(
+        ['/assets/index-AAAA.js', '/assets/x.css'],
+        ['/assets/index-BBBB.js', '/assets/x.css'],
+      ),
+    ).toBe(false);
+  });
+
+  it('is false when the deployment gained or lost a kind', () => {
+    expect(sameAssets(['/assets/a.js'], ['/assets/a.js', '/assets/b.wasm'])).toBe(false);
+  });
+
+  it('is true for two empty reads, which is not a change of version', () => {
+    expect(sameAssets([], [])).toBe(true);
   });
 });
