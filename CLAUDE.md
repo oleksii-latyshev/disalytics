@@ -1643,6 +1643,25 @@ all three statuses where the feed draws only the completed one — so it stays o
 and is what the refusal reads. No new string, no second drawing: `EventRow`'s four arms and
 `labelFor`'s four cases were all already built.
 
+**#249 answered the legend's last open question by building the answer and then taking it out.**
+The vision cone is the one §6.1 mark the legend names in words, and the reason recorded for that had
+been false since #232: it said the geometry sat inside the token layer around a gradient the layer
+cached, so lifting it out would move a frame path. `visionWedge()` has been a factory that owns its
+own cache since then, so the sheet can hold one of its own — and the entry was written, drawn by
+that factory, and passed the sentinel-palette test unchanged. **It is still not drawn, and the
+reason is the swatch.** What makes the cone legible on the plate is *area* rather than ink: it is
+painted at α0.15 fading to nothing across its whole radius, which is around 140px there against 18
+in a 56×28 tile — a sixtieth of the area. Measured in the built sheet, the swatch reads α0.063 at
+10px from the token and α0.031 at 14, and a throwaway build that stood the same drawing on a
+mid-grey ground looked identical, which is what rules out the tile's own ground as the cause. The
+alternative is `plate-legend.ts` choosing an opacity, and that is the one thing that file may not do
+— its whole argument is that nothing in it decides what a mark looks like. Two things worth keeping.
+**The issue's stated argument against was scale, and scale was the wrong objection**: three entries
+already choose their own reach — `TRACER_LENGTH_PX`, `AUDIBLE_RADIUS_PX` and #290's leader — so
+"every other entry is drawn at its true size" stopped being true before this issue was read. And
+**the words carry no number**, which is what makes the drift risk the issue was built around small:
+the entry says "the cone of what they can see" and never states the angle or the reach.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
