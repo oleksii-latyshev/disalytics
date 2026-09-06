@@ -34,10 +34,10 @@ function Hint({ folder, isDraggedOver }: HintProps) {
 }
 
 /**
- * **The card leads with the action.** The heading, the hint and the button used to stack in that
- * order, which reads as a paragraph with a control at the end of it; the reader came here to open a
- * demo, and the one white control on the screen is what they are looking for. It is first, and what
- * follows it explains it rather than introducing it.
+ * **The card is the action and nothing else.** It carried a heading reading *Open a demo* directly
+ * above a button reading *Open demo* — the same words twice, which #332 took out along with the
+ * key that held them. What explains the control now follows it, rather than a second copy of it
+ * introducing it, and the promise the screen leads with is the hero above the card.
  */
 export function OpenDemo({ onFile, isDraggedOver }: Props) {
   // Read where it is used rather than passed down: it is a constant of the device, not state, and
@@ -50,10 +50,6 @@ export function OpenDemo({ onFile, isDraggedOver }: Props) {
 
   return (
     <div className="flex flex-col items-start gap-4">
-      <h2 className="font-ui font-medium text-28 leading-dense">
-        <Text path="library.open.title" />
-      </h2>
-
       <ChooseDemo onFile={onFile} />
 
       <p className="text-13 text-ink-dim leading-prose">

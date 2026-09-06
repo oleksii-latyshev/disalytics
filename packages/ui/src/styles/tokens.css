@@ -106,6 +106,15 @@
   --color-nade-decoy: #7a8599;
   --color-objective: #d14fa0;
 
+  /* The two the way in's background is drawn from, and the only hues in this file that mean nothing
+     a demo said. Rule 1 above is narrowed rather than dropped (#332): it governs the screens that
+     show a match, and the way in shows none, so there is no reading here for a colour to be
+     confused with. They are their own tokens for exactly that reason — reaching for `--color-ct`
+     would have put a side's colour on a screen with no sides on it — and the colour-blind palette
+     leaves them alone, because a mark nobody has to tell apart from another needs no separation. */
+  --color-pixel-1: #2f3fb8;
+  --color-pixel-2: #8b3fd0;
+
   /* One face for every word. Onest is variable across 300–700, which is what let two static
      families go — the narrow face `.label-dense` used to need is Onest 500 uppercase now, and it
      reads better small than a condensed grotesque ever did.

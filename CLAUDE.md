@@ -1722,6 +1722,58 @@ platform: anubis is 4.32 MiB, adding it back is one row in `catalogue.ts`, and e
 after a schema bump lands in git again. Measured in both locales at 1440×900 and 1024×800: **0
 elements overflowing**, two cards in each, and the bundle is 236.33 → **237.61 kB gz, 47.5%**.
 
+**#332 gave the way in a background and a promise, and it is the only screen in the product allowed
+a colour that means nothing.** The upload screen was a correct box in the middle of an empty viewport
+with the words *Open demo* on it twice — once as a heading and once as the button under it — over a
+Mirage plate at 15% opacity that read as noise rather than as a map. What replaces it is
+`PixelBackdrop`: **Dust2's own radar plate, sampled once per cell of a 10px grid and drawn as squares
+that breathe**, with the product's sentence at `text-44` standing on it above a card that now holds
+the action alone. Two owner decisions paid for it, both taken on 6 September 2026. **`ogl` is
+spent** — approved since #200 for exactly this and unspent ever since — at **17.2 kB gz**, taking the
+bundle 237.59 → **254.82 kB, 51.0%**. And **`ROADMAP.md`'s "no chromatic accent in the chrome" is
+narrowed rather than dropped**: it governs the screens that show a match, the way in shows none, and
+the grid gets `--color-pixel-1` and `--color-pixel-2` of its own so that nothing carrying a reading
+is reused as decoration.
+
+**The first build of it was a gradient-wave field and the owner rejected it on sight**, which is the
+part worth keeping: what makes this screen worth looking at is that the thing on it is *the product's
+own material*, and an aurora is decoration that any product could have had. The revision cost one
+dependency decision that was **not** taken — the reference the owner pointed at runs on
+`three` + `postprocessing`, which is around 200 kB gz against a 500 kB budget standing at 252, and
+the same pixelation is a dozen lines of GLSL in the `ogl` already installed.
+
+Six things are load-bearing. **The map is a texture rather than an image behind glass**: the grid
+samples it once per cell at the cell's own centre, so what is drawn is the map at the grid's
+resolution rather than the map with a mesh over it. **Presence is the map's and size is the wave's**
+— a cell exists where there is map under it and its size says where the wave has got to, which reads
+as breathing where a changing hue would read as data. **Two facts decide a cell, and both are
+needed**: alpha says whether the map is there at all (a radar asset is transparent outside its own
+outline, and the texture clamps at its edge, which without the test paints a stripe of the rim across
+the screen), and the brightest channel says whether this is structure or the plate's own ground —
+measured off the asset, the blue theme puts its ground near 0.15 against 0.30 for a wall, and a
+luminance reads both as almost nothing. **The buffer is capped at a device pixel ratio of 1.25**: the
+cells are a fixed size in CSS pixels, so there is nothing here for resolution to resolve, and dpr 2
+quadruples the fragments on a laptop about to spend every core it has on a parse. **It keeps moving
+through a real parse** — M7's own constraint on this row, measured with a 462 MB demo dropped in and
+the grid still moving between two composited screenshots at 0%. And **reduced motion draws exactly one
+frame**, through `@disa/ui`'s own setting rather than a second reading of the media query.
+
+Four things to know if this is touched again. **The hero needed a scrim and the mean is what hides
+that**: a single lit cell behind a glyph took the worst *pixel* of §14's contrast to **2.73** against
+a floor of 4.5 while the mean read 14, and a radial `color-mix` of `--color-surface-0` under the
+reading takes the worst back to **11.08–12.36** without touching the field around it. **The
+instrument for "is it still moving" is a screenshot, not `readPixels`**: a WebGL drawing buffer is
+cleared once it has been composited, so `readPixels` after the frame returns the same bytes for ever
+— it read one constant hash across idle, reduced *and* parsing, which looks exactly like a shader
+that never runs. **A patch sampled for that has to be somewhere the picture actually changes**: the
+first region chosen sat inside the scrim, where two moments are byte-identical because there is
+nothing there. And **`Page.captureScreenshot` with a `clip` and a `scale` tiles the page 2×2 when the
+device metrics carry a `deviceScaleFactor` of 2** — the page is fine and the picture is the artefact.
+A hidden tab is left alone and does not jump on the way back: six seconds away moved the ground by
+0.209 of a mean channel where one second of drift moves it 0.593. The tagline moved out of the rail
+in the same PR — it was the same sentence in two places — and `library.open.title` is deleted in both
+locales.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

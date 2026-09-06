@@ -77,6 +77,7 @@ Violating any of these is a bug, not a trade-off.
 | UI state | Zustand (discrete state only) | decided |
 | Playback clock | plain mutable object + rAF — not a state library | decided |
 | Radar rendering | Canvas 2D (PixiJS only if measurably needed) | decided, see §9 |
+| The way in's background | **`ogl`** — one full-screen fragment shader over the radar plate | decided, spent in #332 |
 | Parser | **Rust — `demoparser2` (LaihoE) compiled with wasm-pack** | decided; adopted in #46, vendored and patched — see `vendor/README.md` |
 | Persistence | OPFS, IndexedDB fallback | decided |
 | Testing | Vitest + happy-dom | decided |
@@ -1400,7 +1401,8 @@ proves worth it.
   and written up as revision 3 of the design document (#130), after three revisions drew the same verdict
   from the owner. Four sub-decisions came with it: the player rails get live armour, weapon,
   grenades and money (`SCHEMA_VERSION` 3 → 4); `ogl` is approved as a runtime dependency for two
-  WebGL backgrounds on the landing and parse screens only; hard rule 9 becomes a frame budget; and
+  WebGL backgrounds on the landing and parse screens only — **spent in #332 on one background behind
+  the whole way-in shell**, which is both of them, since the parse screen is a view inside it; hard rule 9 becomes a frame budget; and
   the bottom of the review screen carries the round, with the whole-match spine re-scaled to a 14px
   ribbon
 
