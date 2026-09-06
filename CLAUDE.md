@@ -1722,6 +1722,27 @@ platform: anubis is 4.32 MiB, adding it back is one row in `catalogue.ts`, and e
 after a schema bump lands in git again. Measured in both locales at 1440×900 and 1024×800: **0
 elements overflowing**, two cards in each, and the bundle is 236.33 → **237.61 kB gz, 47.5%**.
 
+**#317 made the deploy smoke re-read the document on every retry, and the fix is about *what* it
+waits for rather than how long.** `fetchWhenServed` resolved the asset paths once, from one read of
+`index.html`, and then retried each path while the shell answered — so in a torn window, where the
+edge serves the previous document while `/assets/*` already resolves against the new version's
+manifest, every retry asked for a file the deployment does not contain and never will, and the whole
+120 s deadline went on a URL that could not become live. `serveDiscovered` re-reads the document
+after each poll and moves onto the assets the deployment actually names. Three things to know.
+**The reproduction is a fake edge rather than a wait for the real one** — a `Bun.serve` that answers
+the old document, serves the shell for the old chunk *as that same old document*, and turns over
+after 20 s — and it is the shell body that makes it torn rather than merely late: an edge whose
+shell already names the new chunk leads discovery to it on its own, which is why the first two
+versions of that probe passed on both arms. Measured against it: `main` reads
+**`fail immutable .js /assets/index-OLD.js → 200 … after 120s`** and the branch reads
+**`ok immutable .js /assets/index-NEW.js → 200 … after 21s`**. **A failing shell now says which
+fault it is** — the document never named another asset, or it changed *n* times while waiting —
+because those two ask for different actions. And **`sameAssets` lives in `smoke/assets.ts`**: it is
+assets vocabulary, `representativesOf` sorts so an ordered comparison is a set comparison, and it is
+four unit tests there rather than a closure nothing can reach. Against production the same hour:
+**13 passed, 0 failed** — thirteen rather than twelve, because #331's sample containers are a
+discovered asset kind and the contract now covers them.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

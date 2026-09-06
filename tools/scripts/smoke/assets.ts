@@ -50,3 +50,12 @@ export function isFollowable(path: string): boolean {
   const extension = extensionOf(path);
   return extension === '.js' || extension === '.css';
 }
+
+/**
+ * Whether two reads of the deployed document name the same assets. `representativesOf` sorts, so an
+ * ordered comparison is a set comparison here — and the caller needs to know that the *set* moved
+ * rather than that some member of it did, because one changed hash means the whole version changed.
+ */
+export function sameAssets(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((path, index) => path === right[index]);
+}

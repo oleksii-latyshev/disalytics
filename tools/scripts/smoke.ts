@@ -1,7 +1,13 @@
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
-import { assetPathsIn, extensionOf, isFollowable, representativesOf } from './smoke/assets';
+import {
+  assetPathsIn,
+  extensionOf,
+  isFollowable,
+  representativesOf,
+  sameAssets,
+} from './smoke/assets';
 
 // The radar images are the one part of the contract a local checkout can still speak for: they are
 // committed, copied verbatim rather than content-hashed, and served under a path computed from the
@@ -143,27 +149,73 @@ interface Served {
   readonly waitedMs: number;
 }
 
-/**
- * One request per asset, retried only while the shell is answering. Both the caching and the
- * content-type assertions read this single response, so they can no longer disagree about the same
- * URL seconds apart — which is how #65 first showed itself.
- *
- * The deadline is shared across every asset rather than granted to each: propagation is one event
- * at the edge, so four assets each waiting their own two minutes would spend eight on it.
- */
-async function fetchWhenServed(baseUrl: string, path: string, deadline: number): Promise<Served> {
-  const startedAt = Date.now();
-  let response = await fetchPath(baseUrl, path);
-
-  while (isShell(response) && Date.now() < deadline) {
-    await Bun.sleep(ASSET_POLL_MS);
-    response = await fetchPath(baseUrl, path);
-  }
-
-  return { path, response, waitedMs: Date.now() - startedAt };
+interface ServedAssets {
+  readonly served: readonly Served[];
+  /** How many times the deployed document named a different set of assets while this waited. */
+  readonly documentChanges: number;
 }
 
-function checkImmutableCaching(served: readonly Served[]): Check[] {
+/**
+ * One request per asset per round, retried only while the shell is answering — and **the document is
+ * read again on every retry** rather than once at the start.
+ *
+ * That is #317, and the reason the old shape could not be fixed by waiting longer: in a torn window
+ * the edge answers the *previous* `index.html` while `/assets/*` already resolves against the new
+ * version's manifest, so the path being retried is one the deployed version does not contain and
+ * never will. Every retry then asks for a file that has been deleted, and the whole deadline is
+ * spent on a URL that cannot become live. Re-reading the document is what moves the retry onto the
+ * asset the deployment actually has.
+ *
+ * Both the caching and the content-type assertions read one response per asset, so they can no
+ * longer disagree about the same URL seconds apart — which is how #65 first showed itself. The
+ * deadline is shared across every asset rather than granted to each: propagation is one event at the
+ * edge, so four assets each waiting their own two minutes would spend eight on it.
+ */
+async function serveDiscovered(
+  baseUrl: string,
+  paths: readonly string[],
+  deadline: number,
+): Promise<ServedAssets> {
+  const startedAt = Date.now();
+  let current = paths;
+  let documentChanges = 0;
+
+  for (;;) {
+    const served: Served[] = [];
+
+    for (const path of current) {
+      const response = await fetchPath(baseUrl, path);
+      served.push({ path, response, waitedMs: Date.now() - startedAt });
+    }
+
+    if (!served.some(({ response }) => isShell(response)) || Date.now() >= deadline) {
+      return { served, documentChanges };
+    }
+
+    await Bun.sleep(ASSET_POLL_MS);
+
+    const fresh = [...representativesOf(await discoverAssets(baseUrl)).values()];
+    // An empty read is the edge answering nothing rather than the deployment naming nothing, and
+    // replacing a real set with it would end the run with no assets to assert against.
+    if (fresh.length > 0 && !sameAssets(fresh, current)) {
+      current = fresh;
+      documentChanges += 1;
+    }
+  }
+}
+
+/**
+ * Why an asset is still the shell, which is two different faults asking for two different actions:
+ * a deployment that never served the file, and a document that moved while this was waiting. The
+ * second is #317 and is the edge catching up rather than anything being wrong with the release.
+ */
+function shellReason(documentChanges: number): string {
+  return documentChanges === 0
+    ? ' — the shell, and the deployed document never named another asset'
+    : ` — the shell, and the deployed document changed ${documentChanges} time(s) while waiting`;
+}
+
+function checkImmutableCaching({ served, documentChanges }: ServedAssets): Check[] {
   const checks: Check[] = [];
 
   for (const [index, { path, response, waitedMs }] of served.entries()) {
@@ -171,11 +223,12 @@ function checkImmutableCaching(served: readonly Served[]): Check[] {
     const immutable =
       cacheControl !== null && normalizeCacheControl(cacheControl) === IMMUTABLE_CACHE_CONTROL;
     const waited = waitedMs < ASSET_POLL_MS ? '' : `, after ${Math.round(waitedMs / 1000)}s`;
+    const shell = isShell(response) ? shellReason(documentChanges) : '';
 
     checks.push({
       name: `immutable ${extensionOf(path) || 'no extension'}`,
       status: response.status === 200 && immutable && !isShell(response) ? 'pass' : 'fail',
-      detail: `${path} → ${response.status}, cache-control: ${cacheControl ?? 'none'}${waited}`,
+      detail: `${path} → ${response.status}, cache-control: ${cacheControl ?? 'none'}${waited}${shell}`,
     });
 
     if (index === 0) checks.push(...isolationChecks(path, response));
@@ -184,7 +237,7 @@ function checkImmutableCaching(served: readonly Served[]): Check[] {
   return checks;
 }
 
-function checkWasmMimeType(served: readonly Served[]): Check {
+function checkWasmMimeType({ served }: ServedAssets): Check {
   const binary = served.find(({ path }) => extensionOf(path) === '.wasm');
 
   if (binary === undefined) {
@@ -274,14 +327,13 @@ async function runChecks(url: string): Promise<Check[]> {
   }
 
   const deadline = Date.now() + ASSET_TIMEOUT_MS;
-  const served: Served[] = [];
-  for (const path of assets.values()) served.push(await fetchWhenServed(url, path, deadline));
+  const outcome = await serveDiscovered(url, [...assets.values()], deadline);
 
   return [
     ...(await checkDocument(url)),
     await checkClientRoute(url),
-    ...checkImmutableCaching(served),
-    checkWasmMimeType(served),
+    ...checkImmutableCaching(outcome),
+    checkWasmMimeType(outcome),
     await checkRadarImage(url),
   ];
 }
