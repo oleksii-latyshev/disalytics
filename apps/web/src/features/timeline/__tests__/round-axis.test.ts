@@ -1,6 +1,6 @@
-import { asPlayerSlot, asTick } from '@disa/demo-core';
+import { asPlayerSlot, asTick, type DefuseOutcome } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { axisGlyphs, namedKill, positionInSegment, timelineSegment } from '../helpers/round-axis';
+import { axisGlyphs, namedRow, positionInSegment, timelineSegment } from '../helpers/round-axis';
 import { newBuy, newDefuse, newDemo, newGrenade, newKill, newPlant, newRound } from './helpers';
 
 // The fixtures run at 64 ticks and 16 samples, so a frame is a tick over four. `newRound` opens the
@@ -186,36 +186,57 @@ describe('axisGlyphs', () => {
   });
 });
 
-describe('namedKill', () => {
-  function glyphs() {
+describe('namedRow', () => {
+  function glyphs(defuseStatus: DefuseOutcome['status'] = 'completed') {
+    const outcome: DefuseOutcome =
+      defuseStatus === 'interrupted'
+        ? { status: 'interrupted' }
+        : { status: defuseStatus, tick: asTick(700) };
+    // Slot 0 opens on CT and slot 1 on T, so the thrower and the defuser each carry a side.
     const demo = newDemo(4001, {
-      rounds: ROUNDS,
+      rounds: [newRound(1, 0, 'CT', newBuy({ CT: [0], T: [0] })), newRound(2, 8000)],
       kills: [newKill(400)],
       plants: [newPlant(500)],
       grenades: [newGrenade(600)],
+      defuses: [newDefuse(650, outcome)],
     });
 
     return axisGlyphs(demo, 0, timelineSegment(demo, 0));
   }
 
-  it('names a kill, and hands over where to hang the row', () => {
-    const kill = glyphs().find((glyph) => glyph.event.kind === 'kill');
-    const named = namedKill(glyphs(), kill?.id ?? null);
+  it('names every glyph whose row the feed also draws, and where to hang it', () => {
+    expect(
+      glyphs()
+        .map((glyph) => glyph.event.kind)
+        .sort(),
+    ).toEqual(['defuse', 'grenade', 'kill', 'plant']);
 
-    expect(named?.event.kind).toBe('kill');
-    expect(named?.fraction).toBe(kill?.fraction);
+    for (const glyph of glyphs()) {
+      const named = namedRow(glyphs(), glyph.id);
+
+      expect(named?.event.kind).toBe(glyph.event.kind);
+      expect(named?.fraction).toBe(glyph.fraction);
+    }
   });
 
-  it('names nothing else on the axis — §9.2 permits the row only where the feed draws it', () => {
-    for (const glyph of glyphs()) {
-      if (glyph.event.kind === 'kill') continue;
+  it('hands a grenade the side its thrower held, which is what colours the name', () => {
+    const nade = glyphs().find((glyph) => glyph.event.kind === 'grenade');
+    const named = namedRow(glyphs(), nade?.id ?? null);
 
-      expect(namedKill(glyphs(), glyph.id)).toBeUndefined();
+    expect(named?.event).toMatchObject({ kind: 'grenade', throwerSide: 'CT' });
+  });
+
+  it('refuses a defuse that never finished — the axis is the only place it is said', () => {
+    for (const status of ['aborted', 'interrupted'] as const) {
+      const axis = glyphs(status);
+      const defuse = axis.find((glyph) => glyph.event.kind === 'defuse');
+
+      expect(namedRow(axis, defuse?.id ?? null)).toBeUndefined();
     }
   });
 
   it('names nothing when the pointer is off the axis, or when the round has turned over', () => {
-    expect(namedKill(glyphs(), null)).toBeUndefined();
-    expect(namedKill(glyphs(), 'kill-404')).toBeUndefined();
+    expect(namedRow(glyphs(), null)).toBeUndefined();
+    expect(namedRow(glyphs(), 'kill-404')).toBeUndefined();
   });
 });
