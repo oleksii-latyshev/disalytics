@@ -1,60 +1,62 @@
-import { Text } from '@disa/i18n';
-import { matchHistoryFolder } from '../helpers/match-history';
-import { ChooseDemo } from './ChooseDemo';
+import { Text, useT } from '@disa/i18n';
+import { useRef } from 'react';
+import { ACCEPTED_EXTENSIONS, takeChosenFile } from '../helpers/demo-file';
+import { CardMascot } from './CardMascot';
+import { DemoFolderHint } from './DemoFolderHint';
 
 interface Props {
   onFile: (file: File) => void;
   isDraggedOver: boolean;
 }
 
-interface HintProps {
-  folder: string | null;
-  isDraggedOver: boolean;
-}
-
 /**
- * The invitation, with the folder the reader's own demos are recorded into. The path is game
- * vocabulary — one string in both locales, rendered as vocabulary rather than through `<Text>` —
- * and it is interpolated into a whole sentence rather than appended to a translated prefix, which
- * is grammatically impossible in Russian (`AGENTS.md` §11).
+ * **The invitation is the target.** It used to be a line of copy above a button, which asked the
+ * reader to read a sentence about dropping a file and then press something else; the card's whole
+ * body is the thing to drop onto and the thing to press now, and the mascot in the middle of it is
+ * what says so without a second sentence.
  *
- * It wraps rather than truncating: the Windows path is the longest and it does not fit the card on
- * one line at any width the card has, and a path with its middle elided names nothing.
- */
-function Hint({ folder, isDraggedOver }: HintProps) {
-  if (isDraggedOver) return <Text path="library.open.release" />;
-  if (folder === null) return <Text path="library.open.hint" />;
-
-  return (
-    <Text
-      path="library.open.hintFolder"
-      values={{ folder: <code className="wrap-anywhere text-ink">{folder}</code> }}
-    />
-  );
-}
-
-/**
- * **The card is the action and nothing else.** It carried a heading reading *Open a demo* directly
- * above a button reading *Open demo* — the same words twice, which #332 took out along with the
- * key that held them. What explains the control now follows it, rather than a second copy of it
- * introducing it, and the promise the screen leads with is the hero above the card.
+ * The drop itself is still the window's — `useFileDrop` listens there, because a drop the page does
+ * not take responsibility for navigates away to the file — so this target is what the *pointer* is
+ * offered, not what the drag is limited to.
+ *
+ * It is a plain `button` rather than the shared one: that component is a control in a row of
+ * controls, and this is a region the size of the card. Focus is not styled here either way —
+ * `base.css` puts the product's outline on `:focus-visible` for every element there is.
  */
 export function OpenDemo({ onFile, isDraggedOver }: Props) {
-  // Read where it is used rather than passed down: it is a constant of the device, not state, and
-  // the card is the only thing on the screen that says it.
-  const folder = matchHistoryFolder({
-    platform: navigator.userAgentData?.platform,
-    userAgent: navigator.userAgent,
-    maxTouchPoints: navigator.maxTouchPoints,
-  });
+  const t = useT();
+  const picker = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex flex-col items-start gap-4">
-      <ChooseDemo onFile={onFile} />
+    <>
+      {/* A sibling of the target rather than a child of it, so pressing it opens the folder note
+          instead of the file picker. It is positioned against the card, which is the nearest
+          positioned ancestor — `.surface-sweep` is what makes it one. */}
+      <DemoFolderHint />
 
-      <p className="text-13 text-ink-dim leading-prose">
-        <Hint folder={folder} isDraggedOver={isDraggedOver} />
-      </p>
-    </div>
+      <button
+        type="button"
+        aria-label={t('library.open.action')}
+        onClick={() => picker.current?.click()}
+        className="flex w-full cursor-pointer flex-col items-center gap-3 rounded-card px-4 py-5 transition-colors duration-(--duration-micro) ease-out hover:bg-hover"
+      >
+        <CardMascot isLifted={isDraggedOver} />
+
+        <span className="text-center text-14 text-ink">
+          <Text path={isDraggedOver ? 'library.open.release' : 'library.open.invite'} />
+        </span>
+      </button>
+
+      <input
+        ref={picker}
+        type="file"
+        accept={ACCEPTED_EXTENSIONS}
+        className="hidden"
+        onChange={(event) => {
+          const chosen = takeChosenFile(event.target);
+          if (chosen) onFile(chosen);
+        }}
+      />
+    </>
   );
 }

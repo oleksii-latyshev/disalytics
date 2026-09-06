@@ -2,7 +2,6 @@ import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
 import { AnimatePresence, DURATION_BASE_SECONDS, EASE_OUT, motion } from '@disa/ui';
 import type { ParseState } from '@/core/parsing';
-import { CardWatcher } from './CardWatcher';
 import { DemoLibrary } from './DemoLibrary';
 
 interface Props {
@@ -39,12 +38,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
         <Text path="common.tagline" />
       </h2>
 
-      <div className="surface-card relative w-full max-w-[36rem] rounded-float p-8">
-        {/* Outside the crossfade, the way the hero is outside it: the card's body is replaced four
-            times over a parse and this stands through all of them, which is what makes it the
-            card's own rather than the upload state's. */}
-        <CardWatcher isLifted={isDraggedOver} />
-
+      <div className="surface-card surface-sweep w-full max-w-[36rem] rounded-float p-6">
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={state.status}
@@ -52,7 +46,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: DURATION_BASE_SECONDS, ease: EASE_OUT }}
-            className="relative flex flex-col gap-4"
+            className="flex flex-col gap-4"
           >
             <DemoLibrary
               state={state}
@@ -65,7 +59,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
           </motion.div>
         </AnimatePresence>
 
-        <p className="relative mt-6 text-12 text-ink-dim leading-prose">
+        <p className="mt-6 text-12 text-ink-dim leading-prose">
           <Text path="common.privacyNote" />
         </p>
       </div>
