@@ -148,9 +148,17 @@ export interface PlateMark {
  * `tokens`, `grenades` and `kill-line` helpers the layers call, and the only things this file
  * chooses are where in the swatch a mark sits and how far through its own life it is caught.
  *
- * The vision wedge is the one mark of §6.1 that is missing. Its geometry lives inside the token
- * layer, around a gradient the layer caches across frames, and lifting it out for a swatch would
- * move a frame path for a picture — so the entry for a selected player names the cone instead.
+ * The vision wedge is the one mark of §6.1 with no entry, and the reason is the swatch rather than
+ * the renderer — #249 settled that after building it. Nothing stands in the way of drawing it: #232
+ * made `visionWedge()` a factory that owns its own gradient cache, so the sheet can hold one of its
+ * own and the token layer's is untouched. **The cone is unreadable at this size**, because what
+ * makes it legible on the plate is area and not ink: it is painted at α0.15 fading to nothing over
+ * its whole radius, which is around 140px there and 18 here — a sixtieth of the area. Measured in
+ * the built sheet, the swatch reaches α0.063 at 10px from the token and α0.031 at 14, over
+ * `--color-surface-0` and over a mid-grey alike, and a reader sees a token beside an empty box.
+ * The alternative is this file choosing an opacity, which is the one thing it may not do. So the
+ * entry for a selected player names the cone in words, and the words carry no number that could go
+ * stale.
  */
 export const PLATE_MARKS: readonly PlateMark[] = [
   {
