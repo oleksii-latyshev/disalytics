@@ -86,7 +86,14 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
 
   return (
     <div className="app-shell relative grid grid-rows-[auto_minmax(0,1fr)] bg-surface-0 split:h-dvh split:grid-cols-[17.5rem_minmax(0,1fr)] split:grid-rows-1">
-      <PixelBackdrop isLifted={isDraggedOver} />
+      {/* The field is the way in's own screen and nobody else's. The library and the two screens
+          that are coming are pages of text, and they stand on the app's ground with one light over
+          it — which is the whole of their decoration. */}
+      <PixelBackdrop isLifted={isDraggedOver} isShown={view === 'upload'} />
+
+      {view !== 'upload' && (
+        <div aria-hidden="true" className="surface-vignette pointer-events-none fixed inset-0" />
+      )}
 
       {/* The acknowledgement is the screen's, not the card's. It is white, like every other thing
           in the product that is the interface talking rather than the demo — there is no accent hue

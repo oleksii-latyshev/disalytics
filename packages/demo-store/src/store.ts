@@ -1,5 +1,5 @@
 import type { ParsedDemo } from '@disa/demo-core';
-import { matchScore, SCHEMA_VERSION } from '@disa/demo-core';
+import { matchScore, roundWinners, SCHEMA_VERSION } from '@disa/demo-core';
 import type { BackendKind, StoreBackend } from './backend';
 import { openIndexedDbBackend } from './backends/indexeddb';
 import { openOpfsBackend } from './backends/opfs';
@@ -38,13 +38,32 @@ export interface DemoStore {
   remove(key: string): Promise<void>;
 }
 
+/**
+ * First round to last, in seconds — the match rather than the recording, which starts in a warmup
+ * nobody is reviewing. `undefined` for a demo with no rounds at all, where there is no match to
+ * measure.
+ */
+function durationOf(demo: ParsedDemo): number | undefined {
+  const { rounds } = demo.events;
+  const first = rounds.at(0);
+  const last = rounds.at(-1);
+
+  if (first === undefined || last === undefined) return undefined;
+
+  return (last.endTick - first.startTick) / demo.header.tickRate;
+}
+
 function metaFor(demo: ParsedDemo, fileName: string): CatalogMeta {
+  const durationSeconds = durationOf(demo);
+
   return {
     fileName,
     map: demo.header.map,
     roundCount: demo.events.rounds.length,
     score: matchScore(demo),
     storedAt: Date.now(),
+    winners: roundWinners(demo),
+    ...(durationSeconds === undefined ? {} : { durationSeconds }),
   };
 }
 

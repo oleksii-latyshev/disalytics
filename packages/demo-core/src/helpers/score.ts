@@ -20,6 +20,12 @@ export interface MatchScore {
   startedT: number;
 }
 
+/**
+ * One of the two teams, named by the side it opened the match on — the only name the demo lets us
+ * give a team, and the same one `MatchScore` counts under.
+ */
+export type OpeningSide = 'ct' | 't';
+
 function ctSlotsOf(round: Round): readonly PlayerSlot[] {
   return round.economy.filter((slot) => slot.team === 'CT').map((slot) => slot.slot);
 }
@@ -57,30 +63,44 @@ function openingCtOnCt(round: Round, opening: ReadonlySet<PlayerSlot>): boolean 
 }
 
 /**
- * `Round.winner` is a *side*, and a side belongs to a different team in each half, so counting
- * winners by side gives a pair of numbers that is neither team's score. Each round is attributed
- * through the side its own economy recorded — the only per-round side the schema carries.
+ * Which of the two teams won each round, in order.
  *
- * A round the mapping cannot be read from keeps the previous round's, which is what makes a match
- * with no economy data at all degrade to a side count rather than to nonsense.
+ * `Round.winner` is a *side*, and a side belongs to a different team in each half, so reading it
+ * directly gives an answer that changes hands at halftime. Each round is attributed through the
+ * side its own economy recorded — the only per-round side the schema carries — and a round the
+ * mapping cannot be read from keeps the previous round's, which is what makes a match with no
+ * economy data at all degrade to a side count rather than to nonsense.
  *
- * `throughRound` bounds the walk at a round index, which is the score *after* that round — what
+ * This is the one walk. `matchScore` counts it and the library card draws it, so the day the
+ * attribution is corrected both are corrected — two walks of it is exactly what #141 was.
+ */
+export function roundWinners(demo: ParsedDemo): readonly OpeningSide[] {
+  const { rounds } = demo.events;
+  const opening = openingCtSlots(rounds);
+  const winners: OpeningSide[] = [];
+  let openingCtIsCt = true;
+
+  for (const round of rounds) {
+    openingCtIsCt = openingCtOnCt(round, opening) ?? openingCtIsCt;
+    winners.push((round.winner === 'CT') === openingCtIsCt ? 'ct' : 't');
+  }
+
+  return winners;
+}
+
+/**
+ * A finished match's score by team, counted over `roundWinners`.
+ *
+ * `throughRound` bounds the count at a round index, which is the score *after* that round — what
  * §7.3's round list names on a hover.
  */
 export function matchScore(demo: ParsedDemo, throughRound?: number): MatchScore {
-  const { rounds } = demo.events;
-  const opening = openingCtSlots(rounds);
   const score: MatchScore = { startedCt: 0, startedT: 0 };
-  let openingCtIsCt = true;
 
-  for (const [index, round] of rounds.entries()) {
+  for (const [index, winner] of roundWinners(demo).entries()) {
     if (throughRound !== undefined && index > throughRound) break;
 
-    openingCtIsCt = openingCtOnCt(round, opening) ?? openingCtIsCt;
-
-    const wonByOpeningCt = (round.winner === 'CT') === openingCtIsCt;
-
-    if (wonByOpeningCt) score.startedCt += 1;
+    if (winner === 'ct') score.startedCt += 1;
     else score.startedT += 1;
   }
 

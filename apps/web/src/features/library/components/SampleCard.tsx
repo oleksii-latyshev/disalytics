@@ -2,7 +2,7 @@ import { Text, useT } from '@disa/i18n';
 import type { RadarTheme } from '@disa/map-data';
 import { type SampleMatch, sampleByteLength } from '@/core/samples';
 import { megabytesOf } from '../helpers/saved-list';
-import { MapThumbnail } from './MapThumbnail';
+import { MapPoster } from './MapPoster';
 import { MetaDot } from './MetaDot';
 
 interface Props {
@@ -34,11 +34,11 @@ export function SampleCard({ sample, theme, onOpen }: Props) {
         type="button"
         onClick={() => onOpen(sample)}
         aria-label={t('library.samples.open', { home, away, map: sample.map, megabytes })}
-        className="group flex w-full flex-col overflow-hidden rounded-card border border-line bg-surface-1 text-left transition-colors duration-(--duration-micro) ease-out hover:border-line-strong hover:bg-hover"
+        className="group relative flex h-56 w-full flex-col justify-end overflow-hidden rounded-card border border-line bg-surface-1 text-left transition-colors duration-(--duration-micro) ease-out hover:border-line-strong"
       >
-        <MapThumbnail map={sample.map} theme={theme} />
+        <MapPoster map={sample.map} theme={theme} />
 
-        <span className="flex min-w-0 flex-col gap-1 p-3">
+        <span className="relative flex min-w-0 flex-col gap-1 p-3">
           {/* One whole sentence rather than two names either side of a hardcoded word: the names
               are game vocabulary and the join between them is not. It has the line to itself
               because both cards of a series carry the same two names, and a map name beside them
@@ -47,12 +47,16 @@ export function SampleCard({ sample, theme, onOpen }: Props) {
             <Text path="library.samples.teams" values={{ home, away }} />
           </span>
 
-          <span className="flex flex-wrap items-baseline gap-x-2 text-12 text-ink-dim">
+          {/* Two lines for the reason a saved card has two: the map and the event on one, the
+              download on the next, each fitting the narrowest column instead of being clipped. */}
+          <span className="flex h-4 items-baseline gap-x-2 truncate text-12 text-ink-dim">
             <span className="shrink-0">{sample.map}</span>
             <MetaDot />
             <span className="truncate">{sample.event}</span>
-            <MetaDot />
-            <span className="numeric shrink-0">
+          </span>
+
+          <span className="flex h-4 items-baseline text-12 text-ink-dim">
+            <span className="numeric truncate">
               <Text path="library.samples.size" values={{ megabytes }} />
             </span>
           </span>

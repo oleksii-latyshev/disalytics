@@ -30,6 +30,7 @@
     "note": "Opened before, kept in this browser. Removing one clears the saved copy — the .dem file on your disk is untouched.",
     "score": "{startedCt} : {startedT}",
     "rounds": "{count, plural, one {# round} other {# rounds}}",
+    "duration": "{minutes} min",
     "storedAt": "{when, date, medium}",
     "size": "{megabytes, number, ::.#} MB",
     "open": "Show {map}, saved on this device",
