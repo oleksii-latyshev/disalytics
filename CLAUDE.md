@@ -1683,6 +1683,45 @@ thins a round**, which is the shape #313's own roadmap row asked for and stopped
 The counting is `axisGlyphs` → `filterGlyphs` → `glyphHitHalves` driven in Bun over a real parse, so
 the figures are the shipped code's own rather than a sweep of the DOM.
 
+**#330 put two matches in the library before the reader has a demo, and the decision it closes was
+smaller than everyone thought.** `ROADMAP.md` had been holding "what exactly ships, and whose names
+are on it" since the redesign, with a size ceiling under it: a static asset is capped at **25 MiB**
+and a parsed 300 MB demo was assumed not to fit until it was trimmed to a few rounds. Measured, a
+whole match is **10.28 MiB** (inferno) and **13.15 MiB** (dust2) as a container and **2.89 and
+3.90 MiB gzipped** — so nothing is trimmed, and what ships is two maps of the IEM Atlanta 2026
+series between Natus Vincere and Vitality, published by HLTV. Professionals rather than ten private
+people is the whole of the names answer. Six things are load-bearing.
+
+**No `.dem` is committed and the rule is not bent** — what is in the tree is the *parse* of one,
+which is the same container `packages/demo-store` writes into OPFS after any parse, so the app needed
+no second format and the library needed no second kind of entry. **The bytes are spent on a press**:
+nothing is fetched before it, verified in the built bundle with an empty resource list on the library
+screen, and the service worker's `globPatterns` is `html,css,js`, so a sample is not precached — which
+would otherwise have cost every visitor 6.8 MiB. **A downloaded sample is an ordinary saved demo from
+that moment**: it is written under `sample:<id>:${SCHEMA_VERSION}`, so `staleKeys` evicts it on a
+schema bump exactly as it evicts everything else, the library lists it as a saved card, and removing
+it is the removal that already existed — the sample card comes back afterwards, measured over the
+whole round trip. **The container is decompressed in the page rather than by the server**: naming
+`Content-Encoding` would leave the browser to do it, and a proxy that re-compresses the response —
+which Cloudflare may — would hand the page bytes through gzip twice and out of it once.
+**`bun run samples:check` is what stops a stale one shipping**, and the failure it exists for is
+silent: a `SCHEMA_VERSION` bump makes every committed container unreadable, `decodeDemo` throws, and
+the card answers a press with a failure on a build whose tests, types and bundle are all green —
+because nothing else in the repository reads those bytes. Regenerating them needs the demos, which
+live on the owner's machine and never in CI, so what CI can do is refuse. And **the codec moved onto
+its own entry point** — `@disa/demo-store/codec` — because `bun run samples:generate` runs in Bun and
+the store's barrel reaches IndexedDB and OPFS: a Node-side script cannot typecheck against the
+package at all through the front door.
+
+Two smaller things. **A sample that will not download is its own `OpenFailure`** rather than
+`cacheGone` — nothing was read, and what the reader needs told is that this is the network and not
+the match — and the `restoring` state gained a `download` block, so the same screen that says
+"opening from cache" says "downloading the match" with a percentage when there is one to say.
+**Two of three maps ship**, and the cost that decided it is the repository's history rather than the
+platform: anubis is 4.32 MiB, adding it back is one row in `catalogue.ts`, and every regeneration
+after a schema bump lands in git again. Measured in both locales at 1440×900 and 1024×800: **0
+elements overflowing**, two cards in each, and the bundle is 236.33 → **237.61 kB gz, 47.5%**.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

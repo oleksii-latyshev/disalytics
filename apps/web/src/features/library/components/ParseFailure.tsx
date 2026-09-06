@@ -16,6 +16,10 @@ function copyFor(failure: OpenFailure): { title: TranslationKey; hint: Translati
     return { title: 'library.saved.gone.title', hint: 'library.saved.gone.hint' };
   }
 
+  if (failure.kind === 'sampleUnreachable') {
+    return { title: 'library.samples.gone.title', hint: 'library.samples.gone.hint' };
+  }
+
   return { title: errorTitleKey(failure.code), hint: errorHintKey(failure.code) };
 }
 

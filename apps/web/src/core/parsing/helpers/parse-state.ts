@@ -12,13 +12,25 @@ export type CacheState =
 /**
  * Why an open ended without a demo on screen. A saved demo that is no longer on the device is not
  * a parser failure and has no `ErrorCode`: nothing was read, and the vocabulary in
- * `packages/demo-core` describes what a demo turned out to be.
+ * `packages/demo-core` describes what a demo turned out to be. A sample that would not download is
+ * the third of those — the demo exists and is fine, and what failed is this device's reach.
  */
-export type OpenFailure = { kind: 'parse'; code: ErrorCode } | { kind: 'cacheGone' };
+export type OpenFailure =
+  | { kind: 'parse'; code: ErrorCode }
+  | { kind: 'cacheGone' }
+  | { kind: 'sampleUnreachable' };
 
 export type ParseState =
   | { status: 'idle' }
-  | { status: 'restoring'; fileName: string }
+  | {
+      status: 'restoring';
+      fileName: string;
+      /**
+       * `null` while the demo is being read out of this device's own store, which is instant and
+       * has no progress to report. A sample match is a download first, and says so.
+       */
+      download: { percent: number | null } | null;
+    }
   | {
       status: 'parsing';
       fileName: string;
@@ -49,6 +61,7 @@ export type ParseEvent =
   | { type: 'opened'; fileName: string }
   | { type: 'closed' }
   | { type: 'restored'; demo: ParsedDemo; roundIndex: number }
+  | { type: 'downloading'; percent: number | null }
   | { type: 'parseStarted' }
   | { type: 'progressed'; phase: ParsePhase; percent: number }
   | { type: 'wentHidden' }
@@ -60,7 +73,12 @@ export type ParseEvent =
 
 export const IDLE_PARSE: ParseState = { status: 'idle' };
 
-function reduceRestoring(fileName: string, event: ParseEvent): ParseState | null {
+function reduceRestoring(
+  state: Extract<ParseState, { status: 'restoring' }>,
+  event: ParseEvent,
+): ParseState | null {
+  const { fileName } = state;
+
   if (event.type === 'restored') {
     return {
       status: 'ready',
@@ -68,6 +86,20 @@ function reduceRestoring(fileName: string, event: ParseEvent): ParseState | null
       demo: event.demo,
       cache: { status: 'restored' },
       roundIndex: event.roundIndex,
+    };
+  }
+
+  if (event.type === 'downloading') return { ...state, download: { percent: event.percent } };
+
+  // A sample that had to be fetched arrives the way a parse does rather than the way a cache read
+  // does: it is on screen and not yet in the store, and `cache` is what says so.
+  if (event.type === 'succeeded') {
+    return {
+      status: 'ready',
+      fileName,
+      demo: event.demo,
+      cache: { status: event.caching ? 'storing' : 'unavailable' },
+      roundIndex: 0,
     };
   }
 
@@ -137,12 +169,14 @@ function reduceReady(
 // left — the worker is terminated rather than asked to stop, so a message posted just before the
 // terminate can still be waiting in the queue.
 export function reduceParse(state: ParseState, event: ParseEvent): ParseState {
-  if (event.type === 'opened') return { status: 'restoring', fileName: event.fileName };
+  if (event.type === 'opened') {
+    return { status: 'restoring', fileName: event.fileName, download: null };
+  }
   if (event.type === 'closed') return IDLE_PARSE;
 
   switch (state.status) {
     case 'restoring':
-      return reduceRestoring(state.fileName, event) ?? state;
+      return reduceRestoring(state, event) ?? state;
     case 'parsing':
       return reduceParsing(state, event) ?? state;
     case 'ready':

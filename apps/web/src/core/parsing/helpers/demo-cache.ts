@@ -21,6 +21,17 @@ export interface DemoCache {
   write(demo: ParsedDemo): Promise<PersistenceStatus>;
 }
 
+function cacheAt(store: DemoStore, key: string, fileName: string): DemoCache {
+  return {
+    read: () => store.read(key).catch(() => null),
+    write: async (demo) => {
+      await store.write(key, demo, fileName);
+
+      return requestPersistence();
+    },
+  };
+}
+
 /**
  * `null` when this browser has nothing to cache into, or when reaching the cache failed. The cost
  * of either is a parse rather than a demo, so neither is worth failing the open over.
@@ -37,14 +48,19 @@ export async function openCacheFor(file: File): Promise<DemoCache | null> {
     return null;
   }
 
-  return {
-    read: () => store.read(key).catch(() => null),
-    write: async (demo) => {
-      await store.write(key, demo, file.name);
+  return cacheAt(store, key, file.name);
+}
 
-      return requestPersistence();
-    },
-  };
+/**
+ * The same cache under a key the caller already knows, which is how a sample match is filed: there
+ * is no file to fingerprint, and the id in the key is what makes the entry recognisable in a
+ * catalogue full of hashes. A `null` here costs the download again on the next visit and nothing
+ * else, exactly as a missing cache costs a parse again.
+ */
+export async function openCacheAt(key: string, fileName: string): Promise<DemoCache | null> {
+  const store = await sharedStore();
+
+  return store === null ? null : cacheAt(store, key, fileName);
 }
 
 /**

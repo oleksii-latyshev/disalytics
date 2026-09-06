@@ -100,6 +100,13 @@ jobs:
       - name: bitfields:check
         run: bun run bitfields:check
 
+      # The sample matches are containers this repository committed, and a `SCHEMA_VERSION` bump
+      # makes every one of them unreadable — silently, because nothing else in the tree reads those
+      # bytes. Regenerating them needs the `.dem` files, which are never in CI, so what CI can do is
+      # refuse to ship the stale ones.
+      - name: samples:check
+        run: bun run samples:check
+
       - name: test
         run: bun run test
 

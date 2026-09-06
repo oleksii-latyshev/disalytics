@@ -1,6 +1,7 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { useCallback, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
+import type { SampleMatch } from '@/core/samples';
 import { HelpSheet, SettingsSheet } from '@/features/review';
 import type { RailView } from '../helpers/views';
 import { useFileDrop } from '../hooks/use-file-drop';
@@ -15,6 +16,7 @@ interface Props {
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
   onEnter: (demo: SavedDemo, roundIndex: number) => void;
+  onSample: (sample: SampleMatch) => void;
   onClose: () => void;
 }
 
@@ -31,7 +33,7 @@ type Sheet = 'settings' | 'help';
  * stage leaves it, so a rail is not chrome beside the plate — it is a subtraction from the plate's
  * own axis, and 280px of it is nearly half the 616px the plate measures at 1280.
  */
-export function WayIn({ state, onFile, onEnter, onClose }: Props) {
+export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
   const [view, setView] = useState<RailView>('upload');
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
@@ -53,6 +55,16 @@ export function WayIn({ state, onFile, onEnter, onClose }: Props) {
       onEnter(demo, roundIndex);
     },
     [onEnter],
+  );
+
+  // The same move a file makes, for the same reason: the upload view is where a download reports
+  // itself, and the library has nowhere to put a progress reading.
+  const enterSample = useCallback(
+    (sample: SampleMatch) => {
+      setView('upload');
+      onSample(sample);
+    },
+    [onSample],
   );
 
   // A failure belongs to the screen that raised it. Leaving ends it rather than parking it behind
@@ -101,7 +113,7 @@ export function WayIn({ state, onFile, onEnter, onClose }: Props) {
             isDraggedOver={isDraggedOver}
           />
         )}
-        {view === 'library' && <LibraryView onEnter={enterMatch} />}
+        {view === 'library' && <LibraryView onEnter={enterMatch} onSample={enterSample} />}
         {(view === 'lineups' || view === 'stats') && <SoonView view={view} />}
       </main>
 
