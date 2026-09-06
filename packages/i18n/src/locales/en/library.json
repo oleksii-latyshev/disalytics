@@ -1,9 +1,11 @@
 {
   "open": {
-    "hint": "Drop a .dem file here, or choose one from your match history folder.",
-    "hintFolder": "Drop a .dem file here, or choose one from {folder}.",
-    "action": "Open demo",
-    "release": "Release to open it."
+    "invite": "Drop a demo here, or click to choose one",
+    "release": "Release to open it.",
+    "where": "Where are my demos?",
+    "hint": "Recorded demos are kept in your match history folder.",
+    "hintFolder": "Recorded demos are kept in {folder}.",
+    "action": "Open demo"
   },
   "progress": {
     "phase": {

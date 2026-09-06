@@ -3,7 +3,7 @@ import { Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import { useEffect, useRef } from 'react';
 import { useSetting } from '@/core/settings';
 import { prefersLessMotion } from '../helpers/less-motion';
-import { coverOf, PIXEL_FRAGMENT, PIXEL_VERTEX, pixelColours } from '../helpers/pixels';
+import { CELL_PX, coverOf, PIXEL_FRAGMENT, PIXEL_VERTEX, pixelColours } from '../helpers/pixels';
 
 /**
  * The material of the product rather than an illustration. One plate, fixed, because this screen has
@@ -11,9 +11,6 @@ import { coverOf, PIXEL_FRAGMENT, PIXEL_VERTEX, pixelColours } from '../helpers/
  * shape alone, which is what a grid this coarse leaves of it.
  */
 const BACKDROP_MAP = 'de_dust2';
-
-/** The grid, in CSS pixels. Around 144 cells across a 1440px viewport — enough to read a map. */
-const CELL_PX = 10;
 
 /**
  * A device pixel ratio of 2 quadruples the fragments, and the picture is a grid of squares whose

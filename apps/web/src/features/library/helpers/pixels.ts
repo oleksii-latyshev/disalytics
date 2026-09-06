@@ -45,6 +45,22 @@ export function coverOf(width: number, height: number): readonly [number, number
   return aspect >= 1 ? [aspect, 1] : [1, 1 / aspect];
 }
 
+/**
+ * The grid, in CSS pixels. Around 144 cells across a 1440px viewport — enough to read a map.
+ *
+ * It is here rather than in the component because **the way in has one grid**: the field draws the
+ * map in it and the card's watcher draws a player in it, and two screens' worth of squares at two
+ * pitches would be two languages on one page.
+ */
+export const CELL_PX = 10;
+
+/**
+ * Half a lit cell's side, in cell units, at full strength. The shader scales it by the wave — a cell
+ * exists where there is something under it and its *size* says how much — and anything else drawn in
+ * this grid scales it the same way, which is what makes the two look like one material.
+ */
+export const CELL_EXTENT = 0.44;
+
 export const PIXEL_VERTEX = /* glsl */ `
   attribute vec2 uv;
   attribute vec2 position;

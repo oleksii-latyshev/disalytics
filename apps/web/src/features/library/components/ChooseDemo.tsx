@@ -1,19 +1,17 @@
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { useRef } from 'react';
-
-// The container is identified from magic bytes, not from the name, so this only narrows the
-// picker's default filter — a renamed demo still opens.
-const ACCEPTED_EXTENSIONS = '.dem,.dem.zst,.dem.bz2';
+import { ACCEPTED_EXTENSIONS, takeChosenFile } from '../helpers/demo-file';
 
 interface Props {
   onFile: (file: File) => void;
 }
 
 /**
- * The way to a file, wherever the card happens to be. It is its own component because the failure
- * screen is the same card in the same place and has to offer the same route out — and a second copy
- * of `OpenDemo` there would put its heading on screen under the error's.
+ * The way to a file as an ordinary button. The way in's own card is a drop zone that opens the
+ * picker when it is pressed, so this is the failure screen's route out and nothing else — that card
+ * is a heading, an explanation and a way to try again, and a target the size of the invitation
+ * would read as the failure being the thing to press.
  */
 export function ChooseDemo({ onFile }: Props) {
   const picker = useRef<HTMLInputElement>(null);
@@ -30,9 +28,7 @@ export function ChooseDemo({ onFile }: Props) {
         accept={ACCEPTED_EXTENSIONS}
         className="hidden"
         onChange={(event) => {
-          const chosen = event.target.files?.item(0);
-          // Cleared so choosing the same file twice in a row still reaches onFile.
-          event.target.value = '';
+          const chosen = takeChosenFile(event.target);
           if (chosen) onFile(chosen);
         }}
       />

@@ -57,6 +57,64 @@ pre {
   box-shadow: 0 0 0 1px var(--color-line);
 }
 
+/* The way in's card, alive: a light travelling once around its edge.
+
+   It is the only animated border in the product, and this card is the only place one belongs — every
+   other surface here is a panel to read, and this one is a *target*, something the reader is meant
+   to drop a file onto. A frame that moves is what says so without a second sentence under it.
+
+   Three things are deliberate. **It is a registered angle rather than a rotating element**: a
+   rotation has to be square to cover a rounded rectangle at every step, so the overdraw is the whole
+   card, where turning `--sweep` repaints a 1px ring. **The colours are `--color-pixel-1` and
+   `--color-pixel-2`**, the two tokens #332 minted for this screen: nothing that carries a reading is
+   spent on decoration, and this screen shows no match for a hue to be confused with. And **it needs
+   no reduced-motion rule of its own** — `motion.css`'s reset already reaches `*::before` and takes
+   every animation there to one 0.01ms iteration.
+
+   The ring sits inside the card's own hairline rather than replacing it: `.surface-card` draws that
+   as a `box-shadow`, so there is no border here to animate and nothing of the card's own to lose. */
+@property --sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes surface-sweep {
+  to {
+    --sweep: 1turn;
+  }
+}
+
+.surface-sweep {
+  --sweep: 0deg;
+  position: relative;
+}
+
+/* Over the card's content rather than under its background, which is where `z-index: -1` puts it —
+   a stacking context of its own is what a card with a background *is*. It is a 1px ring with no
+   pointer events, so painting last costs nothing and reaches nothing. */
+.surface-sweep::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--sweep),
+    transparent 0turn,
+    var(--color-pixel-2) 0.05turn,
+    var(--color-pixel-1) 0.11turn,
+    transparent 0.18turn,
+    transparent 1turn
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: surface-sweep 9s linear infinite;
+  pointer-events: none;
+}
+
 /* The scoreboard's lip, rising from the centre of the timeline block's top edge as a tab of that
    card rather than a card on it.
 
