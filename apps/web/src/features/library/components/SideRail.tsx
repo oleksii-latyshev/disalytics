@@ -1,4 +1,4 @@
-import { Text, useT } from '@disa/i18n';
+import { useT } from '@disa/i18n';
 import { Button, Highlight, HighlightItem } from '@disa/ui';
 import { CircleQuestionMark, Settings } from 'lucide-react';
 import { RAIL_SECTIONS, type RailView } from '../helpers/views';
@@ -35,11 +35,10 @@ export function SideRail({ view, onView, onSettingsOpen, onHelpOpen }: Props) {
     <aside className="relative z-10 flex flex-col gap-3 border-b border-line bg-surface-0 p-3 split:h-dvh split:gap-6 split:border-r split:border-b-0 split:p-4">
       <header className="flex flex-col gap-1">
         {/* The product name is a name, not copy — AGENTS.md §11 keeps this kind of vocabulary out
-            of the message catalogue in both locales. */}
+            of the message catalogue in both locales. The tagline that used to sit under it is the
+            way in's hero since #332: it was the same sentence twice on the same screen, and the
+            13px copy in a rail is the half that was not being read. */}
         <h1 className="font-ui font-medium text-20 leading-dense">disalytics</h1>
-        <p className="hidden text-13 text-ink-dim leading-prose wide:block">
-          <Text path="common.tagline" />
-        </p>
       </header>
 
       <div className="flex items-start gap-2 split:flex-1 split:flex-col split:items-stretch split:gap-6">

@@ -104,7 +104,6 @@ export const TRANSLATION_KEYS = [
   'library.open.hint',
   'library.open.hintFolder',
   'library.open.release',
-  'library.open.title',
   'library.progress.cancel',
   'library.progress.hiddenTab',
   'library.progress.label',
