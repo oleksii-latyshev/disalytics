@@ -6,7 +6,7 @@ import { EventGlyph, UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { Transport } from '@/core/playback';
 import { useRovingFocus } from '@/shared/hooks';
 import { GLYPH_HIT_HALF_PX, glyphHitHalves, hasRoomForSymbol } from '../helpers/glyph-hits';
-import { type AxisEvent, type AxisGlyph, namedKill } from '../helpers/round-axis';
+import { type AxisEvent, type AxisGlyph, namedRow } from '../helpers/round-axis';
 import { anchorAtFraction } from '../helpers/round-strip';
 
 /** The band the glyphs occupy, centred on the axis — 24px of mark plus the room to rise into. */
@@ -105,7 +105,7 @@ export const EventGlyphs = memo(function EventGlyphs({
 
   if (glyphs.length === 0) return null;
 
-  const named = namedKill(glyphs, namedId);
+  const named = namedRow(glyphs, namedId);
 
   function nameOf(slot: PlayerSlot | null): string {
     if (slot === null) return t('timeline.unknownPlayer');
@@ -199,18 +199,18 @@ export const EventGlyphs = memo(function EventGlyphs({
         })}
       </ul>
 
-      {/* The kill row: `--surface-3` and no `backdrop-filter`, because the playhead and the glyphs
-          are moving under it every frame. It hangs above the axis and over the round strip — the
-          block does not clip its overflow, and below the axis is the bottom of the window. Anchored
-          by the edge nearer its end of the axis, so the row grows inward and the last kill of a
-          round is not drawn off the screen.
+      {/* The row: `--surface-3` and no `backdrop-filter`, because the playhead and the glyphs are
+          moving under it every frame. It hangs above the axis and over the round strip — the block
+          does not clip its overflow, and below the axis is the bottom of the window. Anchored by the
+          edge nearer its end of the axis, so the row grows inward and the last event of a round is
+          not drawn off the screen.
 
           `aria-hidden` because it restates the glyph's own accessible name, which is the whole
           reason it is allowed to exist — and since #214 that is true rather than nearly true. The
           row draws a weapon and up to three marks; until the name carried them too, a tooltip was
           the only place they were said, and below `--breakpoint-split` §5.4's feed is not drawn, so
           there was no second route to them at all. A tooltip may shorten a route; it may not be
-          one. */}
+          one — which is `namedRow`'s whole rule, and why an unfinished defuse raises nothing. */}
       {named !== undefined && (
         <div
           aria-hidden="true"

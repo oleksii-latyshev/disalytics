@@ -28,7 +28,7 @@ const KILL: AxisEvent = {
 };
 const PLANT: AxisEvent = { kind: 'plant', planter: THEM };
 const DEFUSE: AxisEvent = { kind: 'defuse', defuser: ME, status: 'completed' };
-const GRENADE: AxisEvent = { kind: 'grenade', thrower: THEM, utility: 'smoke' };
+const GRENADE: AxisEvent = { kind: 'grenade', thrower: THEM, throwerSide: 'T', utility: 'smoke' };
 
 function glyph(event: AxisEvent, fraction: number): AxisGlyph {
   return { id: `${event.kind}-${fraction}`, frame: asFrame(0), fraction, event };

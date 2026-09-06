@@ -1624,6 +1624,25 @@ rows were re-measured against a `d90cb0f` baseline the same hour: **0 frames ove
 three passes an arm, both arms**, out of round 7's buy phase rather than out of a round where nobody
 is clustered. The bundle is 235.77 → **236.26 kB gz**.
 
+**#312 gave the axis's tooltip the rule the file had already written down.** `namedKill` refused a
+tooltip to everything but a kill, and stated its own reason for the refusal: a tooltip is permitted
+*because §5.4's feed draws the same row*, so the fact stays reachable without hovering — a tooltip
+may shorten a route, it may not be one. Measured against that rule the line was in the wrong place
+for **three of the four kinds the feed draws**. A grenade satisfied it from #310, where the feed
+gained its row; a plant and a completed defuse had satisfied it for longer than that and were being
+refused by nothing at all. It is `namedRow` now, and the refusal is exactly one case — an **aborted
+or interrupted** defuse, which the feed does not carry, so a tooltip for it would be the only route
+to its own fact. Three things to know. **The predicate is the rule rather than a list of kinds**,
+which is what stops the two drifting again: anything the feed draws is named, and the one thing it
+does not is refused by name. **`AxisEvent` is assignable to `RowEvent`** and the type says so —
+`NamedRow.event` is `RowEvent`, so a kind that reaches the tooltip without everything the row needs
+is a compile error rather than an empty line; that is what the grenade arm's new `throwerSide` is
+for, and it comes from `sidesBySlotAtRound` the way a kill's two ends already did, never from
+`PlayerInfo.team`. And **a defuse's `status` is the one field the row has no use for** — §7.1 draws
+all three statuses where the feed draws only the completed one — so it stays on the axis's own arm
+and is what the refusal reads. No new string, no second drawing: `EventRow`'s four arms and
+`labelFor`'s four cases were all already built.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

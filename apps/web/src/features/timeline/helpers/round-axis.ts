@@ -15,7 +15,7 @@ import {
   type UtilityKind,
   utilityKindOfGrenade,
 } from '@disa/demo-core';
-import type { KillRow } from '@/core/events';
+import type { KillRow, RowEvent } from '@/core/events';
 
 /**
  * One glyph's width, and so the room one needs before it is drawn over its neighbour. The symbols
@@ -48,10 +48,15 @@ export interface TimelineSegment {
 }
 
 /**
- * A kill on the axis is the same `KillRow` the event feed draws, because the axis's tooltip draws
- * that row.
- * `victimSide` is what tints the skull; the rest of it is the tooltip's, and none of it costs
- * anything at the readout — `axisGlyphs` runs once per round.
+ * An event on the axis carries everything `EventRow` needs of it, because the axis's tooltip draws
+ * that row — so every arm here is assignable to `RowEvent`, and `namedRow` is what states it.
+ *
+ * A kill's `victimSide` is what tints the skull and a grenade's `throwerSide` is what colours the
+ * thrower's name; the rest of each arm is the tooltip's, and none of it costs anything at the
+ * readout — `axisGlyphs` runs once per round.
+ *
+ * The one field the row has no use for is a defuse's `status`, which is the axis's own reading:
+ * §7.1 draws all three statuses where the feed draws only the completed one.
  */
 export type AxisEvent =
   | ({ readonly kind: 'kill' } & KillRow)
@@ -61,7 +66,13 @@ export type AxisEvent =
       readonly defuser: PlayerSlot;
       readonly status: DefuseOutcome['status'];
     }
-  | { readonly kind: 'grenade'; readonly thrower: PlayerSlot; readonly utility: UtilityKind };
+  | {
+      readonly kind: 'grenade';
+      readonly thrower: PlayerSlot;
+      /** The side that slot held *that* round, the way a kill's two ends carry theirs. */
+      readonly throwerSide: Team | undefined;
+      readonly utility: UtilityKind;
+    };
 
 export interface AxisGlyph {
   /** Stable across renders inside one round, which is what identifies a glyph to React. */
@@ -218,7 +229,11 @@ function defuseGlyphs(demo: ParsedDemo, window: RoundWindow): AxisGlyph[] {
   return glyphs;
 }
 
-function grenadeGlyphs(demo: ParsedDemo, window: RoundWindow): AxisGlyph[] {
+function grenadeGlyphs(
+  demo: ParsedDemo,
+  window: RoundWindow,
+  sides: readonly (Team | undefined)[],
+): AxisGlyph[] {
   const glyphs: AxisGlyph[] = [];
 
   // Where the utility took effect, falling back to the throw. A `null` detonation is an ending the
@@ -231,6 +246,7 @@ function grenadeGlyphs(demo: ParsedDemo, window: RoundWindow): AxisGlyph[] {
       glyphAt(demo, window, tick, `nade-${index}`, {
         kind: 'grenade',
         thrower: grenade.thrower,
+        throwerSide: sides[grenade.thrower],
         utility: utilityKindOfGrenade(grenade.type),
       }),
     );
@@ -269,36 +285,41 @@ export function axisGlyphs(
     ...killGlyphs(demo, window, sides),
     ...plantGlyphs(demo, window),
     ...defuseGlyphs(demo, window),
-    ...grenadeGlyphs(demo, window),
+    ...grenadeGlyphs(demo, window, sides),
   ].sort((a, b) => a.frame - b.frame || a.id.localeCompare(b.id));
 }
 
 /** What the axis's tooltip needs of a glyph: where to hang, and the row to draw there. */
-export interface NamedKill {
+export interface NamedRow {
   readonly fraction: number;
-  readonly event: Extract<AxisEvent, { kind: 'kill' }>;
+  readonly event: RowEvent;
 }
 
 /**
- * The glyph a tooltip is owed, which is a kill and only a kill.
+ * The glyph a tooltip is owed, which is every glyph whose fact the event feed also states.
  *
- * The rule draws the line rather than taste: a tooltip is permitted because the event feed draws the
- * same row, and pressing a glyph seeks to it, so the row is always reachable without hovering. An
- * aborted or interrupted defuse is on the axis alone, so a tooltip for it would be the only route to
- * its own fact.
+ * The rule draws the line rather than taste: a tooltip is permitted because §5.4's feed draws the
+ * same row, and pressing a glyph seeks to it, so the fact is always reachable without hovering. A
+ * tooltip may shorten a route; it may not be one.
  *
- * A grenade satisfies that rule since #310 — the feed draws its row now — and is still refused here,
- * because whether the axis *should* raise a second tooltip is a question about the axis rather than
- * about what the feed carries. It is its own decision and its own issue.
+ * That leaves exactly one refusal, and it is the same one it always was — an **aborted or
+ * interrupted** defuse is on the axis alone, because the feed carries only the defuse that
+ * finished. A tooltip for it would be the only route to its own fact.
+ *
+ * Until #312 this was `namedKill` and refused everything but a kill. A grenade satisfied the rule
+ * from #310, where the feed gained its row, and a plant and a completed defuse had satisfied it for
+ * longer than that — so three of the four kinds the feed draws were being refused by a line the
+ * file's own rule does not draw.
  *
  * It takes the glyph's id rather than its position: a round turning over replaces the whole list
  * under a held pointer, and an index into the old one names a different event in the new one.
  */
-export function namedKill(glyphs: readonly AxisGlyph[], id: string | null): NamedKill | undefined {
+export function namedRow(glyphs: readonly AxisGlyph[], id: string | null): NamedRow | undefined {
   if (id === null) return undefined;
 
   const glyph = glyphs.find((candidate) => candidate.id === id);
-  if (glyph === undefined || glyph.event.kind !== 'kill') return undefined;
+  if (glyph === undefined) return undefined;
+  if (glyph.event.kind === 'defuse' && glyph.event.status !== 'completed') return undefined;
 
   return { fraction: glyph.fraction, event: glyph.event };
 }
