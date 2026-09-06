@@ -1,10 +1,11 @@
 import { FIRE_AREA_ALPHA, SMOKE_AREA_ALPHA, UTILITY_NAMES } from '@disa/demo-core';
 import type { RadarColors } from './colors';
 import { damageFigure, drawDamageFigure } from './damage-figure';
-import { drawGrenadeMark, drawWeaponMark } from './equipment-marks';
+import { drawGrenadeMark, drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
-import { haloStroke, type LabelStyle } from './labels';
+import { haloStroke, LABEL_HEIGHT_PX, type LabelStyle } from './labels';
+import { drawLeaderLine, leaderStroke } from './leader-line';
 import {
   DEAD_ALPHA,
   DEAD_RADIUS_FRACTION,
@@ -84,9 +85,27 @@ const HIT_TOKEN_X = 18;
 const HIT_FIGURE_X = HIT_TOKEN_X + TOKEN_RADIUS_PX + 6;
 const HIT_FIGURE = damageFigure(89) ?? '';
 
+/**
+ * The leader's swatch: a token in the bottom-left corner and a label's box across the top, with the
+ * line between them. The label is drawn as its own leading edge — the weapon mark the plate reserves
+ * a box for — rather than as a specimen nickname, for the reason the `weapon` swatch draws a single
+ * outline: a name in a 56px box is a name clipped, and what this entry has to show is the line.
+ *
+ * The distance is the box's rather than the plate's, the way `TRACER_LENGTH_PX` and
+ * `AUDIBLE_RADIUS_PX` are: on the plate a displaced label sits up to three rows out, and three rows
+ * do not fit here. The token is pinned off the bottom edge rather than typed at a height, so a
+ * change to the token's radius moves it instead of clipping it.
+ */
+const LEADER_TOKEN_X = TOKEN_RADIUS_PX;
+const LEADER_TOKEN_Y = MARK_HEIGHT_PX - TOKEN_RADIUS_PX - 1;
+const LEADER_BOX_X = MARK_WIDTH_PX - WEAPON_MARK_PX;
+const LEADER_BOX_Y = 0;
+const LEADER_BOX_WIDTH = WEAPON_MARK_PX;
+
 export type PlateMarkId =
   | 'player'
   | 'weapon'
+  | 'leader'
   | 'walking'
   | 'firing'
   | 'selected'
@@ -154,6 +173,34 @@ export const PLATE_MARKS: readonly PlateMark[] = [
       // with no token beside them, which is not what a reader sees.
       haloStroke(context, colors.label.halo);
       drawWeaponMark(context, WEAPON_STRIP_X, CENTRE_Y, 'rifle', 'ak47', colors.label.ink);
+    },
+  },
+  {
+    id: 'leader',
+    draw: (context, colors) => {
+      drawToken(context, LEADER_TOKEN_X, LEADER_TOKEN_Y, TOKEN_RADIUS_PX, colors.team.CT);
+
+      leaderStroke(context, colors.label.leader);
+      drawLeaderLine(
+        context,
+        LEADER_TOKEN_X,
+        LEADER_TOKEN_Y,
+        TOKEN_RADIUS_PX,
+        LEADER_BOX_X,
+        LEADER_BOX_Y,
+        LEADER_BOX_WIDTH,
+        LABEL_HEIGHT_PX,
+      );
+
+      haloStroke(context, colors.label.halo);
+      drawWeaponMark(
+        context,
+        LEADER_BOX_X,
+        LEADER_BOX_Y + LABEL_HEIGHT_PX / 2,
+        'rifle',
+        'ak47',
+        colors.label.ink,
+      );
     },
   },
   {

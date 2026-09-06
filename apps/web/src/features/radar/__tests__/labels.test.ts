@@ -121,16 +121,21 @@ interface Drawn {
   readonly markX: number[];
   /** One entry per weapon mark drawn — a `fill` taking a path, which nothing else in the pass does. */
   readonly marks: number[];
+  /** Each leader line as it was stroked: where it started and where it ended. */
+  readonly lines: { fromX: number; fromY: number; toX: number; toY: number }[];
+  /** `line` and `text` in the order the pass drew them, which is the layering. */
+  readonly order: string[];
 }
 
 function newDrawn(): Drawn {
-  return { text: [], textX: [], textY: [], ink: [], markX: [], marks: [] };
+  return { text: [], textX: [], textY: [], ink: [], markX: [], marks: [], lines: [], order: [] };
 }
 
 /** Only what the pass touches. What it draws is recorded; the rest is a sink. */
 function newContext(drawn: Drawn): CanvasRenderingContext2D {
   const ignore = () => {};
   let ink = '';
+  let from = { x: 0, y: 0 };
 
   return {
     font: '',
@@ -153,6 +158,14 @@ function newContext(drawn: Drawn): CanvasRenderingContext2D {
       drawn.textX.push(x);
       drawn.textY.push(y);
       drawn.ink.push(ink);
+      drawn.order.push('text');
+    },
+    moveTo: (x: number, y: number) => {
+      from = { x, y };
+    },
+    lineTo: (x: number, y: number) => {
+      drawn.lines.push({ fromX: from.x, fromY: from.y, toX: x, toY: y });
+      drawn.order.push('line');
     },
     save: ignore,
     restore: ignore,
@@ -170,7 +183,7 @@ const STYLE = {
   detailFont: `9px monospace`,
   damageFont: `9px monospace`,
 };
-const COLORS = { halo: '#halo', ink: '#ink', damage: '#damage' };
+const COLORS = { halo: '#halo', ink: '#ink', damage: '#damage', leader: '#leader' };
 
 /** Two players, the second of them wherever the caller puts it. */
 function subjectAt(
@@ -348,6 +361,83 @@ describe("the selected player's round", () => {
     // Three frames of the same round cost one measurement, not three: `measureText` allocates a
     // `TextMetrics`, and this runs inside a draw.
     expect(measured - afterNames).toBe(1);
+  });
+});
+
+describe('the line back to the token', () => {
+  /** Five players on one spawn point, which is what pushes a label outside the four beside it. */
+  const CLUSTER = ['plyr01', 'plyr02', 'plyr03', 'plyr04', 'plyr05'];
+  const CLUSTER_X = 320;
+  const CLUSTER_Y = 320;
+
+  const cluster = () => {
+    const built = labelPass(CLUSTER, CLUSTER.length, STYLE, COLORS);
+    built.measure(newContext(newDrawn()));
+
+    return built;
+  };
+
+  const pair = () => {
+    const built = labelPass(['s1mple', 'ropz'], 2, STYLE, COLORS);
+    built.measure(newContext(newDrawn()));
+
+    return built;
+  };
+
+  const onOnePoint = {
+    isNamed: () => true,
+    x: () => CLUSTER_X,
+    y: () => CLUSTER_Y,
+    alpha: () => 1,
+    weapon: () => 'rifle' as const,
+    icon: () => undefined,
+    detail: () => null,
+    damage: () => 0,
+    damageLife: () => 0,
+  };
+
+  it('draws none while every name sits beside its own token', () => {
+    const drawn = newDrawn();
+
+    pair().draw(newContext(drawn), PLATE, subjectAt(400, 400), TOKEN_RADIUS);
+
+    expect(drawn.text).toEqual(['s1mple', 'ropz']);
+    expect(drawn.lines).toEqual([]);
+  });
+
+  it('draws one for the name the placer had to put outside them', () => {
+    const drawn = newDrawn();
+
+    cluster().draw(newContext(drawn), PLATE, onOnePoint, TOKEN_RADIUS);
+
+    // Four of the five take a box beside the token and need nothing said about them; the fifth is a
+    // row further out, where the name nearest a reader's eye is somebody else's.
+    expect(drawn.text).toEqual(CLUSTER);
+    expect(drawn.lines.length).toBe(1);
+  });
+
+  it('runs from the token rim to the box, and never over the token', () => {
+    const drawn = newDrawn();
+
+    cluster().draw(newContext(drawn), PLATE, onOnePoint, TOKEN_RADIUS);
+
+    const line = drawn.lines[0];
+
+    expect(line?.fromX).toBe(CLUSTER_X);
+    expect(line?.fromY).toBe(CLUSTER_Y + TOKEN_RADIUS);
+    expect(line?.toX).toBe(CLUSTER_X);
+    expect(line?.toY).toBeGreaterThan(CLUSTER_Y + TOKEN_RADIUS);
+  });
+
+  it('draws every line before any name, so no line crosses one', () => {
+    const drawn = newDrawn();
+
+    cluster().draw(newContext(drawn), PLATE, onOnePoint, TOKEN_RADIUS);
+
+    // The lines are placed from the same ring of boxes the names are, so one drawn as its own name
+    // was written would be laid over a name placed after it.
+    expect(drawn.order.indexOf('line')).toBeLessThan(drawn.order.indexOf('text'));
+    expect(drawn.order.lastIndexOf('line')).toBeLessThan(drawn.order.indexOf('text'));
   });
 });
 
