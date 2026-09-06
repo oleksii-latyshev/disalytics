@@ -4,6 +4,7 @@ import { readCssToken } from '@/shared/lib';
 import { DAMAGE_FIGURE_PREFIX, damageFigure, drawDamageFigure } from './damage-figure';
 import { drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { labelPlacer } from './label-placer';
+import { drawLeaderLine, leaderStroke } from './leader-line';
 import type { PlateBounds } from './view';
 
 /**
@@ -80,6 +81,13 @@ export interface LabelColors {
   readonly ink: string;
   /** What a hit took, beside the token that took it — the same token the flash on it is drawn in. */
   readonly damage: string;
+  /**
+   * The hairline back to the token, for a name the placer had to put outside the four boxes
+   * "beside" used to mean. It is a mark and nothing on it is read aloud, which is what lets it sit
+   * at the ink §14 keeps for marks — a line loud enough to be found by following it from a name is
+   * a line loud enough to be mistaken for something the map is telling you.
+   */
+  readonly leader: string;
 }
 
 /**
@@ -196,6 +204,16 @@ export function labelPass(
   const placer = labelPlacer(slotCount * 2, LABEL_HEIGHT_PX);
   const widths = new Float32Array(slotCount);
 
+  /* Where each name went this frame — x, y, width, height a slot — and whether the placer had to
+     reach outside the cardinal four to put it there. The names are placed in one pass and written
+     in another, with the leader lines between the two: a line drawn as its own name was written
+     would be laid over every name placed after it, and a hairline crossing a nickname is a worse
+     defect than the one this fixes. Owned by the pass and rewritten in place, because this runs
+     inside a draw. */
+  const boxes = new Float32Array(slotCount * 4);
+  const hasBox = new Uint8Array(slotCount);
+  const isDisplaced = new Uint8Array(slotCount);
+
   /* The figure's face is tabular, so a width is its character count rather than a measurement: two
      `measureText` calls in `measure` below answer for all thousand readings, where measuring each
      would have been a thousand `TextMetrics` for a number three characters long. The sign is
@@ -214,14 +232,16 @@ export function labelPass(
   /** One placed label: the mark it leads with, then the name, both over the same halo. */
   function write(
     context: CanvasRenderingContext2D,
+    boxX: number,
+    boxY: number,
     label: string,
     weapon: WeaponClass | null,
     icon: WeaponIconId | undefined,
     alpha: number,
     detail: string | null,
   ): void {
-    const x = placer.x + LABEL_HALO_PX;
-    const y = placer.y + LABEL_HEIGHT_PX / 2;
+    const x = boxX + LABEL_HALO_PX;
+    const y = boxY + LABEL_HEIGHT_PX / 2;
 
     context.globalAlpha = alpha;
 
@@ -274,6 +294,8 @@ export function labelPass(
     subject: LabelSubject,
     tokenRadius: number,
   ): void {
+    hasBox[slot] = 0;
+
     if (!subject.isNamed(slot)) return;
 
     const label = labelBySlot[slot];
@@ -294,7 +316,74 @@ export function labelPass(
     const boxHeight = detail === null ? LABEL_HEIGHT_PX : LABEL_HEIGHT_PX + DETAIL_LEAD_PX;
 
     placer.place(tokenX, tokenY, tokenRadius, boxWidth, bounds, boxHeight);
-    write(context, label, subject.weapon(slot), subject.icon(slot), subject.alpha(slot), detail);
+
+    const offset = slot * 4;
+    boxes[offset] = placer.x;
+    boxes[offset + 1] = placer.y;
+    boxes[offset + 2] = boxWidth;
+    boxes[offset + 3] = boxHeight;
+    hasBox[slot] = 1;
+    isDisplaced[slot] = placer.isDisplaced ? 1 : 0;
+  }
+
+  /**
+   * The hairline back to the token, for every name the placer could not put beside one. It is the
+   * answer to what a name two rows out belongs to: in a spawn cluster five names stack into a
+   * column beside five tokens twenty pixels apart, and until the line was drawn nothing on the
+   * plate said which name went with which player.
+   *
+   * Only a name gets one. The hit's figure is placed by the same placer and is displaced more
+   * often, and it needs no line because it already has a tie the name does not: the token it
+   * belongs to is flashing in the same colour on the same frame.
+   */
+  function drawLeaders(
+    context: CanvasRenderingContext2D,
+    subject: LabelSubject,
+    tokenRadius: number,
+  ): void {
+    leaderStroke(context, colors.leader);
+
+    for (let slot = 0; slot < slotCount; slot++) {
+      if (hasBox[slot] === 0 || isDisplaced[slot] === 0) continue;
+
+      const offset = slot * 4;
+      context.globalAlpha = subject.alpha(slot);
+      drawLeaderLine(
+        context,
+        subject.x(slot),
+        subject.y(slot),
+        tokenRadius,
+        sampleAt(boxes, offset),
+        sampleAt(boxes, offset + 1),
+        sampleAt(boxes, offset + 2),
+        sampleAt(boxes, offset + 3),
+      );
+    }
+
+    // The halo the names are about to be written through, which the lines above stroked over.
+    haloStroke(context, colors.halo);
+  }
+
+  /** Every placed name, written after every line, so no line is laid over a name. */
+  function writeNames(context: CanvasRenderingContext2D, subject: LabelSubject): void {
+    for (let slot = 0; slot < slotCount; slot++) {
+      if (hasBox[slot] === 0) continue;
+
+      const label = labelBySlot[slot];
+      if (label === undefined) continue;
+
+      const offset = slot * 4;
+      write(
+        context,
+        sampleAt(boxes, offset),
+        sampleAt(boxes, offset + 1),
+        label,
+        subject.weapon(slot),
+        subject.icon(slot),
+        subject.alpha(slot),
+        subject.detail(slot),
+      );
+    }
   }
 
   /**
@@ -374,6 +463,9 @@ export function labelPass(
       for (let slot = 0; slot < slotCount; slot++) {
         place(context, slot, bounds, subject, tokenRadius);
       }
+
+      drawLeaders(context, subject, tokenRadius);
+      writeNames(context, subject);
 
       for (let slot = 0; slot < slotCount; slot++) {
         placeDamage(context, slot, bounds, subject, tokenRadius);

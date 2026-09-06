@@ -12,6 +12,15 @@ const LABEL_GAP_PX = 4;
 export interface LabelPlacer {
   x: number;
   y: number;
+  /**
+   * Whether the last `place` had to reach past the four boxes a reader expects — under the token,
+   * over it, either side. Those four are the ones §6.1 means by "beside", and a box outside them
+   * is what the leader line exists to tie back to its token.
+   *
+   * It is a field rather than a return value for the reason `x` and `y` are: this runs for ten
+   * players every animation frame, and nothing here returns an object.
+   */
+  isDisplaced: boolean;
   reset(): void;
   place(
     tokenX: number,
@@ -40,6 +49,13 @@ export interface LabelPlacer {
  * almost none to either side.
  */
 const CANDIDATE_COUNT = 12;
+
+/**
+ * How many of them are the ring a reader reads as "beside the token". A label that took one of
+ * these is where it would have been before the outer rings existed and needs nothing to explain it;
+ * everything further out is displaced, and that is the whole of the rule the leader line follows.
+ */
+const CARDINAL_COUNT = 4;
 
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;
@@ -85,6 +101,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
   const placer: LabelPlacer = {
     x: 0,
     y: 0,
+    isDisplaced: false,
 
     reset(): void {
       count = 0;
@@ -123,6 +140,9 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
 
       let chosenX = 0;
       let chosenY = 0;
+      // The fallback is candidate 0, which is cardinal: a label nothing could be found a box for is
+      // buried under another one, and a line drawn from under a name explains nothing.
+      let chosen = 0;
 
       for (let candidate = 0; candidate < CANDIDATE_COUNT; candidate++) {
         const x = clamp(sampleAt(candidates, candidate * 2), bounds.left, maxX);
@@ -136,6 +156,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
         if (!overlapsPlaced(x, y, width, boxHeight)) {
           chosenX = x;
           chosenY = y;
+          chosen = candidate;
           break;
         }
       }
@@ -151,6 +172,7 @@ export function labelPlacer(capacity: number, height: number): LabelPlacer {
 
       placer.x = chosenX;
       placer.y = chosenY;
+      placer.isDisplaced = chosen >= CARDINAL_COUNT;
     },
   };
 

@@ -50,7 +50,7 @@ function KeyCap({ label }: { label: KeyLabel }) {
 export function HelpSheet({ isOpen, onDismiss }: Props) {
   const t = useT();
 
-  // One read for seventeen swatches rather than one per swatch, and re-read only when the palette
+  // One read for eighteen swatches rather than one per swatch, and re-read only when the palette
   // row moves — the legend has to show the marks as the plate is drawing them now.
   const [palette] = useSetting('palette');
   const colors = radarColors(palette);

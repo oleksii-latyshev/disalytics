@@ -77,18 +77,22 @@ The redesign is closed (below). What is left here is defects and decisions on th
 
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
-| #292, #294 | The highlight effect writes `aria-selected` where it may not | Two places where a decorative element and a plain button carry an attribute their role does not allow. One vendored primitive, two call sites. | P1 | S each |
-| #290 | Decide what a label two rows from its token belongs to | #289's twelve candidate boxes buried 0% of labels, at the cost of a name that can sit far from the token it names. | P1 | S |
 | #123 | Fail CI when a documented contrast ratio drifts | The 36 pairings `tokens.css` now states stay true without anyone re-running the maths by hand. | P2 | M |
 | #115 | Let the reader choose the radar plate | The reader who wants the game's own map colours can have them. | P2 | M |
 | #249 | Decide whether the legend draws the vision wedge | Draw it or record why not — the reason it was not drawn no longer holds. | P2 | S |
 | #230 | Measure a shotgun's shot count | Whether nine pellets are one `fire_bullets` event or nine. **Blocked** on a demo that fires one. | P3 | S |
 
+**Closed on 6 September 2026**: #290 — a name the placer had to put outside the four boxes beside
+its token is joined back to it by a hairline, which is the owner's answer to the question that issue
+put; the alternative on the table was to bound the ring and give the tenth label back its burial.
+
 **Closed on 5 September 2026**: #287 — a hit states what it took beside the token that took it,
 which is the reading a flash alone could not carry; #170 — §6.2 was restated by M4's smoke and fire
 row, which is where that question said it would be answered.
 
-**Closed on 4 September 2026**: #275 — hard rule 9 is the 60 fps budget and bans no property by
+**Closed on 4 September 2026**: #292 and #294 — the highlight effect no longer writes
+`aria-selected` onto an element whose role may not carry it, in the vendored primitive and at both
+call sites; #275 — hard rule 9 is the 60 fps budget and bans no property by
 name, which is the owner's call rather than a reading of the old wording; #214 — the axis glyph's
 accessible name carries the weapon and the three marks, out of an `events` namespace both surfaces
 own; #284 — `LazyMotion` and `m` are deleted, because the split point measured 157 bytes and could

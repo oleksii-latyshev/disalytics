@@ -1596,6 +1596,34 @@ the canvas: 0 frames over 16.7 ms in every playback pass on all three arms, and 
 frame this row has always warned about lands on `main` in three passes of three, at rest in two, and
 expanded in one.
 
+**#290 gave a displaced name a line back to its own token, and the option the owner took is the
+middle one of three.** #289 gave `labelPlacer` twelve candidate boxes where it had four, which took a
+buy phase from 40% of its labels buried at 1440×900 and 70% at 1024×800 to 0% — at the cost of a name
+that may now sit three rows out, where it is nearer to somebody else's token than to its own. The
+issue put three answers on the table: do nothing, draw the line, or bound the ring and give the tenth
+label its burial back. Five things are load-bearing. **The rule is the placer's, not the label's** —
+`LabelPlacer.isDisplaced` says whether the last `place` reached past the *cardinal four*, which are
+the boxes §6.1 means by "beside", so the same instrument that decides where a label goes decides
+whether it is owed a line. **Every line is drawn before any name**: the pass places all ten boxes,
+strokes the lines, and only then writes the glyphs, because a line drawn as its own name was written
+would be laid over every name placed after it — a hairline crossing a nickname is a worse defect than
+the one this fixes. That cost three small typed arrays owned by the pass, which is the shape the rest
+of that draw already has. **Only a name gets one.** The hit's figure goes through the same placer and
+is displaced more often, and it needs no line because it already has the tie a name does not: the
+token it belongs to is flashing in the same colour on the same frame. **The line runs from the rim to
+the nearest point of the box** — for the row above a token that is a plain vertical, which is the
+shortest statement of "this one" the geometry allows — and it draws nothing at all where the box is
+already against the token, so the mark appears exactly where the ambiguity does. And **§10.6's legend
+draws it**, which takes the swatch count to eighteen; its box is 56×28 against a plate where a
+displaced label sits up to three rows out, so the swatch chooses the distance the way `TRACER_LENGTH_PX`
+already chooses a reach. Measured over #289's own eight windows — two rounds × a buy phase and a
+mid-round × 1440×900 and 1024×800 × a player selected and not — **0% of labels buried in all eight**,
+unchanged, with **2 to 4 of ten labels displaced** per window and so carrying a line; placement is
+untouched by construction, since the change adds no candidate and moves no `place` call. §16's two
+rows were re-measured against a `d90cb0f` baseline the same hour: **0 frames over 16.7 ms out of 399,
+three passes an arm, both arms**, out of round 7's buy phase rather than out of a round where nobody
+is clustered. The bundle is 235.77 → **236.26 kB gz**.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

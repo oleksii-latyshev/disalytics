@@ -57,6 +57,7 @@ export const TRANSLATION_KEYS = [
   'help.legend.he',
   'help.legend.hit',
   'help.legend.kill',
+  'help.legend.leader',
   'help.legend.objective',
   'help.legend.player',
   'help.legend.selected',

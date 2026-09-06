@@ -34,6 +34,7 @@
     "title": "On the plate",
     "player": "A player, in their side's colour. The needle is where they are looking, and it grows longer while they are scoped in.",
     "weapon": "What a player is holding, beside the name that says who they are. Counter-Strike's own outline, so an AK-47 and an M4A4 are two shapes; a weapon with no outline of its own is drawn by its class.",
+    "leader": "Where players stand on one spot their names step aside for each other, and one of them ends up a row or two away. The line says whose it is.",
     "walking": "A player holding shift: slower, and quiet enough that the audibility ring goes with it.",
     "firing": "A trigger pull, along the line it was fired down — the angle at that moment, not the one the player is facing now. It runs a fixed distance and fades out rather than reaching anything: the recording does not say where the bullet stopped.",
     "selected": "The player you have selected. They also get the cone of what they can see.",

@@ -61,6 +61,7 @@ function readRadarColors(): RadarColors {
       halo: readCssToken('--color-surface-0'),
       ink: readCssToken('--color-ink-dim'),
       damage: readCssToken('--color-damage'),
+      leader: readCssToken('--color-ink-faint'),
     },
     hollow: readCssToken('--color-surface-0'),
     gunfire: readCssToken('--color-ink'),
