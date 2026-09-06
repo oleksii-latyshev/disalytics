@@ -133,7 +133,7 @@ one the owner looks at every day.
 | # | Task | Goal | P | Size |
 |---|---|---|---|---|
 | #308 | A team card states what the side is holding | The buy total per side, so a card answers "who can afford this round" without adding up five numbers. **The round's own figure is free** — `PlayerEconomy.equipmentValue` is already read at freeze-time end. A total that stays true *during* a round is not: equipment value is sampled only at wanted ticks, so a live figure is a new `TickTrack` column and a `SCHEMA_VERSION` bump. Ship the round figure first and decide whether live is worth the bump. | **P1** | S |
-| #313 | Give the axis its glyphs back, and a filter beside it | #271 collapsed a crowded glyph to a tick because 29 of 30 rounds overlapped. The owner's answer is better: keep the marks at full size and let the reader turn kinds off — kills, utility, objectives, and the selected player — so a dense round is thinned by choice rather than by the axis. The collapse stays as the floor for what no filter can separate. Persisted where every other preference is, and read where it is obeyed. | **P1** | M |
+| #313 | Give the axis its glyphs back, and a filter beside it | #271 collapsed a crowded glyph to a tick because 29 of 30 rounds overlapped. The owner's answer is better: keep the marks at full size and let the reader turn kinds off — kills, utility, objectives, and the selected player — so a dense round is thinned by choice rather than by the axis. The collapse stayed as the floor for what no filter can separate, and **#328 deleted it**. Persisted where every other preference is, and read where it is obeyed. | **P1** | M |
 | #310 | A grenade is a row in the feed | The feed says who threw what, so a cloud on the plate has an author. The data is there — `Grenade` carries its thrower and its throw tick — and the work is a fourth row kind, both locales, and the same hover-to-the-plate the kill rows already have. Its window is the grenade's own life, so scrubbing backwards takes it away like every other row. | P1 | S |
 | #315 | A zoomed plate uses the whole stage | The zoom was capped by the square the plate is inscribed in, which wasted the width the stage actually has — 92px at 1440×900 and 551px at 1024×800. Zoomed, the plate's cell is the width of the stage and runs under the cards; at 1× nothing moves at all, which was the owner's constraint on this row. | **P1** | M |
 | #318 | A bullet reads as a bullet | Today a shot is a white spur past the needle, which says *fired* and not *at what*. A tracer from the muzzle along the shooter's own view angle says the second thing. **Where it ends was the open question and the recording answered it**: the demo declares 54 event names and `bullet_impact` is not among them, so there is no impact point to reach for and the tracer is a fixed-length ray that fades, labelled as the approximation it is. **Closed by #319 on 5 September 2026**, at `SCHEMA_VERSION` 8 — a shot carries its own firing angle, because the 16 Hz sample beside it is a median 0.16° out and the owner bought the exact one. | P2 | M |
@@ -170,7 +170,13 @@ never the problem.** On the fixture at 1440×900, where the axis is 886.55px wid
 what crowds a kill is not what the reader was looking at. Turning it off leaves 233 glyphs and
 **130 symbols, with 116 of the 212 kills drawn**; at 1024×800 the same two arms read 41 → 82 symbols
 and 22 → 74 kills. Nothing about #271 was retuned — `GLYPH_PITCH_PX` and `hasRoomForSymbol` are
-untouched, and the collapse still holds the floor for a genuinely simultaneous pair. What changed is
+untouched, and the collapse still holds the floor for a genuinely simultaneous pair. **#328 deleted
+that floor on 6 September 2026**, and the reason is that the same measurement taken on a
+professional match does not reproduce: dust2 at 1440×900 draws 57 symbols of 677 glyphs with every
+facet on and **44 of 155 with utility off**, reaching 35 of its 144 kills — so a reader who has
+already thinned the round still loses three quarters of what they thinned it for. Every glyph draws
+its symbol now, a cluster is drawn over itself, and the filter is the only thing that thins a
+round. What changed is
 that the filter runs before the hit slots are measured, so taking a facet away widens the survivors
 and the same rule hands them their symbols back. **The axis itself is not shorter for it**: the
 control sits at the end of the round strip's row, measured at 886.55px of axis on both arms at 1440

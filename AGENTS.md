@@ -500,8 +500,10 @@ The bottom of the screen is a 96px card carrying two strips, and neither of them
 **`RoundTimeline` is the round axis**, scoped to one round since #182. The
 buy phase is a region of its own, the round's events are glyphs on the axis, the scrubber under them
 is the uncontrolled range input above, and the playhead is the only thing on either strip that moves
-per frame. The glyphs are 24px and `GLYPH_PITCH_PX` is 24 with them: the threshold is one glyph's
-width, so a row too tight for symbols collapses to marks rather than drawing them overlapping.
+per frame. The glyphs are 24px and `GLYPH_PITCH_PX` is 24 with them, and **every one of them draws
+its symbol** — a crowded round draws its marks over each other, and what thins it is the filter
+beside the axis rather than the axis deciding for the reader (#328). `GLYPH_PITCH_PX` still sizes a
+press target, which is the one thing in a cluster that may not overlap (#268).
 
 **`RoundList` is the strip beneath it** — §7.3, since #183. One equal-width cell per round tinted by
 its winner at α0.14, carrying the round number and the winning side's survivor count, lit by a 1px

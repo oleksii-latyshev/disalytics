@@ -7,7 +7,7 @@ import {
   filterGlyphs,
   isBySubject,
 } from '../helpers/axis-filter';
-import { glyphHitHalves, hasRoomForSymbol } from '../helpers/glyph-hits';
+import { GLYPH_HIT_HALF_PX, glyphHitHalves } from '../helpers/glyph-hits';
 import type { AxisEvent, AxisGlyph } from '../helpers/round-axis';
 
 const ME = asPlayerSlot(3);
@@ -99,10 +99,10 @@ describe('filterGlyphs', () => {
 describe('filtering and the collapse', () => {
   /**
    * The mechanism the whole row rests on: a hit slot is half the way to the nearest *drawn* mark, so
-   * taking a facet away widens what is left and #271's collapse hands those glyphs their symbols
-   * back. If this ever fails, the filter has stopped running before `glyphHitHalves`.
+   * taking a facet away widens what is left and a kill buried in a cluster becomes a target a
+   * pointer can address. If this ever fails, the filter has stopped running before `glyphHitHalves`.
    */
-  it('gives a crowded kill its symbol back once the utility around it goes', () => {
+  it('gives a crowded kill its whole target back once the utility around it goes', () => {
     const widthPx = 1000;
     // Four grenades within a glyph's width of the kill, which is exactly what collapses it.
     const crowded = [
@@ -114,13 +114,12 @@ describe('filtering and the collapse', () => {
     ];
 
     const before = glyphHitHalves(crowded, widthPx);
-    expect(hasRoomForSymbol(before.at(2) ?? 0)).toBe(false);
+    expect(before.at(2)).toBeLessThan(GLYPH_HIT_HALF_PX);
 
     const after = glyphHitHalves(
       filterGlyphs(crowded, { facets: ['kills', 'objectives'], subject: null }),
       widthPx,
     );
-    expect(after).toHaveLength(1);
-    expect(hasRoomForSymbol(after.at(0) ?? 0)).toBe(true);
+    expect(after).toEqual([GLYPH_HIT_HALF_PX]);
   });
 });

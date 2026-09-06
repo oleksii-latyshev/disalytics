@@ -1662,6 +1662,27 @@ already choose their own reach — `TRACER_LENGTH_PX`, `AUDIBLE_RADIUS_PX` and #
 **the words carry no number**, which is what makes the drift risk the issue was built around small:
 the entry says "the cone of what they can see" and never states the angle or the reach.
 
+**#328 deleted the axis's collapse, and the measurement is what says #313's floor was never a
+floor.** #271 collapsed a glyph to a 2px tick whenever its hit slot is narrower than one glyph's
+width, and #313 kept that rule "as the floor for what no filter can separate" — the argument being
+that turning utility off widens the survivors and hands them their symbols back. Measured on a
+professional match rather than on the fixture, it does not: on `main` at 1440×900 the dust2 map of
+IEM Atlanta 2026 draws **57 symbols out of 677 glyphs** and **14 of its 144 kills**, and with
+utility off it is **44 of 155 glyphs and 35 of 144 kills** — so the reader who has already thinned
+the round still cannot see three quarters of what they asked for. The anubis map reads 82 of 729,
+and at 1024×800 both fall to the twenties. Every one of 24 rounds carries a collapse in every filter
+state. So `hasRoomForSymbol` is deleted rather than retuned, and every glyph draws its symbol.
+Three things to know. **The press is untouched**, and that is what makes an overlapping cluster
+affordable: #268's `glyphHitHalves` still tiles the axis with targets that cannot overlap, the
+symbol is still laid over the slot with `pointer-events-none` rather than inside it, and
+`GLYPH_PITCH_PX` still sizes that target — the constant lost one reader, not its job. **Nothing is
+nudged**, which is the part of #271 that survives whole: a mark moved off its own moment is a lie
+about time on a time axis, so a cluster is drawn on top of itself and the reader separates it with
+the filter beside the axis or with the arrow keys. And **the filter is now the only thing that
+thins a round**, which is the shape #313's own roadmap row asked for and stopped one step short of.
+The counting is `axisGlyphs` → `filterGlyphs` → `glyphHitHalves` driven in Bun over a real parse, so
+the figures are the shipped code's own rather than a sweep of the DOM.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
