@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Extension included: Vite's `configLoader: 'native'` becomes the default in a future major and
 // warns about extensionless local imports today.
 import { radarAssets } from './plugins/radar-assets.ts';
+import { sampleContainers } from './plugins/sample-containers.ts';
 
 export default defineConfig({
   plugins: [
@@ -15,6 +16,9 @@ export default defineConfig({
     // inside a file bundled into it points at this file regardless of where that file lives.
     radarAssets({
       assetsRoot: fileURLToPath(new URL('../../packages/map-data/assets', import.meta.url)),
+    }),
+    sampleContainers({
+      assetsRoot: fileURLToPath(new URL('./assets/samples', import.meta.url)),
     }),
     VitePWA({
       strategies: 'injectManifest',

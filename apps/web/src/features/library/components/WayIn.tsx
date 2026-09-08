@@ -3,11 +3,11 @@ import { useCallback, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
 import type { SampleMatch } from '@/core/samples';
 import { HelpSheet, SettingsSheet } from '@/features/review';
-import type { RailView } from '../helpers/views';
+import type { ShellView } from '../helpers/views';
 import { useFileDrop } from '../hooks/use-file-drop';
 import { LibraryView } from './LibraryView';
 import { PixelBackdrop } from './PixelBackdrop';
-import { SideRail } from './SideRail';
+import { ShellDock } from './ShellDock';
 import { SoonView } from './SoonView';
 import { UploadView } from './UploadView';
 
@@ -24,21 +24,29 @@ interface Props {
 type Sheet = 'settings' | 'help';
 
 /**
- * The way in. A shell with a persistent rail and one view inside it, and the drop target is the
- * whole viewport rather than a box inside it: `useFileDrop` already listens on the window, so what
- * this adds is the screen *acknowledging* the drag instead of a dashed rectangle doing it alone.
+ * The way in. A shell with the whole viewport for its content, a dock along the bottom, and a drop
+ * target that is the viewport rather than a box inside it: `useFileDrop` already listens on the
+ * window, so what this adds is the screen *acknowledging* the drag instead of a dashed rectangle
+ * doing it alone.
  *
  * The ground under all of it is `PixelBackdrop` since #332 — Dust2's own plate taken apart into a
  * grid, and the one place in the product where a hue means nothing a demo said, because this is the
  * screen with no demo on it.
  *
+ * **It is three rows and the dock is in none of them.** `ShellDock` is fixed to the viewport's
+ * bottom edge, and what reserves its band is `main`'s own bottom padding — which is why the shell is
+ * `h-dvh` at every width and `main` is the scroller. It used to be the document that scrolled below
+ * `--breakpoint-split`, and a fixed panel over a document scroller is the one arrangement where the
+ * reader can reach the end of a library and find the last row underneath it.
+ *
  * **The shell ends where the match begins.** `App` swaps it for the review screen entirely, and the
  * reason is the plate rather than a preference: the plate is `min(100cqi, 100cqb)` of the cell the
- * stage leaves it, so a rail is not chrome beside the plate — it is a subtraction from the plate's
- * own axis, and 280px of it is nearly half the 616px the plate measures at 1280.
+ * stage leaves it, so neither a rail nor a dock is chrome beside it — each is a subtraction from one
+ * of the plate's own axes, and three of the four widths this repository quotes a plate figure at are
+ * height-bound.
  */
 export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
-  const [view, setView] = useState<RailView>('upload');
+  const [view, setView] = useState<ShellView>('upload');
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
   // An open lands the reader on the upload view wherever they were, because that is the view that
@@ -72,10 +80,10 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
   );
 
   // A failure belongs to the screen that raised it. Leaving ends it rather than parking it behind
-  // the rail to reappear on the way back; a parse still running is left alone, because `close`
+  // the dock to reappear on the way back; a parse still running is left alone, because `close`
   // terminates the worker and navigating away is not cancelling.
   const chooseView = useCallback(
-    (next: RailView) => {
+    (next: ShellView) => {
       if (state.status === 'failed') onClose();
       setView(next);
     },
@@ -85,7 +93,7 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
   const isDraggedOver = useFileDrop(openFile);
 
   return (
-    <div className="app-shell relative grid grid-rows-[auto_minmax(0,1fr)] bg-surface-0 split:h-dvh split:grid-cols-[17.5rem_minmax(0,1fr)] split:grid-rows-1">
+    <div className="relative grid h-dvh grid-rows-[auto_minmax(0,1fr)] bg-surface-0">
       {/* The field is the way in's own screen and nobody else's. The library and the two screens
           that are coming are pages of text, and they stand on the app's ground with one light over
           it — which is the whole of their decoration. */}
@@ -106,14 +114,17 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
         }`}
       />
 
-      <SideRail
-        view={view}
-        onView={chooseView}
-        onSettingsOpen={() => setOpenSheet('settings')}
-        onHelpOpen={() => setOpenSheet('help')}
-      />
+      {/* The product name's home now that the rail is gone. It is a name and not copy — AGENTS.md
+          §11 keeps this kind of vocabulary out of the message catalogue in both locales — and it
+          stays at the top left, where it was, rather than joining the dock: a wordmark is not a
+          control, and six squares in a 52px panel is not a place to read one. */}
+      <header className="relative z-10 px-6 pt-6 wide:px-10 wide:pt-8">
+        <h1 className="font-ui font-medium text-20 leading-dense">disalytics</h1>
+      </header>
 
-      <main className="relative min-w-0 overflow-y-auto p-6 wide:p-10">
+      {/* The band the dock stands in is reserved here rather than drawn here: the dock is fixed, so
+          only this padding keeps a scrolled library's last row from sliding under it. */}
+      <main className="relative min-w-0 overflow-y-auto px-6 pt-4 pb-24 wide:px-10 wide:pt-6">
         {view === 'upload' && (
           <UploadView
             state={state}
@@ -127,6 +138,13 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
         {view === 'library' && <LibraryView onEnter={enterMatch} onSample={enterSample} />}
         {(view === 'lineups' || view === 'stats') && <SoonView view={view} />}
       </main>
+
+      <ShellDock
+        view={view}
+        onView={chooseView}
+        onSettingsOpen={() => setOpenSheet('settings')}
+        onHelpOpen={() => setOpenSheet('help')}
+      />
 
       <SettingsSheet isOpen={openSheet === 'settings'} onDismiss={() => setOpenSheet(null)} />
       <HelpSheet isOpen={openSheet === 'help'} onDismiss={() => setOpenSheet(null)} />

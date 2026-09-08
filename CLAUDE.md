@@ -1774,6 +1774,88 @@ A hidden tab is left alone and does not jump on the way back: six seconds away m
 in the same PR — it was the same sentence in two places — and `library.open.title` is deleted in both
 locales.
 
+**#338 turned the shell's navigation ninety degrees, and what it bought is measured rather than
+argued.** `SideRail` was 280px of every screen that is not the match, and #233's own reason for the
+rail ending at the match is what a dock inherits turned on its side. Content at 1440×900 goes
+**1160 → 1440**, and the library spends it on card width rather than on a column — **4 columns of
+261px → 4 of 279px**, because `LibraryView`'s own `max-w-[72rem]` is what caps it, and widening that
+measure is #336's decision and not this one. At 1024×800 nothing moves: the rail was a full-width
+row below `--breakpoint-split`, so it never took horizontal width there, and the library is 3
+columns of 317px on both arms. Six things are load-bearing.
+
+**Nothing about where you are is in the magnification.** The current entry is `aria-current`, the
+ink step, and a 16×3 bar the dock slides under it — `Highlight` in `children` mode, one `layoutId`,
+so `motion` moves the same mark between seats on `transform`. That is §17 rule 9 in a product where
+a magnifying dock is a pointer affordance, and it is why the bar is a bar rather than the rail's
+pill: the entry *scales*, so its layout box never moves, and a mark sized from that box stays under
+a glyph however far it has grown.
+
+**The registry component was read and not added, and none of it survived the reading.** Upstream's
+`Dock-TS-TW` animates each item's `width` and `height` and the panel's height with them, so every
+pointer move relays out a row of six and the ground under it; it is a `motion.div` with
+`role="button"`, `tabIndex={0}` and an `aria-haspopup` nothing pops up; it keys its items on the
+array index; and its colours are three hex literals. `useDockMagnify` is 85 lines writing `scale` —
+composited, no layout — and the declared `motion@^12.23.12` never met this repository's 13.1.0, so
+`shadcn add` would have installed a second copy beside ours. The bundle moved **274.52 → 275.29 kB
+gz, 55.1%**, all of it four lucide glyphs against a rail deleted.
+
+**Touch degrades to nothing because nothing is written.** The listener returns on any
+`pointerType` that is not `mouse`, so a tap sets no scale and there is none left behind when the
+finger goes — measured, `['','','','','','']` after a touch move and `1.25` at the peak after a
+mouse one. Reduced motion never attaches the listeners at all, and it was checked both ways round:
+the reader's own `reduced` and the *device's* `prefers-reduced-motion` each read six empty scales.
+
+**The entry's name is `sr-only` text on the control rather than an `aria-label`**, so an unfinished
+one still reads *"Utility lineups Soon"* — the reading the rail's chip carried, which a glyph must
+not cost. The label that rises above the dock restates it and is `aria-hidden` for that reason, and
+it is raised by `:focus-visible` rather than by focus, or a pressed entry would leave its own name
+standing over the content it opened.
+
+**The band is reserved by `main`'s padding and the shell is `h-dvh` at every width.** The document
+used to scroll below the split, and a fixed panel over a document scroller is the one arrangement
+where the reader reaches the end of a library and finds the last row underneath it. Measured at
+scroll end: **30px of clearance at 1024×600, 1280×560, 900×700 and 420×760**, 53 at 1440×900, and
+the panel is 287×54 at every one of them. **The product name stays at the top left** — a wordmark is
+not a control — and settings and help are the same `DockEntry` as the four views, without
+`aria-current`, because two hover treatments in one 52px panel is a panel assembled from parts.
+
+**The overflow sweep needed #278's rule to stay honest.** The hover label is absolutely positioned
+and centred on a 40px seat, so it extends every ancestor's `scrollWidth` by design; a sweep counting
+that reports thirteen elements at 1440 and says nothing true. Counting only an *in-flow* child past
+its parent's padding box reads **0 elements overflowing** at 1440×900 and 1024×800 in `en` and in
+`ru`, on both arms. `.app-shell` went with the rail: `h-dvh` says what its `min-height: 100dvh` said
+and nothing else read the class.
+
+**#345 rode with it, and the shape of the fix is what to keep.** Vite's static middleware treats a
+`.gz` file as a pre-compressed copy of something else and names `Content-Encoding: gzip` on it, so
+the browser un-gzipped the container and `decodeDemo` was handed raw bytes where it expects a gzip
+stream — a sample downloaded with a clean `200` and refused to open, under `bun run dev` only.
+`sampleContainers` **serves the bytes rather than patching the header a later handler will write**:
+a patch has to guess between `setHeader` and `writeHead`, and the one it misses is the one that
+reintroduces the bug in silence. Two things cost a round trip. **A request carrying a query is Vite
+asking *about* the file rather than for it** — `?url` is answered with a module exporting the path,
+and serving the container's bytes to that request breaks the import, because the browser refuses
+`application/gzip` as a module script and the app never starts. And it is `configureServer` and
+nothing else, so `dist` is untouched. Dev now reads `content-type: application/gzip` with no
+`Content-Encoding`, which is what production has always sent, and the fixture sample opened onto the
+review screen in **10.9 s** from the press.
+
+**#323 rode with it too, and the seam #322 declined is the one that opened.** `labels.ts` was 476
+lines holding four things that never ask each other anything, and the reason that PR gave for
+leaving them was the whole problem: `placeDamage` needed `isOnPlate`, `LABEL_HALO_PX` and
+`LABEL_HEIGHT_PX`, so a `damage-figure.ts` that owned the placement would have imported back into
+the file importing it. `label-box.ts` (118) is every size and box; `label-subject.ts` (60) is what a
+pass is *given*, the names included; `damage-pass.ts` (80) is the hit's figure and **shares the
+caller's placer** rather than owning one, which is what keeps every name placed before any figure
+and so keeps a figure giving way to a name; `labels.ts` is 292 and re-exports what it exported
+before, so nothing outside `features/radar/helpers` changed an import. The plate is **pixel-identical
+across 12 states — 6 rounds × a player selected and not, 12 distinct hashes, 12 of 12 matching** —
+and §16's two frame rows are **not** re-measured, deliberately: a move that adds one cross-module
+import to a function already called per label per frame is not a shape change, which is #264's own
+rule. The check is cheap now for a reason worth knowing: **#330's committed sample is what makes a
+plate hash reproducible without a `.dem`**, so the arm setup is a press on a card rather than a demo
+somebody has to hand over.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

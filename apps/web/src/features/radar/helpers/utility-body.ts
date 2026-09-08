@@ -1,6 +1,6 @@
 import type { GrenadeType } from '@disa/demo-core';
 import { readCssToken } from '@/shared/lib';
-import { LABEL_HALO_PX, LABEL_SIZE_PX } from './labels';
+import { LABEL_HALO_PX, LABEL_SIZE_PX } from './label-box';
 
 /**
  * How many parts a body is made of. One number for both readings, because what tells a cloud from a
