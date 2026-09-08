@@ -22,7 +22,9 @@ import { type MapOverview, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { positionScratch, readPositions } from '@/core/playback';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
-import { type LabelStyle, type LabelSubject, labelPass } from './labels';
+import type { LabelStyle } from './label-box';
+import type { LabelSubject } from './label-subject';
+import { labelPass } from './labels';
 import { plateProjection } from './projection';
 import {
   DEAD_ALPHA,

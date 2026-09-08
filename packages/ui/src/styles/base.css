@@ -196,7 +196,3 @@ pre {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;
 }
-
-.app-shell {
-  min-height: 100dvh;
-}

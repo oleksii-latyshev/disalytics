@@ -4,7 +4,7 @@ import { damageFigure, drawDamageFigure } from './damage-figure';
 import { drawGrenadeMark, drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
-import { haloStroke, LABEL_HEIGHT_PX, type LabelStyle } from './labels';
+import { haloStroke, LABEL_HEIGHT_PX, type LabelStyle } from './label-box';
 import { drawLeaderLine, leaderStroke } from './leader-line';
 import {
   DEAD_ALPHA,
