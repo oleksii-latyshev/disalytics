@@ -1,16 +1,22 @@
 import { DEFAULT_RADAR_THEME, getMapOverview, radarAssetPath } from '@disa/map-data';
 import { Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useSetting } from '@/core/settings';
+import { WAY_IN_REEL } from '../generated/reel';
+import { AGENT_COUNT, AGENT_STRIDE } from '../helpers/agents';
 import { prefersLessMotion } from '../helpers/less-motion';
 import { CELL_PX, coverOf, PIXEL_FRAGMENT, PIXEL_VERTEX, pixelColours } from '../helpers/pixels';
+import { decodeReel, sampleReel } from '../helpers/reel';
 
 /**
  * The material of the product rather than an illustration. One plate, fixed, because this screen has
  * no demo yet and so no map of its own to show; Dust2 is the one every reader can name from its
  * shape alone, which is what a grid this coarse leaves of it.
+ *
+ * **The reel names it rather than a constant here.** The round being played and the plate it is
+ * played on are one fact, and two places to write it down is one place for them to disagree.
  */
-const BACKDROP_MAP = 'de_dust2';
+const BACKDROP_MAP = WAY_IN_REEL.map;
 
 /**
  * A device pixel ratio of 2 quadruples the fragments, and the picture is a grid of squares whose
@@ -22,6 +28,14 @@ const MAX_PIXEL_RATIO = 1.25;
 
 /** Radians of wave per second of wall time. Slow enough to be movement rather than animation. */
 const DRIFT = 0.5;
+
+/**
+ * How fast the round is played back, against the match's own clock.
+ *
+ * Below life speed, because this is a background: a reader looking past it should see the shape of
+ * an attack rather than a firefight, and the wave it is drawn over moves at `DRIFT`.
+ */
+const REEL_RATE = 0.6;
 
 /**
  * What the hero stands on. The grid is bright enough that a single lit cell behind a glyph took the
@@ -74,6 +88,9 @@ interface Props {
 export function PixelBackdrop({ isLifted, isShown }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [motion] = useSetting('motion');
+  // Decoded once for the life of the screen: the base64 is unpacked, undeltaed and put through the
+  // radar transform, none of which belongs anywhere near a frame.
+  const reel = useMemo(() => decodeReel(WAY_IN_REEL), []);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -99,6 +116,7 @@ export function PixelBackdrop({ isLifted, isShown }: Props) {
     host.append(canvas);
 
     const colours = pixelColours(document.documentElement);
+    const agents = new Float32Array(AGENT_COUNT * AGENT_STRIDE);
     const texture = new Texture(renderer.gl, { generateMipmaps: false });
     const program = new Program(renderer.gl, {
       vertex: PIXEL_VERTEX,
@@ -112,9 +130,14 @@ export function PixelBackdrop({ isLifted, isShown }: Props) {
         uGround: { value: colours.ground },
         uFirst: { value: colours.first },
         uSecond: { value: colours.second },
+        uAgents: { value: agents },
       },
     });
     const mesh = new Mesh(renderer.gl, { geometry: new Triangle(renderer.gl), program });
+
+    const play = (seconds: number) => {
+      if (reel !== null) sampleReel(reel, seconds, agents);
+    };
 
     const render = () => renderer.render({ scene: mesh });
 
@@ -137,6 +160,9 @@ export function PixelBackdrop({ isLifted, isShown }: Props) {
     });
     image.src = `${import.meta.env.BASE_URL}${radarAssetPath(level, DEFAULT_RADAR_THEME)}`;
 
+    // The still is the round's fullest frame rather than its first, so the picture before any
+    // motion starts is already the one a reader who never sees it move is owed.
+    play(reel === null ? 0 : reel.stillFrame / reel.hz);
     resize();
     window.addEventListener('resize', resize);
 
@@ -154,10 +180,14 @@ export function PixelBackdrop({ isLifted, isShown }: Props) {
 
     let frame = 0;
     let last = performance.now();
+    let played = 0;
 
     const draw = (now: number) => {
-      program.uniforms.uTime.value += ((now - last) / 1000) * DRIFT;
+      const elapsed = (now - last) / 1000;
       last = now;
+      program.uniforms.uTime.value += elapsed * DRIFT;
+      played += elapsed * REEL_RATE;
+      play(played);
       render();
       frame = requestAnimationFrame(draw);
     };
@@ -179,7 +209,7 @@ export function PixelBackdrop({ isLifted, isShown }: Props) {
       document.removeEventListener('visibilitychange', follow);
       release();
     };
-  }, [motion, isShown]);
+  }, [motion, isShown, reel]);
 
   return (
     <div

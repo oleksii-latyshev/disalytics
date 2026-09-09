@@ -107,6 +107,13 @@ jobs:
       - name: samples:check
         run: bun run samples:check
 
+      # One link further down the same chain: the way in's reel is cut from those containers, so a
+      # regeneration of them leaves it stale. This one can do better than assert a shape — the
+      # source is in the tree, so it rebuilds the reel and compares, which is the byte-stability
+      # claim and the staleness check in one run.
+      - name: reel:check
+        run: bun run reel:check
+
       - name: test
         run: bun run test
 
