@@ -1774,6 +1774,93 @@ A hidden tab is left alone and does not jump on the way back: six seconds away m
 in the same PR — it was the same sentence in two places — and `library.open.title` is deleted in both
 locales.
 
+**#335 put a round in the way in's pixels, and the reel it plays is cut from a parse rather than
+from a demo.** The field behind the way in drew a map that breathed; it now plays round 22 of the
+IEM Atlanta 2026 dust2 map in the same squares — ten players crossing it, utility blooming where it
+went off and fading where it died. Seven things are load-bearing.
+
+**The source is the sample container this build already ships**, so `bun run reel:generate` needs
+nothing outside the tree and no `.dem` anywhere: the chain is `.dem` → container → reel and only the
+first link is on the owner's machine. That is what lets `reel:check` do better than assert a shape —
+**it regenerates and compares**, so the staleness check and the byte-stability claim are one run. It
+sits beside `samples:check` in `ci.yml` for the reason that one exists: a `SCHEMA_VERSION` bump
+rebuilds the containers, and a reel cut from the old ones is a background nobody can check against
+anything.
+
+**It is a module and not an asset.** #330's rule for this screen is that nothing is fetched before a
+press, and an asset imported with `?url` is a request — so the reel ships inside the entry chunk.
+Measured on the built bundle at 1440×900: **nine requests on the way in and 0 containers**, the list
+`main` produces.
+
+**`ogl` resolves an array uniform only when its value is a plain `Array`.** It walks the name GL
+reports — `uAgents[0]` — and the branch that accepts the index tests `Array.isArray`, which a typed
+array fails. The cost of getting that wrong is silent in the picture and loud in the console: every
+frame renders, the field draws its map, and nothing the reel says arrives, which reads exactly like
+a feature that was never wired up. The tell is `Active uniform uAgents[0] has not been supplied` in
+a **fresh** console — the browser pane's holds stale entries, so it went on reporting a warning that
+had already been fixed and would have reported none for the bug itself.
+
+**A mark takes its cell rather than adding to it** — `max(breath, glow * 1.25)` and not a sum. Added,
+a mark caught in a crest of the wave had a quarter of the range left to say anything with and
+vanished into it; taken, a cell under a mark is always at the ceiling while the wave alone reaches
+0.60, so the difference is the same everywhere on the field. The ceiling is what keeps the grid a
+grid: 0.485 of a cell's box against the 0.5 where neighbours meet.
+
+**The wave was compressed to about half its swing when the round arrived**, and that is the change
+that made the screen legible rather than any change to the marks. It existed because nothing else on
+the field moved; with a round playing it is texture, and at full amplitude it was the loudest thing
+on a screen whose subject had become somebody else. **It is not compressed further than that**: at a
+third, two frames of the map a second apart were byte-identical over a 300×300 patch — 8-bit
+quantisation swallowed the whole remaining swing — which is a still image rather than a quiet one,
+and it reads in a probe exactly like a shader that stopped.
+
+**Precision is set by what the grid can show, not by what the number can hold.** A cell of the way
+in's 10px grid is about 31 world units across, so the reel quantises to a whole world unit; a
+quarter-unit step was measured against it and cost 236 bytes for precision nothing can display. On
+that grid a **delta-coded integer array beats base64** — 3.51 kB gzipped against 3.77 on the round
+first cut — and it takes `atob` and the byte-plane split out of the client, leaving `decodeReel` a
+running sum. Undifferenced, the same tracks are 6.28 kB.
+
+**Two numbers are rules rather than choices, and the first is the owner's steer of 9 September
+2026.** The round is the one with the most events in it, ties going to the *longer* — a short round
+packed with utility is a screen of smoke where a long one is an attack that goes somewhere, and this
+is watched on a loop by somebody who is not being asked to read it. Three rounds tie at 47 events
+and the longest is 124.8 s. The still a reader who asked for less motion is shown is the round's
+**fullest** frame rather than its first, because frame zero is ten players on two spawns with
+nothing thrown. Ten utility agents is a measurement — this round peaks at seven standing at once —
+and the generator **fails** rather than dropping a mark, so a future reel that needs more says so at
+build time.
+
+**The way to check a reel is truthful is to draw it on the plate, not to look at the field.** A
+throwaway probe painting every sampled position onto `packages/map-data`'s own dust2 image put all
+ten tracks inside the map's corridors — mid, catwalk, long, tunnels — with **0 of 499 frames × 10
+slots off the image**, which is what says the world→radar transform and the quantisation are right.
+Nothing about the shader can answer that question, and the field at a 10px grid is far too coarse to
+answer it by eye.
+
+Measured over the built bundle in headed Chrome at 1440×900, `deviceScaleFactor` 1, with
+`innerWidth`/`innerHeight`/`visibilityState`/`hasFocus` asserted inside the run: the worst pixel
+behind the hero is **7.48** against §14's floor of 4.5; the field moves at rest (**five distinct
+patch hashes of five**); **reduced motion draws one frame** (one of five); **a hidden tab does not
+jump**, six seconds away moving the mean channel **0.003** against **0.065** for one second of
+ordinary play; and the field **keeps moving through a real parse** — eleven samples during a 398 MB
+demo's parse, eleven distinct.
+
+**Two things about that run are worth more than its numbers.** A contrast figure here is only a
+claim with a *duration*: the reel loops over 208 s, so eight frames sample three seconds of it and
+read anywhere from 8.73 to 10.23 depending on where the round happens to be — 7.48 is a 40-frame
+sweep across ~50 s, and the worst case it catches is exactly the one that matters, a player's own
+lit cell passing behind a glyph. And **a killed run leaves its settings behind**: this script writes
+`disa.motion` to test reduced motion, so a pass interrupted between writing and clearing it makes
+the *next* pass measure a field drawing one frame — which reports as a still shader, a dead patch
+probe and a flattering contrast figure all at once. It clears the key and asserts
+`data-motion-reduce` is `null` before measuring anything now. The sibling trap is #332's own: **a
+patch probe placed off the map reports a still field**, so the probe states its lit-pixel count and
+a zero there is visible rather than implied.
+
+The bundle is 275.29 → **285.39 kB gz, 57.1%**, and `AGENTS.md` §16's two rows are untouched: this
+screen is never mounted on the review screen.
+
 **#338 turned the shell's navigation ninety degrees, and what it bought is measured rather than
 argued.** `SideRail` was 280px of every screen that is not the match, and #233's own reason for the
 rail ending at the match is what a dock inherits turned on its side. Content at 1440×900 goes

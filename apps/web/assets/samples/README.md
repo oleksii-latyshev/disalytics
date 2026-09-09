@@ -24,6 +24,13 @@ DISALYTICS_SAMPLE_DIR=<the directory holding the .dem files> bun run samples:gen
 It rewrites both containers and `apps/web/src/core/samples/generated/assets.ts`, and is byte-stable
 across runs — the parse is deterministic by hard rule 8, and the gzip carries no timestamp.
 
+**The way in's reel is cut from these bytes, so a rebuild here needs one there too.** `#335`'s
+background plays one round of the dust2 container, and `bun run reel:generate` reads that container
+rather than any `.dem` — so regenerating the reel needs nothing but this directory. Run it after
+`samples:generate`, and `bun run reel:check` will refuse the build until you have: it rebuilds the
+reel from the container and compares, which is the staleness check and the byte-stability claim in
+one run.
+
 **Every `SCHEMA_VERSION` bump needs one.** A container names the schema it was written under and
 `decodeDemo` refuses any other, so a bumped version makes both of these unreadable on the day it
 lands. `bun run samples:check` is what turns that from a card that fails when pressed into a red

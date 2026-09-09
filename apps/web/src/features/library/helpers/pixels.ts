@@ -1,3 +1,5 @@
+import { AGENT_COUNT } from './agents';
+
 /**
  * The way in's ground: the product's own map, taken apart into pixels.
  *
@@ -74,16 +76,29 @@ export const PIXEL_VERTEX = /* glsl */ `
 `;
 
 /**
- * One square per cell of a fixed grid, lit by what the map has at that cell and by a wave crossing
- * the grid.
+ * One square per cell of a fixed grid, lit by what the map has at that cell, by a wave crossing the
+ * grid, and by the round the reel is playing over it.
  *
- * Three things are deliberate. **The map is sampled once per cell, at the cell's own centre**, so
+ * Four things are deliberate. **The map is sampled once per cell, at the cell's own centre**, so
  * this is a picture of the map at the grid's resolution rather than a picture of the map with a
  * grid over it — the difference is whether a wall stays one block wide when it is a pixel wide.
  * **A lit cell is a square with a gap around it**, because the gap is what makes the grid readable
- * as pixels rather than as a smeared image. And **the wave decides size, not colour**: a cell grows
+ * as pixels rather than as a smeared image. **The wave decides size, not colour**: a cell grows
  * and shrinks where the wave passes, which reads as the map breathing, where a hue that changed
- * would read as data.
+ * would read as data. And **an agent is more of the same wave rather than a mark of its own** — a
+ * player and a grenade raise the energy of the cells they stand on, so they arrive as the map
+ * brightening under them and stay inside the two pixel tokens. Lending them `--color-ct` or a
+ * grenade's own colour would put a reading on the one screen in the product that has no data on it.
+ *
+ * **The mark takes the cell rather than adding to it** — `max` and not a sum — and that is what makes
+ * a player readable wherever the wave happens to be. Added, a mark in a crest had a quarter of the
+ * range left to say anything with and vanished into it; taken, a cell under a mark is always at the
+ * ceiling while the wave alone can only reach 1.0, so the difference between the two is the same
+ * everywhere on the field.
+ *
+ * The ceiling is what keeps the grid a grid: at `1.25` a lit cell is 0.485 of its box against the
+ * 0.5 where neighbours meet, so the brightest thing the field can draw still has a hairline around
+ * it rather than smearing into a blob.
  */
 export const PIXEL_FRAGMENT = /* glsl */ `
   precision highp float;
@@ -96,6 +111,9 @@ export const PIXEL_FRAGMENT = /* glsl */ `
   uniform vec3 uGround;
   uniform vec3 uFirst;
   uniform vec3 uSecond;
+  // xy is the position in the map's own uv, z how much of the mark is on screen, w its radius in
+  // the same uv. A zero z is an empty slot, which is most of them for most of the round.
+  uniform vec4 uAgents[${AGENT_COUNT}];
 
   varying vec2 vUv;
 
@@ -116,26 +134,49 @@ export const PIXEL_FRAGMENT = /* glsl */ `
     // near 0.15 and a wall near 0.30, and a luminance would read both as almost nothing.
     float ink = sampled.a * (0.45 + 0.55 * smoothstep(0.16, 0.34, brightest));
 
-    // Outside the map is the ground: the texture clamps at its edge, and a clamped edge repeated
-    // sideways would draw a stripe of the map's rim across the rest of the screen.
-    vec2 inside = step(vec2(0.0), mapUv) * step(mapUv, vec2(1.0));
-    ink *= inside.x * inside.y;
-
     float wave =
       sin(cell.x * 0.055 + uTime * 0.55) +
       sin(cell.y * 0.075 - uTime * 0.38) +
       sin((cell.x + cell.y) * 0.035 + uTime * 0.7);
     float pulse = clamp(0.5 + wave / 4.5, 0.0, 1.0);
 
+    float glow = 0.0;
+    for (int index = 0; index < ${AGENT_COUNT}; index++) {
+      vec4 agent = uAgents[index];
+      if (agent.z <= 0.0) continue;
+
+      glow += agent.z * (1.0 - smoothstep(0.0, agent.w, distance(mapUv, agent.xy)));
+    }
+    glow = clamp(glow, 0.0, 1.0);
+
+    // A mark carries its own presence: a player crossing the plate's dim ground has to read, and
+    // that ground alone lights a cell barely at all. It is still bounded by the map, so the field
+    // outside the outline stays the app's own surface however close a mark passes to the rim.
+    ink = max(ink, glow);
+
+    // Outside the map is the ground: the texture clamps at its edge, and a clamped edge repeated
+    // sideways would draw a stripe of the map's rim across the rest of the screen.
+    vec2 inside = step(vec2(0.0), mapUv) * step(mapUv, vec2(1.0));
+    ink *= inside.x * inside.y;
+
+    // The wave was the whole of the movement before there was a round to play; it is texture now,
+    // and its swing is compressed to about half so the thing that moves on purpose is the loudest
+    // thing on the field. It is not compressed further than this: taken to a third, the map stopped
+    // changing any 8-bit pixel between two frames a second apart, which is a still image rather than
+    // a quiet one. A mark still takes the cell outright, so a player is the biggest square on screen
+    // wherever the wave happens to be.
+    float breath = 0.20 + 0.50 * pulse;
+    float energy = max(breath, glow * 1.25);
+
     vec2 inCell = fract(gl_FragCoord.xy / uCell) - 0.5;
     float extent = max(abs(inCell.x), abs(inCell.y));
     // Presence is the map's and size is the wave's: a cell exists where there is map under it, and
-    // how big it is says where the wave has got to.
-    float size = 0.44 * (0.55 + 0.45 * pulse);
+    // how big it is says where the wave — and whoever is standing on it — has got to.
+    float size = ${CELL_EXTENT} * (0.55 + 0.45 * energy);
     float square = 1.0 - smoothstep(size - 0.08, size, extent);
 
-    vec3 tint = mix(uFirst, uSecond, clamp(0.15 + 0.85 * pulse, 0.0, 1.0));
-    vec3 colour = uGround + tint * square * ink * (1.05 + 0.75 * pulse);
+    vec3 tint = mix(uFirst, uSecond, clamp(0.15 + 0.85 * min(energy, 1.0), 0.0, 1.0));
+    vec3 colour = uGround + tint * square * ink * (0.95 + 0.50 * pulse + 0.95 * glow);
 
     gl_FragColor = vec4(colour, 1.0);
   }

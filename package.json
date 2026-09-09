@@ -22,6 +22,8 @@
     "size": "bun tools/scripts/size.ts",
     "repo:labels": "bun tools/scripts/labels.ts",
     "repo:milestones": "bun tools/scripts/milestones.ts",
+    "reel:generate": "bun tools/scripts/reel-generate.ts",
+    "reel:check": "bun tools/scripts/reel-check.ts",
     "samples:generate": "bun tools/scripts/samples-generate.ts",
     "samples:check": "bun tools/scripts/samples-check.ts"
   },
