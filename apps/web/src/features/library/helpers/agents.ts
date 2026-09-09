@@ -1,8 +1,8 @@
 /**
  * How many marks the field can carry at once, and they are two numbers because they are two
- * questions. Players are the reel's own `slotCount`. **Ten utility is a measurement**: the round
- * the reel holds peaks at nine live marks, and `reel:generate` fails rather than dropping one, so a
- * future reel that needs more says so at build time instead of losing marks on screen.
+ * questions. Players are the reel's own `slotCount`. **Ten utility is a measurement**: the round the
+ * reel holds peaks at eight marks standing at once, and `reel:generate` fails rather than dropping
+ * one, so a future reel that needs more says so at build time instead of losing marks on screen.
  *
  * They are their own module because they have three readers in two runtimes: the shader compiles
  * the bound into a GLSL loop, `sampleReel` fills the array up to it, and `reel:generate` refuses a

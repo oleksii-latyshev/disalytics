@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { buildReel, OUTPUT_PATH } from './reel/build';
+import { buildReel } from './reel/build';
+import { OUTPUT_PATH } from './reel/emit';
 
 /**
  * Holds the committed reel to the container it was cut from.

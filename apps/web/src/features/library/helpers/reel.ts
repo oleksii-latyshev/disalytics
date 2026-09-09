@@ -171,8 +171,14 @@ function grenadeStrength(grenade: ReelGrenade, frame: number): number {
  * **Nothing here allocates**: this runs once an animation frame beneath a shader, which is the rule
  * `PixelBackdrop`'s own uniforms already obey. The reel loops on its own length, so the round plays
  * again rather than the field going still.
+ *
+ * **`out` is a plain array and not a `Float32Array`**, which is `ogl`'s requirement rather than a
+ * preference: it resolves an array uniform by walking the name GL reports for it — `uAgents[0]` —
+ * and the branch that accepts the index tests `Array.isArray`, which a typed array fails. The cost
+ * of getting this wrong is silent in the picture and loud in the console: every frame renders, the
+ * field draws its map, and nothing the reel says reaches the shader at all.
  */
-export function sampleReel(reel: Reel, seconds: number, out: Float32Array): void {
+export function sampleReel(reel: Reel, seconds: number, out: number[]): void {
   out.fill(0);
 
   const position = (((seconds * reel.hz) % reel.frameCount) + reel.frameCount) % reel.frameCount;

@@ -90,9 +90,15 @@ export const PIXEL_VERTEX = /* glsl */ `
  * brightening under them and stay inside the two pixel tokens. Lending them `--color-ct` or a
  * grenade's own colour would put a reading on the one screen in the product that has no data on it.
  *
- * The energy ceiling is what keeps the grid a grid: at `1.25` a lit cell is 0.485 of its box against
- * the 0.5 where neighbours meet, so the brightest thing the field can draw still has a hairline
- * around it rather than smearing into a blob.
+ * **The mark takes the cell rather than adding to it** — `max` and not a sum — and that is what makes
+ * a player readable wherever the wave happens to be. Added, a mark in a crest had a quarter of the
+ * range left to say anything with and vanished into it; taken, a cell under a mark is always at the
+ * ceiling while the wave alone can only reach 1.0, so the difference between the two is the same
+ * everywhere on the field.
+ *
+ * The ceiling is what keeps the grid a grid: at `1.25` a lit cell is 0.485 of its box against the
+ * 0.5 where neighbours meet, so the brightest thing the field can draw still has a hairline around
+ * it rather than smearing into a blob.
  */
 export const PIXEL_FRAGMENT = /* glsl */ `
   precision highp float;
@@ -153,7 +159,14 @@ export const PIXEL_FRAGMENT = /* glsl */ `
     vec2 inside = step(vec2(0.0), mapUv) * step(mapUv, vec2(1.0));
     ink *= inside.x * inside.y;
 
-    float energy = clamp(pulse + 1.1 * glow, 0.0, 1.25);
+    // The wave was the whole of the movement before there was a round to play; it is texture now,
+    // and its swing is compressed to about half so the thing that moves on purpose is the loudest
+    // thing on the field. It is not compressed further than this: taken to a third, the map stopped
+    // changing any 8-bit pixel between two frames a second apart, which is a still image rather than
+    // a quiet one. A mark still takes the cell outright, so a player is the biggest square on screen
+    // wherever the wave happens to be.
+    float breath = 0.20 + 0.50 * pulse;
+    float energy = max(breath, glow * 1.25);
 
     vec2 inCell = fract(gl_FragCoord.xy / uCell) - 0.5;
     float extent = max(abs(inCell.x), abs(inCell.y));
@@ -163,7 +176,7 @@ export const PIXEL_FRAGMENT = /* glsl */ `
     float square = 1.0 - smoothstep(size - 0.08, size, extent);
 
     vec3 tint = mix(uFirst, uSecond, clamp(0.15 + 0.85 * min(energy, 1.0), 0.0, 1.0));
-    vec3 colour = uGround + tint * square * ink * (1.05 + 0.75 * pulse + 0.6 * glow);
+    vec3 colour = uGround + tint * square * ink * (0.95 + 0.50 * pulse + 0.95 * glow);
 
     gl_FragColor = vec4(colour, 1.0);
   }

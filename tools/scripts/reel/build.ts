@@ -6,6 +6,7 @@ import {
   PLAYER_AGENTS,
   UTILITY_AGENTS,
 } from '../../../apps/web/src/features/library/helpers/agents';
+import { emitReel, type ReelCut, type ReelGrenadeRow } from './emit';
 
 /**
  * The container the reel is cut from. It is the sample the library already ships, which is what
@@ -15,20 +16,12 @@ import {
  */
 export const SOURCE_CONTAINER = 'apps/web/assets/samples/navi-vitality-dust2.disa.gz';
 
-export const OUTPUT_PATH = 'apps/web/src/features/library/generated/reel.ts';
-
 /**
  * Samples per second of match. Four is what makes a round of ten players affordable inside the
  * bundle — 8.8 kB before compression — and the field is a 10px grid, where a player crossing it
  * covers about one cell in that quarter second.
  */
 const REEL_HZ = 4;
-
-/**
- * The longest round the reel will take. It is a budget rather than a property of the match: the
- * round is what a reader watches on a loop, and #335's own figure for one is a minute.
- */
-const MAX_ROUND_SECONDS = 60;
 
 /**
  * World units at quantised zero, and steps per world unit. The grid belongs to no map, and the step
@@ -63,61 +56,32 @@ function inRound(round: Round, tick: number): boolean {
 }
 
 /**
- * The round the reel plays: the busiest one that fits the budget.
+ * The round the reel plays: the one with the most in it, and the longer of two that tie.
  *
- * A rule rather than a number, so a regeneration reproduces the choice instead of trusting an index
- * somebody wrote down — and the generated module records which round it landed on, so a change of
- * mind is visible in the diff rather than silent.
+ * A rule rather than an index somebody wrote down, so a regeneration reproduces the choice — and the
+ * generated module records which round it landed on, so a change of mind shows up in the diff.
+ *
+ * **Events rather than grenades, and length as the tie-break**, which is the owner's steer of
+ * 9 September 2026: a short round packed with utility is a screen of smoke where a long one is an
+ * attack that goes somewhere, and the field is watched on a loop by somebody who is not being asked
+ * to read it. On the shipped container three rounds tie at 47 events and the longest is 124.8 s.
  */
 function chooseRound(demo: ParsedDemo): Round {
-  const tickRate = demo.header.tickRate;
-  const fits = demo.events.rounds.filter(
-    (round) => (round.endTick - round.freezeTimeEndTick) / tickRate <= MAX_ROUND_SECONDS,
-  );
-  const pool = fits.length > 0 ? fits : demo.events.rounds;
-  const density = (round: Round) =>
-    demo.events.grenades.filter((grenade) => inRound(round, grenade.throwTick)).length;
+  const weight = (round: Round) =>
+    demo.events.grenades.filter((grenade) => inRound(round, grenade.throwTick)).length +
+    demo.events.kills.filter((kill) => inRound(round, kill.tick)).length;
 
-  return pool.reduce((best, round) => (density(round) > density(best) ? round : best));
+  return demo.events.rounds.reduce((best, round) => {
+    if (weight(round) !== weight(best)) return weight(round) > weight(best) ? round : best;
+
+    return round.endTick - round.freezeTimeEndTick > best.endTick - best.freezeTimeEndTick
+      ? round
+      : best;
+  });
 }
 
 function quantise(value: number): number {
   return Math.max(0, Math.min(65535, Math.round((value - QUANT_ORIGIN) * QUANT_UNITS)));
-}
-
-/**
- * The bulk of the reel: a running difference along each player's own track.
- *
- * **A walk is small numbers, and small numbers are what gzip is good at** — a step at 4 Hz is tens
- * of units where a position is thousands. Measured on this round at this quantisation, the deltas
- * as a plain integer array gzip to **3.51 kB** against **3.77 kB** for the same numbers base64'd,
- * and the array needs no `atob` and no byte-plane split on the way back in: `decodeReel` is a
- * running sum and nothing else. The absolute positions, undifferenced, gzip to 6.28 kB.
- */
-function packPositions(values: Uint16Array, seriesCount: number, frameCount: number): number[] {
-  const deltas: number[] = [];
-
-  for (let series = 0; series < seriesCount; series += 1) {
-    const base = series * frameCount;
-    let previous = 0;
-
-    for (let frame = 0; frame < frameCount; frame += 1) {
-      const value = sampleAt(values, base + frame);
-
-      deltas.push(value - previous);
-      previous = value;
-    }
-  }
-
-  return deltas;
-}
-
-interface ReelGrenadeRow {
-  type: string;
-  detonateFrame: number;
-  endFrame: number;
-  x: number;
-  y: number;
 }
 
 function grenadeRows(
@@ -206,40 +170,6 @@ function chooseStillFrame(
   return best;
 }
 
-const GENERATED_DOC = `/**
- * One round of IEM Atlanta 2026, cut from the sample container this build already ships and small
- * enough to sit inside the bundle. Written by \`bun run reel:generate\`, held to the container it came
- * from by \`bun run reel:check\`.
- *
- * **It is in the bundle rather than beside it on purpose.** #330's rule for this screen is that
- * nothing is fetched before a reader presses something, and an asset imported with \`?url\` is a
- * request — so the reel is a module, and the way in still reaches the network for nothing at all.
- */`;
-
-/**
- * The formatter's own answer for the file, rather than this script's guess at it.
- *
- * A generated file is checked by `bun run check` like any other, and the reel's bulk is an array of
- * four thousand numbers — whose wrapping is a fill algorithm, not a rule anything here should be
- * reimplementing. Asking Biome means a version of it that reflows arrays differently changes this
- * file the same way it changes a hand-written one, and `reel:check` stays a true comparison because
- * both sides come through here.
- */
-function formatted(source: string): string {
-  const run = Bun.spawnSync(
-    ['bunx', '--bun', 'biome', 'format', `--stdin-file-path=${OUTPUT_PATH}`],
-    {
-      stdin: Buffer.from(source),
-    },
-  );
-
-  if (run.exitCode !== 0) {
-    throw new Error(`biome could not format the reel: ${run.stderr.toString()}`);
-  }
-
-  return run.stdout.toString();
-}
-
 export function buildReel(): { source: string; facts: ReelFacts } {
   const bytes = new Uint8Array(gunzipSync(readFileSync(SOURCE_CONTAINER)));
   const demo = decodeDemo(bytes);
@@ -280,45 +210,30 @@ export function buildReel(): { source: string; facts: ReelFacts } {
   }
 
   const stillFrame = chooseStillFrame(rows, alive, slotCount, frameCount);
-  const grenades = rows.map(
-    (row) =>
-      `    { type: '${row.type}', detonateFrame: ${row.detonateFrame}, endFrame: ${row.endFrame}, x: ${row.x}, y: ${row.y} },`,
-  );
-
-  const source = [
-    '// Generated by `bun run reel:generate`. Do not edit.',
-    "import type { ReelSource } from '../helpers/reel';",
-    '',
-    GENERATED_DOC,
-    'export const WAY_IN_REEL: ReelSource = {',
-    `  map: '${header.map}',`,
-    `  round: ${round.number},`,
-    `  hz: ${REEL_HZ},`,
-    `  frameCount: ${frameCount},`,
-    `  stillFrame: ${stillFrame},`,
-    `  slotCount: ${slotCount},`,
-    `  quantOrigin: ${QUANT_ORIGIN},`,
-    `  quantUnits: ${QUANT_UNITS},`,
-    `  positions: [${packPositions(positions, slotCount * 2, frameCount).join(', ')}],`,
-    `  alive: [${[...alive].join(', ')}],`,
-    '  grenades: [',
-    ...grenades,
-    '  ],',
-    '};',
-    '',
-  ].join('\n');
-
-  const formattedSource = formatted(source);
+  const cut: ReelCut = {
+    map: header.map,
+    round: round.number,
+    hz: REEL_HZ,
+    frameCount,
+    stillFrame,
+    slotCount,
+    quantOrigin: QUANT_ORIGIN,
+    quantUnits: QUANT_UNITS,
+    positions,
+    alive,
+    grenades: rows,
+  };
+  const source = emitReel(cut);
 
   return {
-    source: formattedSource,
+    source,
     facts: {
       round: round.number,
       frameCount,
       stillFrame,
       grenadeCount: rows.length,
       peakUtility: peak,
-      byteLength: Buffer.byteLength(formattedSource),
+      byteLength: Buffer.byteLength(source),
     },
   };
 }

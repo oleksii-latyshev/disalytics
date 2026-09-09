@@ -90,7 +90,7 @@ describe('decodeReel', () => {
 });
 
 describe('sampleReel', () => {
-  const out = new Float32Array((PLAYER_AGENTS + UTILITY_AGENTS) * AGENT_STRIDE);
+  const out: number[] = new Array((PLAYER_AGENTS + UTILITY_AGENTS) * AGENT_STRIDE).fill(0);
 
   it('interpolates between two samples rather than stepping', () => {
     const reel = decodeReel(stubReel());
@@ -165,10 +165,12 @@ describe('sampleReel', () => {
     const reel = decodeReel(stubReel());
     if (reel === null) throw new Error('stub did not decode');
 
-    const guarded = new Float32Array(out.length + 4).fill(-1);
-    sampleReel(reel, 0, guarded.subarray(0, out.length));
+    // The uniform is exactly this long, and a write past it would be a silent out-of-range on a
+    // plain array rather than the throw a typed one gives.
+    const guarded: number[] = new Array(out.length).fill(0);
+    sampleReel(reel, 0, guarded);
 
-    expect([...guarded.slice(out.length)]).toEqual([-1, -1, -1, -1]);
+    expect(guarded.length).toBe(out.length);
   });
 });
 
@@ -195,7 +197,7 @@ describe('the shipped reel', () => {
     const reel = decodeReel(WAY_IN_REEL);
     if (reel === null) throw new Error('the shipped reel did not decode');
 
-    const out = new Float32Array((PLAYER_AGENTS + UTILITY_AGENTS) * AGENT_STRIDE);
+    const out: number[] = new Array((PLAYER_AGENTS + UTILITY_AGENTS) * AGENT_STRIDE).fill(0);
     let mostDropped = 0;
 
     for (let frame = 0; frame < reel.frameCount; frame += 1) {

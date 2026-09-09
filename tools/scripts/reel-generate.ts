@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { buildReel, OUTPUT_PATH, SOURCE_CONTAINER } from './reel/build';
+import { buildReel, SOURCE_CONTAINER } from './reel/build';
+import { OUTPUT_PATH } from './reel/emit';
 
 /**
  * Rebuilds the way in's reel from the committed sample container.

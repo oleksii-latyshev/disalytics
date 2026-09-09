@@ -116,7 +116,7 @@ export function PixelBackdrop({ isLifted, isShown }: Props) {
     host.append(canvas);
 
     const colours = pixelColours(document.documentElement);
-    const agents = new Float32Array(AGENT_COUNT * AGENT_STRIDE);
+    const agents: number[] = new Array(AGENT_COUNT * AGENT_STRIDE).fill(0);
     const texture = new Texture(renderer.gl, { generateMipmaps: false });
     const program = new Program(renderer.gl, {
       vertex: PIXEL_VERTEX,
