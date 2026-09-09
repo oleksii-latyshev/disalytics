@@ -1,4 +1,4 @@
-export const RADAR_THEMES = ['vanilla', 'blue'] as const;
+export const RADAR_THEMES = ['vanilla', 'blue', 'cyber'] as const;
 export type RadarTheme = (typeof RADAR_THEMES)[number];
 
 export const DEFAULT_RADAR_THEME: RadarTheme = 'blue';

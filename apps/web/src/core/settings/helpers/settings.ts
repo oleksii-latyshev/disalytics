@@ -6,8 +6,12 @@ export type ScoreboardPosition = 'block' | 'plate';
 /** Which grenades draw the 1px flight path §6.2 describes. */
 export type TrajectoryVisibility = 'flight' | 'selected' | 'off';
 
-/** `docs/DESIGN.md` §2.4's data colours, or the colour-blind-safe variant beside them. */
-export type Palette = 'default' | 'colour-blind';
+/**
+ * `docs/DESIGN.md` §2.4's data colours, the colour-blind-safe variant beside them, or the
+ * cyberpunk look's — #339. The third is a *look* rather than an accessibility answer, and
+ * `tokens.css` states its measured floors either way.
+ */
+export type Palette = 'default' | 'colour-blind' | 'cyber';
 
 /** What `prefers-reduced-motion` says, or the reader's own answer over the top of it. */
 export type MotionPreference = 'system' | 'reduced' | 'full';
@@ -101,7 +105,7 @@ export const TRAJECTORY_VISIBILITIES: readonly TrajectoryVisibility[] = [
   'off',
 ];
 export const SCOREBOARD_POSITIONS: readonly ScoreboardPosition[] = ['block', 'plate'];
-export const PALETTES: readonly Palette[] = ['default', 'colour-blind'];
+export const PALETTES: readonly Palette[] = ['default', 'colour-blind', 'cyber'];
 export const MOTION_PREFERENCES: readonly MotionPreference[] = ['system', 'reduced', 'full'];
 
 /**

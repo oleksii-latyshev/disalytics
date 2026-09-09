@@ -50,6 +50,12 @@ function ChoiceButton({ index, label }: { index: number; label: ReactNode }) {
  * **An option is addressed by its index rather than by its own value.** The table holds numbers as
  * well as strings — a seek step is `5`, a rate is `2` — and a group speaks in strings, so passing
  * the value through would need parsing back into whichever type this row happens to hold.
+ *
+ * **`value` may be `null`, and then no answer is lit.** Every row of §10.5's own table always holds
+ * one, but the look row (#339) is a reading of two other settings rather than a setting itself, and
+ * a reader who has crossed them is standing on a pair no look names. Lighting one of them there
+ * would be the control lying about what is on screen; the group already renders an empty selection,
+ * so this is the type catching up with what it does.
  */
 export function SettingChoice<T extends string | number>({
   labelPath,
@@ -58,7 +64,7 @@ export function SettingChoice<T extends string | number>({
   onChange,
 }: {
   labelPath: TranslationKey;
-  value: T;
+  value: T | null;
   options: readonly ChoiceOption<T>[];
   onChange: (value: T) => void;
 }) {

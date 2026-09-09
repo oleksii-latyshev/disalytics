@@ -1774,6 +1774,71 @@ A hidden tab is left alone and does not jump on the way back: six seconds away m
 in the same PR — it was the same sentence in two places — and `library.open.title` is deleted in both
 locales.
 
+**#339 gave the product a look, and the decision that shaped it is what it *refused* to spend.**
+A third `palette` and a third `radarTheme`, chosen together as one look: a violet plate with cyan
+and lime players on it. **The chrome takes no hue from it, on any screen** — the owner's call of
+9 September 2026 — so §17 rule 5 and `ROADMAP.md`'s "no chromatic accent in the chrome" are exactly
+where they were, and the primary action, the focus ring and the drag acknowledgement are still
+white under it. Six things are load-bearing.
+
+**A look is not a stored setting.** What is remembered is still `palette` and `radarTheme`, one key
+each; `LOOKS` is a table that writes both at once and `lookOf` reads back which pair the reader is
+standing on. A third key would be one that can disagree with the two it summarises, and the
+disagreement would then have to be resolved somewhere. **`lookOf` returns `null` on a crossed pair**
+and the control lights nothing — the colour-blind palette on a violet plate is exactly that, and a
+row that picked one of the two looks there would be lying about what is on screen. `SettingChoice`
+already rendered an empty selection; the type is what caught up.
+
+**The palette numbers are measured rather than picked, and the instrument was checked before it was
+trusted.** The script is #133's, and it reproduces `tokens.css`'s own committed contract exactly —
+all thirty-six existing pairings to the last decimal, and #81's colour-blind floor of **ΔE2000
+14.28** — before it was pointed at anything new. Two helpers were missing from that comment,
+`from_linear` and `rgb_to_hex`, and reproducing 14.28 is what says they were restored correctly.
+
+**The look clears §14 more comfortably than the default palette does.** Its eighteen pairings floor
+at **5.35** (`--color-nade-decoy` on a card) against the default's 5.03. Its **dichromat floor is
+ΔE2000 6.68**, smoke against decoy under protanopia — stated in `tokens.css` because a look that
+quietly says two events are one colour is the defect rather than the low number. It is not held to
+the colour-blind palette's 14.28 and does not claim to be; it is worth knowing it lands nearly four
+times the *default* palette's own 1.83. Two candidates were rejected on measurement rather than
+taste: the first draft floored at 3.85 under deuteranopia, and the second failed §14 outright with
+`--color-nade-decoy` at 4.40.
+
+**A generated theme is now a pair of ramps and nothing else**, which is what makes a third one
+honest — every theme flattens the same terrain through the same window, so two cannot disagree about
+what a wall is. `recolorToBlue` is `recolorTo(theme, source)`, and **`blue` is byte-identical across
+that refactor**, which is the check that says the generalisation changed nothing. Eight images,
+1.0 MB, taking the radar assets to three themes.
+
+**The default look is unchanged by construction rather than by inspection**: the `tokens.css` diff
+is *purely additive* — not one removed line — the `blue` and `vanilla` images are byte-untouched,
+and a cascade cannot reach `:root[data-palette="cyber"]` without the attribute. Read back off the
+live document, all three palettes compute exactly what the file states. Measured on the built
+review screen under the look: 28 elements set text in a data colour, worst ratio **12.98**, which is
+the table's own `ct on surface-1` figure reproduced by the page. In `ru` at 1440×900 the settings
+sheet has **0 elements overflowing** by #278's rule. The bundle is 285.39 → **285.80 kB gz, 57.2%**,
+all of it the third palette's tokens and two rows of interface; no new dependency.
+
+One dev-only papercut found and left alone: `radar-assets`'s middleware caches its file map with
+`??=` on first request, so an image generated *during* a dev session needs a server restart before
+it is served. The built path emits every file at `buildStart` and is unaffected.
+
+**#349 rode with it and the seam is not the one the issue proposed.** `plate-legend.ts` was 380
+lines, and the cut it suggested — the catalogue against the drawing — could not work here because
+the drawing *is* the catalogue: every entry carries its own closure, so the drawing half would have
+stayed over 300 on its own. The seam taken is the plate's own, the one its layers already use: what
+belongs to a **player** (`legend-token-marks.ts`, 231) against what records an **event**
+(`legend-event-marks.ts`, 111). Both runs were contiguous in the array, so `PLATE_MARKS` is
+`[...TOKEN_MARKS, ...EVENT_MARKS]` and the order nothing else may change is preserved by
+construction rather than by care. **`legend-box.ts` (63) exists to stop a cycle**, not to group
+anything: both lists read the swatch's box and the mark type, and `plate-legend` (30) reads both
+lists. No consumer changed an import. The proof is a **hash of every draw call and its arguments**
+per mark — the sentinel test #220 built records ink and ignores geometry, so it could not have
+caught a moved constant — and it reads **18 of 18 marks identical** either side. `token-layer.ts`
+(361), `utility-layer.ts` (329) and `round-axis.ts` (325) are **left**, deliberately: the first two
+are on the frame path and so are held to #323's plate-hash standard rather than to a swatch's, and
+each is its own argument.
+
 **#335 put a round in the way in's pixels, and the reel it plays is cut from a parse rather than
 from a demo.** The field behind the way in drew a map that breathed; it now plays round 22 of the
 IEM Atlanta 2026 dust2 map in the same squares — ten players crossing it, utility blooming where it

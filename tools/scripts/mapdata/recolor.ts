@@ -5,27 +5,58 @@ interface Stop {
   rgb: [number, number, number];
 }
 
-/**
- * The `blue` theme: Valve's terrain flattened onto the blue-shifted graphite ramp from
- * `docs/DESIGN.md`. It stays desaturated on purpose — CT tokens are `#4A90D9`, and a saturated blue
- * map would compete with the one colour that has to read as a side.
- */
-const RAMP: Stop[] = [
-  { at: 0.0, rgb: [18, 24, 30] },
-  { at: 0.35, rgb: [30, 38, 46] },
-  { at: 0.7, rgb: [44, 55, 66] },
-  { at: 1.0, rgb: [70, 82, 94] },
-];
+interface Ramps {
+  /** Terrain, from the darkest floor to the brightest wall. */
+  readonly terrain: Stop[];
+  /**
+   * Partially transparent pixels are not terrain — on Nuke's lower level they are the ghost of the
+   * floor above, and their whole job is to read *lighter* than what is under them. Flattening them
+   * onto the terrain ramp makes them vanish against a dark app background.
+   */
+  readonly overlay: Stop[];
+}
 
 /**
- * Partially transparent pixels are not terrain — on Nuke's lower level they are the ghost of the
- * floor above, and their whole job is to read *lighter* than what is under them. Flattening them
- * onto `RAMP` makes them vanish against a dark app background.
+ * A generated theme is a pair of ramps and nothing else, which is what keeps a third one honest:
+ * every theme flattens the same terrain through the same window, so two themes cannot disagree
+ * about what a wall is.
+ *
+ * **Both stay desaturated relative to the marks drawn on them.** `blue` is the blue-shifted
+ * graphite the redesign chose, held down because CT tokens are blue and a saturated blue map would
+ * compete with the one colour that has to read as a side. `cyber` is #339's violet, and it is held
+ * down for the same reason one step over: its look puts cyan and lime on the plate, so the plate
+ * itself may be the only violet thing on screen but it may not be the *loudest*.
  */
-const OVERLAY_RAMP: Stop[] = [
-  { at: 0.0, rgb: [96, 108, 120] },
-  { at: 1.0, rgb: [188, 200, 212] },
-];
+const THEME_RAMPS: Record<GeneratedTheme, Ramps> = {
+  blue: {
+    terrain: [
+      { at: 0.0, rgb: [18, 24, 30] },
+      { at: 0.35, rgb: [30, 38, 46] },
+      { at: 0.7, rgb: [44, 55, 66] },
+      { at: 1.0, rgb: [70, 82, 94] },
+    ],
+    overlay: [
+      { at: 0.0, rgb: [96, 108, 120] },
+      { at: 1.0, rgb: [188, 200, 212] },
+    ],
+  },
+  cyber: {
+    terrain: [
+      { at: 0.0, rgb: [20, 14, 30] },
+      { at: 0.35, rgb: [34, 22, 50] },
+      { at: 0.7, rgb: [52, 33, 76] },
+      { at: 1.0, rgb: [84, 56, 118] },
+    ],
+    overlay: [
+      { at: 0.0, rgb: [116, 96, 140] },
+      { at: 1.0, rgb: [206, 188, 226] },
+    ],
+  },
+};
+
+/** Every theme this script writes. `vanilla` is Valve's own and is committed rather than generated. */
+export const GENERATED_THEMES = ['blue', 'cyber'] as const;
+export type GeneratedTheme = (typeof GENERATED_THEMES)[number];
 
 /**
  * Above this saturation a pixel is a deliberate marker rather than terrain — the bombsite outlines
@@ -113,7 +144,8 @@ function terrainWindow(data: Buffer): { low: number; high: number } {
  * Maps terrain luminance through the ramp, alpha untouched — the transparent border outside the
  * playable area has to stay transparent or the radar becomes a square tile.
  */
-export function recolorToBlue(source: Uint8Array): Uint8Array {
+export function recolorTo(theme: GeneratedTheme, source: Uint8Array): Uint8Array {
+  const ramps = THEME_RAMPS[theme];
   const png = PNG.sync.read(Buffer.from(source));
   const { low, high } = terrainWindow(png.data);
   const span = high - low;
@@ -126,7 +158,7 @@ export function recolorToBlue(source: Uint8Array): Uint8Array {
     if (alpha < OPAQUE) continue;
     if (saturation(r, g, b) > MARKER_SATURATION) continue;
 
-    const ramp = alpha < 255 ? OVERLAY_RAMP : RAMP;
+    const ramp = alpha < 255 ? ramps.overlay : ramps.terrain;
     const [nr, ng, nb] = sample(ramp, (luma(r, g, b) - low) / span);
     png.data[index] = nr;
     png.data[index + 1] = ng;
