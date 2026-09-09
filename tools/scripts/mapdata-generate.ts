@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import { type KeyValues, parseKeyValues } from './mapdata/keyvalues';
 import { readPngSize } from './mapdata/png';
-import { recolorToBlue } from './mapdata/recolor';
+import { GENERATED_THEMES, recolorTo } from './mapdata/recolor';
 
 const PACKAGE_DIR = 'packages/map-data';
 const OVERVIEW_DIR = `${PACKAGE_DIR}/assets/overviews`;
@@ -182,9 +182,13 @@ await Bun.write(OUTPUT_PATH, render(overviews, imageSize));
 
 const images = overviews.flatMap((overview) => overview.levels.map((level) => level.image));
 for (const image of images) {
-  const source = await Bun.file(`${VANILLA_DIR}/${image}.png`).arrayBuffer();
-  await Bun.write(`${RADAR_DIR}/blue/${image}.png`, recolorToBlue(new Uint8Array(source)));
+  const source = new Uint8Array(await Bun.file(`${VANILLA_DIR}/${image}.png`).arrayBuffer());
+  for (const theme of GENERATED_THEMES) {
+    await Bun.write(`${RADAR_DIR}/${theme}/${image}.png`, recolorTo(theme, source));
+  }
 }
 
 console.log(`${OUTPUT_PATH}: ${overviews.length} maps, ${images.length} radar levels.`);
-console.log(`${RADAR_DIR}/blue: ${images.length} images recoloured.`);
+for (const theme of GENERATED_THEMES) {
+  console.log(`${RADAR_DIR}/${theme}: ${images.length} images recoloured.`);
+}

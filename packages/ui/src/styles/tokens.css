@@ -240,3 +240,50 @@
   --color-nade-decoy: #c2bbad;
   --color-objective: #a26fab;
 }
+
+/* The cyberpunk look's data colours — #339, and the second half of a *look* rather than a palette
+   a reader would cross with something else: it is chosen together with `radarTheme: cyber`, whose
+   violet plate these are drawn on. Both settings stay individually reachable, so a reader who wants
+   the violet map under the default colours can still have it; what the look does is stop that being
+   the thing the product shows them first.
+
+   **The chrome takes no hue from it**, on this screen or any other — the owner's decision of
+   9 September 2026, which leaves rule 1 above and `ROADMAP.md`'s "no chromatic accent in the chrome"
+   exactly where they were. The primary action, the focus ring and the drag acknowledgement are still
+   white under this look, so a hue on a screen showing a match still means something the demo said.
+
+   Measured on the same two grounds as the palettes above, and `--color-nade-flash` is unchanged
+   because white is what a flash is in every palette:
+
+                        cyber
+                    surface-0  surface-1
+       ct              13.36      12.98
+       t               15.28      14.85
+       damage           5.68       5.52
+       nade-he          8.93       8.67
+       nade-flash      18.83      18.29
+       nade-smoke       6.97       6.77
+       nade-molotov     5.54       5.38
+       nade-decoy       5.51       5.35
+       objective        8.28       8.05
+
+   The floor across the eighteen is **5.35**, `--color-nade-decoy` on a card — above the default
+   palette's own 5.03, so §14 costs this look nothing.
+
+   **Its dichromat floor is ΔE2000 6.68**, `--color-nade-smoke` against `--color-nade-decoy` under
+   protanopia, stated here because a look that quietly says two events are one colour is the defect
+   rather than the low number. It is not held to the colour-blind palette's 14.28 — that figure is
+   an accessibility contract and this is a look — but it is worth knowing that it lands nearly four
+   times the *default* palette's own floor of 1.83, which is `--color-nade-decoy` against
+   `--color-objective` under deuteranopia. A reader who needs the guarantee still has the palette
+   that makes it. */
+:root[data-palette="cyber"] {
+  --color-ct: #2ee6f6;
+  --color-t: #b6f238;
+  --color-damage: #ff2d6f;
+  --color-nade-he: #ff8f1f;
+  --color-nade-smoke: #a08fc0;
+  --color-nade-molotov: #f04a1e;
+  --color-nade-decoy: #7f83a3;
+  --color-objective: #e879f9;
+}

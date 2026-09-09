@@ -3,8 +3,12 @@ import { DEFAULT_RADAR_THEME, RADAR_THEMES, type RadarTheme } from '@disa/map-da
 import {
   HELD_ARROW_RATES,
   type HeldArrowRate,
+  LOOKS,
+  type LookId,
   MOTION_PREFERENCES,
   type MotionPreference,
+  PALETTES,
+  type Palette,
   SCOREBOARD_POSITIONS,
   type ScoreboardPosition,
   SEEK_STEPS,
@@ -41,6 +45,21 @@ export const THEME_OPTIONS: readonly ChoiceOption<RadarTheme>[] = [
   DEFAULT_RADAR_THEME,
   ...RADAR_THEMES.filter((theme) => theme !== DEFAULT_RADAR_THEME),
 ].map((theme) => ({ value: theme, label: <Text path={`settings.radarTheme.${theme}`} /> }));
+
+/**
+ * The look, and the palette it is half of. Both are named in the reader's own language — a look is
+ * this repository's word for an arrangement it ships, the way a plate's name is, and neither names
+ * anything in the game (§11).
+ */
+export const LOOK_OPTIONS: readonly ChoiceOption<LookId>[] = LOOKS.map((look) => ({
+  value: look.id,
+  label: <Text path={`settings.look.${look.id}`} />,
+}));
+
+export const PALETTE_OPTIONS: readonly ChoiceOption<Palette>[] = PALETTES.map((palette) => ({
+  value: palette,
+  label: <Text path={`settings.palette.${palette}`} />,
+}));
 
 export const TRAJECTORY_OPTIONS: readonly ChoiceOption<TrajectoryVisibility>[] =
   TRAJECTORY_VISIBILITIES.map((visibility) => ({

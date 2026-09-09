@@ -26,7 +26,8 @@
     "label": "Radar theme",
     "note": "Which set of map images the plate draws. Which one is better is settled by looking at ten players on top of both.",
     "blue": "Blue",
-    "vanilla": "The game's own"
+    "vanilla": "The game's own",
+    "cyber": "Cyberpunk"
   },
   "audibility": {
     "label": "Audibility rings",
@@ -67,9 +68,18 @@
     "reduced": "Reduce",
     "full": "Full"
   },
+  "look": {
+    "label": "Look",
+    "note": "The data colours and the map plate, chosen together. Both stay reachable on their own below, so a pair no look names is a pair you can still assemble.",
+    "default": "Default",
+    "cyber": "Cyberpunk"
+  },
   "palette": {
-    "label": "Colour-blind-safe palette",
-    "note": "Both side colours and every mark on the plate, chosen so that no two stay close under red-green colour blindness."
+    "label": "Data colours",
+    "note": "Both side colours and every mark on the plate. The colour-blind-safe set is chosen so that no two stay close under red-green colour blindness; the cyberpunk set is a look, and states its own floor rather than promising that one.",
+    "default": "Default",
+    "colour-blind": "Colour-blind-safe",
+    "cyber": "Cyberpunk"
   },
   "debug": {
     "label": "Debug overlay",

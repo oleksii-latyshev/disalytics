@@ -1,3 +1,5 @@
+export type { Look, LookId } from './helpers/look';
+export { LOOKS, lookById, lookOf } from './helpers/look';
 export type {
   HeldArrowRate,
   MotionPreference,

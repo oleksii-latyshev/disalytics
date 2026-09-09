@@ -1,11 +1,13 @@
 import { Text, useLocalePreference, useT } from '@disa/i18n';
 import { Accordion, Button, Sheet, Switch } from '@disa/ui';
 import { X } from 'lucide-react';
-import { useSetting, useSettingToggle } from '@/core/settings';
+import { lookById, lookOf, useSetting, useSettingToggle } from '@/core/settings';
 import {
   HELD_ARROW_OPTIONS,
   LANGUAGE_OPTIONS,
+  LOOK_OPTIONS,
   MOTION_OPTIONS,
+  PALETTE_OPTIONS,
   SCOREBOARD_OPTIONS,
   SEEK_STEP_OPTIONS,
   THEME_OPTIONS,
@@ -221,15 +223,30 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
 
           <SettingGroup value="colour" titlePath="settings.group.colour">
             <SettingRow
+              labelPath="settings.look.label"
+              notePath="settings.look.note"
+              control={
+                <SettingChoice
+                  labelPath="settings.look.label"
+                  value={lookOf({ palette, radarTheme })}
+                  options={LOOK_OPTIONS}
+                  onChange={(id) => {
+                    const look = lookById(id);
+                    setPalette(look.palette);
+                    setRadarTheme(look.radarTheme);
+                  }}
+                />
+              }
+            />
+            <SettingRow
               labelPath="settings.palette.label"
               notePath="settings.palette.note"
               control={
-                <Switch
-                  checked={palette === 'colour-blind'}
-                  onChange={() =>
-                    setPalette(palette === 'colour-blind' ? 'default' : 'colour-blind')
-                  }
-                  aria-label={t('settings.palette.label')}
+                <SettingChoice
+                  labelPath="settings.palette.label"
+                  value={palette}
+                  options={PALETTE_OPTIONS}
+                  onChange={setPalette}
                 />
               }
             />
