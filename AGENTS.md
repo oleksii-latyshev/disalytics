@@ -930,14 +930,25 @@ a layer of build-time magic:
 - The app must be genuinely usable offline, and say so rather than failing.
 
 It works under Bun — verified in #22, no Node fallback needed (§20). What is wired today:
-`vite-plugin-pwa` in `injectManifest` mode, `apps/web/src/sw.ts` calling `precacheAndRoute` over a
-nine-entry shell, and the manifest above emitted from `apps/web/vite.config.ts`.
+`vite-plugin-pwa` in `injectManifest` mode, `apps/web/src/sw.ts` calling `precacheAndRoute` over the
+shell, a `NavigationRoute` that answers every navigation with the precached `index.html`, and the
+manifest above emitted from `apps/web/vite.config.ts`.
 
-Two deliberate gaps, both Phase 6:
+**The app registers the worker itself** — `useWorkerUpdate` in `apps/web/src/core/pwa`, production
+only, with `injectRegister` left `false` because the plugin's own script would register without the
+prompt. A new worker waits until the reader presses the way in's update notice, which posts
+`SKIP_WAITING_MESSAGE`; every tab then reloads on `controllerchange`, because a tab left on the old
+chunks would ask a precache that no longer holds them. The notice is the way in's alone: a reload on
+the review screen drops the reader's place, and the old worker serves the old shell whole until they
+leave it.
 
-- **The worker is built but never registered** (`injectRegister: false`). Registering it before the
-  update prompt exists makes the shell cache-sticky with no way to ask for the reload — the exact
-  bug the bullet above warns about. Phase 6 turns the option on and adds the prompt together.
+**The navigation route is the whole of offline routing**, and it is one route because the app has no
+routes of its own. Without it only `/` resolved offline — Workbox's `directoryIndex` maps it onto
+`index.html` — while `/open`, the manifest's file-handler action, and any other path were answered
+by Cloudflare's `not_found_handling`, which is not there offline.
+
+One deliberate gap, Phase 6:
+
 - **Fonts are outside the precache.** 240 kB of woff2 that the shell renders without, so they stay a
   runtime concern alongside the WASM binary.
 

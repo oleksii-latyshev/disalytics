@@ -139,6 +139,8 @@ export const TRANSLATION_KEYS = [
   'library.shell.soonNote.lineups',
   'library.shell.soonNote.stats',
   'library.shell.stats',
+  'library.shell.update.ready',
+  'library.shell.update.reload',
   'library.shell.upload',
   'radar.debug.altitudeBand',
   'radar.debug.frame',

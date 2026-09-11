@@ -24,17 +24,15 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      // The worker is built and shipped but never registered: AGENTS.md §12 requires an update
-      // prompt before anything caches the shell, and that prompt is Phase 6. Registering it here
-      // would make the deployment cache-sticky with no way to ask for the reload.
+      // The app registers the worker itself, in `core/pwa`, because registering is only half of it:
+      // AGENTS.md §12's update prompt has to be listening before a new worker is allowed to wait.
       injectRegister: false,
       devOptions: { enabled: false },
       injectManifest: {
         // Fonts stay out: 240 kB of woff2 the shell renders without, and §12 scopes the precache to
         // HTML/JS/CSS/icons. Sourcemaps and .wasm fall outside the extension list. The manifest and
         // its icons are absent on purpose — the plugin adds those itself, and globbing them too
-        // puts every one of them in the precache list twice. §12 also lists the radar images, but
-        // the worker is never registered until Phase 6, so precaching them now caches nothing.
+        // puts every one of them in the precache list twice.
         globPatterns: ['**/*.{html,css,js}'],
       },
       manifest: {

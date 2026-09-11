@@ -22,6 +22,7 @@ apps/web/src/
     renderer/     Canvas setup, layer compositing, resize, device-pixel handling.
                   Knows nothing about CS2 — it draws what it is told.
     parsing/      Parse worker lifecycle, progress state machine, cancellation.
+    pwa/          Service worker registration and the update it offers the reader.
     shortcuts/    Keyboard registry and scope handling.
     motion/       The one orchestrated moment, as timings two slices read.
     settings/     UI preferences: playback rules, plate options, locale, palette.

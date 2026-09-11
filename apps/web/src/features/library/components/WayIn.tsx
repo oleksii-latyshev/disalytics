@@ -1,4 +1,6 @@
 import type { SavedDemo } from '@disa/demo-store';
+import { Text } from '@disa/i18n';
+import { Button } from '@disa/ui';
 import { useCallback, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
 import type { SampleMatch } from '@/core/samples';
@@ -18,6 +20,8 @@ interface Props {
   onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onSample: (sample: SampleMatch) => void;
   onClose: () => void;
+  /** Present while a new version of the app is waiting; pressing it reloads onto that version. */
+  onUpdate: (() => void) | null;
 }
 
 /** Settings and help are the way in's too, and they are the review screen's own sheets, not copies. */
@@ -45,7 +49,7 @@ type Sheet = 'settings' | 'help';
  * of the plate's own axes, and three of the four widths this repository quotes a plate figure at are
  * height-bound.
  */
-export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
+export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: Props) {
   const [view, setView] = useState<ShellView>('upload');
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
@@ -118,8 +122,23 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose }: Props) {
           §11 keeps this kind of vocabulary out of the message catalogue in both locales — and it
           stays at the top left, where it was, rather than joining the dock: a wordmark is not a
           control, and six squares in a 52px panel is not a place to read one. */}
-      <header className="relative z-10 px-6 pt-6 wide:px-10 wide:pt-8">
+      {/* A new version is offered here and nowhere else. The review screen is not interrupted: a
+          reload there drops the reader's place in a match, and the old worker goes on serving the
+          old shell whole until they come back to this one. */}
+      <header className="relative z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 pt-6 wide:px-10 wide:pt-8">
         <h1 className="font-ui font-medium text-20 leading-dense">disalytics</h1>
+        <div role="status" className="flex items-center gap-3">
+          {onUpdate && (
+            <>
+              <p className="text-13 text-ink-dim">
+                <Text path="library.shell.update.ready" />
+              </p>
+              <Button variant="outline" onClick={onUpdate}>
+                <Text path="library.shell.update.reload" />
+              </Button>
+            </>
+          )}
+        </div>
       </header>
 
       {/* The band the dock stands in is reserved here rather than drawn here: the dock is fixed, so
