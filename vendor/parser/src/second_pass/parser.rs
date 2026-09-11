@@ -86,6 +86,9 @@ impl<'a> SecondPassParser<'a> {
         let mut buf2 = vec![0_u8; OUTER_BUF_DEFAULT_LEN];
 
         loop {
+            if let Some(on_position) = self.on_position {
+                on_position(self.ptr);
+            }
             // Need at least a few bytes to read frame header (3 varints, minimum 1 byte each)
             if self.ptr + 3 > demo_bytes.len() {
                 break;

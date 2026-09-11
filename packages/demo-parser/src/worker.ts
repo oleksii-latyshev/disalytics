@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import init, { DemoBuffer, parseDemo, passCount } from 'demo-parser-wasm';
+import init, { DemoBuffer, parseDemo } from 'demo-parser-wasm';
 import { errorCodeOf } from './errors';
 import type { DemoSource, WorkerIn, WorkerOut } from './protocol';
 import { fileOf, streamInto } from './source';
@@ -18,20 +18,11 @@ async function run(source: DemoSource): Promise<void> {
   const demo = new DemoBuffer(file.size);
   await streamInto(file, demo);
 
-  // Decompression happens inside the first `parseDemo` call and reports nothing from in there, so
-  // the phase is named before the call rather than during it. The container is read on the Rust
-  // side because that is where the magic bytes are already known.
-  if (demo.isCompressed) post({ type: 'progress', phase: 'decompress', percent: 0 });
-
-  const totalPasses = passCount();
+  // The phase and the percentage are both the parser's: it knows when the container is open and how
+  // far into the demo each pass has read, and it reports a percentage only when it changes.
   const { track, events } = parseDemo(
     demo,
-    (completedPasses) =>
-      post({
-        type: 'progress',
-        phase: 'parse',
-        percent: Math.round((completedPasses / totalPasses) * 100),
-      }),
+    (phase, percent) => post({ type: 'progress', phase, percent }),
     (header) => post({ type: 'header', header }),
   );
 

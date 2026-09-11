@@ -7,6 +7,7 @@ mod events;
 mod fields;
 mod grenades;
 mod passes;
+mod progress;
 mod rounds;
 mod schema;
 mod ticks;
@@ -14,8 +15,9 @@ mod upstream;
 mod vocabulary;
 mod weapons;
 
-pub use container::is_compressed;
 pub use error::{ErrorCode, ParseError};
+pub use progress::ParsePhase;
+use progress::Progress;
 pub use schema::{
     ANGLE_SCALE, Blind, BombDefuse, BombPlant, BuyType, DEFAULT_SAMPLE_HZ, Damage, DefuseOutcome,
     FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HELMET, FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING,
@@ -30,11 +32,12 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// What a caller can learn while a parse is still running.
 ///
-/// Upstream exposes no hook inside a pass, so a pass boundary is the finest granularity that is
-/// honest — `AGENTS.md` §7.3 asks the worker for a percentage and this is what it is derived from.
-/// The header is worth its own callback because it is complete two passes in, while the third is
-/// still running.
+/// `progressed` hears each whole-number percentage once, with the phase it measures: the
+/// container's compressed bytes while it expands, then upstream's position in the demo inside each
+/// pass — `AGENTS.md` §7.3 asks the worker for exactly that. The header is worth its own callback
+/// because it is complete two passes in, while the third is still running.
 pub trait ParseObserver {
+    fn progressed(&mut self, _phase: ParsePhase, _percent: u8) {}
     fn pass_completed(&mut self, _label: &'static str, _completed_passes: usize) {}
     fn header_ready(&mut self, _header: &MatchHeader) {}
 }
@@ -62,11 +65,21 @@ pub fn parse(file_bytes: &[u8]) -> Result<ParsedDemo, ParseError> {
 /// letting [`parse`] expand it, because the compressed copy is freed before the passes begin
 /// rather than after them.
 ///
+/// `observer` hears the expansion's progress, and nothing for a raw demo.
+///
 /// # Errors
 ///
 /// Returns the [`ParseError`] the container earned.
-pub fn decompressed(file_bytes: Vec<u8>) -> Result<Vec<u8>, ParseError> {
-    container::decompressed_owned(file_bytes)
+pub fn decompressed(
+    file_bytes: Vec<u8>,
+    observer: &mut dyn ParseObserver,
+) -> Result<Vec<u8>, ParseError> {
+    let file_len = file_bytes.len();
+    let progress = Progress::new(observer);
+
+    container::decompressed_owned(file_bytes, &|consumed| {
+        progress.decompressing(consumed, file_len);
+    })
 }
 
 /// [`parse`], plus the passes it made over the demo. `docs/PARSER.md` §3 measured three as a floor
@@ -96,7 +109,7 @@ impl ParseObserver for PassRecorder {
     }
 }
 
-/// [`parse`], reporting each pass and the header to `observer` as they land.
+/// [`parse`], reporting its progress, each pass and the header to `observer` as they land.
 ///
 /// # Errors
 ///
@@ -105,18 +118,26 @@ pub fn parse_observed(
     file_bytes: &[u8],
     observer: &mut dyn ParseObserver,
 ) -> Result<ParsedDemo, ParseError> {
-    parse_expanded(&container::decompressed(file_bytes)?, observer)
+    let progress = Progress::new(observer);
+    let demo_bytes = container::decompressed(file_bytes, &|consumed| {
+        progress.decompressing(consumed, file_bytes.len());
+    })?;
+
+    parse_expanded(&demo_bytes, &progress)
 }
 
-fn parse_expanded(
-    demo_bytes: &[u8],
-    observer: &mut dyn ParseObserver,
-) -> Result<ParsedDemo, ParseError> {
-    let events_output = upstream::events_pass(demo_bytes)?;
-    observer.pass_completed(upstream::PASS_LABELS[0], 1);
+fn parse_expanded(demo_bytes: &[u8], progress: &Progress<'_>) -> Result<ParsedDemo, ParseError> {
+    let demo_len = demo_bytes.len();
 
-    let ticks_output = upstream::ticks_pass(demo_bytes)?;
-    observer.pass_completed(upstream::PASS_LABELS[1], 2);
+    let events_output = upstream::events_pass(demo_bytes, &|position| {
+        progress.reading(0, position, demo_len);
+    })?;
+    progress.pass_completed(0, demo_len);
+
+    let ticks_output = upstream::ticks_pass(demo_bytes, &|position| {
+        progress.reading(1, position, demo_len);
+    })?;
+    progress.pass_completed(1, demo_len);
 
     let table = ticks::Ticks::of(&ticks_output)?;
     let roster = table.roster();
@@ -139,11 +160,13 @@ fn parse_expanded(
 
     drop(table);
     drop(ticks_output);
-    observer.header_ready(&header);
+    progress.header_ready(&header);
 
-    let projectiles_output = upstream::projectiles_pass(demo_bytes)?;
+    let projectiles_output = upstream::projectiles_pass(demo_bytes, &|position| {
+        progress.reading(2, position, demo_len);
+    })?;
     match_events.grenades = grenades::build(&projectiles_output, &passes, tick_rate)?;
-    observer.pass_completed(upstream::PASS_LABELS[2], PASS_COUNT);
+    progress.pass_completed(2, demo_len);
 
     Ok(ParsedDemo {
         header,
@@ -178,15 +201,20 @@ fn players(table: &ticks::Ticks<'_>, roster: &ticks::Roster) -> Vec<PlayerInfo> 
 
 #[cfg(test)]
 mod tests {
-    use super::{MatchHeader, ParseObserver, parse_observed};
+    use super::{MatchHeader, ParseObserver, ParsePhase, parse_observed};
 
     #[derive(Default)]
     struct Recording {
         passes: Vec<(&'static str, usize)>,
         headers: usize,
+        percents: usize,
     }
 
     impl ParseObserver for Recording {
+        fn progressed(&mut self, _phase: ParsePhase, _percent: u8) {
+            self.percents += 1;
+        }
+
         fn pass_completed(&mut self, label: &'static str, completed_passes: usize) {
             self.passes.push((label, completed_passes));
         }
@@ -203,5 +231,6 @@ mod tests {
         assert!(parse_observed(&[0_u8; 64], &mut observer).is_err());
         assert!(observer.passes.is_empty());
         assert_eq!(observer.headers, 0);
+        assert_eq!(observer.percents, 0);
     }
 }

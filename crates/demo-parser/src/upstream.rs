@@ -135,7 +135,14 @@ fn inputs(
     }
 }
 
-fn run(demo_bytes: &[u8], settings: ParserInputs<'_>) -> Result<DemoOutput, ParseError> {
+/// `on_position` hears upstream's byte offset into the demo once per frame of the second pass,
+/// through the one hook `vendor/README.md` lists as added. Upstream's first pass has none, and
+/// `docs/PARSER.md` §14 measured why it needs none.
+fn run<'a>(
+    demo_bytes: &[u8],
+    settings: ParserInputs<'a>,
+    on_position: &'a dyn Fn(usize),
+) -> Result<DemoOutput, ParseError> {
     // Upstream slices `demo_bytes[..16]` one line before its own length check can fire, so a file
     // shorter than the header panics instead of erroring. `docs/PARSER.md` §8 records that an
     // aborted instance is poisoned for good, which turns that panic into a dead worker. The guard
@@ -146,7 +153,10 @@ fn run(demo_bytes: &[u8], settings: ParserInputs<'_>) -> Result<DemoOutput, Pars
         });
     }
 
-    Parser::new(settings, PARSING_MODE)
+    let mut parser = Parser::new(settings, PARSING_MODE);
+    parser.on_position = Some(on_position);
+
+    parser
         .parse_demo(demo_bytes)
         .map_err(|error| translate(&error, demo_bytes))
 }
@@ -155,7 +165,10 @@ fn owned(values: &[&str]) -> Vec<String> {
     values.iter().map(|value| (*value).to_owned()).collect()
 }
 
-pub(crate) fn events_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
+pub(crate) fn events_pass(
+    demo_bytes: &[u8],
+    on_position: &dyn Fn(usize),
+) -> Result<DemoOutput, ParseError> {
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
@@ -166,10 +179,14 @@ pub(crate) fn events_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
             owned(&["all"]),
             false,
         ),
+        on_position,
     )
 }
 
-pub(crate) fn ticks_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
+pub(crate) fn ticks_pass(
+    demo_bytes: &[u8],
+    on_position: &dyn Fn(usize),
+) -> Result<DemoOutput, ParseError> {
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
@@ -180,14 +197,19 @@ pub(crate) fn ticks_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
             vec![],
             false,
         ),
+        on_position,
     )
 }
 
-pub(crate) fn projectiles_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseError> {
+pub(crate) fn projectiles_pass(
+    demo_bytes: &[u8],
+    on_position: &dyn Fn(usize),
+) -> Result<DemoOutput, ParseError> {
     let huffman_lookup_table = create_huffman_lookup_table();
     run(
         demo_bytes,
         inputs(&huffman_lookup_table, vec![], vec![], vec![], true),
+        on_position,
     )
 }
 
@@ -201,7 +223,10 @@ pub(crate) fn projectiles_pass(demo_bytes: &[u8]) -> Result<DemoOutput, ParseErr
 /// Returns the [`ParseError`] the file earned: an unreadable file is an expected outcome here, not
 /// a programmer error.
 pub fn event_names(file_bytes: &[u8]) -> Result<Vec<String>, ParseError> {
-    let output = events_pass(&crate::container::decompressed(file_bytes)?)?;
+    let output = events_pass(
+        &crate::container::decompressed(file_bytes, &|_| {})?,
+        &|_| {},
+    )?;
     let mut names: Vec<String> = output.game_events_counter.into_iter().collect();
     names.sort_unstable();
 

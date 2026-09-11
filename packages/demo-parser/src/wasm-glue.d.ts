@@ -19,9 +19,6 @@ declare module 'demo-parser-wasm' {
 
   export function parserVersion(): string;
 
-  /** How many passes over the demo one parse makes — the denominator of a progress percentage. */
-  export function passCount(): number;
-
   export function eventNames(demoBytes: Uint8Array): string[];
 
   /** The demo's bytes in linear memory, filled a chunk at a time so the file is never held twice. */
@@ -29,8 +26,6 @@ declare module 'demo-parser-wasm' {
     constructor(sizeBytes: number);
     push(chunk: Uint8Array): void;
     readonly byteLength: number;
-    /** Whether a `.zst` or `.bz2` container has to be expanded before the passes can begin. */
-    readonly isCompressed: boolean;
     free(): void;
   }
 
@@ -38,12 +33,13 @@ declare module 'demo-parser-wasm' {
    * Consumes `demo` and returns the columnar half of the schema. Every buffer in it is a
    * JavaScript-owned typed array, so the caller can transfer them and terminate the worker.
    *
-   * The header is not in the return value: it is complete while the last pass is still running and
-   * reaches `onHeader` there.
+   * `onProgress` hears each whole-number percentage once, with the phase it measures. The header is
+   * not in the return value: it is complete while the last pass is still running and reaches
+   * `onHeader` there.
    */
   export function parseDemo(
     demo: DemoBuffer,
-    onPass: (completedPasses: number) => void,
+    onProgress: (phase: 'decompress' | 'parse', percent: number) => void,
     onHeader: (header: MatchHeader) => void,
   ): { track: TickTrack; events: MatchEvents };
 }

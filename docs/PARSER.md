@@ -607,12 +607,34 @@ consumed by value and dropped before any of the output is allocated.
 
 An allocation that will not fit still aborts the instance. There is no `ErrorCode` for it — see #56.
 
-### Progress is per pass, and that is the honest limit
+### Progress is a position inside a pass (#354)
 
-Upstream exposes no hook inside a pass, so `ParseObserver` reports at the three boundaries and the
-worker turns that into 33 / 67 / 100. The header is reported separately because it is complete after
-the second pass while the third is still running; `crates/demo-parser/tests/fixture.rs` asserts that
-ordering, since a header that arrives with `done` is a header not worth a message.
+Until #354 upstream exposed no hook inside a pass, so `ParseObserver` reported at the three
+boundaries and the worker turned that into 33 / 67 / 100 — four to eight seconds standing at 0 on the
+§16 fixture, and a `.dem.zst` naming the decompress phase for the whole of the first pass. The hook
+`vendor/README.md` lists is what replaced it, and one measurement decided where it goes. Native,
+single-threaded, release profile, over the 398 MB IEM Atlanta 2026 inferno map with upstream's own
+`CS2_PROF` timers:
+
+| per pass | events | ticks | projectiles |
+|---|---|---|---|
+| upstream's first pass | 0.070 s | 0.041 s | 0.040 s |
+| upstream's second pass | 2.169 s | 3.742 s | 2.442 s |
+
+**Upstream's second pass is the whole of each of ours**, so its byte offset into the demo is an
+honest position and the first pass has no hook. `Progress` in `crates/demo-parser` turns positions
+into whole-number percentages and hands each one to the observer once: upstream reports once per
+frame, and the WASM wrapper turns every report into a call into JavaScript. **Every pass is an equal
+share** — the ticks pass is 45% of this demo's parse, but a weight measured on one demo is a guess
+about the next, so the readout changes pace instead. **A pass never reaches its own end by
+reading**; completing it does, so 100 waits for the grenades the last pass is still building. A
+container reports the compressed bytes its decoder has consumed — the one position both codecs can
+state, since a `.bz2` never says how far it expands — and the phase becomes `parse` the moment the
+first pass starts rather than when it ends.
+
+The header is reported separately because it is complete after the second pass while the third is
+still running; `crates/demo-parser/tests/fixture.rs` asserts that ordering, since a header that
+arrives with `done` is a header not worth a message.
 
 ### Parse cost of the binary that ships — 13.89 s, and what that is not
 

@@ -407,9 +407,12 @@ The file is streamed into WASM a chunk at a time rather than read whole first, s
 held in the JavaScript heap and in linear memory at once — that duplication is what the §16 peak
 budget is spent on.
 
-`percent` counts finished passes, because upstream offers no hook inside one. `header` gets its own
-message rather than riding on `done` for the same reason it is worth having: it is complete after
-the second pass, while the third is still running.
+`phase` and `percent` are both the parser's, and a worker forwards them as they come. `percent` is a
+position: the compressed bytes consumed while a container expands, then upstream's byte offset into
+the demo inside each pass, every pass an equal share, reported once per whole number and reaching
+100 only when the parse has finished — `docs/PARSER.md` §14 has the measurement that put the hook
+where it is. `header` gets its own message rather than riding on `done` for the same reason it is
+worth having: it is complete after the second pass, while the third is still running.
 
 `ErrorCode` is a machine-readable enum. The worker never produces user-facing prose — the UI maps
 codes to translated copy. Failures that are the *worker's* rather than the demo's — a binary that

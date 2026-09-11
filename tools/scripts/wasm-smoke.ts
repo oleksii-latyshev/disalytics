@@ -5,7 +5,6 @@ const PKG_DIR = 'crates/demo-parser-wasm/pkg';
 const GLUE_PATH = `${PKG_DIR}/demo_parser_wasm.js`;
 const BINARY_PATH = `${PKG_DIR}/demo_parser_wasm_bg.wasm`;
 const FIXTURE_ENV = 'DISALYTICS_FIXTURE_DEMO';
-const EXPECTED_PASSES = 3;
 
 // A binary whose entry point traps has its unreachable code eliminated and then measures tiny —
 // docs/PARSER.md §8 recorded 293 KB that looked like a win and held no parser at all. Weighing the
@@ -14,8 +13,10 @@ const NOT_A_DEMO = new Uint8Array(64);
 NOT_A_DEMO.set(new TextEncoder().encode('NOTADEM\0'));
 
 // The zstd frame magic. A container is recognised by these four bytes and never by a file name, so
-// this is all it takes to make the buffer answer that it needs expanding.
+// this is all it takes for the parser to start expanding — and to say so before it gives up.
 const ZSTD_MAGIC = new Uint8Array([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00, 0x00, 0x00]);
+
+type Phase = 'decompress' | 'parse';
 
 // The glue is generated into a gitignored `pkg/`, so it cannot be a typed static import: a fresh
 // clone has to typecheck before any binary exists. Every value read from it is `unknown` and
@@ -24,18 +25,16 @@ const ZSTD_MAGIC = new Uint8Array([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00, 0x00, 0x0
 type DemoBuffer = {
   push(chunk: Uint8Array): void;
   readonly byteLength: number;
-  readonly isCompressed: boolean;
 };
 
 type WasmExports = {
   default: (init: { module_or_path: ArrayBuffer }) => Promise<unknown>;
   parserVersion: () => unknown;
-  passCount: () => unknown;
   eventNames: (demoBytes: Uint8Array) => unknown;
   DemoBuffer: new (sizeBytes: number) => DemoBuffer;
   parseDemo: (
     demo: DemoBuffer,
-    onPass: (completedPasses: number) => void,
+    onProgress: (phase: Phase, percent: number) => void,
     onHeader: (header: unknown) => void,
   ) => unknown;
 };
@@ -125,7 +124,7 @@ if (!existsSync(GLUE_PATH) || !existsSync(BINARY_PATH)) {
 
 const glue: WasmExports = await import(resolve(GLUE_PATH));
 
-for (const name of ['default', 'parserVersion', 'passCount', 'eventNames', 'parseDemo'] as const) {
+for (const name of ['default', 'parserVersion', 'eventNames', 'parseDemo'] as const) {
   if (typeof glue[name] !== 'function') {
     fail(`${GLUE_PATH} is not the generated glue — it is missing ${name}.`);
   }
@@ -143,12 +142,6 @@ const version: unknown = glue.parserVersion();
 
 if (typeof version !== 'string' || version.length === 0) {
   fail(`parserVersion() returned ${String(version)} rather than a version.`);
-}
-
-const passes: unknown = glue.passCount();
-
-if (passes !== EXPECTED_PASSES) {
-  fail(`passCount() returned ${String(passes)}; docs/PARSER.md §3 measured ${EXPECTED_PASSES}.`);
 }
 
 for (const [name, call] of [
@@ -183,15 +176,27 @@ function bufferOf(bytes: Uint8Array): DemoBuffer {
   return buffer;
 }
 
-if (bufferOf(NOT_A_DEMO).isCompressed) {
-  fail('isCompressed called an uncompressed file a container.');
+const phasesBeforeFailing = new Set<Phase>();
+const truncated = thrownBy(() =>
+  glue.parseDemo(bufferOf(ZSTD_MAGIC), (phase) => phasesBeforeFailing.add(phase), noop),
+);
+
+if (truncated !== 'TRUNCATED_DEMO') {
+  fail(
+    `a zstd header with nothing behind it threw ${String(truncated)} rather than TRUNCATED_DEMO.`,
+  );
 }
 
-if (!bufferOf(ZSTD_MAGIC).isCompressed) {
-  fail('isCompressed did not recognise the zstd magic, so the worker would name the wrong phase.');
+if ([...phasesBeforeFailing].join() !== 'decompress') {
+  fail(
+    `a container reported [${[...phasesBeforeFailing].join(', ')}] before failing, rather than ` +
+      'only the decompress phase — the worker would name the wrong stage.',
+  );
 }
 
-console.log(`parserVersion() -> ${version}, passCount() -> ${passes}, a non-demo -> NOT_A_DEMO.`);
+console.log(
+  `parserVersion() -> ${version}, a non-demo -> NOT_A_DEMO, a cut container -> decompress.`,
+);
 
 const fixturePath = process.env[FIXTURE_ENV];
 
@@ -214,18 +219,35 @@ if (demo.byteLength !== file.size) {
   fail(`the buffer holds ${demo.byteLength} bytes of a ${file.size}-byte demo.`);
 }
 
-const reported: number[] = [];
+const parsePercents: number[] = [];
 const headers: unknown[] = [];
 const started = Bun.nanoseconds();
 const parsed = glue.parseDemo(
   demo,
-  (completedPasses) => reported.push(completedPasses),
+  (phase, percent) => {
+    if (phase === 'parse') parsePercents.push(percent);
+  },
   (header) => headers.push(header),
 );
 const seconds = (Bun.nanoseconds() - started) / 1e9;
 
-if (reported.join() !== '1,2,3') {
-  fail(`progress arrived as [${reported.join(', ')}] rather than one report per pass.`);
+const isStrictlyRising = parsePercents.every(
+  (percent, at) => at === 0 || percent > (parsePercents[at - 1] ?? percent),
+);
+
+if (!isStrictlyRising || parsePercents[0] !== 0 || parsePercents.at(-1) !== 100) {
+  fail(
+    `the parse reported ${parsePercents.length} percentages that do not rise once each from 0 to ` +
+      '100 across the boundary.',
+  );
+}
+
+// Three passes reported only at their ends would still rise from 0 to 100; what says the position
+// inside each pass is arriving is how many distinct readings there were.
+if (parsePercents.length <= 50) {
+  fail(
+    `the parse reported only ${parsePercents.length} percentages — progress inside a pass is lost.`,
+  );
 }
 
 if (headers.length !== 1) {

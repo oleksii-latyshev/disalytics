@@ -77,6 +77,7 @@ pub struct SecondPassParser<'a> {
     pub last_tick: i32,
     pub parse_usercmd: bool,
     pub list_props: bool,
+    pub on_position: Option<&'a dyn Fn(usize)>,
 }
 #[derive(Debug, Clone)]
 pub struct Teams {
@@ -228,6 +229,7 @@ impl<'a> SecondPassParser<'a> {
             huffman_lookup_table: &first_pass_output.settings.huffman_lookup_table,
             header: HashMap::default(),
             list_props: first_pass_output.list_props,
+            on_position: None,
         })
     }
 }
