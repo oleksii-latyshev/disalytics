@@ -2061,6 +2061,25 @@ profile moved #355: **5.74 s of the 8.73 s parse is entity decoding repeated onc
 room in the speed half is the three passes rather than anything inside one. Found on the way and
 left as its own task: the fixture's area-grenade assertion fails on that inferno map on `main` too.
 
+**#355 took the parse from three passes to two, and `vendor/` did not change.** `docs/PARSER.md` §3
+read upstream's `collect_entities` as returning early whenever events are wanted, so events, tick
+columns and trajectories took a pass each. That return sits inside `if !event_with_velocity`, and
+upstream sets the flag when events are wanted beside a prop that needs velocity — which
+`TICK_PROPS` has asked for since #111. `match_pass` now carries `wanted_events: ["all"]` beside the
+tick props. Four things are load-bearing. **It is the same parse, proved rather than argued**: a
+hash of the whole `ParsedDemo`'s `Debug` form matched `main` on the fixture and on the IEM inferno
+map, and the committed snapshot changed in its `passes` line alone. **`velocity` is structural
+now** — without it the merged pass collects no columns, which `Ticks::of` refuses loudly, and
+`PASS_COUNT`'s comment says so. **Trajectories keep their own pass**, because `collect_projectiles`
+writes `tick`, `steamid` and `name` under the same ids the player loop writes into the same `df`;
+one pass would be upstream reworked rather than configured. And **the tick table is released before
+the projectile pass** with `mem::take` on `df`, since the events the grenades still need live in the
+same `DemoOutput`. Measured on the built bundle, drop to review screen, container fixture, arms
+interleaved in one hour: **15.72 → 13.45 s**, which gives §16's parse row headroom it had not had;
+natively 8.99 → 7.52 s on the fixture and 7.02 → 5.45 s on the inferno map. The cost is memory:
+upstream copies every wanted player prop into every event, so WASM linear memory peaks **849 →
+897 MiB** on the fixture, inside §16's 1.5 GB.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

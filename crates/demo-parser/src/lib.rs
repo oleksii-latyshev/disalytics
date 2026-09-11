@@ -35,7 +35,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// `progressed` hears each whole-number percentage once, with the phase it measures: the
 /// container's compressed bytes while it expands, then upstream's position in the demo inside each
 /// pass — `AGENTS.md` §7.3 asks the worker for exactly that. The header is worth its own callback
-/// because it is complete two passes in, while the third is still running.
+/// because it is complete one pass in, while the second is still running.
 pub trait ParseObserver {
     fn progressed(&mut self, _phase: ParsePhase, _percent: u8) {}
     fn pass_completed(&mut self, _label: &'static str, _completed_passes: usize) {}
@@ -129,44 +129,46 @@ pub fn parse_observed(
 fn parse_expanded(demo_bytes: &[u8], progress: &Progress<'_>) -> Result<ParsedDemo, ParseError> {
     let demo_len = demo_bytes.len();
 
-    let events_output = upstream::events_pass(demo_bytes, &|position| {
+    let mut match_output = upstream::match_pass(demo_bytes, &|position| {
         progress.reading(0, position, demo_len);
     })?;
     progress.pass_completed(0, demo_len);
 
-    let ticks_output = upstream::ticks_pass(demo_bytes, &|position| {
-        progress.reading(1, position, demo_len);
-    })?;
-    progress.pass_completed(1, demo_len);
-
-    let table = ticks::Ticks::of(&ticks_output)?;
-    let roster = table.roster();
-    let passes = passes::Passes {
-        events: &events_output,
-        roster: &roster,
-    };
-
     let tick_rate = ticks::TICK_RATE;
-    let frames = rounds::frames(&passes);
-    let samples = table.samples(&events::sampled_ticks(&passes, &frames), &roster);
-    let (track, weapons) = table.track(&roster, &events::plant_windows(&passes), tick_rate);
-    let header = MatchHeader {
-        map: map_name(&events_output),
-        tick_rate,
-        players: players(&table, &roster),
-        weapons,
+    let table = ticks::Ticks::of(&match_output)?;
+    let roster = table.roster();
+    let (header, track, mut match_events) = {
+        let passes = passes::Passes {
+            events: &match_output,
+            roster: &roster,
+        };
+        let frames = rounds::frames(&passes);
+        let samples = table.samples(&events::sampled_ticks(&passes, &frames), &roster);
+        let (track, weapons) = table.track(&roster, &events::plant_windows(&passes), tick_rate);
+        let header = MatchHeader {
+            map: map_name(&match_output),
+            tick_rate,
+            players: players(&table, &roster),
+            weapons,
+        };
+        let match_events = events::build(&passes, &frames, &samples, &header.weapons);
+
+        (header, track, match_events)
     };
-    let mut match_events = events::build(&passes, &frames, &samples, &header.weapons);
 
     drop(table);
-    drop(ticks_output);
+    drop(std::mem::take(&mut match_output.df));
     progress.header_ready(&header);
 
     let projectiles_output = upstream::projectiles_pass(demo_bytes, &|position| {
-        progress.reading(2, position, demo_len);
+        progress.reading(1, position, demo_len);
     })?;
+    let passes = passes::Passes {
+        events: &match_output,
+        roster: &roster,
+    };
     match_events.grenades = grenades::build(&projectiles_output, &passes, tick_rate)?;
-    progress.pass_completed(2, demo_len);
+    progress.pass_completed(1, demo_len);
 
     Ok(ParsedDemo {
         header,

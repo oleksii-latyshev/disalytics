@@ -63,6 +63,16 @@ Total 1.72 s natively multi-threaded. §7.2 asks for "as few passes as possible"
 number to be recorded — the number is **3**, and reducing it means patching upstream, not
 configuring it.
 
+**Corrected by #355: the number is 2, and it took configuration after all.** The first early return
+sits inside `if !prop_controller.event_with_velocity`, and upstream sets that flag whenever events
+are wanted *and* a player prop needs velocity. The probe above requested no `velocity`; pass B
+always has, since #111's audibility ring. So a pass carrying `wanted_events: ["all"]` beside the
+tick props collects both, with no change to `vendor/`. Upstream adds every wanted player prop to
+each event as `user_*`/`attacker_*` fields, appended after the event's own, and nothing here reads
+them. The second return is real: `collect_projectiles` writes `tick`, `steamid` and `name` under
+the same ids the player loop writes into the same `df`, so trajectories keep a pass of their own.
+§25 has the numbers.
+
 ---
 
 ## 4. Schema coverage against §10
@@ -333,8 +343,8 @@ The browser is 5.3× slower than a native multi-threaded parse, and that splits 
   win back.
 
 The useful consequence: **there is no large, cheap optimisation waiting here.** Anything that
-materially improves parse time has to reduce the work, not speed it up — fewer passes (blocked
-upstream, §3), fewer props, or sampling rather than reading every tick.
+materially improves parse time has to reduce the work, not speed it up — fewer passes (read as blocked
+upstream in §3, and taken from three to two by #355 — §25), fewer props, or sampling rather than reading every tick.
 
 ### Memory
 
@@ -1498,3 +1508,70 @@ health, not the absence of one.
 
 Both figures are per *victim*, whoever fired: damage from a teammate is damage taken, and the
 attribution question `playerRoundStats` answers is a different one.
+
+---
+
+## 25. Two passes, and the flag that allowed it (#355)
+
+§3 recorded three passes as a floor imposed by two early returns in `collect_entities`. The first
+of them was misread:
+
+```rust
+if !self.prop_controller.event_with_velocity {
+    if !self.wanted_ticks.contains(&self.tick) && self.wanted_ticks.len() != 0 || self.wanted_events.len() != 0 {
+        return;
+    }
+}
+```
+
+`event_with_velocity` is `!wanted_events.is_empty() && needs_velocity(wanted_player_props)`, and the
+tick props have requested `velocity` since #111. A pass carrying `wanted_events: ["all"]` beside
+`TICK_PROPS` therefore never takes that return, and collects the events and every tick column at
+once. §3's probe requested no `velocity`, which is why it saw events only. The crate's `match_pass`
+is that pass, and `vendor/` is untouched.
+
+### What rides along
+
+Upstream appends every wanted player prop to each event — `user_*`, `attacker_*` and the like — and
+every `wanted_other_props` entry once more. Nothing in the crate reads those fields, and the digests
+below say the output did not move because of them.
+
+### Why trajectories keep a pass
+
+`collect_projectiles` writes `tick`, `steamid` and `name` under `TICK_ID`, `STEAMID_ID` and
+`NAME_ID`, which are the ids the player loop writes into the same `df`, and the player loop would in
+turn carry the five grenade props as empty player columns. One pass is a change to upstream's output
+shape rather than a setting, so nothing is filed for it.
+
+### Identity
+
+The whole `ParsedDemo`, hashed through its `Debug` form, is identical on `main` and on two passes:
+
+| demo | digest, both arms |
+|---|---|
+| container fixture, 264 MB `.dem.zst` | `a59ac5a95aacb130` |
+| IEM Atlanta 2026 inferno map, 398 MB `.dem` | `3b0addaae9b080a8` |
+
+The committed snapshot changed in its `passes` line alone.
+
+### Cost, interleaved against `main`
+
+| | `main`, three passes | two passes |
+|---|---|---|
+| browser, built bundle, drop to review screen, fixture | 16.73 / 15.25 / 15.17 → **15.72 s** | 14.17 / 13.41 / 12.78 → **13.45 s** |
+| native, single-threaded, fixture | 8.98 / 9.01 / 8.98 s | 7.53 / 7.52 / 7.50 s |
+| native, single-threaded, inferno map | 6.97 / 7.03 / 7.05 s | 5.39 / 5.52 / 5.45 s |
+| WASM linear memory at its peak, fixture | 849 MiB | **897 MiB** |
+| WASM linear memory at its peak, inferno map | 870 MiB | 909 MiB |
+| native peak RSS, fixture | 1,360–1,382 MB | 1,476–1,498 MB |
+
+The browser rows are §16's method: headed Chrome over CDP, both bundles built from their own trees
+and their binaries hashed against `pkg/`, the demo staged into OPFS and handed over as a fresh
+`File` per run so every run is a cache miss, and `visibilityState` and `hasFocus()` asserted inside
+every run. Linear memory never shrinks, so it is read after a parse under Bun.
+
+Three readings. **The saving is one decode of three**, and a smaller share on the container because
+its expansion costs both arms the same. **The memory is the events' copies of the tick props**,
+alive beside the tick columns until the merged pass returns; native RSS overstates it here, because
+the probe holds the compressed file through the parse where the worker frees it first. And **`main`
+was over §16's 15 s on this day** — the budget's lack of headroom that #66 recorded, reproduced.

@@ -974,8 +974,7 @@
     ]
   },
   "passes": [
-    "events",
-    "ticks",
+    "events and ticks",
     "projectiles"
   ],
   "plants": [

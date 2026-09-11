@@ -14,11 +14,13 @@ const PARSING_MODE: ParsingMode = ParsingMode::ForceSingleThreaded;
 /// Mirrors `parser::parse_demo::HEADER_ENDS_AT_BYTE`, which upstream does not re-export.
 const HEADER_BYTES: usize = 16;
 
-/// `docs/PARSER.md` §3: upstream's `collect_entities` returns early for events and again for
-/// projectiles, so one pass can carry exactly one of the three. Three is a floor, not a budget.
-pub const PASS_COUNT: usize = 3;
+/// `docs/PARSER.md` §3: events ride with the tick columns only because [`TICK_PROPS`] asks for
+/// `velocity`, which sets upstream's `event_with_velocity` and skips the early return that would
+/// otherwise drop every column. Trajectories cannot join them — they write the same `tick`,
+/// `steamid` and `name` ids into the same table. Two is a floor, not a budget.
+pub const PASS_COUNT: usize = 2;
 
-pub(crate) const PASS_LABELS: [&str; PASS_COUNT] = ["events", "ticks", "projectiles"];
+pub(crate) const PASS_LABELS: [&str; PASS_COUNT] = ["events and ticks", "projectiles"];
 
 /// Real prop paths, never the friendly aliases `docs/PARSER.md` §5 measured being dropped in
 /// silence. Changing this list changes parsed output and so requires a `SCHEMA_VERSION` bump.
@@ -183,7 +185,7 @@ pub(crate) fn events_pass(
     )
 }
 
-pub(crate) fn ticks_pass(
+pub(crate) fn match_pass(
     demo_bytes: &[u8],
     on_position: &dyn Fn(usize),
 ) -> Result<DemoOutput, ParseError> {
@@ -194,7 +196,7 @@ pub(crate) fn ticks_pass(
             &huffman_lookup_table,
             owned(&TICK_PROPS),
             owned(&RULES_PROPS),
-            vec![],
+            owned(&["all"]),
             false,
         ),
         on_position,
@@ -331,8 +333,8 @@ mod tests {
     }
 
     #[test]
-    fn the_pass_plan_is_three_named_passes() {
-        assert_eq!(PASS_COUNT, 3);
+    fn the_pass_plan_is_two_named_passes() {
+        assert_eq!(PASS_COUNT, 2);
         assert_eq!(PASS_LABELS.len(), PASS_COUNT);
         assert_eq!(
             PASS_LABELS.iter().collect::<BTreeSet<_>>().len(),

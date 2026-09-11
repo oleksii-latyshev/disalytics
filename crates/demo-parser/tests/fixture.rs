@@ -11,8 +11,8 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, GrenadeType, Kill, MatchHeader, ParseObserver, ParsePhase, ParsedDemo,
-    Shot, TickTrack, WEAPON_NONE, parse_observed, parse_recording_passes,
+    DefuseOutcome, Grenade, GrenadeType, Kill, MatchHeader, PASS_COUNT, ParseObserver, ParsePhase,
+    ParsedDemo, Shot, TickTrack, WEAPON_NONE, parse_observed, parse_recording_passes,
 };
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -44,15 +44,16 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
     let (first, passes) = parse_recording_passes(&demo_bytes).expect("the fixture failed to parse");
     let elapsed = started.elapsed();
     eprintln!(
-        "parsed in {:.2}s ({} bytes, three passes, native single-threaded)",
+        "parsed in {:.2}s ({} bytes, two passes, native single-threaded)",
         elapsed.as_secs_f64(),
         demo_bytes.len()
     );
 
     assert_eq!(
         passes,
-        vec!["events", "ticks", "projectiles"],
-        "docs/PARSER.md §3 measured three passes as a floor upstream imposes"
+        vec!["events and ticks", "projectiles"],
+        "docs/PARSER.md §3: a tick column and a trajectory column share upstream's table, so two \
+         passes is the floor"
     );
 
     assert_track_is_rectangular(&first.track);
@@ -71,10 +72,9 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
     assert_eq!(
         observed.reports,
         vec![
-            "pass events 1/3".to_owned(),
-            "pass ticks 2/3".to_owned(),
+            "pass events and ticks 1/2".to_owned(),
             format!("header {}", first.header.map),
-            "pass projectiles 3/3".to_owned(),
+            "pass projectiles 2/2".to_owned(),
         ],
         "the header has to reach a worker while the last pass is still running, or reporting it \
          separately buys nothing"
@@ -111,7 +111,7 @@ impl ParseObserver for ObservedParse {
 
     fn pass_completed(&mut self, label: &'static str, completed_passes: usize) {
         self.reports
-            .push(format!("pass {label} {completed_passes}/3"));
+            .push(format!("pass {label} {completed_passes}/{PASS_COUNT}"));
     }
 
     fn header_ready(&mut self, header: &MatchHeader) {
