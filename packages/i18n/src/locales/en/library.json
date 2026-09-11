@@ -54,6 +54,10 @@
     "players": "{count, plural, one {# player} other {# players}}"
   },
   "shell": {
+    "update": {
+      "ready": "A new version of disalytics is ready.",
+      "reload": "Reload"
+    },
     "nav": "Sections",
     "upload": "Upload",
     "library": "Library",

@@ -54,6 +54,10 @@
     "players": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}"
   },
   "shell": {
+    "update": {
+      "ready": "Готова новая версия disalytics.",
+      "reload": "Перезагрузить"
+    },
     "nav": "Разделы",
     "upload": "Открыть",
     "library": "Библиотека",

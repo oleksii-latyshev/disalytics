@@ -1,5 +1,6 @@
 import { MotionProvider } from '@disa/ui';
 import { useDemoParse } from '@/core/parsing';
+import { useWorkerUpdate } from '@/core/pwa';
 import { useSetting } from '@/core/settings';
 import { WayIn } from '@/features/library';
 import { MatchReview } from '@/features/review';
@@ -16,6 +17,7 @@ const REDUCED_MOTION = { system: 'user', reduced: 'always', full: 'never' } as c
 export function App() {
   const parse = useDemoParse();
   const [motion] = useSetting('motion');
+  const update = useWorkerUpdate();
   const { state } = parse;
 
   return (
@@ -34,6 +36,7 @@ export function App() {
           onEnter={parse.openSaved}
           onSample={parse.openSample}
           onClose={parse.close}
+          onUpdate={update}
         />
       )}
     </MotionProvider>

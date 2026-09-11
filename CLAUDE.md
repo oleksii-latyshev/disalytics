@@ -2008,6 +2008,31 @@ rule. The check is cheap now for a reason worth knowing: **#330's committed samp
 plate hash reproducible without a `.dem`**, so the arm setup is a press on a card rather than a demo
 somebody has to hand over.
 
+**#43 and #352 registered the service worker, in one PR at the owner's direction, because the two
+halves are useless apart.** A route served offline by a worker nobody registers changes nothing, and
+a registered worker with no prompt is the cache-sticky shell `AGENTS.md` §12 warns about. Five things
+are load-bearing. **`useWorkerUpdate` in `core/pwa` registers `/sw.js` itself, production only, and
+`injectRegister` stays `false`**: the plugin's script would register without asking, and
+`virtual:pwa-register` would bring `workbox-window` into the page for what `navigator.serviceWorker`
+already does in thirty lines. **A new worker waits for the reader's press** — `SKIP_WAITING_MESSAGE`
+is the one string both sides import — and **every tab reloads on `controllerchange`**, not only the
+one that pressed, because a tab left on the old chunks asks a precache `cleanupOutdatedCaches` has
+emptied and a server that only holds the new hashes. **The notice is the way in's alone**: a reload
+on the review screen drops the reader's place in a match, and the old worker goes on serving the old
+shell whole until they leave it. **The offline half is one `NavigationRoute` onto the precached
+`index.html`**, because the app has no routes of its own — #43's `/round/12/kill/3` never existed,
+and the only path anything sends here is the manifest's `/open`. `workbox-routing` is *declared*
+rather than new: it was already in the tree as `workbox-precaching`'s own dependency, and the owner
+approved the declaration. And **Cloudflare's 307 on `/index.html` needs nothing** — Workbox's
+precache copies a redirected response, and the cached shell reads 200 with `#root` in it. Measured on
+the built bundle through `wrangler dev`: a first install shows no notice; with the server stopped,
+`/`, `/open`, `/round/12/kill/3` and `/no-such-route` all render the way in under the worker's
+control while an uncached fetch fails; a second build with a changed precache raises the notice, and
+one press reloads **both** open tabs onto the new worker; the header holds **0 elements overflowing**
+at 1440×900 and 1024×800 in `en` and `ru`, measured against the header's own padding box as well as
+the viewport. The bundle is 285.80 → **286.28 kB gz, 57.3%** — `sw.js` 5.65 → 5.80 and the entry
+chunk +0.29 — against `main` at `322ba90`, rebuilt the same hour.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
