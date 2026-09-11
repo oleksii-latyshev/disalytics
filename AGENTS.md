@@ -914,9 +914,13 @@ The app is installable and offline-capable. This produces the best interaction i
 }
 ```
 
-`launchQueue.setConsumer` yields `FileSystemFileHandle`s — pass the handle straight to the worker
-(§7.3). File Handling is Chromium-desktop-only: feature-detect (`'launchQueue' in window`) and keep
-the file picker and drag-and-drop paths working everywhere.
+`launchQueue.setConsumer` yields `FileSystemFileHandle`s. Since #358 `useLaunchedFiles` in
+`core/pwa` hands the first one's `getFile()` to the same `open` a drop reaches: a `File` is a
+reference to the disk rather than its bytes, so the worker still does the reading (§7.3), and the
+store's fingerprint is taken from a `File` anyway. With `focus-existing` a later launch arrives in the
+open window and replaces whatever is there, the way a second drop does. File Handling is
+Chromium-desktop-only: the consumer is set only where `launchQueue` exists, and the file picker and
+drag-and-drop paths work everywhere.
 
 ### Service worker
 

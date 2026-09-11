@@ -2080,6 +2080,24 @@ natively 8.99 → 7.52 s on the fixture and 7.02 → 5.45 s on the inferno map. 
 upstream copies every wanted player prop into every event, so WASM linear memory peaks **849 →
 897 MiB** on the fixture, inside §16's 1.5 GB.
 
+**#358 made double-clicking a demo open it, which the manifest had promised since Phase 1.**
+`file_handlers` named `/open` and three extensions and `launch_handler` was `focus-existing`, and
+since #352 the app installs — but nothing read `window.launchQueue`, so an installed app opened on
+the way in and dropped the file. `useLaunchedFiles` in `core/pwa` is the whole of it. Three things
+to know. **The file reaches the same `open` a drop does**, as the `File` that `getFile()` returns
+rather than as the handle §12 used to name: a `File` is a reference to the disk, so the worker still
+reads the bytes, and the store fingerprints a `File` anyway. **`launchQueue` exists in an ordinary
+Chrome tab too**, so its presence is no evidence of a launch; the consumer is simply never called
+there. And **a launch cannot be verified over `--remote-debugging-port`**: Chrome 152 lists the
+`PWA` domain in `/json/protocol` and answers `wasn't found` to every command on both the browser
+and the page target, because it attaches that domain to a trusted session only — over
+`--remote-debugging-pipe`, `PWA.install` and `PWA.launchFilesInApp` work. Measured that way on the
+built bundle with two public IEM demos, one app window throughout: a cold launch parses at `/open`,
+a second file launched mid-parse replaces it and reaches the review screen, and a third launched
+into an open match replaces that. TypeScript's DOM library has no `LaunchParams`, so
+`launch-queue.d.ts` declares the three names used, and the handle is narrowed with
+`instanceof FileSystemFileHandle` rather than cast.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
