@@ -131,7 +131,8 @@ mod tests {
         }
 
         let percents: Vec<u8> = reports.0.iter().map(|(_, percent)| *percent).collect();
-        assert_eq!(percents, (0..=33).collect::<Vec<u8>>());
+        let one_pass = percent_of(10_000, PASS_COUNT as u64 * 10_000);
+        assert_eq!(percents, (0..=one_pass).collect::<Vec<u8>>());
     }
 
     #[test]

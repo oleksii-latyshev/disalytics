@@ -50,8 +50,8 @@ pub(crate) fn decompressed<'f>(
 /// [`decompressed`], releasing the compressed file as it returns.
 ///
 /// The two copies of a `.dem.zst` exist at once only while it is being expanded. That is the
-/// difference between a transient 617 MB and carrying the compressed quarter-gigabyte through all
-/// three passes, and `AGENTS.md` §16 is what it buys.
+/// difference between a transient 617 MB and carrying the compressed quarter-gigabyte through both
+/// passes, and `AGENTS.md` §16 is what it buys.
 pub(crate) fn decompressed_owned(
     file_bytes: Vec<u8>,
     on_consumed: &dyn Fn(usize),
