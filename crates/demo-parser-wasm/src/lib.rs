@@ -6,7 +6,7 @@ mod header;
 mod js;
 mod track;
 
-use demo_parser::{MatchHeader, PASS_COUNT, ParseError, ParseObserver};
+use demo_parser::{MatchHeader, ParseError, ParseObserver, ParsePhase};
 use js_sys::{Function, Object};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::{JsError, wasm_bindgen};
@@ -15,14 +15,6 @@ use wasm_bindgen::prelude::{JsError, wasm_bindgen};
 #[must_use]
 pub fn parser_version() -> String {
     demo_parser::VERSION.to_owned()
-}
-
-/// How many passes over the demo one parse makes, so the caller's percentage is derived from the
-/// parser rather than from a number written twice.
-#[wasm_bindgen(js_name = passCount)]
-#[must_use]
-pub fn pass_count() -> usize {
-    PASS_COUNT
 }
 
 /// # Errors
@@ -68,21 +60,14 @@ impl DemoBuffer {
     pub fn byte_length(&self) -> usize {
         self.bytes.len()
     }
-
-    /// Whether the file arrived in a `.zst` or `.bz2` container, so the caller can name the phase
-    /// it reports without reading magic bytes on its own side of the boundary.
-    #[wasm_bindgen(getter, js_name = isCompressed)]
-    #[must_use]
-    pub fn is_compressed(&self) -> bool {
-        demo_parser::is_compressed(&self.bytes)
-    }
 }
 
 /// Parses `demo` and returns `{ track, events }` as plain `JavaScript` values.
 ///
-/// `on_pass` receives the number of passes finished so far, `on_header` the match header — which is
-/// complete while the last pass is still running. The header is not repeated in the return value:
-/// `AGENTS.md` §7.3 gives it its own message precisely so it can arrive early.
+/// `on_progress` receives a phase — `"decompress"` or `"parse"` — and a whole-number percentage,
+/// once per change. `on_header` receives the match header, which is complete while the last pass is
+/// still running. The header is not repeated in the return value: `AGENTS.md` §7.3 gives it its own
+/// message precisely so it can arrive early.
 ///
 /// Every buffer in the result is a `JavaScript`-owned typed array, so the caller can transfer them
 /// and terminate the worker.
@@ -93,14 +78,18 @@ impl DemoBuffer {
 #[wasm_bindgen(js_name = parseDemo)]
 pub fn parse_demo(
     demo: DemoBuffer,
-    on_pass: &Function,
+    on_progress: &Function,
     on_header: &Function,
 ) -> Result<Object, JsError> {
+    let mut observer = JsObserver {
+        on_progress,
+        on_header,
+    };
     // Expanding the container here rather than inside the parse is what frees the compressed file
     // before the passes begin: the two copies of a `.dem.zst` then overlap only while it is being
     // decompressed, which is the difference the §16 peak budget is measured against.
-    let demo_bytes = demo_parser::decompressed(demo.bytes).map_err(|error| coded(&error))?;
-    let mut observer = JsObserver { on_pass, on_header };
+    let demo_bytes =
+        demo_parser::decompressed(demo.bytes, &mut observer).map_err(|error| coded(&error))?;
     let parsed =
         demo_parser::parse_observed(&demo_bytes, &mut observer).map_err(|error| coded(&error))?;
 
@@ -116,19 +105,20 @@ pub fn parse_demo(
 }
 
 struct JsObserver<'a> {
-    on_pass: &'a Function,
+    on_progress: &'a Function,
     on_header: &'a Function,
 }
 
-/// A callback that throws is the caller's own defect, and a pass boundary is not somewhere the
+/// A callback that throws is the caller's own defect, and the middle of a pass is not somewhere the
 /// parse can be unwound to — the demo would have to be read again from the start. So the exception
 /// is dropped here and the parse runs to completion.
 impl ParseObserver for JsObserver<'_> {
-    fn pass_completed(&mut self, _label: &'static str, completed_passes: usize) {
-        drop(
-            self.on_pass
-                .call1(&JsValue::NULL, &js::count(completed_passes)),
-        );
+    fn progressed(&mut self, phase: ParsePhase, percent: u8) {
+        drop(self.on_progress.call2(
+            &JsValue::NULL,
+            &JsValue::from_str(phase.as_str()),
+            &JsValue::from(percent),
+        ));
     }
 
     fn header_ready(&mut self, header: &MatchHeader) {

@@ -61,13 +61,21 @@ it, which keeps 19 packages out of the dependency graph.
   upstream's own `prof_on().then(std::time::Instant::now)` style. This is
   `tools/probes/wasm-build/lazy-instant.patch` applied as ordinary source rather than carried as a
   patch file. `docs/PARSER.md` §11 keeps offering this upstream as an open question.
+- **`parser/src/parse_demo.rs`, `parser/src/second_pass/parser_settings.rs` and
+  `parser/src/second_pass/parser.rs`** — a position hook. `Parser::on_position` and
+  `SecondPassParser::on_position` are `None` unless a caller sets them; the single-threaded second
+  pass hands the first to the second, and the frame loop calls it with `self.ptr` at the top of
+  every iteration. It observes and never steers, so output is unchanged, and the multi-threaded
+  paths never set it. Upstream's first pass gets no hook: `docs/PARSER.md` §14 measured it at under
+  3% of each pass.
 - **`parser/Cargo.toml`** — `[profile.dev]` and `[profile.release]` removed. Cargo ignores profiles
   on a non-root package and warns about them on every build; the real profiles are in the root
   manifest.
 - **`vendor/Cargo.toml`** — added. It makes `vendor/` a workspace root of its own, which is what
-  keeps `cargo fmt --all` and `cargo clippy --workspace` from answering for upstream code. It is
-  paired with `exclude = ["vendor"]` in the root manifest, without which cargo refuses the nested
-  root outright.
+  keeps `cargo clippy --workspace` from answering for upstream code. It is paired with
+  `exclude = ["vendor"]` in the root manifest, without which cargo refuses the nested root outright.
+  It does **not** keep out `cargo fmt --all`, which follows path dependencies into this directory and
+  reformats every file in it; that is why `lefthook.yml` and `wasm.yml` name their two packages.
 - **`[lints.rust] warnings = "allow"`** in both manifests. Upstream builds with ten warnings that
   are not ours to fix, and letting them print on every build is how a real warning from
   `crates/` goes unread.

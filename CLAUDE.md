@@ -2033,6 +2033,34 @@ at 1440×900 and 1024×800 in `en` and `ru`, measured against the header's own p
 the viewport. The bundle is 285.80 → **286.28 kB gz, 57.3%** — `sw.js` 5.65 → 5.80 and the entry
 chunk +0.29 — against `main` at `322ba90`, rebuilt the same hour.
 
+**#354 put a position inside each pass on the parse screen, and the profile that placed the hook
+also re-scoped the speed half of the same `ROADMAP.md` row.** The readout stepped 0 → 33 → 67 → 100
+because upstream offered no hook inside a pass, and a `.dem.zst` said "decompressing" for the whole
+of the first pass. Five things are load-bearing. **The hook is the second-pass frame loop's own
+`self.ptr`**, handed from `Parser::on_position` to `SecondPassParser::on_position` on the
+single-threaded path — eight added lines in `vendor/`, listed in `vendor/README.md`, observing and
+never steering. Upstream's *first* pass has none because it needs none: `CS2_PROF` over the 398 MB
+IEM Atlanta inferno map put it at 0.070 / 0.041 / 0.040 s against 2.169 / 3.742 / 2.442 s for the
+second, so the second is the whole of each of our passes. **`Progress` in `crates/demo-parser` owns
+the arithmetic and the deduplication**: every pass an equal share, each whole-number percentage
+handed to the observer once, 100 only when the last pass has *completed* rather than read to its
+end, and all of it in `u64`, because a demo's length times a hundred overflows `usize` on `wasm32`.
+The observer sits in a `RefCell` because upstream's hook is a shared `Fn`, called synchronously, so
+two borrows never meet. **A container reports the compressed bytes its decoder has consumed** —
+`Counted`, a `Read` wrapper — which is the one position both codecs can state, and the phase becomes
+`parse` the moment the first pass starts. **The parser owns the phase now**: `parseDemo` takes
+`onProgress(phase, percent)`, and `passCount` and `DemoBuffer.isCompressed` went with the worker's
+own percentage maths, which was their only reader. And **`cargo fmt --all` reformats `vendor/`** —
+it follows path dependencies, which `lefthook.yml` and `wasm.yml` already knew and
+`vendor/README.md` denied until this PR corrected it — so read the vendored diff as additions only
+before committing. Measured: a real parse in the built bundle read **101 distinct percentages,
+strictly rising, 0 to 100 in 12.8 s** on the inferno map, and `wasm:smoke` now fails on 50 or fewer;
+the hook costs nothing measurable, interleaved against a `main` worktree over three rounds — native
+**7.06 → 7.08 s** and WASM under Bun **11.50 → 11.53 s**, each inside `main`'s own spread. The same
+profile moved #355: **5.74 s of the 8.73 s parse is entity decoding repeated once per pass**, so the
+room in the speed half is the three passes rather than anything inside one. Found on the way and
+left as its own task: the fixture's area-grenade assertion fails on that inferno map on `main` too.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

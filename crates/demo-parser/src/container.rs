@@ -30,21 +30,19 @@ pub(crate) enum Container {
     Compressed(Codec),
 }
 
-/// Whether the file needs expanding before it is a demo, which is what lets a caller name the phase
-/// it is reporting without knowing the magic bytes itself.
-#[must_use]
-pub fn is_compressed(file_bytes: &[u8]) -> bool {
-    matches!(identify(file_bytes), Ok(Container::Compressed(_)))
-}
-
-/// The demo's bytes, borrowed when the file already held them.
-pub(crate) fn decompressed(file_bytes: &[u8]) -> Result<Cow<'_, [u8]>, ParseError> {
+/// The demo's bytes, borrowed when the file already held them. `on_consumed` hears how many of the
+/// file's bytes the decoder has taken so far, and hears nothing for a raw demo.
+pub(crate) fn decompressed<'f>(
+    file_bytes: &'f [u8],
+    on_consumed: &dyn Fn(usize),
+) -> Result<Cow<'f, [u8]>, ParseError> {
     match identify(file_bytes)? {
         Container::Raw => Ok(Cow::Borrowed(file_bytes)),
         Container::Compressed(codec) => Ok(Cow::Owned(expand(
             codec,
             file_bytes,
             MAX_DECOMPRESSED_BYTES,
+            on_consumed,
         )?)),
     }
 }
@@ -54,10 +52,15 @@ pub(crate) fn decompressed(file_bytes: &[u8]) -> Result<Cow<'_, [u8]>, ParseErro
 /// The two copies of a `.dem.zst` exist at once only while it is being expanded. That is the
 /// difference between a transient 617 MB and carrying the compressed quarter-gigabyte through all
 /// three passes, and `AGENTS.md` §16 is what it buys.
-pub(crate) fn decompressed_owned(file_bytes: Vec<u8>) -> Result<Vec<u8>, ParseError> {
+pub(crate) fn decompressed_owned(
+    file_bytes: Vec<u8>,
+    on_consumed: &dyn Fn(usize),
+) -> Result<Vec<u8>, ParseError> {
     match identify(&file_bytes)? {
         Container::Raw => Ok(file_bytes),
-        Container::Compressed(codec) => expand(codec, &file_bytes, MAX_DECOMPRESSED_BYTES),
+        Container::Compressed(codec) => {
+            expand(codec, &file_bytes, MAX_DECOMPRESSED_BYTES, on_consumed)
+        }
     }
 }
 
@@ -86,12 +89,40 @@ fn is_bzip2(file_bytes: &[u8]) -> bool {
             .is_some_and(|digit| digit.is_ascii_digit() && *digit != b'0')
 }
 
-fn expand(codec: Codec, file_bytes: &[u8], limit: usize) -> Result<Vec<u8>, ParseError> {
+/// The compressed bytes a decoder has taken. It is the one position both containers can report
+/// honestly: a `.bz2` never says how far it expands, and a zstd frame is allowed not to.
+struct Counted<'c, R> {
+    source: R,
+    bytes: usize,
+    on_consumed: &'c dyn Fn(usize),
+}
+
+impl<R: Read> Read for Counted<'_, R> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        let read = self.source.read(buffer)?;
+        self.bytes += read;
+        (self.on_consumed)(self.bytes);
+
+        Ok(read)
+    }
+}
+
+fn expand(
+    codec: Codec,
+    file_bytes: &[u8],
+    limit: usize,
+    on_consumed: &dyn Fn(usize),
+) -> Result<Vec<u8>, ParseError> {
     let mut demo_bytes = Vec::new();
+    let source = Counted {
+        source: file_bytes,
+        bytes: 0,
+        on_consumed,
+    };
 
     match codec {
-        Codec::Zstd => expand_zstd(file_bytes, &mut demo_bytes, limit)?,
-        Codec::Bzip2 => read_into(MultiBzDecoder::new(file_bytes), &mut demo_bytes, limit)?,
+        Codec::Zstd => expand_zstd(source, &mut demo_bytes, limit)?,
+        Codec::Bzip2 => read_into(MultiBzDecoder::new(source), &mut demo_bytes, limit)?,
     }
 
     Ok(demo_bytes)
@@ -101,13 +132,11 @@ fn expand(codec: Codec, file_bytes: &[u8], limit: usize) -> Result<Vec<u8>, Pars
 /// hold several. Handing back the first frame alone would look like a demo that ends early, so the
 /// loop is what makes a concatenated archive read as the whole file it is.
 fn expand_zstd(
-    file_bytes: &[u8],
+    mut source: Counted<'_, &[u8]>,
     demo_bytes: &mut Vec<u8>,
     limit: usize,
 ) -> Result<(), ParseError> {
-    let mut source = file_bytes;
-
-    while !source.is_empty() {
+    while !source.source.is_empty() {
         let mut frame =
             StreamingDecoder::new(&mut source).map_err(|_| decoding_failed(demo_bytes.len()))?;
 
@@ -190,14 +219,17 @@ fn unallocatable() -> ParseError {
 mod tests {
     use super::{
         Codec, Container, MAX_DECOMPRESSED_BYTES, decompressed, decompressed_owned, expand,
-        identify, is_compressed,
+        identify,
     };
     use crate::error::{ErrorCode, ParseError};
     use bzip2::Compression;
     use bzip2::write::BzEncoder;
+    use std::cell::RefCell;
     use std::io::Write;
 
     const DEMO: &[u8] = b"PBDEMS2\0the bytes a parser would be handed";
+
+    fn ignore(_consumed: usize) {}
 
     fn zstd(bytes: &[u8]) -> Vec<u8> {
         ruzstd::encoding::compress_to_vec(bytes, ruzstd::encoding::CompressionLevel::Fastest)
@@ -215,9 +247,8 @@ mod tests {
     #[test]
     fn a_raw_demo_is_recognised_and_never_copied() {
         assert_eq!(identify(DEMO), Ok(Container::Raw));
-        assert!(!is_compressed(DEMO));
 
-        let borrowed = decompressed(DEMO).expect("a raw demo failed to pass through");
+        let borrowed = decompressed(DEMO, &ignore).expect("a raw demo failed to pass through");
 
         assert!(matches!(borrowed, std::borrow::Cow::Borrowed(_)));
         assert_eq!(borrowed.as_ref(), DEMO);
@@ -233,14 +264,12 @@ mod tests {
             identify(&bzip2(DEMO)),
             Ok(Container::Compressed(Codec::Bzip2))
         );
-        assert!(is_compressed(&zstd(DEMO)));
-        assert!(is_compressed(&bzip2(DEMO)));
     }
 
     #[test]
     fn a_zstd_container_expands_to_the_demo_inside_it() {
         assert_eq!(
-            decompressed(&zstd(DEMO))
+            decompressed(&zstd(DEMO), &ignore)
                 .expect("a zstd container failed")
                 .as_ref(),
             DEMO
@@ -250,7 +279,7 @@ mod tests {
     #[test]
     fn a_bzip2_container_expands_to_the_demo_inside_it() {
         assert_eq!(
-            decompressed(&bzip2(DEMO))
+            decompressed(&bzip2(DEMO), &ignore)
                 .expect("a bzip2 container failed")
                 .as_ref(),
             DEMO
@@ -263,7 +292,7 @@ mod tests {
         archive.extend_from_slice(&zstd(b"and the second"));
 
         assert_eq!(
-            decompressed(&archive)
+            decompressed(&archive, &ignore)
                 .expect("a multi-frame archive failed")
                 .as_ref(),
             b"first half of the demo, and the second"
@@ -271,12 +300,38 @@ mod tests {
     }
 
     #[test]
+    fn each_container_reports_every_compressed_byte_it_consumes_and_never_goes_back() {
+        for container in [zstd(&DEMO.repeat(512)), bzip2(&DEMO.repeat(512))] {
+            let positions = RefCell::new(Vec::new());
+
+            decompressed(&container, &|consumed| {
+                positions.borrow_mut().push(consumed);
+            })
+            .expect("a container failed");
+
+            let positions = positions.into_inner();
+            assert!(positions.windows(2).all(|pair| pair[0] <= pair[1]));
+            assert_eq!(positions.last(), Some(&container.len()));
+        }
+    }
+
+    #[test]
+    fn a_raw_demo_reports_no_decompression() {
+        let reports = RefCell::new(0);
+
+        decompressed(DEMO, &|_| *reports.borrow_mut() += 1).expect("a raw demo failed");
+
+        assert_eq!(reports.into_inner(), 0);
+    }
+
+    #[test]
     fn expanding_an_owned_file_hands_a_raw_demo_straight_back() {
-        let owned = decompressed_owned(DEMO.to_vec()).expect("a raw demo failed to pass through");
+        let owned =
+            decompressed_owned(DEMO.to_vec(), &ignore).expect("a raw demo failed to pass through");
 
         assert_eq!(owned, DEMO);
         assert_eq!(
-            decompressed_owned(zstd(DEMO)).expect("a zstd container failed"),
+            decompressed_owned(zstd(DEMO), &ignore).expect("a zstd container failed"),
             DEMO
         );
     }
@@ -287,7 +342,7 @@ mod tests {
 
         assert_eq!(identify(&gzipped), Err(ParseError::UnsupportedContainer));
         assert_eq!(
-            decompressed(&gzipped).unwrap_err().code(),
+            decompressed(&gzipped, &ignore).unwrap_err().code(),
             ErrorCode::UnsupportedContainer
         );
     }
@@ -310,7 +365,7 @@ mod tests {
         let cut = &compressed[..compressed.len() - 8];
 
         assert_eq!(
-            decompressed(cut).unwrap_err().code(),
+            decompressed(cut, &ignore).unwrap_err().code(),
             ErrorCode::TruncatedDemo
         );
     }
@@ -321,7 +376,7 @@ mod tests {
         let cut = &compressed[..compressed.len() - 8];
 
         assert_eq!(
-            decompressed(cut).unwrap_err().code(),
+            decompressed(cut, &ignore).unwrap_err().code(),
             ErrorCode::TruncatedDemo
         );
     }
@@ -332,7 +387,7 @@ mod tests {
         rubbish.extend_from_slice(&[0xff; 32]);
 
         assert_eq!(
-            decompressed(&rubbish).unwrap_err().code(),
+            decompressed(&rubbish, &ignore).unwrap_err().code(),
             ErrorCode::TruncatedDemo
         );
     }
@@ -342,9 +397,11 @@ mod tests {
         let bomb = zstd(&vec![0_u8; 4 * 1024 * 1024]);
 
         assert_eq!(
-            expand(Codec::Zstd, &bomb, 1024).unwrap_err().code(),
+            expand(Codec::Zstd, &bomb, 1024, &ignore)
+                .unwrap_err()
+                .code(),
             ErrorCode::MalformedDemo
         );
-        assert!(expand(Codec::Zstd, &bomb, MAX_DECOMPRESSED_BYTES).is_ok());
+        assert!(expand(Codec::Zstd, &bomb, MAX_DECOMPRESSED_BYTES, &ignore).is_ok());
     }
 }

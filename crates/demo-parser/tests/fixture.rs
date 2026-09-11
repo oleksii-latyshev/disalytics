@@ -11,8 +11,8 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, GrenadeType, Kill, MatchHeader, ParseObserver, ParsedDemo, Shot,
-    TickTrack, WEAPON_NONE, parse_observed, parse_recording_passes,
+    DefuseOutcome, Grenade, GrenadeType, Kill, MatchHeader, ParseObserver, ParsePhase, ParsedDemo,
+    Shot, TickTrack, WEAPON_NONE, parse_observed, parse_recording_passes,
 };
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -79,6 +79,7 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
         "the header has to reach a worker while the last pass is still running, or reporting it \
          separately buys nothing"
     );
+    assert_progress_counts_up_once_per_percent(&observed.percents);
 
     let snapshot = snapshot_of(&first, &passes);
     let rendered = format!("{}\n", serde_json::to_string_pretty(&snapshot).unwrap());
@@ -100,9 +101,14 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
 #[derive(Default)]
 struct ObservedParse {
     reports: Vec<String>,
+    percents: Vec<(ParsePhase, u8)>,
 }
 
 impl ParseObserver for ObservedParse {
+    fn progressed(&mut self, phase: ParsePhase, percent: u8) {
+        self.percents.push((phase, percent));
+    }
+
     fn pass_completed(&mut self, label: &'static str, completed_passes: usize) {
         self.reports
             .push(format!("pass {label} {completed_passes}/3"));
@@ -111,6 +117,37 @@ impl ParseObserver for ObservedParse {
     fn header_ready(&mut self, header: &MatchHeader) {
         self.reports.push(format!("header {}", header.map));
     }
+}
+
+/// Each phase counts up without repeating itself, and the parse reaches a hundred exactly once, at
+/// the end. The reports are what a worker turns into messages, so a demo that sent one per frame
+/// would be a hundred thousand of them.
+fn assert_progress_counts_up_once_per_percent(percents: &[(ParsePhase, u8)]) {
+    let parse: Vec<u8> = percents
+        .iter()
+        .filter(|(phase, _)| *phase == ParsePhase::Parse)
+        .map(|(_, percent)| *percent)
+        .collect();
+
+    assert!(
+        parse.windows(2).all(|pair| pair[0] < pair[1]),
+        "the parse's percentage repeated itself or went backwards"
+    );
+    assert_eq!(
+        parse.first(),
+        Some(&0),
+        "the parse did not start from nothing"
+    );
+    assert_eq!(
+        parse.last(),
+        Some(&100),
+        "the parse did not finish at a hundred"
+    );
+    assert!(
+        parse.len() > 50,
+        "only {} percentages over a whole parse — progress inside a pass is not arriving",
+        parse.len()
+    );
 }
 
 /// An area grenade is drawn between its detonation and its expiry, so one without an expiry is on

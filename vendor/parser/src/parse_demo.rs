@@ -48,6 +48,7 @@ pub struct DemoOutput {
 pub struct Parser<'a> {
     input: ParserInputs<'a>,
     pub parsing_mode: ParsingMode,
+    pub on_position: Option<&'a dyn Fn(usize)>,
 }
 #[derive(PartialEq)]
 pub enum ParsingMode {
@@ -61,6 +62,7 @@ impl<'a> Parser<'a> {
         Parser {
             input: input,
             parsing_mode: parsing_mode,
+            on_position: None,
         }
     }
     pub fn parse_demo(&mut self, demo_bytes: &[u8]) -> Result<DemoOutput, DemoParserError> {
@@ -134,6 +136,7 @@ impl<'a> Parser<'a> {
         let prof = std::env::var("CS2_PROF").is_ok();
         let mut t = prof.then(std::time::Instant::now);
         let mut parser = SecondPassParser::new(first_pass_output.clone(), 16, true, None)?;
+        parser.on_position = self.on_position;
         parser.start(outer_bytes)?;
         if prof { eprintln!("[prof] second_pass start(): {:.3}s", t.unwrap().elapsed().as_secs_f64()); t = prof.then(std::time::Instant::now); }
         let second_pass_output = parser.create_output();
