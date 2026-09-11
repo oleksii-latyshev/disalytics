@@ -1,6 +1,6 @@
 import { MotionProvider } from '@disa/ui';
 import { useDemoParse } from '@/core/parsing';
-import { useWorkerUpdate } from '@/core/pwa';
+import { useLaunchedFiles, useWorkerUpdate } from '@/core/pwa';
 import { useSetting } from '@/core/settings';
 import { WayIn } from '@/features/library';
 import { MatchReview } from '@/features/review';
@@ -19,6 +19,8 @@ export function App() {
   const [motion] = useSetting('motion');
   const update = useWorkerUpdate();
   const { state } = parse;
+
+  useLaunchedFiles(parse.open);
 
   return (
     <MotionProvider reducedMotion={REDUCED_MOTION[motion]}>
