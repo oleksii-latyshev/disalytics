@@ -2205,6 +2205,29 @@ locales at both widths. §16's two frame rows are stated as unmoved rather than 
 new reaches the frame channel and this screen has no clock. The bundle is 289.05 → **290.36 kB
 gz**.
 
+**#367 closed the assertion #354 found failing, and the answer was the same one §19 already gave
+for smoke.** Of the IEM Atlanta inferno map's 382 grenades — 192 of them areas — exactly **one**
+reached the schema with a detonation and no expiry, which `grenadeEndTick` draws as nothing at all.
+Four things to know. **Only a fire can fail that assertion**, by construction: `area_expiry` answers
+`last_sample + 1` for every smoke and decoy, so an unbounded area is always an inferno whose
+`inferno_expire` never came. **The recording says what happened to it**: 84 `inferno_startburn`
+against 83 `inferno_expire`, no third `inferno_*` name in the demo at all — and since #355 passes
+`wanted_events: ["all"]`, that absence is the demo's rather than the parser's — with the unmatched
+fire starting at tick 90,977 and `round_officially_ended` landing at **91,008**, 31 ticks later,
+against a median burn of 352 ticks. It was still burning when the round was cleaned up, which is
+§19's smoke finding arriving for the other area grenade that owns an entity. **The projectile cannot
+answer here the way it does for a smoke** — a smoke's cloud *is* the projectile and a fire's flames
+are a different entity, which §20 measured as a projectile dying within 0.1 s of the detonation — so
+the ending is the round's own event, and **no duration is assumed**. And **the fixture test skips
+the snapshot when the demo is not the snapshot's own**, identified by the header: one snapshot
+describes one recording, so a second demo could only ever fail that comparison and the assertions
+that say a parse is *self-consistent* would never get to run on one. That is how this survived
+until a second demo was pointed at the test. The assertion **names the offenders** now rather than
+counting them, because a bare `left: 1` is what sent this back to the demo to ask which grenade.
+The original fixture is **byte-identical** — 519 grenades, 254 areas, 0 unbounded, snapshot matched
+— because 114 of its 114 fires pair and the fallback never fires there. `docs/PARSER.md` §19
+carries the table.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
