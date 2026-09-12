@@ -2,6 +2,7 @@ import type { TranslationKey } from '@disa/i18n';
 // `Map` is aliased because the global of that name is one Biome will not let a module shadow.
 import {
   ChartColumn,
+  Cloud,
   Crosshair,
   Flame,
   type LucideIcon,
@@ -13,10 +14,10 @@ import {
  * What a match can be showing, in the order the switch lists them. The stage is the match as it
  * plays; the rest are readings of the whole of it — `ROADMAP.md` M5, one screen per row.
  */
-export type MatchView = 'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'metrics';
+export type MatchView = 'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'utility' | 'metrics';
 
 /** A view with no screen behind it yet. */
-export type UnbuiltMatchView = Exclude<MatchView, 'stage' | 'duels' | 'heatmap'>;
+export type UnbuiltMatchView = Exclude<MatchView, 'stage' | 'duels' | 'heatmap' | 'utility'>;
 
 export interface MatchViewSection {
   view: MatchView;
@@ -40,6 +41,7 @@ export const MATCH_VIEWS: readonly MatchViewSection[] = [
   { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table, isSoon: true },
   { view: 'duels', labelPath: 'review.views.duels', icon: Crosshair, isSoon: false },
   { view: 'heatmap', labelPath: 'review.views.heatmap', icon: Flame, isSoon: false },
+  { view: 'utility', labelPath: 'review.views.utility', icon: Cloud, isSoon: false },
   { view: 'metrics', labelPath: 'review.views.metrics', icon: ChartColumn, isSoon: true },
 ];
 

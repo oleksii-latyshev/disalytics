@@ -80,7 +80,14 @@ export {
   tickAtFrame,
 } from './helpers/selectors';
 export type { UtilityHeld, UtilityKind } from './helpers/utility';
-export { UTILITY_NAMES, utilityHeld, utilityKindOfGrenade } from './helpers/utility';
+export {
+  THROWN_UTILITY_KINDS,
+  UTILITY_NAMES,
+  utilityHeld,
+  utilityKindOfGrenade,
+} from './helpers/utility';
+export type { UtilityThrow } from './helpers/utility-throws';
+export { matchUtility } from './helpers/utility-throws';
 export type { WeaponIconId } from './helpers/weapon-icons';
 export { isWeaponIconId, WEAPON_ICON_IDS } from './helpers/weapon-icons';
 export type { WeaponClass } from './helpers/weapons';

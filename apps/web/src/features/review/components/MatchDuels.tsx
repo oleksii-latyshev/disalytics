@@ -55,7 +55,7 @@ export function MatchDuels({ demo }: { demo: ParsedDemo }) {
         players={demo.header.players}
         reading={<Text path="review.maps.duels" values={{ count: shown.length }} />}
         figure={(slot) => (slot === null ? onSide.length : (counts[slot] ?? 0))}
-        note={<Text path="review.maps.soonNote" />}
+        note={<Text path="review.maps.worldKillNote" />}
       />
 
       <section className="grid min-h-0 min-w-0">

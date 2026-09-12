@@ -18,6 +18,12 @@ interface Props {
   figure: (slot: PlayerSlot | null) => ReactNode;
   /** What this map does not draw yet, at the foot. */
   note: ReactNode;
+  /**
+   * A narrowing of this map's own, stated under the sides it shares with every other one. The
+   * utility map is the only screen with one: its marks are three to four times a duel map's, so
+   * what kind of grenade is being asked about is a question the reader cannot answer by looking.
+   */
+  scope?: ReactNode;
 }
 
 const SEAT_CLASS =
@@ -51,6 +57,7 @@ export function MapScope({
   reading,
   figure,
   note,
+  scope,
 }: Props) {
   const t = useT();
 
@@ -78,6 +85,8 @@ export function MapScope({
           onChange={onSide}
         />
       </div>
+
+      {scope}
 
       <p className="numeric text-13 text-ink">{reading}</p>
 

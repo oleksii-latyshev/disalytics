@@ -6,6 +6,7 @@ import {
   GRENADE_FLASH_SECOND,
   GRENADE_HE,
   GRENADE_SMOKE,
+  GRENADE_TYPES,
   type GrenadeType,
 } from '../schema';
 
@@ -32,6 +33,16 @@ export function utilityKindOfGrenade(type: GrenadeType): UtilityKind {
       return 'decoy';
   }
 }
+
+/**
+ * The kinds that reach the map as a thrown grenade, in the order the types themselves are declared
+ * in. Derived rather than restated, for `UTILITY_KINDS`' reason: a list of five written out here is
+ * an enumeration living beside the one that decides it. `kit` is not among them — a defuse kit is
+ * equipment and is never thrown.
+ */
+export const THROWN_UTILITY_KINDS: readonly UtilityKind[] = [
+  ...new Set(GRENADE_TYPES.map(utilityKindOfGrenade)),
+];
 
 /**
  * Canonical names for what a player is carrying — game vocabulary, never translated (`AGENTS.md`

@@ -6,6 +6,7 @@ import { MatchCorner } from './MatchCorner';
 import { MatchDuels } from './MatchDuels';
 import { MatchHeatmap } from './MatchHeatmap';
 import { MatchSoon } from './MatchSoon';
+import { MatchUtility } from './MatchUtility';
 import { MatchViewBar } from './MatchViewBar';
 import { ReviewSheets } from './ReviewSheets';
 
@@ -46,12 +47,13 @@ export function MatchViewScreen({
           own to state, so nothing hangs under it here. */}
       <MatchViewBar view={view} onView={onView} />
 
-      {/* Two views are built and the rest say so. The screen behind a seat is what each
+      {/* Three views are built and the rest say so. The screen behind a seat is what each
           `ROADMAP.md` M5 row adds; this file is where a built one takes the place of its own
           note. */}
       {view === 'duels' && <MatchDuels demo={demo} />}
       {view === 'heatmap' && <MatchHeatmap demo={demo} />}
-      {view !== 'duels' && view !== 'heatmap' && <MatchSoon view={view} />}
+      {view === 'utility' && <MatchUtility demo={demo} />}
+      {view !== 'duels' && view !== 'heatmap' && view !== 'utility' && <MatchSoon view={view} />}
 
       <ReviewSheets
         demo={demo}

@@ -2257,6 +2257,37 @@ stylesheet Tailwind emits. The dichromat half of #133's comment is deliberately 
 is a separation between marks rather than a contrast figure, and nothing in the file states one that
 this issue was asked to hold.
 
+**#372 gave the match a utility map, and the two decisions in it are both about what a whole match
+does to a mark.** The sixth seat in the view switch draws every grenade the match threw — a dot
+where the player stood, the flight the projectile actually took, and a ring at the ground it covered
+where it went off — narrowed by side, by player and by kind. Six things are load-bearing.
+**`matchUtility` in `demo-core` is the rule**, beside `matchDuels` and walking the same shape: the
+round's own window, the sides that round recorded, one pass over each list. Its one omission is the
+grenade the round was cleaned up around — no `detonationPosition`, so nowhere to land — which is
+**3 of 526** on the dust2 sample and 2 of 382 on inferno, and is `matchDuels`' own refusal of a kill
+by the world arriving for the other screen. **The path is the projectile's trajectory and never a
+straight line between the two ends**: a bullet crosses the ground it is drawn over, which is what
+lets #362 join a duel's ends with one stroke, and a grenade is thrown over a wall. It is clipped one
+tick short of the detonation, since a projectile stays sampled where it landed for up to twenty-two
+seconds afterwards (`docs/PARSER.md` §20) — measured on the sample, the tail wanders a median 0 units
+and at most 73, so it draws nothing and costs 353 segments on every smoke. **The landing is a ring at
+the grenade's own effective radius rather than §6.2's body**, and the reason is that the plate's
+marks are drawings of a moment: `drawFlashMark`'s alpha *is* how far through it is, so the same mark
+at full progress is invisible by construction. What survives a match is the extent —
+`grenadeRadiusUnits`, the number those marks are already built from — and a ring is what lets a
+hundred and fifty of them overlap and still be counted. **The origin is the thrower's own position**
+at the throw frame rather than the projectile's first sample, which sits a **median 24.9 units** away:
+that is the hand rather than the feet, and both are sampled at the same 16 Hz. **The kind is a third
+narrowing** where `MapScope` carried two, because a match's utility is three to four times its duels
+— 523 marks against 144 — and it is a single answer rather than #313's facets, which is the grammar
+of the side row above it. And **the foot note's prose is measured in pixels of map**: below the split
+the aside is a strip above the plate, so this screen's first draft, whose note ran to a second line at
+1024 where both siblings hold one, measured **561.75 against 581.25**. Two numbers: the plate is
+**793 at 1440×900 and 581 at 1024×800** in both locales — the duel map's own figures — with the stage
+unmoved at 716 and 473, and the switch is **202×32 centred on 720**, the same rect on the stage and on
+a view, which is #364's invariant holding with six seats. §16's two frame rows are stated as unmoved
+rather than re-measured: nothing new reaches the frame channel and this screen has no clock.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

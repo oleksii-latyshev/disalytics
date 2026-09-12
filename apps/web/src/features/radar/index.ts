@@ -3,6 +3,7 @@ export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export { PlateStill } from './components/PlateStill';
+export { UtilityPlate } from './components/UtilityPlate';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
 export type { PresenceField, PresenceScope } from './helpers/heat-field';

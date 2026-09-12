@@ -233,7 +233,7 @@ issues one screen at a time.
 | — | The match scoreboard | Kills, deaths, assists, damage, and the per-round detail behind them, for both sides at once — the reading that is too big for a team card row and the reason the row's expand was deleted. | P1 | M |
 | #366 | Heat map | **Built 12 September 2026**, and it is a seat of its own rather than a layer of the duel map: the owner's call is that the two answer different questions and nobody reads them at once, so the switch carries five seats and #362's screen is named **Duels**. Where the ten players stood over the whole match, binned on a 128² grid and narrowed by side and by player, counting only living samples and only from each round's freeze-time end. It is the first surface that reads the whole `TickTrack` rather than a frame of it, and the cost turned out not to be a render decision at all — 3.4 ms per narrowing over a 24-round match, and one `drawImage` per repaint. **Where a side did its damage is still open**: it is a second reading over the same bins. | P1 | L |
 | #362 | Duel map | **Built 12 September 2026**, and it is the first screen behind the **Maps** seat #360 built. Every kill as a line from killer to victim, narrowed by side and by player — **the same three marks the feed's hover already draws for one kill**, from the same helpers, over a whole match. `matchDuels` in `demo-core` is the rule: a kill's ends are read at its own frame, its sides are the ones that round recorded, and a kill by the world is left out because it has no end to come from. | P1 | M |
-| — | Utility map | Where a side's smokes, flashes and fires land, collected over the match. It is the per-match half of the lineups screen, and building it first is how that screen gets its shape. **Its own seat, the way #366's heat map took one.** | P1 | M |
+| #372 | Utility map | **Built 12 September 2026**, on a seat of its own — the sixth. Every grenade the match threw: a dot where the player stood, the flight the projectile actually took, and a ring at the ground it covered where it went off, narrowed by side, by player and by kind. `matchUtility` in `demo-core` is the rule, beside `matchDuels`, and it leaves out the grenade the round was cleaned up around for the reason that one leaves out a kill by the world: 3 of 526 on dust2, 2 of 382 on inferno. **The kind is the narrowing this screen needs and the duel map does not** — a match's utility is three to four times its duels. Where the thrower was *looking* is still M4's row: this screen says from where and to where and promises no lineup. | P1 | M |
 | — | Match metrics | The numbers a match produces that no map can show: economy over the rounds, clutches, opening duels, trades, multi-kills, utility damage, time blinded. The economy half already exists inside the match overlay and moves here rather than being rebuilt. | P1 | L |
 | — | The economy overlay over the stage | The current round's buys and balances, raised over the match without leaving it. Distinct from the metrics screen: this one answers "what can they afford *now*", which is a question asked while watching. | P2 | M |
 | — | Highlight extraction | The product proposes the moments worth watching — multi-kills, clutches, opening duels — instead of asking the reader to find them. Reads the same derivations the metrics screen needs, so it goes after it. | P2 | L |
@@ -270,6 +270,33 @@ draw is a single `drawImage` of an image built when the narrowing changed. Measu
 at 1440×900 and 1024×800: the stage is **716 and 473**, unchanged, the heat map's own plate is
 **793 and 581** — the duel map's figures exactly — and **0 elements overflow**. The bundle is
 289.05 → **290.36 kB gz, 58.1%**, no new dependency.
+
+**#372 took the sixth seat on 12 September 2026, and the two decisions in it are both about what a
+whole match does to a mark.** **The path is the projectile's own trajectory and never a straight
+line between the two ends.** A bullet crosses the ground it is drawn over, which is what lets #362
+join a duel's ends with one stroke; a grenade is thrown over a wall, so a straight line is a claim
+about the path rather than a drawing of it. It is clipped one tick short of the detonation, because
+a projectile stays sampled where it landed for as long as twenty-two seconds afterwards
+(`docs/PARSER.md` §20) — 353 more segments to the same point on a smoke, drawn 146 times.
+**The landing is a ring at the grenade's own effective radius rather than §6.2's body.** A cloud, a
+fire and a blast are drawn on the plate as things standing in the world at a moment — arriving,
+depleting, fading — and a whole match has no moment to draw them at: `drawFlashMark` at its own
+full progress is invisible by construction, since its alpha *is* how far through it is. What
+survives is the extent, which is the number the plate's own marks are built from, and a ring is
+what lets a hundred and fifty of them overlap and still be counted. The origin is the **thrower's
+own position** at the throw frame rather than the projectile's first sample, which sits a median
+24.9 units away — that is the hand rather than the feet, and both are sampled at the same 16 Hz.
+
+One measurement worth keeping for every screen `MapScope` carries: **below the split, the foot note's
+prose is measured in pixels of map.** The aside is a strip above the plate there, so the first draft
+of this screen — whose note ran to a second line at 1024 where both siblings hold one — measured
+**561.75 against the duel map's 581.25**. The note is one line in both locales now and all three
+screens measure the same. Measured on the shipped dust2 sample in `en` and in `ru`: **523 throws of
+526 grenades**, the roster's ten figures summing to exactly that; the plate **793 at 1440×900 and
+581 at 1024×800**, matching #362 and #366; the stage untouched at **716 and 473**; the view switch
+**202×32 centred on 720** at 1440 and on 512 at 1024, identical on the stage and on a view, which is
+#364's invariant holding with six seats; `V` walking all six and wrapping; and **0 elements
+overflowing** beyond the way out's own deliberate −10px that `main` reports too.
 
 ## M6 — The coach's tools
 
