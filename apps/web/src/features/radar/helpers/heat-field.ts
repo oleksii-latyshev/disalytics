@@ -28,7 +28,7 @@ export interface PresenceScope {
 }
 
 export interface PresenceField {
-  /** `HEAT_GRID²` weights in 0..1, row-major, densest bin at 1. */
+  /** `HEAT_GRID²` weights in 0..1, row-major, `HOT_QUANTILE` of the ground and above at 1. */
   readonly bins: Float32Array;
   /** Seconds each slot spent alive inside the side scope, indexed by slot. */
   readonly secondsBySlot: Float32Array;
@@ -96,11 +96,11 @@ function hotCeiling(bins: Float32Array): number {
  * sample is binned where it stands on the plan, and a two-storey map reads as both floors at once.
  *
  * **The ramp tops out at a quantile rather than at the densest bin**, and that is what makes the
- * field a reading rather than a green wash. A match's time is spent very unevenly: measured over
- * this match's 5,946 lit bins the median holds 25 samples, the 95th percentile 148 and the single
+ * field a reading rather than a green wash. A match's time is spent very unevenly: over the 5,946
+ * lit bins of the dust2 sample the median holds 25 samples, the 95th percentile 148 and the single
  * densest 2,205, so against the peak alone half the ground resolves to a tenth of the ramp and
  * nothing but one plant spot is ever hot. Against `HOT_QUANTILE` the top 5% of the ground saturates
- * — 298 bins here, 955 above half the ramp — and the corridors between them keep their step.
+ * — 298 bins there, 955 above half the ramp — and the corridors between them keep their step.
  */
 export function presenceField(
   demo: ParsedDemo,
