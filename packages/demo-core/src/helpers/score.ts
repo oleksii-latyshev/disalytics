@@ -89,6 +89,34 @@ export function roundWinners(demo: ParsedDemo): readonly OpeningSide[] {
 }
 
 /**
+ * Which of the two teams each slot belongs to, indexed by slot.
+ *
+ * The first round that records a slot's side decides it, read through whether the opening CT team
+ * was holding that side then — so a player who joined at halftime lands with the team they actually
+ * played for rather than with whoever opened on the side they walked into. It is the same pair of
+ * rules `roundWinners` attributes a round through, which is what keeps a scoreboard's rows and the
+ * score above them from disagreeing about whose they are.
+ */
+export function openingSideBySlot(demo: ParsedDemo): readonly (OpeningSide | undefined)[] {
+  const { rounds } = demo.events;
+  const opening = openingCtSlots(rounds);
+  const teams: (OpeningSide | undefined)[] = [];
+  let openingCtIsCt = true;
+
+  for (const round of rounds) {
+    openingCtIsCt = openingCtOnCt(round, opening) ?? openingCtIsCt;
+
+    for (const entry of round.economy) {
+      if (entry.team === null || teams[entry.slot] !== undefined) continue;
+
+      teams[entry.slot] = (entry.team === 'CT') === openingCtIsCt ? 'ct' : 't';
+    }
+  }
+
+  return teams;
+}
+
+/**
  * A finished match's score by team, counted over `roundWinners`.
  *
  * `throughRound` bounds the count at a round index, which is the score *after* that round — what

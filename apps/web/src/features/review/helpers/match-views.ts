@@ -17,7 +17,10 @@ import {
 export type MatchView = 'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'utility' | 'metrics';
 
 /** A view with no screen behind it yet. */
-export type UnbuiltMatchView = Exclude<MatchView, 'stage' | 'duels' | 'heatmap' | 'utility'>;
+export type UnbuiltMatchView = Exclude<
+  MatchView,
+  'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'utility'
+>;
 
 export interface MatchViewSection {
   view: MatchView;
@@ -38,7 +41,7 @@ export interface MatchViewSection {
 
 export const MATCH_VIEWS: readonly MatchViewSection[] = [
   { view: 'stage', labelPath: 'review.views.stage', icon: MapIcon, isSoon: false },
-  { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table, isSoon: true },
+  { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table, isSoon: false },
   { view: 'duels', labelPath: 'review.views.duels', icon: Crosshair, isSoon: false },
   { view: 'heatmap', labelPath: 'review.views.heatmap', icon: Flame, isSoon: false },
   { view: 'utility', labelPath: 'review.views.utility', icon: Cloud, isSoon: false },
