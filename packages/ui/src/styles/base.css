@@ -152,8 +152,8 @@ pre {
   border-block-end: 0;
 }
 
-/* The one surface allowed to sit over the live radar plate — the scoreboard chip, in the position
-   the reader can choose instead of the brow.
+/* The surface allowed to sit over the live radar plate — the scoreboard chip, in the position the
+   reader can choose instead of the brow, and since #364 the match's view switch above it.
 
    It is `--surface-2` rather than `--surface-1` because what is behind it is an image rather than
    the app's ground, and a chip that matched a card would read as a hole in the plate. It carries no

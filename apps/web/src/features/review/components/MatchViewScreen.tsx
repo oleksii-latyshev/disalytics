@@ -5,6 +5,7 @@ import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
 import { MatchMaps } from './MatchMaps';
 import { MatchSoon } from './MatchSoon';
+import { MatchViewBar } from './MatchViewBar';
 import { ReviewSheets } from './ReviewSheets';
 
 interface Props {
@@ -37,8 +38,12 @@ export function MatchViewScreen({
   onDismissSheet,
 }: Props) {
   return (
-    <div className="grid h-dvh grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden bg-surface-0 p-3 wide:p-6">
-      <MatchCorner demo={demo} cache={cache} view={view} onView={onView} onClose={onClose} />
+    <div className="relative grid h-dvh grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden bg-surface-0 p-3 wide:p-6">
+      <MatchCorner demo={demo} cache={cache} onClose={onClose} />
+
+      {/* The same bar in the same place as on the stage — #364. A view screen has no clock of its
+          own to state, so nothing hangs under it here. */}
+      <MatchViewBar view={view} onView={onView} />
 
       {/* One view is built and the rest say so. The screen behind a seat is what each `ROADMAP.md`
           M5 row adds; this file is where a built one takes the place of its own note. */}
