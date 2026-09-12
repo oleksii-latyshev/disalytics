@@ -324,8 +324,26 @@ fn inferno_ending(passes: &Passes<'_>, flight: &Flight, spent: &mut BTreeSet<Tic
     Ending {
         detonation_tick: Some(startburn.tick),
         detonation_position: position_of(startburn),
-        expiry_tick: expiry,
+        expiry_tick: expiry.or_else(|| round_cleanup_tick(passes, startburn.tick)),
     }
+}
+
+/// When the round took the world away, which is what ends a fire that is still burning at its end.
+///
+/// A fire that runs out fires `inferno_expire`, and 83 of the 84 on the IEM Atlanta inferno map do.
+/// The one that does not started 31 ticks before `round_officially_ended` and would have burned for
+/// another 350 to 450 — the engine deletes the flames with the rest of the round's world and
+/// announces nothing, which is `docs/PARSER.md` §19's smoke finding arriving for the other area
+/// that has an entity of its own. The round's own event is the ending, so no duration is assumed.
+fn round_cleanup_tick(passes: &Passes<'_>, from: Tick) -> Option<Tick> {
+    passes
+        .events
+        .game_events
+        .iter()
+        .filter(|event| event.name == "round_officially_ended")
+        .map(|event| event.tick)
+        .filter(|tick| *tick >= from)
+        .min()
 }
 
 const fn detonation_event_name(grenade_type: GrenadeType) -> Option<&'static str> {

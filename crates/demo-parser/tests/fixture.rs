@@ -91,11 +91,33 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
     }
 
     let committed = std::fs::read_to_string(SNAPSHOT).expect("no committed snapshot to compare to");
+
+    if !is_the_snapshots_demo(&committed, &snapshot) {
+        eprintln!(
+            "skipped the snapshot: {} is a different recording, so only the assertions above ran",
+            path.display()
+        );
+        return;
+    }
+
     assert!(
         committed == rendered,
         "parsed output no longer matches the committed snapshot; \
          regenerate with {UPDATE_ENV}=1 and review the diff by hand"
     );
+}
+
+/// Whether the demo just parsed is the one the committed snapshot was written from.
+///
+/// One snapshot, one recording — so a *second* demo can only ever fail that comparison, and the
+/// assertions above it, which are what say a parse is self-consistent, would never get to run on
+/// one. The header names the map, the roster and the match's own weapon table, which identifies a
+/// recording as well as anything in the snapshot does.
+fn is_the_snapshots_demo(committed: &str, parsed: &Value) -> bool {
+    serde_json::from_str::<Value>(committed)
+        .ok()
+        .and_then(|value| value.get("header").cloned())
+        .is_some_and(|header| Some(&header) == parsed.get("header"))
 }
 
 #[derive(Default)]
@@ -157,17 +179,38 @@ fn assert_progress_counts_up_once_per_percent(percents: &[(ParsePhase, u8)]) {
 /// with `expiry_tick: None`, because a cloud the round's own cleanup deletes fires no
 /// `smokegrenade_expired` and the absence was read as "it never bloomed" (`docs/PARSER.md` §19).
 fn assert_every_area_that_detonates_can_be_drawn(demo: &ParsedDemo) {
-    let unbounded = demo
+    let areas = demo
+        .events
+        .grenades
+        .iter()
+        .filter(|grenade| is_area(grenade))
+        .count();
+
+    // Named rather than counted: the count alone sent #367 back to the demo to ask which grenade,
+    // and a type and a tick are what a reader needs to find it in the recording.
+    let unbounded: Vec<String> = demo
         .events
         .grenades
         .iter()
         .filter(|grenade| is_area(grenade))
         .filter(|grenade| grenade.detonation_tick.is_some() && grenade.expiry_tick.is_none())
-        .count();
+        .map(|grenade| {
+            format!(
+                "{:?} thrown {} detonating {:?}",
+                grenade.grenade_type, grenade.throw_tick, grenade.detonation_tick
+            )
+        })
+        .collect();
 
-    assert_eq!(
-        unbounded, 0,
-        "an area grenade that detonates and has no expiry draws nothing at all"
+    eprintln!(
+        "areas: {areas} of {} grenades, {} without an ending",
+        demo.events.grenades.len(),
+        unbounded.len()
+    );
+
+    assert!(
+        unbounded.is_empty(),
+        "an area grenade that detonates and has no expiry draws nothing at all: {unbounded:?}"
     );
 
     let backwards = demo

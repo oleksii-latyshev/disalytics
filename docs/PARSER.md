@@ -1124,16 +1124,55 @@ smoke ever looked for one — gave every decoy an area with no life. `Grenade.de
 from `decoy_started` now and the expiry from the projectile, so a decoy is drawn for the time it
 actually spends on the ground.
 
-### What did not need changing
+### What did not need changing on this demo
 
 Fire is joined by a different route — the inferno is its own entity, matched by thrower and time —
-and it has no gap of this kind: **114 `inferno_startburn` and 114 `inferno_expire`**, every one
-paired. HE and flash are marks rather than areas and carry no expiry by design.
+and on this recording it has no gap of this kind: **114 `inferno_startburn` and 114
+`inferno_expire`**, every one paired. HE and flash are marks rather than areas and carry no expiry
+by design. **A second demo says otherwise, and the next section is that measurement.**
 
 The fixture test asserts the outcome rather than the mechanism: **no area grenade that detonates may
 reach the schema without an expiry**, and none may end before it begins. That is the assertion the
 fixture was missing, and it is what would have caught this the day the schema first carried
 grenades.
+
+### The same gap for fire, on a second demo (#367)
+
+The assertion above did its job on the IEM Atlanta 2026 inferno map: of that match's **382 grenades,
+192 of them areas**, exactly **one** reached the schema with a detonation and no expiry, and the
+failure reproduced on `main`. It is one fire, and the recording says plainly what happened to it.
+
+| | |
+|---|---|
+| `inferno_startburn` in the match | **84** |
+| `inferno_expire` in the match | **83** |
+| Any other `inferno_*` event | **none at all** |
+| The unmatched fire | startburn tick **90,977**, inferno entity **493** |
+| Its projectile | sampled 90,929 → 90,976, so the flames begin one tick after it dies |
+| `round_officially_ended` / `round_start` | both at **91,008**, 31 ticks — 0.48 s — later |
+| The 83 fires that do pair, in ticks | min **21**, median **352**, max **449** (0.3 / 5.5 / 7.0 s) |
+
+So this fire was 31 ticks old with five to seven seconds left to burn when its round was cleaned up.
+**It is §19's smoke finding arriving for the other area grenade that owns an entity**: the engine
+deletes the flames with the rest of the round's world and announces nothing. There is no
+`inferno_extinguish` to look for — the recording carries no third `inferno_*` name, and every event
+in the demo is collected since #355 passes `wanted_events: ["all"]`.
+
+**The projectile cannot answer here the way it does for a smoke.** A smoke's cloud *is* the
+projectile entity, so its last sample is the cloud's end; a fire's flames are a different entity and
+the projectile dies on impact — measured in §20 as 67 of 67 molotovs and 47 of 47 incendiaries
+within 0.1 s of the detonation. What the demo does state is the moment the round took the flames
+away, and `round_officially_ended` is that moment: `inferno_ending` falls back to the first one at
+or after the startburn. **No duration is assumed** — this is the same kind of answer §19 gave for
+smoke, read off a different event of the demo's own.
+
+A demo cut off while a fire is still burning has no such event and keeps `expiry_tick: None`, which
+`grenadeEndTick` draws as nothing at all. That case did not occur here and is not modelled.
+
+The fixture test gained a second thing with it: **the snapshot comparison is skipped when the demo
+is not the snapshot's own**, identified by the header. One snapshot describes one recording, so a
+second demo could only ever fail it — and the assertions that say a parse is *self-consistent* would
+never get to run on one, which is how this gap survived until a second demo was pointed at the test.
 
 ---
 
