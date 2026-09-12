@@ -1,3 +1,4 @@
+export { DuelPlate } from './components/DuelPlate';
 export { MatchRadar } from './components/MatchRadar';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export { PlateStill } from './components/PlateStill';
