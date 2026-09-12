@@ -63,7 +63,6 @@
     "library": "Library",
     "lineups": "Utility lineups",
     "stats": "Player stats",
-    "soon": "Soon",
     "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
     "soonNote": {
       "lineups": "Every grenade thrown in the match, grouped by where it was thrown from and where it landed. Not built yet.",
