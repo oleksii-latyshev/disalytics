@@ -18,6 +18,7 @@ export type ShortcutAction =
   | 'clearSelection'
   | 'fullscreen'
   | 'matchOverlay'
+  | 'nextView'
   | 'zoomIn'
   | 'zoomOut'
   | 'help';
@@ -122,6 +123,14 @@ export const SHORTCUT_BINDINGS: readonly ShortcutBinding[] = [
     triggers: ['m', 'M'],
     labels: [{ literal: 'M' }],
     descriptionPath: 'help.shortcut.matchOverlay',
+  },
+  {
+    action: 'nextView',
+    // Both cases, for the reason `matchOverlay` names: the keycap prints one letter and
+    // `event.key` reports what was typed.
+    triggers: ['v', 'V'],
+    labels: [{ literal: 'V' }],
+    descriptionPath: 'help.shortcut.nextView',
   },
   {
     // `=` is the same keycap unshifted, and a reader who has just pressed `-` for the other half of

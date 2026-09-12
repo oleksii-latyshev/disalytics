@@ -27,7 +27,7 @@ export function SoonView({ view }: { view: 'lineups' | 'stats' }) {
     <div className="flex min-h-full items-center justify-center">
       <section className="flex w-full max-w-[32rem] flex-col items-start gap-3">
         <p className="label-dense rounded-chip border border-line px-1.5 py-0.5 text-ink-dim">
-          <Text path="library.shell.soon" />
+          <Text path="common.soon" />
         </p>
 
         <h2 className="font-ui font-medium text-28 leading-dense">

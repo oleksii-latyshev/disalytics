@@ -2098,6 +2098,28 @@ into an open match replaces that. TypeScript's DOM library has no `LaunchParams`
 `launch-queue.d.ts` declares the three names used, and the handle is narrowed with
 `instanceof FileSystemFileHandle` rather than cast.
 
+**#360 gave the match its own navigation, and the decision behind it is where the control may not
+go.** `ROADMAP.md` M5's first row had been a question since the redesign — where a view switch lives
+and what it costs the stage — and it blocked every other row in that milestone. The owner's answer
+of 12 September 2026 is that **a view replaces the stage**: a view is a place rather than a sheet
+over a paused match. Four things are load-bearing. **The switch may not take a grid row.** The plate
+is `min(100cqi, 100cqb)` of the cell the stage's grid leaves it and three of the four widths this
+repository quotes a plate figure at are height-bound, so a strip of tabs along either edge is a
+subtraction from the map — the same reasoning that ends `ShellDock` where the match begins. **That
+rules out a third line in the corner too**, which is what the first draft of the branch had: the
+seats ride on the way out's own 40px line instead, and they are glyphs rather than names because
+four names — longer again in Russian (§17 rule 7) — do not fit beside it. Measured on both arms in
+both locales, the plate is **716 at 1440×900 and 473 at 1024×800, unchanged**, and the corner simply
+widens where the column lets it (280 above the split, 296 in `en` and 311 in `ru` below it). **The
+hooks stay above the branch**, so the transport, the shortcut table and the sheets are the same ones
+the stage was using: `V` walks the four views and the clock reads the same `00:19` on the way out and
+on the way back. And **the unbuilt views are listed and honest**, exactly as the shell lists the
+screens it does not have — `MatchSoon` says what each will hold and nothing else. Two smaller things
+ride with it: `common.soon` replaces `library.shell.soon`, because two slices say that word now
+(#214's rule), and `useMatchReadout` takes the 10 Hz derivations out of `MatchReview`, which the
+switch had pushed past 300 lines. The bundle is 286.30 → **287.59 kB gz**, all of it four lucide
+glyphs and the switch.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

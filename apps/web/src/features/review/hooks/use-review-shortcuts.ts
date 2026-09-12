@@ -28,6 +28,8 @@ interface Options {
   onClearSelection: () => void;
   onFullscreenToggle: () => void;
   onMatchOverlay: () => void;
+  /** §17 rule 9's binding for the view switch: the next view in the order the switch lists them. */
+  onNextView: () => void;
   onHelp: () => void;
 }
 
@@ -48,6 +50,7 @@ export function useReviewShortcuts({
   onClearSelection,
   onFullscreenToggle,
   onMatchOverlay,
+  onNextView,
   onHelp,
 }: Options): void {
   const [seekStepSeconds] = useSetting('seekStepSeconds');
@@ -110,6 +113,7 @@ export function useReviewShortcuts({
       clearSelection: onClearSelection,
       fullscreen: onFullscreenToggle,
       matchOverlay: onMatchOverlay,
+      nextView: onNextView,
       help: onHelp,
     },
     { isSuspended, onRelease: releaseAction },

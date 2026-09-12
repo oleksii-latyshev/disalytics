@@ -1,29 +1,23 @@
-import {
-  type ParsedDemo,
-  type PlayerSlot,
-  playersOnSide,
-  roundIndexAtFrame,
-  roundOpeningFrame,
-  sidesBySlotAtRound,
-} from '@disa/demo-core';
+import { type ParsedDemo, type PlayerSlot, roundOpeningFrame } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
 import { motion } from '@disa/ui';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { RowFocus } from '@/core/events';
 import { assembly } from '@/core/motion';
 import type { CacheState } from '@/core/parsing';
-import { useBuyPhaseSkip, useFrameReadout, useTransport } from '@/core/playback';
+import { useBuyPhaseSkip, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
 import { MatchRadar } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
-import { createMoneyFormat, moneyShape } from '../helpers/money';
+import { type MatchView, nextMatchView } from '../helpers/match-views';
 import { useHotCorners } from '../hooks/use-hot-corners';
+import { useMatchReadout } from '../hooks/use-match-readout';
 import { useReviewSheets } from '../hooks/use-review-sheets';
 import { useReviewShortcuts } from '../hooks/use-review-shortcuts';
 import { CornerCluster } from './CornerCluster';
 import { EventFeed } from './EventFeed';
-import { LeaveMatch } from './LeaveMatch';
-import { MatchIdentity } from './MatchIdentity';
+import { MatchCorner } from './MatchCorner';
+import { MatchViewScreen } from './MatchViewScreen';
 import { ReviewSheets } from './ReviewSheets';
 import { Scoreboard } from './Scoreboard';
 import { TeamCard } from './TeamCard';
@@ -72,6 +66,12 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   // at most once per zoom step, so it is nowhere near the frame channel.
   const [isPlateExpanded, setPlateExpanded] = useState(false);
 
+  // Which reading of the match is open — `ROADMAP.md` M5's first row, decided on 12 September 2026:
+  // a view replaces the stage rather than covering it. The state lives here, above the stage, so
+  // every hook below keeps running while another view is open: the clock is still the match's, and
+  // coming back to the stage finds it where the reader left it.
+  const [view, setView] = useState<MatchView>('stage');
+
   // DESIGN.md §9.3's two live regions. The block's own cell is what the hook watches for focus,
   // because a block that has left the screen still holds every control the keyboard can reach.
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -97,17 +97,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     setSelectedSlot((current) => (current === slot ? null : slot));
   }, []);
 
-  // Which side a slot holds changes at halftime, so the cards follow the round rather than the
-  // end-of-match roster — and off the 10 Hz readout, because a roster is text.
-  const frame = useFrameReadout(transport);
-  const roundIndex = roundIndexAtFrame(demo, frame);
-  const sides = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
-  const ct = useMemo(() => playersOnSide(demo.header.players, sides, 'CT'), [demo, sides]);
-  const t = useMemo(() => playersOnSide(demo.header.players, sides, 'T'), [demo, sides]);
-  const money = useMemo(() => createMoneyFormat(locale), [locale]);
-  // The locale's currency placement and thousands separator, taken apart once: `SlidingNumber`
-  // writes digits and nothing else, so the symbol has to sit outside it.
-  const shape = useMemo(() => moneyShape(money), [money]);
+  const { frame, roundIndex, ct, t, money, shape } = useMatchReadout(demo, transport, locale);
 
   useReviewShortcuts({
     demo,
@@ -119,6 +109,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     onClearSelection: () => setSelectedSlot(null),
     onFullscreenToggle: fullscreen.toggle,
     onMatchOverlay: () => showSheet('match'),
+    onNextView: () => setView(nextMatchView(view)),
     onHelp: () => showSheet('help'),
   });
 
@@ -163,6 +154,26 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     </>
   );
 
+  /* A view that is not the stage takes the whole screen, and the stage's grid is left exactly as it
+     was — which is what keeps §5.1's plate figures unchanged by construction rather than by
+     measurement. The corner comes with it, because the way out, the map's name and which view is
+     open are the match's rather than the stage's. Every hook above has already run, so the clock,
+     the shortcuts and the sheets are the same ones the stage was using. */
+  if (view !== 'stage') {
+    return (
+      <MatchViewScreen
+        demo={demo}
+        cache={cache}
+        view={view}
+        roundIndex={roundIndex}
+        openSheet={openSheet}
+        onView={setView}
+        onClose={onClose}
+        onDismissSheet={dismissSheet}
+      />
+    );
+  }
+
   return (
     <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 overflow-hidden bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
       {/* The inset is this corner's own below `wide`, where the stage has none and the cards dock to
@@ -174,9 +185,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         {...assembly('stage')}
         className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]"
       >
-        <LeaveMatch onClose={onClose} />
-
-        <MatchIdentity demo={demo} cache={cache} />
+        <MatchCorner demo={demo} cache={cache} view={view} onView={setView} onClose={onClose} />
       </motion.div>
 
       {/* The cluster and, under it, §5.4's feed. Above the split this spans rows 1 and 2 of the

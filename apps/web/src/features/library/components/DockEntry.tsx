@@ -57,7 +57,7 @@ export function DockEntry({ icon: Icon, labelPath, isCurrent, isSoon, onSelect }
           {isSoon && (
             <>
               {' '}
-              <Text path="library.shell.soon" />
+              <Text path="common.soon" />
             </>
           )}
         </span>
@@ -71,7 +71,7 @@ export function DockEntry({ icon: Icon, labelPath, isCurrent, isSoon, onSelect }
 
         {isSoon && (
           <span className="label-dense rounded-chip border border-line px-1 py-0.5 text-ink-dim">
-            <Text path="library.shell.soon" />
+            <Text path="common.soon" />
           </span>
         )}
       </span>
