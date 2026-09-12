@@ -32,6 +32,15 @@
       "damage": "DMG"
     }
   },
+  "maps": {
+    "controls": "What the map draws",
+    "sides": "Side",
+    "bothSides": "Both",
+    "roster": "Narrow to one player",
+    "everyone": "Everyone",
+    "duels": "{count, plural, one {# duel} other {# duels}}",
+    "soonNote": "Where players spent the match, and where their utility landed, are coming to this view too."
+  },
   "views": {
     "nav": "Views",
     "stage": "Stage",
@@ -40,7 +49,6 @@
     "metrics": "Metrics",
     "soonNote": {
       "scoreboard": "Kills, deaths, damage and the rounds behind them, for both sides at once. Not built yet.",
-      "maps": "Where the match happened: where players spent it, where kills fell, where utility landed. Not built yet.",
       "metrics": "What no map can show — clutches, opening duels, trades, utility damage, time blinded. Not built yet."
     }
   }

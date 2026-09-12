@@ -2120,6 +2120,35 @@ ride with it: `common.soon` replaces `library.shell.soon`, because two slices sa
 switch had pushed past 300 lines. The bundle is 286.30 → **287.59 kB gz**, all of it four lucide
 glyphs and the switch.
 
+**#362 drew a match's duels on a map of their own, and it needed no new mark, no new colour and no
+new field.** The **Maps** seat #360 built said "Soon"; behind it now is every kill in the match as a
+line from where the killer stood to where the victim fell — §5.4's own ring, disc and line, from the
+same three helpers, over a whole match instead of over one hovered row. Six things are load-bearing.
+**`matchDuels` in `demo-core` is the rule, and it is one rule**: a duel's ends are read at *its own*
+frame, its two sides are the ones those slots held **that round** — `PlayerInfo.team` is the
+end-of-match roster and names the wrong side for half a match — and a kill by the world is left out
+because it has no point on the map to come from. Rounds and kills are both sorted by tick, so it
+walks each list once. **`duelPlot` is `killLineGeometry` run at scale 1 and copied out**, rather than
+a second reader of `TickTrack`: the positions are resolved once, the draw multiplies by the plate's
+scale, and a resize re-reads nothing. **A canvas is not sized like a `div`** — #315's finding, met
+again from the other side: `aspect-square max-h-full` measured **1100×1100 in a 793px cell** and ran
+off the bottom of the screen, because a replaced element carries an intrinsic ratio and a cap is not
+a size. It is `min(100cqi,100cqb)` of a `container-type: size` box, which is the stage's own rule.
+**Below the split the controls are a strip above the map, not a column beside it**, and that is the
+same measurement one row down: a column there is a grid *row*, and the plate is measured from what
+the row leaves — the first draft read **121px at 1024×800**. It is `TeamCard`'s answer at another
+size, and the plate reads **793 at 1440×900 and 581 at 1024×800** in both locales. **Both narrowings
+read the attacker**, which is `isBySubject`'s rule on the round axis: a side's duels are the kills it
+got, so a kill cannot count for a player in one place and against them in another. And **the
+narrowing is not remembered**, deliberately unlike #313's four axis filters: those hide marks on a
+screen the reader did not come to for them, where this screen *is* the reading and leaving it is the
+gesture that ends it. One thing was built and taken out — a sentence for an empty narrowing, which
+the count line already states as `0 duels`, and #205's rule is that what is on screen twice is not a
+reading. Measured on the shipped dust2 sample: **144 duels, 89 CT and 55 T**, a partition with
+nothing lost; the stage untouched at **716 at 1440×900** with the round clock reading `01:55` before
+and after a full `V` round trip; one element overflowing in either locale at either width, the way
+out's deliberate `-10px`, which `main` reports too. The bundle is 287.59 → **288.98 kB gz**.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

@@ -6,7 +6,6 @@ const PROMISE: Record<UnbuiltMatchView, { titlePath: TranslationKey; notePath: T
     titlePath: 'review.views.scoreboard',
     notePath: 'review.views.soonNote.scoreboard',
   },
-  maps: { titlePath: 'review.views.maps', notePath: 'review.views.soonNote.maps' },
   metrics: { titlePath: 'review.views.metrics', notePath: 'review.views.soonNote.metrics' },
 };
 

@@ -8,8 +8,8 @@ import { ChartColumn, Flame, type LucideIcon, Map as MapIcon, Table } from 'luci
  */
 export type MatchView = 'stage' | 'scoreboard' | 'maps' | 'metrics';
 
-/** A view with no screen behind it yet, which is every view but the stage. */
-export type UnbuiltMatchView = Exclude<MatchView, 'stage'>;
+/** A view with no screen behind it yet. The maps left it when #362 drew the match's duels. */
+export type UnbuiltMatchView = Exclude<MatchView, 'stage' | 'maps'>;
 
 export interface MatchViewSection {
   view: MatchView;
@@ -31,7 +31,7 @@ export interface MatchViewSection {
 export const MATCH_VIEWS: readonly MatchViewSection[] = [
   { view: 'stage', labelPath: 'review.views.stage', icon: MapIcon, isSoon: false },
   { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table, isSoon: true },
-  { view: 'maps', labelPath: 'review.views.maps', icon: Flame, isSoon: true },
+  { view: 'maps', labelPath: 'review.views.maps', icon: Flame, isSoon: false },
   { view: 'metrics', labelPath: 'review.views.metrics', icon: ChartColumn, isSoon: true },
 ];
 
