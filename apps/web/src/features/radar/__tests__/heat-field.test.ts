@@ -79,11 +79,11 @@ function newTrack(): TickTrack {
 }
 
 /** One round covering every frame the track holds, slot 0 on CT and slot 1 on T. */
-function newRound(): Round {
+function newRound(freezeFrames = 0): Round {
   return {
     number: 1,
     startTick: asTick(0),
-    freezeTimeEndTick: asTick(0),
+    freezeTimeEndTick: asTick((freezeFrames / SAMPLE_HZ) * TICK_RATE),
     endTick: asTick(((FRAME_COUNT - 1) / SAMPLE_HZ) * TICK_RATE),
     winner: 'CT',
     reason: 'all-t-eliminated',
@@ -95,7 +95,7 @@ function newRound(): Round {
   };
 }
 
-function newDemo(): ParsedDemo {
+function newDemo(freezeFrames = 0): ParsedDemo {
   const player = (slot: number, team: Team) => ({
     slot: asPlayerSlot(slot),
     steamId: `7656119800000000${slot}`,
@@ -112,7 +112,7 @@ function newDemo(): ParsedDemo {
     },
     track: newTrack(),
     events: {
-      rounds: [newRound()],
+      rounds: [newRound(freezeFrames)],
       kills: [],
       damage: [],
       shots: [],
@@ -151,6 +151,13 @@ describe('presenceField', () => {
     expect(bins[binAt(80, 60)]).toBe(1);
     expect(bins[binAt(40, 40)]).toBe(0);
     expect([...secondsBySlot]).toEqual([0, DEATH_FRAME / SAMPLE_HZ]);
+  });
+
+  it('starts counting where the players stop standing on their spawn', () => {
+    const held = presenceField(newDemo(DEATH_FRAME), dust2, wholeMatch);
+
+    expect([...held.secondsBySlot]).toEqual([DEATH_FRAME / SAMPLE_HZ, 0]);
+    expect(held.bins[binAt(80, 60)]).toBe(0);
   });
 
   it('narrows the field to one player without moving the roster figures', () => {

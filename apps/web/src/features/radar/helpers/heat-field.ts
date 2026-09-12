@@ -3,6 +3,7 @@ import {
   frameForTick,
   type ParsedDemo,
   type PlayerSlot,
+  roundOpeningFrame,
   sampleAt,
   sidesBySlotAtRound,
   type Team,
@@ -76,9 +77,13 @@ function binFrame(walk: FieldWalk, frame: number, sides: readonly (Team | undefi
  * would put the heaviest mark of every round on the spot somebody died on rather than on the ground
  * the round was played over.
  *
- * **The walk is per round, and the side is the one that round recorded.** Warmup is not a round and
- * is left out for the reason `matchDuels` leaves out post-round kills: it is not the match. Sides
- * swap, so `PlayerInfo.team` would put half the match on the wrong side (`sidesBySlotAtRound`).
+ * **A round is counted from the end of its freeze time**, which is `roundOpeningFrame`'s own
+ * definition: the first moment its players stand where they chose to rather than where they
+ * spawned. Counting from `startTick` puts twenty seconds of every round on two spawn points —
+ * eight minutes of this match, and a tactical timeout in round 13 that holds ten players still for
+ * another four. Warmup is not a round at all and is left out for the reason `matchDuels` leaves out
+ * post-round kills: it is not the match. Sides swap, so `PlayerInfo.team` would put half the match
+ * on the wrong side (`sidesBySlotAtRound`).
  *
  * **The field has no level.** A whole match stands on every floor the map has, so unlike one frame
  * (`busiestLevelIndex`) or one kill (§6.3's faded end) there is nothing to choose between: every
@@ -109,7 +114,7 @@ export function presenceField(
     const sides = sidesBySlotAtRound(demo, roundIndex);
     const lastFrame = frameForTick(track, round.endTick);
 
-    for (let frame = frameForTick(track, round.startTick); frame <= lastFrame; frame++) {
+    for (let frame = roundOpeningFrame(demo, roundIndex); frame <= lastFrame; frame++) {
       binFrame(walk, frame, sides);
     }
   }
