@@ -61,15 +61,22 @@ const TRAJECTORY_WIDTH_PX = 1;
  * The path's ink, on its own so that a drawing which is not a grenade's own trajectory — §10.6's
  * legend — strokes the line with these values rather than with a second copy of them.
  */
-export function trajectoryStroke(context: CanvasRenderingContext2D, color: string): void {
-  context.globalAlpha = TRAJECTORY_ALPHA;
+export function trajectoryStroke(
+  context: CanvasRenderingContext2D,
+  color: string,
+  alpha = TRAJECTORY_ALPHA,
+): void {
+  context.globalAlpha = alpha;
   context.strokeStyle = color;
   context.lineWidth = TRAJECTORY_WIDTH_PX;
 }
 
 /**
- * A grenade's flight path clipped to `clipCount` positions. White, 1px, α0.35 — not in the
- * utility's colour, because a path is not the grenade — §6.2.
+ * A grenade's flight path clipped to `clipCount` positions. 1px at α0.35 on the plate, where §6.2
+ * draws it in white because a path is not the grenade.
+ *
+ * The alpha is a default rather than a constant inside, for `MATCH_ALPHA`'s reason on the duel map:
+ * a whole match of paths at the strength one of them is drawn at covers the map they are drawn on.
  */
 export function drawTrajectory(
   context: CanvasRenderingContext2D,
@@ -78,11 +85,12 @@ export function drawTrajectory(
   overview: MapOverview,
   scale: number,
   color: string,
+  alpha = TRAJECTORY_ALPHA,
 ): void {
-  if (clipCount < 2) return;
+  if (clipCount < 2 || alpha <= 0) return;
 
   context.save();
-  trajectoryStroke(context, color);
+  trajectoryStroke(context, color, alpha);
   context.beginPath();
 
   const startX = radarX(overview, sampleAt(trajectory.x, 0)) * scale;

@@ -39,10 +39,14 @@
     "roster": "Narrow to one player",
     "everyone": "Everyone",
     "duels": "{count, plural, one {# duel} other {# duels}}",
-    "soonNote": "Where a side’s utility landed is coming to this view too.",
     "timeOnMap": "{count} min on the map",
     "minutes": "{count} min",
-    "sampledNote": "Positions are sampled {hz} times a second and only while a player is alive, so the field is that time added up rather than a path."
+    "sampledNote": "Positions are sampled {hz} times a second and only while a player is alive, so the field is that time added up rather than a path.",
+    "worldKillNote": "A kill the world did is not drawn: it comes from nowhere a line can start.",
+    "kinds": "Kind",
+    "everyKind": "All",
+    "throws": "{count, plural, one {# throw} other {# throws}}",
+    "lineupNote": "Where the thrower was looking is not drawn: view angles are sampled {hz} times a second."
   },
   "views": {
     "nav": "Views",
@@ -54,6 +58,7 @@
     "soonNote": {
       "scoreboard": "Kills, deaths, damage and the rounds behind them, for both sides at once. Not built yet.",
       "metrics": "What no map can show — clutches, opening duels, trades, utility damage, time blinded. Not built yet."
-    }
+    },
+    "utility": "Utility"
   }
 }
