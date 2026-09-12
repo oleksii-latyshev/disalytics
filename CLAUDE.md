@@ -2228,6 +2228,35 @@ The original fixture is **byte-identical** — 519 grenades, 254 areas, 0 unboun
 — because 114 of its 114 fires pair and the fallback never fires there. `docs/PARSER.md` §19
 carries the table.
 
+**#123 made the token layer's contrast figures checkable, and the script knows what a column means
+rather than what any row says.** `bun run contrast:check` re-derives **81 pairings over five
+tables** out of `packages/ui/src/styles/tokens.css` itself — the twelve ink-on-ground figures, the
+thirty-six data colours across the default and colour-blind palettes, #339's eighteen for the cyber
+look, six composites and nine interaction readings — and reproduces every one. Six things are
+load-bearing. **The expected numbers live in the file and nowhere else**: tables are found by their
+own shape, a row is a colour and a column is a surface, a composite or an ink, so a pairing added to
+a comment is checked the moment it is written and this script needs no list to maintain. **The maths
+is #133's reference implementation** rather than a fifth rewrite of it — the fourth is what that
+issue exists to stop. **A composite has to be quantised to whole bytes** before it is measured, and
+that is the one thing that cost a cycle: blending in float and measuring the unrounded mix moved
+every figure in the interaction table by up to 0.09, which reads exactly like nine drifted numbers
+in a file that had reproduced perfectly a line earlier. A screen is asked for `#191919`, so `#191919`
+is what the ratio is against. **Two prose blocks became tables** — the three line alphas and the
+three interaction states — because the numbers were already there in sentences and one parser covers
+everything once they are in the file's own table shape; **no token changed**, and the emitted
+stylesheet is byte-identical across the branch — the same content hash, `index-DE5OQ6ka.css`, on
+both arms. **The floor is not uniform and the check says so**: a `ground` column
+is a hairline, which §14 says is seen rather than read, so it is exempt; `--color-ink-faint` is
+asserted *below* 4.5 rather than above it, because the sentence calling it text-free is the thing
+that would be wrong if it rose; everything else must clear 4.5. And **a `**5.03**` claim is attached
+to the table it follows**, so the two stated floors are re-derived rather than trusted. Measured by
+breaking it on purpose: `--color-ct` `#4fa3ff` → `#4fa3fe` fails with both its pairings named, and
+`--color-ink-dim` off by one byte fails **seven pairings across three tables**. It runs in `ci.yml`
+after `bitfields:check` and needs no build, since it reads the token file's source rather than the
+stylesheet Tailwind emits. The dichromat half of #133's comment is deliberately not ported: ΔE2000
+is a separation between marks rather than a contrast figure, and nothing in the file states one that
+this issue was asked to hold.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
@@ -2319,6 +2348,7 @@ bun run test           # vitest, node environment
 bun run i18n:check     # en/ru parity, every key read + regenerates the typed key union
 bun run errors:check   # ErrorCode parity between demo-core and crates/demo-parser
 bun run bitfields:check   # FLAG_* / GRENADE_* parity between the same two files
+bun run contrast:check # every contrast figure tokens.css states still measures what it says
 bun run tokens:check   # every class and var(--…) resolves in the built CSS (build first)
 bun run mapdata:generate  # map constants + themed radar images; byte-stable across runs
 bun run icons:generate    # weapon outlines from apps/web/assets/weapon-icons; byte-stable

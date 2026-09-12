@@ -182,6 +182,7 @@ bun run i18n:check           # fail on a missing, orphaned or unread key; regene
 bun run errors:check         # fail when demo-core and the crate disagree about ErrorCode
 bun run bitfields:check      # fail when the FLAG_* / GRENADE_* bits disagree between the two
 bun run samples:check        # fail when a committed sample container is not this SCHEMA_VERSION
+bun run contrast:check       # fail when a contrast figure tokens.css states no longer measures
 bun run tokens:check         # fail on a class or a var(--…) the built stylesheet never defined
                              # reads apps/web/dist, so it needs a build first
 bun run size                 # bundle + wasm sizes against budgets (§16)
@@ -1174,10 +1175,11 @@ No artifact is uploaded anywhere: nothing consumes `pkg/` yet.
 
 **`ci.yml`** — **exists since #20.** Every PR and every push to `main`: `setup-bun` (pinned to
 `devEngines`) → `bun install --frozen-lockfile` → `typecheck` → `check` (Biome) → `i18n:check` →
-`errors:check` → `bitfields:check` → `samples:check` → `test` → restore-or-build the parser →
-`build` →
+`errors:check` → `bitfields:check` → `contrast:check` → `samples:check` → `test` →
+restore-or-build the parser → `build` →
 `tokens:check` → `size` gate, in one job, in that order. `tokens:check` sits after the build because
-it reads the stylesheet Tailwind emitted rather than the sources. Bun's install cache is keyed on
+it reads the stylesheet Tailwind emitted rather than the sources; `contrast:check` does not, because
+it reads the token file's own source. Bun's install cache is keyed on
 `bun.lock`. A push to `main` carries `paths-ignore: crates/**`, so a parser-only commit does not run
 the frontend pipeline; a pull request reaches the same answer through the `scope` job above. `ci`
 and `wasm` are both required status checks on `main` — `CONTRIBUTING.md` §5 has what is applied and
@@ -1323,8 +1325,9 @@ Rules that constrain engineering:
 
 1. `bun run typecheck` passes
 2. `bun run check` passes with no new suppressions
-3. `bun run i18n:check` passes — no missing, orphaned or unread keys in either locale
-   and `bun run tokens:check` passes, on a `dist` built from the branch
+3. `bun run i18n:check` passes — no missing, orphaned or unread keys in either locale,
+   `bun run contrast:check` passes, and `bun run tokens:check` passes on a `dist` built from the
+   branch
 4. `bun run test` passes; new logic in `demo-core` has unit tests; `cargo test` passes for crates
 5. No performance budget in §16 regressed
 6. No new runtime dependency without approval

@@ -100,6 +100,11 @@ jobs:
       - name: bitfields:check
         run: bun run bitfields:check
 
+      # It reads the token file's own source rather than the emitted stylesheet, so unlike
+      # `tokens:check` it has nothing to wait for.
+      - name: contrast:check
+        run: bun run contrast:check
+
       # The sample matches are containers this repository committed, and a `SCHEMA_VERSION` bump
       # makes every one of them unreadable — silently, because nothing else in the tree reads those
       # bytes. Regenerating them needs the `.dem` files, which are never in CI, so what CI can do is
