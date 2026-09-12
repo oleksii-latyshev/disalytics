@@ -61,7 +61,9 @@ export {
 export type { PlayerRoundStats, SideEquipment, SideSurvivors } from './helpers/round-stats';
 export { playerRoundStats, roundEquipment, roundSurvivors } from './helpers/round-stats';
 export type { MatchScore, OpeningSide, SideScore } from './helpers/score';
-export { matchScore, roundWinners, sideScoreAtFrame } from './helpers/score';
+export { matchScore, openingSideBySlot, roundWinners, sideScoreAtFrame } from './helpers/score';
+export type { PlayerTotals, TeamScoreboard } from './helpers/scoreboard';
+export { matchScoreboard } from './helpers/scoreboard';
 export type { MatchSegment } from './helpers/segments';
 export { matchSegments } from './helpers/segments';
 export {

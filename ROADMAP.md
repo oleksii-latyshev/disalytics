@@ -230,7 +230,7 @@ issues one screen at a time.
 |---|---|---|---|---|
 | — | Filter system | The reader narrows a match to what they came for — a player, a side, a weapon, a round range — and every surface obeys the same filter. This is the mechanism the "40 minutes into 10" promise rests on, and nothing else on this list replaces it. **M4's axis filter is its first caller**, and building that one honestly is what tells us what this needs to be. | **P1** | L |
 | #360 | A place to switch views within a match | The match gains its own navigation — the stage, the full scoreboard, and the map-shaped readings below. **Answered and built 12 September 2026: a view replaces the stage**, rather than covering it as a sheet. The control is four glyph seats speaking the dock's vocabulary — on the way out's own line in the top-left corner until **#364 stood them at the top centre of every match screen**, out of flow, so they still take no row from the plate, and the three views with no screen yet are listed and say so. What the shape had to avoid was a grid row — the plate is `min(100cqi, 100cqb)` of the cell the stage's grid leaves it, so a strip of tabs, or even a third line in that corner, comes straight off the map; measured on both arms in both locales, the plate is **716 at 1440×900 and 473 at 1024×800, unchanged**. Every other row in this milestone now has somewhere to arrive. | **P1** | M |
-| — | The match scoreboard | Kills, deaths, assists, damage, and the per-round detail behind them, for both sides at once — the reading that is too big for a team card row and the reason the row's expand was deleted. | P1 | M |
+| #374 | The match scoreboard | **Built 12 September 2026.** Ten rows over two teams, each stating kills, assists, deaths, the difference, damage per round and the headshot share, and opening onto what that player did in each round of the match. `matchScoreboard` in `demo-core` is the rule: **the teams are named by the side they opened on**, which is `MatchScore`'s own naming and the same attribution `roundWinners` counts the score through, so a row and the score above it cannot disagree about whose it is. Damage is health damage to opponents read against the sides *that round*, and a kill after the round ended is not in the match. | P1 | M |
 | #366 | Heat map | **Built 12 September 2026**, and it is a seat of its own rather than a layer of the duel map: the owner's call is that the two answer different questions and nobody reads them at once, so the switch carries five seats and #362's screen is named **Duels**. Where the ten players stood over the whole match, binned on a 128² grid and narrowed by side and by player, counting only living samples and only from each round's freeze-time end. It is the first surface that reads the whole `TickTrack` rather than a frame of it, and the cost turned out not to be a render decision at all — 3.4 ms per narrowing over a 24-round match, and one `drawImage` per repaint. **Where a side did its damage is still open**: it is a second reading over the same bins. | P1 | L |
 | #362 | Duel map | **Built 12 September 2026**, and it is the first screen behind the **Maps** seat #360 built. Every kill as a line from killer to victim, narrowed by side and by player — **the same three marks the feed's hover already draws for one kill**, from the same helpers, over a whole match. `matchDuels` in `demo-core` is the rule: a kill's ends are read at its own frame, its sides are the ones that round recorded, and a kill by the world is left out because it has no end to come from. | P1 | M |
 | #372 | Utility map | **Built 12 September 2026**, on a seat of its own — the sixth. Every grenade the match threw: a dot where the player stood, the flight the projectile actually took, and a ring at the ground it covered where it went off, narrowed by side, by player and by kind. `matchUtility` in `demo-core` is the rule, beside `matchDuels`, and it leaves out the grenade the round was cleaned up around for the reason that one leaves out a kill by the world: 3 of 526 on dust2, 2 of 382 on inferno. **The kind is the narrowing this screen needs and the duel map does not** — a match's utility is three to four times its duels. Where the thrower was *looking* is still M4's row: this screen says from where and to where and promises no lineup. | P1 | M |
@@ -270,6 +270,25 @@ draw is a single `drawImage` of an image built when the narrowing changed. Measu
 at 1440×900 and 1024×800: the stage is **716 and 473**, unchanged, the heat map's own plate is
 **793 and 581** — the duel map's figures exactly — and **0 elements overflow**. The bundle is
 289.05 → **290.36 kB gz, 58.1%**, no new dependency.
+
+**#374 filled the Scoreboard seat on 12 September 2026, and the decision in it is one this
+repository keeps having to make again.** A scoreboard groups ten players into two teams, and the
+only name a team has here is **the side it opened the match on** — `PlayerInfo.team` is the
+end-of-match roster, so grouping by it puts half a match under the wrong heading, which is #141 in
+another place. `openingSideBySlot` is that rule, next to `roundWinners` in `score.ts` and built out
+of the same two helpers, so the rows and the score above them are attributed by one piece of code
+rather than by two that agree today. It answers correctly for a player who joined at halftime as
+well: the first round that records a slot's side decides its team, read through whether the opening
+CT team held that side then.
+
+Two smaller things. **Damage per round is divided by the rounds that slot played**, not by the
+match's round count, or a player who joined at halftime would be shown as half the player they were.
+And **the round-by-round panel is derived for the opened row only** — #147's rule for
+`playerRoundStats`, arriving on another screen: walking a match's kills and damage for ten rows
+nobody opened is the cost that avoids. Measured on the shipped samples: dust2 reads
+**ct 11 : 13 t** with the two rosters correctly separated and the ten rows summing to 144 kills
+against 144 deaths — the one post-round kill of 145 excluded — and inferno reads **ct 13 : 3 t**
+over 89 of 91.
 
 **#372 took the sixth seat on 12 September 2026, and the two decisions in it are both about what a
 whole match does to a mark.** **The path is the projectile's own trajectory and never a straight

@@ -56,9 +56,24 @@
     "heatmap": "Heat map",
     "metrics": "Metrics",
     "soonNote": {
-      "scoreboard": "Kills, deaths, damage and the rounds behind them, for both sides at once. Not built yet.",
       "metrics": "What no map can show — clutches, opening duels, trades, utility damage, time blinded. Not built yet."
     },
     "utility": "Utility"
+  },
+  "board": {
+    "started": "Started {side}",
+    "player": "Player",
+    "assists": "Assists",
+    "diff": "Kills minus deaths",
+    "adr": "Damage per round",
+    "headshots": "Headshot share",
+    "detail": "Round by round",
+    "roundLine": "Round {round, number}: {kills, plural, one {# kill} other {# kills}}, {damage} damage",
+    "abbr": {
+      "assists": "A",
+      "diff": "+/−",
+      "adr": "ADR",
+      "headshots": "HS%"
+    }
   }
 }

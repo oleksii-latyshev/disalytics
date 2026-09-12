@@ -2288,6 +2288,30 @@ unmoved at 716 and 473, and the switch is **202×32 centred on 720**, the same r
 a view, which is #364's invariant holding with six seats. §16's two frame rows are stated as unmoved
 rather than re-measured: nothing new reaches the frame channel and this screen has no clock.
 
+**#374 gave the match its full scoreboard, and the decision in it is one this repository has made
+before under another name.** The `scoreboard` seat stops saying "Soon": ten rows over two teams —
+kills, assists, deaths, the difference, damage per round and the headshot share — each opening onto
+what that player did in every round of the match. Five things are load-bearing. **A team is named by
+the side it opened on**, which is the only name the demo gives one (`MatchScore`), and
+`openingSideBySlot` is that rule living beside `roundWinners` in `score.ts` and built from the same
+two helpers — grouping by `PlayerInfo.team` is the end-of-match roster and puts half a match under
+the wrong heading, which is #141 in another place. It also answers for a player who joined at
+halftime: the first round that records a slot's side decides its team, read through whether the
+opening CT team held that side then. **Damage is health damage to opponents against the sides *that
+round***, which is `playerRoundStats`' own rule — both shipped samples carry real teammate damage,
+74 and 69 health on one slot each, so it is not theoretical. **A kill after the round ended is not in
+the match**, the window `matchDuels` and `roundSurvivors` already use: 1 of 145 on dust2, 2 of 91 on
+inferno, and the ten rows sum to 144 kills against 144 deaths because of it. **ADR's denominator is
+the rounds that slot played**, not the match's round count, or a half-match substitute is shown as
+half the player they were. And **the round-by-round panel is derived for the opened row only** —
+#147's rule for `playerRoundStats` arriving on another screen — with at most one row open across
+both tables, and its cells **wrap rather than scroll**, because a strip of twenty-four is wider than
+this screen at every width the product supports. Measured on the shipped dust2 sample in both
+locales: **ct 11 : 13 t** with the two real rosters correctly separated, the stage unmoved at
+**716 at 1440×900 and 473 at 1024×800**, and **0 elements overflowing** beyond the way out's own
+deliberate −10px. The bundle is 291.64 → **293.14 kB gz, 58.6%**; §16's two frame rows are stated as unmoved
+rather than re-measured, since this screen has no clock and nothing new reaches the frame channel.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 

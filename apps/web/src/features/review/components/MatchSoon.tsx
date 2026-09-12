@@ -2,10 +2,6 @@ import { Text, type TranslationKey } from '@disa/i18n';
 import type { UnbuiltMatchView } from '../helpers/match-views';
 
 const PROMISE: Record<UnbuiltMatchView, { titlePath: TranslationKey; notePath: TranslationKey }> = {
-  scoreboard: {
-    titlePath: 'review.views.scoreboard',
-    notePath: 'review.views.soonNote.scoreboard',
-  },
   metrics: { titlePath: 'review.views.metrics', notePath: 'review.views.soonNote.metrics' },
 };
 
