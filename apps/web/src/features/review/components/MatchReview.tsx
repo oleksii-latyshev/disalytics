@@ -17,6 +17,7 @@ import { useReviewShortcuts } from '../hooks/use-review-shortcuts';
 import { CornerCluster } from './CornerCluster';
 import { EventFeed } from './EventFeed';
 import { MatchCorner } from './MatchCorner';
+import { MatchViewBar } from './MatchViewBar';
 import { MatchViewScreen } from './MatchViewScreen';
 import { ReviewSheets } from './ReviewSheets';
 import { Scoreboard } from './Scoreboard';
@@ -175,7 +176,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   }
 
   return (
-    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 overflow-hidden bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
+    <div className="relative grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 overflow-hidden bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
       {/* The inset is this corner's own below `wide`, where the stage has none and the cards dock to
           the viewport edges: a docked card still holds its content off the edge with its own
           padding, and type with no card behind it would sit on the glass of the window. It has no
@@ -185,8 +186,18 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         {...assembly('stage')}
         className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]"
       >
-        <MatchCorner demo={demo} cache={cache} view={view} onView={setView} onClose={onClose} />
+        <MatchCorner demo={demo} cache={cache} onClose={onClose} />
       </motion.div>
+
+      {/* The match's own navigation, at the top centre rather than in the corner — #364. It is out
+          of flow, so §5.1's plate figures are untouched by it, and where the reader has asked for
+          the score over the plate (§10.5) that chip hangs under the switch instead of standing on
+          the plate's own top edge. */}
+      <MatchViewBar view={view} onView={setView}>
+        {scoreboard === 'plate' && (
+          <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
+        )}
+      </MatchViewBar>
 
       {/* The cluster and, under it, §5.4's feed. Above the split this spans rows 1 and 2 of the
           right-hand column — the one cell on the stage that neither a card nor the plate is in — so
@@ -250,18 +261,6 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           isSuspended={openSheet !== null}
           onExpandedChange={setPlateExpanded}
         />
-
-        {/* §5.1's one permitted overlap, and since #196 the reader's own choice rather than the
-            default (§10.5). It is anchored to the top of the plate's *cell* rather than to the
-            canvas inside it: above the split those two edges are the same line — the cell is wider
-            than it is tall, so the square plate fills its height — and where they are not, the chip
-            floats in the letterbox above the plate and covers nothing at all. Anchoring to the
-            canvas instead would mean a second reader of `min(100cqi,100cqb)`. */}
-        {scoreboard === 'plate' && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-            <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
-          </div>
-        )}
       </motion.div>
 
       {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two

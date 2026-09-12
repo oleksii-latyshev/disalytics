@@ -46,7 +46,7 @@
   },
   "scoreboard": {
     "label": "Scoreboard position",
-    "note": "On the timeline it costs the plate nothing. Over the map it floats above the players, which is the one thing allowed to cover them.",
+    "note": "On the timeline it costs the plate nothing. Over the map it hangs under the view switch, above the players — the two things allowed to cover them.",
     "block": "On the timeline",
     "plate": "Over the map"
   },

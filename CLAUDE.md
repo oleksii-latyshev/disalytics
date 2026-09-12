@@ -2149,6 +2149,29 @@ nothing lost; the stage untouched at **716 at 1440×900** with the round clock r
 and after a full `V` round trip; one element overflowing in either locale at either width, the way
 out's deliberate `-10px`, which `main` reports too. The bundle is 287.59 → **288.98 kB gz**.
 
+**#364 stood the view switch at the top centre of the match, and what makes that affordable is that
+it is out of flow.** #360 put the seats on the way out's line because a line of their own comes
+straight off the map — the plate is `min(100cqi, 100cqb)` of the cell the grid leaves it — and that
+measurement is unchanged: the bar is absolutely positioned, so it takes no row and the plate reads
+exactly what it read before. Four things are load-bearing. **The bar is one component rendered by
+both screens**, so the switch stands at the *same* coordinates on the stage and on a view rather than
+riding a corner whose width changes with the locale: measured at **(653, 28), 134×32, centre 720** at
+1440×900 and **(445, 16), centre 512** at 1024×800 — identical on both screens in `en` and in `ru`,
+because the seats are glyphs. **It stands on `.surface-hud`**, the surface that already exists for
+standing over a live plate; since the redesign that class carries no `backdrop-filter`, so a second
+tenant costs nothing, and the scoreboard chip is the first. **Where the reader has put the score over
+the map it hangs under the switch** — the owner's instruction of 13 September 2026 — measured 12px
+below it, both centred on 720, with the plate at its documented 748. And **only the two boxes take
+pointer events**: the bar spans the screen so its children can be centred, and `elementFromPoint`
+inside that strip but beside the switch returns the plate's own canvas, which is what keeps #315's
+expanded plate draggable along its top edge. The corner keeps the way out and the map's name.
+One instrument lesson rode with it, the sibling of #278's clip walk: **a sweep must skip a parent
+with no box.** Above the split the two team cards sit inside a `display: contents` wrapper, whose
+`getBoundingClientRect()` is an empty rect at the origin, so measuring a child against it reported
+304px and 1416px of overflow on a stage where nothing had moved. With that guard the stage, the duel
+map and both locales report the same single hit `main` reports — the way out's deliberate `-10px`.
+The bundle is 288.98 → **289.05 kB gz**.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
