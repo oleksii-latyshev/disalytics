@@ -3,7 +3,8 @@ import type { CacheState } from '@/core/parsing';
 import type { MatchView } from '../helpers/match-views';
 import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
-import { MatchMaps } from './MatchMaps';
+import { MatchDuels } from './MatchDuels';
+import { MatchHeatmap } from './MatchHeatmap';
 import { MatchSoon } from './MatchSoon';
 import { MatchViewBar } from './MatchViewBar';
 import { ReviewSheets } from './ReviewSheets';
@@ -45,9 +46,12 @@ export function MatchViewScreen({
           own to state, so nothing hangs under it here. */}
       <MatchViewBar view={view} onView={onView} />
 
-      {/* One view is built and the rest say so. The screen behind a seat is what each `ROADMAP.md`
-          M5 row adds; this file is where a built one takes the place of its own note. */}
-      {view === 'maps' ? <MatchMaps demo={demo} /> : <MatchSoon view={view} />}
+      {/* Two views are built and the rest say so. The screen behind a seat is what each
+          `ROADMAP.md` M5 row adds; this file is where a built one takes the place of its own
+          note. */}
+      {view === 'duels' && <MatchDuels demo={demo} />}
+      {view === 'heatmap' && <MatchHeatmap demo={demo} />}
+      {view !== 'duels' && view !== 'heatmap' && <MatchSoon view={view} />}
 
       <ReviewSheets
         demo={demo}

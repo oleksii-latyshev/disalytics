@@ -28,6 +28,7 @@ const COLORS: RadarColors = {
   nadeDecoy: '#decoy0',
   trajectory: '#trajectory',
   killLine: '#killline',
+  heat: { low: '#heatlo', high: '#heathi' },
 };
 
 const PALETTE = new Set<string>([

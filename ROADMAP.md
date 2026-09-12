@@ -231,9 +231,9 @@ issues one screen at a time.
 | — | Filter system | The reader narrows a match to what they came for — a player, a side, a weapon, a round range — and every surface obeys the same filter. This is the mechanism the "40 minutes into 10" promise rests on, and nothing else on this list replaces it. **M4's axis filter is its first caller**, and building that one honestly is what tells us what this needs to be. | **P1** | L |
 | #360 | A place to switch views within a match | The match gains its own navigation — the stage, the full scoreboard, and the map-shaped readings below. **Answered and built 12 September 2026: a view replaces the stage**, rather than covering it as a sheet. The control is four glyph seats speaking the dock's vocabulary — on the way out's own line in the top-left corner until **#364 stood them at the top centre of every match screen**, out of flow, so they still take no row from the plate, and the three views with no screen yet are listed and say so. What the shape had to avoid was a grid row — the plate is `min(100cqi, 100cqb)` of the cell the stage's grid leaves it, so a strip of tabs, or even a third line in that corner, comes straight off the map; measured on both arms in both locales, the plate is **716 at 1440×900 and 473 at 1024×800, unchanged**. Every other row in this milestone now has somewhere to arrive. | **P1** | M |
 | — | The match scoreboard | Kills, deaths, assists, damage, and the per-round detail behind them, for both sides at once — the reading that is too big for a team card row and the reason the row's expand was deleted. | P1 | M |
-| — | Heat map | Where a player spent the match and where they did their damage, per side and per round range. It is the first surface that reads the whole `TickTrack` rather than a frame of it, so its cost is a render decision, not a data one. **It arrives into the screen #362 built**, which is what that row leaves behind. | P1 | L |
+| #366 | Heat map | **Built 12 September 2026**, and it is a seat of its own rather than a layer of the duel map: the owner's call is that the two answer different questions and nobody reads them at once, so the switch carries five seats and #362's screen is named **Duels**. Where the ten players stood over the whole match, binned on a 128² grid and narrowed by side and by player, counting only living samples and only from each round's freeze-time end. It is the first surface that reads the whole `TickTrack` rather than a frame of it, and the cost turned out not to be a render decision at all — 3.4 ms per narrowing over a 24-round match, and one `drawImage` per repaint. **Where a side did its damage is still open**: it is a second reading over the same bins. | P1 | L |
 | #362 | Duel map | **Built 12 September 2026**, and it is the first screen behind the **Maps** seat #360 built. Every kill as a line from killer to victim, narrowed by side and by player — **the same three marks the feed's hover already draws for one kill**, from the same helpers, over a whole match. `matchDuels` in `demo-core` is the rule: a kill's ends are read at its own frame, its sides are the ones that round recorded, and a kill by the world is left out because it has no end to come from. | P1 | M |
-| — | Utility map | Where a side's smokes, flashes and fires land, collected over the match. It is the per-match half of the lineups screen, and building it first is how that screen gets its shape. **Into #362's screen, beside the duels.** | P1 | M |
+| — | Utility map | Where a side's smokes, flashes and fires land, collected over the match. It is the per-match half of the lineups screen, and building it first is how that screen gets its shape. **Its own seat, the way #366's heat map took one.** | P1 | M |
 | — | Match metrics | The numbers a match produces that no map can show: economy over the rounds, clutches, opening duels, trades, multi-kills, utility damage, time blinded. The economy half already exists inside the match overlay and moves here rather than being rebuilt. | P1 | L |
 | — | The economy overlay over the stage | The current round's buys and balances, raised over the match without leaving it. Distinct from the metrics screen: this one answers "what can they afford *now*", which is a question asked while watching. | P2 | M |
 | — | Highlight extraction | The product proposes the moments worth watching — multi-kills, clutches, opening duels — instead of asking the reader to find them. Reads the same derivations the metrics screen needs, so it goes after it. | P2 | L |
@@ -253,6 +253,23 @@ screen draws **144 duels, 89 for CT and 55 for T**, a partition with nothing los
 and the roster states each player's share of whichever side is chosen. The bundle is 287.59 →
 **288.98 kB gz**, no new dependency: the ring, the disc and the line are §5.4's own marks and the
 plate is `radarBackdrop` over `useCanvasLayers`.
+
+**#366 took the second of the five seats on 12 September 2026, and the measurement that shaped it
+is one nothing else in the product had needed.** A field of a whole match is a distribution, and a
+distribution normalised against its own peak is a wash: over the dust2 sample's 5,946 lit bins the
+median holds 25 samples and the densest 2,205, so against the peak half the ground resolves to a
+tenth of the ramp and one plant spot is the only hot thing on the map. The ramp tops out at the 95th
+percentile instead — 298 bins saturate, 955 stand above half — and what the reader sees is routes
+and holds rather than green fog. Two smaller decisions carry as much: a round is counted from its
+**freeze-time end**, because `startTick` puts twenty seconds of every round on two spawn points and
+a tactical timeout in round 13 holds ten players still for four minutes more; and only **living**
+samples count, or the heaviest mark of every round would be the spot somebody died on. The field
+costs **3.4 ms** for the whole match, 2.6 ms for a side and 2.0 ms for one player, measured in Bun
+over the shipped container — so the narrowing is a fresh walk rather than a cached one, and the
+draw is a single `drawImage` of an image built when the narrowing changed. Measured in both locales
+at 1440×900 and 1024×800: the stage is **716 and 473**, unchanged, the heat map's own plate is
+**793 and 581** — the duel map's figures exactly — and **0 elements overflow**. The bundle is
+289.05 → **290.36 kB gz, 58.1%**, no new dependency.
 
 ## M6 — The coach's tools
 

@@ -1,8 +1,11 @@
 export { DuelPlate } from './components/DuelPlate';
+export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export { PlateStill } from './components/PlateStill';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
+export type { PresenceField, PresenceScope } from './helpers/heat-field';
+export { presenceField } from './helpers/heat-field';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';

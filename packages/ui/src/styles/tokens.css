@@ -115,6 +115,17 @@
   --color-pixel-1: #2f3fb8;
   --color-pixel-2: #8b3fd0;
 
+  /* The heat map's ramp, cool where the match barely went and hot where it was spent. It is its own
+     pair for the reason above and a stricter one: every hue in this file already means something a
+     demo said, and a field of time drawn in a side's blue or a hit's red would read as that thing
+     spread over the map. Green is the one region of the wheel the product has never spent, so a
+     reader cannot mistake this field for a mark — and it is a field under the marks rather than a
+     mark on a surface, so what keeps the map readable through it is alpha (`PEAK_ALPHA`) rather
+     than a contrast pairing. The alternate palettes leave it alone: a ramp with nothing to be told
+     apart from needs no separation. */
+  --color-heat-low: #2fbf71;
+  --color-heat-high: #f2f06b;
+
   /* One face for every word. Onest is variable across 300–700, which is what let two static
      families go — the narrow face `.label-dense` used to need is Onest 500 uppercase now, and it
      reads better small than a condensed grotesque ever did.
