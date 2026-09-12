@@ -49,6 +49,12 @@ export interface RadarColors {
   readonly trajectory: string;
   /** The line between a hovered kill's two ends — white, for the reason a trajectory is (§5.4). */
   readonly killLine: string;
+  /**
+   * The two ends of the heat map's ramp. A density is its own reading rather than a mark standing
+   * for something a demo said, so it takes tokens of its own instead of borrowing a data colour
+   * that already means a side, a hit or a piece of utility (§17 rule 5).
+   */
+  readonly heat: { readonly low: string; readonly high: string };
 }
 
 function readRadarColors(): RadarColors {
@@ -75,6 +81,7 @@ function readRadarColors(): RadarColors {
     nadeDecoy: readCssToken('--color-nade-decoy'),
     trajectory: readCssToken('--color-ink'),
     killLine: readCssToken('--color-ink'),
+    heat: { low: readCssToken('--color-heat-low'), high: readCssToken('--color-heat-high') },
   };
 }
 

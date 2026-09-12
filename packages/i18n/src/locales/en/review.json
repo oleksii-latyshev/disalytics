@@ -39,13 +39,17 @@
     "roster": "Narrow to one player",
     "everyone": "Everyone",
     "duels": "{count, plural, one {# duel} other {# duels}}",
-    "soonNote": "Where players spent the match, and where their utility landed, are coming to this view too."
+    "soonNote": "Where a side’s utility landed is coming to this view too.",
+    "timeOnMap": "{count} min on the map",
+    "minutes": "{count} min",
+    "sampledNote": "Positions are sampled {hz} times a second and only while a player is alive, so the field is that time added up rather than a path."
   },
   "views": {
     "nav": "Views",
     "stage": "Stage",
     "scoreboard": "Scoreboard",
-    "maps": "Maps",
+    "duels": "Duels",
+    "heatmap": "Heat map",
     "metrics": "Metrics",
     "soonNote": {
       "scoreboard": "Kills, deaths, damage and the rounds behind them, for both sides at once. Not built yet.",
