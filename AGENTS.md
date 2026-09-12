@@ -693,6 +693,15 @@ runtime and cannot carry a content hash. The plugin lists the directory rather t
 cannot. `apps/web/plugins/__tests__/radar-assets.test.ts` is what holds the directory and the map
 data to each other — a level with no image, or an image no level names, fails it.
 
+That check stays in the suite rather than moving into the build (#78, measured on Vite 8.2.0).
+`--configLoader runner` does let the config import the package — the config reads its 7 maps and 3
+themes and the build completes — but `--configLoader native`, the loader Vite is moving toward as
+the default, fails exactly as the default `bundle` does, so that flag pins the app against the
+direction the loader is going rather than with it. Explicit `.ts` extensions inside
+`packages/map-data/src` work under every loader and change a package to suit one app, which is the
+direction `CODE_REQUIREMENTS.md` §1 exists to prevent. Neither buys earlier feedback: lefthook runs
+`bun run test` pre-push and never runs a build, so the test is the earlier of the two checks.
+
 `/radar/*` keeps the Workers default `max-age=0, must-revalidate`; the `_headers` rule in §13
 covers hashed names only, and unhashed plus `immutable` would pin a stale radar after a
 `mapdata:generate`.
