@@ -28,12 +28,16 @@
   --color-surface-3: #212121;
 
   /* Structure is white at three alphas rather than three opaque greys, so one hairline reads the
-     same over every surface above and over the radar plate. Composited on `surface-1` these are
-     #191919, #232323 and #313131 — a 1.13, 1.26 and 1.52 ratio against their ground, which is the
-     range where an edge is *seen* without being *read*.
+     same over every surface above and over the radar plate. Composited on `surface-1`:
 
-     `line-strong` is for the one edge that has to survive a busy ground: the plate's own frame, and
-     the outline of a control that is currently taking input. */
+                    composite  ground
+       line-soft      #191919    1.13
+       line           #232323    1.26
+       line-strong    #313131    1.52
+
+     That is the range where an edge is *seen* without being *read*. `line-strong` is for the one
+     edge that has to survive a busy ground: the plate's own frame, and the outline of a control
+     that is currently taking input. */
   --color-line-soft: rgb(255 255 255 / 0.06);
   --color-line: rgb(255 255 255 / 0.1);
   --color-line-strong: rgb(255 255 255 / 0.16);
@@ -52,10 +56,15 @@
   --color-ink-dim: #a1a1a1;
   --color-ink-faint: #737373;
 
-  /* Interaction, and there is no fifth state. Composited on `surface-1` these are #191919, #232323
-     and #2C2C2C, where `--color-ink` still reads 16.84, 15.06 and 13.38 and `--color-ink-dim` still
-     reads 6.80, 6.08 and 5.41 — so a selected row does not quietly cost the reader its secondary
-     column. */
+  /* Interaction, and there is no fifth state. Composited on `surface-1`, with what `--color-ink`
+     and `--color-ink-dim` still read on each:
+
+                    composite    ink  ink-dim
+       hover          #191919  16.84     6.80
+       press          #232323  15.06     6.08
+       selected       #2C2C2C  13.38     5.41
+
+     So a selected row does not quietly cost the reader its secondary column. */
   --color-hover: rgb(255 255 255 / 0.06);
   --color-press: rgb(255 255 255 / 0.1);
   --color-selected: rgb(255 255 255 / 0.14);
