@@ -134,7 +134,7 @@ describe('presenceField', () => {
     const { bins, seconds } = presenceField(newDemo(), dust2, wholeMatch);
 
     expect(bins[binAt(40, 40)]).toBe(1);
-    expect(bins[binAt(80, 60)]).toBeCloseTo(Math.sqrt(DEATH_FRAME / FRAME_COUNT), 5);
+    expect(bins[binAt(80, 60)]).toBeCloseTo(DEATH_FRAME / FRAME_COUNT, 5);
     expect(bins[binAt(20, 100)]).toBe(0);
     expect(seconds).toBeCloseTo((FRAME_COUNT + DEATH_FRAME) / SAMPLE_HZ, 5);
   });

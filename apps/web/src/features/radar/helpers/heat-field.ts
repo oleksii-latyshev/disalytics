@@ -18,6 +18,9 @@ import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-da
  */
 export const HEAT_GRID = 128;
 
+/** Where the ramp's hot end sits in the lit bins' own distribution. Everything past it saturates. */
+const HOT_QUANTILE = 0.95;
+
 /** Which samples count towards the field. Both are `null` for the match as a whole. */
 export interface PresenceScope {
   readonly side: Team | null;
@@ -40,7 +43,6 @@ interface FieldWalk {
   readonly bins: Float32Array;
   readonly secondsBySlot: Float32Array;
   samples: number;
-  peak: number;
 }
 
 function binFrame(walk: FieldWalk, frame: number, sides: readonly (Team | undefined)[]): void {
@@ -61,13 +63,17 @@ function binFrame(walk: FieldWalk, frame: number, sides: readonly (Team | undefi
     const y = Math.floor(radarY(overview, sampleAt(track.posY, sample)) * binScale);
     if (x < 0 || y < 0 || x >= HEAT_GRID || y >= HEAT_GRID) continue;
 
-    const bin = y * HEAT_GRID + x;
-    const weight = sampleAt(bins, bin) + 1;
-
-    bins[bin] = weight;
+    bins[y * HEAT_GRID + x] = sampleAt(bins, y * HEAT_GRID + x) + 1;
     walk.samples++;
-    if (weight > walk.peak) walk.peak = weight;
   }
+}
+
+/** The sample count the ramp's hot end stands at, over the bins that were reached at all. */
+function hotCeiling(bins: Float32Array): number {
+  const lit = bins.filter((weight) => weight > 0).sort();
+  if (lit.length === 0) return 0;
+
+  return sampleAt(lit, Math.min(lit.length - 1, Math.floor(lit.length * HOT_QUANTILE)));
 }
 
 /**
@@ -89,10 +95,12 @@ function binFrame(walk: FieldWalk, frame: number, sides: readonly (Team | undefi
  * (`busiestLevelIndex`) or one kill (§6.3's faded end) there is nothing to choose between: every
  * sample is binned where it stands on the plan, and a two-storey map reads as both floors at once.
  *
- * The weights are compressed on their way out. A match's time is spent very unevenly — a spawn or a
- * plant spot holds an order of magnitude more of it than the corridor into it — so against the
- * densest bin alone everything but the hotspots resolves to nothing; the square root is what keeps
- * the ground between them readable.
+ * **The ramp tops out at a quantile rather than at the densest bin**, and that is what makes the
+ * field a reading rather than a green wash. A match's time is spent very unevenly: measured over
+ * this match's 5,946 lit bins the median holds 25 samples, the 95th percentile 148 and the single
+ * densest 2,205, so against the peak alone half the ground resolves to a tenth of the ramp and
+ * nothing but one plant spot is ever hot. Against `HOT_QUANTILE` the top 5% of the ground saturates
+ * — 298 bins here, 955 above half the ramp — and the corridors between them keep their step.
  */
 export function presenceField(
   demo: ParsedDemo,
@@ -107,7 +115,6 @@ export function presenceField(
     bins: new Float32Array(HEAT_GRID * HEAT_GRID),
     secondsBySlot: new Float32Array(track.slotCount),
     samples: 0,
-    peak: 0,
   };
 
   for (const [roundIndex, round] of demo.events.rounds.entries()) {
@@ -119,10 +126,11 @@ export function presenceField(
     }
   }
 
-  const { bins, secondsBySlot, samples, peak } = walk;
+  const { bins, secondsBySlot, samples } = walk;
+  const ceiling = hotCeiling(bins);
 
-  for (let bin = 0; peak > 0 && bin < bins.length; bin++) {
-    bins[bin] = Math.sqrt(sampleAt(bins, bin) / peak);
+  for (let bin = 0; ceiling > 0 && bin < bins.length; bin++) {
+    bins[bin] = Math.min(sampleAt(bins, bin) / ceiling, 1);
   }
 
   return { bins, secondsBySlot, seconds: samples / track.sampleHz };
