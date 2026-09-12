@@ -2172,6 +2172,39 @@ with no box.** Above the split the two team cards sit inside a `display: content
 map and both locales report the same single hit `main` reports — the way out's deliberate `-10px`.
 The bundle is 288.98 → **289.05 kB gz**.
 
+**#366 gave the match a heat map, and the number that decided how it looks is a quantile.** The
+**Maps** seat split: the switch carries five seats, #362's screen is **Duels**, and where the ten
+players stood over the whole match is a place of its own beside it — the owner's call that the two
+answer different questions and nobody reads them at once. Six things are load-bearing.
+**`presenceField` bins the track and nothing else does**: a 128² grid over the radar image, one
+pass per narrowing, and the same pass counts each slot's seconds — the roster's figures and the
+field come out of one walk, so a second pass to say "28 min" would read the whole match again.
+**A field normalised against its own peak is a wash**, which is the finding: over the dust2
+sample's 5,946 lit bins the median holds 25 samples and the densest 2,205, so at the peak half the
+ground sits at a tenth of the ramp and one plant spot is the only hot thing on the map. Topping the
+ramp out at the **95th percentile** saturates 298 bins and puts 955 above half, and what the reader
+then sees is routes and holds. **A round is counted from its freeze-time end** — `roundOpeningFrame`,
+whose own definition is the first moment players stand where they chose to — because `startTick`
+puts twenty seconds of every round on two spawn points, eight minutes of this match, with a
+tactical timeout in round 13 holding ten players still for four more; and **only living samples
+count**, or the heaviest mark of every round is the spot somebody died on. **The field has no
+level**: a whole match stands on every floor, so unlike one frame (`busiestLevelIndex`) or one kill
+(§6.3's faded end) there is nothing to choose between. **The draw is one `drawImage`** of a
+`HEAT_GRID`-sized image painted when the narrowing changed — the browser's own bilinear upscale is
+what smooths the bins, where drawing them as rectangles would put a grid the data does not have on
+the map and a blur at draw time would spend a filter pass to arrive at the same picture. And
+**`--color-heat-low`/`--color-heat-high` are declared for this reading**: every other hue in the
+token layer means something a demo said, green is the one region of the wheel the product has never
+spent, and what keeps the map readable through the field is alpha rather than a contrast pairing —
+so the alternate palettes leave the pair alone, for the reason the way in's two pixel tokens are
+left alone. `MatchMaps` is `MatchDuels`, and the aside both screens carry is `MapScope`. Two
+numbers: the field costs **3.4 ms** for the whole match, 2.6 for a side and 2.0 for one player, in
+Bun over the shipped container, and the plate is **793 at 1440×900 and 581 at 1024×800** — the duel
+map's own figures — with the stage unmoved at 716 and 473 and **0 elements overflowing** in both
+locales at both widths. §16's two frame rows are stated as unmoved rather than re-measured: nothing
+new reaches the frame channel and this screen has no clock. The bundle is 289.05 → **290.36 kB
+gz**.
+
 **`AGENTS.md` outranks anything you observe in the file tree.** If existing code contradicts the
 docs, the code is the thing that is wrong.
 
