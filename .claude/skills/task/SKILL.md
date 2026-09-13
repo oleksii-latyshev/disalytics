@@ -16,11 +16,16 @@ The title becomes the squash-commit subject, so write it as a conventional commi
 `type(scope): imperative subject`, lower case, no trailing period, under 72 characters. Scope is the
 `area:` label without its prefix.
 
-Every issue gets exactly one `type:`, one `area:`, one `phase:` label.
+Every issue gets exactly one `type:`, one `area:`, one `phase:`, one `priority:` and one `size:`
+label, plus the milestone matching its phase (`CONTRIBUTING.md` §3).
 
 - **type:** `feat` `fix` `perf` `refactor` `chore` `docs` `test`
 - **area:** `parser` `radar` `timeline` `analytics` `ui` `i18n` `pwa` `storage` `ci` `docs`
-- **phase:** `phase:0` … `phase:6`, matching the roadmap in `AGENTS.md` §19
+- **phase / milestone:** `phase:polish` Polish · `phase:match-views` Match views · `phase:toolbox`
+  Toolbox · `phase:coaching` Coaching · `phase:lineups` Lineups · `phase:players` Player profiles
+  (historic `phase:0`–`6` and `phase:redesign` still exist)
+- **priority:** `p0` `p1` `p2` `p3` · **size:** `xs` `s` `m` `l` `xl` — an `xl` is split into child
+  issues before a branch is opened
 
 The body needs four sections, all required:
 
@@ -34,10 +39,10 @@ naming the boundary up front is what prevents it.
 
 ```bash
 gh issue create \
-  --title "feat(parser): stream columnar tick output from Rust" \
+  --title "feat(radar): zoom and pan the plate with a trackpad" \
   --body-file <path> \
-  --label "type:feat,area:parser,phase:2" \
-  --milestone "Phase 2"
+  --label "type:feat,area:radar,phase:polish,priority:p1,size:s" \
+  --milestone "Polish"
 ```
 
 Write the body to a file in the scratchpad rather than inlining it — multi-line `--body` through
@@ -111,7 +116,7 @@ Never merge your own PR without green CI.
 ## Useful
 
 ```bash
-gh issue list --label "phase:2" --state open
+gh issue list --milestone Polish --label priority:p1 --state open
 gh pr checks
 gh run watch
 ```

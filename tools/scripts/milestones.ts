@@ -39,6 +39,34 @@ const MILESTONES: Milestone[] = [
     description:
       'PWA polish — file handlers, install prompt, offline shell, demo library, update flow',
   },
+  {
+    title: 'Redesign',
+    description: 'Visual system rebuild — September 2026',
+  },
+  {
+    title: 'Polish',
+    description: 'Small fixes to what already ships — surfaces, icon, way in, input, settings',
+  },
+  {
+    title: 'Match views',
+    description: 'Duels, utility, heat map and metrics — sharper, filterable, linked to the stage',
+  },
+  {
+    title: 'Toolbox',
+    description: 'A tools screen in the dock — economy calculator, grenade and weapon reference',
+  },
+  {
+    title: 'Coaching',
+    description: 'Coach mode on the stage, then a tactics builder that exports and shares',
+  },
+  {
+    title: 'Lineups',
+    description: 'Grenade lineups per map — a shipped library plus the reader’s own',
+  },
+  {
+    title: 'Player profiles',
+    description: 'A player’s stats, weapons and maps from FACEIT and Steam',
+  },
 ];
 
 const existingTitles =

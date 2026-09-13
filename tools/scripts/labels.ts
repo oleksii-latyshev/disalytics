@@ -60,6 +60,32 @@ const PHASE_LABELS: Label[] = [
   { name: 'phase:4', color: PHASE_COLOR, description: 'Playback' },
   { name: 'phase:5', color: PHASE_COLOR, description: 'Analytics' },
   { name: 'phase:6', color: PHASE_COLOR, description: 'PWA polish' },
+  { name: 'phase:redesign', color: PHASE_COLOR, description: 'Visual system rebuild — Sept 2026' },
+  { name: 'phase:polish', color: PHASE_COLOR, description: 'Polish' },
+  { name: 'phase:match-views', color: PHASE_COLOR, description: 'Match views' },
+  { name: 'phase:toolbox', color: PHASE_COLOR, description: 'Toolbox' },
+  { name: 'phase:coaching', color: PHASE_COLOR, description: 'Coaching' },
+  { name: 'phase:lineups', color: PHASE_COLOR, description: 'Lineups' },
+  { name: 'phase:players', color: PHASE_COLOR, description: 'Player profiles' },
+];
+
+const PRIORITY_LABELS: Label[] = [
+  {
+    name: 'priority:p0',
+    color: 'B60205',
+    description: 'Breaks a promise the product already makes',
+  },
+  { name: 'priority:p1', color: 'D93F0B', description: 'Next' },
+  { name: 'priority:p2', color: 'FBCA04', description: 'Wanted' },
+  { name: 'priority:p3', color: 'C2E0C6', description: 'Nice to have' },
+];
+
+const SIZE_LABELS: Label[] = [
+  { name: 'size:xs', color: 'F9D0C4', description: 'Trivial — under an hour' },
+  { name: 'size:s', color: 'F9D0C4', description: 'One session' },
+  { name: 'size:m', color: 'F9D0C4', description: 'Two or three sessions' },
+  { name: 'size:l', color: 'F9D0C4', description: 'Four or more sessions' },
+  { name: 'size:xl', color: 'F9D0C4', description: 'Epic — split into issues before a branch' },
 ];
 
 const STATUS_LABELS: Label[] = [
@@ -101,7 +127,14 @@ async function removeLabel(name: string): Promise<boolean> {
   return result.exitCode === 0;
 }
 
-const labels = [...TYPE_LABELS, ...AREA_LABELS, ...PHASE_LABELS, ...STATUS_LABELS];
+const labels = [
+  ...TYPE_LABELS,
+  ...AREA_LABELS,
+  ...PHASE_LABELS,
+  ...PRIORITY_LABELS,
+  ...SIZE_LABELS,
+  ...STATUS_LABELS,
+];
 
 for (const label of labels) {
   await upsertLabel(label);

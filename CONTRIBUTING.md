@@ -31,10 +31,10 @@ gh issue create --template task.yml
 
 # agents — write the four required sections to a file first
 gh issue create \
-  --title "feat(parser): stream columnar tick output from Rust" \
+  --title "feat(radar): zoom and pan the plate with a trackpad" \
   --body-file <path> \
-  --label "type:feat,area:parser,phase:2" \
-  --milestone "Phase 2"
+  --label "type:feat,area:radar,phase:polish,priority:p1,size:s" \
+  --milestone "Polish"
 ```
 
 Blank issues are disabled. The four sections in `task.yml` (§6) are required either way.
@@ -82,7 +82,7 @@ rather than merely discouraged. So waiting is still not a judgement call, but it
 ### Useful
 
 ```bash
-gh issue list --label "phase:2" --state open
+gh issue list --milestone Polish --label priority:p1 --state open
 gh pr checks                      # CI status for the current branch
 gh pr view --web
 gh run watch                      # follow the running workflow
@@ -92,8 +92,8 @@ gh run watch                      # follow the running workflow
 
 ## 3. Labels
 
-Created once with `gh label create`. Three orthogonal axes plus status — every issue gets one
-`type:`, one `area:`, one `phase:`.
+Created once with `gh label create`. Five axes plus status — every issue gets one `type:`, one
+`area:`, one `phase:`, one `priority:` and one `size:`, and the milestone matching its phase.
 
 **Type** — matches the conventional-commit prefix:
 
@@ -112,7 +112,18 @@ Created once with `gh label create`. Three orthogonal axes plus status — every
 `area:parser` · `area:radar` · `area:timeline` · `area:analytics` · `area:ui` · `area:i18n` ·
 `area:pwa` · `area:storage` · `area:ci` · `area:docs`
 
-**Phase** — `phase:0` … `phase:6`, matching the roadmap in `AGENTS.md` §19.
+**Phase** — matches a milestone. Historic: `phase:0` … `phase:6`, `phase:redesign`. Planned, in
+order: `phase:polish` (Polish), `phase:match-views` (Match views), `phase:toolbox` (Toolbox),
+`phase:coaching` (Coaching), `phase:lineups` (Lineups), `phase:players` (Player profiles).
+
+**Priority** — `priority:p0` breaks a promise the product already makes · `p1` next · `p2` wanted ·
+`p3` nice to have.
+
+**Size** — one issue → PR loop: `size:xs` under an hour · `s` one session · `m` two or three ·
+`l` four or more · `xl` an epic, split into child issues before any branch is opened.
+
+The plan is these milestones and labels — there is no roadmap file. `gh issue list --milestone
+Polish --label priority:p1` is the queue.
 
 **Status** — used sparingly: `blocked`, `needs-decision`, `good-first-issue`.
 
@@ -175,9 +186,10 @@ the chat. The owner attaches them, if they are attachable at all. A pull request
 an image it cannot carry, and a criterion phrased as "screenshots in the pull request" is read as
 "screenshots to the owner" — that is what satisfies it.
 
-**The review screen is never attachable.** It carries ten real players' names and SteamIDs
-(`AGENTS.md` §18), so its screenshots may not go into an issue, a pull request, or anything else that
-leaves this machine. Screen work on it is evidenced by measurement instead, and these are the forms
+**The review screen is never attachable** with a private demo open. It carries ten real players'
+names and SteamIDs (`AGENTS.md` §18), so its screenshots may not go into an issue, a pull request, or
+anything else that leaves this machine. The one exception is the shipped professional samples (public
+match, published names) — that is where `docs/images/review-dust2.png` comes from. Screen work on it is evidenced by measurement instead, and these are the forms
 that have stood in for a picture:
 
 - **Measured geometry** at a named viewport, and it is a claim with a setup: state the viewport
