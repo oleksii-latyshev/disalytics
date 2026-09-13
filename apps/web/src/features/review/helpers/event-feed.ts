@@ -2,15 +2,12 @@ import {
   type Frame,
   frameForTick,
   grenadeEndTick,
-  killWeaponClass,
-  killWeaponIcon,
-  killWeaponName,
   type ParsedDemo,
   sidesBySlotAtRound,
   type Tick,
   utilityKindOfGrenade,
 } from '@disa/demo-core';
-import type { RowEvent, RowFocus } from '@/core/events';
+import { killRow, type RowEvent, type RowFocus } from '@/core/events';
 
 /**
  * How many rows the feed holds — DESIGN.md §5.4. It is a cap on what is *shown*, not on what is
@@ -84,16 +81,11 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
       untilFrame: null,
       event: {
         kind: 'kill',
-        attacker: kill.attacker,
-        victim: kill.victim,
-        attackerSide: kill.attacker === null ? undefined : sides[kill.attacker],
-        victimSide: sides[kill.victim],
-        weapon: killWeaponClass(kill.weapon),
-        weaponIcon: killWeaponIcon(kill.weapon),
-        weaponName: killWeaponName(kill.weapon),
-        isHeadshot: kill.isHeadshot,
-        isWallbang: kill.isWallbang,
-        isThroughSmoke: kill.isThroughSmoke,
+        ...killRow(
+          kill,
+          kill.attacker === null ? undefined : sides[kill.attacker],
+          sides[kill.victim],
+        ),
       },
     } satisfies Omit<FeedRow, 'focus'>;
 

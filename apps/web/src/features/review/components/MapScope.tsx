@@ -1,10 +1,8 @@
-import type { PlayerInfo, PlayerSlot, Team } from '@disa/demo-core';
+import type { PlayerInfo, PlayerSlot } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import type { ReactNode } from 'react';
+import type { SideScope } from '../helpers/map-scope';
 import { type ChoiceOption, SettingChoice } from './SettingChoice';
-
-/** `all` is not a side, and it is first because the match is what a map screen opens on. */
-export type SideScope = 'all' | Team;
 
 interface Props {
   side: SideScope;
@@ -24,6 +22,31 @@ interface Props {
    * what kind of grenade is being asked about is a question the reader cannot answer by looking.
    */
   scope?: ReactNode;
+}
+
+/** The side narrowing every map screen shares, as one labelled row. */
+export function SideRow({ side, onSide }: { side: SideScope; onSide: (side: SideScope) => void }) {
+  // A side is game vocabulary and stays in English; only the word for *both* of them is a string.
+  const sideOptions: readonly ChoiceOption<SideScope>[] = [
+    { value: 'all', label: <Text path="review.maps.bothSides" /> },
+    { value: 'CT', label: 'CT' },
+    { value: 'T', label: 'T' },
+  ];
+
+  return (
+    <div className="flex items-center justify-between gap-2 split:self-stretch">
+      <h2 className="label-dense text-ink-dim">
+        <Text path="review.maps.sides" />
+      </h2>
+
+      <SettingChoice
+        labelPath="review.maps.sides"
+        value={side}
+        options={sideOptions}
+        onChange={onSide}
+      />
+    </div>
+  );
 }
 
 const SEAT_CLASS =
@@ -61,30 +84,12 @@ export function MapScope({
 }: Props) {
   const t = useT();
 
-  // A side is game vocabulary and stays in English; only the word for *both* of them is a string.
-  const sideOptions: readonly ChoiceOption<SideScope>[] = [
-    { value: 'all', label: <Text path="review.maps.bothSides" /> },
-    { value: 'CT', label: 'CT' },
-    { value: 'T', label: 'T' },
-  ];
-
   return (
     <aside
       aria-label={t('review.maps.controls')}
       className="surface-card flex min-h-0 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-float p-3 split:flex-col split:flex-nowrap split:items-stretch split:gap-3 split:overflow-y-auto"
     >
-      <div className="flex items-center justify-between gap-2 split:self-stretch">
-        <h2 className="label-dense text-ink-dim">
-          <Text path="review.maps.sides" />
-        </h2>
-
-        <SettingChoice
-          labelPath="review.maps.sides"
-          value={side}
-          options={sideOptions}
-          onChange={onSide}
-        />
-      </div>
+      <SideRow side={side} onSide={onSide} />
 
       {scope}
 

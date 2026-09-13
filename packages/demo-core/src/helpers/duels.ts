@@ -15,6 +15,8 @@ import { frameForTick, sidesBySlotAtRound } from './selectors';
 export interface Duel {
   /** The round it happened in, which is the axis a reading of the whole match narrows by. */
   readonly roundIndex: number;
+  /** Its index in `MatchEvents.kills`, which is where the weapon and the marks are read. */
+  readonly killIndex: number;
   readonly frame: Frame;
   readonly attacker: PlayerSlot;
   readonly victim: PlayerSlot;
@@ -56,6 +58,7 @@ export function matchDuels(demo: ParsedDemo): readonly Duel[] {
 
       duels.push({
         roundIndex,
+        killIndex: index,
         frame: frameForTick(demo.track, kill.tick),
         attacker,
         victim: kill.victim,

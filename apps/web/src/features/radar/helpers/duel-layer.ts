@@ -23,6 +23,12 @@ import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 const MATCH_ALPHA = 0.7;
 
 /**
+ * What every other duel keeps while one is isolated from the list beside the map (#386): enough to
+ * see where the rest were, little enough that the one being read is the only thing drawn in full.
+ */
+const UNFOCUSED_ALPHA = 0.12;
+
+/**
  * Where every duel's two ends fall on the radar image, computed once for a list of duels.
  *
  * It is `killLineGeometry` run at scale 1 and copied out, rather than a second reader of
@@ -55,6 +61,8 @@ export interface DuelLayerOptions {
   readonly colors: RadarColors;
   /** Read at draw time, the way every layer on the plate reads it. */
   readonly view: { readonly current: PlateView };
+  /** The index into `duels` of the one duel isolated from the list, or `null` for all of them. */
+  readonly focused: number | null;
 }
 
 /**
@@ -68,11 +76,40 @@ export interface DuelLayerOptions {
  * duel that owns them.
  */
 export function duelLayer(options: DuelLayerOptions): Layer {
-  const { duels, plot, colors, view } = options;
+  const { duels, plot, colors, view, focused } = options;
   const geometry = plateGeometry();
 
   const sideColor = (side: Team | undefined) =>
     side === undefined ? colors.dead : colors.team[side];
+
+  const drawDuel = (context: CanvasRenderingContext2D, index: number, strength: number) => {
+    const duel = duels[index];
+    if (duel === undefined) return;
+
+    const { scale } = geometry;
+    const base = index * ENDS_LENGTH;
+    const originX = sampleAt(plot, base) * scale;
+    const originY = sampleAt(plot, base + 1) * scale;
+    const originAlpha = sampleAt(plot, base + 2) * strength;
+    const fallX = sampleAt(plot, base + END_STRIDE) * scale;
+    const fallY = sampleAt(plot, base + END_STRIDE + 1) * scale;
+    const fallAlpha = sampleAt(plot, base + END_STRIDE + 2) * strength;
+
+    // A line crossing a floor the map is not showing is as faint as its fainter end — §6.3, and
+    // the same rule the hovered line obeys.
+    drawKillPath(
+      context,
+      originX,
+      originY,
+      fallX,
+      fallY,
+      Math.min(originAlpha, fallAlpha),
+      colors.killLine,
+    );
+
+    drawKillOrigin(context, originX, originY, originAlpha, sideColor(duel.attackerSide));
+    drawKillFall(context, fallX, fallY, fallAlpha, sideColor(duel.victimSide));
+  };
 
   return (context, size) => {
     if (duels.length === 0) return;
@@ -80,31 +117,12 @@ export function duelLayer(options: DuelLayerOptions): Layer {
     readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
-    const { scale } = geometry;
-
-    for (const [index, duel] of duels.entries()) {
-      const base = index * ENDS_LENGTH;
-      const originX = sampleAt(plot, base) * scale;
-      const originY = sampleAt(plot, base + 1) * scale;
-      const originAlpha = sampleAt(plot, base + 2) * MATCH_ALPHA;
-      const fallX = sampleAt(plot, base + END_STRIDE) * scale;
-      const fallY = sampleAt(plot, base + END_STRIDE + 1) * scale;
-      const fallAlpha = sampleAt(plot, base + END_STRIDE + 2) * MATCH_ALPHA;
-
-      // A line crossing a floor the map is not showing is as faint as its fainter end — §6.3, and
-      // the same rule the hovered line obeys.
-      drawKillPath(
-        context,
-        originX,
-        originY,
-        fallX,
-        fallY,
-        Math.min(originAlpha, fallAlpha),
-        colors.killLine,
-      );
-
-      drawKillOrigin(context, originX, originY, originAlpha, sideColor(duel.attackerSide));
-      drawKillFall(context, fallX, fallY, fallAlpha, sideColor(duel.victimSide));
+    const rest = focused === null ? MATCH_ALPHA : MATCH_ALPHA * UNFOCUSED_ALPHA;
+    for (let index = 0; index < duels.length; index++) {
+      if (index !== focused) drawDuel(context, index, rest);
     }
+
+    // Last and at full strength, so nothing else is drawn over the one being read.
+    if (focused !== null) drawDuel(context, focused, 1);
   };
 }

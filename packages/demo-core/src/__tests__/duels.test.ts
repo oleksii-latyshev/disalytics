@@ -53,6 +53,7 @@ describe('matchDuels', () => {
     expect(duels.map((duel) => duel.attackerSide)).toEqual(['CT', 'T']);
     expect(duels.map((duel) => duel.victimSide)).toEqual(['T', 'CT']);
     expect(duels.map((duel) => duel.roundIndex)).toEqual([0, 1]);
+    expect(duels.map((duel) => duel.killIndex)).toEqual([0, 1]);
   });
 
   it('reads the frame the kill happened on', () => {
