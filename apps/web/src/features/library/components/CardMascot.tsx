@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { paintLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { readCssToken } from '@/shared/lib';
@@ -8,7 +8,6 @@ import {
   lookToward,
   MASCOT_HEIGHT_PX,
   MASCOT_WIDTH_PX,
-  type MascotSide,
   type Step,
 } from '../helpers/mascot';
 
@@ -24,13 +23,11 @@ interface Props {
 }
 
 /**
- * The watcher in the middle of the card that takes a demo: a pixel CT or T who turns towards the
- * pointer, and hops when a demo arrives — #380.
+ * The watcher in the middle of the card that takes a demo: a pixel T who turns towards the pointer,
+ * and hops when a demo arrives — #380.
  *
- * **Which side is chance, once per showing of the card.** Both are the product's, neither is the
- * default, and a reader who comes back meets the other one half the time. **It is the chrome's own
- * ink and no side colour**: this screen shows no match, so a blue or a yellow here would mean nothing
- * the demo said (§17) — the silhouette, helmet or balaclava, is what tells the sides apart.
+ * **It is the chrome's own ink and no side colour**: this screen shows no match, so a T yellow here
+ * would mean nothing the demo said (§17) — the balaclava is what says who it is.
  *
  * Four things are load-bearing. **It is drawn in the way in's own grid**, at `PixelBackdrop`'s pitch.
  * **It costs no layout per move**: the box is measured on mount and on a resize, and a move schedules
@@ -41,7 +38,6 @@ interface Props {
 export function CardMascot({ isLifted }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lookRef = useRef<{ lookX: Step; lookY: Step }>({ lookX: 0, lookY: 0 });
-  const [side] = useState<MascotSide>(() => (Math.random() < 0.5 ? 'ct' : 't'));
   const [motion] = useSetting('motion');
 
   useEffect(() => {
@@ -54,7 +50,7 @@ export function CardMascot({ isLifted }: Props) {
 
     const paint = () => {
       const look = isLifted ? LOOK_UP : lookRef.current;
-      paintLayers(canvas, [(context) => drawMascot(context, { side, ...look, hop }, ink)], {
+      paintLayers(canvas, [(context) => drawMascot(context, { ...look, hop }, ink)], {
         width: MASCOT_WIDTH_PX,
         height: MASCOT_HEIGHT_PX,
       });
@@ -113,7 +109,7 @@ export function CardMascot({ isLifted }: Props) {
       window.removeEventListener('pointermove', follow);
       window.removeEventListener('resize', remeasure);
     };
-  }, [isLifted, motion, side]);
+  }, [isLifted, motion]);
 
   return (
     // The wrapper carries the hiding rather than the canvas: a canvas is focusable content, and ARIA

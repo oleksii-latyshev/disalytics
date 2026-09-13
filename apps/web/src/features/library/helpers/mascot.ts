@@ -1,48 +1,28 @@
 import { CELL_EXTENT, CELL_PX } from './pixels';
 
 /**
- * The watcher on the upload card: a CT or a T operator from the chest up, one character per cell —
- * `#` is body, `o` is a hole (a slit, or a face opening) and `.` is nothing. #380 replaced the round
- * mascot with it.
+ * The watcher on the upload card: a T in a balaclava from the chest up, one character per cell —
+ * `#` is body, `o` is a hole (the eye slit) and `.` is nothing. #380 replaced the round mascot with it;
+ * a CT was drawn too and dropped, because no helmet at this size read as special forces.
  *
  * It is drawn in the way in's own grid rather than as a shape, which is the whole reason it fits this
  * screen: the ground behind it is Dust2's plate sampled once per cell of the same grid, and anything
  * smooth standing on it is a second visual language. Holes are left unpainted rather than filled
  * with a background colour, so the card's hover shows through them like it does around the figure.
  */
-export type MascotSide = 'ct' | 't';
-
 /** The head is its own sprite because it is the part that turns; the shoulders stay put. */
-export const HEADS: Readonly<Record<MascotSide, readonly string[]>> = {
-  // A tactical helmet that wraps the sides of the head, and in its face opening two goggle lenses
-  // over a mask. The lenses are body on a dark opening, which is how a lens catching the light
-  // reads at this size — a brim read as a hat, and dark lenses with pupils read as an alien.
-  ct: [
-    '...######...',
-    '.##########.',
-    '############',
-    '##oooooooo##',
-    '##o##oo##o##',
-    '##o##oo##o##',
-    '##oooooooo##',
-    '##o######o##',
-    '.#o######o#.',
-    '...######...',
-  ],
-  // A balaclava: one slit, and the eyes in it.
-  t: [
-    '...######...',
-    '..########..',
-    '.##########.',
-    '.##########.',
-    '.#oooooooo#.',
-    '.#oooooooo#.',
-    '.##########.',
-    '.##########.',
-    '..########..',
-    '...######...',
-  ],
-};
+export const HEAD = [
+  '...######...',
+  '..########..',
+  '.##########.',
+  '.##########.',
+  '.#oooooooo#.',
+  '.#oooooooo#.',
+  '.##########.',
+  '.##########.',
+  '..########..',
+  '...######...',
+];
 
 export const SHOULDERS = [
   '......####......',
@@ -63,16 +43,12 @@ export const MASCOT_HEIGHT_PX = MASCOT_ROWS * CELL_PX;
 
 /**
  * Each eye's resting cell in head coordinates, looking straight ahead. A look moves it one cell
- * along each axis, and the sprite leaves exactly that much hole around it.
+ * along each axis, and the slit leaves exactly that much hole around it.
  */
-const EYES: Readonly<Record<MascotSide, readonly { column: number; row: number }[]>> = {
-  // None: the lenses are part of the sprite and turn with the head.
-  ct: [],
-  t: [
-    { column: 4, row: 4 },
-    { column: 7, row: 4 },
-  ],
-};
+const EYES = [
+  { column: 4, row: 4 },
+  { column: 7, row: 4 },
+] as const;
 
 /** How far the hop lifts it, in cells, while a demo is over the window. */
 const HOP_CELLS = 0.8;
@@ -81,7 +57,6 @@ const HOP_CELLS = 0.8;
 export type Step = -1 | 0 | 1;
 
 export interface MascotPose {
-  readonly side: MascotSide;
   /** Where it is looking, one step along each axis. `{0, 0}` is facing the reader. */
   readonly lookX: Step;
   readonly lookY: Step;
@@ -90,12 +65,11 @@ export interface MascotPose {
 }
 
 /**
- * Which cell an eye sits in. A T's slit is wide enough for an eye to slide a cell across it, and
- * two rows tall, so it takes the bottom row looking down and the top row otherwise. A CT has no eyes
- * of its own — its goggles turn with the head.
+ * Which cell an eye sits in. The slit is wide enough for an eye to slide a cell across it, and two
+ * rows tall, so it takes the bottom row looking down and the top row otherwise.
  */
-export function eyeCells(pose: Pick<MascotPose, 'side' | 'lookX' | 'lookY'>) {
-  return EYES[pose.side].map((eye) => ({
+export function eyeCells(pose: Pick<MascotPose, 'lookX' | 'lookY'>) {
+  return EYES.map((eye) => ({
     column: eye.column + pose.lookX,
     row: eye.row + Math.max(pose.lookY, 0),
   }));
@@ -127,7 +101,7 @@ function fillSprite(
 }
 
 /**
- * The operator, head turned a cell towards wherever it is looking. Nothing here allocates beyond the
+ * The T, head turned a cell towards wherever it is looking. Nothing here allocates beyond the
  * two eye cells: loops over constant sprites and one `fillRect` per cell.
  */
 export function drawMascot(context: CanvasRenderingContext2D, pose: MascotPose, ink: string) {
@@ -136,7 +110,7 @@ export function drawMascot(context: CanvasRenderingContext2D, pose: MascotPose, 
 
   context.fillStyle = ink;
   fillSprite(context, SHOULDERS, 0, HEAD_ROWS, offsetY);
-  fillSprite(context, HEADS[pose.side], headColumn, 0, offsetY);
+  fillSprite(context, HEAD, headColumn, 0, offsetY);
 
   for (const eye of eyeCells(pose)) fillCell(context, headColumn + eye.column, eye.row, offsetY);
 }
