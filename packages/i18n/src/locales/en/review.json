@@ -59,6 +59,21 @@
       "vitals": "{health, number} HP · {armour, number} armour",
       "nothing": "Nothing in hand",
       "lead": "Press to watch it on the stage from {seconds, number} s before."
+    },
+    "heat": {
+      "mode": "Reading",
+      "presence": "Where they stood",
+      "damageDealt": "Damage dealt",
+      "damageTaken": "Damage taken",
+      "kills": "Kills",
+      "deaths": "Deaths",
+      "utility": "Where utility landed",
+      "damage": "{count, number} damage",
+      "killCount": "{count, plural, one {# kill} other {# kills}}",
+      "deathCount": "{count, plural, one {# death} other {# deaths}}",
+      "figure": "{count, number}",
+      "eventNote": "Each mark stands where its player was at the event; damage counts only the health left.",
+      "utilityNote": "Each grenade stands where it went off; one that never did is not drawn."
     }
   },
   "views": {

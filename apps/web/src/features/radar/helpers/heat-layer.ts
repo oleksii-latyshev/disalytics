@@ -2,7 +2,7 @@ import { sampleAt } from '@disa/demo-core';
 import { RADAR_IMAGE_SIZE } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
-import { HEAT_GRID, type PresenceField } from './heat-field';
+import { HEAT_GRID, type HeatField } from './heat-field';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /** What the densest bin is drawn at. The map underneath has to stay readable through the field. */
@@ -23,12 +23,11 @@ function mix(from: number, to: number, weight: number): number {
 /**
  * The field as an image the size of its own grid, painted once and then scaled onto the plate.
  *
- * The upscale is what smooths it: a bin is about 6 plate pixels across, and the browser's own
- * bilinear filtering between them is a gradient rather than a mosaic. Drawing the bins as rectangles
- * would put a grid the data does not have on the map, and blurring the plate at draw time would
- * spend a filter pass on every repaint to arrive at the same picture.
+ * The field arrives already smoothed by its kernel (#384), and a bin is about two plate pixels at
+ * the plate's largest, so the scale is a resample of a smooth picture rather than the thing doing
+ * the smoothing. Blurring the plate at draw time would spend a filter pass on every repaint.
  */
-export function fieldImage(field: PresenceField, colors: RadarColors): HTMLCanvasElement {
+export function fieldImage(field: HeatField, colors: RadarColors): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = HEAT_GRID;
   canvas.height = HEAT_GRID;

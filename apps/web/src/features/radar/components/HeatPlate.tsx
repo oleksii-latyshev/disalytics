@@ -6,7 +6,7 @@ import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
-import type { PresenceField } from '../helpers/heat-field';
+import type { HeatField } from '../helpers/heat-field';
 import { fieldImage, heatLayer } from '../helpers/heat-layer';
 import { levelAt } from '../helpers/levels';
 import { plateView } from '../helpers/view';
@@ -15,7 +15,7 @@ import { UnknownMap } from './UnknownMap';
 
 /**
  * The level the map is drawn at. A field of a whole match stands on every floor at once — which is
- * what `presenceField` bins — so there is no level to choose between, and the map shows its default
+ * what `heatField` bins — so there is no level to choose between, and the map shows its default
  * the way the duel map does. Giving the reader the choice is #86's, and that row waits on a demo.
  */
 const LEVEL_INDEX = 0;
@@ -23,10 +23,10 @@ const LEVEL_INDEX = 0;
 interface Props {
   demo: ParsedDemo;
   /** Already narrowed by whatever the screen above is narrowing by, or `null` on an unknown map. */
-  field: PresenceField | null;
+  field: HeatField | null;
 }
 
-function HeatCanvas({ field, overview }: { field: PresenceField | null; overview: MapOverview }) {
+function HeatCanvas({ field, overview }: { field: HeatField | null; overview: MapOverview }) {
   const t = useT();
 
   const [theme] = useSetting('radarTheme');
