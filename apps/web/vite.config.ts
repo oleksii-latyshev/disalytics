@@ -50,8 +50,9 @@ export default defineConfig({
             accept: { 'application/octet-stream': ['.dem', '.dem.zst', '.dem.bz2'] },
           },
         ],
-        background_color: '#0e1216',
-        theme_color: '#0e1216',
+        // `--color-surface-0`, so the splash and the title bar are the app's own ground.
+        background_color: '#050505',
+        theme_color: '#050505',
         icons: [
           { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
