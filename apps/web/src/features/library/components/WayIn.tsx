@@ -148,9 +148,7 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: P
           <UploadView
             state={state}
             onFile={openFile}
-            onEnter={enterMatch}
             onClose={onClose}
-            onShowAll={() => setView('library')}
             isDraggedOver={isDraggedOver}
           />
         )}
