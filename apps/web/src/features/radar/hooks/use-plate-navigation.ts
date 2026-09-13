@@ -2,6 +2,7 @@ import { RADAR_IMAGE_SIZE, type RadarPoint } from '@disa/map-data';
 import { type PointerEvent, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { useShortcuts } from '@/core/shortcuts';
 import {
+  MAX_ZOOM,
   MIN_ZOOM,
   type PlateView,
   panBy,
@@ -11,6 +12,7 @@ import {
   zoomAbout,
   zoomByStep,
 } from '../helpers/view';
+import { wheelIntent } from '../helpers/wheel';
 
 interface Options {
   /** The box the layers draw through. Created by the caller, because the layers read it too. */
@@ -28,7 +30,10 @@ interface Options {
 }
 
 export interface PlateNavigation {
-  /** A copy of the box's zoom that the `+`/`−` pair reads to know when it has run out of range. */
+  /**
+   * A copy of the box's zoom that the `+`/`−` pair reads to know when it has run out of range. A
+   * wheel or a pinch only updates it when it reaches or leaves an end of the range.
+   */
   readonly zoom: number;
   readonly zoomBy: (factor: number) => void;
   readonly canvasProps: {
@@ -41,8 +46,8 @@ export interface PlateNavigation {
 }
 
 /**
- * Everything that moves the reader's view of the plate: the wheel, a drag, a double-click, the
- * `+`/`−` pair and DESIGN.md §9.1's two keys.
+ * Everything that moves the reader's view of the plate: the wheel, a trackpad's pinch and two-finger
+ * scroll, a drag, a double-click, the `+`/`−` pair and DESIGN.md §9.1's two keys.
  *
  * None of it goes through React. The view lives in the caller's mutable box, so a drag repaints the
  * layers that already exist rather than rebuilding them, and hard rule 4 stays off that path — the
@@ -81,33 +86,78 @@ export function usePlateNavigation({
     { isSuspended },
   );
 
-  // Non-passive, because a wheel over the plate zooms instead of scrolling the page and only a
-  // `preventDefault` says so. React's own `onWheel` is delegated and cannot promise that, which is
-  // why this stays an effect that owns its listener rather than a handler the JSX spreads.
+  // Non-passive, because a wheel over the plate zooms or pans instead of scrolling the page and only
+  // a `preventDefault` says so. React's own `onWheel` is delegated and cannot promise that, which is
+  // why this stays an effect that owns its listeners rather than handlers the JSX spreads.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
+    // A pinch is dozens of events a second, and the state copy only has to be right at the ends of
+    // the range — which is all the `+`/`−` pair and the expansion read — so the render per event a
+    // plain `setZoom` would cost is skipped everywhere in between.
+    const syncZoom = (): void => {
+      const next = view.current.zoom;
+      setZoom((shown) =>
+        shown <= MIN_ZOOM !== next <= MIN_ZOOM || shown >= MAX_ZOOM !== next >= MAX_ZOOM
+          ? next
+          : shown,
+      );
+    };
+
+    const zoomAt = (factor: number, clientX: number, clientY: number): void => {
+      const box = canvas.getBoundingClientRect();
+      if (box.width === 0) return;
+
+      zoomAbout(view.current, factor, clientX - box.left, clientY - box.top, box);
+      syncZoom();
+      repaint();
+    };
+
     const handleWheel = (event: WheelEvent): void => {
       event.preventDefault();
+
+      const intent = wheelIntent(event);
+      if (intent.kind === 'zoom') {
+        zoomAt(intent.factor, event.clientX, event.clientY);
+        return;
+      }
 
       const box = canvas.getBoundingClientRect();
       if (box.width === 0) return;
 
-      zoomAbout(
-        view.current,
-        event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
-        event.clientX - box.left,
-        event.clientY - box.top,
-        box,
-      );
-      setZoom(view.current.zoom);
+      panBy(view.current, intent.dx, intent.dy, box);
       repaint();
     };
 
-    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    // Safari reports a pinch as its own gesture events rather than as `ctrlKey` wheels. `scale` is
+    // cumulative from the gesture's start, so each change zooms by its ratio to the last one.
+    let gestureScale = 1;
+    const handleGestureStart = (event: Event): void => {
+      event.preventDefault();
+      gestureScale = 1;
+    };
+    const handleGestureChange = (event: Event): void => {
+      event.preventDefault();
+      if (!('scale' in event && 'clientX' in event && 'clientY' in event)) return;
+      const { scale, clientX, clientY } = event;
+      if (typeof scale !== 'number' || typeof clientX !== 'number' || typeof clientY !== 'number') {
+        return;
+      }
 
-    return () => canvas.removeEventListener('wheel', handleWheel);
+      zoomAt(scale / gestureScale, clientX, clientY);
+      gestureScale = scale;
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener('gesturestart', handleGestureStart);
+    canvas.addEventListener('gesturechange', handleGestureChange);
+
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener('gesturestart', handleGestureStart);
+      canvas.removeEventListener('gesturechange', handleGestureChange);
+    };
   }, [canvasRef, repaint, view]);
 
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {

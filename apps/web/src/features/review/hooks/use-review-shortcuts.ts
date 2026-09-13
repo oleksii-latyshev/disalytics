@@ -5,7 +5,7 @@ import {
   roundIndexAtFrame,
   roundOpeningFrame,
 } from '@disa/demo-core';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Transport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
 import {
@@ -15,6 +15,7 @@ import {
   T_ROW_KEYS,
   useShortcuts,
 } from '@/core/shortcuts';
+import { createArrowPress } from '../helpers/arrow-press';
 
 interface Options {
   demo: ParsedDemo;
@@ -67,27 +68,26 @@ export function useReviewShortcuts({
     [demo, transport],
   );
 
-  // DESIGN.md §9.1's arrow row, both halves of it. A tap seeks by the configured step; the
-  // keyboard's own repeat is what turns the same key into a hold, and a hold is a *rate* the
-  // transport owns rather than a stream of seeks — releasing it puts back the rate and the play
-  // state it interrupted.
-  const seekBy = useCallback(
-    (direction: 1 | -1, press: ShortcutPress) => {
-      if (press.isRepeat) {
-        transport.holdScrub(direction * heldArrowRate);
-        return;
-      }
-
-      transport.seek(transport.clock.frame + direction * seekStepSeconds * demo.track.sampleHz);
-    },
+  // DESIGN.md §9.1's arrow row, both halves of it. A tap seeks by the configured step; a hold is a
+  // *rate* the transport owns rather than a stream of seeks — releasing it puts back the rate and
+  // the play state it interrupted. Which one a press was is `createArrowPress`'s to decide.
+  const arrows = useMemo(
+    () =>
+      createArrowPress({
+        seek: (direction) =>
+          transport.seek(transport.clock.frame + direction * seekStepSeconds * demo.track.sampleHz),
+        hold: (direction) => transport.holdScrub(direction * heldArrowRate),
+        release: transport.releaseScrub,
+      }),
     [demo, transport, seekStepSeconds, heldArrowRate],
   );
 
   const releaseAction = useCallback(
     (action: ShortcutAction) => {
-      if (action === 'seekBack' || action === 'seekForward') transport.releaseScrub();
+      if (action === 'seekBack') arrows.release(-1);
+      if (action === 'seekForward') arrows.release(1);
     },
-    [transport],
+    [arrows],
   );
 
   const selectRow = useCallback(
@@ -102,8 +102,8 @@ export function useReviewShortcuts({
   useShortcuts(
     {
       playPause: transport.toggle,
-      seekBack: (press) => seekBy(-1, press),
-      seekForward: (press) => seekBy(1, press),
+      seekBack: (press) => arrows.press(-1, press.isRepeat),
+      seekForward: (press) => arrows.press(1, press.isRepeat),
       stepBack: () => transport.step(-1),
       stepForward: () => transport.step(1),
       previousRound: () => jumpRounds(-1),
