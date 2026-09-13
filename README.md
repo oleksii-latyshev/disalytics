@@ -47,7 +47,7 @@ bun run dev
 
 Monorepo: `apps/web` (the SPA), `packages/*` (schema, parser client, storage, map data, i18n, UI),
 `crates/*` (the Rust parser). The full command list, rules and architecture are in
-[`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md); workflow in [`CONTRIBUTING.md`](CONTRIBUTING.md);
+[`AGENTS.md`](AGENTS.md); workflow in [`CONTRIBUTING.md`](CONTRIBUTING.md);
 plans in [issues and milestones](https://github.com/oleksii-latyshev/disalytics/milestones).
 
 ## Credits
