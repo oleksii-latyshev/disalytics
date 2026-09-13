@@ -35,7 +35,6 @@
     "size": "{megabytes, number, ::.#} MB",
     "open": "Show {map}, saved on this device",
     "remove": "Remove {fileName} from this device",
-    "showAll": "Show all ({count})",
     "gone": {
       "title": "That demo is no longer on this device.",
       "hint": "The browser cleared it, or the cache made room for a newer one. Open the file again to read it."

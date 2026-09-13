@@ -75,7 +75,12 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
           </Button>
         </header>
 
-        <Accordion multiple defaultValue={['playback']} className="flex flex-col">
+        {/* Every section open (#382): the reader collapses what they do not need. */}
+        <Accordion
+          multiple
+          defaultValue={['playback', 'plate', 'interface', 'colour', 'developer']}
+          className="flex flex-col"
+        >
           <SettingGroup value="playback" titlePath="settings.group.playback">
             <SettingRow
               labelPath="settings.skipBuyPhase.label"

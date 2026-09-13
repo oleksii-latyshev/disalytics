@@ -1,31 +1,25 @@
-import type { SavedDemo } from '@disa/demo-store';
 import type { ParseState } from '@/core/parsing';
 import { OpenDemo } from './OpenDemo';
 import { ParseFailure } from './ParseFailure';
 import { ParseProgress } from './ParseProgress';
 import { RestoreProgress } from './RestoreProgress';
-import { SavedDemos } from './SavedDemos';
 
 interface Props {
   // An opened demo is the workspace's screen rather than the library's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
-  onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onClose: () => void;
-  onShowAll: () => void;
   isDraggedOver: boolean;
 }
 
-/** The card's body. The card itself, and the screen around it, are `WayIn`'s. */
-export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDraggedOver }: Props) {
+/**
+ * The card's body. The card itself, and the screen around it, are `WayIn`'s. Saved demos are the
+ * Library screen's alone (#379): the card holds the one thing to do, which is take a demo.
+ */
+export function DemoLibrary({ state, onFile, onClose, isDraggedOver }: Props) {
   switch (state.status) {
     case 'idle':
-      return (
-        <div className="flex flex-col gap-6">
-          <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />
-          <SavedDemos onEnter={onEnter} onShowAll={onShowAll} />
-        </div>
-      );
+      return <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />;
     case 'restoring':
       return (
         <RestoreProgress fileName={state.fileName} download={state.download} onCancel={onClose} />
@@ -42,14 +36,8 @@ export function DemoLibrary({ state, onFile, onEnter, onClose, onShowAll, isDrag
         />
       );
     // The failure is the same card in the same place, so it replaces the way in rather than
-    // sitting above a copy of it. What it keeps is the route out — its own file picker, and the
-    // demos this device already holds.
+    // sitting above a copy of it. What it keeps is the route out — its own file picker.
     case 'failed':
-      return (
-        <div className="flex flex-col gap-6">
-          <ParseFailure failure={state.failure} fileName={state.fileName} onFile={onFile} />
-          <SavedDemos onEnter={onEnter} onShowAll={onShowAll} />
-        </div>
-      );
+      return <ParseFailure failure={state.failure} fileName={state.fileName} onFile={onFile} />;
   }
 }

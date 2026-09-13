@@ -1,4 +1,3 @@
-import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
 import { AnimatePresence, DURATION_BASE_SECONDS, EASE_OUT, motion } from '@disa/ui';
 import type { ParseState } from '@/core/parsing';
@@ -8,9 +7,7 @@ interface Props {
   // An opened demo is the workspace's screen rather than the library's, so it never reaches here.
   state: Exclude<ParseState, { status: 'ready' }>;
   onFile: (file: File) => void;
-  onEnter: (demo: SavedDemo, roundIndex: number) => void;
   onClose: () => void;
-  onShowAll: () => void;
   isDraggedOver: boolean;
 }
 
@@ -31,7 +28,7 @@ interface Props {
  * moving gradient, and a translucent card would make every reading on it a function of which band
  * happens to be under it.
  */
-export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDraggedOver }: Props) {
+export function UploadView({ state, onFile, onClose, isDraggedOver }: Props) {
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-8 py-8">
       <h2 className="max-w-[22ch] text-balance text-center font-ui font-medium text-44 leading-tight">
@@ -51,9 +48,7 @@ export function UploadView({ state, onFile, onEnter, onClose, onShowAll, isDragg
             <DemoLibrary
               state={state}
               onFile={onFile}
-              onEnter={onEnter}
               onClose={onClose}
-              onShowAll={onShowAll}
               isDraggedOver={isDraggedOver}
             />
           </motion.div>
