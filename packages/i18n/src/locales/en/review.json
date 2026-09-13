@@ -46,7 +46,20 @@
     "kinds": "Kind",
     "everyKind": "All",
     "throws": "{count, plural, one {# throw} other {# throws}}",
-    "lineupNote": "Where the thrower was looking is not drawn: view angles are sampled {hz} times a second."
+    "lineupNote": "Where the thrower was looking is not drawn: view angles are sampled {hz} times a second.",
+    "players": "Players",
+    "duelList": "Duels, in match order",
+    "throwList": "Throws, in match order",
+    "roundShort": "R{round, number}",
+    "rowLabel": "Round {round, number}: {event}",
+    "opensOnStage": "Opens on the stage",
+    "duel": {
+      "empty": "Hover or focus a duel to see what both players held.",
+      "before": "Just before the kill",
+      "vitals": "{health, number} HP · {armour, number} armour",
+      "nothing": "Nothing in hand",
+      "lead": "Press to watch it on the stage from {seconds, number} s before."
+    }
   },
   "views": {
     "nav": "Views",

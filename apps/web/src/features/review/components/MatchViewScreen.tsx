@@ -1,5 +1,6 @@
-import type { ParsedDemo } from '@disa/demo-core';
+import type { Frame, ParsedDemo } from '@disa/demo-core';
 import type { CacheState } from '@/core/parsing';
+import type { MapNarrowing } from '../helpers/map-scope';
 import type { MatchView } from '../helpers/match-views';
 import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
@@ -20,6 +21,10 @@ interface Props {
   onView: (view: MatchView) => void;
   onClose: () => void;
   onDismissSheet: () => void;
+  duelNarrowing: MapNarrowing;
+  onDuelNarrowing: (narrowing: MapNarrowing) => void;
+  /** Leave for the stage at a frame — a duel opened from the duel map (#387). */
+  onOpenOnStage: (frame: Frame) => void;
 }
 
 /**
@@ -39,6 +44,9 @@ export function MatchViewScreen({
   onView,
   onClose,
   onDismissSheet,
+  duelNarrowing,
+  onDuelNarrowing,
+  onOpenOnStage,
 }: Props) {
   return (
     <div className="relative grid h-dvh grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden bg-surface-0 p-3 wide:p-6">
@@ -52,7 +60,14 @@ export function MatchViewScreen({
           `ROADMAP.md` M5 row adds; this file is where a built one takes the place of its own
           note. */}
       {view === 'scoreboard' && <MatchScoreboard demo={demo} />}
-      {view === 'duels' && <MatchDuels demo={demo} />}
+      {view === 'duels' && (
+        <MatchDuels
+          demo={demo}
+          narrowing={duelNarrowing}
+          onNarrowing={onDuelNarrowing}
+          onOpenOnStage={onOpenOnStage}
+        />
+      )}
       {view === 'heatmap' && <MatchHeatmap demo={demo} />}
       {view === 'utility' && <MatchUtility demo={demo} />}
       {view === 'metrics' && <MatchSoon view={view} />}

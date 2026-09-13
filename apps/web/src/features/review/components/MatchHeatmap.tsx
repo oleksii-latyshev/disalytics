@@ -3,7 +3,8 @@ import { Text } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
 import { useMemo, useState } from 'react';
 import { HeatPlate, presenceField } from '@/features/radar';
-import { MapScope, type SideScope } from './MapScope';
+import type { SideScope } from '../helpers/map-scope';
+import { MapScope } from './MapScope';
 
 const SECONDS_PER_MINUTE = 60;
 

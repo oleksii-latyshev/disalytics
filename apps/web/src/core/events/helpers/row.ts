@@ -1,10 +1,14 @@
-import type {
-  Frame,
-  PlayerSlot,
-  Team,
-  UtilityKind,
-  WeaponClass,
-  WeaponIconId,
+import {
+  type Frame,
+  type Kill,
+  killWeaponClass,
+  killWeaponIcon,
+  killWeaponName,
+  type PlayerSlot,
+  type Team,
+  type UtilityKind,
+  type WeaponClass,
+  type WeaponIconId,
 } from '@disa/demo-core';
 
 /**
@@ -40,6 +44,29 @@ export interface KillRow {
   readonly isHeadshot: boolean;
   readonly isWallbang: boolean;
   readonly isThroughSmoke: boolean;
+}
+
+/**
+ * A kill as a row, given the sides its two ends held that round. One builder for every list that
+ * draws kills — §5.4's feed and the duel map's (#386) — so a mark added to one reaches both.
+ */
+export function killRow(
+  kill: Kill,
+  attackerSide: Team | undefined,
+  victimSide: Team | undefined,
+): KillRow {
+  return {
+    attacker: kill.attacker,
+    victim: kill.victim,
+    attackerSide,
+    victimSide,
+    weapon: killWeaponClass(kill.weapon),
+    weaponIcon: killWeaponIcon(kill.weapon),
+    weaponName: killWeaponName(kill.weapon),
+    isHeadshot: kill.isHeadshot,
+    isWallbang: kill.isWallbang,
+    isThroughSmoke: kill.isThroughSmoke,
+  };
 }
 
 /**

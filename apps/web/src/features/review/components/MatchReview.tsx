@@ -1,4 +1,4 @@
-import { type ParsedDemo, type PlayerSlot, roundOpeningFrame } from '@disa/demo-core';
+import { type Frame, type ParsedDemo, type PlayerSlot, roundOpeningFrame } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
 import { motion } from '@disa/ui';
 import { useCallback, useRef, useState } from 'react';
@@ -9,6 +9,7 @@ import { useBuyPhaseSkip, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
 import { MatchRadar } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
+import { type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
 import { type MatchView, nextMatchView } from '../helpers/match-views';
 import { useHotCorners } from '../hooks/use-hot-corners';
 import { useMatchReadout } from '../hooks/use-match-readout';
@@ -72,6 +73,21 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   // every hook below keeps running while another view is open: the clock is still the match's, and
   // coming back to the stage finds it where the reader left it.
   const [view, setView] = useState<MatchView>('stage');
+
+  // The duel map's narrowing, held here rather than by that screen: a duel opened on the stage
+  // leaves the screen, and coming back to it finds the narrowing where the reader left it (#387).
+  const [duelNarrowing, setDuelNarrowing] = useState<MapNarrowing>(WHOLE_MATCH);
+
+  // Paused at the lead-in rather than playing into the kill: the reader asked to watch it, and the
+  // space bar is theirs to press. The seek goes through the transport, never React (hard rule 4).
+  const openOnStage = useCallback(
+    (frame: Frame) => {
+      transport.pause();
+      transport.seek(frame);
+      setView('stage');
+    },
+    [transport],
+  );
 
   // DESIGN.md §9.3's two live regions. The block's own cell is what the hook watches for focus,
   // because a block that has left the screen still holds every control the keyboard can reach.
@@ -171,6 +187,9 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         onView={setView}
         onClose={onClose}
         onDismissSheet={dismissSheet}
+        duelNarrowing={duelNarrowing}
+        onDuelNarrowing={setDuelNarrowing}
+        onOpenOnStage={openOnStage}
       />
     );
   }

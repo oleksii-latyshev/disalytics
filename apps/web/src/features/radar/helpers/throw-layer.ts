@@ -31,6 +31,9 @@ const FULL_TURN = 2 * Math.PI;
 const MARK_ALPHA = 0.7;
 const PATH_ALPHA = 0.12;
 
+/** What every other throw keeps while one is isolated from the list — `duel-layer.ts`'s number. */
+const UNFOCUSED_ALPHA = 0.12;
+
 /** Where the player stood — smaller than the ground the grenade went on to cover. */
 const ORIGIN_RADIUS_PX = 2.5;
 
@@ -137,6 +140,8 @@ export interface ThrowLayerOptions {
   readonly colors: RadarColors;
   /** Read at draw time, the way every layer on the plate reads it. */
   readonly view: { readonly current: PlateView };
+  /** The index into `throws` of the one throw isolated from the list, or `null` for all of them. */
+  readonly focused: number | null;
 }
 
 /**
@@ -156,8 +161,61 @@ export interface ThrowLayerOptions {
  * built. Nothing in the draw allocates.
  */
 export function throwLayer(options: ThrowLayerOptions): Layer {
-  const { throws, plot, overview, tickRate, colors, view } = options;
+  const { throws, plot, overview, tickRate, colors, view, focused } = options;
   const geometry = plateGeometry();
+
+  /** `markStrength` scales the two ends and `pathStrength` the flight between them. */
+  const drawThrow = (
+    context: CanvasRenderingContext2D,
+    index: number,
+    markStrength: number,
+    pathStrength: number,
+  ) => {
+    const thrown = throws[index];
+    if (thrown === undefined) return;
+
+    const { scale } = geometry;
+    const { grenade } = thrown;
+    const color = grenadeColor(grenade.type, colors);
+    const base = index * ENDS_LENGTH;
+    const originAlpha = sampleAt(plot, base + 2) * markStrength;
+    const landingAlpha = sampleAt(plot, base + END_STRIDE + 2) * markStrength;
+
+    // One tick short of the detonation is the flight: `trajectoryClipCount` answers with the whole
+    // trajectory from the detonation onwards, by design, because that is what the plate draws once
+    // a grenade has landed.
+    const flight =
+      grenade.detonationTick === null
+        ? 0
+        : trajectoryClipCount(grenade, asTick((grenade.detonationTick as number) - 1), tickRate);
+
+    drawTrajectory(
+      context,
+      grenade.trajectory,
+      flight,
+      overview,
+      scale,
+      color,
+      Math.min(sampleAt(plot, base + 2), sampleAt(plot, base + END_STRIDE + 2)) * pathStrength,
+    );
+
+    drawOrigin(
+      context,
+      sampleAt(plot, base) * scale,
+      sampleAt(plot, base + 1) * scale,
+      originAlpha,
+      color,
+    );
+
+    drawLanding(
+      context,
+      sampleAt(plot, base + END_STRIDE) * scale,
+      sampleAt(plot, base + END_STRIDE + 1) * scale,
+      (grenadeRadiusUnits(grenade.type) / overview.scale) * scale,
+      landingAlpha,
+      color,
+    );
+  };
 
   return (context, size) => {
     if (throws.length === 0) return;
@@ -165,49 +223,14 @@ export function throwLayer(options: ThrowLayerOptions): Layer {
     readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
-    const { scale } = geometry;
-
-    for (const [index, thrown] of throws.entries()) {
-      const { grenade } = thrown;
-      const color = grenadeColor(grenade.type, colors);
-      const base = index * ENDS_LENGTH;
-      const originAlpha = sampleAt(plot, base + 2) * MARK_ALPHA;
-      const landingAlpha = sampleAt(plot, base + END_STRIDE + 2) * MARK_ALPHA;
-
-      // One tick short of the detonation is the flight: `trajectoryClipCount` answers with the whole
-      // trajectory from the detonation onwards, by design, because that is what the plate draws once
-      // a grenade has landed.
-      const flight =
-        grenade.detonationTick === null
-          ? 0
-          : trajectoryClipCount(grenade, asTick((grenade.detonationTick as number) - 1), tickRate);
-
-      drawTrajectory(
-        context,
-        grenade.trajectory,
-        flight,
-        overview,
-        scale,
-        color,
-        Math.min(originAlpha, landingAlpha) * PATH_ALPHA,
-      );
-
-      drawOrigin(
-        context,
-        sampleAt(plot, base) * scale,
-        sampleAt(plot, base + 1) * scale,
-        originAlpha,
-        color,
-      );
-
-      drawLanding(
-        context,
-        sampleAt(plot, base + END_STRIDE) * scale,
-        sampleAt(plot, base + END_STRIDE + 1) * scale,
-        (grenadeRadiusUnits(grenade.type) / overview.scale) * scale,
-        landingAlpha,
-        color,
-      );
+    const dim = focused === null ? 1 : UNFOCUSED_ALPHA;
+    for (let index = 0; index < throws.length; index++) {
+      if (index !== focused) {
+        drawThrow(context, index, MARK_ALPHA * dim, MARK_ALPHA * PATH_ALPHA * dim);
+      }
     }
+
+    // Last and at full strength, path included: the one flight being read is the whole reading.
+    if (focused !== null) drawThrow(context, focused, 1, 1);
   };
 }

@@ -25,9 +25,11 @@ interface Props {
   demo: ParsedDemo;
   /** Already narrowed by whatever the screen above is narrowing by. */
   duels: readonly Duel[];
+  /** The index into `duels` of the one mark isolated from the list beside the map, or `null`. */
+  focused: number | null;
 }
 
-function DuelCanvas({ demo, duels, overview }: Props & { overview: MapOverview }) {
+function DuelCanvas({ demo, duels, focused, overview }: Props & { overview: MapOverview }) {
   const t = useT();
 
   const [theme] = useSetting('radarTheme');
@@ -46,12 +48,12 @@ function DuelCanvas({ demo, duels, overview }: Props & { overview: MapOverview }
   );
 
   const layers = useMemo(() => {
-    const duelsLayer = duelLayer({ duels, plot, colors, view: viewRef });
+    const duelsLayer = duelLayer({ duels, plot, colors, view: viewRef, focused });
 
     return image.status === 'ready'
       ? [radarBackdrop(image.image, viewRef), duelsLayer]
       : [duelsLayer];
-  }, [duels, plot, colors, image]);
+  }, [duels, plot, colors, image, focused]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
@@ -83,12 +85,12 @@ function DuelCanvas({ demo, duels, overview }: Props & { overview: MapOverview }
  * reader already knows from hovering one row in the feed are the same three marks, drawn from the
  * same helpers, over the whole match.
  */
-export function DuelPlate({ demo, duels }: Props) {
+export function DuelPlate({ demo, duels, focused }: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return overview === undefined ? (
     <UnknownMap map={demo.header.map} />
   ) : (
-    <DuelCanvas demo={demo} duels={duels} overview={overview} />
+    <DuelCanvas demo={demo} duels={duels} focused={focused} overview={overview} />
   );
 }

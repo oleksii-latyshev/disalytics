@@ -23,9 +23,11 @@ interface Props {
   demo: ParsedDemo;
   /** Already narrowed by whatever the screen above is narrowing by. */
   throws: readonly UtilityThrow[];
+  /** The index into `throws` of the one mark isolated from the list beside the map, or `null`. */
+  focused: number | null;
 }
 
-function UtilityCanvas({ demo, throws, overview }: Props & { overview: MapOverview }) {
+function UtilityCanvas({ demo, throws, focused, overview }: Props & { overview: MapOverview }) {
   const t = useT();
 
   const [theme] = useSetting('radarTheme');
@@ -50,10 +52,11 @@ function UtilityCanvas({ demo, throws, overview }: Props & { overview: MapOvervi
       tickRate: demo.header.tickRate,
       colors,
       view: viewRef,
+      focused,
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), utility] : [utility];
-  }, [throws, plot, overview, demo.header.tickRate, colors, image]);
+  }, [throws, plot, overview, demo.header.tickRate, colors, image, focused]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
@@ -78,12 +81,12 @@ function UtilityCanvas({ demo, throws, overview }: Props & { overview: MapOvervi
  * `useCanvasLayers` paints when its layers change and when the element is resized, so nothing here
  * subscribes to a frame channel.
  */
-export function UtilityPlate({ demo, throws }: Props) {
+export function UtilityPlate({ demo, throws, focused }: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return overview === undefined ? (
     <UnknownMap map={demo.header.map} />
   ) : (
-    <UtilityCanvas demo={demo} throws={throws} overview={overview} />
+    <UtilityCanvas demo={demo} throws={throws} focused={focused} overview={overview} />
   );
 }
