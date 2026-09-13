@@ -9,7 +9,7 @@ body:
         lower case, imperative, no trailing period, under 72 characters. Scope is the `area:`
         label without its prefix.
 
-        Apply exactly one `type:`, one `area:` and one `phase:` label, and the matching milestone.
+        Apply exactly one `type:`, `area:`, `phase:`, `priority:` and `size:` label, and the matching milestone.
 
   - type: textarea
     id: goal

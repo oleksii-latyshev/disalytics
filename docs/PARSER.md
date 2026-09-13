@@ -1,1616 +1,262 @@
 # PARSER.md
 
-Findings from Phase 0. This document records what `demoparser2` can and cannot produce, and the
-constraints its design imposes on `crates/demo-parser`. Everything here was measured against a real
-demo, not read from upstream documentation.
+What upstream `demoparser` can and cannot produce, the traps in driving it, and what the crate does
+about them. Every claim was measured against a real demo. Section numbers are stable — code cites
+them. Full measurements and method live in the PR named in each heading.
 
-Scope note: this covers **schema extractability and query batching only**. Parse time, peak memory
-in the browser, and shipped WASM size are separate Phase 0 questions and are not settled here. The
-timings below are incidental context from a native multi-threaded run and are **not** budget
-numbers.
+**Fixture** unless stated: FACEIT GOTV `de_dust2`, 353 MB decompressed (264 MB `.dem.zst`), 30 rounds,
+10 players. A second demo, the IEM Atlanta 2026 inferno map (398 MB), is cited as "inferno".
 
 ---
 
 ## 1. Verdict
 
-**The §10 event schema is extractable.** Both of the fields `AGENTS.md` §19 singled out as the
-likeliest gaps — grenade trajectories and per-player blind durations — are present and complete.
-
-The Rust default passes this Phase 0 criterion. Three findings change how it must be used, and one
-is an upstream defect that our code has to work around.
-
----
+The `AGENTS.md` §10 schema is fully extractable from upstream, including grenade trajectories and
+per-player blind durations. Rust was confirmed in Phase 0; Go was never built.
 
 ## 2. What was tested
 
-| | |
+Upstream `github.com/LaihoE/demoparser`, crate `parser` (not on crates.io), vendored at a pinned
+revision in `vendor/` — `vendor/README.md` lists every patch. `demoparser2` is the name of the Python
+and JS bindings, not of the Rust crate. Probes live in `tools/probes/`.
+
+## 3. Query batching
+
+Upstream `second_pass/collect_data.rs::collect_entities` has two early returns:
+
+- events + player props share a pass **only when a wanted prop needs velocity**
+  (`event_with_velocity`). `TICK_PROPS` asks for `velocity`, so events ride with the tick columns.
+- `parse_projectiles` replaces player-prop collection and writes into the same table under the same
+  ids, so trajectories need a pass of their own.
+
+The parse is therefore **two passes** (Phase 0 read it as three; corrected in §25).
+
+## 4. Schema coverage
+
+| Group | Source |
 |---|---|
-| Upstream | `github.com/LaihoE/demoparser`, rev `ba39cc44cd5abfd7f34df2b3c0a7dd3630048311` (2026-07-07) |
-| Crate | `parser` 0.1.1 — **not published to crates.io** |
-| Fixture | FACEIT GOTV demo, `de_dust2`, 353,144,958 bytes decompressed, 32 rounds, 194,521 ticks, 10 players |
-| Host | macOS arm64, native, `--release`, `ParsingMode::Normal` |
-| Probe | `tools/probes/schema-extraction` |
+| Kills | `player_death` — `attacker_*`, `user_*`, `assister_*`, `weapon`, `headshot`, `penetrated`, `thrusmoke`, `noscope`, `attackerblind`, `distance` |
+| Damage | `player_hurt` |
+| Shots | `fire_bullets` (§18, §22) |
+| Grenades | projectile pass (trajectory), `*_detonate` events, expiry from §19 |
+| Blinds | `player_blind.blind_duration` per affected player |
+| Objectives | `bomb_planted`/`bomb_defused` (`site` = entity id), `bomb_begindefuse`, `bomb_exploded` |
+| Rounds | `round_start`, `round_end`, `round_freeze_end`, `round_officially_ended`, `m_iRoundTime` |
+| Economy | `m_iAccount`, `m_iEquipmentValue`, `m_iCashSpentThisRound`, read at freeze end |
 
-`demoparser2` is the name of the PyPI/npm binding, not of a Rust crate. The Rust crate is called
-`parser`, lives at `src/parser` in that repository, and has to be consumed as a git dependency
-pinned to a revision.
-
----
-
-## 3. Query batching — the answer to §7.2
-
-**A single pass cannot produce events, per-tick player props and projectile trajectories together.**
-This is not a tuning choice; it is enforced by upstream control flow in
-`second_pass/collect_data.rs::collect_entities`:
-
-- if `wanted_events` is non-empty, entity collection returns early — so requesting events yields
-  **no** per-tick props and **no** projectiles
-- if `parse_projectiles` is set, `collect_projectiles()` runs and returns — so projectile sampling
-  replaces player-prop collection rather than joining it
-
-Measured on the fixture, requesting all three in one pass produced events only — 0 prop columns and
-0 projectile records — exactly as the control flow predicts.
-
-**The schema therefore requires three passes, and three is the floor, not a starting point:**
-
-| Pass | `ParserInputs` | Yields | Time |
-|---|---|---|---|
-| A — events | `wanted_events: ["all"]` | 32,378 events across 54 distinct names | 0.52 s |
-| B — ticks | player props, no events | 16 columns × 1,945,210 values, zero nones | 0.72 s |
-| C — projectiles | `parse_projectiles: true`, `parse_grenades: false` | 301,488 trajectory samples, in `df` and **not** in `output.projectiles` — see §13 | 0.49 s |
-
-Total 1.72 s natively multi-threaded. §7.2 asks for "as few passes as possible" and asks for the
-number to be recorded — the number is **3**, and reducing it means patching upstream, not
-configuring it.
-
-**Corrected by #355: the number is 2, and it took configuration after all.** The first early return
-sits inside `if !prop_controller.event_with_velocity`, and upstream sets that flag whenever events
-are wanted *and* a player prop needs velocity. The probe above requested no `velocity`; pass B
-always has, since #111's audibility ring. So a pass carrying `wanted_events: ["all"]` beside the
-tick props collects both, with no change to `vendor/`. Upstream adds every wanted player prop to
-each event as `user_*`/`attacker_*` fields, appended after the event's own, and nothing here reads
-them. The second return is real: `collect_projectiles` writes `tick`, `steamid` and `name` under
-the same ids the player loop writes into the same `df`, so trajectories keep a pass of their own.
-§25 has the numbers.
-
----
-
-## 4. Schema coverage against §10
-
-| Group | Status | Source |
-|---|---|---|
-| **Kills** | extractable | `player_death`: `attacker_*`, `user_*` (victim), `assister_*`, `weapon`, `headshot`, `penetrated` (wallbang), `thrusmoke`, `noscope`, `attackerblind`, `distance`, `dmg_health`, `dmg_armor`, `hitgroup`, `assistedflash`, `attackerinair`, `tick` |
-| **Damage** | extractable | `player_hurt`, 913 occurrences on the fixture |
-| **Grenade trajectories** | extractable | pass C, sampled **every tick**, with thrower steamid and name. Read from `df`, not from `output.projectiles` — §13 |
-| **Grenade detonations** | extractable | `hegrenade_detonate`, `flashbang_detonate`, `smokegrenade_detonate`, `decoy_detonate`, each carrying `x`/`y` |
-| **Grenade expiry** | extractable | `smokegrenade_expired`, `inferno_expire` |
-| **Blinds** | extractable | `player_blind` carries `blind_duration: f32` **per affected player**, plus attacker identity. 237 occurrences |
-| **Objectives** | extractable | `bomb_planted` / `bomb_defused` with `site: i32`, `bomb_begindefuse` with `haskit: bool`, `bomb_beginplant`, `bomb_exploded` |
-| **Rounds** | extractable | `round_start`, `round_end` (`winner`, `reason`, `round`), `round_freeze_end`, `round_officially_ended` |
-| **Economy** | extractable | props `m_iAccount`, `m_iEquipmentValue`, `m_iCashSpentThisRound`, `m_iTotalCashSpent`, and per-round `CSPerRoundStats_t.*` |
-| **Victim blind at time of death** | **derived, not a field** | `player_death` has `attackerblind` but no victim equivalent. Derive from `m_flFlashDuration` at the death tick, or by joining `player_blind` |
-| **Defuse abort** | **unconfirmed** | `bomb_abortdefuse` did not occur in this match. Absent from the fixture, not shown absent from the parser |
-
-Trajectory sampling is per tick and smooth — a representative smoke projectile:
-
-```
-tick 6920  (-490.8, -205.8,  78.4)  CSmokeGrenadeProjectile
-tick 6921  (-490.3, -196.9,  84.0)
-tick 6922  (-489.9, -188.1,  89.5)
-```
-
-At 301,488 samples per match, trajectories must be downsampled or stored per grenade rather than
-kept at full rate — a `TickTrack`-style concern for Phase 2, not a blocker here.
-
----
+Victim-blind-at-death is derived, not a field. `bomb_abortdefuse` and `bomb_abortplant` have never
+occurred in a demo here.
 
 ## 5. Defects and traps
 
-### `*_grenade_type` on events is filled with the tick
-
-When player props are requested alongside events, each actor on an event gains
-`<actor>_grenade_type`. On the fixture **28,306 of 28,306** such fields were exactly equal to the
-event's own tick. The field is unusable; grenade type must come from the projectile pass or from the
-detonation event name. Do not read it, and do not map it into our schema.
-
-### `parse_grenades: true` silently destroys trajectories
-
-With `parse_grenades: true` the projectile pass also picks up inventory grenade entities
-(`CSmokeGrenade`), and upstream only collects coordinates for classes whose name contains
-`Projectile`. The result is a table with 2,921,567 rows whose X/Y/Z are entirely `None`. With
-`parse_grenades: false` the same pass returns 301,488 rows with real coordinates.
-
-**The flag that sounds like it enables grenades is the one that breaks them.**
-
-### Lowercase position fields are always null
-
-Events carry both `attacker_X`/`attacker_Y`/`attacker_Z` (populated) and
-`attacker_x`/`attacker_y`/`attacker_z` (always `None`). Same for `user_*` and `assister_*`. Read the
-uppercase set.
-
-### Friendly prop names are not resolved by the core crate
-
-`maps.rs` maps `health` → `CCSPlayerPawn.m_iHealth` and ~1,000 similar aliases, but
-`Parser::parse_demo` does not apply it — the bindings do, via
-`first_pass::parser_settings::rm_user_friendly_names`. Passing `health` to the core crate silently
-produces **no column at all**: no error, no warning. Requesting 12 props yielded 10 columns until the
-real paths were used, at which point all 13 resolved.
-
-Silent omission of a requested field is the single most dangerous behaviour found. Our wrapper must
-assert that every requested prop produced a column.
-
-### Some props silently disable multi-threading
-
-`check_multithreadability` scans requested props against `NON_MULTITHREADABLE_PROPS` — several
-`CSPerRoundStats_t` counters and movement props including `m_bDucking` — and falls back to
-single-threaded parsing without saying so. Swapping one such prop changed pass B from 2.39 s to
-0.83 s. In the browser we are single-threaded regardless, so this costs us nothing there, but it
-makes native benchmarks misleading unless the prop set is held fixed.
-
-### The build clones a repository from the network
-
-`csgoproto`'s build script clones `GameTracking-CS2` at build time and requires `protoc`. That is a
-network dependency and an unpinned upstream inside our build — unacceptable for reproducible CI, and
-it must be vendored or pre-generated before Phase 2.
-
----
+- **`*_grenade_type` on events is filled with the tick** (28,306 of 28,306). Never read it.
+- **`parse_grenades: true` destroys trajectories** — it adds inventory entities with all-`None`
+  coordinates. Always `parse_grenades: false`.
+- **Lowercase `attacker_x/y/z` are always null**; read the uppercase `attacker_X/Y/Z`.
+- **Friendly prop names are not resolved by the core crate** — `health` silently produces no column.
+  Use real paths (`CCSPlayerPawn.m_iHealth`) and **assert every requested prop produced a column**.
+- **Some props silently force single-threaded parsing** (`NON_MULTITHREADABLE_PROPS`), which makes
+  native benchmarks misleading unless the prop set is fixed.
+- **Upstream's build scripts reach the network** — deleted in `vendor/`; the protobuf code is committed
+  upstream (§12).
 
 ## 6. Consequences for `crates/demo-parser`
 
-- Vendor or pin `parser` by revision. There is no crates.io release to depend on.
-- Generate protobuf code ahead of time; do not let a build script reach the network.
-- Drive the parser with real prop paths, never friendly aliases, and **verify every requested prop
-  produced a column**.
-- Treat `*_grenade_type` on events as absent.
-- Run the projectile pass with `parse_grenades: false`.
-- Force `ParsingMode::ForceSingleThreaded` on the WASM path — `SharedArrayBuffer` is rejected (§3)
-  and COOP/COEP are forbidden (§13), so there are no threads to use. See §8 for what actually
-  blocks the browser build, which is not what was expected.
+Vendor by revision · no network in the build · real prop paths, verified · ignore `*_grenade_type` ·
+`parse_grenades: false` · `ParsingMode::ForceSingleThreaded` everywhere, so native tests and the
+browser see the same output.
 
----
+## 7. Determinism
 
-## 7. Determinism — single-threaded and multi-threaded output differ
-
-Repeated runs in the same mode are stable. **The two threading modes are not equivalent**, and this
-is the finding with the longest reach.
-
-`second_pass_multi_threaded` post-processes its output with `remove_duplicate_player_connects`;
-`second_pass_single_threaded` does not. Both apply the other two post-processing steps. Measured on
-the fixture, events-only:
-
-| | `Normal` (multi-threaded) | `ForceSingleThreaded` |
-|---|---|---|
-| total events | 32,378 | 32,435 |
-| `player_first_connect` | 10 | 67 |
-
-Every other event name matched exactly. The difference is entirely the un-deduplicated connect
-events.
-
-This matters because the mode is not always chosen deliberately. `check_multithreadability` drops to
-single-threaded whenever any requested prop is in `NON_MULTITHREADABLE_PROPS`, silently — so the
-event set can change as a side effect of adding a prop. And in the browser we are single-threaded
-regardless, which means **the browser sees the 67-event shape while a native `cargo test` sees the
-10-event shape.** Golden snapshots (§18) taken natively would not match browser output.
-
-Consequences for `crates/demo-parser`:
-
-- pin the threading mode explicitly rather than relying on `ParsingMode::Normal`
-- deduplicate `player_first_connect` ourselves, so the result does not depend on which branch ran
-- the prop set is part of the schema contract; changing it must bump `SCHEMA_VERSION`
-
-Hard rule 8 is satisfiable here, but only because we normalise the output. It is not inherited from
-upstream for free.
-
----
+Multi-threaded and single-threaded modes differ: only the multi-threaded path deduplicates
+`player_first_connect` (10 vs 67 events). Pinning single-threaded mode makes native and WASM output
+identical. Connect events are not in the schema, so nothing needs deduplicating (§13). The prop set is
+part of the schema contract.
 
 ## 8. The browser build
 
-Verified by building the parser for `wasm32-unknown-unknown` and running all three passes in a Web
-Worker against the same fixture, served over `http://127.0.0.1`.
-
-### Verdict
-
-**It builds, it runs, and it fits the budget** — but only after a patch to upstream. The blockers
-were not the ones expected.
-
-### `rayon`, `memmap2` and `libc` are not blockers
-
-All three compile for `wasm32-unknown-unknown` without complaint. The concern recorded before this
-check was wrong, and is corrected in §6. They are still a reason to pin
-`ForceSingleThreaded`, because rayon's threads cannot run in the browser — but they do not stop the
-build.
-
-### What actually blocks it: `std::time::Instant::now()`
-
-`wasm32-unknown-unknown` has no clock, and `Instant::now()` compiles to an `unreachable` trap.
-`Parser::parse_demo` calls it unconditionally on its second line, and
-`second_pass_single_threaded` — the path we are forced onto — calls it again:
-
-```rust
-let _prof = std::env::var("CS2_PROF").is_ok();
-let _t = std::time::Instant::now();   // traps in the browser
-```
-
-Both are leftovers from upstream's profiling work. Every other `Instant::now()` in the parser is
-already lazy (`prof_on().then(std::time::Instant::now)`) and therefore harmless. Making these two
-lazy in the same style is the whole fix — a two-line change, carried as a patch on the pinned
-revision.
-
-### The trap that hid the trap
-
-**A binary whose entry point traps early gets its unreachable code eliminated, and then measures
-tiny.** Before the patch, the optimiser saw `unreachable` at the top of `parse_demo`, concluded
-everything downstream was dead, and produced a 293 KB artifact that gzipped to 16 KB. That number
-looked like a spectacular result against the 4 MB budget. It was a binary with no parser in it.
-
-A size measurement taken from an artifact that has never successfully run is worthless. Measure
-after a green run, never before.
-
-### Size, measured after `wasm-opt` on a build that works
-
-| | bytes | |
-|---|---|---|
-| raw | 2,285,183 | 2.18 MB |
-| gzip -9 | 654,603 | 0.62 MB |
-| brotli -q 11 | 478,028 | 0.46 MB |
-
-Against `AGENTS.md` §16 — under the 4 MB target at **54% of budget**, far under the 24 MB CI gate.
-The §19 pass condition is met.
-
-### Output parity with native
-
-The three passes produce byte-identical counts to a native `ForceSingleThreaded` run:
-
-| | native ST | browser |
-|---|---|---|
-| events total | 32,435 | 32,435 |
-| `player_first_connect` | 67 | 67 |
-| pass B columns × rows | 16 × 1,945,210 | 16 × 1,945,210 |
-| pass C columns × rows | 8 × 301,488 | 8 × 301,488 |
-
-This also **confirms the prediction in §7**: the browser sees 67 `player_first_connect` events, not
-the 10 a native `Normal` run produces. The threading discrepancy is real and reaches the product.
-
-### Timings from this check were wrong — see §9
-
-An earlier revision of this section reported 44 s for three passes and concluded the parse-time
-budget was missed. **That measurement was contaminated** — it was taken while `cargo` and
-`wasm-pack` builds were running on the same machine. Re-measured on an idle machine the same work
-takes ~10.4 s, and the figure reproduces to within 1.5%.
-
-The retraction is kept rather than quietly deleted because the failure is instructive: the bad
-number survived a "verification" that reran it under `-O3` and got 43.9 s, which looked like
-independent confirmation and was really the same contamination twice. Two agreeing measurements
-taken under the same broken conditions agree about nothing.
-
-§9 has the real figures.
-
-### `only_header` does not short-circuit
-
-`only_header: true` takes essentially as long as a full pass — 3.1 s against 3.0 s for the events
-pass — and still produces three prop columns with 1,945,210 rows. It does not stop after the
-header. Reading a demo's map and tick rate cheaply, which the library screen needs, requires
-something other than this flag.
-
-### An aborted instance is poisoned
-
-Once any call traps, **every subsequent call into the same instance traps too**, including calls
-that had worked moments earlier. There is no recovering an instance after an abort. This is why the
-first attempt appeared to fail in all four passes when only the first one had really failed.
-
-For §7.3 this means an abort is not a catchable error: the worker must be terminated and recreated,
-which is the same lifecycle cancellation already requires.
-
-### Build requirements
-
-Two `getrandom` majors coexist in the tree and each needs its own opt-in:
-
-```toml
-getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
-getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
-```
-
-plus `RUSTFLAGS=--cfg getrandom_backend="wasm_js"`. The 0.3 copy arrives through `ahash`, not
-directly.
-
----
+- **`std::time::Instant::now()` traps on `wasm32-unknown-unknown`.** Two unconditional calls in
+  upstream's profiling code are patched to be lazy. `rayon`, `memmap2` and `libc` compile fine.
+- **A binary that traps early gets its parser optimised away** — a 293 KB "success" that parsed
+  nothing. Only measure size after `wasm:smoke` has called into the binary.
+- **An aborted instance is poisoned**: every later call traps. Recovery is terminating the worker.
+- **`only_header: true` does not short-circuit** — it costs a full pass.
+- Two `getrandom` majors each need their browser feature, plus `RUSTFLAGS=--cfg getrandom_backend="wasm_js"`.
+- Native single-threaded and browser output match exactly.
+- **Measure on an idle machine.** An early 44 s figure was taken during a `cargo` build and "confirmed"
+  by a second run under the same load; the real figure was 10.4 s.
 
 ## 9. Parse cost
 
-Measured on an idle machine. Every browser figure is the mean of two runs that agreed to within
-1.5%; the native figures are single runs of a much less variable workload.
-
-### Time
-
-| pass | native, multi-threaded | native, single-threaded | browser |
-|---|---|---|---|
-| A events | 0.46 s | 1.93 s | 2.96 s |
-| B per-tick props | 0.70 s | 2.53 s | 4.26 s |
-| C projectiles | 0.53 s | 2.11 s | 3.14 s |
-| **three passes** | **1.97 s** | **6.66 s** | **10.4 s** |
-
-Copying the 353 MB fixture across the WASM boundary costs 39–84 ms and is not a factor.
-
-### Where the time goes
-
-The browser is 5.3× slower than a native multi-threaded parse, and that splits cleanly:
-
-- **losing threads costs 3.4×** — 1.97 s to 6.66 s, both native. This is the larger factor and it is
-  not recoverable: `SharedArrayBuffer` is rejected (§3) and COOP/COEP are forbidden (§13), so WASM
-  threads are off the table by decision, not by accident.
-- **WASM itself costs 1.6×** — 6.66 s to 10.4 s, both single-threaded. For a parser that is
-  bit-twiddling in a tight loop, a 60% penalty against native is unremarkable and leaves little to
-  win back.
-
-The useful consequence: **there is no large, cheap optimisation waiting here.** Anything that
-materially improves parse time has to reduce the work, not speed it up — fewer passes (read as blocked
-upstream in §3, and taken from three to two by #355 — §25), fewer props, or sampling rather than reading every tick.
-
-### Memory
-
-WASM linear memory across a three-pass parse, which never shrinks and so ends at its peak:
-
-| after | linear memory |
-|---|---|
-| boundary copy of the demo | 339 MB |
-| pass A events | 446 MB |
-| pass B per-tick props | 663 MB |
-| pass C projectiles | 663 MB |
-
-Native peak RSS for the same work: 691 MB single-threaded, 927 MB multi-threaded — the parallel path
-costs more because each second-pass worker builds its own output.
-
-Two honest limits on this figure. **WASM linear memory is not tab memory**: it excludes the JS-side
-`ArrayBuffer` holding the fetched demo, which is another ~353 MB before it is dropped. And
-`performance.measureUserAgentSpecificMemory()`, the only API that reports true tab memory, requires
-cross-origin isolation, which §13 forbids — so the honest whole-tab number cannot be taken under our
-own constraints. Adding the JS buffer by hand puts a realistic peak near **1.0 GB**, inside the
-§16 budget of 1.5 GB but not by a wide margin.
-
-### §16 budgets, now set
-
-§16 marked its parse-time figure provisional and asked Phase 0 to replace it. Applied:
-
-| metric | was | now | reasoning |
-|---|---|---|---|
-| Parse a 300 MB demo | < 30 s | **< 15 s** | 10.4 s measured on 337 MB, a larger demo than the reference. 15 s leaves ~45% headroom for slower hardware and for the columnar write this probe does not do, while still catching a real regression. 30 s is loose enough to hide a 3× regression. |
-| Peak tab memory during parse | < 1.5 GB | **unchanged** | ~1.0 GB estimated. Keep the margin; the estimate is not a measurement. |
-
-The parse-time budget should be asserted against the same fixture on CI hardware, not a developer
-laptop — the number will differ and the budget should be set from the CI figure once it exists.
-
----
+Losing threads costs ~3.4× and WASM itself ~1.6× against native multi-threaded. Neither is
+recoverable (no COOP/COEP), so parse time only improves by **doing less work** — fewer passes, fewer
+props. WASM linear memory never shrinks, so it can be read after a parse under Bun. True tab memory
+cannot be measured without cross-origin isolation.
 
 ## 10. Phase 0 verdict
 
-All five §19 criteria, answered:
-
-| question | pass condition | result |
-|---|---|---|
-| Parses a 400 MB demo in-browser? | completes without crashing | **pass** — 337 MB, three passes, no crash |
-| Peak memory? | < 1.5 GB | **pass** — 663 MB in WASM, ~1.0 GB estimated whole-tab |
-| Parse time? | < 30 s, record the real number | **pass** — 10.4 s; §16 now reads < 15 s |
-| Full §10 schema extractable? | yes | **pass** — including grenade trajectories and per-player blind durations |
-| Shipped WASM size? | < 4 MB | **pass** — 2.18 MB, 54% of budget |
-
-**The Rust default is confirmed. Go is not needed and was never built.**
-
-What Phase 2 inherits as known risk, all recorded above rather than discovered later:
-
-- three passes are a floor imposed by upstream (§3)
-- output differs between threading modes and must be normalised by us (§7)
-- upstream must be pinned and patched — `lazy-instant.patch` — and its build reaches the network (§5, §8)
-- unresolved prop names are dropped silently, so every request must be verified (§5)
-- no large parse-time win is available without reducing the work (§9)
-
----
+All five criteria passed: parses a large demo in-browser, peak memory under 1.5 GB, parse time set the
+15 s budget, full schema extractable, WASM under 4 MB. Current figures are in `AGENTS.md` §16.
 
 ## 11. Still open
 
-- A cheap way to read a demo's header, since `only_header` costs a full pass
-- Whether `bomb_abortdefuse` behaves as expected — needs a demo containing one
-- Whether the profiling timestamps can be fixed upstream rather than carried in `vendor/`
-- Budget figures re-measured on CI hardware rather than a laptop
-- What "slower hardware" is, concretely. §16 bounds it at 5× by confining the browser to efficiency
-  cores, but nothing has run on a machine that is actually slow
-- Naming a bombsite A or B, which needs `packages/map-data` — §13
-- Whether `bomb_abortplant` occurs at all; like `bomb_abortdefuse` it is absent from this fixture,
-  so the plant window that reads it has never been exercised
-
----
+A cheap header read · `bomb_abortdefuse`/`bomb_abortplant` on a real demo · parse time on genuinely
+slow hardware (CDP CPU throttling does not reach a worker; efficiency cores are a 5× lower bound) ·
+bombsite names, which need map polygons (#58) · shotgun shot counts (#230).
 
 ## 12. Found while adopting it (#46)
 
-### A file shorter than the header panics
-
-`first_pass/parser.rs` slices `demo_bytes[..HEADER_ENDS_AT_BYTE]` on the first line of
-`parse_demo`, one line before `handle_short_header`'s own `bytes.len() < 16` check can fire. Any
-file under 16 bytes panics rather than erroring, and that check is unreachable.
-
-This is not cosmetic. §8 above records that an aborted instance is poisoned permanently, and the
-release profile builds with `panic = "abort"` — so a 12-byte file would kill the worker instead of
-producing an error screen. `crates/demo-parser` guards the length before handing bytes over rather
-than patching the vendored copy: never crashing on a malformed file is our contract, and keeping
-the guard on our side keeps it in front of the tests that own it.
-
-### No demo fixture can be committed, so the tests drive the parser without one
-
-`AGENTS.md` §18 forbids committing a `.dem` and §15 rules out Git LFS, which leaves the question of
-how small a real one could be. Upstream's own fixture is 60 MB. There is no such thing as a
-kilobyte-scale CS2 demo: a GOTV recording carries the send tables, the string tables and the game
-event list before a single tick, so even a few seconds of play is megabytes.
-
-`crates/demo-parser` therefore tests against synthetic byte sequences — a wrong magic, the Source 1
-magic, a file shorter than the header, and Source 2 magic over noise. These are not mocks: every one
-of them runs `Parser::parse_demo` for real and asserts the `ErrorCode` it produces. They cover the
-whole of `AGENTS.md` §7.1's "handle gracefully, never a crash" list except the POV case, which needs
-a real POV recording to tell apart.
-
-A real demo arrives the way §18 prescribes, with the golden snapshot that the three-pass extraction
-will need. This section originally read "fetched from a GitHub Release"; #49 settled it the other
-way. Publishing a GOTV recording means publishing ten players' names and SteamIDs, and a project
-whose first hard rule is that no server touches a demo should not keep one on a release page. The
-fixture is named by `DISALYTICS_FIXTURE_DEMO` instead — see §13.
-
-### The generated protobuf code did not need generating
-
-§5 recorded that the build clones `GameTracking-CS2` and needs `protoc`, and treated pre-generating
-that code as work Phase 2 would have to do. It does not: upstream commits `csgoproto/src/protobuf.rs`,
-`csgoproto/src/maps.rs` and `csgoproto/src/message_type.rs` at the pinned revision, and only the
-`GameTracking-CS2` checkout is gitignored. Deleting both build scripts is the whole fix, and it
-keeps `prost-build` and its 18 further packages out of the graph. `vendor/README.md` has the detail.
-
----
+- **A file shorter than 16 bytes panics upstream** before its own length check. With `panic = "abort"`
+  that kills the worker, so the crate guards the length itself.
+- **No demo is committed.** Crate tests use synthetic bytes (wrong magic, Source 1 magic, short file,
+  magic over noise) that run the real parser and assert the `ErrorCode`.
+- **Upstream commits its generated protobuf code**, so deleting the build scripts was the whole fix.
 
 ## 13. Found while extracting the schema (#49)
 
-Everything below was measured against the same fixture §2 describes, driving
-`crates/demo-parser` rather than a probe.
+- **`DemoOutput.projectiles` is always empty** — trajectories live in the shared table under
+  `GRENADE_X/Y/Z`, `ENTITY_ID_ID` etc.
+- **Projectile entity indices are recycled.** A flight is keyed by index and start tick, split on a
+  sample gap over 8 ticks. 519 flights match `weapon_fire` counts per type exactly.
+- **Molotov and incendiary share `CMolotovProjectile`**; the type comes from the thrower's latest
+  `weapon_fire`. Fires are a separate `inferno_*` entity, joined by thrower and time.
+- **`player_death.distance` is metres** (×39.37008 for units).
+- **The bombsite has no name** — `site` is a trigger entity id; `m_iBombSite` reads 0.
+- **The demo reports no tick rate** — `sv_tickrate` is not broadcast. The rate is the constant 64,
+  confirmed by `mp_freezetime = 20` against a 1,280-tick buy phase (§21). The demo *does* carry other
+  convars (§21).
+- **Warmup `round_end`s are dropped**: rounds are assembled after `begin_new_match`. Overtime halves
+  swap sides too.
+- **The release profile dominates parse cost**: the columnar write is ~0.2 s; `-Oz` cost 1.8× natively.
 
-### `DemoOutput.projectiles` is always empty — trajectories live in the table
-
-`projectile_records` is initialised to `vec![]` at the pinned revision and never pushed to.
-`collect_projectiles` writes into `self.output`, the same `df` the tick pass uses, under
-`GRENADE_X`/`GRENADE_Y`/`GRENADE_Z`, `GRENADE_TYPE_ID`, `ENTITY_ID_ID`, `STEAMID_ID`, `NAME_ID` and
-`TICK_ID` — the eight columns §8 counted.
-
-Both threading modes were re-run to be sure: `output.projectiles` is empty in each, and the `df` is
-identical in each — 301,488 rows, 385 distinct entities, entity 98 opening at tick 6,920 with
-`x = -490.78`, which is the sample §4 prints. The threading discrepancy §7 records is real for
-events and does **not** extend to projectiles.
-
-### Projectile entity indices are recycled inside a match
-
-385 distinct entity indices carry 519 flights. A flight is therefore keyed by index *and* by the
-tick its samples started, split wherever the gap between consecutive samples exceeds 8 ticks —
-upstream samples a projectile every tick it exists, so any real gap means a different object.
-
-519 is not an estimate. `weapon_fire` on the same demo counts 153 HE, 136 smoke, 112 flashbang,
-68 molotov, 49 incendiary and 1 decoy, and the extracted grenades match every one of those six
-numbers exactly.
-
-### A molotov and an incendiary are the same projectile class
-
-Both arrive as `CMolotovProjectile`; `m_bIsIncGrenade` lives on the entity but upstream does not
-expose it. The type is resolved from the thrower's most recent `weapon_fire` — `weapon_molotov`
-against `weapon_incgrenade` — which is what produces the 68/49 split above.
-
-Molotov detonations also cannot be joined by entity index: the flames are a separate `inferno_*`
-entity. They are matched by thrower and time instead, and `inferno_expire` then joins the inferno's
-own index.
-
-### `player_death.distance` is in metres
-
-A Source unit is one inch, so a metre is 39.3701 of them. Computing the distance between attacker
-and victim from the tick pass at each death tick and dividing gives a median of **39.366** over the
-219 kills that have both endpoints — the outliers are point-blank knife kills where the engine's own
-measurement and the sampled positions disagree by a few units. `distanceUnits` in the schema is the
-field multiplied by 39.37008.
-
-### The bombsite has no name in the demo
-
-`bomb_planted.site` is the bombsite trigger's entity index — 301 and 309 on this fixture, stable
-across the 22 plants. `CCSGameRulesProxy.CCSGameRules.m_iBombSite` reads **0 at every one of them**
-and is no help. Naming a site A or B needs the site polygons that `packages/map-data` will carry in
-Phase 3, so the parser emits `siteEntityId` and `demo-core` lost `BombSite`/`BOMB_SITES` until then.
-
-### The demo does not report its tick rate
-
-The header has no field for it, **`sv_tickrate` specifically** is not among the convars a GOTV
-recording broadcasts, and `m_fRoundStartTime` drifts against the tick counter badly enough to derive
-**59** from it. The rate is the constant 64.
-
-**That sentence has been misread as "a demo carries no convars", and it cost a year.** It carries 72
-of them — `mp_freezetime`, `mp_roundtime_defuse` and the rest — through `server_cvar` game events
-rather than through the `DemoOutput.convars` field named after them, which upstream writes at no
-point at all. §21 has the route, the table and the two traps in reading it, and the round clock
-counted *up* until #295 because this paragraph was read as the broad claim rather than the narrow
-one.
-
-The cross-check on 64 is §21's as well, and for the same reason. The one this section used to
-give — 140,008 to 147,368 is 7,360 ticks over a 115-second round, so 64.0 exactly — takes the
-115 s as given, which was the assumption being checked rather than an independent reading.
-**`mp_freezetime = 20` against a measured 1,280-tick buy phase reads 64.0 without assuming its own
-answer**, and that is the confirmation to quote. The constant is unmoved; what changed is that it is
-now measured twice.
-
-### The fixture plays 30 rounds, not the 32 §2 records
-
-There are 32 `round_end` events, and §2 counted those. Two are warmup: one at tick 1 with no winner
-at all, one at 4,296 before `begin_new_match` at 4,951. Rounds are assembled from `round_end` after
-that boundary — 30 of them, MR12 plus one overtime, with side swaps at rounds 13 and 28.
-
-That second swap is why a pistol round is not simply the first round of a half: overtime halves swap
-sides too and open on $10,000, and every player at round 28 is holding 5,100 or more.
-
-### Parse cost is dominated by the release profile, not by the extraction
-
-| build | three passes + columnar write |
-|---|---|
-| `opt-level = 3` | **6.82 s** |
-| `opt-level = "z"` — what this repository shipped until #66 | **11.5–12.3 s** |
-
-§9 measured 6.66 s for the three passes alone, natively single-threaded, on a normal release build.
-So the whole of the columnar write, the event mapping and the trajectory grouping costs roughly
-**0.2 s** — and `-Oz`, which `AGENTS.md` §16 chose for the 4 MB binary budget, costs **1.8×**.
-
-This matters because §9's browser figure of 10.4 s was taken at `-O`, not at `-Oz`. Scaling it by the
-same factor lands near 19 s against a 15 s budget. That is an extrapolation and not a measurement —
-the honest number needs the worker from #50 — but the budget and the profile were set from different
-builds and the gap is now on the record.
-
-### Running it
-
-The demo is named by an environment variable and never committed (`AGENTS.md` §18):
+Running the fixture test:
 
 ```sh
 DISALYTICS_FIXTURE_DEMO=/path/to/demo.dem cargo test -p demo-parser --test fixture
+DISALYTICS_UPDATE_SNAPSHOT=1 …   # rewrites tests/snapshots/parsed-demo.json — review the diff by hand
 ```
 
-Without it the test reports itself skipped. `DISALYTICS_UPDATE_SNAPSHOT=1` rewrites
-`crates/demo-parser/tests/snapshots/parsed-demo.json` instead of comparing against it; the diff is
-read by a human before it is committed, never accepted because a test asked for it.
-
-The snapshot carries every round and plant and defuse in full, the ends of the longer lists with an
-FNV-1a checksum over the whole of each, per-column checksums of `TickTrack` with every 6,000th frame
-written out, and the grenade counts per type that the `weapon_fire` cross-check above compares
-against.
-
-### `player_first_connect` deduplication is not needed
-
-§7 asks for it so output does not depend on which threading branch ran. Connect events are not part
-of the §10 schema and never reach parsed output, so there is nothing to deduplicate. The point stands
-if that schema ever grows a roster timeline.
-
----
+The snapshot comparison skips when the demo's header is not the snapshot's own; the self-consistency
+assertions still run on any demo.
 
 ## 14. The WASM boundary (#50)
 
-`crates/demo-parser-wasm` hands the parsed demo to JavaScript as plain objects and typed arrays,
-built with `js-sys`. Three things about that were decided rather than fallen into.
-
-### Why not JSON
-
-`serde_json` would carry the event lists in a few lines. It cannot carry `TickTrack`: a 40-minute
-match at 16 Hz is ~384,000 cells per column, and eight columns of that as JSON text is tens of
-megabytes to serialise and then parse back into the wrong type — `number[]`, not `Float32Array`.
-Grenade trajectories have the same problem, 519 of them. A JSON route therefore needs a typed-array
-route beside it for the parts that matter, and once both exist the JSON half only adds a dependency.
-
-`js-sys` adds no crate to the graph: `getrandom`'s browser opt-ins already link it, which is why the
-`Cargo.toml` comment says so and hard rule 10 is not in play. It costs **0.13 MB** of binary —
-2.00 MB before #50, 2.13 MB after.
-
-### Every buffer is JavaScript's, not a view into linear memory
-
-`Float32Array::from(&vec[..])` copies out of WASM memory into a fresh, JavaScript-owned array. A
-view would be cheaper and wrong three times over: it cannot be transferred, it dangles the moment
-the worker is terminated, and it reports the module's whole heap as its `buffer`. `bun run
-wasm:smoke` asserts `buffer.byteLength === byteLength` on every column for exactly that reason.
-
-### The demo goes in a chunk at a time
-
-`parse(&[u8])` would have `wasm-bindgen` copy the file out of a JavaScript `ArrayBuffer` into linear
-memory, holding ~350 MB twice at the peak. `DemoBuffer` reserves the file's size up front and takes
-the chunks a `ReadableStream` yields, so only the chunk in flight is duplicated. The buffer is then
-consumed by value and dropped before any of the output is allocated.
-
-An allocation that will not fit still aborts the instance. There is no `ErrorCode` for it — see #56.
-
-### Progress is a position inside a pass (#354)
-
-Until #354 upstream exposed no hook inside a pass, so `ParseObserver` reported at the three
-boundaries and the worker turned that into 33 / 67 / 100 — four to eight seconds standing at 0 on the
-§16 fixture, and a `.dem.zst` naming the decompress phase for the whole of the first pass. The hook
-`vendor/README.md` lists is what replaced it, and one measurement decided where it goes. Native,
-single-threaded, release profile, over the 398 MB IEM Atlanta 2026 inferno map with upstream's own
-`CS2_PROF` timers:
-
-| per pass | events | ticks | projectiles |
-|---|---|---|---|
-| upstream's first pass | 0.070 s | 0.041 s | 0.040 s |
-| upstream's second pass | 2.169 s | 3.742 s | 2.442 s |
-
-**Upstream's second pass is the whole of each of ours**, so its byte offset into the demo is an
-honest position and the first pass has no hook. `Progress` in `crates/demo-parser` turns positions
-into whole-number percentages and hands each one to the observer once: upstream reports once per
-frame, and the WASM wrapper turns every report into a call into JavaScript. **Every pass is an equal
-share** — the ticks pass is 45% of this demo's parse, but a weight measured on one demo is a guess
-about the next, so the readout changes pace instead. **A pass never reaches its own end by
-reading**; completing it does, so 100 waits for the grenades the last pass is still building. A
-container reports the compressed bytes its decoder has consumed — the one position both codecs can
-state, since a `.bz2` never says how far it expands — and the phase becomes `parse` the moment the
-first pass starts rather than when it ends.
-
-The header is reported separately because it is complete after the second pass while the third is
-still running; `crates/demo-parser/tests/fixture.rs` asserts that ordering, since a header that
-arrives with `done` is a header not worth a message.
-
-### Parse cost of the binary that ships — 13.89 s, and what that is not
-
-`DISALYTICS_FIXTURE_DEMO=… bun run wasm:smoke` drove the shipped `-Oz` binary over the 353 MB
-fixture: **13.89 s**, three passes, columnar write, marshalling and all, `de_dust2`, 486,350 track
-cells and 519 grenade flights — the same 519 the `weapon_fire` cross-check in §13 counted.
-
-This is the first number taken from WASM rather than from native, and it retires the 19 s figure
-§9 arrived at by multiplying 10.4 s by the 1.8× that `-Oz` costs *natively*. WASM does not pay that
-multiplier the way native does.
-
-It is **not** the §16 budget met. Bun's engine is not a browser's, nothing here ran inside a
-`Worker`, and the machine is a developer laptop rather than the slow hardware the 15 s has to cover.
-#59 is still the honest measurement, and it needs the consumer #52 wires.
-
-### First numbers from an actual browser (#52), and why they are not #59 either
-
-Driving the shipped build through workerd in Chrome over the same 353 MB fixture, from the drop to
-the summary, with the file already resident as a `Blob`:
-
-| | elapsed |
-|---|---|
-| first `progress` | 0.2 s |
-| pass 1 done — 33% | 4.6 s |
-| pass 2 done — 67% | 10.7 s |
-| `header` on screen | 11.1 s |
-| `done` | **15.3 s** |
-
-The header landing 0.4 s after the second pass, while the third still runs, is the ordering §14
-argues for and `crates/demo-parser/tests/fixture.rs` asserts — observed here rather than inferred.
-
-**15.3 s is at the budget, not inside it**, and it is 1.4 s above the 13.89 s Bun measured. It is
-still not the measurement: the demo was fetched over HTTP into a `Blob` rather than picked off disk,
-the tab was driven by automation, and nothing was controlled for. #59 remains what settles the
-budget — this is the first evidence that it is worth doing carefully rather than a formality.
-
----
+- **Not JSON.** `TickTrack` as JSON is tens of MB of text parsed into the wrong type; `js-sys` builds
+  objects and typed arrays directly and adds no crate.
+- **Every buffer is JavaScript-owned**, copied out of linear memory — a view cannot be transferred and
+  dangles after `terminate()`. `wasm:smoke` asserts `buffer.byteLength === byteLength`.
+- **The demo goes in chunk by chunk** into `DemoBuffer`, reserved up front, so ~350 MB is never held
+  twice; the buffer is dropped before output is allocated.
+- **Progress is a byte position inside a pass** (#354): a hook in `vendor/` exposes the second-pass
+  frame loop's offset. `Progress` emits each whole percentage once, every pass an equal share, 100 only
+  when the last pass completes; a container reports compressed bytes consumed. Arithmetic is `u64`.
+- **The header is posted before `done`**, as soon as the first pass completes.
+- An allocation that does not fit still aborts the instance; there is no `ErrorCode` for it (#56).
 
 ## 15. Containers (#48)
 
-`.dem.zst` from FACEIT and `.dem.bz2` from Valve matchmaking are expanded inside
-`crates/demo-parser`, before upstream sees a byte. `AGENTS.md` §7.1 settled the placement; what
-follows is what building it found.
-
-### The decoder is `bzip2`, not `bzip2-rs`
-
-§7.1 named `ruzstd` and `bzip2-rs`, and the reasoning behind the second one has expired.
-`bzip2-rs` was the pure-Rust decoder because the `bzip2` crate meant C bindings. Since `bzip2` 0.6
-its default backend is **`libbz2-rs-sys`**, a Rust rewrite, so the C toolchain the rule was
-protecting against is no longer what that crate implies. The measured difference:
-
-| | packages added | wasm-opt `-Oz` | last release |
-|---|---|---|---|
-| `ruzstd` + `bzip2-rs` | 5 | 124.5 kB | Feb 2021 |
-| `ruzstd` + `bzip2` 0.6 | 4 | 119.6 kB | May 2026 |
-
-Five and a half years without a release, on the code that reads a hostile file first, is what
-decided it. Neither route pulls `wasm-bindgen`, `js-sys`, `web-sys`, a build script or a
-proc-macro, and `#![forbid(unsafe_code)]` on `crates/demo-parser` is untouched either way — it
-covers this crate, never its dependencies.
-
-The shipped binary went **2.13 MB → 2.22 MB**, below the 119.6 kB the isolated probe predicted
-because `std`'s machinery was already linked.
-
-### `ruzstd` decodes one frame, and an archive may hold several
-
-`StreamingDecoder::read` returns `Ok(0)` at the end of the *first* frame rather than continuing to
-the next, and the format allows any number of them. Left alone that hands back a prefix of the
-demo, which reads downstream as a recording that stops early — a wrong error about a file that is
-perfectly good. `expand_zstd` therefore loops, building a new decoder per frame until the source is
-consumed. Skippable frames are not handled; they do not occur in a demo download and would need
-byte accounting the crate cannot check against a real file.
-
-### The frame's declared size is what keeps the peak flat
-
-`FrameDecoder::content_size()` reports the frame's uncompressed length, and reserving it up front
-is worth more than it looks. Growing a 353 MB buffer by doubling holds the old and the new
-allocation at once — 792 MB, on top of the 264 MB compressed file still in memory. Reserving once
-makes the same work peak at **617 MB**, under the 663 MB the parse itself reaches. A frame that
-declares nothing falls back to growth; a frame that declares more than the ceiling is refused
-before anything is allocated.
-
-That ceiling is 1.5 GiB, and it is a guard rather than a policy: `wasm32` aborts the instance on a
-failed allocation instead of returning, so a stream claiming to expand forever has to be refused
-rather than attempted.
-
-### The compressed copy is freed before the passes, not after
-
-`demo_parser::decompressed` takes the file **by value** and the WASM wrapper hands it `DemoBuffer`'s
-own `Vec`. The compressed quarter-gigabyte is released as that call returns, so the two copies
-overlap only while the container is being expanded — they do not ride along through all three
-passes. `parse`/`parse_observed` keep a borrowing path for callers who do not own their bytes, and
-a raw `.dem` is passed through untouched by both.
-
-### A failed decompression is `TRUNCATED_DEMO`, deliberately
-
-A decoder cannot tell a download that stopped early from a corrupted one, and the first is much the
-commoner. The alternative code, `MALFORMED_DEMO`, renders as *"The file is a Counter-Strike 2 demo,
-but the recording is damaged"* — a claim nothing has earned while the container is still shut. Both
-messages send the reader to re-download; only one of them avoids asserting something unknown. #56
-owns the vocabulary this is working around.
-
-`UNSUPPORTED_CONTAINER` is now reachable, and gzip is what reaches it: `.dem.gz` is identified and
-named rather than parsed. Before this, a `.dem.zst` failed as `NOT_A_DEMO` — upstream rejected the
-zstd magic as `UnknownFile` — so a good FACEIT download was told it was not a demo.
-
-### What it costs — 2.78 s, and the budget does not have it
-
-`DISALYTICS_FIXTURE_DEMO=… bun run wasm:smoke` over the same fixture, on the same binary, on the
-same machine, one run each:
-
-| input | elapsed |
-|---|---|
-| `demo.dem`, 353 MB raw | 13.92 s |
-| `demo.dem.zst`, 264 MB compressed | **16.70 s** |
-
-Both produced `de_dust2`, 486,350 track cells and 519 grenade flights — the container path is
-output-identical, not merely close. The 13.92 s also confirms the decoders cost nothing on a raw
-demo: §14 measured 13.89 s before they existed.
-
-**Decompression is therefore 2.78 s, and §16's 15 s budget has no room for it.** The browser number
-for the *raw* fixture is already 15.3 s, so a FACEIT `.dem.zst` lands around 18 s on the same
-hardware. That is not a regression this issue introduced — the file could not be opened at all
-before — but it is the budget failing for the input most users actually have, and #59 now has to
-measure both containers rather than one.
-
-The fixture test was also run against the `.dem.zst` directly and reproduced the committed golden
-snapshot for the raw demo byte for byte, twice over: identification, expansion and parsing produce
-the same output as the file that was expanded on the command line.
-
----
+- **`bzip2` 0.6, not `bzip2-rs`** — its default backend is a Rust rewrite, and `bzip2-rs` had not
+  released in five years. Both decoders together cost ~0.09 MB of binary.
+- **`ruzstd` stops at the end of the first frame**; `expand_zstd` loops until the input is consumed.
+- **Reserve the frame's declared size** — doubling growth peaked at 792 MB, reserving at 617 MB. A
+  declared size over 1.5 GiB is refused before allocating (an OOM aborts WASM).
+- **The compressed copy is freed before the passes** — `decompressed` takes the file by value.
+- **A failed decompression is `TRUNCATED_DEMO`** — a decoder cannot tell a cut download from
+  corruption, and the first is commoner. `.dem.gz` is `UNSUPPORTED_CONTAINER`.
+- Container output is byte-identical to the expanded file's.
 
 ## 16. The parse budget, measured (#59)
 
-`AGENTS.md` §16 budgets a 300 MB demo at 15 s. Every earlier figure was taken somewhere other than
-where that claim lives — natively (§9), from Bun (§14), or through a tab whose state nobody checked
-(§14 again). This is the measurement the budget is now written from.
-
-### How it was taken
-
-Chrome 150, headed, one tab, `document.visibilityState` asserted `visible` inside every run. The app
-is the shipped build served by `wrangler dev` out of `apps/web/dist`, and its binary was hashed
-against `crates/demo-parser-wasm/pkg` before the first run — timing an artifact nobody confirmed is
-§8's mistake a second time.
-
-The demo is staged into **OPFS** and handed to the app as the `File` that
-`FileSystemFileHandle.getFile()` returns, so the worker's streaming read comes off disk instead of
-out of a `Blob` the page is already holding. §14 named that `Blob` as one of three reasons not to
-trust its number. It turned out to be worth nothing at all — 15.29 s off disk against the 15.3 s
-§14 measured out of memory — but it was worth removing to find that out.
-
-Timing is a `MutationObserver` over the app's own DOM: the progress bar's `aria-valuenow`, the phase
-label, the header block, the summary. The clock therefore reads the milestones a person watching the
-screen reads, and no polling loop runs against the tab. **The interval is the drop to the summary**,
-which is the whole of what a user waits through.
-
-### The numbers — three runs each, idle machine
-
-| input | runs | mean |
-|---|---|---|
-| `demo.dem`, 353 MB raw | 15.49, 15.16, 15.22 | **15.29 s** |
-| `demo.dem.zst`, 264 MB | 18.80, 18.85, 18.91 | **18.85 s** |
-
-Every run produced `de_dust2`, 10 players, 30 rounds, 225 kills and 519 grenades — the container
-path is output-identical in a browser too, not only under Bun (§15).
-
-Where the time goes, taken from the middle run of each:
-
-| milestone | raw | `.zst` |
-|---|---|---|
-| read into linear memory | — | 0.16 s |
-| pass 1 — 33% | 4.33 s | 8.01 s |
-| pass 2 — 67% | 10.44 s | 14.13 s |
-| header on screen | 10.67 s | 14.34 s |
-| pass 3 — 100% | 15.11 s | 18.80 s |
-| summary | 15.16 s | 18.85 s |
-
-**The container costs 3.56 s**, against the 2.78 s §15 measured under Bun. The read itself is 0.16 s
-for 264 MB, which is why the raw demo does not bother reporting one.
-
-### Two questions §14 left open, answered
-
-**Measure from the drop, not from the first `progress`.** Dropping a 1 KB file and waiting for the
-error screen times worker spawn, `init()` and the rejection together: **0.08 s** on a cold profile,
-0.03 s warm. §14 attributed 0.2 s to instantiating the binary; whatever the true split, it is under
-1% of the budget and cannot decide anything. The drop is what the user starts waiting at.
-
-**"Slower hardware" cannot be emulated with the tooling to hand.** `Emulation.setCPUThrottlingRate`
-at rate 4 leaves the figure at 15.64 s against 15.29 s unthrottled: CDP's throttle reaches the main
-thread and not a dedicated worker, so it cannot say anything about a parse. What *can* be said is
-what the same machine does at background QoS — `taskpolicy -b`, which on Apple silicon confines the
-process to efficiency cores:
-
-| input | efficiency cores | ratio |
-|---|---|---|
-| `demo.dem` | 76.4 s | 5.0× |
-| `demo.dem.zst` | 98.6 s | 5.2× |
-
-That is a lower bound on hardware, not a model of it, and no build in this repository covers a 5×
-machine inside 15 s. The budget's "headroom covers slower hardware" has never been true and is not
-made true here.
-
-### A backgrounded tab parses five times slower
-
-The first attempt at this measurement ran in an embedded browser pane and produced 87.0 s and
-82.7 s for the raw demo. Nothing was wrong with the machine — Bun parsed the same binary in 14.22 s
-the same afternoon, against the 13.92 s §15 recorded. The tab reported `document.hidden === true`,
-and Chrome drops a hidden tab's renderer to background priority, which lands it on the same
-efficiency cores as the table above.
-
-This is a product fact and not only a measurement trap: **a user who switches away mid-parse waits
-roughly five times longer.** Nothing in the app can prevent it, and nothing currently says it.
-
-### `-Oz` misses the budget on both inputs; `-O3` meets it on both
-
-`-Oz` was chosen for the 4 MB binary cap (§8, `Cargo.toml`), and the cap has 45% of itself unused
-while the time budget has none. Rebuilding at `opt-level = 3` and `wasm-opt -O3`, everything else
-held:
-
-| build | raw `.dem` | `.dem.zst` | binary | of the 4 MB cap |
-|---|---|---|---|---|
-| `-Oz` — what ships today | 15.29 s | 18.85 s | 2.22 MB | 55.5% |
-| `-O3` | **11.11 s** | **14.19 s** | 2.62 MB | 65.6% |
-
-`-O3` is 27% faster on the raw demo and 25% on the container, for 0.40 MB. It is the only
-configuration measured in which **both** §16 budgets hold at once.
-
-**Decision: switch the release profile to `-O3`**, taken by the repository owner on 7 August 2026
-against these numbers. The 15 s budget stands as written; the profile moves to meet it. The change is
-**#66** rather than part of this measurement, because a profile that decides both budgets deserves
-its own diff.
-
-### #66 landed it, and re-measured the container arm
-
-4 September 2026, on the built bundle served by `wrangler dev`, same method as above — the demo
-staged into OPFS and handed over as the `File` `getFile()` returns, `document.visibilityState`
-asserted `visible` inside every run, the interval being the drop to the review screen. The arms were
-built and measured **interleaved** — `-Oz`, `-O3`, `-O3`, `-Oz` — because a single before-and-after
-pair cannot tell a profile from an afternoon.
-
-| pass | `-Oz` | `-O3` |
-|---|---|---|
-| first | 20.96, 24.42, 20.39 → **21.92 s** | 15.76, 14.48, 14.48 → **14.91 s** |
-| second | 21.07, 21.44, 21.61 → **21.37 s** | 16.03, 17.23, 15.30 → **16.19 s** |
-| six runs | **21.65 s** | **15.55 s** |
-
-Every one of the twelve runs produced 30 rounds and a review screen, and the two `-O3` builds — one
-before the baseline was put back and one after — were byte-identical, so the arms differ by the
-profile and nothing else.
-
-Three things this says. **The machine is slower than #59's day and not drifting through the hour**:
-the `-Oz` baseline reproduced itself to 0.55 s across four passes with the other arm's builds in
-between, while sitting 2.8 s above the 18.85 s §16 records. **The profile's effect is #59's again** —
-28% here against 25% there — and the best `-O3` pass, 14.48 / 14.48 s, reproduces #59's 14.19 s
-within the day. And **the budget is met with no headroom**: the same binary read 17.23 s on the
-slowest run of that hour, so a machine a little slower than this one is over it. That is a fact about
-the budget rather than about the profile — `-Oz` never came within five seconds of it on any run.
-
-The binary is **2.25 MB → 2.66 MB**, 56.3% → 66.5% of the 4 MB cap. `cargo test -p demo-parser`
-reproduced the committed snapshot unchanged against the fixture, which is hard rule 8: the profile
-changes the binary and not the output.
-
----
-
-## 17. The four props schema 4 needed (#136)
-
-`docs/DESIGN.md` §5.3 asks the player rails for armour, weapon, grenades and money per sample. All
-four exist, but the route to two of them is not the obvious one, and one obvious name is the §5
-silent-omission trap firing again.
-
-Probed against the 264 MB fixture, 1,945,210 tick rows, before a line of #136 was written:
-
-| Requested name | What came back |
-|---|---|
-| `CCSPlayerPawn.m_ArmorValue` | `I32`, present on every row |
-| `CCSPlayerPawn.CCSPlayer_ItemServices.m_bHasHelmet` | `Bool`, present on every row |
-| `weapon_name` | `String`, present on 1,456,141 rows — the missing quarter is dead players |
-| `inventory_as_ids` | `U32Vec`, the same rows, e.g. `[517]`, `[508]` |
-| `inventory` | `StringVec`, the same rows as display names |
-| **`active_weapon_name`** | **no prop info and no column — silently absent** |
-
-### The active weapon is `weapon_name`, not `active_weapon_name`
-
-`vendor/parser/src/maps.rs:1100` maps `active_weapon_name` to `weapon_name`, but that table is the
-one applied *inside* the weapon entity, not to player props. Requested as a player prop,
-`active_weapon_name` produces nothing and says nothing — the §5 failure mode, in the one place a
-reader would most expect the friendly name to be the right one. `weapon_name` is what resolves.
-
-### `inventory_as_bitmask` is broken for knives and must not be used
-
-Upstream builds it as `bitmask |= 1 << def_idx`
-(`vendor/parser/src/second_pass/collect_data.rs:855`) and knife definition indices run to 526, so
-every knife above 63 shifts out of the `u64`. `inventory_as_ids` carries the same information
-soundly, and #136 uses that.
-
-### `item_equip.item` collapses distinct weapons
-
-The event that looks like the cheapest source of "what is this player holding" is the one that
-cannot tell an M4A4 from an M4A1-S: both arrive as `m4a1`, and P2000 and USP-S both arrive as
-`hkp2000`. Confirmed by joining `fire_bullets.item_def_index` to `weapon_fire.weapon` on the same
-demo — def 16 fired 359 times and def 60 fired 625, against one `m4a1` in `item_equip`.
-`weapon_name` resolves through the definition index and tells them apart.
-
-### The vocabulary is a fourth one
-
-`weapon_name` reports upstream's `WEAPINDICIES` **display names** — `AK-47`, `M4A1-S`,
-`Paracord Knife` — which is not the vocabulary `Kill.weapon` and `Damage.weapon` carry (`ak47`,
-`m4a1_silencer`, `knife_cord`) and not the one `weapon_fire` carries (`weapon_ak47`). #53 has the
-full survey of the five namespaces and the evidence-backed mapping between two of them; until it
-lands, `MatchHeader.weapons` and `Kill.weapon` are deliberately different vocabularies and the
-schema says so.
-
-Since #258 `packages/demo-core` carries a **bridge** between those two — `ENTRY_BY_INTERNAL_NAME` in
-`helpers/weapons.ts`, one column from `ak47` to `AK-47` — because a kill has to be stated in words
-somewhere. It changes nothing here: the crate still emits both vocabularies, the bridge is a lookup
-rather than a canonical enumeration, and the name it answers with is still upstream's. #53 is what
-replaces both tables with constants of this repository's own.
-
-### Cost
-
-Ticks pass over the same demo, five alternating runs, `--release`, native single-threaded:
-
-| Props requested | Median |
-|---|---|
-| 16 — before #136 | 5.06 s |
-| 20 — after | 6.18 s |
-
-**+22% on the ticks pass**, and the three-pass parse went 18.6 s → 18.2 s measured end to end, which
-is inside the run-to-run spread rather than an improvement. The binary grew 2.22 MB → 2.25 MB, 56.2%
-of the 4 MB cap.
-
----
-
-## 18. Gunfire, and the two events that carry it (#163)
-
-A shot has two candidate sources and they are not the same event. Counted on the 264 MB fixture, a
-25-round match with 225 kills:
-
-| Event | Count | What it is |
-|---|---|---|
-| `weapon_fire` | 4,788 | a weapon was used — guns, thrown grenades and knife swings alike |
-| `fire_bullets` | 3,500 | a bullet left a gun |
-
-The difference is the 519 grenade throws and the 768 knife swings `weapon_fire` also counts:
-4,788 − 519 − 768 = 3,501, one more than `fire_bullets` reports. **The one extra is a Glock-18**:
-`weapon_fire` counts 203 of them and `fire_bullets` 202, and every other weapon in the match agrees
-exactly. One trigger pull in 4,788 leaving no bullet event is not a discrepancy worth modelling; it
-is recorded here so the next reader who joins the two does not go looking for a bug.
-
-### `fire_bullets` is the one the schema carries
-
-Not because it is the smaller number, but because of the fields:
-
-| Field | Value on the fixture |
-|---|---|
-| `item_def_index` | `U32(16)` — the M4A4, resolving through `WEAPINDICIES` |
-| `user_steamid` | `String("765…")` — present on **all 3,500**, none missing |
-| `tick` | already ascending; the array needs no sort to be sorted |
-
-`weapon_fire` names its weapon `weapon_ak47`, which is the **fifth vocabulary** §17 counts and the
-one nothing in this repository can map without #53. `fire_bullets` names it by definition index,
-which is the route `MatchHeader.weapons` is *already* built through — so `Shot.weapon` is an index
-into that table and means exactly what `TickTrack.weapon` means at the same tick. On the fixture
-**every one of the 3,500 shots resolved into the table**; none fell back to `WEAPON_NONE`.
-
-The per-weapon counts are identical across the two events, which is what says `fire_bullets` counts
-trigger pulls rather than bullets in flight: AK-47 1,280 in both, M4A1-S 625 in both, M4A4 359 in
-both, over 18 guns. **A shotgun could not be checked**: the match carried a MAG-7 and an XM1014 in
-the weapon table but neither was ever fired, so whether nine pellets are one event or nine is
-unverified here. The event carries a single `seed`, `spread` and `inaccuracy`, from which the game
-derives the whole pattern, which is an argument for one — not evidence.
-
-### The shape is a plain array, and the count is why
-
-Hard rule 3 sends discrete events to sorted arrays of objects, and `AGENTS.md` §10 would take a
-columnar exception if the volume argued for one. It does not: 3,500 shots is four times the damage
-array and a third of `item_equip`, three fields wide. The array is ~100 kB in the cache container
-against the 11 MB it already holds.
-
-### Cost
-
-Native, `--release`, single-threaded, three runs of the three-pass parse over the same 264 MB
-container, alternating between the branch and its base on one machine:
-
-| | Runs | Median |
-|---|---|---|
-| before | 16.31 / 16.34 / 16.28 s | 16.31 s |
-| after | 16.20 / 16.09 / 16.09 s | 16.09 s |
-
-**No measurable cost**, and the direction of the difference is run-to-run spread rather than a
-speed-up: the events pass already collects every game event, so this walks a list that was being
-built and discarded.
-
-The browser is where `AGENTS.md` §16's row is measured, so the same comparison was run there —
-headed Chrome 151 over CDP against the built bundle, timed from the drop to the review screen,
-`document.visibilityState` asserted inside every run, three runs an arm on one machine:
-
-| | Runs | Median |
-|---|---|---|
-| before | 20.03 / 19.94 / 19.88 s | 19.94 s |
-| after | 20.22 / 20.05 / 20.06 s | 20.06 s |
-
-**+0.12 s, inside the spread of either arm.** Both sit about 1.1 s above the 18.85 s §16 records
-for this input, and that is the day rather than the change — the before arm is this repository's
-own base, built and measured the same afternoon. §16's figure stands as #59 measured it.
-
----
-
-## 19. What ends an area grenade (#173)
-
-A smoke is drawn between its detonation and its expiry, so a smoke with no expiry is on the plate
-for no time at all. **11 of the fixture's 136 smokes reached the schema that way** — the reader
-watched them fly, land, and never bloom — and the crate's answer was to look for a
-`smokegrenade_expired` event keyed on the projectile's entity index.
-
-### The event is not there, and it is not a lookup that missed it
-
-The first suspect was entity-index reuse: indices are recycled within a match, `REUSE_GAP_TICKS`
-exists for exactly that reason, and a lookup keyed on the index alone can pick the wrong one. It is
-not that. Every one of the 11 has **no `smokegrenade_expired` at any tick**, for any window, under
-its own entity index. The match carries **125 of them for 136 smokes**, and 136
-`smokegrenade_detonate` — one detonation per smoke, eleven endings missing.
-
-### What the 11 have in common
-
-Each of them has its last projectile sample on the tick *immediately before* the round is cleaned
-up: `round_officially_ended`, `round_prestart` and `round_start` all land at `last + 1`.
-
-| Entity | Detonation | Last sample | Cloud life |
-|---|---|---|---|
-| 798 | 12,333 | 12,859 | 8.2 s |
-| 764 | 19,309 | 20,341 | 16.1 s |
-| 576 | 24,362 | 25,459 | 17.1 s |
-| 80 | 43,978 | 45,113 | 17.7 s |
-| 649 | 69,427 | 70,503 | 16.8 s |
-| 978 | 74,210 | 75,380 | 18.3 s |
-| 269 | 83,495 | 84,485 | 15.5 s |
-| 464 | 89,690 | 90,244 | 8.7 s |
-| 480 | 162,882 | 163,699 | 12.8 s |
-| 212 | 167,266 | 167,858 | 9.3 s |
-| 697 | 167,308 | 167,858 | 8.6 s |
-
-Every life is short of the 22.1 s a smoke in this match runs to when nothing interrupts it, which is
-the same statement from the other side: **these are the smokes still standing when their round
-ended.** The engine deletes the cloud with the rest of the round's world and fires nothing. The last
-two are one pair — two smokes up at the same moment, deleted on the same tick, at the half.
-
-### The projectile already carries the ending, and carries it exactly
-
-For all **125** smokes that *do* have the event, the gap between the event's tick and the
-projectile's last sample is a set with a single member:
-
-```
-expired.tick − last_sample  ∈  {1}      (125 of 125)
-```
-
-So the event is a restatement of something the projectile pass already knows, and a strictly less
-complete one — it is absent exactly when the round takes the cloud away. `expiry_tick` is
-`last_sample + 1` for every area, the event lookup is gone, and the 125 known-good values are
-reproduced to the tick rather than approximated. **This is not `AGENTS.md` §21's "a nominal duration
-substituted for demo data"**: no engine constant enters the crate, and nothing is assumed about how
-long a smoke lives. It is the same demo, read off the more complete of its two sources.
-
-### The decoy: `decoy_detonate` is the end, not the beginning
-
-One decoy in this match, so this is one observation rather than a rule, and it is recorded that way.
-
-| Event | Tick | Carries |
-|---|---|---|
-| `decoy_started` | 7,200 | `entityid`, `x`, `y`, `z` |
-| `decoy_detonate` | 8,154 | `entityid`, `x`, `y`, `z` — the same position |
-
-The projectile's first sample is 7,072 and its last is 8,153, so `decoy_detonate` sits at
-`last + 1` the way a smoke's expiry does: it is the pop that *ends* the decoy, ~14.9 s after it
-starts. The crate had been reading it as the beginning, which — with no expiry either, since only
-smoke ever looked for one — gave every decoy an area with no life. `Grenade.detonation_tick` comes
-from `decoy_started` now and the expiry from the projectile, so a decoy is drawn for the time it
-actually spends on the ground.
-
-### What did not need changing on this demo
-
-Fire is joined by a different route — the inferno is its own entity, matched by thrower and time —
-and on this recording it has no gap of this kind: **114 `inferno_startburn` and 114
-`inferno_expire`**, every one paired. HE and flash are marks rather than areas and carry no expiry
-by design. **A second demo says otherwise, and the next section is that measurement.**
-
-The fixture test asserts the outcome rather than the mechanism: **no area grenade that detonates may
-reach the schema without an expiry**, and none may end before it begins. That is the assertion the
-fixture was missing, and it is what would have caught this the day the schema first carried
-grenades.
-
-### The same gap for fire, on a second demo (#367)
-
-The assertion above did its job on the IEM Atlanta 2026 inferno map: of that match's **382 grenades,
-192 of them areas**, exactly **one** reached the schema with a detonation and no expiry, and the
-failure reproduced on `main`. It is one fire, and the recording says plainly what happened to it.
-
-| | |
-|---|---|
-| `inferno_startburn` in the match | **84** |
-| `inferno_expire` in the match | **83** |
-| Any other `inferno_*` event | **none at all** |
-| The unmatched fire | startburn tick **90,977**, inferno entity **493** |
-| Its projectile | sampled 90,929 → 90,976, so the flames begin one tick after it dies |
-| `round_officially_ended` / `round_start` | both at **91,008**, 31 ticks — 0.48 s — later |
-| The 83 fires that do pair, in ticks | min **21**, median **352**, max **449** (0.3 / 5.5 / 7.0 s) |
-
-So this fire was 31 ticks old with five to seven seconds left to burn when its round was cleaned up.
-**It is §19's smoke finding arriving for the other area grenade that owns an entity**: the engine
-deletes the flames with the rest of the round's world and announces nothing. There is no
-`inferno_extinguish` to look for — the recording carries no third `inferno_*` name, and every event
-in the demo is collected since #355 passes `wanted_events: ["all"]`.
-
-**The projectile cannot answer here the way it does for a smoke.** A smoke's cloud *is* the
-projectile entity, so its last sample is the cloud's end; a fire's flames are a different entity and
-the projectile dies on impact — measured in §20 as 67 of 67 molotovs and 47 of 47 incendiaries
-within 0.1 s of the detonation. What the demo does state is the moment the round took the flames
-away, and `round_officially_ended` is that moment: `inferno_ending` falls back to the first one at
-or after the startburn. **No duration is assumed** — this is the same kind of answer §19 gave for
-smoke, read off a different event of the demo's own.
-
-A demo cut off while a fire is still burning has no such event and keeps `expiry_tick: None`, which
-`grenadeEndTick` draws as nothing at all. That case did not occur here and is not modelled.
-
-The fixture test gained a second thing with it: **the snapshot comparison is skipped when the demo
-is not the snapshot's own**, identified by the header. One snapshot describes one recording, so a
-second demo could only ever fail it — and the assertions that say a parse is *self-consistent* would
-never get to run on one, which is how this gap survived until a second demo was pointed at the test.
-
----
-
-## 20. A trajectory is the projectile's whole life, not its flight (#176)
-
-`GrenadeTrajectory` answers *where was this entity*, and never *where did it fly*. `flights()` in
-`crates/demo-parser/src/grenades.rs` samples an entity for as long as it exists, and for three of the
-six grenade types the entity outlives the detonation by a long way. The field's own doc comment said
-"a projectile's flight path" from the day the schema first carried grenades, and reading it that way
-is what the fix for #169 assumed.
-
-### The snapshot's first grenade says it on its own
-
-`crates/demo-parser/tests/snapshots/parsed-demo.json`, a smoke: `throwTick` 6920, `detonationTick`
-7217, `expiryTick` 8629, and `trajectory.sampleCount` **428** at `sampleHz` 16. The flight is 297
-ticks — **4.6 s**. The trajectory is 427 samples at 16 Hz — **26.7 s**, which is throw to expiry to
-the tick.
-
-### The whole fixture, by type
-
-519 grenades, 516 of which carry a detonation. "Tail" is the last trajectory sample minus
-`detonationTick`, in seconds at the demo's 64 tick rate.
-
-| type | n | no detonation | tail min | tail median | tail max | tails > 0.5 s |
-|---|---:|---:|---:|---:|---:|---:|
-| `smokegrenade` | 136 | 0 | 8.2 | **22.0** | 22.1 | 136/136 |
-| `hegrenade` | 153 | 0 | 4.9 | **5.0** | 5.0 | 153/153 |
-| `decoy` | 1 | 0 | 14.9 | 14.9 | 14.9 | 1/1 |
-| `flashbang` | 112 | 0 | −0.1 | 0.0 | 0.0 | 0/112 |
-| `molotov` | 68 | 1 | −0.1 | −0.0 | 0.0 | 0/67 |
-| `incgrenade` | 49 | 2 | −0.1 | −0.0 | 0.0 | 0/47 |
-
-Over all 516: median **5.0 s**, longest **22.1 s**, and 203 whose last sample is at or before the
-detonation.
-
-Three readings matter more than the spread.
-
-**Smoke is the obvious one and the reason this exists.** The cloud *is* the projectile entity, so the
-trajectory runs to the cloud's own expiry — §19 measured the same thing from the other side, where
-`area_expiry` is read off the trajectory precisely because the entity is still there to be sampled.
-
-**A molotov's projectile does die on impact, and that is measured rather than assumed.** 67 of 67
-molotovs and 47 of 47 incendiaries have their last sample within 0.1 s of the detonation, because
-the fire is a *different entity* — §19's `inferno_startburn`, matched by thrower and time. Flash is
-the same: a mark rather than an area, 0 of 112 sampled past 0.1 s.
-
-**An HE's tail is 5.0 s in 153 cases out of 153**, with a spread of one tenth of a second across the
-whole match. That is a fixed engine lifetime for the spent projectile and not a visual of any kind:
-nothing in the product draws an HE for five seconds, and §6.2 gives it 1.2.
-
-### The schema carries no index for the end of a flight
-
-There is no field that says which sample is the last one in the air, and adding one would be a
-schema change this does not need. A reader has two routes and both are already in
-`packages/demo-core/src/helpers/grenade-state.ts`:
-
-- **`trajectoryClipCount`** clips the drawn path at `detonationTick`, which is why `docs/DESIGN.md`
-  §6.2's trajectory does not extend across a smoke's whole life on screen.
-- **`flightEndTick`** falls back to the last sample *only* when `detonationTick` is `null`. That
-  bound is never shorter than the real flight and can be very generous — up to 22 s for a smoke —
-  but on this fixture the three grenades without a detonation are all fire, whose projectiles die on
-  impact, so the generosity is theoretical rather than something that has been drawn.
-
-Neither `SCHEMA_VERSION` nor the crate moves for this. What was wrong was the description.
-
----
-
-## 21. Where a round's own length comes from (#295)
-
-`roundClockAtFrame` counted *up* until 3 September 2026, and its doc comment gave the reason: a
-countdown needs the round's length, and §13 above read "`sv_tickrate` is not among the convars a
-GOTV recording carries". That was taken for a year as *the convars are not there*. They are — and
-§13 says which of the two claims it is making since #297, because the sentence stayed where a reader
-lands long after this section corrected it. Everything below is measured on the same fixture §2
-describes.
-
-### The convars arrive as a game event, and `DemoOutput.convars` is dead
-
-`parse_demo::DemoOutput` has a `convars: AHashMap<String, String>` field. It is initialised at three
-places in the vendored tree and **written at none of them** — a probe with `only_convars: true`
-returns a map of length 0. What upstream actually does with `net_SetConVar` is
-`create_custom_event_parse_convars`, which pushes one `server_cvar` **game event** per variable,
-with `name`, `value` and `tick` fields — and it returns early unless `wanted_events` contains
-`server_cvar` or `all`. So the route is the events pass, and a reader looking at the field named
-after the thing it wants finds nothing and concludes the demo does not carry it.
-
-87 such events on the fixture, 72 distinct variables. Ten of them bear on the clock:
-
-| variable | value | tick |
-|---|---|---|
-| `mp_roundtime` | 1.92 | −1 |
-| `mp_roundtime_hostage` | 1.92 | −1 |
-| `mp_roundtime_defuse` | **2** | −1 |
-| `mp_roundtime_defuse` | **1.92** | **4296** |
-| `mp_freezetime` | 20 | −1 |
-| `mp_maxrounds` | 24 | −1 |
-| `mp_halftime` | true | 4296 |
-| `mp_overtime_enable` | true | −1 |
-| `mp_give_player_c4` | false → true | −1, 4296 |
-| `mp_c4timer` | **absent** | — |
-
-Two traps are visible in that table. **A variable is set more than once**, and the tick-4296 block is
-the match configuration landing just before the first round opens at 4950 — a reader taking the
-first occurrence of `mp_roundtime_defuse` gets 120 s where the match ran 115. And **which of the
-three `mp_roundtime*` applies depends on the map type**, which is a rule about Counter-Strike rather
-than about this demo, and exactly the kind of thing `AGENTS.md` keeps out of anything above the
-crate.
-
-### `m_iRoundTime` is the better source, and it needs no arithmetic
-
-`CCSGameRulesProxy.CCSGameRules.m_iRoundTime` is a `PropType::Rules` prop upstream already maps. It
-resolves through `wanted_other_props` — a channel `crates/demo-parser` passed `vec![]` on every pass
-until this — and reads **115** for the whole match, with 120 and 999 appearing only in warmup. That
-is the number the engine itself computed, in whole seconds, from whichever variable was in force. It
-is read at each round's freeze-time end and stored per round, because a config change between halves
-or into overtime moves it and a single figure for the match would then be wrong for half of them.
-
-A `Rules` prop is written onto every player row, so the tick pass was already reading that row and
-the value costs one more column read per sample. It is deliberately **not** in `TICK_PROPS`, which
-`Ticks::of` requires column by column: a demo that does not carry it parses, and the round it
-describes gets `round_time_seconds: None` rather than the whole file failing.
-
-### The tick rate's cross-check in §13 was circular; `mp_freezetime` is the honest one
-
-§13 derives the constant 64 from "the one round that ended on the clock — 7,360 ticks over a
-115-second round is 64.0". The 115 was the assumption, not an independent reading, so that check
-proves only that 7,360/115 is 64. **`mp_freezetime = 20` against a measured 1,280-tick buy phase is
-the confirmation that does not assume its own answer**, and it also reads 64.0. Both are consistent
-and the constant stands; what changes is that there is now a second, independent measurement of it.
-
-The buy phase measures 20.00 s in 26 of the 30 rounds and 26.50 s in rounds 1, 13, 25 and 28 — the
-opening round and the three half and overtime boundaries, where the side-swap intermission is
-inside the same window.
-
-### The bomb's timer has no convar and one event
-
-`mp_c4timer` is not broadcast at all, so there is nothing to read. What there is instead is a
-`bomb_exploded` game event, which the crate had only ever seen as a `round_end` **reason string**.
-Its three occurrences sit **exactly 2,624 ticks — 41.00 s at 64 tick — after their own
-`bomb_planted`**, three times out of three with no spread. So the interval between a plant and its
-own detonation is the measurement, and `BombPlant.detonation_tick` is where it is carried.
-
-That interval is 41 rather than the engine's documented `mp_c4timer` default of 40. The difference
-is not explained here and is deliberately not modelled: what the schema states is what the demo
-shows, and a bomb drawn counting down to the tick it actually went off is right about this recording
-whatever the variable read.
-
-**The detonation is joined by time and never by the round it fell in.** One of the three lands 29
-ticks *after* its own `round_end` — the last CT died while the bomb was still ticking, so the round
-ended by elimination and the bomb went off anyway. A join through the round would have dropped it.
-The boundary is the next plant instead, since a bomb cannot be down twice at once.
-
-### What it cost
-
-Nothing measurable. The three-pass native parse over the 264 MB `.dem.zst`, three runs an arm on one
-machine within the hour: **16.81 / 16.54 / 16.55 s** before, **15.41 / 15.31 / 16.31 s** after. The
-two arms overlap, and the branch reading lower is the spread rather than a gain from adding a
-column. `SCHEMA_VERSION` moved 6 → 7, so every demo already in a cache is a miss once.
-
----
-
-## 22. Where a bullet went, and where it did not (#318)
-
-`ROADMAP.md` carried the question as a fork: either upstream's impact events come into the parse, or
-the plate draws a fixed-length ray and labels it as the approximation it is. Measured, **neither arm
-survives as it was written** — the first is closed by absence and the second turns out not to be a
-compromise. Everything below is over the same fixture §2 describes: 3,500 `fire_bullets` in a
-25-round match, events pass with `wanted_events: ["all"]` and `ParsingMode::ForceSingleThreaded`,
-which is what the crate itself runs.
-
-### There is no `bullet_impact` to import
-
-Upstream fills `game_events_counter` from the event **descriptor**, once per occurrence and *before*
-the wanted filter, so it is the honest census of what a recording carried rather than of what a
-reader asked for. The fixture declares **54** names there and collects 52. `bullet_impact` is in
-neither list.
-
-It is not being dropped on the way through. `REMOVEDEVENTS` in upstream's
-`second_pass/game_events.rs` holds exactly two names — `server_cvar` and `player_connect` — and the
-two names the fixture declares without collecting are `item_sold` and `rank_update`. So the
-recording never carried an impact, and no flag, prop list or pass structure here can produce one.
-
-**This is one demo, and it is the strongest claim it can support.** A GOTV recording is not obliged
-to carry every event a client sees, so the finding is *this class of demo does not*, which is the
-same shape as §18's unfired shotgun.
-
-### `fire_bullets` carries the aim, exactly
-
-Every field, present on **3,500 of 3,500** with no gaps:
-
-| field | what it is |
-|---|---|
-| `angles_x` / `angles_y` / `angles_z` | pitch, yaw and roll at the trigger pull |
-| `origin_x` / `origin_y` / `origin_z` | the muzzle |
-| `ent_origin_x` / `ent_origin_y` / `ent_origin_z` | the player |
-
-`Shot.yaw` is `angles_y` and nothing else is carried. The other two were measured and left out, and
-the numbers are the argument rather than the taste:
-
-- **The muzzle is the player, on a 2D plate.** `origin` differs from `ent_origin` in x/y by at most
-  **8.48 units** across the match — 1.35px at 1440×900, 5.39px at 4× — so a tracer leaves the token
-  the reader is already looking at, and a second origin would move the mark off the player for no
-  reading. In z the two differ by a median 62.59 units, which is eye height and is not a plan view's
-  business.
-- **Pitch is level.** p50 **0.6°**, 90% inside ±7.3°, and **6 shots of 3,500** steeper than 30°.
-
-### The 16 Hz sample was close, and the schema carries the angle anyway
-
-The plate already holds a yaw per player per frame, so the question is what the exact one buys.
-Rebuilding the product's own track — the first row in each bucket wins, `tick / (tickRate /
-sampleHz)` — and comparing each shot's `angles_y` against the sample the plate would have drawn
-with. All **3,500 matched, none missing**:
-
-| | p50 | p90 | p99 | max |
-|---|---|---|---|---|
-| angular error | 0.16° | 1.48° | 4.29° | **15.68°** |
-| miss at the end of a 512-unit ray, plate px at 1440×900 | 0.23 | 2.10 | 6.09 | 21.99 |
-| the same at 4× | 0.91 | 8.41 | 24.35 | 87.96 |
-
-21 shots (0.60%) are over 5°, six (0.17%) over 10°, and **none over 20°**. So the sampled yaw would
-have drawn a mark that is right nearly always and never absurd; carrying the exact angle is the
-owner's decision of 5 September 2026, taken with these figures in front of it, and it is what
-`SCHEMA_VERSION` 8 is for. The measurement is recorded because the next reader will want the
-argument, not the conclusion: this bought exactness rather than rescuing a broken mark.
-
-### The event's angle leaves the range the props stay inside
-
-The two sources do not agree about normalisation, and only one of them was ever encoded:
-
-| source | rows | outside −180..180 |
-|---|---|---|
-| the `yaw` **prop**, which `TickTrack` reads | 1,945,210 | **0** |
-| `fire_bullets.angles_y` | 3,500 | **12**, all just under −180, furthest **−183.33** |
-
-−183.33 and 176.67 are one direction, so nothing was ever going to be drawn wrong — but `ANGLE_SCALE`
-is documented as holding −180..180 and a schema that states a range should mean it. `scaled_angle`
-wraps into that range for both halves now, which is a no-op for every one of the 1,945,210 prop rows
-and is why the track's own checksums in the golden snapshot did not move on the branch that added
-this. The one behaviour it changes is at the far edge: an angle of 1000° used to saturate to
-`i16::MAX`, a direction nothing was pointing in, and now reads as the −80° it actually is.
-
-### What it costs to draw
-
-The tracer's window is `GUNFIRE_TRACER_SECONDS`, the 0.15 s the spur it replaces already used.
-Counting how many shots fall inside it at each of the match's 48,532 sampled frames:
-
-| window | frames carrying any | p50 | p99 | max |
-|---|---|---|---|---|
-| **0.15 s** | 4,752 of 48,532 (9.8%) | 0 | 3 | **8** |
-| 0.30 s | 6,209 (12.8%) | 0 | 6 | 13 |
-| 0.50 s | 7,551 (15.6%) | 0 | 9 | 18 |
-| 1.00 s | 10,180 (21.0%) | 0 | 15 | 32 |
-
-So `ROADMAP.md`'s worry — "drawn ten times per second per shooter, so it is measured against the
-60 fps row before it ships" — is answered by the count as well as by the measurement: nine frames in
-ten draw nothing at all, and the worst frame in a match draws eight one-pixel lines. Also measured:
-**no tick in the match has one player firing twice**, so a shot is one ray and never a stack of them.
-
-### What it cost to parse
-
-Nothing measurable. The three-pass native parse over the **decompressed** 353 MB `.dem` — a
-different input from §21's, so these figures compare only with each other — three runs an arm on one
-machine within the hour, alternating between the branch and its base:
-
-| | runs | median |
-|---|---|---|
-| before | 7.29 / 7.21 / 7.26 s | 7.26 s |
-| after | 7.16 / 7.19 / 7.22 s | 7.19 s |
-
-The arms overlap and the branch reading lower is spread rather than a gain: the events pass already
-walked every field of every `fire_bullets` to find the definition index, so this reads one more from
-a list that was in hand. `SCHEMA_VERSION` moved 7 → 8, so every demo already in a cache is a miss
-once.
-
----
-
-## 23. Smoke and fire carry no shape, and no spread (#320)
-
-`ROADMAP.md`'s M4 asked for smoke and fire "drawn as they spread", and #170 asked for a body rather
-than a disc. The first question either owes is whether the recording says anything about either.
-**It does not**, and everything below is what was measured before any of it was drawn — same fixture
-as §2, events pass and projectiles pass, `ParsingMode::ForceSingleThreaded`.
-
-### The fire's own entity reports one position and never moves
-
-`inferno_startburn` and `inferno_expire` both carry `x/y/z`, present on **114 of 114**. Paired in
-time — by the first expire at or after each start, because entity ids are reused across a match —
-the distance between a fire's start and its end is:
-
-| | p50 | p90 | max |
-|---|---|---|---|
-| distance moved | **0.00 units** | **0.00** | **0.00** |
-
-Burn time runs 1.12 s to 7.03 s with a median of **7.02 s**. So a molotov is one point and one
-interval. There is no per-flame anything, and nothing that says a fire crept.
-
-### A settled smoke cloud does not move either
-
-The cloud *is* the projectile (§20), so its position is sampled for its whole life — 1,754 samples
-over 27.4 s on the fixture's first one. Once it stops travelling, every remaining sample is
-identical to the last **to 0.0 units**, for 20-odd seconds.
-
-**An aggregate first said otherwise, and it was the instrument.** A sweep over all clouds reported a
-162-unit median drift after settling, which is more than a smoke's own 144-unit radius. The settle
-detector assumed 16 Hz samples where the projectile pass gives one per tick, so it marked a grenade
-that was still rolling — moving under 8 units per *tick* — as settled. Individual trails printed
-sample by sample are what showed it, and they are what any claim of this shape should be checked
-against.
-
-### So the body and the growth are both modelled
-
-`AREA_START_EXTENT`, `SMOKE_FILL_SECONDS`, `FIRE_SPREAD_SECONDS`, `SMOKE_END_EXTENT` and
-`FIRE_END_EXTENT` in `packages/demo-core/src/helpers/grenade-state.ts` are named approximations in
-the sense `audibility.ts` uses, and `bodyParts` in
-`apps/web/src/features/radar/helpers/utility-body.ts` is where the shape comes from — derived once
-per grenade from a deterministic hash, so a cloud is the same cloud on every frame and every replay.
-That is a rule this product states, not a reading of the demo, and it is recorded here so nobody
-goes looking for the field it came from.
-
-### What it may cost: how many areas stand at once
-
-Smoke detonation to expiry and fire start to expire, paired in time, over 48,538 sampled frames:
-
-| | p50 | p90 | p99 | max | frames with none |
-|---|---|---|---|---|---|
-| areas standing | 0 | 3 | 5 | **8** | 27,750 (**57.2%**) |
-
-The worst frame of the match is tick 87,252 — frame 21,813 — and it holds eight. That frame is what
-`AGENTS.md` §16's third row is measured over on this branch rather than near it.
-
-### What a body has to fit inside
-
-From each type's radius and the map's own scale, at the two viewports the product is measured at:
-
-| | 1440×900 (plate 716) | 1024×800 (plate 473) | at 4× |
-|---|---|---|---|
-| smoke, r=144u | 22.9px | **15.1px** | 91.5px |
-| molotov, r=180u | 28.6px | 18.9px | 114.4px |
-| HE, r=350u | 55.6px | 36.7px | 222.5px |
-
-The 15.1px is the number `COUNTDOWN_MIN_RADIUS_PX` is set against: at the smallest viewport a
-full-size cloud is just over the line, so a cloud states its remaining seconds once it has filled
-and not before.
-
----
-
-## 24. `dmg_health` is what the shot did, not what the player lost (#287)
-
-`Damage.healthDamage` is upstream's `dmg_health`, and the reading it carries is the **raw damage of
-the hit** rather than the health actually removed. Measured over the fixture by summing it per
-victim over a 1.5 s window:
-
-| | |
-|---|---|
-| largest figure anywhere | **452** — one AWP headshot |
-| largest figure on a player still alive | **98** |
-| frames carrying one at all, victim alive | 6,465 of 48,635 (**13.29%**) |
-| frames carrying more than one | 1,575 (**3.24%**) |
-| most on the plate at once | **4**, on 41 frames (0.08%) |
-
-Two consequences, and the first is the one that surprises.
-
-**A single hit can read four and a half times a player's health**, because the engine reports what
-the weapon did and clamps nothing: an AWP headshot on an unhelmeted player is 459 in Counter-Strike's
-own tables and 452 here. Anything that shows this number to a reader either says so or draws it only
-while the victim is alive — the second is what the plate does, and it is why the figure on a living
-player never exceeded 98 over thirty rounds.
-
-**A hit can read zero.** An armour-only hit reaches the schema with `healthDamage: 0` and a non-zero
-`armorDamage`, and the fixture holds those: a window sum of exactly 0 is a real hit that took no
-health, not the absence of one.
-
-Both figures are per *victim*, whoever fired: damage from a teammate is damage taken, and the
-attribution question `playerRoundStats` answers is a different one.
-
----
-
-## 25. Two passes, and the flag that allowed it (#355)
-
-§3 recorded three passes as a floor imposed by two early returns in `collect_entities`. The first
-of them was misread:
-
-```rust
-if !self.prop_controller.event_with_velocity {
-    if !self.wanted_ticks.contains(&self.tick) && self.wanted_ticks.len() != 0 || self.wanted_events.len() != 0 {
-        return;
-    }
-}
-```
-
-`event_with_velocity` is `!wanted_events.is_empty() && needs_velocity(wanted_player_props)`, and the
-tick props have requested `velocity` since #111. A pass carrying `wanted_events: ["all"]` beside
-`TICK_PROPS` therefore never takes that return, and collects the events and every tick column at
-once. §3's probe requested no `velocity`, which is why it saw events only. The crate's `match_pass`
-is that pass, and `vendor/` is untouched.
-
-### What rides along
-
-Upstream appends every wanted player prop to each event — `user_*`, `attacker_*` and the like — and
-every `wanted_other_props` entry once more. Nothing in the crate reads those fields, and the digests
-below say the output did not move because of them.
-
-### Why trajectories keep a pass
-
-`collect_projectiles` writes `tick`, `steamid` and `name` under `TICK_ID`, `STEAMID_ID` and
-`NAME_ID`, which are the ids the player loop writes into the same `df`, and the player loop would in
-turn carry the five grenade props as empty player columns. One pass is a change to upstream's output
-shape rather than a setting, so nothing is filed for it.
-
-### Identity
-
-The whole `ParsedDemo`, hashed through its `Debug` form, is identical on `main` and on two passes:
-
-| demo | digest, both arms |
-|---|---|
-| container fixture, 264 MB `.dem.zst` | `a59ac5a95aacb130` |
-| IEM Atlanta 2026 inferno map, 398 MB `.dem` | `3b0addaae9b080a8` |
-
-The committed snapshot changed in its `passes` line alone.
-
-### Cost, interleaved against `main`
-
-| | `main`, three passes | two passes |
-|---|---|---|
-| browser, built bundle, drop to review screen, fixture | 16.73 / 15.25 / 15.17 → **15.72 s** | 14.17 / 13.41 / 12.78 → **13.45 s** |
-| native, single-threaded, fixture | 8.98 / 9.01 / 8.98 s | 7.53 / 7.52 / 7.50 s |
-| native, single-threaded, inferno map | 6.97 / 7.03 / 7.05 s | 5.39 / 5.52 / 5.45 s |
-| WASM linear memory at its peak, fixture | 849 MiB | **897 MiB** |
-| WASM linear memory at its peak, inferno map | 870 MiB | 909 MiB |
-| native peak RSS, fixture | 1,360–1,382 MB | 1,476–1,498 MB |
-
-The browser rows are §16's method: headed Chrome over CDP, both bundles built from their own trees
-and their binaries hashed against `pkg/`, the demo staged into OPFS and handed over as a fresh
-`File` per run so every run is a cache miss, and `visibilityState` and `hasFocus()` asserted inside
-every run. Linear memory never shrinks, so it is read after a parse under Bun.
-
-Three readings. **The saving is one decode of three**, and a smaller share on the container because
-its expansion costs both arms the same. **The memory is the events' copies of the tick props**,
-alive beside the tick columns until the merged pass returns; native RSS overstates it here, because
-the probe holds the compressed file through the parse where the worker frees it first. And **`main`
-was over §16's 15 s on this day** — the budget's lack of headroom that #66 recorded, reproduced.
+Method for any parse timing: headed Chrome, built bundle via `wrangler dev`, binary hashed against
+`pkg/`, the demo staged in OPFS and handed over as a `File`, `visibilityState` asserted in every run,
+timed **from the drop** to the review screen, three runs per arm, arms interleaved in one hour.
+
+- Worker spawn + `init()` is 0.08 s cold — negligible.
+- **A hidden tab parses ~5× slower** (Chrome moves it to efficiency cores); the parse screen says so.
+- **`-O3` over `-Oz`** is ~25–28% faster for +0.4 MB; decided 7 August 2026, shipped in #66.
+
+## 17. The props schema 4 needed (#136)
+
+- **The active weapon is `weapon_name`**. `active_weapon_name` silently produces nothing (§5's trap).
+- **`inventory_as_bitmask` is broken for knives** (definition indices up to 526 shift out of a `u64`);
+  use `inventory_as_ids`.
+- **`item_equip.item` collapses weapons** — M4A4 and M4A1-S are both `m4a1`.
+- **Vocabularies differ**: `weapon_name` gives display names (`AK-47`), kills and damage give internal
+  names (`ak47`), `weapon_fire` gives `weapon_ak47`. `ENTRY_BY_INTERNAL_NAME` in `demo-core` bridges
+  internal → display; #53 is the canonical enumeration.
+- Armour is `m_ArmorValue`, helmet `CCSPlayer_ItemServices.m_bHasHelmet`.
+
+## 18. Gunfire (#163)
+
+`weapon_fire` (4,788) counts guns, grenade throws and knife swings; **`fire_bullets` (3,500) counts
+trigger pulls with a gun** and carries `item_def_index`, which resolves through the same per-match
+weapon table as `TickTrack.weapon` — so `Shot.weapon` is an index, not a sixth vocabulary. Per-weapon
+counts agree exactly between the two (one Glock-18 excepted). Whether a shotgun's pellets are one event
+is unverified (#230). Shots are a plain sorted array; the volume did not justify columns.
+
+## 19. What ends an area grenade (#173, #367)
+
+- **A smoke still standing when its round is cleaned up gets no `smokegrenade_expired`** (11 of 136).
+  The projectile *is* the cloud, and for all 125 that do have the event, `expired.tick = last_sample + 1`.
+  So expiry is read off the trajectory for every smoke — exact, not a nominal duration.
+- **`decoy_detonate` is the decoy's end**; its start is `decoy_started`.
+- **A fire burning at round cleanup has no `inferno_expire`** (1 of 84 on inferno). Its flames are a
+  separate entity, so its end is the round's `round_officially_ended`. No duration is assumed. A demo cut
+  off mid-fire keeps `expiry: null`.
+- The fixture test asserts that no detonated area grenade lacks an expiry, and none ends before it begins.
+
+## 20. A trajectory is the projectile's whole life (#176)
+
+A trajectory samples the entity for as long as it exists, not only in flight. After detonation a smoke
+lives a median 22.0 s, an HE exactly 5.0 s, a decoy 14.9 s; flashes and fire projectiles end within
+0.1 s. The schema has no end-of-flight index: `trajectoryClipCount` clips at `detonationTick`, and
+`flightEndTick` falls back to the last sample only when detonation is `null`.
+
+## 21. Where a round's length comes from (#295)
+
+- **Convars arrive as `server_cvar` game events** (72 variables), and only when `wanted_events` includes
+  them. `DemoOutput.convars` is initialised and never written.
+- **A convar can be set twice** (`mp_roundtime_defuse` 2 at tick −1, then 1.92 at match start), and which
+  `mp_roundtime*` applies depends on the map type — so the crate does not read them.
+- **`CCSGameRules.m_iRoundTime`** via `wanted_other_props` is the engine's own answer in seconds, stored
+  per round at freeze end and nullable. It is not in `TICK_PROPS`, so a demo without it still parses.
+- **`mp_c4timer` is not broadcast.** `bomb_exploded` lands exactly 2,624 ticks (41.00 s) after its plant,
+  3 of 3. It is joined **by time, never by round** — one explosion came after its own `round_end`. With no
+  explosion in a match the product falls back to 40 s.
+
+## 22. Where a bullet went (#318)
+
+- **There is no `bullet_impact` in a GOTV recording** — `game_events_counter` (a census taken before
+  filtering) lists 54 names without it. A tracer is therefore a fixed-length ray, labelled as such.
+- **`fire_bullets` carries exact angles** (`angles_x/y/z`) and muzzle position on every shot. Only yaw is
+  kept: the muzzle is within 8.5 units of the player in plan, pitch is near level.
+- The 16 Hz sampled yaw is off by p50 0.16°, max 15.7°; the exact angle was bought with `SCHEMA_VERSION` 8.
+- **Event angles can leave −180..180** (down to −183.33); `scaled_angle` wraps both sources.
+- At most 8 tracers stand on any frame, and no player fires twice in one tick.
+
+## 23. Smoke and fire carry no shape or spread (#320)
+
+`inferno_*` positions never move (0.00 units over 114 fires), and a settled smoke cloud does not move
+either. Bodies and growth are **the product's model** (`grenade-state.ts`, `utility-body.ts`, seeded
+deterministically), not demo data. At most 8 areas stand at once. Trust individual trails over
+aggregates: a settle detector assuming 16 Hz on per-tick data reported a 162-unit drift that did not exist.
+
+## 24. `dmg_health` is the shot, not the health lost (#287)
+
+`Damage.healthDamage` is raw weapon damage and is not clamped — one AWP headshot reads 452. An
+armour-only hit reads 0 health damage. Clamp or show it only while the victim is alive; damage is per
+victim, whoever fired.
+
+## 25. Two passes (#355)
+
+The `event_with_velocity` flag (§3) lets `match_pass` carry `wanted_events: ["all"]` beside `TICK_PROPS`
+with no change to `vendor/`. `velocity` is now structural: without it the merged pass collects no
+columns and `Ticks::of` fails loudly. Upstream copies every wanted player prop into each event
+(`user_*`, `attacker_*`), which nothing reads. The tick table is released with `mem::take` before the
+projectile pass. The whole `ParsedDemo` hashes identically before and after on two demos.
+
+Cost against three passes: browser 15.72 → **13.45 s** on the container fixture; native 8.99 → 7.52 s;
+WASM peak linear memory 849 → **897 MiB** (the events' copies of tick props).
+
+`cargo fmt --all` also reformats `vendor/` (it follows path dependencies) — commit vendored diffs as
+additions only.

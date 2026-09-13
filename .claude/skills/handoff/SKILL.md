@@ -8,7 +8,7 @@ description: Write a briefing that lets a fresh chat continue this work without 
 `task` and `dod` govern work inside one session. This governs what survives between them.
 
 The reader is **you, cold** — same tools, same repository, no memory of this conversation. It loads
-`CLAUDE.md` automatically and reads `AGENTS.md` on demand. Write for that reader, not for the user,
+`CLAUDE.md` automatically, which imports `AGENTS.md`. Write for that reader, not for the user,
 and write it in the language the user has been using.
 
 ## 1. What to carry
@@ -19,7 +19,7 @@ Carry only what the repository cannot tell the next session itself.
 |---|---|
 | What was measured, and the actual number | What the code does — it will read the code |
 | Why an obvious-looking simplification is wrong | Hard rules, architecture, conventions (`AGENTS.md`) |
-| What is unverified, and why it could not be verified | Commands (`CLAUDE.md`) |
+| What is unverified, and why it could not be verified | Commands (`AGENTS.md` §5) |
 | Which decisions are the human's and still open | Anything in a document it loads anyway |
 | Issue numbers, SHAs, URLs, exact file paths | History that `git log` answers |
 
