@@ -41,11 +41,9 @@ describe('the sprites', () => {
     }
   });
 
-  it('keeps two eyes apart', () => {
-    for (const side of SIDES) {
-      const [left, right] = eyeCells({ side, lookX: 1, lookY: 0 });
-      expect(right?.column).toBeGreaterThan((left?.column ?? 0) + 1);
-    }
+  it("keeps a T's two eyes apart", () => {
+    const [left, right] = eyeCells({ side: 't', lookX: 1, lookY: 0 });
+    expect(right?.column).toBeGreaterThan((left?.column ?? 0) + 1);
   });
 });
 

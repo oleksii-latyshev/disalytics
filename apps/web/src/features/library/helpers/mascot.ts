@@ -2,7 +2,7 @@ import { CELL_EXTENT, CELL_PX } from './pixels';
 
 /**
  * The watcher on the upload card: a CT or a T operator from the chest up, one character per cell —
- * `#` is body, `o` is a hole (the eyes look out through it) and `.` is nothing. #380 replaced the round
+ * `#` is body, `o` is a hole (a slit, or a face opening) and `.` is nothing. #380 replaced the round
  * mascot with it.
  *
  * It is drawn in the way in's own grid rather than as a shape, which is the whole reason it fits this
@@ -14,18 +14,20 @@ export type MascotSide = 'ct' | 't';
 
 /** The head is its own sprite because it is the part that turns; the shoulders stay put. */
 export const HEADS: Readonly<Record<MascotSide, readonly string[]>> = {
-  // A helmet with a brim, and goggles under it.
+  // A tactical helmet that wraps the sides of the head, and in its face opening two goggle lenses
+  // over a mask. The lenses are body on a dark opening, which is how a lens catching the light
+  // reads at this size — a brim read as a hat, and dark lenses with pupils read as an alien.
   ct: [
     '...######...',
-    '..########..',
     '.##########.',
     '############',
-    '..#oo##oo#..',
-    '..#oo##oo#..',
-    '..########..',
-    '..########..',
+    '##oooooooo##',
+    '##o##oo##o##',
+    '##o##oo##o##',
+    '##oooooooo##',
+    '##o######o##',
+    '.#o######o#.',
     '...######...',
-    '....####....',
   ],
   // A balaclava: one slit, and the eyes in it.
   t: [
@@ -64,10 +66,8 @@ export const MASCOT_HEIGHT_PX = MASCOT_ROWS * CELL_PX;
  * along each axis, and the sprite leaves exactly that much hole around it.
  */
 const EYES: Readonly<Record<MascotSide, readonly { column: number; row: number }[]>> = {
-  ct: [
-    { column: 3, row: 4 },
-    { column: 7, row: 4 },
-  ],
+  // None: the lenses are part of the sprite and turn with the head.
+  ct: [],
   t: [
     { column: 4, row: 4 },
     { column: 7, row: 4 },
@@ -90,13 +90,13 @@ export interface MascotPose {
 }
 
 /**
- * Which cell an eye sits in. A 2×2 goggle lens has no middle, so a CT's eye takes the lens's
- * right or bottom half when looking that way and the left or top half otherwise; a T's slit is two
- * rows tall and wide, so its eyes slide across it and take the top or bottom row.
+ * Which cell an eye sits in. A T's slit is wide enough for an eye to slide a cell across it, and
+ * two rows tall, so it takes the bottom row looking down and the top row otherwise. A CT has no eyes
+ * of its own — its goggles turn with the head.
  */
 export function eyeCells(pose: Pick<MascotPose, 'side' | 'lookX' | 'lookY'>) {
   return EYES[pose.side].map((eye) => ({
-    column: eye.column + (pose.side === 'ct' ? Math.max(pose.lookX, 0) : pose.lookX),
+    column: eye.column + pose.lookX,
     row: eye.row + Math.max(pose.lookY, 0),
   }));
 }
