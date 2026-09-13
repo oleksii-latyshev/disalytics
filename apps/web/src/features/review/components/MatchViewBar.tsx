@@ -19,9 +19,8 @@ interface Props {
  * so the plate measures exactly what it measured before — and the switch stands in one place on
  * every view instead of riding a corner whose width changes with the locale.
  *
- * **It stands on `.surface-hud`**, which is the surface that already exists for standing over a live
- * plate. Since the redesign that class carries no `backdrop-filter` at all, so a second tenant costs
- * nothing but its own opaque box.
+ * **It stands on `.surface-hud`** — a card's ground with a stronger edge, for standing over a live
+ * plate. That class carries no `backdrop-filter`, so a second tenant costs nothing but its own box.
  *
  * **The switch is above and the score below**, the owner's instruction of 13 September 2026, and the
  * order is also the one the reader needs: which view they are on is chrome that never changes, and
