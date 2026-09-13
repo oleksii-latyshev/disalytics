@@ -59,6 +59,21 @@
       "vitals": "{health, number} HP · {armour, number} брони",
       "nothing": "Пустые руки",
       "lead": "Нажмите, чтобы посмотреть на сцене с момента за {seconds, number} с до убийства."
+    },
+    "heat": {
+      "mode": "Что показать",
+      "presence": "Где стояли",
+      "damageDealt": "Нанесённый урон",
+      "damageTaken": "Полученный урон",
+      "kills": "Убийства",
+      "deaths": "Смерти",
+      "utility": "Куда падала утилита",
+      "damage": "{count, number} урона",
+      "killCount": "{count, plural, one {# убийство} few {# убийства} many {# убийств} other {# убийства}}",
+      "deathCount": "{count, plural, one {# смерть} few {# смерти} many {# смертей} other {# смерти}}",
+      "figure": "{count, number}",
+      "eventNote": "Отметка стоит там, где был игрок в момент события; урон — в пределах оставшегося здоровья.",
+      "utilityNote": "Каждая граната стоит там, где сработала; несработавшие не рисуются."
     }
   },
   "views": {

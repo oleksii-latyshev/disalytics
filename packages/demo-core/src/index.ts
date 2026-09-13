@@ -36,6 +36,8 @@ export {
   SMOKE_END_EXTENT,
   SMOKE_FILL_SECONDS,
 } from './helpers/grenade-visual';
+export type { HeatMode, HeatScope, HeatTally, HeatVisit } from './helpers/heat';
+export { HEAT_MODES, walkHeat } from './helpers/heat';
 export {
   blindRemainingBySlot,
   bombProgressAt,

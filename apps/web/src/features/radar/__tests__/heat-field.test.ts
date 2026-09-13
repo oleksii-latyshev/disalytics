@@ -5,13 +5,14 @@ import {
   type ParsedDemo,
   type PlayerSlot,
   type Round,
+  sampleAt,
   type Team,
   type TickTrack,
   WEAPON_NONE,
 } from '@disa/demo-core';
 import { MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import { HEAT_GRID, presenceField } from '../helpers/heat-field';
+import { HEAT_GRID, heatField } from '../helpers/heat-field';
 
 const dust2 = MAP_OVERVIEWS.de_dust2;
 
@@ -129,45 +130,40 @@ const wholeMatch = { side: null, subject: null } satisfies {
   subject: PlayerSlot | null;
 };
 
-describe('presenceField', () => {
-  it('bins every living sample and leaves the body where it fell out of it', () => {
-    const { bins, seconds } = presenceField(newDemo(), dust2, wholeMatch);
+/** The binning, the kernel and the ramp — which samples count is `walkHeat`'s and tested there. */
+describe('heatField', () => {
+  it('puts the ramp at 1 on the ground a player held, and nothing where only a body lay', () => {
+    const { bins } = heatField(newDemo(), dust2, 'presence', wholeMatch);
 
     expect(bins[binAt(40, 40)]).toBe(1);
-    expect(bins[binAt(80, 60)]).toBeCloseTo(DEATH_FRAME / FRAME_COUNT, 5);
+    expect(bins[binAt(80, 60)]).toBeGreaterThan(0);
     expect(bins[binAt(20, 100)]).toBe(0);
-    expect(seconds).toBeCloseTo((FRAME_COUNT + DEATH_FRAME) / SAMPLE_HZ, 5);
   });
 
-  it('counts the seconds each slot was alive for', () => {
-    const { secondsBySlot } = presenceField(newDemo(), dust2, wholeMatch);
+  it('spreads a point over its neighbours but not across the map', () => {
+    const { bins } = heatField(newDemo(), dust2, 'presence', wholeMatch);
 
-    expect([...secondsBySlot]).toEqual([FRAME_COUNT / SAMPLE_HZ, DEATH_FRAME / SAMPLE_HZ]);
+    // The kernel reaches six bins out and thins towards its edge.
+    expect(bins[binAt(45, 40)]).toBeGreaterThan(0);
+    expect(bins[binAt(45, 40)]).toBeLessThan(sampleAt(bins, binAt(40, 40)));
+    // Twelve bins out is past three passes of a radius-2 box.
+    expect(bins[binAt(52, 40)]).toBe(0);
+    // Two spots far apart stay two spots: nothing lights the ground between them.
+    expect(bins[binAt(60, 50)]).toBe(0);
   });
 
-  it('keeps only the side the round recorded', () => {
-    const { bins, secondsBySlot } = presenceField(newDemo(), dust2, { side: 'T', subject: null });
+  it('keeps the mode, side and subject figures from the walk', () => {
+    const field = heatField(newDemo(), dust2, 'presence', { side: null, subject: asPlayerSlot(1) });
 
-    expect(bins[binAt(80, 60)]).toBe(1);
-    expect(bins[binAt(40, 40)]).toBe(0);
-    expect([...secondsBySlot]).toEqual([0, DEATH_FRAME / SAMPLE_HZ]);
+    expect([...field.bySlot]).toEqual([FRAME_COUNT / SAMPLE_HZ, DEATH_FRAME / SAMPLE_HZ]);
+    expect(field.total).toBeCloseTo(DEATH_FRAME / SAMPLE_HZ, 5);
+    expect(field.bins[binAt(40, 40)]).toBe(0);
   });
 
-  it('starts counting where the players stop standing on their spawn', () => {
-    const held = presenceField(newDemo(DEATH_FRAME), dust2, wholeMatch);
+  it('draws nothing at all for a mode with nothing in it', () => {
+    const { bins, total } = heatField(newDemo(), dust2, 'kills', wholeMatch);
 
-    expect([...held.secondsBySlot]).toEqual([DEATH_FRAME / SAMPLE_HZ, 0]);
-    expect(held.bins[binAt(80, 60)]).toBe(0);
-  });
-
-  it('narrows the field to one player without moving the roster figures', () => {
-    const { bins, secondsBySlot } = presenceField(newDemo(), dust2, {
-      side: null,
-      subject: asPlayerSlot(1),
-    });
-
-    expect(bins[binAt(80, 60)]).toBe(1);
-    expect(bins[binAt(40, 40)]).toBe(0);
-    expect([...secondsBySlot]).toEqual([FRAME_COUNT / SAMPLE_HZ, DEATH_FRAME / SAMPLE_HZ]);
+    expect(total).toBe(0);
+    expect(bins.every((weight) => weight === 0)).toBe(true);
   });
 });
