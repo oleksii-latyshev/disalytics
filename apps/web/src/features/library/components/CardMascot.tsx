@@ -1,73 +1,72 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { paintLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { readCssToken } from '@/shared/lib';
 import { prefersLessMotion } from '../helpers/less-motion';
 import {
-  angleToPointer,
   drawMascot,
+  lookToward,
   MASCOT_HEIGHT_PX,
   MASCOT_WIDTH_PX,
-  type MascotColours,
+  type MascotSide,
+  type Step,
 } from '../helpers/mascot';
 
 /** How long one hop takes, in seconds of wall time. */
 const HOP_SECONDS = 0.6;
 
+/** A demo over the window is something to look up at, wherever the pointer was. */
+const LOOK_UP: { lookX: Step; lookY: Step } = { lookX: 0, lookY: -1 };
+
 interface Props {
-  /** A demo is over the window: it closes its eyes and hops. */
+  /** A demo is over the window: it looks up and hops. */
   isLifted: boolean;
 }
 
 /**
- * Two colours and no third. The body is the chrome's own ink — this screen shows no match, so there
- * is no reading for a hue to carry — and the eyes are holes rather than marks, so their colour is
- * what is behind the mascot.
+ * The watcher in the middle of the card that takes a demo: a pixel CT or T who turns towards the
+ * pointer, and hops when a demo arrives — #380.
  *
- * It does **not** dim at rest and brighten on a drag, which was the first version of this: at
- * `--color-ink-dim` the whole character reads as switched off, and what says a demo has arrived is
- * the face and the hop rather than the ink.
- */
-function mascotColours(): MascotColours {
-  return { body: readCssToken('--color-ink'), socket: readCssToken('--color-surface-1') };
-}
-
-/**
- * The mascot in the middle of the card that takes a demo: it watches the pointer, and it is pleased
- * when a demo arrives.
+ * **Which side is chance, once per showing of the card.** Both are the product's, neither is the
+ * default, and a reader who comes back meets the other one half the time. **It is the chrome's own
+ * ink and no side colour**: this screen shows no match, so a blue or a yellow here would mean nothing
+ * the demo said (§17) — the silhouette, helmet or balaclava, is what tells the sides apart.
  *
- * Four things are load-bearing. **It is drawn in the way in's own grid**, at the pitch and the
- * square proportions `PixelBackdrop` uses, so it is made of what the ground is made of — a smooth
- * character here would be a second visual language on a screen of squares. **It costs no layout per
- * move**: the box is measured on mount and on a resize rather than inside the pointer handler, and a
- * move schedules at most one paint per frame. **The hop is the only wall-time animation**, it runs
- * only while a file is over the window, and it stops the moment the drag ends. And **with no pointer
- * nothing moves at all** — this decorates a control that works without it, so a touch reader and a
- * keyboard reader lose nothing.
+ * Four things are load-bearing. **It is drawn in the way in's own grid**, at `PixelBackdrop`'s pitch.
+ * **It costs no layout per move**: the box is measured on mount and on a resize, and a move schedules
+ * at most one paint per frame. **The hop is the only wall-time animation** and runs only while a file
+ * is over the window. And **only a mouse or a pen turns it** — with touch, a keyboard or reduced
+ * motion it faces the reader and nothing moves.
  */
 export function CardMascot({ isLifted }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const angleRef = useRef(0);
+  const lookRef = useRef<{ lookX: Step; lookY: Step }>({ lookX: 0, lookY: 0 });
+  const [side] = useState<MascotSide>(() => (Math.random() < 0.5 ? 'ct' : 't'));
   const [motion] = useSetting('motion');
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
-    const colours = mascotColours();
+    const ink = readCssToken('--color-ink');
     const still = prefersLessMotion(motion);
     let hop = 0;
 
     const paint = () => {
-      paintLayers(
-        canvas,
-        [(context) => drawMascot(context, { angle: angleRef.current, isLifted, hop }, colours)],
-        { width: MASCOT_WIDTH_PX, height: MASCOT_HEIGHT_PX },
-      );
+      const look = isLifted ? LOOK_UP : lookRef.current;
+      paintLayers(canvas, [(context) => drawMascot(context, { side, ...look, hop }, ink)], {
+        width: MASCOT_WIDTH_PX,
+        height: MASCOT_HEIGHT_PX,
+      });
     };
 
+    if (still) {
+      lookRef.current = { lookX: 0, lookY: 0 };
+      paint();
+      return;
+    }
+
     paint();
-    if (still) return;
 
     let frame = 0;
     let box = canvas.getBoundingClientRect();
@@ -78,7 +77,12 @@ export function CardMascot({ isLifted }: Props) {
     };
 
     const follow = (event: PointerEvent) => {
-      angleRef.current = angleToPointer(box, event.clientX, event.clientY);
+      if (event.pointerType === 'touch') return;
+
+      const next = lookToward(box, event.clientX, event.clientY);
+      if (next.lookX === lookRef.current.lookX && next.lookY === lookRef.current.lookY) return;
+
+      lookRef.current = next;
       // A rAF id is never 0, so 0 is "nothing scheduled" and a burst of moves inside one frame
       // paints once.
       if (frame === 0) frame = requestAnimationFrame(scheduled);
@@ -109,7 +113,7 @@ export function CardMascot({ isLifted }: Props) {
       window.removeEventListener('pointermove', follow);
       window.removeEventListener('resize', remeasure);
     };
-  }, [isLifted, motion]);
+  }, [isLifted, motion, side]);
 
   return (
     // The wrapper carries the hiding rather than the canvas: a canvas is focusable content, and ARIA

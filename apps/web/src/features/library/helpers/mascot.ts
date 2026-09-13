@@ -1,71 +1,107 @@
 import { CELL_EXTENT, CELL_PX } from './pixels';
 
 /**
- * The mascot, one character per cell: `#` is body and `.` is nothing. Its eyes are not in here —
- * they are drawn over it, because where a pupil sits is a function of where the pointer is and a
- * sprite is a constant.
+ * The watcher on the upload card: a CT or a T operator from the chest up, one character per cell —
+ * `#` is body, `o` is a hole (the eyes look out through it) and `.` is nothing. #380 replaced the round
+ * mascot with it.
  *
- * It is drawn in the way in's own grid rather than as a shape, which is the whole reason it fits
- * this screen: the ground behind it is Dust2's plate sampled once per cell of the same grid, and
- * anything smooth standing on it is a second visual language.
+ * It is drawn in the way in's own grid rather than as a shape, which is the whole reason it fits this
+ * screen: the ground behind it is Dust2's plate sampled once per cell of the same grid, and anything
+ * smooth standing on it is a second visual language. Holes are left unpainted rather than filled
+ * with a background colour, so the card's hover shows through them like it does around the figure.
  */
-export const MASCOT_SPRITE = [
-  '.....######.....',
-  '...##########...',
+export type MascotSide = 'ct' | 't';
+
+/** The head is its own sprite because it is the part that turns; the shoulders stay put. */
+export const HEADS: Readonly<Record<MascotSide, readonly string[]>> = {
+  // A helmet with a brim, and goggles under it.
+  ct: [
+    '...######...',
+    '..########..',
+    '.##########.',
+    '############',
+    '..#oo##oo#..',
+    '..#oo##oo#..',
+    '..########..',
+    '..########..',
+    '...######...',
+    '....####....',
+  ],
+  // A balaclava: one slit, and the eyes in it.
+  t: [
+    '...######...',
+    '..########..',
+    '.##########.',
+    '.##########.',
+    '.#oooooooo#.',
+    '.#oooooooo#.',
+    '.##########.',
+    '.##########.',
+    '..########..',
+    '...######...',
+  ],
+};
+
+export const SHOULDERS = [
+  '......####......',
   '..############..',
   '.##############.',
-  '.##############.',
-  '.##############.',
-  '.##############.',
-  '.##############.',
-  '.##############.',
-  '..############..',
-  '..############..',
-  '...##########...',
-  '....##....##....',
-  '....##....##....',
-] as const;
+  '################',
+];
 
 export const MASCOT_COLUMNS = 16;
-export const MASCOT_ROWS = MASCOT_SPRITE.length;
+export const HEAD_COLUMNS = 12;
+const HEAD_ROWS = 10;
+/** Where the head's left edge sits when it faces forward, so a turn of one cell stays in the grid. */
+const HEAD_COLUMN = (MASCOT_COLUMNS - HEAD_COLUMNS) / 2;
+
+export const MASCOT_ROWS = HEAD_ROWS + SHOULDERS.length;
 export const MASCOT_WIDTH_PX = MASCOT_COLUMNS * CELL_PX;
 export const MASCOT_HEIGHT_PX = MASCOT_ROWS * CELL_PX;
 
-/** Top-left cell of each eye. They are 3×3, which is what gives a pupil nine places to sit. */
-export const MASCOT_EYES = [
-  { column: 3, row: 4 },
-  { column: 10, row: 4 },
-] as const;
-export const EYE_CELLS = 3;
-
-/** How far a pupil travels from the middle of its socket: one cell, which is all a 3×3 socket has. */
-const PUPIL_REACH = 1;
+/**
+ * Each eye's resting cell in head coordinates, looking straight ahead. A look moves it one cell
+ * along each axis, and the sprite leaves exactly that much hole around it.
+ */
+const EYES: Readonly<Record<MascotSide, readonly { column: number; row: number }[]>> = {
+  ct: [
+    { column: 3, row: 4 },
+    { column: 7, row: 4 },
+  ],
+  t: [
+    { column: 4, row: 4 },
+    { column: 7, row: 4 },
+  ],
+};
 
 /** How far the hop lifts it, in cells, while a demo is over the window. */
 const HOP_CELLS = 0.8;
 
-export interface MascotColours {
-  /** The body: the chrome's own ink, because this screen has no data for a hue to mean. */
-  readonly body: string;
-  /** The eyes, which are holes in the body rather than marks on it — so, what is behind it. */
-  readonly socket: string;
-}
+/** A step along one axis: towards the pointer, away from it, or straight ahead. */
+export type Step = -1 | 0 | 1;
 
 export interface MascotPose {
-  /** Where it is looking, in radians, from the middle of the sprite. */
-  readonly angle: number;
-  /** A file is over the window: the eyes close happily and it hops. */
-  readonly isLifted: boolean;
+  readonly side: MascotSide;
+  /** Where it is looking, one step along each axis. `{0, 0}` is facing the reader. */
+  readonly lookX: Step;
+  readonly lookY: Step;
   /** Where the hop has got to, 0 to 1 and back, in wall time. Zero is standing still. */
   readonly hop: number;
 }
 
-function fillCell(
-  context: CanvasRenderingContext2D,
-  column: number,
-  row: number,
-  offsetY: number,
-): void {
+/**
+ * Which cell an eye sits in. A 2×2 goggle lens has no middle, so a CT's eye takes the lens's
+ * right or bottom half when looking that way and the left or top half otherwise; a T's slit is two
+ * rows tall and wide, so its eyes slide across it and take the top or bottom row.
+ */
+export function eyeCells(pose: Pick<MascotPose, 'side' | 'lookX' | 'lookY'>) {
+  return EYES[pose.side].map((eye) => ({
+    column: eye.column + (pose.side === 'ct' ? Math.max(pose.lookX, 0) : pose.lookX),
+    row: eye.row + Math.max(pose.lookY, 0),
+  }));
+}
+
+function fillCell(context: CanvasRenderingContext2D, column: number, row: number, offsetY: number) {
   const side = 2 * CELL_EXTENT * CELL_PX;
   const x = (column + 0.5) * CELL_PX - side / 2;
   const y = (row + 0.5) * CELL_PX - side / 2 + offsetY;
@@ -73,85 +109,57 @@ function fillCell(
   context.fillRect(x, y, side, side);
 }
 
-/**
- * An eye that is looking: a 3×3 hole with the pupil pushed one cell towards whatever it has found.
- *
- * The pupil is the *body* colour rather than a third one — it is the part of the face the hole did
- * not take — which is what keeps this two colours deep, the way everything else on this screen is.
- */
-function drawOpenEye(
+function fillSprite(
   context: CanvasRenderingContext2D,
-  eye: { readonly column: number; readonly row: number },
-  angle: number,
+  sprite: readonly string[],
+  column: number,
+  row: number,
   offsetY: number,
-  colours: MascotColours,
-): void {
-  context.fillStyle = colours.socket;
-  for (let row = 0; row < EYE_CELLS; row++) {
-    for (let column = 0; column < EYE_CELLS; column++) {
-      fillCell(context, eye.column + column, eye.row + row, offsetY);
-    }
-  }
-
-  const pupilColumn = eye.column + 1 + Math.round(Math.cos(angle) * PUPIL_REACH);
-  const pupilRow = eye.row + 1 + Math.round(Math.sin(angle) * PUPIL_REACH);
-
-  context.fillStyle = colours.body;
-  fillCell(context, pupilColumn, pupilRow, offsetY);
-}
-
-/** An eye that is pleased: the chevron a closed, smiling eye is in every pixel face ever drawn. */
-function drawHappyEye(
-  context: CanvasRenderingContext2D,
-  eye: { readonly column: number; readonly row: number },
-  offsetY: number,
-  colours: MascotColours,
-): void {
-  context.fillStyle = colours.socket;
-  fillCell(context, eye.column, eye.row + 1, offsetY);
-  fillCell(context, eye.column + 1, eye.row, offsetY);
-  fillCell(context, eye.column + 2, eye.row + 1, offsetY);
-}
-
-/**
- * The mascot, looking wherever the pointer is — and, while a demo is over the window, closing its
- * eyes and hopping.
- *
- * Nothing here allocates: two loops over a constant sprite and one `fillRect` per cell.
- */
-export function drawMascot(
-  context: CanvasRenderingContext2D,
-  pose: MascotPose,
-  colours: MascotColours,
-): void {
-  const offsetY = -pose.hop * HOP_CELLS * CELL_PX;
-
-  context.fillStyle = colours.body;
-  for (let row = 0; row < MASCOT_SPRITE.length; row++) {
-    const line = MASCOT_SPRITE[row];
+) {
+  for (let y = 0; y < sprite.length; y++) {
+    const line = sprite[y];
     if (line === undefined) continue;
 
-    for (let column = 0; column < line.length; column++) {
-      if (line[column] === '#') fillCell(context, column, row, offsetY);
+    for (let x = 0; x < line.length; x++) {
+      if (line[x] === '#') fillCell(context, column + x, row + y, offsetY);
     }
-  }
-
-  for (const eye of MASCOT_EYES) {
-    if (pose.isLifted) drawHappyEye(context, eye, offsetY, colours);
-    else drawOpenEye(context, eye, pose.angle, offsetY, colours);
   }
 }
 
-/** Where the sprite's own middle is in the viewport, which is what a pupil looks out from. */
+/**
+ * The operator, head turned a cell towards wherever it is looking. Nothing here allocates beyond the
+ * two eye cells: loops over constant sprites and one `fillRect` per cell.
+ */
+export function drawMascot(context: CanvasRenderingContext2D, pose: MascotPose, ink: string) {
+  const offsetY = -pose.hop * HOP_CELLS * CELL_PX;
+  const headColumn = HEAD_COLUMN + pose.lookX;
+
+  context.fillStyle = ink;
+  fillSprite(context, SHOULDERS, 0, HEAD_ROWS, offsetY);
+  fillSprite(context, HEADS[pose.side], headColumn, 0, offsetY);
+
+  for (const eye of eyeCells(pose)) fillCell(context, headColumn + eye.column, eye.row, offsetY);
+}
+
+/** The sprite's box in the viewport. */
 export interface MascotBox {
   readonly left: number;
   readonly top: number;
 }
 
-/** The angle from the mascot to a point in the viewport. */
-export function angleToPointer(box: MascotBox, clientX: number, clientY: number): number {
-  return Math.atan2(
-    clientY - (box.top + MASCOT_HEIGHT_PX / 2),
-    clientX - (box.left + MASCOT_WIDTH_PX / 2),
-  );
+/** How far from the figure's middle, in CSS pixels, a pointer has to be before it turns that way. */
+const LOOK_DEAD_ZONE_PX = 40;
+
+function stepToward(distance: number): Step {
+  if (distance > LOOK_DEAD_ZONE_PX) return 1;
+
+  return distance < -LOOK_DEAD_ZONE_PX ? -1 : 0;
+}
+
+/** Which way to look for a pointer at a point in the viewport. */
+export function lookToward(box: MascotBox, clientX: number, clientY: number) {
+  return {
+    lookX: stepToward(clientX - (box.left + MASCOT_WIDTH_PX / 2)),
+    lookY: stepToward(clientY - (box.top + MASCOT_HEIGHT_PX / 2)),
+  };
 }
