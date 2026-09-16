@@ -1,4 +1,4 @@
-import type { ParsedDemo } from '@disa/demo-core';
+import { openingDuels, type ParsedDemo, type Team } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { useMemo } from 'react';
 import { EconomyGaps, economySteps } from '@/features/timeline';
@@ -9,6 +9,13 @@ const REACH = 42;
 export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
   const t = useT();
   const steps = useMemo(() => economySteps(demo), [demo]);
+  const openingWins = useMemo(() => {
+    const wins: Record<Team, number> = { CT: 0, T: 0 };
+    for (const duel of openingDuels(demo)) {
+      if (duel.attackerSide !== undefined) wins[duel.attackerSide] += 1;
+    }
+    return wins;
+  }, [demo]);
 
   if (steps.length === 0) {
     return (
@@ -100,6 +107,29 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
           </span>
         </figcaption>
       </figure>
+
+      <section className="surface-card flex flex-col gap-3 rounded-card p-3">
+        <header className="flex flex-col gap-1">
+          <h3 className="font-ui font-medium text-20 leading-dense">
+            <Text path="review.metrics.opening.title" />
+          </h3>
+          <p className="text-12 text-ink-dim leading-prose">
+            <Text path="review.metrics.opening.note" />
+          </p>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2">
+          {(['CT', 'T'] as const).map((side) => (
+            <p
+              key={side}
+              className="flex items-baseline justify-between gap-3 rounded-card bg-surface-2 px-3 py-2"
+            >
+              <span className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</span>
+              <span className="numeric text-28 text-ink">{openingWins[side]}</span>
+            </p>
+          ))}
+        </div>
+      </section>
 
       <EconomyGaps steps={steps} />
     </section>

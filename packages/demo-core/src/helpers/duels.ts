@@ -70,3 +70,25 @@ export function matchDuels(demo: ParsedDemo): readonly Duel[] {
 
   return duels;
 }
+
+/** The first opponent kill in each round, oldest first. */
+export function openingDuels(demo: ParsedDemo): readonly Duel[] {
+  const openings: Duel[] = [];
+  let openedRound = -1;
+
+  for (const duel of matchDuels(demo)) {
+    if (
+      duel.roundIndex === openedRound ||
+      duel.attackerSide === undefined ||
+      duel.victimSide === undefined ||
+      duel.attackerSide === duel.victimSide
+    ) {
+      continue;
+    }
+
+    openings.push(duel);
+    openedRound = duel.roundIndex;
+  }
+
+  return openings;
+}
