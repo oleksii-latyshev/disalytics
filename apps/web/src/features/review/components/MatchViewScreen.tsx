@@ -6,8 +6,8 @@ import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
 import { MatchDuels } from './MatchDuels';
 import { MatchHeatmap } from './MatchHeatmap';
+import { MatchMetrics } from './MatchMetrics';
 import { MatchScoreboard } from './MatchScoreboard';
-import { MatchSoon } from './MatchSoon';
 import { MatchUtility } from './MatchUtility';
 import { MatchViewBar } from './MatchViewBar';
 import { ReviewSheets } from './ReviewSheets';
@@ -56,9 +56,6 @@ export function MatchViewScreen({
           own to state, so nothing hangs under it here. */}
       <MatchViewBar view={view} onView={onView} />
 
-      {/* Four views are built and the last one says so. The screen behind a seat is what each
-          `ROADMAP.md` M5 row adds; this file is where a built one takes the place of its own
-          note. */}
       {view === 'scoreboard' && <MatchScoreboard demo={demo} />}
       {view === 'duels' && (
         <MatchDuels
@@ -70,7 +67,7 @@ export function MatchViewScreen({
       )}
       {view === 'heatmap' && <MatchHeatmap demo={demo} />}
       {view === 'utility' && <MatchUtility demo={demo} />}
-      {view === 'metrics' && <MatchSoon view={view} />}
+      {view === 'metrics' && <MatchMetrics demo={demo} />}
 
       <ReviewSheets
         demo={demo}
