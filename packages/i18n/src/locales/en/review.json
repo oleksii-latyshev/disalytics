@@ -86,7 +86,11 @@
     "utility": "Utility"
   },
   "metrics": {
-    "empty": "No round economy was recorded for this match."
+    "empty": "No round economy was recorded for this match.",
+    "opening": {
+      "title": "Opening duels",
+      "note": "The first opponent kill in each round."
+    }
   },
   "board": {
     "started": "Started {side}",

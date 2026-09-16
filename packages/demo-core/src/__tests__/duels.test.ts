@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchDuels } from '../helpers/duels';
+import { matchDuels, openingDuels } from '../helpers/duels';
 import {
   asPlayerSlot,
   asTick,
@@ -12,6 +12,7 @@ import { newEvents, newTrack, withKill } from './helpers';
 
 const ct = asPlayerSlot(0);
 const terrorist = asPlayerSlot(1);
+const ctTeammate = asPlayerSlot(2);
 
 /** The same two slots, on opposite sides in each half — which is what a whole-match reading trips on. */
 function newRound(number: number, startTick: number, sides: readonly [Team, Team]): Round {
@@ -87,5 +88,52 @@ describe('matchDuels', () => {
     const events = withKill(newEvents(), { tick: asTick(400), attacker: ct, victim: terrorist });
 
     expect(matchDuels(newDemo(events, []))).toEqual([]);
+  });
+});
+
+describe('openingDuels', () => {
+  it('keeps one opening per round with the side recorded in that round', () => {
+    let events = withKill(newEvents(), { tick: asTick(400), attacker: ct, victim: terrorist });
+    events = withKill(events, { tick: asTick(500), attacker: terrorist, victim: ct });
+    events = withKill(events, { tick: asTick(2400), attacker: ct, victim: terrorist });
+
+    expect(
+      openingDuels(newDemo(events, [firstHalf, secondHalf])).map((duel) => ({
+        roundIndex: duel.roundIndex,
+        attackerSide: duel.attackerSide,
+      })),
+    ).toEqual([
+      { roundIndex: 0, attackerSide: 'CT' },
+      { roundIndex: 1, attackerSide: 'T' },
+    ]);
+  });
+
+  it('keeps the first opponent kill per round after ignoring non-duels', () => {
+    const roundWithTeammate: Round = {
+      ...firstHalf,
+      economy: [
+        ...firstHalf.economy,
+        {
+          slot: ctTeammate,
+          money: 0,
+          equipmentValue: 0,
+          buyType: 'full-buy',
+          team: 'CT',
+        },
+      ],
+    };
+    let events = withKill(newEvents(), {
+      tick: asTick(200),
+      attacker: null,
+      victim: terrorist,
+    });
+    events = withKill(events, { tick: asTick(300), attacker: ct, victim: ct });
+    events = withKill(events, { tick: asTick(350), attacker: ct, victim: ctTeammate });
+    events = withKill(events, { tick: asTick(400), attacker: terrorist, victim: ct });
+    events = withKill(events, { tick: asTick(500), attacker: ct, victim: terrorist });
+
+    expect(openingDuels(newDemo(events, [roundWithTeammate]))).toMatchObject([
+      { roundIndex: 0, attacker: terrorist, victim: ct, attackerSide: 'T', victimSide: 'CT' },
+    ]);
   });
 });
