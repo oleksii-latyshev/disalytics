@@ -35,7 +35,7 @@ export function MatchViewSwitch({ view, onView }: Props) {
         transition={{ type: 'spring', stiffness: 420, damping: 38 }}
       >
         <ul className="flex list-none items-center gap-0.5 p-0">
-          {MATCH_VIEWS.map(({ view: seat, labelPath, icon: Icon, isSoon }) => (
+          {MATCH_VIEWS.map(({ view: seat, labelPath, icon: Icon }) => (
             <HighlightItem
               key={seat}
               as="li"
@@ -56,12 +56,6 @@ export function MatchViewSwitch({ view, onView }: Props) {
 
                 <span className="sr-only">
                   <Text path={labelPath} />
-                  {isSoon && (
-                    <>
-                      {' '}
-                      <Text path="common.soon" />
-                    </>
-                  )}
                 </span>
               </button>
             </HighlightItem>

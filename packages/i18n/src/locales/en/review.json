@@ -83,10 +83,10 @@
     "duels": "Duels",
     "heatmap": "Heat map",
     "metrics": "Metrics",
-    "soonNote": {
-      "metrics": "What no map can show — clutches, opening duels, trades, utility damage, time blinded. Not built yet."
-    },
     "utility": "Utility"
+  },
+  "metrics": {
+    "empty": "No round economy was recorded for this match."
   },
   "board": {
     "started": "Started {side}",

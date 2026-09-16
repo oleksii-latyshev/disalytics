@@ -16,12 +16,6 @@ import {
  */
 export type MatchView = 'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'utility' | 'metrics';
 
-/** A view with no screen behind it yet. */
-export type UnbuiltMatchView = Exclude<
-  MatchView,
-  'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'utility'
->;
-
 export interface MatchViewSection {
   view: MatchView;
   labelPath: TranslationKey;
@@ -32,20 +26,15 @@ export interface MatchViewSection {
    * still hears it.
    */
   icon: LucideIcon;
-  /**
-   * Listed and honest about being unfinished, the way the shell lists the screens it does not have.
-   * The navigation is what ships here, so adding a screen later is not a redesign.
-   */
-  isSoon: boolean;
 }
 
 export const MATCH_VIEWS: readonly MatchViewSection[] = [
-  { view: 'stage', labelPath: 'review.views.stage', icon: MapIcon, isSoon: false },
-  { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table, isSoon: false },
-  { view: 'duels', labelPath: 'review.views.duels', icon: Crosshair, isSoon: false },
-  { view: 'heatmap', labelPath: 'review.views.heatmap', icon: Flame, isSoon: false },
-  { view: 'utility', labelPath: 'review.views.utility', icon: Cloud, isSoon: false },
-  { view: 'metrics', labelPath: 'review.views.metrics', icon: ChartColumn, isSoon: true },
+  { view: 'stage', labelPath: 'review.views.stage', icon: MapIcon },
+  { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table },
+  { view: 'duels', labelPath: 'review.views.duels', icon: Crosshair },
+  { view: 'heatmap', labelPath: 'review.views.heatmap', icon: Flame },
+  { view: 'utility', labelPath: 'review.views.utility', icon: Cloud },
+  { view: 'metrics', labelPath: 'review.views.metrics', icon: ChartColumn },
 ];
 
 /** The next view in the order above, wrapping — §9.1's `V`. */
