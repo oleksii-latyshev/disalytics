@@ -94,6 +94,10 @@
     "multi": {
       "title": "Multi-kills",
       "note": "Rounds where one player killed at least two opponents."
+    },
+    "utilityDamage": {
+      "title": "Utility damage",
+      "note": "Health damage dealt to opponents with utility."
     }
   },
   "board": {

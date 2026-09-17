@@ -90,6 +90,7 @@ export {
   utilityHeld,
   utilityKindOfGrenade,
 } from './helpers/utility';
+export { matchUtilityDamage } from './helpers/utility-damage';
 export type { UtilityThrow } from './helpers/utility-throws';
 export { matchUtility } from './helpers/utility-throws';
 export type { WeaponIconId } from './helpers/weapon-icons';
