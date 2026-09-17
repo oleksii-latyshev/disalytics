@@ -1,5 +1,11 @@
-import { multiKills, openingDuels, type ParsedDemo, type Team } from '@disa/demo-core';
-import { Text, useT } from '@disa/i18n';
+import {
+  matchUtilityDamage,
+  multiKills,
+  openingDuels,
+  type ParsedDemo,
+  type Team,
+} from '@disa/demo-core';
+import { Text, useLocale, useT } from '@disa/i18n';
 import { useMemo } from 'react';
 import { EconomyGaps, economySteps } from '@/features/timeline';
 
@@ -9,6 +15,8 @@ const MULTI_KILL_COUNTS = [2, 3, 4, 5] as const;
 
 export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
   const t = useT();
+  const locale = useLocale();
+  const numberFormat = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const steps = useMemo(() => economySteps(demo), [demo]);
   const openingWins = useMemo(() => {
     const wins: Record<Team, number> = { CT: 0, T: 0 };
@@ -25,6 +33,7 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
     }
     return rounds;
   }, [demo]);
+  const utilityDamage = useMemo(() => matchUtilityDamage(demo), [demo]);
 
   if (steps.length === 0) {
     return (
@@ -157,6 +166,31 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
                 {kills}K{kills === 5 ? '+' : ''}
               </span>
               <span className="numeric text-28 text-ink">{multiKillRounds[index]}</span>
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section className="surface-card flex flex-col gap-3 rounded-card p-3">
+        <header className="flex flex-col gap-1">
+          <h3 className="font-ui font-medium text-20 leading-dense">
+            <Text path="review.metrics.utilityDamage.title" />
+          </h3>
+          <p className="text-12 text-ink-dim leading-prose">
+            <Text path="review.metrics.utilityDamage.note" />
+          </p>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2">
+          {(['CT', 'T'] as const).map((side) => (
+            <p
+              key={side}
+              className="flex items-baseline justify-between gap-3 rounded-card bg-surface-2 px-3 py-2"
+            >
+              <span className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</span>
+              <span className="numeric text-28 text-ink">
+                {numberFormat.format(utilityDamage[side])}
+              </span>
             </p>
           ))}
         </div>
