@@ -1,10 +1,11 @@
-import { openingDuels, type ParsedDemo, type Team } from '@disa/demo-core';
+import { multiKills, openingDuels, type ParsedDemo, type Team } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { useMemo } from 'react';
 import { EconomyGaps, economySteps } from '@/features/timeline';
 
 const CENTRE = 50;
 const REACH = 42;
+const MULTI_KILL_COUNTS = [2, 3, 4, 5] as const;
 
 export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
   const t = useT();
@@ -15,6 +16,14 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
       if (duel.attackerSide !== undefined) wins[duel.attackerSide] += 1;
     }
     return wins;
+  }, [demo]);
+  const multiKillRounds = useMemo(() => {
+    const rounds = [0, 0, 0, 0];
+    for (const multiKill of multiKills(demo)) {
+      const index = Math.min(multiKill.kills, 5) - 2;
+      rounds[index] = (rounds[index] ?? 0) + 1;
+    }
+    return rounds;
   }, [demo]);
 
   if (steps.length === 0) {
@@ -126,6 +135,28 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
             >
               <span className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</span>
               <span className="numeric text-28 text-ink">{openingWins[side]}</span>
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section className="surface-card flex flex-col gap-3 rounded-card p-3">
+        <header className="flex flex-col gap-1">
+          <h3 className="font-ui font-medium text-20 leading-dense">
+            <Text path="review.metrics.multi.title" />
+          </h3>
+          <p className="text-12 text-ink-dim leading-prose">
+            <Text path="review.metrics.multi.note" />
+          </p>
+        </header>
+
+        <div className="grid grid-cols-4 gap-2">
+          {MULTI_KILL_COUNTS.map((kills, index) => (
+            <p key={kills} className="flex flex-col gap-1 rounded-card bg-surface-2 px-3 py-2">
+              <span className="label-dense text-ink-dim">
+                {kills}K{kills === 5 ? '+' : ''}
+              </span>
+              <span className="numeric text-28 text-ink">{multiKillRounds[index]}</span>
             </p>
           ))}
         </div>

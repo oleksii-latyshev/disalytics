@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchDuels, openingDuels } from '../helpers/duels';
+import { matchDuels, multiKills, openingDuels } from '../helpers/duels';
 import {
   asPlayerSlot,
   asTick,
@@ -13,6 +13,7 @@ import { newEvents, newTrack, withKill } from './helpers';
 const ct = asPlayerSlot(0);
 const terrorist = asPlayerSlot(1);
 const ctTeammate = asPlayerSlot(2);
+const terroristTeammate = asPlayerSlot(3);
 
 /** The same two slots, on opposite sides in each half — which is what a whole-match reading trips on. */
 function newRound(number: number, startTick: number, sides: readonly [Team, Team]): Round {
@@ -135,5 +136,63 @@ describe('openingDuels', () => {
     expect(openingDuels(newDemo(events, [roundWithTeammate]))).toMatchObject([
       { roundIndex: 0, attacker: terrorist, victim: ct, attackerSide: 'T', victimSide: 'CT' },
     ]);
+  });
+});
+
+describe('multiKills', () => {
+  it('groups opponent kills by player and round using that round side', () => {
+    let events = withKill(newEvents(), { tick: asTick(300), attacker: ct, victim: terrorist });
+    events = withKill(events, {
+      tick: asTick(400),
+      attacker: ct,
+      victim: terroristTeammate,
+    });
+    events = withKill(events, { tick: asTick(2300), attacker: ct, victim: terrorist });
+    events = withKill(events, {
+      tick: asTick(2400),
+      attacker: ct,
+      victim: terroristTeammate,
+    });
+    const rounds = [firstHalf, secondHalf].map((round) => ({
+      ...round,
+      economy: [
+        ...round.economy,
+        {
+          slot: terroristTeammate,
+          money: 0,
+          equipmentValue: 0,
+          buyType: 'full-buy' as const,
+          team: round === firstHalf ? ('T' as const) : ('CT' as const),
+        },
+      ],
+    }));
+
+    expect(multiKills(newDemo(events, rounds))).toEqual([
+      { roundIndex: 0, player: ct, side: 'CT', kills: 2 },
+      { roundIndex: 1, player: ct, side: 'T', kills: 2 },
+    ]);
+  });
+
+  it('ignores world, suicide, team, single, and post-round kills', () => {
+    const round: Round = {
+      ...firstHalf,
+      economy: [
+        ...firstHalf.economy,
+        {
+          slot: ctTeammate,
+          money: 0,
+          equipmentValue: 0,
+          buyType: 'full-buy',
+          team: 'CT',
+        },
+      ],
+    };
+    let events = withKill(newEvents(), { tick: asTick(200), attacker: null, victim: terrorist });
+    events = withKill(events, { tick: asTick(300), attacker: ct, victim: ct });
+    events = withKill(events, { tick: asTick(400), attacker: ct, victim: ctTeammate });
+    events = withKill(events, { tick: asTick(500), attacker: ct, victim: terrorist });
+    events = withKill(events, { tick: asTick(950), attacker: ct, victim: terrorist });
+
+    expect(multiKills(newDemo(events, [round]))).toEqual([]);
   });
 });
