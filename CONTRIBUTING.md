@@ -289,67 +289,13 @@ gh api -X DELETE repos/oleksii-latyshev/disalytics/branches/main/protection   # 
 
 ### Git hooks
 
-Lefthook installs `pre-commit` and `pre-push` on `bun install` — `lefthook` is listed in
-`trustedDependencies`, so its install step runs and writes `.git/hooks`. There is no manual setup
-step, and no `postinstall` script of our own. If the hooks ever go missing, `bun lefthook install`
-restores them.
+Lefthook installs on `bun install`; `bun lefthook install` restores missing hooks. Pre-commit runs
+only fast changed-file checks: Biome over staged web files and `cargo fmt --check` when Rust is
+staged. It never rewrites or stages files and is skipped during rebase. There is no pre-push hook.
 
-What runs, and against what (`lefthook.yml`, and `CODE_REQUIREMENTS.md` §13):
-
-| Hook | Job | Scope |
-|---|---|---|
-| pre-commit | `biome check` | the staged files, passed as arguments |
-| pre-commit | `bun run typecheck` | the whole project, and only when the commit stages a `*.ts`/`*.tsx` file |
-| pre-commit | `cargo fmt --check` | `demo-parser` and `demo-parser-wasm`, and only when the commit stages `crates/**`, `Cargo.toml`, `Cargo.lock` or `rust-toolchain.toml` |
-| pre-commit | `cargo clippy` | the workspace, same trigger |
-| pre-push | `bun run test` | the whole test suite |
-
-`tsc` has no staged-file mode — it type-checks a project, not a file list, and a file list would
-report errors that are artefacts of the missing context. So the staged files decide *whether* the
-typecheck runs, not *what* it covers. It is a full `turbo run typecheck`, cached, ~1.4 s cold,
-followed by `tsc -p tsconfig.tools.json` over `tools/scripts` — those files are not in a workspace,
-so turbo cannot see them, and they are not cached.
-
-Biome does not rewrite files here. A failure prints what to run (`bun run check:fix`); it never
-stages fixes on your behalf, because writing a file that is only partially staged would commit
-hunks you did not stage.
-
-The two Rust jobs are the same two lines `.github/workflows/wasm.yml` runs, so a commit that passes
-them is one `wasm` will not bounce for formatting or a lint — the rest of that workflow, from
-`cargo test` to the size gate, still runs only there. Clippy is `--workspace --all-targets -- -D warnings`, and
-the level that matters lives in `Cargo.toml` under `[workspace.lints.clippy]`: `all` is denied and
-`pedantic` is warned, so `-D warnings` is what turns a pedantic lint into a failed commit. Keep the
-hook and the workflow in step — a hook that lints more loosely than CI is a hook that stops
-predicting it. Like `tsc`, both read the working tree rather than the staged content, and neither
-rewrites a file: `cargo fmt --package demo-parser --package demo-parser-wasm` is yours to run.
-
-They cost about half a second on a warm `target/`, and ~17 s on a cold one — the first Rust commit
-after a `cargo clean` or a toolchain bump pays for a full check of the workspace. A commit that
-stages no Rust pays nothing: lefthook filters on the glob and never starts the process. `cargo`
-itself is looked up with `~/.cargo/bin` prepended to `PATH`, because a git hook is not always
-launched from a login shell that has it.
-
-Pre-commit is skipped during a `rebase`: those commits were checked when they were written, and
-re-checking every replayed commit is what makes people turn hooks off for good. It is **not**
-skipped during a `merge` — a conflict resolution is new code that nothing has looked at yet, and
-that is exactly when a check earns its keep.
-
-### Skipping a hook on purpose
-
-Sometimes you need the commit anyway — a WIP commit before a bisect, a rebase that has to land
-before it can pass, a push whose failure is the point. Skip deliberately and narrowly:
-
-```bash
-LEFTHOOK_EXCLUDE=typecheck git commit -m "..."   # one job
-LEFTHOOK=0 git commit -m "..."                   # all hooks, this command
-LEFTHOOK=0 git push                              # skip the pre-push tests
-```
-
-`git commit --no-verify` works too, and skips everything for that command.
-
-Two rules around this: a skipped hook is temporary, and a PR that reached `main` with a skipped
-check says so in its body. Turning hooks off permanently (`bun lefthook uninstall`) is not a
-supported state — if a hook is wrong often enough to want that, fix the hook.
+Run focused tests while editing, then push and open a draft pull request. Required GitHub checks are
+the full verification gate and block merging; inspect detailed output only for failed jobs. This
+keeps local feedback immediate without paying for the same project-wide suite twice.
 
 ---
 
@@ -373,7 +319,7 @@ naming the boundary up front prevents it.
 ## 7. Notes for Agents
 
 - Read `AGENTS.md` before starting, and `CODE_REQUIREMENTS.md` before writing code.
-- Re-read the issue's acceptance criteria before opening the PR, and confirm each one.
+- Re-read the issue's acceptance criteria before marking the PR ready, and confirm each one.
 - If the work turns out to need a decision listed in `AGENTS.md` §21, stop and comment on the issue
   instead of choosing. `gh issue comment 42 --body "..."`.
 - If the scope grows, open a follow-up issue and link it — do not widen the current PR.

@@ -1,6 +1,6 @@
 ---
 name: dod
-description: Run the disalytics Definition of Done before a PR, push, or readiness check.
+description: Review a finished disalytics branch before its pull request is marked ready or merged.
 ---
 
 Read and follow [`../../../.claude/skills/dod/SKILL.md`](../../../.claude/skills/dod/SKILL.md).

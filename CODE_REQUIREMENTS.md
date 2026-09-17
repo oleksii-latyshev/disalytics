@@ -442,31 +442,17 @@ thoroughness. See the table in `AGENTS.md` §11.
 
 ## 13. Workflow
 
-```bash
-bun run typecheck   # tsc over app, worker, and node configs
-bun run check       # biome — lint + format (check:fix to apply)
-bun run i18n:check  # key parity, every key read + regenerate the typed key union
-bun run test        # vitest
-bun run build       # tsc -b && vite build
-cargo test -p demo-parser
-```
+Run the narrowest relevant test while editing. Locale changes also run `bun run i18n:check` because
+it regenerates the committed key union. Do not run the full repository suite before a commit, push,
+or draft pull request: required `ci` and `wasm` checks own typechecking, linting, tests, builds,
+budgets, parser checks and generated-artifact validation.
 
-All of these must pass before a push. **Lefthook** (`lefthook.yml`) enforces part of that locally,
-so CI is the second line of defence rather than the first:
+Lefthook gives immediate changed-file feedback only: Biome checks staged web files and
+`cargo fmt --check` checks staged Rust. It skips pre-commit during rebase and has no pre-push gate.
+Hooks install on `bun install`; `bun lefthook install` restores them if needed.
 
-- **pre-commit** — Biome over the staged files only, and `bun run typecheck` when the commit touches
-  `*.ts`/`*.tsx`. `tsc` is a whole-project check by nature: the staged files decide *whether* it
-  runs, never *what* it checks. Skipped during a `rebase`, which only replays commits that were
-  already checked; not skipped during a `merge`, where the conflict resolution is new code. A commit
-  that stages Rust also runs `cargo fmt --check` and `cargo clippy` — the same two lines `wasm.yml`
-  runs, so the workflow stops being the first thing to see an unformatted file.
-- **pre-push** — `bun run test`.
-
-Hooks install themselves on `bun install` (`trustedDependencies` in the root `package.json`); there
-is no manual setup step. Skipping a hook deliberately is documented in `CONTRIBUTING.md` §5 — say so
-in the PR when you do.
-
-CI runs the full set and blocks deploys otherwise.
+Open a draft pull request early so CI evaluates the branch. Inspect detailed logs only for a failed
+job, fix the cause, and let CI rerun. Required checks block merging and production deployment.
 
 Commits and PR titles follow `CONTRIBUTING.md` §4.
 

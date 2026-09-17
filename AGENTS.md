@@ -211,8 +211,8 @@ keep `.assetsignore`. `bun run smoke <url>` asserts all of it from the deployed 
 - Titles are conventional commits, scope = `area:` label. Every issue has `type:`, `area:`, `phase:`,
   `priority:`, `size:` and a milestone; `size:xl` is split before a branch (`CONTRIBUTING.md` §3).
 - Docs and small fixes ride in the feature PR that motivates them. Aim for zero comments; no `TODO`.
-- Lefthook: Biome on staged files + `typecheck` pre-commit, `test` pre-push, `cargo fmt`/clippy for
-  staged Rust. `LEFTHOOK=0` skips — say so in the PR.
+- Open a draft PR early. Run focused checks while editing; required CI is the full gate.
+- Lefthook gives fast feedback only: Biome on staged files and `cargo fmt --check` for staged Rust.
 
 ## 15. CI/CD — GitHub Actions
 
@@ -270,8 +270,8 @@ Mono, **chroma reserved for data**.
 
 ## 18. Definition of Done
 
-1. `typecheck`, `check` (no new suppressions), `test`, and `cargo test` for crates pass
-2. `i18n:check`, `contrast:check`, and `tokens:check` on a branch-built `dist` pass
+1. Required `ci` and `wasm` checks pass; do not repeat their full suites locally
+2. Focused tests pass while editing; `i18n:check` regenerates typed keys when locale files change
 3. New `demo-core` logic has unit tests
 4. No §16 budget regressed — measured when the change is on the frame path
 5. No new runtime dependency without approval

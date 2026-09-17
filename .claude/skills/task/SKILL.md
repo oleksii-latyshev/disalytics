@@ -1,122 +1,23 @@
 ---
 name: task
-description: Run the disalytics issue → branch → PR → squash-merge loop from CONTRIBUTING.md. Use when starting any piece of work, creating an issue, opening a branch or PR, or merging. Triggers on "start work on", "create an issue", "open a PR", "let's do <feature>", or any request to change code in this repo that has no issue yet.
+description: Run the disalytics issue-to-PR workflow for repository changes.
 ---
 
-# The disalytics work loop
+# Task workflow
 
-`issue → branch (linked) → commits → PR (Closes #N) → CI green → squash merge → branch deleted`
+`CONTRIBUTING.md` is canonical. Read only the section needed for the current operation: §§3 and 6
+when creating an issue, §§2 and 4 when opening or merging a pull request.
 
-**No issue, no branch.** Work that is not described somewhere cannot be reviewed against intent.
-If the user asks for a code change and no issue exists, create one first — do not skip to editing.
+1. Reuse the current issue and linked branch. If none exists, create an issue with the four required
+   sections, five labels and matching milestone, then use `gh issue develop --base main`.
+2. Preserve unrelated working-tree changes. Read only the parts of `CODE_REQUIREMENTS.md` relevant
+   to the files being changed.
+3. While editing, run the narrowest useful test. Run `bun run i18n:check` after locale changes
+   because it regenerates the typed key union.
+4. Commit, push and open a draft PR early. Required CI is the full deterministic verification gate;
+   inspect detailed logs only for failed jobs.
+5. Before marking the PR ready or merging, use `dod`, confirm required checks are green, and wait for
+   `mergeStateStatus: CLEAN`. Squash merge and delete the branch; never push to `main` or force-push.
 
-## 1. Create the issue
-
-The title becomes the squash-commit subject, so write it as a conventional commit immediately:
-`type(scope): imperative subject`, lower case, no trailing period, under 72 characters. Scope is the
-`area:` label without its prefix.
-
-Every issue gets exactly one `type:`, one `area:`, one `phase:`, one `priority:` and one `size:`
-label, plus the milestone matching its phase (`CONTRIBUTING.md` §3).
-
-- **type:** `feat` `fix` `perf` `refactor` `chore` `docs` `test`
-- **area:** `parser` `radar` `timeline` `analytics` `ui` `i18n` `pwa` `storage` `ci` `docs`
-- **phase / milestone:** `phase:polish` Polish · `phase:match-views` Match views · `phase:toolbox`
-  Toolbox · `phase:coaching` Coaching · `phase:lineups` Lineups · `phase:players` Player profiles
-  (historic `phase:0`–`6` and `phase:redesign` still exist)
-- **priority:** `p0` `p1` `p2` `p3` · **size:** `xs` `s` `m` `l` `xl` — an `xl` is split into child
-  issues before a branch is opened
-
-The body needs four sections, all required:
-
-- **Goal** — one sentence in user terms, not implementation terms
-- **Acceptance criteria** — a checklist someone else could verify without asking questions
-- **Constraints touched** — which `AGENTS.md` hard rules (§2) or budgets (§16) are relevant
-- **Out of scope** — what this issue deliberately does not do
-
-That last field matters most. Scope creep is the common failure mode for agent-assigned work, and
-naming the boundary up front is what prevents it.
-
-```bash
-gh issue create \
-  --title "feat(radar): zoom and pan the plate with a trackpad" \
-  --body-file <path> \
-  --label "type:feat,area:radar,phase:polish,priority:p1,size:s" \
-  --milestone "Polish"
-```
-
-Write the body to a file in the scratchpad rather than inlining it — multi-line `--body` through
-the shell mangles markdown.
-
-## 2. Start work
-
-```bash
-gh issue develop <N> --checkout --base main
-```
-
-Never create the branch by hand. The recorded issue↔branch link is the entire point of using this
-command.
-
-Before writing code, re-read `CODE_REQUIREMENTS.md`, and `packages/ui/src/styles/tokens.css` if
-the work is visual.
-
-## 3. Commit
-
-Commits inside a branch can be untidy — they get squashed. Keep them small and readable anyway.
-
-## 4. Open the PR
-
-Run the `dod` skill first. Do not open a PR against a red Definition of Done.
-
-```bash
-gh pr create --base main --fill --draft --assignee @me
-gh pr ready    # when it is
-```
-
-The body must contain `Closes #N` and three sections:
-
-```markdown
-Closes #42
-
-## What
-<what changed>
-
-## Why
-<why, in terms of the problem — not "as requested">
-
-## Verification
-<how it was checked; before/after numbers if a budget in AGENTS.md §16 was touched>
-```
-
-"Seems faster" is not verification. If a budget was touched, measure it.
-
-## 5. Merge
-
-```bash
-gh pr view 42 --json mergeStateStatus   # BLOCKED while a check runs, CLEAN once they pass
-gh pr merge --squash --delete-branch
-```
-
-**Do not reach for `--auto`** — the repository's `allow_auto_merge` is `false`, so the flag is
-refused outright and queues nothing (read on 4 September 2026 while merging #305). Protection is a
-separate setting and is on since #301, so a merge before `ci` and `wasm` pass is refused: wait for
-`CLEAN` rather than judging it. If a merge ever lands too fast, check
-`gh api repos/oleksii-latyshev/disalytics/branches/main/protection` — a 404 means it was lifted.
-Never merge your own PR without green CI.
-
-## Rules that have no exceptions
-
-- One PR per issue. A PR closing two issues is two PRs.
-- Never push to `main`. Never force-push.
-- If the work turns out to need a decision listed in `AGENTS.md` §21, stop and comment on the issue
-  instead of choosing: `gh issue comment <N> --body "..."`.
-- If scope grows mid-branch, open a follow-up issue and link it. Do not widen the current PR.
-- Before opening the PR, re-read the issue's acceptance criteria and confirm each one explicitly.
-
-## Useful
-
-```bash
-gh issue list --milestone Polish --label priority:p1 --state open
-gh pr checks
-gh run watch
-```
+One issue closes one PR. The PR body contains `Closes #N`, What, Why and Verification. Measure any
+touched `AGENTS.md` §16 budget; stop for the user's decision on an `AGENTS.md` §21 question.
