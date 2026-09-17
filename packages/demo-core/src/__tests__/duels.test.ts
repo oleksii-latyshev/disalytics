@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { matchDuels, multiKills, openingDuels } from '../helpers/duels';
+import {
+  matchDuels,
+  multiKills,
+  openingDuels,
+  TRADE_WINDOW_SECONDS,
+  tradeKills,
+} from '../helpers/duels';
 import {
   asPlayerSlot,
   asTick,
@@ -194,5 +200,102 @@ describe('multiKills', () => {
     events = withKill(events, { tick: asTick(950), attacker: ct, victim: terrorist });
 
     expect(multiKills(newDemo(events, [round]))).toEqual([]);
+  });
+});
+
+describe('tradeKills', () => {
+  const round: Round = {
+    ...firstHalf,
+    economy: [
+      ...firstHalf.economy,
+      {
+        slot: ctTeammate,
+        money: 0,
+        equipmentValue: 0,
+        buyType: 'full-buy',
+        team: 'CT',
+      },
+      {
+        slot: terroristTeammate,
+        money: 0,
+        equipmentValue: 0,
+        buyType: 'full-buy',
+        team: 'T',
+      },
+    ],
+  };
+
+  it('counts an opponent kill at the edge of the trade window once', () => {
+    let events = withKill(newEvents(), {
+      tick: asTick(200),
+      attacker: terrorist,
+      victim: ct,
+    });
+    events = withKill(events, {
+      tick: asTick(200 + TRADE_WINDOW_SECONDS * 64),
+      attacker: ctTeammate,
+      victim: terrorist,
+    });
+
+    expect(tradeKills(newDemo(events, [round]))).toEqual([
+      { roundIndex: 0, killIndex: 1, player: ctTeammate, side: 'CT' },
+    ]);
+  });
+
+  it('uses the side recorded for the round after the teams swap', () => {
+    const swapped: Round = {
+      ...secondHalf,
+      economy: round.economy.map((player) => ({
+        ...player,
+        team: player.team === 'CT' ? ('T' as const) : ('CT' as const),
+      })),
+    };
+    let events = withKill(newEvents(), {
+      tick: asTick(2200),
+      attacker: terrorist,
+      victim: ct,
+    });
+    events = withKill(events, {
+      tick: asTick(2300),
+      attacker: ctTeammate,
+      victim: terrorist,
+    });
+
+    expect(tradeKills(newDemo(events, [swapped]))).toMatchObject([
+      { roundIndex: 0, player: ctTeammate, side: 'T' },
+    ]);
+  });
+
+  it('ignores late answers and kills that do not avenge a teammate', () => {
+    let events = withKill(newEvents(), {
+      tick: asTick(200),
+      attacker: terrorist,
+      victim: ct,
+    });
+    events = withKill(events, {
+      tick: asTick(300),
+      attacker: ctTeammate,
+      victim: terroristTeammate,
+    });
+    events = withKill(events, {
+      tick: asTick(200 + TRADE_WINDOW_SECONDS * 64 + 1),
+      attacker: ctTeammate,
+      victim: terrorist,
+    });
+
+    expect(tradeKills(newDemo(events, [round]))).toEqual([]);
+  });
+
+  it('ignores world, suicide, team, unknown-side, and post-round kills', () => {
+    const unknown = asPlayerSlot(4);
+    let events = withKill(newEvents(), { tick: asTick(200), attacker: null, victim: ct });
+    events = withKill(events, { tick: asTick(250), attacker: ct, victim: ct });
+    events = withKill(events, { tick: asTick(300), attacker: ct, victim: ctTeammate });
+    events = withKill(events, { tick: asTick(350), attacker: unknown, victim: terrorist });
+    events = withKill(events, { tick: asTick(400), attacker: terrorist, victim: unknown });
+    events = withKill(events, { tick: asTick(900), attacker: terrorist, victim: ct });
+    events = withKill(events, { tick: asTick(950), attacker: ctTeammate, victim: terrorist });
+
+    expect(tradeKills(newDemo(events, [round]))).toEqual([]);
   });
 });

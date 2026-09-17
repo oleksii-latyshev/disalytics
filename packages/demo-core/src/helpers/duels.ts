@@ -31,6 +31,15 @@ export interface MultiKill {
   readonly kills: number;
 }
 
+export interface TradeKill {
+  readonly roundIndex: number;
+  readonly killIndex: number;
+  readonly player: PlayerSlot;
+  readonly side: Team;
+}
+
+export const TRADE_WINDOW_SECONDS = 5;
+
 type OpponentDuel = Duel & { readonly attackerSide: Team; readonly victimSide: Team };
 
 function isOpponentDuel(duel: Duel): duel is OpponentDuel {
@@ -121,4 +130,42 @@ export function multiKills(demo: ParsedDemo): readonly MultiKill[] {
   }
 
   return [...counts.values()].filter(({ kills }) => kills >= 2);
+}
+
+/** Opponent kills that answer a teammate's death inside the trade window, oldest first. */
+export function tradeKills(demo: ParsedDemo): readonly TradeKill[] {
+  const trades: TradeKill[] = [];
+  const latestKillByAttacker = new Map<PlayerSlot, Duel>();
+  let roundIndex = -1;
+
+  for (const duel of matchDuels(demo)) {
+    if (duel.roundIndex !== roundIndex) {
+      latestKillByAttacker.clear();
+      roundIndex = duel.roundIndex;
+    }
+    if (!isOpponentDuel(duel)) continue;
+
+    const previous = latestKillByAttacker.get(duel.victim);
+    if (previous !== undefined) {
+      const kill = demo.events.kills[duel.killIndex];
+      const previousKill = demo.events.kills[previous.killIndex];
+      if (kill === undefined || previousKill === undefined) continue;
+      const elapsedTicks = kill.tick - previousKill.tick;
+      if (
+        previous.victimSide === duel.attackerSide &&
+        elapsedTicks <= TRADE_WINDOW_SECONDS * demo.track.tickRate
+      ) {
+        trades.push({
+          roundIndex: duel.roundIndex,
+          killIndex: duel.killIndex,
+          player: duel.attacker,
+          side: duel.attackerSide,
+        });
+      }
+    }
+
+    latestKillByAttacker.set(duel.attacker, duel);
+  }
+
+  return trades;
 }
