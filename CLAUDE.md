@@ -8,8 +8,7 @@
 
 ## Claude Code specifics
 
-- **Skills** in `.claude/skills`: `task` (issue → PR loop), `i18n-key` (any user-facing string),
-  `dod` (before opening or updating a PR), `handoff` (continuing in a new chat).
+- Shared project skills live in `.agents/skills`; do not duplicate them under `.claude/`.
 - **Dev server** is the `web` entry in `.claude/launch.json` (`:5173`) — start it with `preview_start`,
   never through Bash.
 - **The in-app Browser pane reports the tab as hidden**: rAF, transitions and `motion` animations stall
