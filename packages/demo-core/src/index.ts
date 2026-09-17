@@ -7,8 +7,14 @@ export {
   RUNNING_SPEED_UNITS,
   SILENT_SPEED_UNITS,
 } from './helpers/audibility';
-export type { Duel, MultiKill } from './helpers/duels';
-export { matchDuels, multiKills, openingDuels } from './helpers/duels';
+export type { Duel, MultiKill, TradeKill } from './helpers/duels';
+export {
+  matchDuels,
+  multiKills,
+  openingDuels,
+  TRADE_WINDOW_SECONDS,
+  tradeKills,
+} from './helpers/duels';
 export { matchEnemyBlindTime } from './helpers/enemy-blind-time';
 export { flightEndTick, isInFlight, trajectoryClipCount } from './helpers/grenade-flight';
 export {

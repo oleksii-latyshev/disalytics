@@ -224,6 +224,8 @@ export const TRANSLATION_KEYS = [
   'review.metrics.multi.title',
   'review.metrics.opening.note',
   'review.metrics.opening.title',
+  'review.metrics.trades.note',
+  'review.metrics.trades.title',
   'review.metrics.utilityDamage.note',
   'review.metrics.utilityDamage.title',
   'review.player.abbr.damage',

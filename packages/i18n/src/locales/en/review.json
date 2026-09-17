@@ -91,6 +91,10 @@
       "title": "Opening duels",
       "note": "The first opponent kill in each round."
     },
+    "trades": {
+      "title": "Trade kills",
+      "note": "Opponent kills answered within five seconds."
+    },
     "multi": {
       "title": "Multi-kills",
       "note": "Rounds where one player killed at least two opponents."

@@ -5,6 +5,7 @@ import {
   openingDuels,
   type ParsedDemo,
   type Team,
+  tradeKills,
 } from '@disa/demo-core';
 import { Text, useLocale, useT } from '@disa/i18n';
 import { useMemo } from 'react';
@@ -43,6 +44,11 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
       rounds[index] = (rounds[index] ?? 0) + 1;
     }
     return rounds;
+  }, [demo]);
+  const tradeKillTotals = useMemo(() => {
+    const totals: Record<Team, number> = { CT: 0, T: 0 };
+    for (const trade of tradeKills(demo)) totals[trade.side] += 1;
+    return totals;
   }, [demo]);
   const utilityDamage = useMemo(() => matchUtilityDamage(demo), [demo]);
   const enemyBlindTime = useMemo(() => matchEnemyBlindTime(demo), [demo]);
@@ -156,6 +162,29 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
             >
               <span className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</span>
               <span className="numeric text-28 text-ink">{openingWins[side]}</span>
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section className="surface-card flex flex-col gap-3 rounded-card p-3">
+        <header className="flex flex-col gap-1">
+          <h3 className="font-ui font-medium text-20 leading-dense">
+            <Text path="review.metrics.trades.title" />
+          </h3>
+          <p className="text-12 text-ink-dim leading-prose">
+            <Text path="review.metrics.trades.note" />
+          </p>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2">
+          {(['CT', 'T'] as const).map((side) => (
+            <p
+              key={side}
+              className="flex items-baseline justify-between gap-3 rounded-card bg-surface-2 px-3 py-2"
+            >
+              <span className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</span>
+              <span className="numeric text-28 text-ink">{tradeKillTotals[side]}</span>
             </p>
           ))}
         </div>
