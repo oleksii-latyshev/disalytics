@@ -24,6 +24,23 @@ export interface Duel {
   readonly victimSide: Team | undefined;
 }
 
+export interface MultiKill {
+  readonly roundIndex: number;
+  readonly player: PlayerSlot;
+  readonly side: Team;
+  readonly kills: number;
+}
+
+type OpponentDuel = Duel & { readonly attackerSide: Team; readonly victimSide: Team };
+
+function isOpponentDuel(duel: Duel): duel is OpponentDuel {
+  return (
+    duel.attackerSide !== undefined &&
+    duel.victimSide !== undefined &&
+    duel.attackerSide !== duel.victimSide
+  );
+}
+
 /**
  * Every kill in the match that has two ends, oldest first.
  *
@@ -77,18 +94,31 @@ export function openingDuels(demo: ParsedDemo): readonly Duel[] {
   let openedRound = -1;
 
   for (const duel of matchDuels(demo)) {
-    if (
-      duel.roundIndex === openedRound ||
-      duel.attackerSide === undefined ||
-      duel.victimSide === undefined ||
-      duel.attackerSide === duel.victimSide
-    ) {
-      continue;
-    }
+    if (duel.roundIndex === openedRound || !isOpponentDuel(duel)) continue;
 
     openings.push(duel);
     openedRound = duel.roundIndex;
   }
 
   return openings;
+}
+
+/** Players who killed at least two opponents in one round, oldest round first. */
+export function multiKills(demo: ParsedDemo): readonly MultiKill[] {
+  const counts = new Map<number, MultiKill>();
+
+  for (const duel of matchDuels(demo)) {
+    if (!isOpponentDuel(duel)) continue;
+
+    const key = duel.roundIndex * demo.track.slotCount + duel.attacker;
+    const previous = counts.get(key);
+    counts.set(key, {
+      roundIndex: duel.roundIndex,
+      player: duel.attacker,
+      side: duel.attackerSide,
+      kills: (previous?.kills ?? 0) + 1,
+    });
+  }
+
+  return [...counts.values()].filter(({ kills }) => kills >= 2);
 }

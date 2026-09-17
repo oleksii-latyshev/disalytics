@@ -7,8 +7,8 @@ export {
   RUNNING_SPEED_UNITS,
   SILENT_SPEED_UNITS,
 } from './helpers/audibility';
-export type { Duel } from './helpers/duels';
-export { matchDuels, openingDuels } from './helpers/duels';
+export type { Duel, MultiKill } from './helpers/duels';
+export { matchDuels, multiKills, openingDuels } from './helpers/duels';
 export { flightEndTick, isInFlight, trajectoryClipCount } from './helpers/grenade-flight';
 export {
   FLASH_RADIUS_UNITS,

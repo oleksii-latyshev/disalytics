@@ -90,6 +90,10 @@
     "opening": {
       "title": "Opening duels",
       "note": "The first opponent kill in each round."
+    },
+    "multi": {
+      "title": "Multi-kills",
+      "note": "Rounds where one player killed at least two opponents."
     }
   },
   "board": {
