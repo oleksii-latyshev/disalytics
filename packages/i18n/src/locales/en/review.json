@@ -98,6 +98,10 @@
     "utilityDamage": {
       "title": "Utility damage",
       "note": "Health damage dealt to opponents with utility."
+    },
+    "enemyBlindTime": {
+      "title": "Enemy blind time",
+      "note": "Total flash duration across opponents."
     }
   },
   "board": {
