@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@disa/demo-core": "*"
+  },
   "devDependencies": {
     "@disa/tsconfig": "*",
     "typescript": "5.9.2",
