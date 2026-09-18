@@ -103,6 +103,18 @@ export {
   PLANT_SECONDS,
   visibleShots,
 } from './helpers/player-state';
+export type {
+  GrenadeReference,
+  HitgroupDamage,
+  HitgroupValues,
+  WeaponReference,
+  WeaponReferenceCategory,
+} from './helpers/reference-data';
+export {
+  calculateHitgroupDamage,
+  GRENADE_REFERENCES,
+  WEAPON_REFERENCES,
+} from './helpers/reference-data';
 export type { RoundClock, RoundPhase } from './helpers/round-clock';
 export {
   bombTimerTicks,

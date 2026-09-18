@@ -72,6 +72,11 @@
   "tools": {
     "title": "Tools",
     "note": "Quick tactical calculations and game references.",
+    "tabs": {
+      "economy": "Economy",
+      "weapons": "Weapons",
+      "grenades": "Grenades"
+    },
     "economy": {
       "title": "Economy calculator",
       "note": "Estimate enemy funds and next round buy capability.",
@@ -107,6 +112,62 @@
         "killRewards": "Kill rewards",
         "call": "Buy call"
       }
+    },
+    "weapons": {
+      "title": "Weapon reference",
+      "note": "Base damage, hitgroup values, armor penetration, fire rates, and prices.",
+      "searchPlaceholder": "Search weapons...",
+      "categories": {
+        "all": "All",
+        "rifle": "Rifles",
+        "pistol": "Pistols",
+        "smg": "SMGs",
+        "sniper": "Snipers",
+        "shotgun": "Shotguns",
+        "machinegun": "Heavy",
+        "equipment": "Equipment"
+      },
+      "sides": {
+        "all": "All sides",
+        "ct": "CT",
+        "t": "T"
+      },
+      "mode": {
+        "armored": "Armored",
+        "unarmored": "Unarmored"
+      },
+      "columns": {
+        "weapon": "Weapon",
+        "category": "Class",
+        "side": "Side",
+        "price": "Price",
+        "killReward": "Kill reward",
+        "rpm": "RPM",
+        "armorPen": "Armor pen",
+        "head": "Head",
+        "chest": "Chest",
+        "stomach": "Stomach",
+        "legs": "Legs"
+      }
+    },
+    "grenades": {
+      "title": "Grenade reference",
+      "note": "Measured entity timings, explosion radii, damage profiles, and costs.",
+      "columns": {
+        "grenade": "Grenade",
+        "side": "Side",
+        "price": "Price",
+        "duration": "Duration",
+        "radius": "Radius",
+        "damage": "Damage",
+        "citation": "Source & notes"
+      },
+      "instant": "Instant",
+      "seconds": "{seconds, number}s",
+      "units": "{units, number} u",
+      "los": "Line of sight",
+      "dps": "~40 DPS",
+      "none": "None"
     }
   },
   "grid": {
