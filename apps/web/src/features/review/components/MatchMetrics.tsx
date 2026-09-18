@@ -1,4 +1,5 @@
 import {
+  matchClutches,
   matchEnemyBlindTime,
   matchUtilityDamage,
   multiKills,
@@ -48,6 +49,11 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
   const tradeKillTotals = useMemo(() => {
     const totals: Record<Team, number> = { CT: 0, T: 0 };
     for (const trade of tradeKills(demo)) totals[trade.side] += 1;
+    return totals;
+  }, [demo]);
+  const clutchTotals = useMemo(() => {
+    const totals: Record<Team, number> = { CT: 0, T: 0 };
+    for (const clutch of matchClutches(demo)) totals[clutch.side] += 1;
     return totals;
   }, [demo]);
   const utilityDamage = useMemo(() => matchUtilityDamage(demo), [demo]);
@@ -207,6 +213,29 @@ export function MatchMetrics({ demo }: { demo: ParsedDemo }) {
                 {kills}K{kills === 5 ? '+' : ''}
               </span>
               <span className="numeric text-28 text-ink">{multiKillRounds[index]}</span>
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section className="surface-card flex flex-col gap-3 rounded-card p-3">
+        <header className="flex flex-col gap-1">
+          <h3 className="font-ui font-medium text-20 leading-dense">
+            <Text path="review.metrics.clutches.title" />
+          </h3>
+          <p className="text-12 text-ink-dim leading-prose">
+            <Text path="review.metrics.clutches.note" />
+          </p>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2">
+          {(['CT', 'T'] as const).map((side) => (
+            <p
+              key={side}
+              className="flex items-baseline justify-between gap-3 rounded-card bg-surface-2 px-3 py-2"
+            >
+              <span className={`label-dense ${side === 'CT' ? 'text-ct' : 'text-t'}`}>{side}</span>
+              <span className="numeric text-28 text-ink">{clutchTotals[side]}</span>
             </p>
           ))}
         </div>

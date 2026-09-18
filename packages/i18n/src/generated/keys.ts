@@ -217,6 +217,8 @@ export const TRANSLATION_KEYS = [
   'review.maps.throws',
   'review.maps.timeOnMap',
   'review.maps.worldKillNote',
+  'review.metrics.clutches.note',
+  'review.metrics.clutches.title',
   'review.metrics.empty',
   'review.metrics.enemyBlindTime.note',
   'review.metrics.enemyBlindTime.title',

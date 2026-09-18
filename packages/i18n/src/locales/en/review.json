@@ -106,6 +106,10 @@
     "enemyBlindTime": {
       "title": "Enemy blind time",
       "note": "Total flash duration across opponents."
+    },
+    "clutches": {
+      "title": "Clutches",
+      "note": "Rounds won after being the last player alive against opponents."
     }
   },
   "board": {
