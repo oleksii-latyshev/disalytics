@@ -7,6 +7,8 @@ export {
   RUNNING_SPEED_UNITS,
   SILENT_SPEED_UNITS,
 } from './helpers/audibility';
+export type { Clutch } from './helpers/clutches';
+export { matchClutches } from './helpers/clutches';
 export type { Duel, MultiKill, TradeKill } from './helpers/duels';
 export {
   matchDuels,
