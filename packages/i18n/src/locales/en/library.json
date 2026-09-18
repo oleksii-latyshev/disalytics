@@ -60,12 +60,53 @@
     "nav": "Sections",
     "upload": "Upload",
     "library": "Library",
+    "tools": "Tools",
     "lineups": "Utility lineups",
     "stats": "Player stats",
     "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
     "soonNote": {
       "lineups": "Every grenade thrown in the match, grouped by where it was thrown from and where it landed. Not built yet.",
       "stats": "What each player did across the match — opening duels, trades, utility, damage. Not built yet."
+    }
+  },
+  "tools": {
+    "title": "Tools",
+    "note": "Quick tactical calculations and game references.",
+    "economy": {
+      "title": "Economy calculator",
+      "note": "Estimate enemy funds and next round buy capability.",
+      "team": "Team",
+      "result": "Round result",
+      "won": "Won",
+      "lost": "Lost",
+      "reason": "Win condition",
+      "elimination": "Elimination",
+      "bombDefused": "Bomb defused",
+      "bombExploded": "Bomb exploded",
+      "timeExpired": "Time expired",
+      "lossStreak": "Consecutive losses",
+      "bombPlanted": "Bomb was planted",
+      "survivedSave": "Saved after time (no plant)",
+      "previousBuy": "Previous buy",
+      "buyFull": "Full buy",
+      "buyForce": "Force buy",
+      "buyEco": "Eco / Save",
+      "kills": "Team kills",
+      "rifles": "Rifles / Pistols ($300)",
+      "smgs": "SMGs ($600)",
+      "shotguns": "Shotguns ($900)",
+      "snipers": "AWP ($100)",
+      "knife": "Knife ($1,500)",
+      "decrease": "Decrease",
+      "increase": "Increase",
+      "output": {
+        "roundReward": "Round reward",
+        "estimatedBank": "Estimated bank (avg / player)",
+        "teamTotal": "Team bank total",
+        "leftover": "Leftover funds",
+        "killRewards": "Kill rewards",
+        "call": "Buy call"
+      }
     }
   },
   "grid": {
