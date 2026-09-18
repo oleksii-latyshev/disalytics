@@ -144,6 +144,8 @@ export {
   slotSampleIndex,
   tickAtFrame,
 } from './helpers/selectors';
+export type { MovementKey, ThrowDetail, ThrowType } from './helpers/throw-detail';
+export { throwDetail } from './helpers/throw-detail';
 export type { UtilityHeld, UtilityKind } from './helpers/utility';
 export {
   THROWN_UTILITY_KINDS,

@@ -60,6 +60,21 @@
       "nothing": "Nothing in hand",
       "lead": "Press to watch it on the stage from {seconds, number} s before."
     },
+    "throw": {
+      "empty": "Hover or select a grenade throw to inspect its lineup command and movement.",
+      "copyCommand": "Copy console command",
+      "copied": "Copied to clipboard",
+      "select": "Select lineup",
+      "movement": "Movement",
+      "landing": "Landing: {x, number}, {y, number}",
+      "types": {
+        "stand": "Stand",
+        "run": "Run",
+        "jump": "Jump",
+        "crouch": "Crouch",
+        "unknown": "Unknown"
+      }
+    },
     "heat": {
       "mode": "Reading",
       "presence": "Where they stood",

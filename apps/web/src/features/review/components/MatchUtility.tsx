@@ -3,13 +3,14 @@ import {
   type ParsedDemo,
   type PlayerSlot,
   THROWN_UTILITY_KINDS,
+  throwDetail,
   UTILITY_NAMES,
   type UtilityKind,
   type UtilityThrow,
   utilityKindOfGrenade,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { UtilityPlate } from '@/features/radar';
 import { isInNarrowing, type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
@@ -17,6 +18,7 @@ import { type MapFeedItem, MapFeedList } from './MapFeedList';
 import { SideRow } from './MapScope';
 import { PlayerTags } from './PlayerTags';
 import { type ChoiceOption, SettingChoice } from './SettingChoice';
+import { ThrowCard } from './ThrowCard';
 
 /** `all` is not a kind, and it is first because the match is what a map screen opens on. */
 type KindScope = 'all' | UtilityKind;
@@ -109,7 +111,16 @@ export function MatchUtility({ demo }: { demo: ParsedDemo }) {
     });
   }, [shown, players, t]);
 
-  const [active, setActive] = useState<UtilityThrow | null>(null);
+  const [selected, setSelected] = useState<UtilityThrow | null>(null);
+  const [hovered, setHovered] = useState<UtilityThrow | null>(null);
+
+  useEffect(() => {
+    if (selected !== null && !shown.includes(selected)) {
+      setSelected(null);
+    }
+  }, [shown, selected]);
+
+  const active = hovered ?? selected;
   const focused = active === null ? -1 : shown.indexOf(active);
 
   // A grenade's name is game vocabulary and stays as `UTILITY_NAMES` gives it; only the word for
@@ -160,8 +171,22 @@ export function MatchUtility({ demo }: { demo: ParsedDemo }) {
             items={items}
             players={players}
             focused={focused === -1 ? null : focused}
-            onFocused={(index) => setActive(index === null ? null : (shown[index] ?? null))}
+            onFocused={(index) => setHovered(index === null ? null : (shown[index] ?? null))}
+            press={{
+              describe: t('review.maps.throw.select'),
+              onPress: (index) => {
+                const item = shown[index] ?? null;
+                setSelected((prev) => (prev === item ? null : item));
+              },
+            }}
           />
+
+          <div aria-live="polite">
+            <ThrowCard
+              detail={active === null ? undefined : throwDetail(demo, active)}
+              players={players}
+            />
+          </div>
 
           <p className="text-12 text-ink-dim leading-prose">
             <Text path="review.maps.lineupNote" values={{ hz: demo.track.sampleHz }} />
@@ -169,7 +194,12 @@ export function MatchUtility({ demo }: { demo: ParsedDemo }) {
         </aside>
 
         <section className="grid min-h-0 min-w-0">
-          <UtilityPlate demo={demo} throws={shown} focused={focused === -1 ? null : focused} />
+          <UtilityPlate
+            demo={demo}
+            throws={shown}
+            focused={focused === -1 ? null : focused}
+            onSelect={(index) => setSelected(index === null ? null : (shown[index] ?? null))}
+          />
         </section>
       </div>
     </div>
