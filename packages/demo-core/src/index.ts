@@ -17,6 +17,46 @@ export {
   TRADE_WINDOW_SECONDS,
   tradeKills,
 } from './helpers/duels';
+export type {
+  BuyCall,
+  EconomyCalculatorInputs,
+  EconomyEstimate,
+  PreviousBuyType,
+  RoundEndReason,
+  WeaponKillCounts,
+} from './helpers/economy-rules';
+export {
+  BOMB_PLANTED_LOSS_BONUS,
+  BUY_THRESHOLD_FORCE,
+  BUY_THRESHOLD_FULL_CT,
+  BUY_THRESHOLD_FULL_T,
+  calculateKillRewards,
+  calculateNextRoundEconomy,
+  calculateRoundReward,
+  estimateBuyCall,
+  estimateRemainingBank,
+  KILL_REWARD_AWP,
+  KILL_REWARD_CZ75,
+  KILL_REWARD_DEFAULT,
+  KILL_REWARD_KNIFE,
+  KILL_REWARD_P90,
+  KILL_REWARD_SHOTGUN,
+  KILL_REWARD_SMG,
+  KILL_REWARD_ZEUS,
+  LOSS_BONUS_LADDER,
+  LOSS_BONUS_STEP,
+  MAX_LOSS_STREAK,
+  MAX_MONEY,
+  OVERTIME_ROUNDS_PER_HALF,
+  REGULATION_ROUNDS_PER_HALF,
+  REGULATION_TOTAL_ROUNDS,
+  STARTING_MONEY_OVERTIME,
+  STARTING_MONEY_REGULATION,
+  WIN_REWARD_BOMB_DEFUSED,
+  WIN_REWARD_BOMB_EXPLODED,
+  WIN_REWARD_ELIMINATION,
+  WIN_REWARD_TIME_EXPIRED,
+} from './helpers/economy-rules';
 export { matchEnemyBlindTime } from './helpers/enemy-blind-time';
 export { flightEndTick, isInFlight, trajectoryClipCount } from './helpers/grenade-flight';
 export {

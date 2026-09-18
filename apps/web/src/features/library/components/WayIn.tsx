@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
 import type { SampleMatch } from '@/core/samples';
 import { HelpSheet, SettingsSheet } from '@/features/review';
+import { ToolsView } from '@/features/tools';
 import type { ShellView } from '../helpers/views';
 import { useFileDrop } from '../hooks/use-file-drop';
 import { LibraryView } from './LibraryView';
@@ -153,6 +154,7 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: P
           />
         )}
         {view === 'library' && <LibraryView onEnter={enterMatch} onSample={enterSample} />}
+        {view === 'tools' && <ToolsView />}
         {(view === 'lineups' || view === 'stats') && <SoonView view={view} />}
       </main>
 
