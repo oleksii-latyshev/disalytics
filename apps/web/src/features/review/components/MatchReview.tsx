@@ -1,7 +1,7 @@
 import { type Frame, type ParsedDemo, type PlayerSlot, roundOpeningFrame } from '@disa/demo-core';
 import { useLocale } from '@disa/i18n';
 import { motion } from '@disa/ui';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RowFocus } from '@/core/events';
 import { assembly } from '@/core/motion';
 import type { CacheState } from '@/core/parsing';
@@ -114,6 +114,24 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     setSelectedSlot((current) => (current === slot ? null : slot));
   }, []);
 
+  const [isCoachMode, setIsCoachMode] = useState(false);
+
+  const toggleCoachMode = useCallback(() => {
+    setIsCoachMode((prev) => {
+      if (!prev) {
+        transport.pause();
+        return true;
+      }
+      return false;
+    });
+  }, [transport]);
+
+  useEffect(() => {
+    if (view !== 'stage') {
+      setIsCoachMode(false);
+    }
+  }, [view]);
+
   const { frame, roundIndex, ct, t, money, shape } = useMatchReadout(demo, transport, locale);
 
   useReviewShortcuts({
@@ -127,6 +145,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     onFullscreenToggle: fullscreen.toggle,
     onMatchOverlay: () => showSheet('match'),
     onNextView: () => setView(nextMatchView(view)),
+    onCoachMode: toggleCoachMode,
     onHelp: () => showSheet('help'),
   });
 
@@ -278,6 +297,8 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
           selectedSlot={selectedSlot}
           focus={focus}
           isSuspended={openSheet !== null}
+          isCoachMode={isCoachMode}
+          onCoachModeChange={setIsCoachMode}
           onExpandedChange={setPlateExpanded}
         />
       </motion.div>

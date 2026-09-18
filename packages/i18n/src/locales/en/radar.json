@@ -21,5 +21,28 @@
   },
   "utility": {
     "secondsUnit": "s"
+  },
+  "coach": {
+    "enter": "Enter coach mode",
+    "exit": "Exit coach mode",
+    "tools": {
+      "pencil": "Pencil",
+      "eraser": "Eraser",
+      "move": "Move player or utility",
+      "smoke": "Smoke grenade",
+      "molotov": "Molotov",
+      "flash": "Flashbang",
+      "he": "HE grenade",
+      "undo": "Undo",
+      "redo": "Redo",
+      "clear": "Clear drawings"
+    },
+    "colors": {
+      "objective": "Yellow",
+      "ct": "Cyan",
+      "t": "Amber",
+      "damage": "Red",
+      "ink": "White"
+    }
   }
 }

@@ -29,6 +29,8 @@ describe('SHORTCUT_BINDINGS', () => {
     expect(actionForKey('ArrowLeft')).toBe('seekBack');
     expect(actionForKey('ArrowRight')).toBe('seekForward');
     expect(actionForKey('F')).toBe('fullscreen');
+    expect(actionForKey('c')).toBe('coachMode');
+    expect(actionForKey('C')).toBe('coachMode');
     expect(actionForKey('+')).toBe('zoomIn');
     expect(actionForKey('-')).toBe('zoomOut');
     expect(actionForKey('?')).toBe('help');

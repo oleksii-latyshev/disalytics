@@ -8,8 +8,8 @@ import {
 import { Text, useLocale, useT } from '@disa/i18n';
 import { type MapOverview, type RadarPoint, radarAssetPath } from '@disa/map-data';
 import { Button } from '@disa/ui';
-import { Minus, Plus } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { GraduationCap, Minus, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KillLine, RowFocus } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
@@ -23,8 +23,11 @@ import { busiestLevelIndex, levelAt } from '../helpers/levels';
 import { playerTokens } from '../helpers/token-layer';
 import { utilityLayer } from '../helpers/utility-layer';
 import { MAX_ZOOM, MIN_ZOOM, plateView, ZOOM_STEP } from '../helpers/view';
+import { useCoachMode } from '../hooks/use-coach-mode';
 import { usePlateNavigation } from '../hooks/use-plate-navigation';
 import { useRadarImage } from '../hooks/use-radar-image';
+import { CoachCanvas } from './CoachCanvas';
+import { CoachToolbar } from './CoachToolbar';
 import { RadarDebug } from './RadarDebug';
 
 /** Held outside the component so an unmeasurable font does not remount the layer every render. */
@@ -37,6 +40,8 @@ interface Props {
   selectedSlot: PlayerSlot | null;
   focus: RowFocus | null;
   isSuspended: boolean;
+  isCoachMode: boolean;
+  onCoachModeChange: (active: boolean) => void;
   /** That the reader has zoomed in, which is the stage's business rather than the plate's — #315. */
   onExpandedChange: (isExpanded: boolean) => void;
 }
@@ -48,6 +53,8 @@ export function RadarView({
   selectedSlot,
   focus,
   isSuspended,
+  isCoachMode,
+  onCoachModeChange,
   onExpandedChange,
 }: Props) {
   const t = useT();
@@ -210,6 +217,41 @@ export function RadarView({
     repaint();
   }, [focus, repaint]);
 
+  const coachCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [coachRepaintKey, setCoachRepaintKey] = useState(0);
+
+  const triggerRepaint = useCallback(() => {
+    repaint();
+    setCoachRepaintKey((k) => k + 1);
+  }, [repaint]);
+
+  const coach = useCoachMode({
+    demo,
+    overview,
+    view: viewRef,
+    canvasRef: coachCanvasRef,
+    teamBySlot,
+    colors,
+    frame,
+  });
+
+  const prevCoachModeRef = useRef(isCoachMode);
+  useEffect(() => {
+    if (prevCoachModeRef.current && !isCoachMode) {
+      coach.resetAll();
+    }
+    prevCoachModeRef.current = isCoachMode;
+  }, [isCoachMode, coach.resetAll]);
+
+  const handleCoachToggle = useCallback(() => {
+    if (isCoachMode) {
+      onCoachModeChange(false);
+    } else {
+      transport.pause();
+      onCoachModeChange(true);
+    }
+  }, [isCoachMode, onCoachModeChange, transport]);
+
   // Everything the reader can do to move the plate. The coordinate readout is the only consumer of
   // a hover, so the callback is handed over only while the overlay is on — DESIGN.md §9.2. Leaving
   // the plate stays here rather than going with it: the readout has to be cleared whether or not it
@@ -217,7 +259,8 @@ export function RadarView({
   const navigation = usePlateNavigation({
     view: viewRef,
     canvasRef,
-    repaint,
+    overlayCanvasRef: coachCanvasRef,
+    repaint: triggerRepaint,
     isSuspended,
     onHover: isDebugShown ? setPointer : undefined,
   });
@@ -252,6 +295,24 @@ export function RadarView({
         onPointerLeave={() => setPointer(null)}
       />
 
+      {isCoachMode && (
+        <CoachCanvas
+          canvasRef={coachCanvasRef}
+          isExpanded={isExpanded}
+          annotations={coach.annotations}
+          originalPlayerPoints={coach.originalPlayerPoints}
+          teamBySlot={teamBySlot}
+          overview={overview}
+          colors={colors}
+          view={viewRef}
+          hoveredUtilityId={coach.hoveredUtilityId}
+          hoveredPlayerSlot={coach.hoveredPlayerSlot}
+          tool={coach.tool}
+          repaintTrigger={coachRepaintKey}
+          {...coach.canvasProps}
+        />
+      )}
+
       {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
           the cell is wider than the square it centres, so the offset is half the slack on each axis
           plus the stage inset. **Written against the cell instead, it lands under the CT card when
@@ -281,7 +342,37 @@ export function RadarView({
         >
           <Minus aria-hidden="true" />
         </Button>
+
+        <div className="my-0.5 h-px bg-line" />
+
+        <Button
+          type="button"
+          variant={isCoachMode ? 'secondary' : 'ghost'}
+          size="icon"
+          aria-label={t(isCoachMode ? 'radar.coach.exit' : 'radar.coach.enter')}
+          aria-pressed={isCoachMode}
+          onClick={handleCoachToggle}
+        >
+          <GraduationCap aria-hidden="true" />
+        </Button>
       </div>
+
+      {isCoachMode && (
+        <div className="pointer-events-auto absolute bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] left-1/2 z-20 -translate-x-1/2">
+          <CoachToolbar
+            tool={coach.tool}
+            colorName={coach.colorName}
+            canUndo={coach.canUndo}
+            canRedo={coach.canRedo}
+            onSelectTool={coach.setTool}
+            onSelectColor={coach.setColorName}
+            onUndo={coach.undo}
+            onRedo={coach.redo}
+            onClear={coach.clear}
+            onExit={() => onCoachModeChange(false)}
+          />
+        </div>
+      )}
 
       {/* The two surfaces allowed over the live canvas, and neither is chrome the reader did not
           ask for: the notice speaks only when the image failed, and the overlay only once it is

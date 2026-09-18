@@ -29,6 +29,7 @@
     "zoomIn": "Zoom the map in",
     "zoomOut": "Zoom the map out, and all the way out puts it back",
     "help": "Open this help",
+    "coachMode": "Coach mode (draw and place utility)",
     "nextView": "Next view of the match"
   },
   "legend": {

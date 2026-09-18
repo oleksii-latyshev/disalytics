@@ -18,6 +18,7 @@ interface Options {
   /** The box the layers draw through. Created by the caller, because the layers read it too. */
   readonly view: RefObject<PlateView>;
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
+  readonly overlayCanvasRef?: RefObject<HTMLCanvasElement | null>;
   readonly repaint: () => void;
   /** DESIGN.md §9.1's `+` and `−` stand down while a sheet is open. */
   readonly isSuspended: boolean;
@@ -56,6 +57,7 @@ export interface PlateNavigation {
 export function usePlateNavigation({
   view,
   canvasRef,
+  overlayCanvasRef,
   repaint,
   isSuspended,
   onHover,
@@ -149,16 +151,24 @@ export function usePlateNavigation({
       gestureScale = scale;
     };
 
-    canvas.addEventListener('wheel', handleWheel, { passive: false });
-    canvas.addEventListener('gesturestart', handleGestureStart);
-    canvas.addEventListener('gesturechange', handleGestureChange);
+    const targets = [canvas, overlayCanvasRef?.current].filter(
+      (c): c is HTMLCanvasElement => c !== null && c !== undefined,
+    );
+
+    for (const target of targets) {
+      target.addEventListener('wheel', handleWheel, { passive: false });
+      target.addEventListener('gesturestart', handleGestureStart);
+      target.addEventListener('gesturechange', handleGestureChange);
+    }
 
     return () => {
-      canvas.removeEventListener('wheel', handleWheel);
-      canvas.removeEventListener('gesturestart', handleGestureStart);
-      canvas.removeEventListener('gesturechange', handleGestureChange);
+      for (const target of targets) {
+        target.removeEventListener('wheel', handleWheel);
+        target.removeEventListener('gesturestart', handleGestureStart);
+        target.removeEventListener('gesturechange', handleGestureChange);
+      }
     };
-  }, [canvasRef, repaint, view]);
+  }, [canvasRef, overlayCanvasRef, repaint, view]);
 
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {
     if (view.current.zoom === MIN_ZOOM) return;
