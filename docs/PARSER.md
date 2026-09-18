@@ -260,3 +260,26 @@ WASM peak linear memory 849 → **897 MiB** (the events' copies of tick props).
 
 `cargo fmt --all` also reformats `vendor/` (it follows path dependencies) — commit vendored diffs as
 additions only.
+
+## 26. Where a grenade came from (#388)
+
+- **No game event carries exact throw angles or position** — `weapon_fire` counts the throw but carries
+  only `userid`, `weapon` and `silenced`; there is no `grenade_thrown` user message like `fire_bullets`
+  (§22).
+- The projectile entity's initial sample in `trajectory` gives the projectile spawn position in world
+  coordinates (`trajectory.x[0]`, `y[0]`, `z[0]`), offset ~24 units forward along the thrower's yaw
+  and ~60 units vertically above the player's origin (the throwing arm).
+- **The thrower's stand position and view angles come from `TickTrack`** at `frameForTick(throwTick)`:
+  the feet coordinates (`posX`, `posY`, `posZ`) and view angles (`yaw`, `pitch` in ° × 100).
+- For stationary lineup throws (`speed == 0`), the 16 Hz sampled yaw matches the projectile's initial
+  flight direction to within **p50 0.05°, max < 0.15°**. Pitch in CS2 is lobbed upwards by the physics
+  engine (~15–20° above eye pitch), but CS2's console commands `setpos x y z; setang pitch yaw 0`
+  reproduce the player's crosshair placement and feet position, letting the engine apply its own throw
+  physics. No schema change or `SCHEMA_VERSION` bump is needed.
+- **Throw type and movement keys are inferred from player state across the 2-second run-up window**:
+  `crouch` (`Ctrl`) when `FLAG_DUCKING` is set, `run` (`W`, `A`, `S`, `D`) based on forward/lateral
+  displacement projected onto the view vector, `walk` (`Shift`) when `FLAG_WALKING` is active, and
+  `jump` (`Jump`) when vertical ascent delta (`posZ` ascent > 5 u) occurs before throw. When jump-throwing,
+  the pre-jump baseline ground `Z` is preserved in `setpos` so teleporting lands the player on the
+  ground rather than in mid-air.
+
