@@ -87,6 +87,15 @@ export {
 } from './helpers/grenade-visual';
 export type { HeatMode, HeatScope, HeatTally, HeatVisit } from './helpers/heat';
 export { HEAT_MODES, walkHeat } from './helpers/heat';
+export type { Lineup, LineupFile, LineupSide } from './helpers/lineups';
+export {
+  isLineup,
+  LINEUP_SIDES,
+  LineupFileError,
+  parseLineupFile,
+  serializeLineupFile,
+  THROW_TYPES,
+} from './helpers/lineups';
 export {
   blindRemainingBySlot,
   bombProgressAt,
