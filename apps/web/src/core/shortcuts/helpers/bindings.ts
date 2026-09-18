@@ -19,6 +19,7 @@ export type ShortcutAction =
   | 'fullscreen'
   | 'matchOverlay'
   | 'nextView'
+  | 'coachMode'
   | 'zoomIn'
   | 'zoomOut'
   | 'help';
@@ -131,6 +132,12 @@ export const SHORTCUT_BINDINGS: readonly ShortcutBinding[] = [
     triggers: ['v', 'V'],
     labels: [{ literal: 'V' }],
     descriptionPath: 'help.shortcut.nextView',
+  },
+  {
+    action: 'coachMode',
+    triggers: ['c', 'C'],
+    labels: [{ literal: 'C' }],
+    descriptionPath: 'help.shortcut.coachMode',
   },
   {
     // `=` is the same keycap unshifted, and a reader who has just pressed `-` for the other half of

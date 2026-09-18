@@ -31,6 +31,7 @@ interface Options {
   onMatchOverlay: () => void;
   /** §17 rule 9's binding for the view switch: the next view in the order the switch lists them. */
   onNextView: () => void;
+  onCoachMode: () => void;
   onHelp: () => void;
 }
 
@@ -52,6 +53,7 @@ export function useReviewShortcuts({
   onFullscreenToggle,
   onMatchOverlay,
   onNextView,
+  onCoachMode,
   onHelp,
 }: Options): void {
   const [seekStepSeconds] = useSetting('seekStepSeconds');
@@ -114,6 +116,7 @@ export function useReviewShortcuts({
       fullscreen: onFullscreenToggle,
       matchOverlay: onMatchOverlay,
       nextView: onNextView,
+      coachMode: onCoachMode,
       help: onHelp,
     },
     { isSuspended, onRelease: releaseAction },
