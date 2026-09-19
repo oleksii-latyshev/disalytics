@@ -67,6 +67,8 @@
       "select": "Выбрать лайнап",
       "movement": "Движение",
       "landing": "Приземление: {x, number}, {y, number}",
+      "saveLineup": "Сохранить как раскидку",
+      "saved": "Сохранено!",
       "types": {
         "stand": "Стоя",
         "run": "На бегу",

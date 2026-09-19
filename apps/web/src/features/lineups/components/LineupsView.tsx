@@ -1,13 +1,19 @@
-import { THROWN_UTILITY_KINDS, UTILITY_NAMES, type UtilityKind } from '@disa/demo-core';
+import {
+  type Lineup,
+  THROWN_UTILITY_KINDS,
+  UTILITY_NAMES,
+  type UtilityKind,
+} from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { BUILT_IN_LINEUP_MAPS, type BuiltInLineupMap } from '@disa/map-data';
 import { Button } from '@disa/ui';
-import { Download, Search, Upload } from 'lucide-react';
+import { Download, Plus, Search, Upload } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { filterLineups } from '../helpers/lineup-filter';
 import { useMapLineups } from '../hooks/use-map-lineups';
 import { LineupDetailCard } from './LineupDetailCard';
+import { LineupFormModal } from './LineupFormModal';
 import { LineupList } from './LineupList';
 import { LineupPlate } from './LineupPlate';
 
@@ -25,10 +31,13 @@ export function LineupsView() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingLineup, setEditingLineup] = useState<Lineup | null>(null);
+
   const [notice, setNotice] = useState<{ message: string; isError: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { lineups, deleteLineup, importLineups, exportLineups } = useMapLineups(map);
+  const { lineups, reload, deleteLineup, importLineups, exportLineups } = useMapLineups(map);
 
   const filteredLineups = useMemo(
     () => filterLineups(lineups, { side, kind, search }),
@@ -109,6 +118,17 @@ export function LineupsView() {
               onChange={handleFileChange}
               className="hidden"
             />
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setEditingLineup(null);
+                setIsModalOpen(true);
+              }}
+              className="h-8 gap-1.5 px-2.5 text-12"
+            >
+              <Plus className="size-3.5" />
+              <Text path="library.lineups.create" />
+            </Button>
             <Button
               variant="secondary"
               onClick={() => fileInputRef.current?.click()}
@@ -239,6 +259,10 @@ export function LineupsView() {
 
           <LineupDetailCard
             lineup={selectedLineup}
+            onEdit={(l) => {
+              setEditingLineup(l);
+              setIsModalOpen(true);
+            }}
             onDelete={async (id) => {
               await deleteLineup(id);
               setSelectedIndex(null);
@@ -255,6 +279,21 @@ export function LineupsView() {
           />
         </section>
       </div>
+
+      {isModalOpen && (
+        <LineupFormModal
+          isOpen={isModalOpen}
+          onDismiss={() => {
+            setIsModalOpen(false);
+            setEditingLineup(null);
+          }}
+          initialData={editingLineup ?? undefined}
+          defaultMap={map}
+          onSaved={() => {
+            void reload();
+          }}
+        />
+      )}
     </div>
   );
 }

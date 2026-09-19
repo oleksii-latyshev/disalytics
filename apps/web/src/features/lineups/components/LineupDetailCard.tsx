@@ -2,13 +2,14 @@ import type { Lineup, LineupSide } from '@disa/demo-core';
 import { UTILITY_NAMES } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { Check, Copy, ExternalLink, Trash2 } from 'lucide-react';
+import { Check, Copy, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 
 interface Props {
   readonly lineup: Lineup | null;
   readonly onDelete?: ((id: string) => void) | undefined;
+  readonly onEdit?: ((lineup: Lineup) => void) | undefined;
 }
 
 const SIDE_STYLES: Readonly<Record<LineupSide, string>> = {
@@ -17,7 +18,7 @@ const SIDE_STYLES: Readonly<Record<LineupSide, string>> = {
   BOTH: 'text-ink border-line bg-surface-3',
 };
 
-export function LineupDetailCard({ lineup, onDelete }: Props) {
+export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
   const t = useT();
   const [copied, setCopied] = useState(false);
 
@@ -85,16 +86,31 @@ export function LineupDetailCard({ lineup, onDelete }: Props) {
             </span>
           </div>
 
-          {!lineup.isBuiltIn && onDelete !== undefined && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              title={t('library.lineups.delete')}
-              aria-label={t('library.lineups.delete')}
-              className="rounded-chip p-1 text-ink-dim transition-colors hover:bg-surface-3 hover:text-ink"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
+          {!lineup.isBuiltIn && (
+            <div className="flex items-center gap-1">
+              {onEdit !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(lineup)}
+                  title={t('library.lineups.edit')}
+                  aria-label={t('library.lineups.edit')}
+                  className="rounded-chip p-1 text-ink-dim transition-colors hover:bg-surface-3 hover:text-ink"
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              )}
+              {onDelete !== undefined && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  title={t('library.lineups.delete')}
+                  aria-label={t('library.lineups.delete')}
+                  className="rounded-chip p-1 text-ink-dim transition-colors hover:bg-surface-3 hover:text-ink"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </div>
           )}
         </div>
 

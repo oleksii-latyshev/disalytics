@@ -2,13 +2,15 @@ import type { PlayerInfo, PlayerSlot, Team, ThrowDetail } from '@disa/demo-core'
 import { UTILITY_NAMES, utilityKindOfGrenade } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { Check, Copy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { BookmarkPlus, Check, Copy } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
+import { type LineupFormData, LineupFormModal } from '@/features/lineups';
 
 interface Props {
   detail: ThrowDetail | undefined;
   players: readonly PlayerInfo[];
+  map?: string;
 }
 
 const SIDE_INK: Readonly<Record<Team, string>> = { CT: 'text-ct', T: 'text-t' };
@@ -21,9 +23,11 @@ const SIDE_INK: Readonly<Record<Team, string>> = { CT: 'text-ct', T: 'text-t' };
  *
  * **Its height is held whether or not a throw is chosen**, preventing the list above it from jittering.
  */
-export function ThrowCard({ detail, players }: Props) {
+export function ThrowCard({ detail, players, map }: Props) {
   const t = useT();
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [savedNotice, setSavedNotice] = useState(false);
 
   const isCopied = copiedCommand !== null && copiedCommand === detail?.command;
 
@@ -43,8 +47,35 @@ export function ThrowCard({ detail, players }: Props) {
     }
   };
 
-  const nameOf = (slot: PlayerSlot) =>
-    players.find((player) => player.slot === slot)?.name ?? t('review.feed.unknownPlayer');
+  const nameOf = useCallback(
+    (slot: PlayerSlot) =>
+      players.find((player) => player.slot === slot)?.name ?? t('review.feed.unknownPlayer'),
+    [players, t],
+  );
+
+  const initialData: LineupFormData | undefined = useMemo(() => {
+    if (detail === undefined) return undefined;
+    const utility = utilityKindOfGrenade(detail.grenadeType);
+    const throwerName = nameOf(detail.thrower);
+    return {
+      title: `${throwerName} ${UTILITY_NAMES[utility]} (R${detail.roundIndex + 1})`,
+      map: map ?? 'de_mirage',
+      side: detail.throwerSide ?? 'BOTH',
+      kind: utility,
+      origin: detail.playerPos,
+      landing: detail.landing,
+      pitch: detail.pitch,
+      yaw: detail.yaw,
+      throwType: detail.throwType,
+      movementKeys: detail.movementKeys,
+      command: detail.command,
+    };
+  }, [detail, map, nameOf]);
+
+  const handleSaved = () => {
+    setSavedNotice(true);
+    setTimeout(() => setSavedNotice(false), 3000);
+  };
 
   return (
     <div className="flex h-[9.5rem] flex-col gap-1.5 overflow-hidden rounded-card bg-surface-2 p-2.5 text-13">
@@ -120,12 +151,39 @@ export function ThrowCard({ detail, players }: Props) {
             </Button>
           </div>
 
-          <p className="mt-auto text-12 text-ink-dim truncate">
-            <Text
-              path="review.maps.throw.landing"
-              values={{ x: Math.round(detail.landing.x), y: Math.round(detail.landing.y) }}
+          <div className="mt-auto flex items-center justify-between gap-2 text-12 text-ink-dim">
+            <span className="truncate">
+              <Text
+                path="review.maps.throw.landing"
+                values={{ x: Math.round(detail.landing.x), y: Math.round(detail.landing.y) }}
+              />
+            </span>
+            {savedNotice ? (
+              <span className="flex shrink-0 items-center gap-1 font-medium text-11 text-ink">
+                <Check className="size-3" />
+                <Text path="review.maps.throw.saved" />
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-11 text-ink-dim transition-colors hover:bg-surface-3 hover:text-ink"
+              >
+                <BookmarkPlus className="size-3" />
+                <Text path="review.maps.throw.saveLineup" />
+              </button>
+            )}
+          </div>
+
+          {isModalOpen && (
+            <LineupFormModal
+              isOpen={isModalOpen}
+              onDismiss={() => setIsModalOpen(false)}
+              initialData={initialData}
+              defaultMap={map ?? 'de_mirage'}
+              onSaved={handleSaved}
             />
-          </p>
+          )}
         </>
       )}
     </div>
