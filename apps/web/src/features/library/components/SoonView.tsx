@@ -1,12 +1,8 @@
 import type { TranslationKey } from '@disa/i18n';
 import { Text } from '@disa/i18n';
 
-/** The two entries the rail keeps honest about being unfinished, and what each will hold. */
-const PROMISE: Record<
-  'lineups' | 'stats',
-  { titlePath: TranslationKey; notePath: TranslationKey }
-> = {
-  lineups: { titlePath: 'library.shell.lineups', notePath: 'library.shell.soonNote.lineups' },
+/** The entry the rail keeps honest about being unfinished, and what it will hold. */
+const PROMISE: Record<'stats', { titlePath: TranslationKey; notePath: TranslationKey }> = {
   stats: { titlePath: 'library.shell.stats', notePath: 'library.shell.soonNote.stats' },
 };
 
@@ -20,7 +16,7 @@ const PROMISE: Record<
  * column reads as a page whose content failed to arrive; a short block in the middle of the room,
  * marked with the word the rail already used, reads as a room that has not been built yet.
  */
-export function SoonView({ view }: { view: 'lineups' | 'stats' }) {
+export function SoonView({ view }: { view: 'stats' }) {
   const { titlePath, notePath } = PROMISE[view];
 
   return (
