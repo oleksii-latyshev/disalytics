@@ -25,6 +25,6 @@ export const DOCK_SECTIONS: readonly DockSection[] = [
   { view: 'upload', labelPath: 'library.shell.upload', icon: Upload, isSoon: false },
   { view: 'library', labelPath: 'library.shell.library', icon: LayoutGrid, isSoon: false },
   { view: 'tools', labelPath: 'library.shell.tools', icon: Wrench, isSoon: false },
-  { view: 'lineups', labelPath: 'library.shell.lineups', icon: Waypoints, isSoon: true },
+  { view: 'lineups', labelPath: 'library.shell.lineups', icon: Waypoints, isSoon: false },
   { view: 'stats', labelPath: 'library.shell.stats', icon: ChartColumn, isSoon: true },
 ];

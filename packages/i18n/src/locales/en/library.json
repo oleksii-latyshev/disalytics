@@ -65,7 +65,6 @@
     "stats": "Player stats",
     "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
     "soonNote": {
-      "lineups": "Every grenade thrown in the match, grouped by where it was thrown from and where it landed. Not built yet.",
       "stats": "What each player did across the match — opening duels, trades, utility, damage. Not built yet."
     }
   },
@@ -169,6 +168,31 @@
       "dps": "~40 DPS",
       "none": "None"
     }
+  },
+  "lineups": {
+    "title": "Utility lineups",
+    "note": "Curated competitive grenade lineups and saved customs per map.",
+    "map": "Map",
+    "side": "Side",
+    "bothSides": "Both",
+    "allKinds": "All kinds",
+    "searchPlaceholder": "Search lineups...",
+    "count": "{count, plural, one {# lineup} other {# lineups}}",
+    "empty": "No lineups match the chosen filters.",
+    "builtIn": "Built-in",
+    "custom": "Custom",
+    "movement": "Movement",
+    "command": "Console command",
+    "copyCommand": "Copy setpos command",
+    "copied": "Copied!",
+    "media": "Watch guide",
+    "delete": "Delete lineup",
+    "deleteConfirm": "Delete this custom lineup?",
+    "import": "Import",
+    "export": "Export",
+    "importSuccess": "Imported {count, plural, one {# lineup} other {# lineups}}.",
+    "importError": "Failed to import lineups file.",
+    "noLineupSelected": "Select a lineup on the map or from the list to inspect details."
   },
   "grid": {
     "count": "{count, plural, one {# demo} other {# demos}}",
