@@ -220,6 +220,82 @@
       }
     }
   },
+  "tactics": {
+    "title": "Tactics board",
+    "note": "Design and review strategies with player positions, utility throws, and step playback.",
+    "editor": {
+      "title": "Tactics editor",
+      "save": "Save tactic",
+      "saved": "Saved",
+      "exit": "Back to tactics",
+      "tacticTitle": "Tactic title",
+      "map": "Map",
+      "side": "Side",
+      "author": "Author",
+      "description": "Description",
+      "descriptionPlaceholder": "Brief strategy overview..."
+    },
+    "steps": {
+      "title": "Steps",
+      "step": "Step {index}",
+      "add": "Add step",
+      "duplicate": "Duplicate step",
+      "delete": "Delete step",
+      "moveEarlier": "Move earlier",
+      "moveLater": "Move later",
+      "name": "Step name",
+      "namePlaceholder": "e.g. A Execute",
+      "offset": "Delay (+{seconds}s)",
+      "notes": "Step notes",
+      "notesPlaceholder": "Execution instructions, callouts...",
+      "cannotDeleteLast": "A tactic must have at least one step."
+    },
+    "transport": {
+      "play": "Play",
+      "pause": "Pause",
+      "scrub": "Playback timeline",
+      "speed": "Speed",
+      "prevStep": "Previous step",
+      "nextStep": "Next step",
+      "time": "{current, number, ::.#}s / {total, number, ::.#}s"
+    },
+    "tools": {
+      "select": "Select & Move",
+      "pencil": "Draw",
+      "throw": "Add throw",
+      "eraser": "Eraser",
+      "undo": "Undo",
+      "redo": "Redo",
+      "clearDrawings": "Clear drawings",
+      "colors": {
+        "ct": "CT",
+        "t": "T",
+        "objective": "Objective",
+        "damage": "Damage",
+        "ink": "White"
+      },
+      "utilityKinds": {
+        "smoke": "Smoke",
+        "flash": "Flashbang",
+        "fire": "Molotov",
+        "he": "HE grenade",
+        "decoy": "Decoy"
+      }
+    },
+    "player": {
+      "selected": "Player {slot}",
+      "label": "Role / Name",
+      "labelPlaceholder": "e.g. IGL, Entry",
+      "yaw": "Facing angle (°)"
+    },
+    "throw": {
+      "selected": "Grenade throw",
+      "kind": "Utility kind",
+      "thrower": "Thrower",
+      "releaseTime": "Release delay (+{seconds}s)",
+      "delete": "Delete throw"
+    }
+  },
   "grid": {
     "count": "{count, plural, one {# demo} other {# demos}}",
     "cacheTotal": "These demos take {used, number} MB of the {limit, number} MB this app keeps.",
