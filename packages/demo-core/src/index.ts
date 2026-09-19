@@ -153,6 +153,26 @@ export {
   slotSampleIndex,
   tickAtFrame,
 } from './helpers/selectors';
+export type {
+  Tactic,
+  TacticDrawingStroke,
+  TacticFile,
+  TacticPlayerPosition,
+  TacticPoint,
+  TacticSide,
+  TacticStep,
+  TacticThrow,
+} from './helpers/tactics';
+export {
+  decodeTacticFromHash,
+  encodeTacticToHash,
+  isTactic,
+  parseTacticFile,
+  serializeTacticFile,
+  TACTIC_SCHEMA_VERSION,
+  TACTIC_SIDES,
+  TacticFileError,
+} from './helpers/tactics';
 export type { MovementKey, ThrowDetail, ThrowType } from './helpers/throw-detail';
 export { throwDetail } from './helpers/throw-detail';
 export type { UtilityHeld, UtilityKind } from './helpers/utility';
