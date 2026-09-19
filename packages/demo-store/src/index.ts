@@ -8,3 +8,5 @@ export type { PersistenceStatus, StorageReport } from './persistence';
 export { requestPersistence, storageEstimate } from './persistence';
 export type { DemoStore } from './store';
 export { openDemoStore } from './store';
+export type { TacticFilter, TacticStore } from './tactic-store';
+export { openTacticStore } from './tactic-store';
