@@ -67,6 +67,8 @@
       "select": "Select lineup",
       "movement": "Movement",
       "landing": "Landing: {x, number}, {y, number}",
+      "saveLineup": "Save as lineup",
+      "saved": "Saved!",
       "types": {
         "stand": "Stand",
         "run": "Run",

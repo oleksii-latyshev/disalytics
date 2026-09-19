@@ -185,6 +185,7 @@ export function MatchUtility({ demo }: { demo: ParsedDemo }) {
             <ThrowCard
               detail={active === null ? undefined : throwDetail(demo, active)}
               players={players}
+              map={demo.header.map}
             />
           </div>
 
