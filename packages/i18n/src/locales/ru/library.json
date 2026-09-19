@@ -220,6 +220,82 @@
       }
     }
   },
+  "tactics": {
+    "title": "Тактический планшет",
+    "note": "Создавайте и разбирайте стратегии с расстановкой игроков, гранатами и пошаговым воспроизведением.",
+    "editor": {
+      "title": "Редактор тактики",
+      "save": "Сохранить тактику",
+      "saved": "Сохранено",
+      "exit": "К списку тактик",
+      "tacticTitle": "Название тактики",
+      "map": "Карта",
+      "side": "Сторона",
+      "author": "Автор",
+      "description": "Описание",
+      "descriptionPlaceholder": "Краткое описание стратегии..."
+    },
+    "steps": {
+      "title": "Шаги",
+      "step": "Шаг {index}",
+      "add": "Добавить шаг",
+      "duplicate": "Дублировать шаг",
+      "delete": "Удалить шаг",
+      "moveEarlier": "Сдвинуть раньше",
+      "moveLater": "Сдвинуть позже",
+      "name": "Название шага",
+      "namePlaceholder": "например, Выход на А",
+      "offset": "Тайминг (+{seconds}с)",
+      "notes": "Заметки к шагу",
+      "notesPlaceholder": "Инструкции по исполнению, коллы...",
+      "cannotDeleteLast": "В тактике должен быть как минимум один шаг."
+    },
+    "transport": {
+      "play": "Воспроизвести",
+      "pause": "Пауза",
+      "scrub": "Временная шкала",
+      "speed": "Скорость",
+      "prevStep": "Предыдущий шаг",
+      "nextStep": "Следующий шаг",
+      "time": "{current, number, ::.#}с / {total, number, ::.#}с"
+    },
+    "tools": {
+      "select": "Выбор и перемещение",
+      "pencil": "Рисование",
+      "throw": "Добавить бросок",
+      "eraser": "Ластик",
+      "undo": "Отменить",
+      "redo": "Повторить",
+      "clearDrawings": "Очистить рисунки",
+      "colors": {
+        "ct": "CT",
+        "t": "T",
+        "objective": "Цель",
+        "damage": "Урон",
+        "ink": "Белый"
+      },
+      "utilityKinds": {
+        "smoke": "Дым",
+        "flash": "Флешка",
+        "fire": "Молотов",
+        "he": "Осколочная",
+        "decoy": "Ложная"
+      }
+    },
+    "player": {
+      "selected": "Игрок {slot}",
+      "label": "Роль / Имя",
+      "labelPlaceholder": "например, IGL, Entry",
+      "yaw": "Направление взгляда (°)"
+    },
+    "throw": {
+      "selected": "Бросок гранаты",
+      "kind": "Тип гранаты",
+      "thrower": "Бросающий",
+      "releaseTime": "Задержка броска (+{seconds}с)",
+      "delete": "Удалить бросок"
+    }
+  },
   "grid": {
     "count": "{count, plural, one {# демо} few {# демо} many {# демо} other {# демо}}",
     "cacheTotal": "Эти демо занимают {used, number} МБ из {limit, number} МБ, которые хранит приложение.",

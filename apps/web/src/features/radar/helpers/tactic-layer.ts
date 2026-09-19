@@ -30,6 +30,8 @@ export interface TacticLayerOptions {
   readonly selectedThrowId?: string | null | undefined;
   readonly hoveredSlot?: number | null | undefined;
   readonly hoveredThrowId?: string | null | undefined;
+  readonly liveStroke?: { readonly current: TacticDrawingStroke | null } | undefined;
+  readonly liveThrow?: { readonly current: TacticThrow | null } | undefined;
 }
 
 export function grenadeColorOfKind(kind: UtilityKind, colors: RadarColors): string {
@@ -472,6 +474,9 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
     } = options;
 
     renderTacticDrawings(context, drawings, overview, geometry);
+    if (options.liveStroke?.current !== null && options.liveStroke?.current !== undefined) {
+      renderSingleDrawingStroke(context, options.liveStroke.current, overview, geometry);
+    }
     renderActiveUtilities(context, activeUtilities, overview, geometry, colors);
     renderTacticThrows(
       context,
@@ -482,6 +487,17 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
       selectedThrowId,
       hoveredThrowId,
     );
+    if (options.liveThrow?.current !== null && options.liveThrow?.current !== undefined) {
+      renderSingleThrow(
+        context,
+        options.liveThrow.current,
+        overview,
+        geometry,
+        colors,
+        true,
+        false,
+      );
+    }
     renderFlyingGrenades(context, flyingGrenades, overview, geometry, colors);
     renderTacticPlayers(
       context,
