@@ -1,8 +1,16 @@
 import type { TranslationKey } from '@disa/i18n';
-import { ChartColumn, LayoutGrid, type LucideIcon, Upload, Waypoints, Wrench } from 'lucide-react';
+import {
+  ChartColumn,
+  LayoutGrid,
+  type LucideIcon,
+  NotebookPen,
+  Upload,
+  Waypoints,
+  Wrench,
+} from 'lucide-react';
 
 /** What the shell can be showing, in the order the dock lists them. */
-export type ShellView = 'upload' | 'library' | 'tools' | 'lineups' | 'stats';
+export type ShellView = 'upload' | 'library' | 'tools' | 'lineups' | 'tactics' | 'stats';
 
 export interface DockSection {
   view: ShellView;
@@ -26,5 +34,6 @@ export const DOCK_SECTIONS: readonly DockSection[] = [
   { view: 'library', labelPath: 'library.shell.library', icon: LayoutGrid, isSoon: false },
   { view: 'tools', labelPath: 'library.shell.tools', icon: Wrench, isSoon: false },
   { view: 'lineups', labelPath: 'library.shell.lineups', icon: Waypoints, isSoon: false },
+  { view: 'tactics', labelPath: 'library.shell.tactics', icon: NotebookPen, isSoon: false },
   { view: 'stats', labelPath: 'library.shell.stats', icon: ChartColumn, isSoon: true },
 ];

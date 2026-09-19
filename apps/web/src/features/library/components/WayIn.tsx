@@ -1,3 +1,4 @@
+import { decodeTacticFromHash, type Tactic } from '@disa/demo-core';
 import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
@@ -6,6 +7,7 @@ import type { ParseState } from '@/core/parsing';
 import type { SampleMatch } from '@/core/samples';
 import { LineupsView } from '@/features/lineups';
 import { HelpSheet, SettingsSheet } from '@/features/review';
+import { TacticsView } from '@/features/tactics';
 import { ToolsView } from '@/features/tools';
 import type { ShellView } from '../helpers/views';
 import { useFileDrop } from '../hooks/use-file-drop';
@@ -52,7 +54,19 @@ type Sheet = 'settings' | 'help';
  * height-bound.
  */
 export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: Props) {
-  const [view, setView] = useState<ShellView>('upload');
+  const [initialSharedTactic, setInitialSharedTactic] = useState<Tactic | null>(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('tactic=')) {
+      return decodeTacticFromHash(window.location.hash);
+    }
+    return null;
+  });
+
+  const [view, setView] = useState<ShellView>(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('tactic=')) {
+      return 'tactics';
+    }
+    return 'upload';
+  });
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
 
   // An open lands the reader on the upload view wherever they were, because that is the view that
@@ -157,6 +171,21 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: P
         {view === 'library' && <LibraryView onEnter={enterMatch} onSample={enterSample} />}
         {view === 'tools' && <ToolsView />}
         {view === 'lineups' && <LineupsView />}
+        {view === 'tactics' && (
+          <TacticsView
+            initialTactic={initialSharedTactic}
+            onClearInitialTactic={() => {
+              setInitialSharedTactic(null);
+              if (typeof window !== 'undefined' && window.location.hash.includes('tactic=')) {
+                window.history.replaceState(
+                  null,
+                  '',
+                  window.location.pathname + window.location.search,
+                );
+              }
+            }}
+          />
+        )}
         {view === 'stats' && <SoonView view={view} />}
       </main>
 

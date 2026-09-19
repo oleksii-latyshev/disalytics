@@ -1,4 +1,10 @@
-import type { Tactic, TacticDrawingStroke, TacticStep, TacticThrow } from '@disa/demo-core';
+import type {
+  Tactic,
+  TacticDrawingStroke,
+  TacticSide,
+  TacticStep,
+  TacticThrow,
+} from '@disa/demo-core';
 
 export const MAX_HISTORY = 30;
 
@@ -265,5 +271,37 @@ export function redoHistoryState(
     past: [...past, current],
     future: future.slice(1),
     current: next,
+  };
+}
+
+export function createNewTactic(
+  map = 'de_mirage',
+  side: TacticSide = 'T',
+  title = 'New Tactic',
+): Tactic {
+  const now = Date.now();
+  return {
+    id: generateId('tactic'),
+    title,
+    map,
+    side,
+    createdAt: now,
+    updatedAt: now,
+    steps: [
+      {
+        id: generateId('step'),
+        name: 'Step 1',
+        timeOffsetSeconds: 0,
+        players: [
+          { slot: 0, x: -1000, y: -1000, yaw: 0, label: 'Player 1' },
+          { slot: 1, x: -1100, y: -1000, yaw: 0, label: 'Player 2' },
+          { slot: 2, x: -1200, y: -1000, yaw: 0, label: 'Player 3' },
+          { slot: 3, x: -1300, y: -1000, yaw: 0, label: 'Player 4' },
+          { slot: 4, x: -1400, y: -1000, yaw: 0, label: 'Player 5' },
+        ],
+        throws: [],
+        drawings: [],
+      },
+    ],
   };
 }
