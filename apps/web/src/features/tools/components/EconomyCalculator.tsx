@@ -1,397 +1,516 @@
 import {
-  calculateNextRoundEconomy,
-  LOSS_BONUS_LADDER,
-  type PreviousBuyType,
+  changeObservedWeaponCount,
+  countObservedWeapons,
+  type EnemyRoundObservation,
+  emptyWeaponObservations,
+  estimateEnemyRounds,
+  OBSERVED_WEAPONS,
   type RoundEndReason,
   type Team,
 } from '@disa/demo-core';
 import { Text, useLocale, useT } from '@disa/i18n';
-import { Switch } from '@disa/ui';
-import { useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 
-const LOSS_STREAKS = [0, 1, 2, 3, 4] as const;
+const COUNTS = [0, 1, 2, 3, 4, 5] as const;
+
+type TrackedRound = EnemyRoundObservation & { readonly id: number };
+
+const REASON_PATHS = {
+  elimination: 'library.tools.economy.elimination',
+  'bomb-defused': 'library.tools.economy.bombDefused',
+  'bomb-exploded': 'library.tools.economy.bombExploded',
+  'time-expired': 'library.tools.economy.timeExpired',
+} as const;
+
+const WEAPON_LABELS = {
+  ak47: { name: 'AK-47' },
+  m4: { name: 'M4' },
+  smg: { path: 'library.tools.economy.weaponSmg' },
+  awp: { name: 'AWP' },
+  shotgun: { path: 'library.tools.economy.weaponShotgun' },
+  pistol: { path: 'library.tools.economy.weaponPistol' },
+  other: { path: 'library.tools.economy.otherWeapon' },
+} as const;
+
+const ASSUMPTION_PATHS = {
+  unknownWeapons: 'library.tools.economy.assumptions.unknownWeapons',
+  survivorCarry: 'library.tools.economy.assumptions.survivorCarry',
+  unpricedEquipment: 'library.tools.economy.assumptions.unpricedEquipment',
+  unknownKills: 'library.tools.economy.assumptions.unknownKills',
+  genericKillReward: 'library.tools.economy.assumptions.genericKillReward',
+  unknownPlant: 'library.tools.economy.assumptions.unknownPlant',
+  otherUnpriced: 'library.tools.economy.assumptions.otherUnpriced',
+} as const;
+
+function enemySide(ourSide: Team): Team {
+  return ourSide === 'CT' ? 'T' : 'CT';
+}
+
+function ourSideAtRound(openingSide: Team, round: number): Team {
+  if (round <= 12) return openingSide;
+  const switches = 1 + Math.floor(Math.max(0, round - 25) / 3);
+  return switches % 2 === 0 ? openingSide : enemySide(openingSide);
+}
+
+function newObservation(ourSide: Team): EnemyRoundObservation {
+  return {
+    ourSide,
+    weWon: true,
+    reason: 'elimination',
+    enemySurvivors: 0,
+    bombPlanted: null,
+    enemyKills: null,
+    weapons: emptyWeaponObservations(),
+  };
+}
+
+function choiceClass(selected: boolean): string {
+  return (
+    'min-h-11 rounded-chip border px-3 py-2 text-12 transition-colors ' +
+    (selected
+      ? 'border-ink bg-ink text-surface-0'
+      : 'border-line bg-surface-2 text-ink-dim hover:border-line-strong hover:text-ink')
+  );
+}
 
 export function EconomyCalculator() {
   const t = useT();
   const locale = useLocale();
-  const moneyFormat = useMemo(
-    () =>
-      new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }),
-    [locale],
+  const money = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
+  const formatRange = (floor: number, ceiling: number): string =>
+    floor === ceiling
+      ? money.format(ceiling)
+      : money.format(floor) + '–' + money.format(Math.round(ceiling / 100) * 100);
+  const [openingSide, setOpeningSide] = useState<Team>('CT');
+  const [rounds, setRounds] = useState<readonly TrackedRound[]>([]);
+  const nextId = useRef(1);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [draft, setDraft] = useState<EnemyRoundObservation>(() => newObservation('CT'));
+
+  const roundNumber = editingIndex === null ? rounds.length + 1 : editingIndex + 1;
+  const ourSide = ourSideAtRound(openingSide, roundNumber);
+  const opponent = enemySide(ourSide);
+  const winner = draft.weWon ? ourSide : opponent;
+  const availableReasons: readonly RoundEndReason[] =
+    winner === 'T'
+      ? ['elimination', 'bomb-exploded']
+      : ['elimination', 'bomb-defused', 'time-expired'];
+  const askingPlant = opponent === 'T' && draft.weWon;
+  const knownWeapons = countObservedWeapons(draft.weapons);
+  const estimates = estimateEnemyRounds(
+    rounds.map((round, index) => ({
+      ...round,
+      ourSide: ourSideAtRound(openingSide, index + 1),
+    })),
   );
+  const latest = estimates.at(-1);
+  const approximateMoney =
+    latest === undefined
+      ? null
+      : formatRange(latest.estimatedNextCashFloorPerPlayer, latest.estimatedNextCashPerPlayer);
 
-  const [team, setTeam] = useState<Team>('T');
-  const [result, setResult] = useState<'won' | 'lost'>('lost');
-  const [reason, setReason] = useState<RoundEndReason>('elimination');
-  const [lossStreak, setLossStreak] = useState<number>(1);
-  const [bombPlantedOnLoss, setBombPlantedOnLoss] = useState(false);
-  const [survivedTWithoutPlant, setSurvivedTWithoutPlant] = useState(false);
-  const [previousBuy, setPreviousBuy] = useState<PreviousBuyType>('full');
-
-  const [rifles, setRifles] = useState(0);
-  const [smgs, setSmgs] = useState(0);
-  const [shotguns, setShotguns] = useState(0);
-  const [snipers, setSnipers] = useState(0);
-  const [knife, setKnife] = useState(0);
-
-  const estimate = useMemo(
-    () =>
-      calculateNextRoundEconomy({
-        team,
-        result,
-        reason,
-        lossStreak,
-        bombPlantedOnLoss,
-        survivedTWithoutPlant,
-        previousBuy,
-        kills: {
-          rifles,
-          smgs,
-          shotguns,
-          snipers,
-          knife,
-        },
-      }),
-    [
-      team,
-      result,
-      reason,
-      lossStreak,
-      bombPlantedOnLoss,
-      survivedTWithoutPlant,
-      previousBuy,
-      rifles,
-      smgs,
-      shotguns,
-      snipers,
-      knife,
-    ],
-  );
-
-  const availableReasons = useMemo<readonly RoundEndReason[]>(() => {
-    if (result === 'lost') return ['elimination', 'time-expired'];
-    if (team === 'CT') return ['elimination', 'bomb-defused', 'time-expired'];
-    return ['elimination', 'bomb-exploded'];
-  }, [result, team]);
-
-  const handleTeamChange = (newTeam: Team) => {
-    setTeam(newTeam);
-    if (result === 'won' && newTeam === 'CT' && reason === 'bomb-exploded') {
-      setReason('elimination');
-    } else if (result === 'won' && newTeam === 'T' && reason === 'bomb-defused') {
-      setReason('elimination');
-    }
+  const saveRound = () => {
+    const id = editingIndex === null ? nextId.current++ : rounds[editingIndex]?.id;
+    if (id === undefined) return;
+    const observation: TrackedRound = { ...draft, ourSide, id };
+    setRounds((previous) =>
+      editingIndex === null
+        ? [...previous, observation]
+        : previous.map((round, index) => (index === editingIndex ? observation : round)),
+    );
+    setEditingIndex(null);
+    setDraft(newObservation(ourSideAtRound(openingSide, rounds.length + 2)));
   };
 
-  const handleResultChange = (newResult: 'won' | 'lost') => {
-    setResult(newResult);
-    setReason('elimination');
+  const editRound = (index: number) => {
+    const observation = rounds[index];
+    if (observation === undefined) return;
+    setDraft(observation);
+    setEditingIndex(index);
+  };
+
+  const removeRound = (index: number) => {
+    setRounds((previous) => previous.filter((_, roundIndex) => roundIndex !== index));
+    setEditingIndex(null);
+    setDraft(newObservation(ourSideAtRound(openingSide, rounds.length)));
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-        {/* Inputs panel */}
-        <div className="surface-card flex flex-col gap-5 rounded-card p-4">
-          {/* Team and Result row */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <fieldset className="flex flex-col gap-1.5 border-0 p-0">
-              <legend className="label-dense text-ink-dim">
-                <Text path="library.tools.economy.team" />
-              </legend>
-              <div className="grid grid-cols-2 gap-1 rounded-card bg-surface-2 p-1">
-                {(['CT', 'T'] as const).map((side) => (
-                  <button
-                    key={side}
-                    type="button"
-                    onClick={() => handleTeamChange(side)}
-                    className={`h-8 rounded-card font-ui text-13 font-medium transition-colors ${
-                      team === side
-                        ? side === 'CT'
-                          ? 'bg-surface-0 text-ct shadow-xs'
-                          : 'bg-surface-0 text-t shadow-xs'
-                        : 'text-ink-dim hover:text-ink'
-                    }`}
-                  >
-                    {side}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+    <section aria-label={t('library.tools.economy.title')}>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-11 tracking-[0.14em] text-ink-dim uppercase">
+            <Text path="library.tools.economy.eyebrow" />
+          </p>
+          <h3 className="text-24 font-medium tracking-[-0.035em]">
+            <Text path="library.tools.economy.title" />
+          </h3>
+          <p className="mt-2 max-w-[60ch] text-13 text-ink-dim leading-prose">
+            <Text path="library.tools.economy.note" />
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-12 text-ink-dim">
+          <Text path="library.tools.economy.startSide" />
+          {(['CT', 'T'] as const).map((side) => (
+            <button
+              key={side}
+              type="button"
+              onClick={() => setOpeningSide(side)}
+              aria-pressed={openingSide === side}
+              className={choiceClass(openingSide === side)}
+            >
+              {side}
+            </button>
+          ))}
+        </div>
+      </div>
 
-            <fieldset className="flex flex-col gap-1.5 border-0 p-0">
-              <legend className="label-dense text-ink-dim">
-                <Text path="library.tools.economy.result" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.18fr)_minmax(310px,0.82fr)]">
+        <div className="min-w-0 rounded-card border border-line bg-surface-1 p-4 sm:p-6">
+          <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p className="text-11 tracking-[0.12em] text-ink-dim uppercase">
+                <Text path="library.tools.economy.inputEyebrow" />
+              </p>
+              <h4 className="mt-2 text-20 font-medium">
+                <Text path="library.tools.economy.round" values={{ round: roundNumber }} />
+              </h4>
+            </div>
+            <span className="text-12 text-ink-dim">
+              <Text path="library.tools.economy.opponent" values={{ side: opponent }} />
+            </span>
+          </div>
+
+          <fieldset className="mb-5 border-0 p-0">
+            <legend className="mb-2 text-12 font-medium">
+              <Text path="library.tools.economy.result" />
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {([true, false] as const).map((weWon) => (
+                <button
+                  key={String(weWon)}
+                  type="button"
+                  onClick={() =>
+                    setDraft((previous) => ({ ...previous, weWon, reason: 'elimination' }))
+                  }
+                  aria-pressed={draft.weWon === weWon}
+                  className={choiceClass(draft.weWon === weWon)}
+                >
+                  <Text path={weWon ? 'library.tools.economy.won' : 'library.tools.economy.lost'} />
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="mb-5 border-0 p-0">
+            <legend className="mb-2 text-12 font-medium">
+              <Text path="library.tools.economy.reason" />
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {availableReasons.map((reason) => (
+                <button
+                  key={reason}
+                  type="button"
+                  onClick={() => setDraft((previous) => ({ ...previous, reason }))}
+                  aria-pressed={draft.reason === reason}
+                  className={choiceClass(draft.reason === reason)}
+                >
+                  <Text path={REASON_PATHS[reason]} />
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="mb-5 border-0 p-0">
+            <legend className="mb-2 text-12 font-medium">
+              <Text path="library.tools.economy.survivors" />
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {COUNTS.map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setDraft((previous) => ({ ...previous, enemySurvivors: count }))}
+                  aria-pressed={draft.enemySurvivors === count}
+                  className={choiceClass(draft.enemySurvivors === count)}
+                >
+                  {count}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {askingPlant && (
+            <fieldset className="mb-5 border-0 p-0">
+              <legend className="mb-2 text-12 font-medium">
+                <Text path="library.tools.economy.bombPlanted" />
               </legend>
-              <div className="grid grid-cols-2 gap-1 rounded-card bg-surface-2 p-1">
-                {(['won', 'lost'] as const).map((r) => (
+              <div className="flex flex-wrap gap-2">
+                {([null, true, false] as const).map((value) => (
                   <button
-                    key={r}
+                    key={String(value)}
                     type="button"
-                    onClick={() => handleResultChange(r)}
-                    className={`h-8 rounded-card font-ui text-13 font-medium transition-colors ${
-                      result === r
-                        ? 'bg-surface-0 text-ink shadow-xs'
-                        : 'text-ink-dim hover:text-ink'
-                    }`}
+                    onClick={() => setDraft((previous) => ({ ...previous, bombPlanted: value }))}
+                    aria-pressed={draft.bombPlanted === value}
+                    className={choiceClass(draft.bombPlanted === value)}
                   >
                     <Text
                       path={
-                        r === 'won' ? 'library.tools.economy.won' : 'library.tools.economy.lost'
+                        value === null
+                          ? 'library.tools.economy.unknown'
+                          : value
+                            ? 'library.tools.economy.yes'
+                            : 'library.tools.economy.no'
                       }
                     />
                   </button>
                 ))}
               </div>
             </fieldset>
-          </div>
-
-          {/* Win / Loss condition */}
-          {result === 'won' ? (
-            <fieldset className="flex flex-col gap-1.5 border-0 p-0">
-              <legend className="label-dense text-ink-dim">
-                <Text path="library.tools.economy.reason" />
-              </legend>
-              <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
-                {availableReasons.map((res) => (
-                  <button
-                    key={res}
-                    type="button"
-                    onClick={() => setReason(res)}
-                    className={`h-8 rounded-card px-2 font-ui text-12 font-medium transition-colors ${
-                      reason === res
-                        ? 'bg-primary text-primary-foreground shadow-xs'
-                        : 'bg-surface-2 text-ink-dim hover:bg-surface-3 hover:text-ink'
-                    }`}
-                  >
-                    {res === 'elimination' && <Text path="library.tools.economy.elimination" />}
-                    {res === 'bomb-defused' && <Text path="library.tools.economy.bombDefused" />}
-                    {res === 'bomb-exploded' && <Text path="library.tools.economy.bombExploded" />}
-                    {res === 'time-expired' && <Text path="library.tools.economy.timeExpired" />}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <fieldset className="flex flex-col gap-1.5 border-0 p-0">
-                <legend className="label-dense text-ink-dim">
-                  <Text path="library.tools.economy.lossStreak" />
-                </legend>
-                <div className="grid grid-cols-5 gap-1">
-                  {LOSS_STREAKS.map((streak) => (
-                    <button
-                      key={streak}
-                      type="button"
-                      onClick={() => setLossStreak(streak)}
-                      className={`flex flex-col items-center justify-center rounded-card py-1.5 transition-colors ${
-                        lossStreak === streak
-                          ? 'bg-primary text-primary-foreground shadow-xs'
-                          : 'bg-surface-2 text-ink-dim hover:bg-surface-3 hover:text-ink'
-                      }`}
-                    >
-                      <span className="font-ui text-12 font-medium">
-                        {streak}
-                        {streak === 4 ? '+' : ''}
-                      </span>
-                      <span className="numeric text-10 text-ink-dim">
-                        ${(LOSS_BONUS_LADDER[streak] ?? 1400) / 1000}k
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              {team === 'T' && (
-                <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:gap-6">
-                  <label
-                    htmlFor="economy-bomb-planted"
-                    className="flex cursor-pointer items-center gap-2.5"
-                  >
-                    <Switch
-                      id="economy-bomb-planted"
-                      checked={bombPlantedOnLoss}
-                      onChange={(e) => setBombPlantedOnLoss(e.target.checked)}
-                      aria-label={t('library.tools.economy.bombPlanted')}
-                    />
-                    <span className="text-13 text-ink">
-                      <Text path="library.tools.economy.bombPlanted" />{' '}
-                      <span className="label-dense text-t">(+$800)</span>
-                    </span>
-                  </label>
-
-                  <label
-                    htmlFor="economy-survived-save"
-                    className="flex cursor-pointer items-center gap-2.5"
-                  >
-                    <Switch
-                      id="economy-survived-save"
-                      checked={survivedTWithoutPlant}
-                      onChange={(e) => setSurvivedTWithoutPlant(e.target.checked)}
-                      aria-label={t('library.tools.economy.survivedSave')}
-                    />
-                    <span className="text-13 text-ink">
-                      <Text path="library.tools.economy.survivedSave" />{' '}
-                      <span className="label-dense text-ink-dim">($0)</span>
-                    </span>
-                  </label>
-                </div>
-              )}
-            </div>
           )}
 
-          {/* Previous round buy level */}
-          <fieldset className="flex flex-col gap-1.5 border-0 p-0">
-            <legend className="label-dense text-ink-dim">
-              <Text path="library.tools.economy.previousBuy" />
+          <div className="[border-block-start:1px_solid_var(--color-line)] pt-5">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h5 className="text-14 font-medium">
+                  <Text path="library.tools.economy.weaponsTitle" />
+                </h5>
+                <p className="mt-1 text-12 text-ink-dim">
+                  <Text path="library.tools.economy.weaponsHint" />
+                </p>
+              </div>
+              <span className="numeric text-12 text-ink-dim">
+                <Text path="library.tools.economy.known" values={{ count: knownWeapons }} />
+              </span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {OBSERVED_WEAPONS.map((weapon) => {
+                const display = WEAPON_LABELS[weapon];
+                const label = 'name' in display ? display.name : t(display.path);
+                return (
+                  <div
+                    key={weapon}
+                    className="flex min-w-0 items-center justify-between gap-2 rounded-chip border border-line bg-surface-2 px-3 py-2"
+                  >
+                    <span className="min-w-0 text-12">{label}</span>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={draft.weapons[weapon] === 0}
+                        onClick={() =>
+                          setDraft((previous) => ({
+                            ...previous,
+                            weapons: changeObservedWeaponCount(previous.weapons, weapon, -1),
+                          }))
+                        }
+                        aria-label={t('library.tools.economy.decreaseWeapon', {
+                          weapon: label,
+                        })}
+                        className="flex size-11 items-center justify-center rounded-chip bg-surface-3 text-ink disabled:opacity-30"
+                      >
+                        −
+                      </button>
+                      <span className="numeric w-5 text-center text-13">
+                        {draft.weapons[weapon]}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={knownWeapons >= 5}
+                        onClick={() =>
+                          setDraft((previous) => ({
+                            ...previous,
+                            weapons: changeObservedWeaponCount(previous.weapons, weapon, 1),
+                          }))
+                        }
+                        aria-label={t('library.tools.economy.increaseWeapon', {
+                          weapon: label,
+                        })}
+                        className="flex size-11 items-center justify-center rounded-chip bg-surface-3 text-ink disabled:opacity-30"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <fieldset className="mt-5 border-0 p-0">
+            <legend className="mb-2 text-12 font-medium">
+              <Text path="library.tools.economy.enemyKills" />
             </legend>
-            <div className="grid grid-cols-3 gap-1 rounded-card bg-surface-2 p-1">
-              {(['full', 'force', 'eco'] as const).map((buy) => (
+            <div className="flex flex-wrap gap-2">
+              {([null, ...COUNTS] as const).map((count) => (
                 <button
-                  key={buy}
+                  key={String(count)}
                   type="button"
-                  onClick={() => setPreviousBuy(buy)}
-                  className={`h-8 rounded-card font-ui text-12 font-medium transition-colors ${
-                    previousBuy === buy
-                      ? 'bg-surface-0 text-ink shadow-xs'
-                      : 'text-ink-dim hover:text-ink'
-                  }`}
+                  onClick={() => setDraft((previous) => ({ ...previous, enemyKills: count }))}
+                  aria-pressed={draft.enemyKills === count}
+                  className={choiceClass(draft.enemyKills === count)}
                 >
-                  {buy === 'full' && <Text path="library.tools.economy.buyFull" />}
-                  {buy === 'force' && <Text path="library.tools.economy.buyForce" />}
-                  {buy === 'eco' && <Text path="library.tools.economy.buyEco" />}
+                  {count === null ? <Text path="library.tools.economy.unknown" /> : count}
                 </button>
               ))}
             </div>
           </fieldset>
 
-          {/* Kill counters */}
-          <fieldset className="flex flex-col gap-2 border-0 p-0">
-            <legend className="label-dense text-ink-dim">
-              <Text path="library.tools.economy.kills" />
-            </legend>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {[
-                { label: 'rifles', value: rifles, set: setRifles },
-                { label: 'smgs', value: smgs, set: setSmgs },
-                { label: 'shotguns', value: shotguns, set: setShotguns },
-                { label: 'snipers', value: snipers, set: setSnipers },
-                { label: 'knife', value: knife, set: setKnife },
-              ].map((k) => (
-                <div
-                  key={k.label}
-                  className="flex items-center justify-between rounded-card bg-surface-2 px-2.5 py-1.5 text-12"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-ui text-12 text-ink">
-                      {k.label === 'rifles' && <Text path="library.tools.economy.rifles" />}
-                      {k.label === 'smgs' && <Text path="library.tools.economy.smgs" />}
-                      {k.label === 'shotguns' && <Text path="library.tools.economy.shotguns" />}
-                      {k.label === 'snipers' && <Text path="library.tools.economy.snipers" />}
-                      {k.label === 'knife' && <Text path="library.tools.economy.knife" />}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={k.value <= 0}
-                      onClick={() => k.set(Math.max(0, k.value - 1))}
-                      className="flex size-6 items-center justify-center rounded-chip bg-surface-3 text-ink transition-colors disabled:pointer-events-none disabled:opacity-50"
-                      aria-label={t('library.tools.economy.decrease')}
-                    >
-                      −
-                    </button>
-                    <span className="numeric w-4 text-center text-13 font-medium text-ink">
-                      {k.value}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => k.set(k.value + 1)}
-                      className="flex size-6 items-center justify-center rounded-chip bg-surface-3 text-ink transition-colors"
-                      aria-label={t('library.tools.economy.increase')}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-
-        {/* Output panel */}
-        <div className="flex flex-col gap-4">
-          <div className="surface-card flex flex-col gap-4 rounded-card p-5">
-            <header className="flex items-center justify-between">
-              <span className="label-dense text-ink-dim">
-                <Text path="library.tools.economy.output.call" />
-              </span>
-              <span
-                className={`label-dense rounded-full px-2.5 py-0.5 font-medium ${
-                  estimate.buyCall === 'full'
-                    ? 'bg-primary text-primary-foreground'
-                    : estimate.buyCall === 'force'
-                      ? 'border border-line-strong bg-surface-2 text-ink'
-                      : 'border border-line bg-surface-2 text-ink-dim'
-                }`}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={saveRound}
+              className="min-h-10 rounded-card bg-ink px-5 py-2 text-13 font-medium text-surface-0 hover:opacity-90"
+            >
+              <Text
+                path={
+                  editingIndex === null
+                    ? 'library.tools.economy.addRound'
+                    : 'library.tools.economy.saveRound'
+                }
+              />
+            </button>
+            {editingIndex !== null && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingIndex(null);
+                  setDraft(newObservation(ourSideAtRound(openingSide, rounds.length + 1)));
+                }}
+                className="text-12 text-ink-dim hover:text-ink"
               >
-                {estimate.buyCall.toUpperCase()}
-              </span>
-            </header>
-
-            <div className="flex flex-col gap-1">
-              <span className="text-12 text-ink-dim">
-                <Text path="library.tools.economy.output.estimatedBank" />
-              </span>
-              <span className="numeric font-medium text-28 text-ink">
-                {moneyFormat.format(estimate.estimatedNextRoundPerPlayer)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 [border-block-start:1px_solid_var(--color-line)] pt-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-11 text-ink-dim">
-                  <Text path="library.tools.economy.output.teamTotal" />
-                </span>
-                <span className="numeric text-16 font-medium text-ink">
-                  {moneyFormat.format(estimate.estimatedNextRoundTeamTotal)}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-11 text-ink-dim">
-                  <Text path="library.tools.economy.output.roundReward" />
-                </span>
-                <span className="numeric text-16 font-medium text-ink">
-                  {moneyFormat.format(estimate.roundRewardPerPlayer)}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 [border-block-start:1px_solid_var(--color-line)] pt-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-11 text-ink-dim">
-                  <Text path="library.tools.economy.output.leftover" />
-                </span>
-                <span className="numeric text-14 text-ink-dim">
-                  ~{moneyFormat.format(estimate.estimatedRemainingBank)}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-11 text-ink-dim">
-                  <Text path="library.tools.economy.output.killRewards" />
-                </span>
-                <span className="numeric text-14 text-ink-dim">
-                  +{moneyFormat.format(estimate.killRewardsTotal)}
-                </span>
-              </div>
-            </div>
+                <Text path="library.tools.economy.cancelEdit" />
+              </button>
+            )}
           </div>
         </div>
+
+        <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+          <div className="rounded-card border border-line bg-surface-1 p-5 sm:p-6">
+            <p className="text-11 tracking-[0.12em] text-ink-dim uppercase">
+              <Text path="library.tools.economy.outputEyebrow" />
+            </p>
+            {latest === undefined ? (
+              <div className="py-8">
+                <h4 className="text-20 font-medium">
+                  <Text path="library.tools.economy.emptyTitle" />
+                </h4>
+                <p className="mt-2 text-13 text-ink-dim leading-prose">
+                  <Text path="library.tools.economy.emptyHint" />
+                </p>
+              </div>
+            ) : (
+              <div aria-live="polite">
+                <h4 className="mt-3 text-20 font-medium">
+                  <Text
+                    path="library.tools.economy.nextRound"
+                    values={{ round: latest.round + 1 }}
+                  />
+                </h4>
+                <p className="mt-5 text-12 text-ink-dim">
+                  <Text path="library.tools.economy.estimatedBank" />
+                </p>
+                <div className="numeric mt-1 text-[clamp(27px,3vw,40px)] font-medium tracking-[-0.055em]">
+                  ≈{approximateMoney}
+                </div>
+                <p className="mt-1 text-12 text-ink-dim">
+                  <Text path="library.tools.economy.perPlayer" />
+                </p>
+                <p className="mt-2 text-12 text-ink-dim">
+                  <Text path="library.tools.economy.exactUnknown" />
+                </p>
+                <div className="mt-6 grid grid-cols-2 gap-4 [border-block-start:1px_solid_var(--color-line)] pt-4">
+                  <div>
+                    <p className="text-11 text-ink-dim">
+                      <Text path="library.tools.economy.roundIncome" />
+                    </p>
+                    <p className="numeric mt-1 text-16">
+                      {money.format(latest.roundRewardPerPlayer)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-11 text-ink-dim">
+                      <Text path="library.tools.economy.observedSpend" />
+                    </p>
+                    <p className="numeric mt-1 text-16">
+                      ≈{money.format(Math.round(latest.estimatedNewWeaponSpend / 100) * 100)}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-5 text-12 text-ink-dim leading-prose">
+                  <Text path="library.tools.economy.modelNote" />
+                </p>
+                <ul className="mt-3 list-disc space-y-1 pl-4 text-11 text-ink-dim leading-prose">
+                  {latest.assumptions.map((assumption) => (
+                    <li key={assumption}>
+                      <Text path={ASSUMPTION_PATHS[assumption]} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {rounds.length > 0 && (
+            <section className="mt-5" aria-label={t('library.tools.economy.history')}>
+              <div className="mb-2 flex items-baseline justify-between">
+                <h4 className="text-13 font-medium">
+                  <Text path="library.tools.economy.history" />
+                </h4>
+                <span className="numeric text-11 text-ink-dim">
+                  <Text path="library.tools.economy.roundCount" values={{ count: rounds.length }} />
+                </span>
+              </div>
+              <ol className="list-none [border-block-start:1px_solid_var(--color-line)] p-0">
+                {rounds.map((round, index) => (
+                  <li
+                    key={round.id}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line py-3"
+                  >
+                    <span className="numeric w-6 text-12 text-ink-dim">{index + 1}</span>
+                    <span className="min-w-0 flex-1 text-12">
+                      <Text
+                        path={
+                          round.weWon
+                            ? 'library.tools.economy.historyWon'
+                            : 'library.tools.economy.historyLost'
+                        }
+                      />{' '}
+                      <span className="text-ink-dim">
+                        · {countObservedWeapons(round.weapons)}/5
+                      </span>
+                    </span>
+                    <span className="numeric text-12 text-ink-dim">
+                      ≈
+                      {formatRange(
+                        estimates[index]?.estimatedNextCashFloorPerPlayer ?? 0,
+                        estimates[index]?.estimatedNextCashPerPlayer ?? 0,
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => editRound(index)}
+                      className="text-11 text-ink-dim hover:text-ink"
+                    >
+                      <Text path="library.tools.economy.edit" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeRound(index)}
+                      className="text-11 text-ink-dim hover:text-ink"
+                    >
+                      <Text path="library.tools.economy.remove" />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
