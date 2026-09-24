@@ -1,6 +1,84 @@
 @import "tailwindcss";
 @import "@disa/ui/styles";
 
+/* Atlas navigation is confined to the way in; review colours remain data semantics. */
+.atlas-dock {
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #ffffff32;
+  border-radius: 21px;
+  background: linear-gradient(160deg, #303034, #1d1d20);
+  box-shadow:
+    0 14px 38px #0008,
+    inset 0 1px 0 #ffffff13;
+}
+.atlas-dock-group {
+  gap: 7px;
+}
+.atlas-dock-seat {
+  width: 52px;
+  height: 54px;
+}
+.atlas-dock-tile {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #ffffff23;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 #ffffff25,
+    0 2px 4px #0004;
+}
+.atlas-upload {
+  --spotlight-x: 50%;
+  --spotlight-y: 50%;
+
+  position: relative;
+  isolation: isolate;
+}
+.atlas-upload::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    380px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    #ffffff14,
+    transparent 75%
+  );
+  opacity: 0;
+  transition: opacity 500ms;
+  pointer-events: none;
+}
+.atlas-upload:hover::before,
+.atlas-upload:focus-within::before {
+  opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+  .atlas-dock {
+    gap: 4px;
+    padding: 8px;
+    border-radius: 18px;
+  }
+  .atlas-dock-group {
+    gap: 4px;
+  }
+  .atlas-dock-seat {
+    width: 34px;
+    height: 42px;
+  }
+  .atlas-dock-tile {
+    width: 32px;
+    height: 34px;
+    border-radius: 9px;
+  }
+  .atlas-dock-tile svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 @source "../../../packages/ui/src";
 @source "./";
 

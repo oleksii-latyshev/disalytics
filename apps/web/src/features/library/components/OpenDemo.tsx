@@ -1,7 +1,7 @@
 import { Text, useT } from '@disa/i18n';
+import { FolderOpen } from 'lucide-react';
 import { useRef } from 'react';
 import { ACCEPTED_EXTENSIONS, takeChosenFile } from '../helpers/demo-file';
-import { CardMascot } from './CardMascot';
 import { DemoFolderHint } from './DemoFolderHint';
 
 interface Props {
@@ -9,43 +9,28 @@ interface Props {
   isDraggedOver: boolean;
 }
 
-/**
- * **The invitation is the target.** It used to be a line of copy above a button, which asked the
- * reader to read a sentence about dropping a file and then press something else; the card's whole
- * body is the thing to drop onto and the thing to press now, and the mascot in the middle of it is
- * what says so without a second sentence.
- *
- * The drop itself is still the window's — `useFileDrop` listens there, because a drop the page does
- * not take responsibility for navigates away to the file — so this target is what the *pointer* is
- * offered, not what the drag is limited to.
- *
- * It is a plain `button` rather than the shared one: that component is a control in a row of
- * controls, and this is a region the size of the card. Focus is not styled here either way —
- * `base.css` puts the product's outline on `:focus-visible` for every element there is.
- */
 export function OpenDemo({ onFile, isDraggedOver }: Props) {
   const t = useT();
   const picker = useRef<HTMLInputElement>(null);
 
   return (
     <>
-      {/* A sibling of the target rather than a child of it, so pressing it opens the folder note
-          instead of the file picker. It is positioned against the card, which is the nearest
-          positioned ancestor — `.surface-sweep` is what makes it one. */}
+      <p className="pr-6 text-13 font-medium text-ink">
+        <Text path="library.open.start" />
+      </p>
       <DemoFolderHint />
-
       <button
         type="button"
         aria-label={t('library.open.action')}
         onClick={() => picker.current?.click()}
-        className="flex w-full cursor-pointer flex-col items-center gap-3 rounded-card px-4 py-5 transition-colors duration-(--duration-micro) ease-out hover:bg-hover"
+        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-card bg-ink px-3 py-3 text-13 font-medium text-surface-0 transition-colors hover:bg-ink-dim"
       >
-        <CardMascot isLifted={isDraggedOver} />
-
-        <span className="text-center text-14 text-ink">
-          <Text path={isDraggedOver ? 'library.open.release' : 'library.open.invite'} />
-        </span>
+        <FolderOpen aria-hidden="true" className="size-5 shrink-0" />
+        <Text path={isDraggedOver ? 'library.open.release' : 'library.open.action'} />
       </button>
+      <p className="text-center text-11 text-ink-dim leading-prose">
+        <Text path="library.open.invite" />
+      </p>
 
       <input
         ref={picker}

@@ -7,8 +7,15 @@ export { TacticPlate, type TacticPlateProps } from './components/TacticPlate';
 export { UtilityPlate } from './components/UtilityPlate';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
+export {
+  drawDecoyPulse,
+  drawFlashMark,
+  drawHeRing,
+  grenadeColor,
+} from './helpers/grenades';
 export type { HeatField } from './helpers/heat-field';
 export { heatField } from './helpers/heat-field';
+export { labelPass, readLabelStyle } from './helpers/labels';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';
 export {
@@ -30,3 +37,18 @@ export {
   tacticRadarToWorld,
   tacticWorldToRadar,
 } from './helpers/tactic-plot';
+export {
+  drawNeedle,
+  drawToken,
+  drawWalkHollow,
+  screenAngleOf,
+  TOKEN_RADIUS_PX,
+} from './helpers/tokens';
+export {
+  bodyParts,
+  countdownLabels,
+  drawFireBody,
+  drawRemainingSeconds,
+  drawSmokeBody,
+  resolveCountdownFont,
+} from './helpers/utility-body';

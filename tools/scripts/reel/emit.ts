@@ -1,4 +1,6 @@
-import { sampleAt } from '@disa/demo-core';
+import { sampleAt, type Team } from '@disa/demo-core';
+
+import type { ReelDetail } from '../../../apps/web/src/features/library/helpers/reel';
 
 export const OUTPUT_PATH = 'apps/web/src/features/library/generated/reel.ts';
 
@@ -19,8 +21,10 @@ export interface ReelCut {
   frameCount: number;
   stillFrame: number;
   slotCount: number;
+  players: readonly { readonly name: string; readonly side: Team }[];
   quantOrigin: number;
   quantUnits: number;
+  detail: ReelDetail;
   positions: Uint16Array;
   alive: Uint8Array;
   grenades: readonly ReelGrenadeRow[];
@@ -105,10 +109,12 @@ export function emitReel(cut: ReelCut): string {
       `  frameCount: ${cut.frameCount},`,
       `  stillFrame: ${cut.stillFrame},`,
       `  slotCount: ${cut.slotCount},`,
+      `  players: ${JSON.stringify(cut.players)},`,
       `  quantOrigin: ${cut.quantOrigin},`,
       `  quantUnits: ${cut.quantUnits},`,
       `  positions: [${packPositions(cut.positions, cut.slotCount * 2, cut.frameCount).join(', ')}],`,
       `  alive: [${[...cut.alive].join(', ')}],`,
+      `  detail: ${JSON.stringify(cut.detail)},`,
       '  grenades: [',
       ...grenades,
       '  ],',

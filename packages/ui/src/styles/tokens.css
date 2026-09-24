@@ -10,9 +10,9 @@
    structure carried by white at low alpha rather than by a grey, and one geometric sans doing all
    the talking. Three things follow from that and each is a rule rather than a preference:
 
-   1. **Chroma is data.** Nothing in the chrome has a hue. There is no branded accent, no coloured
-      primary action, no tinted surface. A reader who sees colour on this screen is looking at
-      something the demo said, not at something the interface wanted.
+   1. **Chroma is data in review.** The way-in dock is the one exception: its coloured tiles identify
+      product sections (#442). There is no branded accent, coloured primary action or tinted surface;
+      once a match is open, colour again means something the demo said.
    2. **Structure is a hairline, not a shadow.** A resting surface is opaque with a 1px edge. Only a
       thing that escapes the layout — a dialog, a menu, a tooltip — casts anything.
    3. **Interaction is luminance.** Hover, press, selection and focus are all white at four alphas. */

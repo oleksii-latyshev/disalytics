@@ -48,6 +48,10 @@ function stubReel(overrides: Partial<ReelSource> = {}): ReelSource {
     frameCount: 3,
     stillFrame: 1,
     slotCount: 2,
+    players: [
+      { name: 'alpha', side: 'CT' },
+      { name: 'bravo', side: 'T' },
+    ],
     quantOrigin: QUANT_ORIGIN,
     quantUnits: QUANT_UNITS,
     positions: packPositions([
@@ -177,6 +181,7 @@ describe('sampleReel', () => {
 describe('the shipped reel', () => {
   it('is a round of the map the field draws', () => {
     expect(WAY_IN_REEL.slotCount).toBeLessThanOrEqual(PLAYER_AGENTS);
+    expect(WAY_IN_REEL.players).toHaveLength(WAY_IN_REEL.slotCount);
     expect(getMapOverview(WAY_IN_REEL.map)).toBeDefined();
     expect(WAY_IN_REEL.stillFrame).toBeLessThan(WAY_IN_REEL.frameCount);
   });

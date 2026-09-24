@@ -1,11 +1,26 @@
 {
   "open": {
-    "invite": "Drop a demo here, or click to choose one",
-    "release": "Release to open it.",
+    "invite": "Or drop a .dem, .dem.zst or .dem.bz2 file here",
+    "release": "Release to start the review",
     "where": "Where are my demos?",
     "hint": "Recorded demos are kept in your match history folder.",
     "hintFolder": "Recorded demos are kept in {folder}.",
-    "action": "Open demo"
+    "action": "Choose demo to review",
+    "eyebrow": "Every round matters",
+    "promise": "Open a match recording to review rounds, positions and player decisions.",
+    "formats": "Browser-based review · No account needed",
+    "start": "Start reviewing your match",
+    "result": "The file is processed in your browser and opens on the map.",
+    "detail": "In detail."
+  },
+  "preview": {
+    "label": "Live preview of a sample round",
+    "liveRound": "Match recording · 0.75×",
+    "round": "Round {round, number}",
+    "pause": "Pause sample round",
+    "play": "Play sample round",
+    "seek": "Round position",
+    "note": "Recorded positions and utility · Areas are approximate"
   },
   "progress": {
     "phase": {
@@ -345,5 +360,13 @@
       "title": "That match could not be downloaded.",
       "hint": "The connection dropped, or this build no longer serves it. Try again, or open a demo of your own."
     }
+  },
+  "home": {
+    "recent": "Return to your matches",
+    "samples": "Start with a professional match",
+    "all": "All matches →",
+    "explore": "Two matches to explore ↗",
+    "saved": "{map} · Saved on this device",
+    "try": "No demo? Review NAVI — Vitality"
   }
 }

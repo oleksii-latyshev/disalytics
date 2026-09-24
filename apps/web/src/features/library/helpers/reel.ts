@@ -1,4 +1,4 @@
-import { sampleAt } from '@disa/demo-core';
+import { type GrenadeType, sampleAt, type Team } from '@disa/demo-core';
 import { getMapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
 import { AGENT_STRIDE, PLAYER_AGENTS, UTILITY_AGENTS } from './agents';
 
@@ -17,7 +17,7 @@ import { AGENT_STRIDE, PLAYER_AGENTS, UTILITY_AGENTS } from './agents';
  * same `radarX`/`radarY` the plate reads, and it runs once per mount rather than once per frame.
  */
 export interface ReelGrenade {
-  type: string;
+  type: GrenadeType;
   /** Reel frames, from the round's freeze-time end. */
   detonateFrame: number;
   /** When the mark is spent: an area's own expiry, a burst's short life. */
@@ -25,6 +25,29 @@ export interface ReelGrenade {
   /** Quantised world units, `quantOrigin` / `quantUnits` below. */
   x: number;
   y: number;
+}
+
+export interface ReelPlayer {
+  /** The nickname and side are facts from the shipped sample, not interface copy. */
+  name: string;
+  side: Team;
+}
+
+export interface ReelDetail {
+  yaw: readonly number[];
+  flags: readonly number[];
+  weapon: readonly number[];
+  weapons: readonly string[];
+  grenades: readonly {
+    type: GrenadeType;
+    start: number;
+    end: number | null;
+    x: number;
+    y: number;
+    originalIndex: number;
+  }[];
+  allGrenadeTypes: readonly { type: GrenadeType }[];
+  kills: readonly { seconds: number; attacker: number | null; victim: number; weapon: string }[];
 }
 
 export interface ReelSource {
@@ -37,6 +60,9 @@ export interface ReelSource {
   /** The fullest frame of the round — what a reader who asked for less motion is shown. */
   stillFrame: number;
   slotCount: number;
+  /** Indexed by slot, so the preview can use the review plate's token vocabulary. */
+  players: readonly ReelPlayer[];
+  detail?: ReelDetail;
   /** World units at quantised zero, and steps per world unit. */
   quantOrigin: number;
   quantUnits: number;
@@ -71,6 +97,7 @@ export interface Reel {
   frameCount: number;
   stillFrame: number;
   slotCount: number;
+  players: readonly ReelPlayer[];
   /** Radar UV, `[slot * frameCount + frame]`. */
   x: Float32Array;
   y: Float32Array;
@@ -139,6 +166,7 @@ export function decodeReel(source: ReelSource): Reel | null {
     frameCount,
     stillFrame: source.stillFrame,
     slotCount,
+    players: source.players,
     x,
     y,
     alive: Uint8Array.from(source.alive),
