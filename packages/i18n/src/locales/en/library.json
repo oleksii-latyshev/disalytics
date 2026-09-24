@@ -42,6 +42,12 @@
   },
   "saved": {
     "title": "On this device",
+    "collection": "Your match collection",
+    "featured": "Latest saved match",
+    "otherMatches": "Other matches",
+    "newestFirst": "Newest first",
+    "view": "Open match",
+    "emptyTitle": "Your next review starts here.",
     "note": "Opened before, kept in this browser. Removing one clears the saved copy — the .dem file on your disk is untouched.",
     "score": "{startedCt} : {startedT}",
     "rounds": "{count, plural, one {# round} other {# rounds}}",

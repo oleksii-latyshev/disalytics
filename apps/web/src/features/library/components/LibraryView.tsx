@@ -1,5 +1,6 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { Text } from '@disa/i18n';
+import { DURATION_BASE_SECONDS, EASE_OUT, motion } from '@disa/ui';
 import { useState } from 'react';
 import { SAMPLE_MATCHES, type SampleMatch, sampleKey } from '@/core/samples';
 import { useSetting } from '@/core/settings';
@@ -14,76 +15,120 @@ interface Props {
   onSample: (sample: SampleMatch) => void;
 }
 
-/**
- * Every demo this device holds. The way-in card keeps the five most recent; this screen is where all
- * of them live, **as a wall of cards rather than a list of rows**: a row is a filing cabinet, and a
- * card can carry the map and the shape of the match, which is how a reader recognises one they
- * opened a week ago.
- *
- * **The wall is a grid, because the cards are all the same height.** Each card clamps its own parts
- * to a fixed number of lines and its strip fills the width rather than wrapping, so there is nothing
- * for a masonry to pack: multicol was built and measured first and saved 29px of 623 on seven cards,
- * which is not worth what it costs — the eye reads down a column before it reads across, where a
- * list sorted by recency wants to be read the other way.
- *
- * The track floor is what keeps it honest at both ends — one column on a phone, and never the two
- * stretched columns at 1024 that the rail turns into a row to avoid.
- *
- * An entry with no metadata, a stale `SCHEMA_VERSION` or a file that has gone never reaches here:
- * the store drops all three, so a card that cannot be opened is never drawn.
- *
- * **A press opens the dialog rather than the match.** The dialog holds a parse only while it is open,
- * and it is owned here rather than by the shell because a read that finds no file has to take the
- * card with it — and `forget` is the list's.
- */
 export function LibraryView({ onEnter, onSample }: Props) {
   const { demos, forget } = useSavedDemos();
   const [theme] = useSetting('radarTheme');
+  const [motionPreference] = useSetting('motion');
   const [opened, setOpened] = useState<SavedDemo | null>(null);
-
-  // A sample that has been opened is a saved demo like any other and is listed as one, so it leaves
-  // this row the moment it lands and comes back if the reader removes it. `demos` is `null` until
-  // the store answers, and offering a download for something already on the device would be the
-  // one wrong thing to flash on the way in.
+  const featured = demos?.[0];
+  const remaining = demos?.slice(1) ?? [];
   const offered =
     demos === null
       ? []
       : SAMPLE_MATCHES.filter((sample) => !demos.some((demo) => demo.key === sampleKey(sample.id)));
 
   return (
-    <section className="mx-auto flex w-full max-w-[72rem] flex-col gap-4">
-      <header className="flex flex-col gap-2">
-        {/* The count sits beside the title rather than at the far edge of the column. Pushed right
-            it is a figure a thousand pixels from the thing it counts, and on a one-card library it
-            reads as a stray. */}
-        <div className="flex items-baseline gap-3">
-          <h2 className="font-ui font-medium text-20 leading-dense">
+    <section className="mx-auto flex w-full max-w-[72rem] flex-col pb-10">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 pb-7">
+        <div>
+          <p className="mb-3 text-11 tracking-[0.16em] text-ink-dim uppercase">
+            <Text path="library.saved.collection" />
+          </p>
+          <h2 className="font-ui text-[clamp(40px,5vw,60px)] font-medium leading-[1.05] tracking-[-0.055em]">
             <Text path="library.shell.library" />
+            <span className="text-ink-dim">.</span>
           </h2>
-
-          {demos !== null && demos.length > 0 && (
-            <p className="numeric shrink-0 text-13 text-ink-dim">
-              <Text path="library.grid.count" values={{ count: demos.length }} />
-            </p>
-          )}
         </div>
-
-        {demos !== null && demos.length > 0 && <LibraryStorage demos={demos} />}
+        {demos !== null && demos.length > 0 && (
+          <p className="numeric pb-1 text-12 text-ink-dim">
+            <Text path="library.grid.count" values={{ count: demos.length }} />
+          </p>
+        )}
       </header>
 
+      {demos === null && <div className="min-h-72" aria-busy="true" />}
+
+      {demos !== null && demos.length === 0 && (
+        <div className="flex min-h-56 flex-col justify-center rounded-float border border-line bg-surface-1 px-6 py-10 sm:px-10">
+          <p className="text-20 font-medium leading-dense">
+            <Text path="library.saved.emptyTitle" />
+          </p>
+          <p className="mt-3 max-w-[48ch] text-13 text-ink-dim leading-prose">
+            <Text path="library.shell.empty" />
+          </p>
+        </div>
+      )}
+
+      {featured !== undefined && (
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: DURATION_BASE_SECONDS, ease: EASE_OUT }}
+          aria-labelledby="library-featured-heading"
+        >
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h3 id="library-featured-heading" className="text-13 font-medium">
+              <Text path="library.saved.featured" />
+            </h3>
+            <span className="text-11 text-ink-dim">
+              <Text path="library.saved.title" />
+            </span>
+          </div>
+          <ul className="list-none p-0">
+            <DemoCard
+              demo={featured}
+              theme={theme}
+              motionPreference={motionPreference}
+              featured
+              onOpen={setOpened}
+              onRemove={forget}
+            />
+          </ul>
+        </motion.section>
+      )}
+
+      {remaining.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: DURATION_BASE_SECONDS, delay: 0.06, ease: EASE_OUT }}
+          className="mt-8"
+          aria-labelledby="library-remaining-heading"
+        >
+          <div className="flex items-baseline justify-between gap-3 pb-3">
+            <h3 id="library-remaining-heading" className="text-13 font-medium">
+              <Text path="library.saved.otherMatches" />
+            </h3>
+            <span className="text-11 text-ink-dim">
+              <Text path="library.saved.newestFirst" />
+            </span>
+          </div>
+          <ul className="list-none [border-block-start:1px_solid_var(--color-line)] p-0">
+            {remaining.map((demo) => (
+              <DemoCard
+                key={demo.key}
+                demo={demo}
+                theme={theme}
+                motionPreference={motionPreference}
+                onOpen={setOpened}
+                onRemove={forget}
+              />
+            ))}
+          </ul>
+        </motion.section>
+      )}
+
       {offered.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <h3 className="font-ui font-medium text-14 leading-dense">
+        <section className="mt-9" aria-labelledby="library-samples-heading">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 pb-3">
+            <h3 id="library-samples-heading" className="text-13 font-medium">
               <Text path="library.samples.title" />
             </h3>
-
-            <p className="max-w-[64ch] text-12 text-ink-dim leading-prose">
+            <p className="max-w-[60ch] text-11 text-ink-dim leading-prose">
               <Text path="library.samples.note" />
             </p>
           </div>
-
-          <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3 p-0">
+          <ul className="list-none [border-block-start:1px_solid_var(--color-line)] p-0">
             {offered.map((sample) => (
               <SampleCard key={sample.id} sample={sample} theme={theme} onOpen={onSample} />
             ))}
@@ -91,44 +136,15 @@ export function LibraryView({ onEnter, onSample }: Props) {
         </section>
       )}
 
-      {/* `null` is the store not having answered yet, which is not the same fact as an empty cache
-          and must not flash the empty state on its way in. The heading is what keeps "nothing here
-          yet" true with two sample cards above it: that line is about the reader's own demos, and
-          without a heading over them it reads as a denial of the cards it sits under. */}
-      {demos !== null && (
-        <section className="flex flex-col gap-3">
-          <h3 className="font-ui font-medium text-14 leading-dense">
-            <Text path="library.saved.title" />
-          </h3>
-
-          {demos.length === 0 ? (
-            <p className="text-13 text-ink-dim leading-prose">
-              <Text path="library.shell.empty" />
-            </p>
-          ) : (
-            <>
-              <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3 p-0">
-                {demos.map((demo) => (
-                  <DemoCard
-                    key={demo.key}
-                    demo={demo}
-                    theme={theme}
-                    onOpen={setOpened}
-                    onRemove={forget}
-                  />
-                ))}
-              </ul>
-
-              <p className="text-12 text-ink-dim leading-prose">
-                <Text path="library.saved.note" />
-              </p>
-            </>
-          )}
-        </section>
+      {demos !== null && demos.length > 0 && (
+        <footer className="mt-9 flex flex-col gap-3 [border-block-start:1px_solid_var(--color-line)] pt-5">
+          <LibraryStorage demos={demos} />
+          <p className="text-11 text-ink-dim leading-prose">
+            <Text path="library.saved.note" />
+          </p>
+        </footer>
       )}
 
-      {/* Mounted whether or not it is open — an exit animation needs an element that still exists.
-          It holds no parse while it is closed; `DemoDialog` drops it as `saved` goes. */}
       <DemoDialog
         saved={opened}
         onEnter={onEnter}

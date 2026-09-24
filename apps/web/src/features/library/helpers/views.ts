@@ -18,7 +18,7 @@ export interface DockSection {
   /**
    * The dock states an entry as a glyph and its name in words on hover or focus, so the glyph is
    * the entry's only permanent mark and is chosen for what the screen holds rather than for what it
-   * is called: a wall of cards, a path from a spot to a spot, a column chart.
+   * is called: a match collection, a path from a spot to a spot, a column chart.
    */
   icon: LucideIcon;
   /**

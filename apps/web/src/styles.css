@@ -55,6 +55,43 @@
   opacity: 0.6;
 }
 
+.library-feature > button::before,
+.library-feature > button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.library-feature > button::before {
+  z-index: 1;
+  background: linear-gradient(90deg, #050505e8 0%, #050505c2 35%, #05050542 74%, #05050518 100%);
+}
+.library-feature > button::after {
+  z-index: 2;
+  background: radial-gradient(
+    420px circle at var(--spotlight-x, 62%) var(--spotlight-y, 42%),
+    #ffffff16,
+    transparent 76%
+  );
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+.library-feature:hover > button::after,
+.library-feature:focus-within > button::after {
+  opacity: 0.75;
+}
+.library-feature > button > img {
+  opacity: 0.83;
+  filter: grayscale(1) brightness(1.6) contrast(1.05);
+}
+.library-feature:hover > button > img,
+.library-feature:focus-within > button > img {
+  opacity: 0.95;
+}
+.library-feature > button > span[aria-hidden="true"] {
+  background: linear-gradient(0deg, #050505 0%, #05050530 40%, transparent 75%);
+}
+
 @media (max-width: 720px) {
   .atlas-dock {
     gap: 4px;
