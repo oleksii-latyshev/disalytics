@@ -58,6 +58,20 @@ export {
   WIN_REWARD_TIME_EXPIRED,
 } from './helpers/economy-rules';
 export { matchEnemyBlindTime } from './helpers/enemy-blind-time';
+export type {
+  EnemyRoundEstimate,
+  EnemyRoundObservation,
+  ObservedWeapon,
+  WeaponObservations,
+} from './helpers/enemy-economy';
+export {
+  changeObservedWeaponCount,
+  countObservedWeapons,
+  emptyWeaponObservations,
+  estimateEnemyRounds,
+  OBSERVED_WEAPONS,
+  observedWeaponSpend,
+} from './helpers/enemy-economy';
 export { flightEndTick, isInFlight, trajectoryClipCount } from './helpers/grenade-flight';
 export {
   FLASH_RADIUS_UNITS,
