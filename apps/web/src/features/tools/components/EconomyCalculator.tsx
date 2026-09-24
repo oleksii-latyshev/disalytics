@@ -5,15 +5,92 @@ import {
   emptyWeaponObservations,
   estimateEnemyRounds,
   OBSERVED_WEAPONS,
+  type ObservedWeapon,
   type RoundEndReason,
   type Team,
 } from '@disa/demo-core';
 import { Text, useLocale, useT } from '@disa/i18n';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const COUNTS = [0, 1, 2, 3, 4, 5] as const;
 
 type TrackedRound = EnemyRoundObservation & { readonly id: number };
+type SavedSession = { readonly openingSide: Team; readonly rounds: readonly TrackedRound[] };
+
+const STORAGE_KEY = 'disa.enemyEconomy.v1';
+const EMPTY_SESSION: SavedSession = { openingSide: 'CT', rounds: [] };
+const REASONS: readonly RoundEndReason[] = [
+  'elimination',
+  'bomb-defused',
+  'bomb-exploded',
+  'time-expired',
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isCount(value: unknown): value is number {
+  return Number.isInteger(value) && typeof value === 'number' && value >= 0 && value <= 5;
+}
+
+function isReason(value: unknown): value is RoundEndReason {
+  return REASONS.some((reason) => reason === value);
+}
+
+function parseWeapons(value: unknown): Record<ObservedWeapon, number> | null {
+  if (!isRecord(value)) return null;
+  const weapons: Record<ObservedWeapon, number> = { ...emptyWeaponObservations() };
+  for (const weapon of OBSERVED_WEAPONS) {
+    const count = value[weapon];
+    if (!isCount(count)) return null;
+    weapons[weapon] = count;
+  }
+  return countObservedWeapons(weapons) <= 5 ? weapons : null;
+}
+
+function parseRound(value: unknown, id: number): TrackedRound | null {
+  if (!isRecord(value)) return null;
+  const weapons = parseWeapons(value.weapons);
+  if (weapons === null || (value.ourSide !== 'CT' && value.ourSide !== 'T')) return null;
+  if (typeof value.weWon !== 'boolean' || !isReason(value.reason)) return null;
+  if (value.enemySurvivors !== null && !isCount(value.enemySurvivors)) return null;
+  if (value.enemyKills !== null && !isCount(value.enemyKills)) return null;
+  if (value.bombPlanted !== null && typeof value.bombPlanted !== 'boolean') return null;
+  return {
+    id,
+    ourSide: value.ourSide,
+    weWon: value.weWon,
+    reason: value.reason,
+    enemySurvivors: value.enemySurvivors,
+    enemyKills: value.enemyKills,
+    bombPlanted: value.bombPlanted,
+    weapons,
+  };
+}
+
+function readSession(): SavedSession {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return EMPTY_SESSION;
+    const saved: unknown = JSON.parse(raw);
+    if (!isRecord(saved) || (saved.openingSide !== 'CT' && saved.openingSide !== 'T')) {
+      return EMPTY_SESSION;
+    }
+    if (!Array.isArray(saved.rounds) || saved.rounds.length > 256) return EMPTY_SESSION;
+
+    const rawRounds: readonly unknown[] = saved.rounds;
+    const rounds: TrackedRound[] = [];
+    for (const value of rawRounds) {
+      const round = parseRound(value, rounds.length + 1);
+      if (round === null) return EMPTY_SESSION;
+      rounds.push(round);
+    }
+    return { openingSide: saved.openingSide, rounds };
+  } catch {
+    return EMPTY_SESSION;
+  }
+}
 
 const REASON_PATHS = {
   elimination: 'library.tools.economy.elimination',
@@ -77,6 +154,9 @@ function choiceClass(selected: boolean): string {
 export function EconomyCalculator() {
   const t = useT();
   const locale = useLocale();
+  const savedSession = useRef<SavedSession | null>(null);
+  const initialSession = savedSession.current ?? readSession();
+  savedSession.current = initialSession;
   const money = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'USD',
@@ -86,11 +166,21 @@ export function EconomyCalculator() {
     floor === ceiling
       ? money.format(ceiling)
       : `${money.format(floor)}–${money.format(Math.round(ceiling / 100) * 100)}`;
-  const [openingSide, setOpeningSide] = useState<Team>('CT');
-  const [rounds, setRounds] = useState<readonly TrackedRound[]>([]);
-  const nextId = useRef(1);
+  const [openingSide, setOpeningSide] = useState<Team>(initialSession.openingSide);
+  const [rounds, setRounds] = useState<readonly TrackedRound[]>(initialSession.rounds);
+  const nextId = useRef(initialSession.rounds.length + 1);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [draft, setDraft] = useState<EnemyRoundObservation>(() => newObservation('CT'));
+  const [draft, setDraft] = useState<EnemyRoundObservation>(() =>
+    newObservation(ourSideAtRound(initialSession.openingSide, initialSession.rounds.length + 1)),
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ openingSide, rounds }));
+    } catch {
+      // The calculator remains usable when browser storage is unavailable.
+    }
+  }, [openingSide, rounds]);
 
   const roundNumber = editingIndex === null ? rounds.length + 1 : editingIndex + 1;
   const ourSide = ourSideAtRound(openingSide, roundNumber);
@@ -124,7 +214,9 @@ export function EconomyCalculator() {
         : previous.map((round, index) => (index === editingIndex ? observation : round)),
     );
     setEditingIndex(null);
-    setDraft(newObservation(ourSideAtRound(openingSide, rounds.length + 2)));
+    setDraft(
+      newObservation(ourSideAtRound(openingSide, rounds.length + (editingIndex === null ? 2 : 1))),
+    );
   };
 
   const editRound = (index: number) => {
