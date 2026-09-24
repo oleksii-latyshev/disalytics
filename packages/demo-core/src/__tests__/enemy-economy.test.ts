@@ -84,4 +84,14 @@ describe('enemy economy history', () => {
       'unknownPlant',
     ]);
   });
+
+  it('keeps unknown survivors visible in the following round', () => {
+    const weapons = { ...emptyWeaponObservations(), smg: 3 };
+    const estimates = estimateEnemyRounds([
+      round({ weWon: false, enemySurvivors: null }),
+      round({ weapons }),
+    ]);
+    expect(estimates[0]?.assumptions).toContain('unknownSurvivors');
+    expect(estimates[1]?.assumptions).toContain('unknownSurvivors');
+  });
 });

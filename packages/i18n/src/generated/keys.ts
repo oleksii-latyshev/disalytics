@@ -306,6 +306,7 @@ export const TRANSLATION_KEYS = [
   'library.tools.economy.assumptions.survivorCarry',
   'library.tools.economy.assumptions.unknownKills',
   'library.tools.economy.assumptions.unknownPlant',
+  'library.tools.economy.assumptions.unknownSurvivors',
   'library.tools.economy.assumptions.unknownWeapons',
   'library.tools.economy.assumptions.unpricedEquipment',
   'library.tools.economy.bombDefused',

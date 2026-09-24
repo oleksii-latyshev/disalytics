@@ -40,6 +40,7 @@ const ASSUMPTION_PATHS = {
   genericKillReward: 'library.tools.economy.assumptions.genericKillReward',
   unknownPlant: 'library.tools.economy.assumptions.unknownPlant',
   otherUnpriced: 'library.tools.economy.assumptions.otherUnpriced',
+  unknownSurvivors: 'library.tools.economy.assumptions.unknownSurvivors',
 } as const;
 
 function enemySide(ourSide: Team): Team {
@@ -84,7 +85,7 @@ export function EconomyCalculator() {
   const formatRange = (floor: number, ceiling: number): string =>
     floor === ceiling
       ? money.format(ceiling)
-      : money.format(floor) + '–' + money.format(Math.round(ceiling / 100) * 100);
+      : `${money.format(floor)}–${money.format(Math.round(ceiling / 100) * 100)}`;
   const [openingSide, setOpeningSide] = useState<Team>('CT');
   const [rounds, setRounds] = useState<readonly TrackedRound[]>([]);
   const nextId = useRef(1);
@@ -146,7 +147,7 @@ export function EconomyCalculator() {
           <p className="mb-2 text-11 tracking-[0.14em] text-ink-dim uppercase">
             <Text path="library.tools.economy.eyebrow" />
           </p>
-          <h3 className="text-24 font-medium tracking-[-0.035em]">
+          <h3 className="text-20 font-medium tracking-[-0.035em]">
             <Text path="library.tools.economy.title" />
           </h3>
           <p className="mt-2 max-w-[60ch] text-13 text-ink-dim leading-prose">
@@ -195,7 +196,12 @@ export function EconomyCalculator() {
                   key={String(weWon)}
                   type="button"
                   onClick={() =>
-                    setDraft((previous) => ({ ...previous, weWon, reason: 'elimination' }))
+                    setDraft((previous) => ({
+                      ...previous,
+                      weWon,
+                      reason: 'elimination',
+                      enemySurvivors: weWon ? 0 : null,
+                    }))
                   }
                   aria-pressed={draft.weWon === weWon}
                   className={choiceClass(draft.weWon === weWon)}
@@ -215,7 +221,13 @@ export function EconomyCalculator() {
                 <button
                   key={reason}
                   type="button"
-                  onClick={() => setDraft((previous) => ({ ...previous, reason }))}
+                  onClick={() =>
+                    setDraft((previous) => ({
+                      ...previous,
+                      reason,
+                      enemySurvivors: reason === 'elimination' && previous.weWon ? 0 : null,
+                    }))
+                  }
                   aria-pressed={draft.reason === reason}
                   className={choiceClass(draft.reason === reason)}
                 >
@@ -230,15 +242,15 @@ export function EconomyCalculator() {
               <Text path="library.tools.economy.survivors" />
             </legend>
             <div className="flex flex-wrap gap-2">
-              {COUNTS.map((count) => (
+              {([null, ...COUNTS] as const).map((count) => (
                 <button
-                  key={count}
+                  key={String(count)}
                   type="button"
                   onClick={() => setDraft((previous) => ({ ...previous, enemySurvivors: count }))}
                   aria-pressed={draft.enemySurvivors === count}
                   className={choiceClass(draft.enemySurvivors === count)}
                 >
-                  {count}
+                  {count === null ? <Text path="library.tools.economy.unknown" /> : count}
                 </button>
               ))}
             </div>

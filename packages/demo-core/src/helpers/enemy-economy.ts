@@ -20,7 +20,7 @@ export interface EnemyRoundObservation {
   readonly ourSide: Team;
   readonly weWon: boolean;
   readonly reason: RoundEndReason;
-  readonly enemySurvivors: number;
+  readonly enemySurvivors: number | null;
   readonly bombPlanted: boolean | null;
   readonly enemyKills: number | null;
   readonly weapons: WeaponObservations;
@@ -45,6 +45,7 @@ export interface EnemyRoundEstimate {
     | 'genericKillReward'
     | 'unknownPlant'
     | 'otherUnpriced'
+    | 'unknownSurvivors'
   )[];
 }
 
@@ -118,7 +119,9 @@ function roundIncome(
     observation.weWon &&
     observation.reason === 'time-expired' &&
     observation.bombPlanted === false;
-  return timeSave ? Math.round((base * (5 - Math.min(observation.enemySurvivors, 5))) / 5) : base;
+  return timeSave
+    ? Math.round((base * (5 - Math.min(observation.enemySurvivors ?? 0, 5))) / 5)
+    : base;
 }
 
 function estimateAssumptions(
@@ -126,6 +129,7 @@ function estimateAssumptions(
   enemySide: Team,
   knownWeapons: number,
   previousSurvivors: number,
+  previousSurvivorsUnknown: boolean,
 ): EnemyRoundEstimate['assumptions'] {
   const assumptions: EnemyRoundEstimate['assumptions'][number][] = ['unpricedEquipment'];
   if (knownWeapons < 5) assumptions.push('unknownWeapons');
@@ -135,6 +139,9 @@ function estimateAssumptions(
     assumptions.push('genericKillReward');
   }
   if (observation.weapons.other > 0) assumptions.push('otherUnpriced');
+  if (observation.enemySurvivors === null || previousSurvivorsUnknown) {
+    assumptions.push('unknownSurvivors');
+  }
   if (enemySide === 'T' && observation.weWon && observation.bombPlanted === null) {
     assumptions.push('unknownPlant');
   }
@@ -154,6 +161,7 @@ function estimateOneRound(
   const knownWeapons = countObservedWeapons(observation.weapons);
   const weaponSpend = observedWeaponSpend(observation.weapons);
   const previousSurvivors = halfStart ? 0 : (previousObservation?.enemySurvivors ?? 0);
+  const previousSurvivorsUnknown = !halfStart && previousObservation?.enemySurvivors === null;
   const estimatedNewWeaponSpend = Math.round(
     weaponSpend * (1 - Math.min(previousSurvivors, 5) / 5),
   );
@@ -184,7 +192,13 @@ function estimateOneRound(
     estimatedNextCashFloorPerPlayer,
     estimatedNextCashPerPlayer: Math.round(estimatedNextCashPerPlayer),
     knownWeapons,
-    assumptions: estimateAssumptions(observation, enemySide, knownWeapons, previousSurvivors),
+    assumptions: estimateAssumptions(
+      observation,
+      enemySide,
+      knownWeapons,
+      previousSurvivors,
+      previousSurvivorsUnknown,
+    ),
   };
 }
 

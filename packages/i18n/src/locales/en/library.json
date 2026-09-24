@@ -142,7 +142,7 @@
       "estimatedBank": "Modeled enemy cash range",
       "perPlayer": "per player, before the next buy",
       "exactUnknown": "The exact balance is unknown.",
-      "roundIncome": "Income this round",
+      "roundIncome": "Estimated income this round",
       "observedSpend": "Modeled weapon spend, team",
       "modelNote": "The lower end assumes earlier cash was spent. The upper end deducts observed guns. Guns may have been picked up, and unentered income can raise the result.",
       "assumptions": {
@@ -152,7 +152,8 @@
         "unknownKills": "Kill rewards were not entered.",
         "genericKillReward": "Entered kills use a $300 reward each; actual rewards vary by weapon.",
         "unknownPlant": "A possible bomb plant bonus is not included.",
-        "otherUnpriced": "Weapons marked Other have no price in this estimate."
+        "otherUnpriced": "Weapons marked Other have no price in this estimate.",
+        "unknownSurvivors": "The number of survivors is unknown; the carry estimate may be off."
       },
       "history": "Round history",
       "roundCount": "{count, plural, one {# round} other {# rounds}}",
