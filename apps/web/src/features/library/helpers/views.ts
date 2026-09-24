@@ -27,13 +27,51 @@ export interface DockSection {
    * those screens later is not a redesign.
    */
   isSoon: boolean;
+  /** A way-in-only identity colour. The review stage still reserves these hues for demo data. */
+  tone: string;
 }
 
 export const DOCK_SECTIONS: readonly DockSection[] = [
-  { view: 'upload', labelPath: 'library.shell.upload', icon: Upload, isSoon: false },
-  { view: 'library', labelPath: 'library.shell.library', icon: LayoutGrid, isSoon: false },
-  { view: 'tools', labelPath: 'library.shell.tools', icon: Wrench, isSoon: false },
-  { view: 'lineups', labelPath: 'library.shell.lineups', icon: Waypoints, isSoon: false },
-  { view: 'tactics', labelPath: 'library.shell.tactics', icon: NotebookPen, isSoon: false },
-  { view: 'stats', labelPath: 'library.shell.stats', icon: ChartColumn, isSoon: true },
+  {
+    view: 'upload',
+    labelPath: 'library.shell.upload',
+    icon: Upload,
+    isSoon: false,
+    tone: 'linear-gradient(160deg, #42adff, #1672df)',
+  },
+  {
+    view: 'library',
+    labelPath: 'library.shell.library',
+    icon: LayoutGrid,
+    isSoon: false,
+    tone: 'linear-gradient(160deg, #8d7cf5, #5a48ca)',
+  },
+  {
+    view: 'tools',
+    labelPath: 'library.shell.tools',
+    icon: Wrench,
+    isSoon: false,
+    tone: 'linear-gradient(160deg, #f2a443, #cc751a)',
+  },
+  {
+    view: 'lineups',
+    labelPath: 'library.shell.lineups',
+    icon: Waypoints,
+    isSoon: false,
+    tone: 'linear-gradient(160deg, #5ac580, #218750)',
+  },
+  {
+    view: 'tactics',
+    labelPath: 'library.shell.tactics',
+    icon: NotebookPen,
+    isSoon: false,
+    tone: 'linear-gradient(160deg, #ed7b99, #b43d63)',
+  },
+  {
+    view: 'stats',
+    labelPath: 'library.shell.stats',
+    icon: ChartColumn,
+    isSoon: true,
+    tone: 'linear-gradient(160deg, #ae7feb, #7442b5)',
+  },
 ];

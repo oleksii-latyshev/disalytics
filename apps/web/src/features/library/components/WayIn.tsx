@@ -12,7 +12,6 @@ import { ToolsView } from '@/features/tools';
 import type { ShellView } from '../helpers/views';
 import { useFileDrop } from '../hooks/use-file-drop';
 import { LibraryView } from './LibraryView';
-import { PixelBackdrop } from './PixelBackdrop';
 import { ShellDock } from './ShellDock';
 import { SoonView } from './SoonView';
 import { UploadView } from './UploadView';
@@ -31,28 +30,7 @@ interface Props {
 /** Settings and help are the way in's too, and they are the review screen's own sheets, not copies. */
 type Sheet = 'settings' | 'help';
 
-/**
- * The way in. A shell with the whole viewport for its content, a dock along the bottom, and a drop
- * target that is the viewport rather than a box inside it: `useFileDrop` already listens on the
- * window, so what this adds is the screen *acknowledging* the drag instead of a dashed rectangle
- * doing it alone.
- *
- * The ground under all of it is `PixelBackdrop` since #332 — Dust2's own plate taken apart into a
- * grid, and the one place in the product where a hue means nothing a demo said, because this is the
- * screen with no demo on it.
- *
- * **It is three rows and the dock is in none of them.** `ShellDock` is fixed to the viewport's
- * bottom edge, and what reserves its band is `main`'s own bottom padding — which is why the shell is
- * `h-dvh` at every width and `main` is the scroller. It used to be the document that scrolled below
- * `--breakpoint-split`, and a fixed panel over a document scroller is the one arrangement where the
- * reader can reach the end of a library and find the last row underneath it.
- *
- * **The shell ends where the match begins.** `App` swaps it for the review screen entirely, and the
- * reason is the plate rather than a preference: the plate is `min(100cqi, 100cqb)` of the cell the
- * stage leaves it, so neither a rail nor a dock is chrome beside it — each is a subtraction from one
- * of the plate's own axes, and three of the four widths this repository quotes a plate figure at are
- * height-bound.
- */
+/** The shell reserves the dock's band in its scroller and ends when a match opens. */
 export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: Props) {
   const [initialSharedTactic, setInitialSharedTactic] = useState<Tactic | null>(() => {
     if (typeof window !== 'undefined' && window.location.hash.includes('tactic=')) {
@@ -114,11 +92,6 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: P
 
   return (
     <div className="relative grid h-dvh grid-rows-[auto_minmax(0,1fr)] bg-surface-0">
-      {/* The field is the way in's own screen and nobody else's. The library and the two screens
-          that are coming are pages of text, and they stand on the app's ground with one light over
-          it — which is the whole of their decoration. */}
-      <PixelBackdrop isLifted={isDraggedOver} isShown={view === 'upload'} />
-
       {view !== 'upload' && (
         <div aria-hidden="true" className="surface-vignette pointer-events-none fixed inset-0" />
       )}
@@ -162,6 +135,9 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: P
       <main className="relative min-w-0 overflow-y-auto px-6 pt-4 pb-24 wide:px-10 wide:pt-6">
         {view === 'upload' && (
           <UploadView
+            onEnter={enterMatch}
+            onSample={enterSample}
+            onLibrary={() => chooseView('library')}
             state={state}
             onFile={openFile}
             onClose={onClose}

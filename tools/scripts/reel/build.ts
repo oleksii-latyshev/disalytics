@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { FLAG_ALIVE, type Grenade, type ParsedDemo, type Round, sampleAt } from '@disa/demo-core';
+import {
+  FLAG_ALIVE,
+  type Grenade,
+  type ParsedDemo,
+  type Round,
+  sampleAt,
+  sidesBySlotAtRound,
+} from '@disa/demo-core';
 import { decodeDemo } from '@disa/demo-store/codec';
 import {
   PLAYER_AGENTS,
@@ -175,6 +182,8 @@ export function buildReel(): { source: string; facts: ReelFacts } {
   const demo = decodeDemo(bytes);
   const { header, track } = demo;
   const round = chooseRound(demo);
+  const roundIndex = demo.events.rounds.indexOf(round);
+  const sides = sidesBySlotAtRound(demo, roundIndex);
 
   const trackFrameOf = (tick: number) => Math.round((tick / header.tickRate) * track.sampleHz);
   const step = track.sampleHz / REEL_HZ;
@@ -187,12 +196,18 @@ export function buildReel(): { source: string; facts: ReelFacts } {
     throw new Error(`${slotCount} slots against ${PLAYER_AGENTS} the shader draws`);
   }
 
+  const yaw: number[] = [];
+  const flags: number[] = [];
+  const weapon: number[] = [];
   const positions = new Uint16Array(slotCount * 2 * frameCount);
   const alive = new Uint8Array(Math.ceil((slotCount * frameCount) / 8));
 
   for (let slot = 0; slot < slotCount; slot += 1) {
     for (let frame = 0; frame < frameCount; frame += 1) {
       const at = (first + frame * step) * slotCount + slot;
+      yaw.push(sampleAt(track.yaw, at));
+      flags.push(sampleAt(track.flags, at));
+      weapon.push(sampleAt(track.weapon, at));
       positions[(slot * 2 + 0) * frameCount + frame] = quantise(sampleAt(track.posX, at));
       positions[(slot * 2 + 1) * frameCount + frame] = quantise(sampleAt(track.posY, at));
 
@@ -217,6 +232,51 @@ export function buildReel(): { source: string; facts: ReelFacts } {
     frameCount,
     stillFrame,
     slotCount,
+    players: Array.from({ length: slotCount }, (_, slot) => {
+      const player = header.players.find((candidate) => candidate.slot === slot);
+      const side = sides[slot];
+      if (player === undefined || side === undefined) {
+        throw new Error(`slot ${slot} has no player or side in round ${round.number}`);
+      }
+
+      return { name: player.name, side };
+    }),
+    detail: {
+      yaw,
+      flags,
+      weapon,
+      weapons: header.weapons,
+      allGrenadeTypes: demo.events.grenades.map(({ type }) => ({ type })),
+      grenades: demo.events.grenades.flatMap((grenade, originalIndex) => {
+        if (
+          !inRound(round, grenade.throwTick) ||
+          grenade.detonationTick === null ||
+          grenade.detonationPosition === null
+        )
+          return [];
+        return [
+          {
+            type: grenade.type,
+            start: (grenade.detonationTick - round.freezeTimeEndTick) / header.tickRate,
+            end:
+              grenade.expiryTick === null
+                ? null
+                : (grenade.expiryTick - round.freezeTimeEndTick) / header.tickRate,
+            x: grenade.detonationPosition.x,
+            y: grenade.detonationPosition.y,
+            originalIndex,
+          },
+        ];
+      }),
+      kills: demo.events.kills
+        .filter((kill) => inRound(round, kill.tick))
+        .map((kill) => ({
+          seconds: (kill.tick - round.freezeTimeEndTick) / header.tickRate,
+          attacker: kill.attacker,
+          victim: kill.victim,
+          weapon: kill.weapon,
+        })),
+    },
     quantOrigin: QUANT_ORIGIN,
     quantUnits: QUANT_UNITS,
     positions,

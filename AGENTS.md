@@ -249,7 +249,7 @@ only on full-screen sheets · no multi-demo comparison in v1.
 No design document: `packages/ui/src/styles/tokens.css` and its siblings are the system, with measured
 contrast figures (`contrast:check`). Comments citing `DESIGN.md` or `ROADMAP.md` point at deleted
 files; the behaviour they describe is current. Near-black ground, white hairlines, Onest plus IBM Plex
-Mono, **chroma reserved for data**.
+Mono, **chroma reserved for data in review; coloured tiles identify way-in dock sections**.
 
 1. The frame budget is the only motion constraint; canvas changes follow `clock.frame`.
 2. `backdrop-filter` only on full-screen sheets and the dialog scrim.
