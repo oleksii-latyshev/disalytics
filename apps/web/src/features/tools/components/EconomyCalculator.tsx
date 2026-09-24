@@ -170,6 +170,7 @@ export function EconomyCalculator() {
   const [rounds, setRounds] = useState<readonly TrackedRound[]>(initialSession.rounds);
   const nextId = useRef(initialSession.rounds.length + 1);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [draft, setDraft] = useState<EnemyRoundObservation>(() =>
     newObservation(ourSideAtRound(initialSession.openingSide, initialSession.rounds.length + 1)),
   );
@@ -230,6 +231,15 @@ export function EconomyCalculator() {
     setRounds((previous) => previous.filter((_, roundIndex) => roundIndex !== index));
     setEditingIndex(null);
     setDraft(newObservation(ourSideAtRound(openingSide, rounds.length)));
+  };
+
+  const resetSession = () => {
+    setRounds([]);
+    setOpeningSide('CT');
+    setEditingIndex(null);
+    setDraft(newObservation('CT'));
+    nextId.current = 1;
+    setConfirmReset(false);
   };
 
   return (
@@ -560,14 +570,49 @@ export function EconomyCalculator() {
 
           {rounds.length > 0 && (
             <section className="mt-5" aria-label={t('library.tools.economy.history')}>
-              <div className="mb-2 flex items-baseline justify-between">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                 <h4 className="text-13 font-medium">
                   <Text path="library.tools.economy.history" />
                 </h4>
-                <span className="numeric text-11 text-ink-dim">
-                  <Text path="library.tools.economy.roundCount" values={{ count: rounds.length }} />
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="numeric text-11 text-ink-dim">
+                    <Text
+                      path="library.tools.economy.roundCount"
+                      values={{ count: rounds.length }}
+                    />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmReset(true)}
+                    className="min-h-10 text-11 text-ink-dim underline underline-offset-4 hover:text-ink"
+                  >
+                    <Text path="library.tools.economy.newMatch" />
+                  </button>
+                </div>
               </div>
+              {confirmReset && (
+                <div className="mb-3 rounded-chip border border-line bg-surface-2 p-3">
+                  <p className="text-12 text-ink">
+                    <Text path="library.tools.economy.confirmNewMatch" />
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={resetSession}
+                      className="min-h-10 rounded-chip bg-ink px-3 text-12 text-surface-0"
+                    >
+                      <Text path="library.tools.economy.clearRounds" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmReset(false)}
+                      className="min-h-10 px-2 text-12 text-ink-dim hover:text-ink"
+                    >
+                      <Text path="library.tools.economy.cancelReset" />
+                    </button>
+                  </div>
+                </div>
+              )}
               <ol className="list-none [border-block-start:1px_solid_var(--color-line)] p-0">
                 {rounds.map((round, index) => (
                   <li
