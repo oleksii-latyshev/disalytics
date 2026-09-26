@@ -169,7 +169,7 @@ export function LineupsView() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-4 py-4">
+    <div className="mx-auto flex min-h-full w-full max-w-[112rem] flex-col gap-3 lg:h-full lg:min-h-0">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="font-ui font-medium text-28 text-ink leading-dense">
@@ -213,137 +213,166 @@ export function LineupsView() {
         </div>
       </header>
 
-      <div
-        role="tablist"
-        aria-label={t('library.lineups.map')}
-        className="flex flex-wrap gap-1 rounded-card bg-surface-2 p-1"
-      >
-        {MAP_IDS.map((mapId) => (
-          <button
-            key={mapId}
-            type="button"
-            role="tab"
-            aria-selected={map === mapId}
-            onClick={() => {
-              setMap(mapId);
-              setSelectedId(null);
-              setOrigin(null);
-              setIsPlacing(false);
-            }}
-            className={`rounded-card px-3 py-2 font-ui text-12 transition-colors ${map === mapId ? 'bg-surface-0 text-ink' : 'text-ink-dim hover:text-ink'}`}
-          >
-            {mapId}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-card bg-surface-2 p-2">
-        <fieldset
-          aria-label={t('library.lineups.side')}
-          className="m-0 flex items-center gap-1 border-none p-0"
-        >
-          {(['ALL', 'CT', 'T'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                setSide(option);
+      <div className="grid min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(14rem,17rem)] xl:grid-cols-[minmax(12rem,15rem)_minmax(0,1fr)_minmax(16rem,19rem)]">
+        <aside className="flex min-w-0 flex-col gap-4 rounded-float border border-line bg-surface-1 p-3 lg:min-h-0 lg:overflow-y-auto">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-ink-dim" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
                 setSelectedId(null);
               }}
-              className={`rounded-chip px-2.5 py-1.5 text-11 ${side === option ? 'bg-surface-3 text-ink' : 'text-ink-dim'}`}
-            >
-              {option === 'ALL' ? <Text path="library.lineups.bothSides" /> : option}
-            </button>
-          ))}
-        </fieldset>
-        <div className="flex flex-wrap items-center gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              setKind('all');
-              setSelectedId(null);
-            }}
-            className={`rounded-chip px-2.5 py-1.5 text-11 ${kind === 'all' ? 'bg-surface-3 text-ink' : 'text-ink-dim'}`}
-          >
-            <Text path="library.lineups.allKinds" />
-          </button>
-          {THROWN_UTILITY_KINDS.map((utilityKind) => (
-            <button
-              key={utilityKind}
-              type="button"
-              onClick={() => {
-                setKind(utilityKind);
-                setSelectedId(null);
-              }}
-              aria-label={UTILITY_NAMES[utilityKind]}
-              className={`flex items-center gap-1 rounded-chip px-2 py-1.5 text-11 ${kind === utilityKind ? 'bg-surface-3 text-ink' : 'text-ink-dim'}`}
-            >
-              <UtilityGlyph kind={utilityKind} label={UTILITY_NAMES[utilityKind]} size="control" />
-              <span className="hidden sm:inline">{UTILITY_NAMES[utilityKind]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="relative ml-auto flex items-center">
-          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-ink-dim" />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setSelectedId(null);
-            }}
-            placeholder={t('library.lineups.searchPlaceholder')}
-            className="h-8 w-40 rounded-card border border-line bg-surface-1 pl-8 pr-2 text-12 text-ink placeholder:text-ink-dim sm:w-52"
-          />
-        </div>
-        <span className="numeric text-12 text-ink-dim">
-          <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
-        </span>
-      </div>
+              aria-label={t('library.lineups.searchPlaceholder')}
+              placeholder={t('library.lineups.searchPlaceholder')}
+              className="h-9 w-full rounded-card border border-line bg-surface-0 pl-8 pr-2 text-12 text-ink placeholder:text-ink-dim"
+            />
+          </div>
 
-      {notice && (
-        <div
-          role="status"
-          className="rounded-card border border-line bg-surface-2 p-2.5 text-13 text-ink"
-        >
-          {notice}
-        </div>
-      )}
-      {isPlacing && (
-        <div
-          role="status"
-          className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface-2 px-4 py-3 text-13 text-ink"
-        >
-          <Text
-            path={origin === null ? 'library.lineups.placeOrigin' : 'library.lineups.placeLanding'}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setIsPlacing(false);
-              setOrigin(null);
-              setDraftLanding(null);
-              setIsModalOpen(true);
-            }}
-            className="ml-auto text-11 text-ink-dim underline hover:text-ink"
-          >
-            <Text path="library.lineups.enterCoordinates" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsPlacing(false);
-              setOrigin(null);
-            }}
-            aria-label={t('library.lineups.form.cancel')}
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-      )}
+          <div className="flex flex-col gap-2">
+            <span className="label-dense text-ink-dim">
+              <Text path="library.lineups.map" />
+            </span>
+            <div
+              role="tablist"
+              aria-label={t('library.lineups.map')}
+              className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1"
+            >
+              {MAP_IDS.map((mapId) => (
+                <button
+                  key={mapId}
+                  type="button"
+                  role="tab"
+                  aria-selected={map === mapId}
+                  onClick={() => {
+                    setMap(mapId);
+                    setSelectedId(null);
+                    setOrigin(null);
+                    setIsPlacing(false);
+                  }}
+                  className={`rounded-card px-3 py-2 text-left font-ui text-12 transition-colors ${map === mapId ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2 hover:text-ink'}`}
+                >
+                  {mapId}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
-        <section className="surface-card flex min-w-0 items-center justify-center rounded-float p-3">
+          <fieldset
+            aria-label={t('library.lineups.side')}
+            className="m-0 flex flex-col gap-2 border-none p-0"
+          >
+            <legend className="label-dense text-ink-dim">
+              <Text path="library.lineups.side" />
+            </legend>
+            <div className="flex items-center gap-1">
+              {(['ALL', 'CT', 'T'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    setSide(option);
+                    setSelectedId(null);
+                  }}
+                  className={`flex-1 rounded-chip px-2.5 py-1.5 text-11 ${side === option ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2'}`}
+                >
+                  {option === 'ALL' ? <Text path="library.lineups.bothSides" /> : option}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="flex flex-col gap-2">
+            <span className="label-dense text-ink-dim">
+              <Text path="library.lineups.form.kind" />
+            </span>
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setKind('all');
+                  setSelectedId(null);
+                }}
+                className={`rounded-card px-3 py-2 text-left text-12 ${kind === 'all' ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2 hover:text-ink'}`}
+              >
+                <Text path="library.lineups.allKinds" />
+              </button>
+              {THROWN_UTILITY_KINDS.map((utilityKind) => (
+                <button
+                  key={utilityKind}
+                  type="button"
+                  onClick={() => {
+                    setKind(utilityKind);
+                    setSelectedId(null);
+                  }}
+                  aria-label={UTILITY_NAMES[utilityKind]}
+                  className={`flex items-center gap-2 rounded-card px-3 py-2 text-left text-12 ${kind === utilityKind ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2 hover:text-ink'}`}
+                >
+                  <UtilityGlyph
+                    kind={utilityKind}
+                    label={UTILITY_NAMES[utilityKind]}
+                    size="control"
+                  />
+                  <span>{UTILITY_NAMES[utilityKind]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <span className="numeric text-12 text-ink-dim">
+            <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
+          </span>
+          {notice && (
+            <div
+              role="status"
+              className="rounded-card border border-line bg-surface-2 p-2.5 text-12 text-ink"
+            >
+              {notice}
+            </div>
+          )}
+          {isPlacing && (
+            <div
+              role="status"
+              className="flex flex-col gap-2 rounded-card border border-line bg-surface-2 p-3 text-12 text-ink"
+            >
+              <Text
+                path={
+                  origin === null ? 'library.lineups.placeOrigin' : 'library.lineups.placeLanding'
+                }
+              />
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPlacing(false);
+                    setOrigin(null);
+                    setDraftLanding(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="text-left text-11 text-ink-dim underline hover:text-ink"
+                >
+                  <Text path="library.lineups.enterCoordinates" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPlacing(false);
+                    setOrigin(null);
+                  }}
+                  aria-label={t('library.lineups.form.cancel')}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </aside>
+
+        <section
+          aria-label={t('library.lineups.map')}
+          className="grid min-h-0 min-w-0 place-items-center lg:[container-type:size]"
+        >
           <LineupPlate
             map={map}
             lineups={filteredLineups}
@@ -353,19 +382,22 @@ export function LineupsView() {
             draftOrigin={origin}
           />
         </section>
-        <LineupSidebar
-          lineups={filteredLineups}
-          selected={selectedLineup}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onEdit={(lineup) => {
-            setEditingLineup(lineup);
-            setIsModalOpen(true);
-          }}
-          onDelete={(id) => {
-            void deleteLineup(id).then(() => setSelectedId(null));
-          }}
-        />
+
+        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto">
+          <LineupSidebar
+            lineups={filteredLineups}
+            selected={selectedLineup}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onEdit={(lineup) => {
+              setEditingLineup(lineup);
+              setIsModalOpen(true);
+            }}
+            onDelete={(id) => {
+              void deleteLineup(id).then(() => setSelectedId(null));
+            }}
+          />
+        </div>
       </div>
       {selectedGroupIds !== null && (
         <Dialog
