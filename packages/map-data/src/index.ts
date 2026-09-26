@@ -1,7 +1,6 @@
 export type { MapId } from './generated/overviews';
 export { MAP_IDS, MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from './generated/overviews';
-export type { BuiltInLineupMap } from './lineups';
-export { BUILT_IN_LINEUP_MAPS, hasBuiltInLineups, loadMapLineups } from './lineups';
+export { loadMapLineups } from './lineups';
 export type { RadarTheme } from './themes';
 export { DEFAULT_RADAR_THEME, isRadarTheme, RADAR_THEMES, radarAssetPath } from './themes';
 export {

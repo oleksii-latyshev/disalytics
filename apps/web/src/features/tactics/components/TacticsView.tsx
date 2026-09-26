@@ -1,6 +1,6 @@
 import type { Tactic, TacticSide } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
-import { BUILT_IN_LINEUP_MAPS } from '@disa/map-data';
+import { MAP_IDS } from '@disa/map-data';
 import { Button } from '@disa/ui';
 import { Download, Plus, Search, Share2, Upload, X } from 'lucide-react';
 import { type ChangeEvent, useMemo, useRef, useState } from 'react';
@@ -232,7 +232,7 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
               {t('library.tactics.library.allMaps')}
             </button>
 
-            {BUILT_IN_LINEUP_MAPS.map((mapId) => (
+            {MAP_IDS.map((mapId) => (
               <button
                 key={mapId}
                 type="button"
