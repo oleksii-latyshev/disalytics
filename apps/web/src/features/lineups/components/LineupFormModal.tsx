@@ -793,7 +793,7 @@ export function LineupFormModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
           <Button type="button" variant="ghost" onClick={onDismiss} className="h-8 px-3 text-12">
             <Text path="library.lineups.form.cancel" />
           </Button>
