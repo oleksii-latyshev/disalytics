@@ -225,7 +225,7 @@
   },
   "lineups": {
     "title": "Utility lineups",
-    "note": "Curated competitive grenade lineups and saved customs per map.",
+    "note": "Save your grenade throws on the map and share them as JSON.",
     "map": "Map",
     "side": "Side",
     "bothSides": "Both",
@@ -239,14 +239,20 @@
     "command": "Console command",
     "copyCommand": "Copy setpos command",
     "copied": "Copied!",
-    "media": "Watch guide",
+    "media": "Open image or guide",
     "delete": "Delete lineup",
     "deleteConfirm": "Delete this custom lineup?",
     "import": "Import",
     "export": "Export",
     "importSuccess": "Imported {count, plural, one {# lineup} other {# lineups}}.",
     "importError": "Failed to import lineups file.",
-    "noLineupSelected": "Select a lineup on the map or from the list to inspect details.",
+    "noLineupSelected": "Select a marker on the map to inspect a lineup.",
+    "emptyMap": "No lineups on this map yet. Create one by marking its throw and landing points.",
+    "placeOrigin": "Click the map where you throw the grenade.",
+    "placeLanding": "Now click where the grenade lands.",
+    "enterCoordinates": "Enter coordinates instead",
+    "nearby": "Lineups from this position",
+    "choose": "Choose a lineup",
     "create": "Create lineup",
     "edit": "Edit lineup",
     "form": {
@@ -264,13 +270,17 @@
       "yaw": "Yaw",
       "notes": "Notes and instructions",
       "notesPlaceholder": "Crosshair alignment, landmarks, etc.",
-      "mediaUrl": "Video / guide URL (optional)",
+      "mediaUrl": "Image or guide URL (optional)",
+      "uploadToImgur": "Upload to Imgur, then paste the direct image link here",
+      "mapCoordinatesNote": "Map clicks provide X and Y only. Check the height (Z) and view angles before using the setpos command.",
       "save": "Save lineup",
       "cancel": "Cancel",
       "close": "Close dialog",
       "validation": {
         "titleRequired": "Title is required",
-        "coordinatesRequired": "Valid coordinates are required"
+        "coordinatesRequired": "Valid coordinates are required",
+        "mediaUrlInvalid": "Use a valid http or https link",
+        "saveFailed": "This lineup could not be saved on this device"
       }
     }
   },

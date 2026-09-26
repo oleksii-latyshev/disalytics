@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 export function useMapLineups(map: string) {
   const [builtInLineups, setBuiltInLineups] = useState<readonly Lineup[]>([]);
   const [customLineups, setCustomLineups] = useState<readonly Lineup[]>([]);
+  const [loadedMap, setLoadedMap] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
@@ -26,6 +27,7 @@ export function useMapLineups(map: string) {
       } else {
         setCustomLineups([]);
       }
+      setLoadedMap(map);
     } finally {
       setLoading(false);
     }
@@ -56,9 +58,9 @@ export function useMapLineups(map: string) {
       if (parsed.length === 0) return 0;
 
       const store = await openLineupStore();
-      if (store === null) return 0;
+      if (store === null) throw new Error('lineup storage is unavailable');
       try {
-        await store.putMany(parsed);
+        await store.putMany(parsed.map((lineup) => ({ ...lineup, isBuiltIn: false })));
       } finally {
         store.close();
       }
@@ -69,21 +71,28 @@ export function useMapLineups(map: string) {
     [reload],
   );
 
-  const exportLineups = useCallback(() => {
-    const all = [...customLineups, ...builtInLineups];
+  const exportLineups = useCallback(async () => {
+    const store = await openLineupStore();
+    if (store === null) return;
+    let all: readonly Lineup[];
+    try {
+      all = await store.list();
+    } finally {
+      store.close();
+    }
     const json = serializeLineupFile(all);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `disalytics-lineups-${map}.json`;
+    anchor.download = 'disalytics-lineups.json';
     anchor.click();
-    URL.revokeObjectURL(url);
-  }, [map, customLineups, builtInLineups]);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }, []);
 
   return {
-    lineups: [...customLineups, ...builtInLineups],
-    loading,
+    lineups: loadedMap === map ? [...customLineups, ...builtInLineups] : [],
+    loading: loading || loadedMap !== map,
     reload,
     deleteLineup,
     importLineups,

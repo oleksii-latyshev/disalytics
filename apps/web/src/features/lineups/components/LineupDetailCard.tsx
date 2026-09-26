@@ -18,6 +18,14 @@ const SIDE_STYLES: Readonly<Record<LineupSide, string>> = {
   BOTH: 'text-ink border-line bg-surface-3',
 };
 
+function safeMediaUrl(url: string | undefined): string | null {
+  return url && /^https?:\/\/[^\s]+$/i.test(url) ? url : null;
+}
+
+function imageUrlOf(url: string | null): string | null {
+  return url && /\.(?:png|jpe?g|webp|gif)(?:\?[^\s]*)?$/i.test(url) ? url : null;
+}
+
 export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
   const t = useT();
   const [copied, setCopied] = useState(false);
@@ -37,6 +45,9 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
       </div>
     );
   }
+
+  const mediaUrl = safeMediaUrl(lineup.mediaUrl);
+  const imageUrl = imageUrlOf(mediaUrl);
 
   const handleCopy = async () => {
     if (!lineup.command) return;
@@ -171,10 +182,22 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
         </div>
       )}
 
+      {imageUrl && (
+        <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+          <img
+            src={imageUrl}
+            alt={lineup.title}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="max-h-64 w-full rounded-card object-contain"
+          />
+        </a>
+      )}
+
       {/* External media guide link */}
-      {lineup.mediaUrl && (
+      {mediaUrl && (
         <a
-          href={lineup.mediaUrl}
+          href={mediaUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-12 text-ink-dim transition-colors hover:text-ink"

@@ -9,7 +9,7 @@ import {
 } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
-import { BUILT_IN_LINEUP_MAPS } from '@disa/map-data';
+import { MAP_IDS } from '@disa/map-data';
 import { Button, Dialog } from '@disa/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -69,6 +69,15 @@ function formatCoord(val?: number): string {
   return val !== undefined ? val.toFixed(2) : '0';
 }
 
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 export function initFormValues(
   data?: LineupFormData | null,
   defaultMap = 'de_mirage',
@@ -122,6 +131,7 @@ export function buildLineupFromForm(
   values: LineupFormValues,
   initialId?: string,
   initialCreatedAt?: number,
+  generateCommand = true,
 ): Lineup | null {
   const ox = Number.parseFloat(values.originX);
   const oy = Number.parseFloat(values.originY);
@@ -143,7 +153,9 @@ export function buildLineupFromForm(
 
   const command =
     values.command.trim() ||
-    `setpos ${ox.toFixed(2)} ${oy.toFixed(2)} ${oz.toFixed(2)}; setang ${p.toFixed(2)} ${y.toFixed(2)} 0`;
+    (generateCommand
+      ? `setpos ${ox.toFixed(2)} ${oy.toFixed(2)} ${oz.toFixed(2)}; setang ${p.toFixed(2)} ${y.toFixed(2)} 0`
+      : '');
 
   return {
     id: initialId ?? `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -215,8 +227,17 @@ export function LineupFormModal({
       setError(t('library.lineups.form.validation.titleRequired'));
       return;
     }
+    if (values.mediaUrl.trim() && !isHttpUrl(values.mediaUrl.trim())) {
+      setError(t('library.lineups.form.validation.mediaUrlInvalid'));
+      return;
+    }
 
-    const lineup = buildLineupFromForm(values, initialData?.id, initialData?.createdAt);
+    const lineup = buildLineupFromForm(
+      values,
+      initialData?.id,
+      initialData?.createdAt,
+      initialData?.command !== undefined,
+    );
     if (!lineup) {
       setError(t('library.lineups.form.validation.coordinatesRequired'));
       return;
@@ -225,16 +246,20 @@ export function LineupFormModal({
     setSaving(true);
     try {
       const store = await openLineupStore();
-      if (store !== null) {
-        try {
-          await store.put(lineup);
-        } finally {
-          store.close();
-        }
+      if (store === null) {
+        setError(t('library.lineups.form.validation.saveFailed'));
+        return;
+      }
+      try {
+        await store.put(lineup);
+      } finally {
+        store.close();
       }
 
       onSaved?.(lineup);
       onDismiss();
+    } catch {
+      setError(t('library.lineups.form.validation.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -297,7 +322,7 @@ export function LineupFormModal({
                 onChange={(e) => updateValue('map', e.target.value)}
                 className="h-8 rounded-card border border-line bg-surface-1 px-2.5 text-13 text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
               >
-                {BUILT_IN_LINEUP_MAPS.map((m) => (
+                {MAP_IDS.map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
@@ -397,6 +422,11 @@ export function LineupFormModal({
 
           {/* Coordinates: Origin, Landing, Angles */}
           <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-1 p-3">
+            {!initialData?.command && (
+              <p className="text-11 text-ink-dim leading-prose">
+                <Text path="library.lineups.form.mapCoordinatesNote" />
+              </p>
+            )}
             <span className="label-dense text-11 text-ink-dim">
               <Text path="library.lineups.form.origin" />
             </span>
@@ -522,6 +552,14 @@ export function LineupFormModal({
               placeholder="https://..."
               className="h-8 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
             />
+            <a
+              href="https://imgur.com/upload"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-11 text-ink-dim underline hover:text-ink"
+            >
+              <Text path="library.lineups.form.uploadToImgur" />
+            </a>
           </div>
         </div>
 

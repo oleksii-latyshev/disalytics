@@ -125,6 +125,9 @@ describe('lineup form helpers', () => {
     expect(lineup.movementKeysSummary).toBe('W + Shift + Jump');
     expect(lineup.isBuiltIn).toBe(false);
     expect(lineup.id.startsWith('custom-')).toBe(true);
+
+    const mapPlaced = buildLineupFromForm(values, undefined, undefined, false);
+    expect(mapPlaced?.command).toBe('');
   });
 
   it('returns null if coordinates are not finite numbers', () => {
