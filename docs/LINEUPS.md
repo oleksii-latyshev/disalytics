@@ -1,6 +1,6 @@
 # Personal lineups
 
-The Lineups dock shows saved throws on each map. Click **Create lineup**, mark the throw position and landing point, then enter a title, grenade kind, movement instructions, and optional media. Zoom with the wheel or the map controls; drag to pan while zoomed. A numbered marker opens the throws saved near the same origin.
+The Lineups dock shows saved throws on each map. On desktop, map and utility filters sit to the left of the radar, and the selected throw sits to the right. The radar fits the available viewport height. Click **Create lineup**, mark the throw position and landing point, then enter a title, grenade kind, movement instructions, and optional media. Zoom with the wheel or the map controls; drag to pan while zoomed. A numbered marker opens the throws saved near the same origin.
 
 The form keeps coordinates, view angles, and the `setpos` command under **Coordinates and console details**. Throws saved from a demo retain their captured `setpos` command and can be edited here.
 
