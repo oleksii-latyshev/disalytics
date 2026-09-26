@@ -175,7 +175,7 @@ function LineupCanvas({
             }
             if (!dragRef.current?.moved) dragRef.current = null;
           }}
-          className="size-full cursor-crosshair touch-none bg-surface-0"
+          className={`size-full cursor-crosshair bg-surface-0 ${zoom > 1 ? 'touch-none' : 'touch-pan-y'}`}
         />
         <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-card border border-line bg-surface-0/90 p-1">
           <button

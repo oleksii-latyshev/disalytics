@@ -188,7 +188,9 @@ function drawGroupBadges(
   context.font = '600 11px Onest, sans-serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  for (const group of groups) {
+  for (let index = 0; index < groups.length; index++) {
+    const group = groups[index];
+    if (group === undefined) continue;
     if (group.indices.length < 2) continue;
     const first = group.indices[0];
     if (first === undefined) continue;

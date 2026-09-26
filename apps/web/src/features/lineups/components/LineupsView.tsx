@@ -408,6 +408,7 @@ export function LineupsView() {
                       src={preview}
                       alt=""
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                       className="size-16 shrink-0 rounded-chip object-cover"
                     />
                   ) : (
