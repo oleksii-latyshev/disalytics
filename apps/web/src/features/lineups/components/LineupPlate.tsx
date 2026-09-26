@@ -7,17 +7,25 @@ import {
   radarAssetPath,
   radarToWorld,
 } from '@disa/map-data';
-import { useMemo, useRef } from 'react';
+import { Minus, Plus } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { UnknownMap } from '@/features/radar/components/UnknownMap';
 import { radarBackdrop } from '@/features/radar/helpers/backdrop';
 import { radarColors } from '@/features/radar/helpers/colors';
 import { levelAt } from '@/features/radar/helpers/levels';
-import { plateView, radarPointAt } from '@/features/radar/helpers/view';
+import {
+  panBy,
+  plateView,
+  radarPointAt,
+  ZOOM_STEP,
+  zoomAbout,
+  zoomByStep,
+} from '@/features/radar/helpers/view';
 import { useRadarImage } from '@/features/radar/hooks/use-radar-image';
 import { lineupLayer } from '../helpers/lineup-layer';
-import { findNearestLineup, lineupPlot } from '../helpers/lineup-plot';
+import { findNearestLineup, groupLineupsByOrigin, lineupPlot } from '../helpers/lineup-plot';
 
 const HIT_RADIUS_PX = 20;
 
@@ -54,25 +62,47 @@ function LineupCanvas({
   const colors = radarColors(palette);
 
   const viewRef = useRef(plateView());
+  const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const [zoom, setZoom] = useState(1);
 
   const plot = useMemo(() => lineupPlot(overview, lineups), [overview, lineups]);
+  const groups = useMemo(() => groupLineupsByOrigin(lineups), [lineups]);
 
   const layers = useMemo(() => {
     const layer = lineupLayer({
       lineups,
       plot,
+      groups,
       overview,
       colors,
       view: viewRef,
       focused,
+      draftOrigin,
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), layer] : [layer];
-  }, [lineups, plot, overview, colors, image, focused]);
+  }, [lineups, plot, groups, overview, colors, image, focused, draftOrigin]);
 
-  const { canvasRef } = useCanvasLayers(layers);
+  const { canvasRef, repaint } = useCanvasLayers(layers);
+
+  const canvasSize = () => {
+    const box = canvasRef.current?.getBoundingClientRect();
+    return box ? { width: box.width, height: box.height } : null;
+  };
+
+  const changeZoom = (factor: number) => {
+    const size = canvasSize();
+    if (size === null) return;
+    zoomByStep(viewRef.current, factor, size);
+    setZoom(viewRef.current.zoom);
+    repaint();
+  };
 
   const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (dragRef.current?.moved) {
+      dragRef.current = null;
+      return;
+    }
     const canvas = canvasRef.current;
     if (canvas === null) return;
     const box = canvas.getBoundingClientRect();
@@ -91,7 +121,7 @@ function LineupCanvas({
       return;
     }
     const extent = Math.min(box.width, box.height);
-    const scale = extent / RADAR_IMAGE_SIZE;
+    const scale = (extent * viewRef.current.zoom) / RADAR_IMAGE_SIZE;
     if (scale <= 0) return;
 
     const hit = findNearestLineup(pt, plot, lineups.length, scale, HIT_RADIUS_PX);
@@ -100,24 +130,76 @@ function LineupCanvas({
 
   return (
     <div className="flex w-full min-w-0 items-center justify-center">
-      <div className="relative aspect-square w-full max-w-[42rem]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-card">
         <canvas
           ref={canvasRef}
           role="img"
           aria-label={t('radar.label', { map: overview.id })}
           onClick={handleClick}
-          className="size-full cursor-crosshair rounded-card bg-surface-0"
+          onWheel={(event) => {
+            event.preventDefault();
+            const size = canvasSize();
+            if (size === null) return;
+            const box = event.currentTarget.getBoundingClientRect();
+            zoomAbout(
+              viewRef.current,
+              event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
+              event.clientX - box.left,
+              event.clientY - box.top,
+              size,
+            );
+            setZoom(viewRef.current.zoom);
+            repaint();
+          }}
+          onPointerDown={(event) => {
+            if (viewRef.current.zoom <= 1) return;
+            dragRef.current = { x: event.clientX, y: event.clientY, moved: false };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const drag = dragRef.current;
+            if (drag === null) return;
+            const dx = event.clientX - drag.x;
+            const dy = event.clientY - drag.y;
+            const size = canvasSize();
+            if (size === null) return;
+            if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
+            panBy(viewRef.current, dx, dy, size);
+            drag.x = event.clientX;
+            drag.y = event.clientY;
+            repaint();
+          }}
+          onPointerUp={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+            if (!dragRef.current?.moved) dragRef.current = null;
+          }}
+          className={`size-full cursor-crosshair bg-surface-0 ${zoom > 1 ? 'touch-none' : 'touch-pan-y'}`}
         />
-        {draftOrigin && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink bg-surface-0 shadow-lg"
-            style={{
-              left: `${((draftOrigin.x - overview.posX) / overview.scale / RADAR_IMAGE_SIZE) * 100}%`,
-              top: `${((overview.posY - draftOrigin.y) / overview.scale / RADAR_IMAGE_SIZE) * 100}%`,
-            }}
-          />
-        )}
+        <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-card border border-line bg-surface-0/90 p-1">
+          <button
+            type="button"
+            onClick={() => changeZoom(1 / ZOOM_STEP)}
+            disabled={zoom <= 1}
+            aria-label={t('library.lineups.zoomOut')}
+            className="rounded-chip p-1.5 text-ink disabled:opacity-40"
+          >
+            <Minus className="size-4" />
+          </button>
+          <span className="numeric min-w-10 text-center text-11 text-ink">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => changeZoom(ZOOM_STEP)}
+            disabled={zoom >= 4}
+            aria-label={t('library.lineups.zoomIn')}
+            className="rounded-chip p-1.5 text-ink disabled:opacity-40"
+          >
+            <Plus className="size-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -130,6 +212,7 @@ export function LineupPlate({ map, lineups, focused, onSelect, onPlace, draftOri
     <UnknownMap map={map} />
   ) : (
     <LineupCanvas
+      key={map}
       overview={overview}
       lineups={lineups}
       focused={focused}

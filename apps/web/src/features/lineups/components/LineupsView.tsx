@@ -6,11 +6,12 @@ import {
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { MAP_IDS, type MapId } from '@disa/map-data';
-import { Button } from '@disa/ui';
+import { Button, Dialog } from '@disa/ui';
 import { Download, Plus, Search, Upload, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { filterLineups } from '../helpers/lineup-filter';
+import { groupLineupsByOrigin } from '../helpers/lineup-plot';
 import { useMapLineups } from '../hooks/use-map-lineups';
 import { LineupDetailCard } from './LineupDetailCard';
 import { LineupFormModal } from './LineupFormModal';
@@ -105,6 +106,7 @@ export function LineupsView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draftLanding, setDraftLanding] = useState<Point | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<readonly string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { lineups, reload, deleteLineup, importLineups, exportLineups } = useMapLineups(map);
 
@@ -114,6 +116,27 @@ export function LineupsView() {
   );
   const selectedIndex = filteredLineups.findIndex((lineup) => lineup.id === selectedId);
   const selectedLineup = selectedIndex >= 0 ? (filteredLineups[selectedIndex] ?? null) : null;
+  const originGroups = useMemo(() => groupLineupsByOrigin(filteredLineups), [filteredLineups]);
+  const selectedGroup =
+    selectedGroupIds?.flatMap((id) => filteredLineups.filter((item) => item.id === id)) ?? [];
+
+  const handleSelectMarker = (index: number | null) => {
+    if (index === null) {
+      setSelectedId(null);
+      return;
+    }
+    const group = originGroups.find(({ indices }) => indices.includes(index));
+    if (group !== undefined && group.indices.length > 1) {
+      setSelectedGroupIds(
+        group.indices.flatMap((position) => {
+          const lineup = filteredLineups[position];
+          return lineup === undefined ? [] : [lineup.id];
+        }),
+      );
+      return;
+    }
+    setSelectedId(filteredLineups[index]?.id ?? null);
+  };
 
   const handleMapPoint = (point: Point) => {
     if (origin === null) {
@@ -146,7 +169,7 @@ export function LineupsView() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[80rem] flex-col gap-4 py-4">
+    <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-4 py-4">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="font-ui font-medium text-28 text-ink leading-dense">
@@ -319,15 +342,13 @@ export function LineupsView() {
         </div>
       )}
 
-      <div className="grid min-h-[35rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
-        <section className="surface-card flex min-h-[35rem] min-w-0 items-center justify-center rounded-float p-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+        <section className="surface-card flex min-w-0 items-center justify-center rounded-float p-3">
           <LineupPlate
             map={map}
             lineups={filteredLineups}
             focused={selectedIndex >= 0 ? selectedIndex : null}
-            onSelect={(index) =>
-              setSelectedId(index === null ? null : (filteredLineups[index]?.id ?? null))
-            }
+            onSelect={handleSelectMarker}
             onPlace={isPlacing ? handleMapPoint : undefined}
             draftOrigin={origin}
           />
@@ -346,6 +367,69 @@ export function LineupsView() {
           }}
         />
       </div>
+      {selectedGroupIds !== null && (
+        <Dialog
+          isOpen
+          onDismiss={() => setSelectedGroupIds(null)}
+          className="w-full max-w-[36rem] p-5"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-ui text-16 font-medium text-ink">
+              <Text path="library.lineups.fromPosition" values={{ count: selectedGroup.length }} />
+            </h3>
+            <button
+              type="button"
+              onClick={() => setSelectedGroupIds(null)}
+              aria-label={t('library.lineups.form.close')}
+              className="rounded-chip p-1 text-ink-dim hover:text-ink"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+          <div className="mt-4 grid max-h-[60vh] gap-2 overflow-y-auto">
+            {selectedGroup.map((lineup) => {
+              const preview =
+                lineup.imageUrls?.[0] ??
+                (/\.(?:png|jpe?g|webp)(?:\?.*)?$/i.test(lineup.mediaUrl ?? '')
+                  ? lineup.mediaUrl
+                  : undefined);
+              return (
+                <button
+                  key={lineup.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(lineup.id);
+                    setSelectedGroupIds(null);
+                  }}
+                  className="flex items-center gap-3 rounded-card border border-line bg-surface-1 p-2 text-left hover:bg-surface-2"
+                >
+                  {preview ? (
+                    <img
+                      src={preview}
+                      alt=""
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="size-16 shrink-0 rounded-chip object-cover"
+                    />
+                  ) : (
+                    <span className="flex size-16 shrink-0 items-center justify-center rounded-chip bg-surface-2">
+                      <UtilityGlyph
+                        kind={lineup.kind}
+                        label={UTILITY_NAMES[lineup.kind]}
+                        size="control"
+                      />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-13 font-medium text-ink">{lineup.title}</span>
+                    <span className="text-11 text-ink-dim">{UTILITY_NAMES[lineup.kind]}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Dialog>
+      )}
       {isModalOpen && (
         <LineupFormModal
           isOpen

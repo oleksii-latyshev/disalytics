@@ -29,7 +29,9 @@ export interface Lineup {
   readonly movementKeysSummary: string;
   readonly command: string;
   readonly notes?: string;
+  readonly movementInstructions?: string;
   readonly mediaUrl?: string;
+  readonly imageUrls?: readonly string[];
   readonly isBuiltIn?: boolean;
   readonly createdAt: number;
 }
@@ -123,6 +125,22 @@ function hasValidOptionals(
   return true;
 }
 
+function isImageUrl(value: unknown): value is string {
+  return typeof value === 'string' && /^https?:\/\/[^\s]+$/i.test(value);
+}
+
+function hasValidInstructions(movementInstructions: unknown, imageUrls: unknown): boolean {
+  if (movementInstructions !== undefined && typeof movementInstructions !== 'string') {
+    return false;
+  }
+  if (imageUrls !== undefined) {
+    if (!Array.isArray(imageUrls) || !imageUrls.every(isImageUrl)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function isLineup(value: unknown): value is Lineup {
   if (!isObject(value)) return false;
 
@@ -131,6 +149,7 @@ export function isLineup(value: unknown): value is Lineup {
     hasValidClassification(value.side, value.kind, value.throwType) &&
     hasValidGeometry(value.origin, value.landing, value.pitch, value.yaw) &&
     hasValidCommand(value.movementKeys, value.movementKeysSummary, value.command) &&
+    hasValidInstructions(value.movementInstructions, value.imageUrls) &&
     hasValidOptionals(value.notes, value.mediaUrl, value.isBuiltIn, value.createdAt)
   );
 }
