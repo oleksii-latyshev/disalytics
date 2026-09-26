@@ -4,6 +4,33 @@ import { type MapOverview, radarX, radarY } from '@disa/map-data';
 /** Origin radar x, origin radar y, landing radar x, landing radar y. */
 export const LINEUP_STRIDE = 4;
 
+export interface LineupOriginGroup {
+  readonly indices: readonly number[];
+  readonly countLabel: string;
+}
+
+export function groupLineupsByOrigin(lineups: readonly Lineup[]): readonly LineupOriginGroup[] {
+  const groups: { indices: number[]; countLabel: string }[] = [];
+  for (let index = 0; index < lineups.length; index++) {
+    const lineup = lineups[index];
+    if (lineup === undefined) continue;
+    const group = groups.find(({ indices }) => {
+      const first = lineups[indices[0] ?? -1];
+      if (first === undefined) return false;
+      const dx = first.origin.x - lineup.origin.x;
+      const dy = first.origin.y - lineup.origin.y;
+      return dx * dx + dy * dy < 80 * 80;
+    });
+    if (group === undefined) {
+      groups.push({ indices: [index], countLabel: '1' });
+    } else {
+      group.indices.push(index);
+      group.countLabel = String(group.indices.length);
+    }
+  }
+  return groups;
+}
+
 /**
  * Computes radar coordinates for a list of lineups on the given map overview.
  *

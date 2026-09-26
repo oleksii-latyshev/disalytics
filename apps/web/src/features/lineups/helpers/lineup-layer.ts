@@ -5,11 +5,11 @@ import {
   type LineupSide,
   type UtilityKind,
 } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE } from '@disa/map-data';
+import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from '@/features/radar/helpers/colors';
 import { type PlateView, plateGeometry, readPlateGeometry } from '@/features/radar/helpers/view';
-import { LINEUP_STRIDE } from './lineup-plot';
+import { LINEUP_STRIDE, type LineupOriginGroup } from './lineup-plot';
 
 const FULL_TURN = 2 * Math.PI;
 
@@ -24,10 +24,12 @@ const FOCUSED_ALPHA = 1.0;
 export interface LineupLayerOptions {
   readonly lineups: readonly Lineup[];
   readonly plot: Float32Array;
+  readonly groups: readonly LineupOriginGroup[];
   readonly overview: MapOverview;
   readonly colors: RadarColors;
   readonly view: { readonly current: PlateView };
   readonly focused: number | null;
+  readonly draftOrigin?: { readonly x: number; readonly y: number } | null | undefined;
 }
 
 function sideColor(side: LineupSide, colors: RadarColors): string {
@@ -174,6 +176,54 @@ function drawLandingMarker(
   }
 }
 
+function drawGroupBadges(
+  context: CanvasRenderingContext2D,
+  groups: readonly LineupOriginGroup[],
+  plot: Float32Array,
+  scale: number,
+  color: string,
+  textColor: string,
+): void {
+  context.globalAlpha = 1;
+  context.font = '600 11px Onest, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  for (const group of groups) {
+    if (group.indices.length < 2) continue;
+    const first = group.indices[0];
+    if (first === undefined) continue;
+    const base = first * LINEUP_STRIDE;
+    const x = (plot[base] ?? 0) * scale + 10;
+    const y = (plot[base + 1] ?? 0) * scale + 10;
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 9, 0, FULL_TURN);
+    context.fill();
+    context.fillStyle = textColor;
+    context.fillText(group.countLabel, x, y + 0.5);
+  }
+}
+
+function drawDraftOrigin(
+  context: CanvasRenderingContext2D,
+  origin: { readonly x: number; readonly y: number } | null | undefined,
+  overview: MapOverview,
+  scale: number,
+  color: string,
+): void {
+  if (origin === null || origin === undefined) return;
+  context.globalAlpha = 1;
+  drawOriginMarker(
+    context,
+    radarX(overview, origin.x) * scale,
+    radarY(overview, origin.y) * scale,
+    scale,
+    color,
+    color,
+    true,
+  );
+}
+
 /**
  * Draws grenade lineups across the radar map:
  * - An origin marker where the player stands (color-coded by side).
@@ -183,7 +233,7 @@ function drawLandingMarker(
  * Lineups are drawn deterministically with zero allocations during paint.
  */
 export function lineupLayer(options: LineupLayerOptions): Layer {
-  const { lineups, plot, overview, colors, view, focused } = options;
+  const { lineups, plot, groups, overview, colors, view, focused, draftOrigin } = options;
   const geometry = plateGeometry();
 
   const drawLineup = (
@@ -214,8 +264,6 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
   };
 
   return (context, size) => {
-    if (lineups.length === 0) return;
-
     readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
@@ -232,5 +280,15 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
     if (focused !== null) {
       drawLineup(context, focused, FOCUSED_ALPHA, 2.5 * geometry.scale, true);
     }
+
+    drawGroupBadges(
+      context,
+      groups,
+      plot,
+      geometry.scale,
+      colors.selectionRing,
+      colors.selectionEdge,
+    );
+    drawDraftOrigin(context, draftOrigin, overview, geometry.scale, colors.selectionRing);
   };
 }

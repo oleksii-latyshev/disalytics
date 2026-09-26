@@ -60,6 +60,8 @@ describe('lineup form helpers', () => {
       kind: 'flash',
       throwType: 'stand',
       movementKeys: ['Stand'],
+      movementInstructions: 'Take two steps while holding Shift',
+      imageUrls: ['https://example.com/one.webp', 'https://example.com/two.webp'],
       originX: '-500.50',
       originY: '250.25',
       originZ: '10.00',
@@ -85,6 +87,11 @@ describe('lineup form helpers', () => {
     expect(lineup.throwType).toBe('stand');
     expect(lineup.movementKeys).toEqual(['Stand']);
     expect(lineup.movementKeysSummary).toBe('Stand');
+    expect(lineup.movementInstructions).toBe('Take two steps while holding Shift');
+    expect(lineup.imageUrls).toEqual([
+      'https://example.com/one.webp',
+      'https://example.com/two.webp',
+    ]);
     expect(lineup.origin).toEqual({ x: -500.5, y: 250.25, z: 10 });
     expect(lineup.landing).toEqual({ x: -300, y: 400, z: 0 });
     expect(lineup.pitch).toBe(-30.5);
@@ -104,6 +111,8 @@ describe('lineup form helpers', () => {
       kind: 'he',
       throwType: 'jump',
       movementKeys: ['W', 'Shift', 'Jump'],
+      movementInstructions: '',
+      imageUrls: [],
       originX: '10.00',
       originY: '20.00',
       originZ: '30.00',
@@ -138,6 +147,8 @@ describe('lineup form helpers', () => {
       kind: 'smoke',
       throwType: 'stand',
       movementKeys: ['Stand'],
+      movementInstructions: '',
+      imageUrls: [],
       originX: 'invalid',
       originY: '20.00',
       originZ: '30.00',

@@ -1,7 +1,12 @@
 import type { Lineup } from '@disa/demo-core';
 import { getMapOverview } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import { findNearestLineup, LINEUP_STRIDE, lineupPlot } from '../helpers/lineup-plot';
+import {
+  findNearestLineup,
+  groupLineupsByOrigin,
+  LINEUP_STRIDE,
+  lineupPlot,
+} from '../helpers/lineup-plot';
 
 const MOCK_LINEUPS: readonly Lineup[] = [
   {
@@ -101,5 +106,20 @@ describe('findNearestLineup', () => {
   it('returns null when click is far away from all points', () => {
     const hit = findNearestLineup({ x: 0, y: 0 }, plot, MOCK_LINEUPS.length, scale, 10);
     expect(hit).toBeNull();
+  });
+});
+
+describe('groupLineupsByOrigin', () => {
+  it('groups several grenades thrown from the same position', () => {
+    const first = MOCK_LINEUPS[0];
+    const second = MOCK_LINEUPS[1];
+    if (first === undefined || second === undefined) throw new Error('Missing test lineups');
+    const grouped = groupLineupsByOrigin([
+      first,
+      { ...first, id: 'second', origin: { x: -180, y: -700, z: -160 } },
+      second,
+    ]);
+    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1], [2]]);
+    expect(grouped[0]?.countLabel).toBe('2');
   });
 });

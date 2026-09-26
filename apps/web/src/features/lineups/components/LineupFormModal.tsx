@@ -12,7 +12,8 @@ import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
 import { Button, Dialog } from '@disa/ui';
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
 
 const ALL_MOVEMENT_KEYS: readonly MovementKey[] = [
   'W',
@@ -27,6 +28,11 @@ const ALL_MOVEMENT_KEYS: readonly MovementKey[] = [
 
 const ALL_THROW_TYPES: readonly ThrowType[] = ['stand', 'jump', 'run', 'crouch', 'unknown'];
 
+interface PreparedImage {
+  readonly file: File;
+  readonly previewUrl: string;
+}
+
 export interface LineupFormData {
   readonly id?: string;
   readonly title?: string;
@@ -39,6 +45,8 @@ export interface LineupFormData {
   readonly yaw?: number;
   readonly throwType?: ThrowType;
   readonly movementKeys?: readonly MovementKey[];
+  readonly movementInstructions?: string;
+  readonly imageUrls?: readonly string[];
   readonly command?: string;
   readonly notes?: string;
   readonly mediaUrl?: string;
@@ -52,6 +60,8 @@ export interface LineupFormValues {
   readonly kind: UtilityKind;
   readonly throwType: ThrowType;
   readonly movementKeys: readonly MovementKey[];
+  readonly movementInstructions: string;
+  readonly imageUrls: readonly string[];
   readonly originX: string;
   readonly originY: string;
   readonly originZ: string;
@@ -78,6 +88,24 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
+function hasInvalidMediaUrl(values: LineupFormValues): boolean {
+  return (
+    (values.mediaUrl.trim().length > 0 && !isHttpUrl(values.mediaUrl.trim())) ||
+    values.imageUrls.some((url) => !isHttpUrl(url))
+  );
+}
+
+function basicValidationKey(
+  values: LineupFormValues,
+):
+  | 'library.lineups.form.validation.titleRequired'
+  | 'library.lineups.form.validation.mediaUrlInvalid'
+  | null {
+  if (!values.title.trim()) return 'library.lineups.form.validation.titleRequired';
+  if (hasInvalidMediaUrl(values)) return 'library.lineups.form.validation.mediaUrlInvalid';
+  return null;
+}
+
 export function initFormValues(
   data?: LineupFormData | null,
   defaultMap = 'de_mirage',
@@ -90,6 +118,8 @@ export function initFormValues(
       kind: 'smoke',
       throwType: 'jump',
       movementKeys: ['Jump'],
+      movementInstructions: '',
+      imageUrls: [],
       originX: '0',
       originY: '0',
       originZ: '0',
@@ -113,6 +143,8 @@ export function initFormValues(
     kind: data.kind ?? 'smoke',
     throwType: data.throwType ?? 'jump',
     movementKeys: data.movementKeys ?? ['Jump'],
+    movementInstructions: data.movementInstructions ?? '',
+    imageUrls: data.imageUrls ?? [],
     originX: formatCoord(origin?.x),
     originY: formatCoord(origin?.y),
     originZ: formatCoord(origin?.z),
@@ -171,12 +203,31 @@ export function buildLineupFromForm(
     movementKeys: values.movementKeys,
     movementKeysSummary:
       values.movementKeys.join(' + ') || (values.throwType === 'stand' ? 'Stand' : 'Jump'),
+    ...(values.movementInstructions.trim()
+      ? { movementInstructions: values.movementInstructions.trim() }
+      : {}),
+    ...(values.imageUrls.length > 0 ? { imageUrls: values.imageUrls } : {}),
     command,
     ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
     ...(values.mediaUrl.trim() ? { mediaUrl: values.mediaUrl.trim() } : {}),
     isBuiltIn: false,
     createdAt: initialCreatedAt ?? Date.now(),
   };
+}
+
+async function persistLineup(lineup: Lineup): Promise<boolean> {
+  try {
+    const store = await openLineupStore();
+    if (store === null) return false;
+    try {
+      await store.put(lineup);
+      return true;
+    } finally {
+      store.close();
+    }
+  } catch {
+    return false;
+  }
 }
 
 interface Props {
@@ -201,11 +252,26 @@ export function LineupFormModal({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [preparedImages, setPreparedImages] = useState<readonly PreparedImage[]>([]);
+  const [isUploadConfirmed, setUploadConfirmed] = useState(false);
+  const previewUrlsRef = useRef(new Set<string>());
+
+  useEffect(
+    () => () => {
+      for (const url of previewUrlsRef.current) URL.revokeObjectURL(url);
+      previewUrlsRef.current.clear();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
     setValues(initFormValues(initialData, defaultMap));
     setError(null);
+    setNewImageUrl('');
+    setPreparedImages([]);
+    setUploadConfirmed(false);
   }, [isOpen, initialData, defaultMap]);
 
   const updateValue = <K extends keyof LineupFormValues>(key: K, val: LineupFormValues[K]) => {
@@ -221,14 +287,39 @@ export function LineupFormModal({
     }));
   };
 
+  const handleImages = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    try {
+      const prepared = await Promise.all(files.map(prepareLineupImage));
+      const images = prepared.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+      for (const image of images) previewUrlsRef.current.add(image.previewUrl);
+      setPreparedImages((previous) => [...previous, ...images]);
+      setUploadConfirmed(false);
+      setError(null);
+    } catch {
+      setError(t('library.lineups.form.validation.imageProcessingFailed'));
+    }
+  };
+
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!values.title.trim()) {
-      setError(t('library.lineups.form.validation.titleRequired'));
+    const validationKey = basicValidationKey(values);
+    if (validationKey !== null) {
+      setError(t(validationKey));
       return;
     }
-    if (values.mediaUrl.trim() && !isHttpUrl(values.mediaUrl.trim())) {
-      setError(t('library.lineups.form.validation.mediaUrlInvalid'));
+    if (preparedImages.length > 0 && !isUploadConfirmed) {
+      setUploadConfirmed(true);
+      setError(null);
+      return;
+    }
+    if (preparedImages.length > 0) {
+      setError(t('library.lineups.form.validation.imageLinksRequired'));
+      return;
+    }
+    if (newImageUrl.trim()) {
+      setError(t('library.lineups.form.validation.imageLinkPending'));
       return;
     }
 
@@ -244,25 +335,14 @@ export function LineupFormModal({
     }
 
     setSaving(true);
-    try {
-      const store = await openLineupStore();
-      if (store === null) {
-        setError(t('library.lineups.form.validation.saveFailed'));
-        return;
-      }
-      try {
-        await store.put(lineup);
-      } finally {
-        store.close();
-      }
-
-      onSaved?.(lineup);
-      onDismiss();
-    } catch {
+    const saved = await persistLineup(lineup);
+    setSaving(false);
+    if (!saved) {
       setError(t('library.lineups.form.validation.saveFailed'));
-    } finally {
-      setSaving(false);
+      return;
     }
+    onSaved?.(lineup);
+    onDismiss();
   };
 
   return (
@@ -418,110 +498,19 @@ export function LineupFormModal({
                 })}
               </div>
             </div>
-          </div>
-
-          {/* Coordinates: Origin, Landing, Angles */}
-          <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-1 p-3">
-            {!initialData?.command && (
-              <p className="text-11 text-ink-dim leading-prose">
-                <Text path="library.lineups.form.mapCoordinatesNote" />
-              </p>
-            )}
-            <span className="label-dense text-11 text-ink-dim">
-              <Text path="library.lineups.form.origin" />
-            </span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="lineup-movement-instructions" className="label-dense text-ink-dim">
+                <Text path="library.lineups.form.movementInstructions" />
+              </label>
               <input
+                id="lineup-movement-instructions"
                 type="text"
-                value={values.originX}
-                onChange={(e) => updateValue('originX', e.target.value)}
-                placeholder="X"
-                className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-              />
-              <input
-                type="text"
-                value={values.originY}
-                onChange={(e) => updateValue('originY', e.target.value)}
-                placeholder="Y"
-                className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-              />
-              <input
-                type="text"
-                value={values.originZ}
-                onChange={(e) => updateValue('originZ', e.target.value)}
-                placeholder="Z"
-                className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                value={values.movementInstructions}
+                onChange={(event) => updateValue('movementInstructions', event.target.value)}
+                placeholder={t('library.lineups.form.movementInstructionsPlaceholder')}
+                className="h-8 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink placeholder:text-ink-dim"
               />
             </div>
-
-            <span className="label-dense text-11 text-ink-dim mt-1">
-              <Text path="library.lineups.form.landing" />
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              <input
-                type="text"
-                value={values.landingX}
-                onChange={(e) => updateValue('landingX', e.target.value)}
-                placeholder="X"
-                className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-              />
-              <input
-                type="text"
-                value={values.landingY}
-                onChange={(e) => updateValue('landingY', e.target.value)}
-                placeholder="Y"
-                className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-              />
-              <input
-                type="text"
-                value={values.landingZ}
-                onChange={(e) => updateValue('landingZ', e.target.value)}
-                placeholder="Z"
-                className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              <div className="flex flex-col gap-1">
-                <span className="label-dense text-10 text-ink-dim">
-                  <Text path="library.lineups.form.pitch" />
-                </span>
-                <input
-                  type="text"
-                  value={values.pitch}
-                  onChange={(e) => updateValue('pitch', e.target.value)}
-                  placeholder="Pitch"
-                  className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="label-dense text-10 text-ink-dim">
-                  <Text path="library.lineups.form.yaw" />
-                </span>
-                <input
-                  type="text"
-                  value={values.yaw}
-                  onChange={(e) => updateValue('yaw', e.target.value)}
-                  placeholder="Yaw"
-                  className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Console Command */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="lineup-command" className="label-dense text-ink-dim">
-              <Text path="library.lineups.form.command" />
-            </label>
-            <input
-              id="lineup-command"
-              type="text"
-              value={values.command}
-              onChange={(e) => updateValue('command', e.target.value)}
-              placeholder="setpos ...; setang ..."
-              className="h-8 rounded-card border border-line bg-surface-1 px-3 font-mono text-11 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
-            />
           </div>
 
           {/* Notes */}
@@ -552,15 +541,255 @@ export function LineupFormModal({
               placeholder="https://..."
               className="h-8 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="lineup-image-url" className="label-dense text-ink-dim">
+              <Text path="library.lineups.form.imageUrls" />
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(event) => void handleImages(event)}
+              className="text-11 text-ink-dim file:mr-3 file:rounded-chip file:border file:border-line file:bg-surface-2 file:px-2 file:py-1 file:text-ink"
+            />
+            {preparedImages.map(({ file, previewUrl }, index) => (
+              <div
+                key={previewUrl}
+                className="flex items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
+              >
+                <img
+                  src={previewUrl}
+                  alt=""
+                  className="size-10 shrink-0 rounded-chip object-cover"
+                />
+                <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
+                  {file.name} · {Math.round(file.size / 1024)} KB
+                </span>
+                {isUploadConfirmed && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        submitImageToCatbox(file);
+                      } catch {
+                        setError(t('library.lineups.form.validation.uploadFailed'));
+                      }
+                    }}
+                    className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
+                  >
+                    <Text path="library.lineups.form.uploadImage" />
+                  </button>
+                )}
+                {isUploadConfirmed && (
+                  <a
+                    href={previewUrl}
+                    download={file.name}
+                    className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
+                  >
+                    <Text path="library.lineups.form.downloadWebp" />
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    URL.revokeObjectURL(previewUrl);
+                    previewUrlsRef.current.delete(previewUrl);
+                    setPreparedImages((previous) => previous.filter((_, at) => at !== index));
+                  }}
+                  aria-label={t('library.lineups.form.removeImage')}
+                  className="p-1 text-ink-dim hover:text-ink"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ))}
+            {preparedImages.length > 0 && isUploadConfirmed && (
+              <p className="text-11 text-ink-dim leading-prose">
+                <Text path="library.lineups.form.catboxCopyLink" />
+              </p>
+            )}
+            {Array.from(new Set(values.imageUrls)).map((url) => (
+              <div
+                key={url}
+                className="flex items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
+              >
+                <img
+                  src={url}
+                  alt=""
+                  loading="lazy"
+                  className="size-10 shrink-0 rounded-chip object-cover"
+                />
+                <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">{url}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateValue(
+                      'imageUrls',
+                      values.imageUrls.filter((item) => item !== url),
+                    )
+                  }
+                  aria-label={t('library.lineups.form.removeImage')}
+                  className="rounded-chip p-1 text-ink-dim hover:text-ink"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input
+                id="lineup-image-url"
+                type="url"
+                value={newImageUrl}
+                onChange={(event) => setNewImageUrl(event.target.value)}
+                placeholder="https://..."
+                className="h-8 min-w-0 flex-1 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  const url = newImageUrl.trim();
+                  if (!isHttpUrl(url)) {
+                    setError(t('library.lineups.form.validation.mediaUrlInvalid'));
+                    return;
+                  }
+                  if (!values.imageUrls.includes(url))
+                    updateValue('imageUrls', [...values.imageUrls, url]);
+                  const firstPrepared = preparedImages[0];
+                  if (firstPrepared !== undefined) {
+                    URL.revokeObjectURL(firstPrepared.previewUrl);
+                    previewUrlsRef.current.delete(firstPrepared.previewUrl);
+                    setPreparedImages((previous) => previous.slice(1));
+                  }
+                  setNewImageUrl('');
+                  setError(null);
+                }}
+                className="h-8 px-3 text-12"
+              >
+                <Text path="library.lineups.form.addImage" />
+              </Button>
+            </div>
             <a
-              href="https://imgur.com/upload"
+              href="https://catbox.moe/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-11 text-ink-dim underline hover:text-ink"
             >
-              <Text path="library.lineups.form.uploadToImgur" />
+              <Text path="library.lineups.form.uploadToCatbox" />
             </a>
           </div>
+          <details className="rounded-card border border-line bg-surface-1 p-3">
+            <summary className="cursor-pointer label-dense text-ink-dim">
+              <Text path="library.lineups.form.technicalDetails" />
+            </summary>
+            <div className="mt-3 flex flex-col gap-3">
+              {/* Coordinates: Origin, Landing, Angles */}
+              <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-1 p-3">
+                {!initialData?.command && (
+                  <p className="text-11 text-ink-dim leading-prose">
+                    <Text path="library.lineups.form.mapCoordinatesNote" />
+                  </p>
+                )}
+                <span className="label-dense text-11 text-ink-dim">
+                  <Text path="library.lineups.form.origin" />
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    value={values.originX}
+                    onChange={(e) => updateValue('originX', e.target.value)}
+                    placeholder="X"
+                    className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                  />
+                  <input
+                    type="text"
+                    value={values.originY}
+                    onChange={(e) => updateValue('originY', e.target.value)}
+                    placeholder="Y"
+                    className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                  />
+                  <input
+                    type="text"
+                    value={values.originZ}
+                    onChange={(e) => updateValue('originZ', e.target.value)}
+                    placeholder="Z"
+                    className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                  />
+                </div>
+
+                <span className="label-dense text-11 text-ink-dim mt-1">
+                  <Text path="library.lineups.form.landing" />
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    value={values.landingX}
+                    onChange={(e) => updateValue('landingX', e.target.value)}
+                    placeholder="X"
+                    className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                  />
+                  <input
+                    type="text"
+                    value={values.landingY}
+                    onChange={(e) => updateValue('landingY', e.target.value)}
+                    placeholder="Y"
+                    className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                  />
+                  <input
+                    type="text"
+                    value={values.landingZ}
+                    onChange={(e) => updateValue('landingZ', e.target.value)}
+                    placeholder="Z"
+                    className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="flex flex-col gap-1">
+                    <span className="label-dense text-10 text-ink-dim">
+                      <Text path="library.lineups.form.pitch" />
+                    </span>
+                    <input
+                      type="text"
+                      value={values.pitch}
+                      onChange={(e) => updateValue('pitch', e.target.value)}
+                      placeholder="Pitch"
+                      className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="label-dense text-10 text-ink-dim">
+                      <Text path="library.lineups.form.yaw" />
+                    </span>
+                    <input
+                      type="text"
+                      value={values.yaw}
+                      onChange={(e) => updateValue('yaw', e.target.value)}
+                      placeholder="Yaw"
+                      className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Console Command */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="lineup-command" className="label-dense text-ink-dim">
+                  <Text path="library.lineups.form.command" />
+                </label>
+                <input
+                  id="lineup-command"
+                  type="text"
+                  value={values.command}
+                  onChange={(e) => updateValue('command', e.target.value)}
+                  placeholder="setpos ...; setang ..."
+                  className="h-8 rounded-card border border-line bg-surface-1 px-3 font-mono text-11 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
+                />
+              </div>
+            </div>
+          </details>
         </div>
 
         {/* Footer */}
@@ -568,8 +797,14 @@ export function LineupFormModal({
           <Button type="button" variant="ghost" onClick={onDismiss} className="h-8 px-3 text-12">
             <Text path="library.lineups.form.cancel" />
           </Button>
-          <Button type="submit" disabled={saving} className="h-8 px-4 text-12">
-            <Text path="library.lineups.form.save" />
+          <Button type="submit" disabled={saving} className="h-8 px-4">
+            <Text
+              path={
+                preparedImages.length > 0 && !isUploadConfirmed
+                  ? 'library.lineups.form.continueToUpload'
+                  : 'library.lineups.form.save'
+              }
+            />
           </Button>
         </div>
       </form>

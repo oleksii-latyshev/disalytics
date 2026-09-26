@@ -47,7 +47,9 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
   }
 
   const mediaUrl = safeMediaUrl(lineup.mediaUrl);
-  const imageUrl = imageUrlOf(mediaUrl);
+  const imageUrls = lineup.imageUrls?.length
+    ? lineup.imageUrls
+    : [imageUrlOf(mediaUrl)].filter((url): url is string => url !== null);
 
   const handleCopy = async () => {
     if (!lineup.command) return;
@@ -149,6 +151,9 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
         )}
 
         {lineup.notes && <p className="text-12 text-ink-dim leading-prose">{lineup.notes}</p>}
+        {lineup.movementInstructions && (
+          <p className="text-12 text-ink leading-prose">{lineup.movementInstructions}</p>
+        )}
       </div>
 
       {/* Console command with copy button */}
@@ -182,16 +187,20 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
         </div>
       )}
 
-      {imageUrl && (
-        <a href={imageUrl} target="_blank" rel="noopener noreferrer">
-          <img
-            src={imageUrl}
-            alt={lineup.title}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className="max-h-64 w-full rounded-card object-contain"
-          />
-        </a>
+      {imageUrls.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {Array.from(new Set(imageUrls)).map((url, index) => (
+            <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+              <img
+                src={url}
+                alt={`${lineup.title} ${index + 1}`}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="aspect-video w-full rounded-card object-cover"
+              />
+            </a>
+          ))}
+        </div>
       )}
 
       {/* External media guide link */}
@@ -206,6 +215,21 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
           <Text path="library.lineups.media" />
         </a>
       )}
+      <details className="border-t border-line pt-2 text-11 text-ink-dim">
+        <summary className="cursor-pointer">
+          <Text path="library.lineups.form.technicalDetails" />
+        </summary>
+        <div className="mt-2 flex flex-col gap-1 font-mono">
+          <span>
+            <Text path="library.lineups.form.origin" />: {lineup.origin.x.toFixed(2)},{' '}
+            {lineup.origin.y.toFixed(2)}, {lineup.origin.z.toFixed(2)}
+          </span>
+          <span>
+            <Text path="library.lineups.form.landing" />: {lineup.landing.x.toFixed(2)},{' '}
+            {lineup.landing.y.toFixed(2)}, {lineup.landing.z.toFixed(2)}
+          </span>
+        </div>
+      </details>
     </div>
   );
 }
