@@ -129,8 +129,8 @@ function LineupCanvas({
   };
 
   return (
-    <div className="flex w-full min-w-0 items-center justify-center">
-      <div className="relative aspect-square w-full overflow-hidden rounded-card">
+    <div className="grid size-full min-h-0 min-w-0 place-items-center">
+      <div className="relative aspect-square w-full max-w-[calc(100dvh-10rem)] overflow-hidden rounded-card lg:w-[min(100cqi,100cqb)] lg:max-w-none">
         <canvas
           ref={canvasRef}
           role="img"

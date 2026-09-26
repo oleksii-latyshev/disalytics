@@ -347,7 +347,7 @@ export function LineupFormModal({
 
   return (
     <Dialog isOpen={isOpen} onDismiss={onDismiss} className="w-full max-w-[36rem] overflow-hidden">
-      <form onSubmit={handleSave} className="flex flex-col">
+      <form noValidate onSubmit={handleSave} className="flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="font-ui text-16 font-medium text-ink">
@@ -797,7 +797,7 @@ export function LineupFormModal({
           <Button type="button" variant="ghost" onClick={onDismiss} className="h-8 px-3 text-12">
             <Text path="library.lineups.form.cancel" />
           </Button>
-          <Button type="submit" disabled={saving} className="h-8 px-4">
+          <Button render={<button type="submit" />} disabled={saving} className="h-8 px-4">
             <Text
               path={
                 preparedImages.length > 0 && !isUploadConfirmed
