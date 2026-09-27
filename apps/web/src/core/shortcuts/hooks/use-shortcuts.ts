@@ -50,6 +50,7 @@ function isHandledByTarget(event: KeyboardEvent): boolean {
 
 /** A press that belongs to the browser or to the focused control rather than to a binding. */
 function isSomeoneElses(event: KeyboardEvent): boolean {
+  if (document.querySelector('[data-shortcuts-suspended]')) return true;
   if (event.metaKey || event.ctrlKey || event.altKey) return true;
   // A roving-focus group walks itself with the arrow keys and says so by calling `preventDefault`
   // on the way up. Without this the same press both moves the focus and seeks the match.

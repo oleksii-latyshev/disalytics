@@ -4,6 +4,8 @@ import { Button, cn, Dialog } from '@disa/ui';
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   ExternalLink,
   Pencil,
@@ -141,10 +143,12 @@ function LineupDetailHeader({
 function LineupImageViewer({
   title,
   imageUrls,
+  imageCaptions,
   kind,
 }: {
   readonly title: string;
   readonly imageUrls: readonly string[];
+  readonly imageCaptions: readonly string[];
   readonly kind: Lineup['kind'];
 }) {
   const t = useT();
@@ -163,9 +167,41 @@ function LineupImageViewer({
     initialPanX: number;
     initialPanY: number;
   } | null>(null);
+  const swipeRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    isHorizontal: boolean;
+  } | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
   const activeUrl = imageUrls[activeIndex];
+  const activeCaption = imageCaptions[activeIndex]?.trim() ?? '';
+
+  const selectImage = useCallback(
+    (nextIndex: number) => {
+      if (nextIndex < 0 || nextIndex >= imageUrls.length || nextIndex === activeIndex) return;
+      setActiveIndex(nextIndex);
+      zoomRef.current = 1;
+      panRef.current = { x: 0, y: 0 };
+      setZoom(1);
+      setIsDragging(false);
+      dragRef.current = null;
+      swipeRef.current = null;
+    },
+    [activeIndex, imageUrls.length],
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (imageUrls.length < 2 || zoomRef.current > 1) return;
+    if (e.key === 'ArrowLeft' && activeIndex > 0) {
+      e.preventDefault();
+      selectImage(activeIndex - 1);
+    } else if (e.key === 'ArrowRight' && activeIndex < imageUrls.length - 1) {
+      e.preventDefault();
+      selectImage(activeIndex + 1);
+    }
+  };
 
   const getBounds = useCallback((currentZoom: number) => {
     if (currentZoom <= 1 || !containerRef.current || !imageRef.current) {
@@ -249,14 +285,7 @@ function LineupImageViewer({
     };
   }, [applyTransform, clampPan, handleZoom]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    if (e.detail === 2) {
-      handleZoom(zoomRef.current > 1 ? 1 : 2.5);
-      return;
-    }
-    if (zoomRef.current <= 1) return;
-
+  const startPan = (e: React.PointerEvent<HTMLDivElement>) => {
     const { maxPanX, maxPanY } = getBounds(zoomRef.current);
     if (maxPanX <= 0 && maxPanY <= 0) return;
 
@@ -275,7 +304,41 @@ function LineupImageViewer({
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
+  const startSwipe = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'touch' || imageUrls.length < 2) return;
+    swipeRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      isHorizontal: false,
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    if (e.detail === 2) {
+      handleZoom(zoomRef.current > 1 ? 1 : 2.5);
+      return;
+    }
+    if (zoomRef.current <= 1) {
+      startSwipe(e);
+      return;
+    }
+    startPan(e);
+  };
+
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const swipe = swipeRef.current;
+    if (swipe?.pointerId === e.pointerId && zoomRef.current <= 1) {
+      const dx = e.clientX - swipe.startX;
+      const dy = e.clientY - swipe.startY;
+      if (!swipe.isHorizontal && Math.abs(dx) >= 12 && Math.abs(dx) > Math.abs(dy)) {
+        swipe.isHorizontal = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+      if (swipe.isHorizontal) e.preventDefault();
+      return;
+    }
     if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
@@ -292,7 +355,22 @@ function LineupImageViewer({
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const finishSwipe = (e: React.PointerEvent<HTMLDivElement>) => {
+    const swipe = swipeRef.current;
+    if (!swipe || swipe.pointerId !== e.pointerId) return false;
+    const dx = e.clientX - swipe.startX;
+    const dy = e.clientY - swipe.startY;
+    if (swipe.isHorizontal && Math.abs(dx) >= 56 && Math.abs(dx) > Math.abs(dy)) {
+      selectImage(activeIndex + (dx < 0 ? 1 : -1));
+    }
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    swipeRef.current = null;
+    return true;
+  };
+
+  const finishPan = (e: React.PointerEvent<HTMLDivElement>) => {
     if (dragRef.current && e.currentTarget.hasPointerCapture(dragRef.current.pointerId)) {
       e.currentTarget.releasePointerCapture(dragRef.current.pointerId);
     }
@@ -306,6 +384,16 @@ function LineupImageViewer({
     }
     dragRef.current = null;
     setIsDragging(false);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (finishSwipe(e)) return;
+    finishPan(e);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    swipeRef.current = null;
+    finishPan(e);
   };
 
   if (!activeUrl) {
@@ -365,7 +453,9 @@ function LineupImageViewer({
         </span>
       </div>
 
-      <div
+      <section
+        tabIndex={imageUrls.length > 1 ? 0 : undefined}
+        aria-label={title}
         ref={containerRef}
         className={cn(
           'relative flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden select-none p-1 sm:p-2',
@@ -375,12 +465,14 @@ function LineupImageViewer({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onKeyDown={handleKeyDown}
       >
         <img
+          key={activeUrl}
           ref={imageRef}
           src={activeUrl}
-          alt={title}
+          alt={activeCaption || title}
           draggable={false}
           referrerPolicy="no-referrer"
           style={{
@@ -399,7 +491,42 @@ function LineupImageViewer({
               : 'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-reduce:transition-none',
           )}
         />
-      </div>
+      </section>
+
+      {activeCaption && (
+        <p className="shrink-0 [border-block-start:1px_solid_var(--color-line)] bg-surface-1 px-3 py-2 text-12 text-ink">
+          {activeCaption}
+        </p>
+      )}
+
+      {imageUrls.length > 1 && (
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={activeIndex === 0}
+            onClick={() => selectImage(activeIndex - 1)}
+            title={t('library.lineups.previousPhoto')}
+            aria-label={t('library.lineups.previousPhoto')}
+            className="absolute left-3 top-1/2 z-10 size-9 -translate-y-1/2 rounded-full border border-line bg-surface-2 text-ink-dim shadow-float hover:text-ink motion-reduce:transition-none"
+          >
+            <ChevronLeft className="size-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={activeIndex === imageUrls.length - 1}
+            onClick={() => selectImage(activeIndex + 1)}
+            title={t('library.lineups.nextPhoto')}
+            aria-label={t('library.lineups.nextPhoto')}
+            className="absolute right-3 top-1/2 z-10 size-9 -translate-y-1/2 rounded-full border border-line bg-surface-2 text-ink-dim shadow-float hover:text-ink motion-reduce:transition-none"
+          >
+            <ChevronRight className="size-5" />
+          </Button>
+        </>
+      )}
 
       {/* Thumbnails strip */}
       {imageUrls.length > 1 && (
@@ -409,11 +536,8 @@ function LineupImageViewer({
               key={url}
               type="button"
               aria-current={idx === activeIndex ? 'true' : undefined}
-              onClick={() => {
-                setActiveIndex(idx);
-                handleZoom(1);
-              }}
-              className={`relative size-12 sm:size-14 shrink-0 overflow-hidden rounded-chip border-2 transition-opacity ${
+              onClick={() => selectImage(idx)}
+              className={`relative size-12 sm:size-14 shrink-0 overflow-hidden rounded-chip border-2 transition-opacity motion-reduce:transition-none ${
                 idx === activeIndex
                   ? 'border-focus opacity-100'
                   : 'border-transparent opacity-60 hover:opacity-100'
@@ -421,7 +545,7 @@ function LineupImageViewer({
             >
               <img
                 src={url}
-                alt={`${title} ${idx + 1}`}
+                alt={imageCaptions[idx]?.trim() || `${title} ${idx + 1}`}
                 loading="lazy"
                 referrerPolicy="no-referrer"
                 className="size-full object-cover select-none pointer-events-none"
@@ -662,6 +786,24 @@ function LineupInfoSidebar({
 
       <LineupMovementCard movementKeys={lineup.movementKeys ?? []} />
 
+      {lineup.mouseButtons && lineup.mouseButtons.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-2 p-3.5">
+          <span className="label-dense text-ink-dim">
+            <Text path="library.lineups.mouseButtons" />
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {lineup.mouseButtons.map((button) => (
+              <kbd
+                key={button}
+                className="rounded-chip border border-line bg-surface-3 px-2.5 py-1 font-mono text-12 text-ink"
+              >
+                <Text path={`library.lineups.form.mouse.${button}`} />
+              </kbd>
+            ))}
+          </div>
+        </div>
+      )}
+
       {isFromDemo && (
         <LineupCoordinatesCollapsible lineup={lineup} landingCommand={landingCommand} />
       )}
@@ -702,7 +844,12 @@ export function LineupDetailModal({ lineup, isOpen, onDismiss, onEdit, onDelete 
       />
 
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden lg:flex-row">
-        <LineupImageViewer title={lineup.title} imageUrls={imageUrls} kind={lineup.kind} />
+        <LineupImageViewer
+          title={lineup.title}
+          imageUrls={imageUrls}
+          imageCaptions={lineup.imageCaptions ?? []}
+          kind={lineup.kind}
+        />
 
         <LineupInfoSidebar
           lineup={lineup}

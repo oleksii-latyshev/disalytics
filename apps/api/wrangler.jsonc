@@ -6,6 +6,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "keep_vars": true,
+  "vars": { "TURNSTILE_SITE_KEY": "0x4AAAAAAFE_B-qzAtGhuFmM" },
   "ratelimits": [
     {
       "name": "UPLOAD_RATE_LIMITER",

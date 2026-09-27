@@ -3,6 +3,7 @@ import type { MovementKey, ThrowType } from './throw-detail';
 import { THROWN_UTILITY_KINDS, type UtilityKind } from './utility';
 
 export type LineupSide = Team | 'BOTH';
+export type LineupMouseButton = 'left' | 'right';
 
 export const LINEUP_SIDES: readonly LineupSide[] = ['CT', 'T', 'BOTH'] as const;
 
@@ -27,6 +28,7 @@ export interface Lineup {
   readonly throwType: ThrowType;
   readonly movementKeys: readonly MovementKey[];
   readonly movementKeysSummary: string;
+  readonly mouseButtons?: readonly LineupMouseButton[];
   readonly command: string;
   readonly landingCommand?: string;
   readonly fromDemo?: boolean;
@@ -34,6 +36,7 @@ export interface Lineup {
   readonly movementInstructions?: string;
   readonly mediaUrl?: string;
   readonly imageUrls?: readonly string[];
+  readonly imageCaptions?: readonly string[];
   readonly isBuiltIn?: boolean;
   readonly createdAt: number;
 }
@@ -135,7 +138,12 @@ function isImageUrl(value: unknown): value is string {
   return typeof value === 'string' && /^https?:\/\/[^\s]+$/i.test(value);
 }
 
-function hasValidInstructions(movementInstructions: unknown, imageUrls: unknown): boolean {
+function hasValidInstructions(
+  movementInstructions: unknown,
+  imageUrls: unknown,
+  imageCaptions: unknown,
+  mouseButtons: unknown,
+): boolean {
   if (movementInstructions !== undefined && typeof movementInstructions !== 'string') {
     return false;
   }
@@ -143,6 +151,24 @@ function hasValidInstructions(movementInstructions: unknown, imageUrls: unknown)
     if (!Array.isArray(imageUrls) || !imageUrls.every(isImageUrl)) {
       return false;
     }
+  }
+  if (imageCaptions !== undefined) {
+    if (
+      !Array.isArray(imageCaptions) ||
+      !imageCaptions.every((caption) => typeof caption === 'string') ||
+      !Array.isArray(imageUrls) ||
+      imageCaptions.length !== imageUrls.length
+    ) {
+      return false;
+    }
+  }
+  if (
+    mouseButtons !== undefined &&
+    (!Array.isArray(mouseButtons) ||
+      !mouseButtons.every((button) => button === 'left' || button === 'right') ||
+      new Set(mouseButtons).size !== mouseButtons.length)
+  ) {
+    return false;
   }
   return true;
 }
@@ -155,7 +181,12 @@ export function isLineup(value: unknown): value is Lineup {
     hasValidClassification(value.side, value.kind, value.throwType) &&
     hasValidGeometry(value.origin, value.landing, value.pitch, value.yaw) &&
     hasValidCommand(value.movementKeys, value.movementKeysSummary, value.command) &&
-    hasValidInstructions(value.movementInstructions, value.imageUrls) &&
+    hasValidInstructions(
+      value.movementInstructions,
+      value.imageUrls,
+      value.imageCaptions,
+      value.mouseButtons,
+    ) &&
     hasValidOptionals(
       value.notes,
       value.mediaUrl,
