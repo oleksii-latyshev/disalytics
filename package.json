@@ -7,6 +7,7 @@
     "build": "turbo run build",
     "preview": "turbo run build && wrangler dev",
     "smoke": "bun tools/scripts/smoke.ts",
+    "api:smoke": "bun tools/scripts/api-smoke.ts",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.tools.json",
     "test": "turbo run test && vitest run",
     "check": "biome check .",
