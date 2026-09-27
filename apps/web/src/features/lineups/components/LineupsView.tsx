@@ -6,92 +6,30 @@ import {
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { MAP_IDS, type MapId } from '@disa/map-data';
-import { Button, Dialog } from '@disa/ui';
+import {
+  Button,
+  Dialog,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@disa/ui';
 import { Download, Plus, Search, Upload, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { filterLineups } from '../helpers/lineup-filter';
 import { groupLineupsByOrigin } from '../helpers/lineup-plot';
 import { useMapLineups } from '../hooks/use-map-lineups';
-import { LineupDetailCard } from './LineupDetailCard';
+import { LineupDetailModal } from './LineupDetailModal';
 import { LineupFormModal } from './LineupFormModal';
+import { LineupList } from './LineupList';
 import { LineupPlate } from './LineupPlate';
 
 type SideScope = 'ALL' | 'CT' | 'T';
 type KindScope = 'all' | UtilityKind;
 type Point = { readonly x: number; readonly y: number };
-
-function lineupsNearOrigin(lineups: readonly Lineup[], selected: Lineup | null): readonly Lineup[] {
-  if (selected === null) return [];
-  return lineups.filter((lineup) => {
-    const dx = lineup.origin.x - selected.origin.x;
-    const dy = lineup.origin.y - selected.origin.y;
-    return dx * dx + dy * dy < 80 * 80;
-  });
-}
-
-function LineupSidebar({
-  lineups,
-  selected,
-  selectedId,
-  onSelect,
-  onEdit,
-  onDelete,
-}: {
-  readonly lineups: readonly Lineup[];
-  readonly selected: Lineup | null;
-  readonly selectedId: string | null;
-  readonly onSelect: (id: string | null) => void;
-  readonly onEdit: (lineup: Lineup) => void;
-  readonly onDelete: (id: string) => void;
-}) {
-  const t = useT();
-  const nearby = lineupsNearOrigin(lineups, selected);
-
-  return (
-    <aside className="flex flex-col gap-3">
-      {lineups.length > 0 && (
-        <select
-          aria-label={t('library.lineups.choose')}
-          value={selectedId ?? ''}
-          onChange={(event) => onSelect(event.target.value || null)}
-          className="h-9 w-full rounded-card border border-line bg-surface-1 px-3 text-12 text-ink"
-        >
-          <option value="">{t('library.lineups.choose')}</option>
-          {lineups.map((lineup) => (
-            <option key={lineup.id} value={lineup.id}>
-              {lineup.title}
-            </option>
-          ))}
-        </select>
-      )}
-      {selected === null && lineups.length === 0 ? (
-        <div className="surface-card flex min-h-[12rem] items-center justify-center rounded-float p-6 text-center text-13 text-ink-dim">
-          <Text path="library.lineups.emptyMap" />
-        </div>
-      ) : (
-        <LineupDetailCard lineup={selected} onEdit={onEdit} onDelete={onDelete} />
-      )}
-      {nearby.length > 1 && (
-        <div className="surface-card flex flex-col gap-1 rounded-float p-3">
-          <span className="label-dense mb-1 text-ink-dim">
-            <Text path="library.lineups.nearby" />
-          </span>
-          {nearby.map((lineup) => (
-            <button
-              key={lineup.id}
-              type="button"
-              onClick={() => onSelect(lineup.id)}
-              className={`rounded-card p-2 text-left text-12 ${selectedId === lineup.id ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2 hover:text-ink'}`}
-            >
-              {lineup.title}
-            </button>
-          ))}
-        </div>
-      )}
-    </aside>
-  );
-}
 
 export function LineupsView() {
   const t = useT();
@@ -103,6 +41,8 @@ export function LineupsView() {
   const [origin, setOrigin] = useState<Point | null>(null);
   const [isPlacing, setIsPlacing] = useState(false);
   const [editingLineup, setEditingLineup] = useState<Lineup | null>(null);
+  const [detailLineup, setDetailLineup] = useState<Lineup | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draftLanding, setDraftLanding] = useState<Point | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -115,7 +55,6 @@ export function LineupsView() {
     [lineups, side, kind, search],
   );
   const selectedIndex = filteredLineups.findIndex((lineup) => lineup.id === selectedId);
-  const selectedLineup = selectedIndex >= 0 ? (filteredLineups[selectedIndex] ?? null) : null;
   const originGroups = useMemo(() => groupLineupsByOrigin(filteredLineups), [filteredLineups]);
   const selectedGroup =
     selectedGroupIds?.flatMap((id) => filteredLineups.filter((item) => item.id === id)) ?? [];
@@ -135,7 +74,11 @@ export function LineupsView() {
       );
       return;
     }
-    setSelectedId(filteredLineups[index]?.id ?? null);
+    const single = filteredLineups[index];
+    if (single !== undefined) {
+      setSelectedId(single.id);
+      setDetailLineup(single);
+    }
   };
 
   const handleMapPoint = (point: Point) => {
@@ -213,11 +156,50 @@ export function LineupsView() {
         </div>
       </header>
 
-      <div className="grid min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(14rem,17rem)] xl:grid-cols-[minmax(12rem,15rem)_minmax(0,1fr)_minmax(16rem,19rem)]">
+      {/* Eyebrow Toolbar with Map Select */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface-1 px-3.5 py-2">
+        <div className="flex items-center gap-2.5">
+          <span className="label-dense text-ink-dim">
+            <Text path="library.lineups.map" />:
+          </span>
+          <div className="w-52">
+            <Select
+              value={map}
+              onValueChange={(val) => {
+                if (!val) return;
+                setMap(val as MapId);
+                setSelectedId(null);
+                setOrigin(null);
+                setIsPlacing(false);
+              }}
+            >
+              <SelectTrigger aria-label={t('library.lineups.map')} className="h-8 bg-surface-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MAP_IDS.map((mapId) => (
+                  <SelectItem key={mapId} value={mapId}>
+                    {mapId}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-12 text-ink-dim">
+          <span className="numeric font-mono">
+            <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
+          </span>
+        </div>
+      </div>
+
+      <div className="grid min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(16rem,20rem)] xl:grid-cols-[minmax(12rem,15rem)_minmax(0,1fr)_minmax(18rem,22rem)]">
+        {/* Left Filter Sidebar */}
         <aside className="flex min-w-0 flex-col gap-4 rounded-float border border-line bg-surface-1 p-3 lg:min-h-0 lg:overflow-y-auto">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-ink-dim" />
-            <input
+            <Input
               type="search"
               value={search}
               onChange={(event) => {
@@ -226,37 +208,8 @@ export function LineupsView() {
               }}
               aria-label={t('library.lineups.searchPlaceholder')}
               placeholder={t('library.lineups.searchPlaceholder')}
-              className="h-9 w-full rounded-card border border-line bg-surface-0 pl-8 pr-2 text-12 text-ink placeholder:text-ink-dim"
+              className="h-8 pl-8 pr-2 text-12"
             />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="label-dense text-ink-dim">
-              <Text path="library.lineups.map" />
-            </span>
-            <div
-              role="tablist"
-              aria-label={t('library.lineups.map')}
-              className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1"
-            >
-              {MAP_IDS.map((mapId) => (
-                <button
-                  key={mapId}
-                  type="button"
-                  role="tab"
-                  aria-selected={map === mapId}
-                  onClick={() => {
-                    setMap(mapId);
-                    setSelectedId(null);
-                    setOrigin(null);
-                    setIsPlacing(false);
-                  }}
-                  className={`rounded-card px-3 py-2 text-left font-ui text-12 transition-colors ${map === mapId ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2 hover:text-ink'}`}
-                >
-                  {mapId}
-                </button>
-              ))}
-            </div>
           </div>
 
           <fieldset
@@ -320,9 +273,6 @@ export function LineupsView() {
             </div>
           </div>
 
-          <span className="numeric text-12 text-ink-dim">
-            <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
-          </span>
           {notice && (
             <div
               role="status"
@@ -331,6 +281,7 @@ export function LineupsView() {
               {notice}
             </div>
           )}
+
           {isPlacing && (
             <div
               role="status"
@@ -369,6 +320,7 @@ export function LineupsView() {
           )}
         </aside>
 
+        {/* Radar Map Center */}
         <section
           aria-label={t('library.lineups.map')}
           className="grid min-h-0 min-w-0 place-items-center lg:[container-type:size]"
@@ -376,36 +328,53 @@ export function LineupsView() {
           <LineupPlate
             map={map}
             lineups={filteredLineups}
-            focused={selectedIndex >= 0 ? selectedIndex : null}
+            focused={selectedIndex >= 0 ? selectedIndex : hoveredIndex}
             onSelect={handleSelectMarker}
             onPlace={isPlacing ? handleMapPoint : undefined}
             draftOrigin={origin}
           />
         </section>
 
-        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto">
-          <LineupSidebar
-            lineups={filteredLineups}
-            selected={selectedLineup}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onEdit={(lineup) => {
-              setEditingLineup(lineup);
-              setIsModalOpen(true);
-            }}
-            onDelete={(id) => {
-              void deleteLineup(id).then(() => setSelectedId(null));
-            }}
-          />
-        </div>
+        {/* Right Lineups List */}
+        <aside
+          aria-label={t('library.lineups.title')}
+          className="flex min-w-0 flex-col gap-2.5 rounded-float border border-line bg-surface-1 p-3 lg:min-h-0 lg:overflow-hidden"
+        >
+          <div className="flex items-center justify-between border-b border-line pb-2">
+            <span className="font-ui text-13 font-medium text-ink">
+              <Text path="library.lineups.title" />
+            </span>
+            <span className="numeric font-mono text-11 text-ink-dim">
+              <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
+            </span>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <LineupList
+              lineups={filteredLineups}
+              focused={hoveredIndex}
+              selectedIndex={selectedIndex >= 0 ? selectedIndex : null}
+              onHover={setHoveredIndex}
+              onSelect={(index) => {
+                const item = filteredLineups[index];
+                if (item) {
+                  setSelectedId(item.id);
+                  setDetailLineup(item);
+                }
+              }}
+            />
+          </div>
+        </aside>
       </div>
+
+      {/* Variants Modal (Cluster on Map) */}
       {selectedGroupIds !== null && (
         <Dialog
           isOpen
           onDismiss={() => setSelectedGroupIds(null)}
           className="w-full max-w-[36rem] p-5"
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between border-b border-line pb-3">
             <h3 className="font-ui text-16 font-medium text-ink">
               <Text path="library.lineups.fromPosition" values={{ count: selectedGroup.length }} />
             </h3>
@@ -418,7 +387,7 @@ export function LineupsView() {
               <X className="size-4" />
             </button>
           </div>
-          <div className="mt-4 grid max-h-[60vh] gap-2 overflow-y-auto">
+          <div className="mt-3 grid max-h-[60vh] gap-2 overflow-y-auto">
             {selectedGroup.map((lineup) => {
               const preview =
                 lineup.imageUrls?.[0] ??
@@ -432,8 +401,9 @@ export function LineupsView() {
                   onClick={() => {
                     setSelectedId(lineup.id);
                     setSelectedGroupIds(null);
+                    setDetailLineup(lineup);
                   }}
-                  className="flex items-center gap-3 rounded-card border border-line bg-surface-1 p-2 text-left hover:bg-surface-2"
+                  className="flex items-center gap-3 rounded-card border border-line bg-surface-1 p-2 text-left transition-colors hover:bg-surface-2"
                 >
                   {preview ? (
                     <img
@@ -462,6 +432,26 @@ export function LineupsView() {
           </div>
         </Dialog>
       )}
+
+      {/* Grenade Detail Modal */}
+      {detailLineup !== null && (
+        <LineupDetailModal
+          isOpen
+          lineup={detailLineup}
+          onDismiss={() => setDetailLineup(null)}
+          onEdit={(lineup) => {
+            setDetailLineup(null);
+            setEditingLineup(lineup);
+            setIsModalOpen(true);
+          }}
+          onDelete={(id) => {
+            setDetailLineup(null);
+            void deleteLineup(id).then(() => setSelectedId(null));
+          }}
+        />
+      )}
+
+      {/* Creation/Edit Form Modal */}
       {isModalOpen && (
         <LineupFormModal
           isOpen

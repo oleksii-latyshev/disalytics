@@ -16,6 +16,16 @@
 export { Button, buttonVariants } from './components/button';
 export { Dialog } from './components/dialog';
 export { Input, inputVariants } from './components/input';
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from './components/select';
 export { Sheet } from './components/sheet';
 export { Switch } from './components/switch';
 export { cn } from './lib/utils';
