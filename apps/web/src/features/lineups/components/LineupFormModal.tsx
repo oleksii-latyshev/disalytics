@@ -1,5 +1,6 @@
 import {
   type Lineup,
+  type LineupMouseButton,
   type LineupSide,
   type MovementKey,
   THROWN_UTILITY_KINDS,
@@ -12,7 +13,6 @@ import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
 import {
   Button,
-  Dialog,
   Input,
   Select,
   SelectContent,
@@ -20,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@disa/ui';
-import { X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
 import { loadTurnstile, uploadLineupImage, uploadSiteKey } from '../helpers/upload-image';
 
@@ -41,6 +42,28 @@ const ALL_THROW_TYPES: readonly ThrowType[] = ['stand', 'jump', 'run', 'crouch',
 interface PreparedImage {
   readonly file: File;
   readonly previewUrl: string;
+  readonly caption: string;
+}
+
+function moved<T>(items: readonly T[], from: number, to: number): readonly T[] {
+  if (to < 0 || to >= items.length || from === to) return items;
+  const result = [...items];
+  const [item] = result.splice(from, 1);
+  if (item === undefined) return items;
+  result.splice(to, 0, item);
+  return result;
+}
+
+export function reorderLineupPhotos(
+  values: LineupFormValues,
+  from: number,
+  to: number,
+): LineupFormValues {
+  return {
+    ...values,
+    imageUrls: moved(values.imageUrls, from, to),
+    imageCaptions: moved(values.imageCaptions, from, to),
+  };
 }
 
 export interface LineupFormData {
@@ -55,8 +78,10 @@ export interface LineupFormData {
   readonly yaw?: number;
   readonly throwType?: ThrowType;
   readonly movementKeys?: readonly MovementKey[];
+  readonly mouseButtons?: readonly LineupMouseButton[];
   readonly movementInstructions?: string;
   readonly imageUrls?: readonly string[];
+  readonly imageCaptions?: readonly string[];
   readonly command?: string;
   readonly landingCommand?: string;
   readonly fromDemo?: boolean;
@@ -72,8 +97,10 @@ export interface LineupFormValues {
   readonly kind: UtilityKind;
   readonly throwType: ThrowType;
   readonly movementKeys: readonly MovementKey[];
+  readonly mouseButtons: readonly LineupMouseButton[];
   readonly movementInstructions: string;
   readonly imageUrls: readonly string[];
+  readonly imageCaptions: readonly string[];
   readonly originX: string;
   readonly originY: string;
   readonly originZ: string;
@@ -128,8 +155,10 @@ function defaultFormValues(defaultMap: string): LineupFormValues {
     kind: 'smoke',
     throwType: 'jump',
     movementKeys: ['Jump'],
+    mouseButtons: ['left'],
     movementInstructions: '',
     imageUrls: [],
+    imageCaptions: [],
     originX: '0',
     originY: '0',
     originZ: '0',
@@ -163,6 +192,14 @@ function extractCoords(coord?: { readonly x: number; readonly y: number; readonl
   };
 }
 
+function captionsOf(data: LineupFormData): readonly string[] {
+  return data.imageUrls?.map((_, index) => data.imageCaptions?.[index] ?? '') ?? [];
+}
+
+function commandOf(data: LineupFormData, isFromDemo: boolean): string {
+  return isFromDemo ? (data.command ?? '') : '';
+}
+
 export function initFormValues(
   data?: LineupFormData | null,
   defaultMap = 'de_mirage',
@@ -183,8 +220,10 @@ export function initFormValues(
     kind: data.kind ?? 'smoke',
     throwType: data.throwType ?? 'jump',
     movementKeys: data.movementKeys ?? ['Jump'],
+    mouseButtons: data.mouseButtons ?? ['left'],
     movementInstructions: data.movementInstructions ?? '',
     imageUrls: data.imageUrls ?? [],
+    imageCaptions: captionsOf(data),
     originX: origin.x,
     originY: origin.y,
     originZ: origin.z,
@@ -193,7 +232,7 @@ export function initFormValues(
     landingZ: landing.z,
     pitch: formatCoord(data.pitch),
     yaw: formatCoord(data.yaw),
-    command: isFromDemo ? (data.command ?? '') : '',
+    command: commandOf(data, isFromDemo),
     landingCommand: landingCmd,
     fromDemo: isFromDemo,
     notes: data.notes ?? '',
@@ -286,10 +325,13 @@ export function buildLineupFromForm(
     throwType: values.throwType,
     movementKeys: values.movementKeys,
     movementKeysSummary: movementSummary,
+    ...(values.mouseButtons.length > 0 ? { mouseButtons: values.mouseButtons } : {}),
     ...(values.movementInstructions.trim()
       ? { movementInstructions: values.movementInstructions.trim() }
       : {}),
-    ...(values.imageUrls.length > 0 ? { imageUrls: values.imageUrls } : {}),
+    ...(values.imageUrls.length > 0
+      ? { imageUrls: values.imageUrls, imageCaptions: values.imageCaptions }
+      : {}),
     command,
     ...(landingCommand ? { landingCommand } : {}),
     ...(values.fromDemo ? { fromDemo: true } : {}),
@@ -339,13 +381,14 @@ export function LineupFormModal({
   const [saving, setSaving] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [preparedImages, setPreparedImages] = useState<readonly PreparedImage[]>([]);
-  const [isUploadConfirmed, setUploadConfirmed] = useState(false);
   const [siteKey, setSiteKey] = useState<string | null | undefined>();
   const [challengeToken, setChallengeToken] = useState('');
   const [uploadingUrl, setUploadingUrl] = useState<string | null>(null);
   const challengeRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<string | null>(null);
   const previewUrlsRef = useRef(new Set<string>());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
 
   useEffect(
     () => () => {
@@ -357,16 +400,19 @@ export function LineupFormModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setValues(initFormValues(initialData, defaultMap));
-    setError(null);
-    setNewImageUrl('');
-    setPreparedImages([]);
-    setUploadConfirmed(false);
-    setChallengeToken('');
-  }, [isOpen, initialData, defaultMap]);
+    const appRoot = document.getElementById('root');
+    const wasInert = appRoot?.inert ?? false;
+    const previousOverflow = document.body.style.overflow;
+    if (appRoot) appRoot.inert = true;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      if (appRoot) appRoot.inert = wasInert;
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !isUploadConfirmed) return;
+    if (!isOpen || preparedImages.length === 0) return;
     let active = true;
     setSiteKey(undefined);
     void uploadSiteKey().then((key) => {
@@ -375,10 +421,10 @@ export function LineupFormModal({
     return () => {
       active = false;
     };
-  }, [isOpen, isUploadConfirmed]);
+  }, [isOpen, preparedImages.length]);
 
   useEffect(() => {
-    if (!isOpen || !isUploadConfirmed || !siteKey || !challengeRef.current) return;
+    if (!isOpen || preparedImages.length === 0 || !siteKey || !challengeRef.current) return;
     let active = true;
     let widget: string | null = null;
     void loadTurnstile()
@@ -400,7 +446,7 @@ export function LineupFormModal({
       if (widget && window.turnstile) window.turnstile.remove(widget);
       widgetRef.current = null;
     };
-  }, [isOpen, isUploadConfirmed, siteKey]);
+  }, [isOpen, preparedImages.length, siteKey]);
 
   const handleUpload = async (image: PreparedImage) => {
     if (!challengeToken) return;
@@ -413,6 +459,9 @@ export function LineupFormModal({
         imageUrls: previous.imageUrls.includes(url)
           ? previous.imageUrls
           : [...previous.imageUrls, url],
+        imageCaptions: previous.imageUrls.includes(url)
+          ? previous.imageCaptions
+          : [...previous.imageCaptions, image.caption],
       }));
       URL.revokeObjectURL(image.previewUrl);
       previewUrlsRef.current.delete(image.previewUrl);
@@ -441,15 +490,17 @@ export function LineupFormModal({
     }));
   };
 
-  const handleImages = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = '';
+  const handleImages = async (files: readonly File[]) => {
+    if (files.length === 0) return;
     try {
       const prepared = await Promise.all(files.map(prepareLineupImage));
-      const images = prepared.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+      const images = prepared.map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        caption: '',
+      }));
       for (const image of images) previewUrlsRef.current.add(image.previewUrl);
       setPreparedImages((previous) => [...previous, ...images]);
-      setUploadConfirmed(false);
       setError(null);
     } catch {
       setError(t('library.lineups.form.validation.imageProcessingFailed'));
@@ -461,11 +512,6 @@ export function LineupFormModal({
     const validationKey = basicValidationKey(values);
     if (validationKey !== null) {
       setError(t(validationKey));
-      return;
-    }
-    if (preparedImages.length > 0 && !isUploadConfirmed) {
-      setUploadConfirmed(true);
-      setError(null);
       return;
     }
     if (preparedImages.length > 0) {
@@ -499,26 +545,55 @@ export function LineupFormModal({
     onDismiss();
   };
 
-  return (
-    <Dialog isOpen={isOpen} onDismiss={onDismiss} className="w-full max-w-[36rem] overflow-hidden">
-      <form noValidate onSubmit={handleSave} className="flex flex-col">
+  const initialValues = initFormValues(initialData, defaultMap);
+  const isDirty =
+    JSON.stringify(values) !== JSON.stringify(initialValues) ||
+    preparedImages.length > 0 ||
+    newImageUrl.trim().length > 0;
+  useEffect(() => {
+    if (!isOpen || !isDirty) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [isOpen, isDirty]);
+  const handleExit = () => {
+    if (!isDirty || window.confirm(t('library.lineups.form.discardConfirm'))) onDismiss();
+  };
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <section
+      data-shortcuts-suspended
+      className="fixed inset-0 z-100 overflow-y-auto bg-surface-0"
+      aria-label={t(initialData?.id ? 'library.lineups.edit' : 'library.lineups.create')}
+    >
+      <form
+        noValidate
+        onSubmit={handleSave}
+        className="mx-auto flex min-h-dvh w-full max-w-[72rem] flex-col px-4 pb-8 sm:px-8"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="font-ui text-16 font-medium text-ink">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 [border-block-end:1px_solid_var(--color-line)] bg-surface-0 py-5">
+          <h2 className="font-ui text-20 font-medium text-ink">
             <Text path={initialData?.id ? 'library.lineups.edit' : 'library.lineups.create'} />
           </h2>
           <button
             type="button"
-            onClick={onDismiss}
-            aria-label={t('library.lineups.form.close')}
-            className="rounded-chip p-1 text-ink-dim hover:bg-surface-2 hover:text-ink"
+            onClick={handleExit}
+            aria-label={t('library.lineups.form.back')}
+            className="flex items-center gap-2 rounded-chip px-2 py-1 text-ink-dim hover:bg-surface-2 hover:text-ink"
           >
-            <X className="size-4" />
+            <ArrowLeft className="size-4" />
+            <Text path="library.lineups.form.back" />
           </button>
         </div>
 
         {/* Form Body */}
-        <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto px-5 py-4 text-13">
+        <div className="flex w-full max-w-[48rem] flex-1 flex-col gap-5 py-6 text-13">
           {error && (
             <div
               role="alert"
@@ -657,6 +732,35 @@ export function LineupFormModal({
                 })}
               </div>
             </div>
+            <fieldset className="flex flex-col gap-1.5 border-0 p-0">
+              <legend className="label-dense text-ink-dim">
+                <Text path="library.lineups.form.mouseButtons" />
+              </legend>
+              <div className="flex flex-wrap gap-1.5">
+                {(['left', 'right'] as const).map((button) => (
+                  <button
+                    key={button}
+                    type="button"
+                    aria-pressed={values.mouseButtons.includes(button)}
+                    onClick={() =>
+                      updateValue(
+                        'mouseButtons',
+                        values.mouseButtons.includes(button)
+                          ? values.mouseButtons.filter((item) => item !== button)
+                          : [...values.mouseButtons, button],
+                      )
+                    }
+                    className={`rounded-chip border px-3 py-1.5 text-11 ${
+                      values.mouseButtons.includes(button)
+                        ? 'border-line bg-surface-3 text-ink'
+                        : 'border-transparent bg-surface-1 text-ink-dim hover:text-ink'
+                    }`}
+                  >
+                    <Text path={`library.lineups.form.mouse.${button}`} />
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="lineup-movement-instructions" className="label-dense text-ink-dim">
                 <Text path="library.lineups.form.movementInstructions" />
@@ -707,48 +811,104 @@ export function LineupFormModal({
               <Text path="library.lineups.form.imageUrls" />
             </label>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               multiple
-              onChange={(event) => void handleImages(event)}
-              className="text-11 text-ink-dim file:mr-3 file:rounded-chip file:border file:border-line file:bg-surface-2 file:px-2 file:py-1 file:text-ink"
+              onChange={(event) => {
+                void handleImages(Array.from(event.target.files ?? []));
+                event.target.value = '';
+              }}
+              className="sr-only"
+              aria-label={t('library.lineups.form.choosePhotos')}
             />
-            {preparedImages.map(({ file, previewUrl }, index) => (
+            <fieldset
+              aria-label={t('library.lineups.form.dropPhotos')}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsDraggingFiles(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                event.dataTransfer.dropEffect = 'copy';
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (
+                  !(event.relatedTarget instanceof Node) ||
+                  !event.currentTarget.contains(event.relatedTarget)
+                ) {
+                  setIsDraggingFiles(false);
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsDraggingFiles(false);
+                void handleImages(
+                  Array.from(event.dataTransfer.files).filter((file) =>
+                    file.type.startsWith('image/'),
+                  ),
+                );
+              }}
+              className={`flex min-h-28 flex-col items-center justify-center gap-2 rounded-card border border-dashed p-4 text-center ${isDraggingFiles ? 'border-ink bg-surface-2' : 'border-line bg-surface-1'}`}
+            >
+              <p className="text-12 text-ink-dim">
+                <Text path="library.lineups.form.dropPhotos" />
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Text path="library.lineups.form.choosePhotos" />
+              </Button>
+            </fieldset>
+            {preparedImages.map((image, index) => (
               <div
-                key={previewUrl}
-                className="flex items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
+                key={image.previewUrl}
+                className="flex flex-wrap items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
               >
                 <img
-                  src={previewUrl}
+                  src={image.previewUrl}
                   alt=""
                   className="size-10 shrink-0 rounded-chip object-cover"
                 />
                 <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
-                  {file.name} · {Math.round(file.size / 1024)} KB
+                  {image.file.name} · {Math.round(image.file.size / 1024)} KB
                 </span>
-                {isUploadConfirmed && siteKey && (
+                {siteKey && (
                   <button
                     type="button"
                     disabled={!challengeToken || uploadingUrl !== null}
-                    onClick={() => void handleUpload({ file, previewUrl })}
+                    onClick={() => void handleUpload(image)}
                     className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
                   >
-                    <Text path="library.lineups.form.uploadImage" />
+                    <Text
+                      path={
+                        uploadingUrl === image.previewUrl
+                          ? 'library.lineups.form.uploading'
+                          : 'library.lineups.form.uploadImage'
+                      }
+                    />
                   </button>
                 )}
-                {isUploadConfirmed && siteKey === null && (
+                {siteKey === null && (
                   <button
                     type="button"
-                    onClick={() => submitImageToCatbox(file)}
+                    onClick={() => submitImageToCatbox(image.file)}
                     className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
                   >
                     <Text path="library.lineups.form.uploadImage" />
                   </button>
                 )}
-                {isUploadConfirmed && (
+                {siteKey === null && (
                   <a
-                    href={previewUrl}
-                    download={file.name}
+                    href={image.previewUrl}
+                    download={image.file.name}
                     className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
                   >
                     <Text path="library.lineups.form.downloadWebp" />
@@ -756,9 +916,27 @@ export function LineupFormModal({
                 )}
                 <button
                   type="button"
+                  disabled={index === 0}
+                  onClick={() => setPreparedImages((current) => moved(current, index, index - 1))}
+                  aria-label={t('library.lineups.form.moveUp')}
+                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+                >
+                  <ArrowUp className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={index === preparedImages.length - 1}
+                  onClick={() => setPreparedImages((current) => moved(current, index, index + 1))}
+                  aria-label={t('library.lineups.form.moveDown')}
+                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+                >
+                  <ArrowDown className="size-4" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
-                    URL.revokeObjectURL(previewUrl);
-                    previewUrlsRef.current.delete(previewUrl);
+                    URL.revokeObjectURL(image.previewUrl);
+                    previewUrlsRef.current.delete(image.previewUrl);
                     setPreparedImages((previous) => previous.filter((_, at) => at !== index));
                   }}
                   aria-label={t('library.lineups.form.removeImage')}
@@ -766,20 +944,34 @@ export function LineupFormModal({
                 >
                   <X className="size-4" />
                 </button>
+                <input
+                  type="text"
+                  value={image.caption}
+                  onChange={(event) =>
+                    setPreparedImages((current) =>
+                      current.map((item) =>
+                        item.previewUrl === image.previewUrl
+                          ? { ...item, caption: event.target.value }
+                          : item,
+                      ),
+                    )
+                  }
+                  aria-label={t('library.lineups.form.photoCaption')}
+                  placeholder={t('library.lineups.form.photoCaptionPlaceholder')}
+                  className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-12 text-ink"
+                />
               </div>
             ))}
-            {preparedImages.length > 0 && isUploadConfirmed && siteKey && (
-              <div ref={challengeRef} />
-            )}
-            {preparedImages.length > 0 && isUploadConfirmed && siteKey === null && (
+            {preparedImages.length > 0 && siteKey && <div ref={challengeRef} />}
+            {preparedImages.length > 0 && siteKey === null && (
               <p className="text-11 text-ink-dim leading-prose">
-                <Text path="library.lineups.form.catboxCopyLink" />
+                <Text path="library.lineups.form.uploadUnavailable" />
               </p>
             )}
-            {Array.from(new Set(values.imageUrls)).map((url) => (
+            {values.imageUrls.map((url, index) => (
               <div
                 key={url}
-                className="flex items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
+                className="flex flex-wrap items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
               >
                 <img
                   src={url}
@@ -790,17 +982,55 @@ export function LineupFormModal({
                 <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">{url}</span>
                 <button
                   type="button"
+                  disabled={index === 0}
                   onClick={() =>
-                    updateValue(
-                      'imageUrls',
-                      values.imageUrls.filter((item) => item !== url),
-                    )
+                    setValues((current) => reorderLineupPhotos(current, index, index - 1))
+                  }
+                  aria-label={t('library.lineups.form.moveUp')}
+                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+                >
+                  <ArrowUp className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={index === values.imageUrls.length - 1}
+                  onClick={() =>
+                    setValues((current) => reorderLineupPhotos(current, index, index + 1))
+                  }
+                  aria-label={t('library.lineups.form.moveDown')}
+                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+                >
+                  <ArrowDown className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setValues((current) => ({
+                      ...current,
+                      imageUrls: current.imageUrls.filter((_, at) => at !== index),
+                      imageCaptions: current.imageCaptions.filter((_, at) => at !== index),
+                    }))
                   }
                   aria-label={t('library.lineups.form.removeImage')}
                   className="rounded-chip p-1 text-ink-dim hover:text-ink"
                 >
                   <X className="size-4" />
                 </button>
+                <input
+                  type="text"
+                  value={values.imageCaptions[index] ?? ''}
+                  onChange={(event) =>
+                    updateValue(
+                      'imageCaptions',
+                      values.imageCaptions.map((caption, at) =>
+                        at === index ? event.target.value : caption,
+                      ),
+                    )
+                  }
+                  aria-label={t('library.lineups.form.photoCaption')}
+                  placeholder={t('library.lineups.form.photoCaptionPlaceholder')}
+                  className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-12 text-ink"
+                />
               </div>
             ))}
             <div className="flex gap-2">
@@ -821,9 +1051,14 @@ export function LineupFormModal({
                     setError(t('library.lineups.form.validation.mediaUrlInvalid'));
                     return;
                   }
-                  if (!values.imageUrls.includes(url))
-                    updateValue('imageUrls', [...values.imageUrls, url]);
                   const firstPrepared = preparedImages[0];
+                  if (!values.imageUrls.includes(url)) {
+                    setValues((current) => ({
+                      ...current,
+                      imageUrls: [...current.imageUrls, url],
+                      imageCaptions: [...current.imageCaptions, firstPrepared?.caption ?? ''],
+                    }));
+                  }
                   if (firstPrepared !== undefined) {
                     URL.revokeObjectURL(firstPrepared.previewUrl);
                     previewUrlsRef.current.delete(firstPrepared.previewUrl);
@@ -978,21 +1213,16 @@ export function LineupFormModal({
         </div>
 
         {/* Footer */}
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
-          <Button type="button" variant="ghost" onClick={onDismiss} className="h-8 px-3 text-12">
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 [border-block-start:1px_solid_var(--color-line)] bg-surface-0 py-3">
+          <Button type="button" variant="ghost" onClick={handleExit} className="h-8 px-3 text-12">
             <Text path="library.lineups.form.cancel" />
           </Button>
           <Button render={<button type="submit" />} disabled={saving} className="h-8 px-4">
-            <Text
-              path={
-                preparedImages.length > 0 && !isUploadConfirmed
-                  ? 'library.lineups.form.continueToUpload'
-                  : 'library.lineups.form.save'
-              }
-            />
+            <Text path="library.lineups.form.save" />
           </Button>
         </div>
       </form>
-    </Dialog>
+    </section>,
+    document.body,
   );
 }

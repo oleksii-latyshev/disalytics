@@ -31,10 +31,12 @@ const sampleLineupWithExtras: Lineup = {
   ...sampleLineup,
   id: 'dust2-xbox-smoke-guided',
   movementInstructions: 'Run forward 2 steps and jump throw.',
+  mouseButtons: ['left', 'right'],
   imageUrls: [
     'https://example.com/lineups/dust2-xbox-stand.png',
     'https://example.com/lineups/dust2-xbox-aim.png',
   ],
+  imageCaptions: ['Stand here', 'Aim here'],
 };
 
 describe('isLineup', () => {
@@ -48,6 +50,12 @@ describe('isLineup', () => {
 
   it('accepts valid lineup with empty imageUrls array', () => {
     expect(isLineup({ ...sampleLineup, imageUrls: [] })).toBe(true);
+  });
+
+  it('rejects misaligned captions and unknown or repeated mouse buttons', () => {
+    expect(isLineup({ ...sampleLineupWithExtras, imageCaptions: ['Only one'] })).toBe(false);
+    expect(isLineup({ ...sampleLineupWithExtras, mouseButtons: ['left', 'middle'] })).toBe(false);
+    expect(isLineup({ ...sampleLineupWithExtras, mouseButtons: ['left', 'left'] })).toBe(false);
   });
 
   it('rejects non-object or null', () => {
@@ -137,6 +145,8 @@ describe('serializeLineupFile & parseLineupFile', () => {
       'https://example.com/lineups/dust2-xbox-stand.png',
       'https://example.com/lineups/dust2-xbox-aim.png',
     ]);
+    expect(item?.imageCaptions).toEqual(['Stand here', 'Aim here']);
+    expect(item?.mouseButtons).toEqual(['left', 'right']);
     expect(item?.mediaUrl).toBe('https://example.com/lineup.mp4');
   });
 

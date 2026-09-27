@@ -56,17 +56,17 @@ In [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/get-starte
 Managed widget named for lineup uploads and authorize `disalytics.disa-67b.workers.dev`.
 Cloudflare's [Free plan](https://developers.cloudflare.com/turnstile/plans/) currently includes
 20 widgets and unlimited challenges. Use a separate widget for localhost development if needed.
-The widget gives you a public sitekey and a private secret key. Set `TURNSTILE_SITE_KEY` as a Worker
-variable and store `CATBOX_USERHASH` and `TURNSTILE_SECRET` as Worker secrets with
-`wrangler secret put`.
-`keep_vars` in the Worker configuration preserves the dashboard variable on later CI deploys.
+The widget gives you a public sitekey and a private secret key. Keep the public
+`TURNSTILE_SITE_KEY` in `wrangler.jsonc` under `vars`, and store `CATBOX_USERHASH` and
+`TURNSTILE_SECRET` as Worker secrets with `wrangler secret put`. Dashboard-only plain-text
+variables were absent from a later deployed Worker version despite `keep_vars`; declaring the
+public sitekey in the deploy configuration keeps it attached to every release.
 The endpoint remains unavailable until all three values are set. Never put the hash or secret
 in a `VITE_*` variable or commit them.
 
 From `apps/api`, run `bunx wrangler secret put CATBOX_USERHASH` and paste the hash at its prompt;
 repeat with `TURNSTILE_SECRET`. A secret binding is delivered in the Worker's `env` argument at
-request time. Set the public `TURNSTILE_SITE_KEY` in the Worker's dashboard Variables and Secrets.
-For local development, put the same names in an ignored `apps/api/.dev.vars` file. Do not paste
+request time. For local development, put the same names in an ignored `apps/api/.dev.vars` file. Do not paste
 secret values into shell command arguments, source files, or a pull request.
 
 For deletion, use the Catbox account's management UI or call its `deletefiles` API privately,

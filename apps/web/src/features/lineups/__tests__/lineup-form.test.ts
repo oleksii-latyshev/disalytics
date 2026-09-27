@@ -4,6 +4,7 @@ import {
   initFormValues,
   type LineupFormData,
   type LineupFormValues,
+  reorderLineupPhotos,
 } from '../components/LineupFormModal';
 
 describe('lineup form helpers', () => {
@@ -15,6 +16,7 @@ describe('lineup form helpers', () => {
     expect(values.kind).toBe('smoke');
     expect(values.throwType).toBe('jump');
     expect(values.movementKeys).toEqual(['Jump']);
+    expect(values.mouseButtons).toEqual(['left']);
     expect(values.originX).toBe('0');
     expect(values.command).toBe('');
   });
@@ -31,6 +33,7 @@ describe('lineup form helpers', () => {
       yaw: 89.12,
       throwType: 'jump',
       movementKeys: ['W', 'Jump'],
+      mouseButtons: ['left', 'right'],
       command: 'setpos -120.46 -450.12 -100.00; setang -18.25 89.12 0',
     };
 
@@ -41,6 +44,7 @@ describe('lineup form helpers', () => {
     expect(values.kind).toBe('smoke');
     expect(values.throwType).toBe('jump');
     expect(values.movementKeys).toEqual(['W', 'Jump']);
+    expect(values.mouseButtons).toEqual(['left', 'right']);
     expect(values.originX).toBe('-120.46');
     expect(values.originY).toBe('-450.12');
     expect(values.originZ).toBe('-100.00');
@@ -60,8 +64,10 @@ describe('lineup form helpers', () => {
       kind: 'flash',
       throwType: 'stand',
       movementKeys: ['Stand'],
+      mouseButtons: ['left', 'right'],
       movementInstructions: 'Take two steps while holding Shift',
       imageUrls: ['https://example.com/one.webp', 'https://example.com/two.webp'],
+      imageCaptions: ['Stand here', 'Aim here'],
       originX: '-500.50',
       originY: '250.25',
       originZ: '10.00',
@@ -88,12 +94,14 @@ describe('lineup form helpers', () => {
     expect(lineup.kind).toBe('flash');
     expect(lineup.throwType).toBe('stand');
     expect(lineup.movementKeys).toEqual(['Stand']);
+    expect(lineup.mouseButtons).toEqual(['left', 'right']);
     expect(lineup.movementKeysSummary).toBe('Stand');
     expect(lineup.movementInstructions).toBe('Take two steps while holding Shift');
     expect(lineup.imageUrls).toEqual([
       'https://example.com/one.webp',
       'https://example.com/two.webp',
     ]);
+    expect(lineup.imageCaptions).toEqual(['Stand here', 'Aim here']);
     expect(lineup.origin).toEqual({ x: -500.5, y: 250.25, z: 10 });
     expect(lineup.landing).toEqual({ x: -300, y: 400, z: 0 });
     expect(lineup.pitch).toBe(-30.5);
@@ -105,6 +113,13 @@ describe('lineup form helpers', () => {
     expect(lineup.mediaUrl).toBe('https://example.com/lineup.png');
     expect(lineup.isBuiltIn).toBe(false);
     expect(lineup.createdAt).toBe(1000);
+
+    const reordered = reorderLineupPhotos(values, 0, 1);
+    expect(reordered.imageUrls).toEqual([
+      'https://example.com/two.webp',
+      'https://example.com/one.webp',
+    ]);
+    expect(reordered.imageCaptions).toEqual(['Aim here', 'Stand here']);
   });
 
   it('compiles setpos and setang command automatically when fromDemo is true and command is blank', () => {
@@ -115,8 +130,10 @@ describe('lineup form helpers', () => {
       kind: 'he',
       throwType: 'jump',
       movementKeys: ['W', 'Shift', 'Jump'],
+      mouseButtons: ['left'],
       movementInstructions: '',
       imageUrls: [],
+      imageCaptions: [],
       originX: '10.00',
       originY: '20.00',
       originZ: '30.00',
@@ -162,8 +179,10 @@ describe('lineup form helpers', () => {
       kind: 'smoke',
       throwType: 'stand',
       movementKeys: ['Stand'],
+      mouseButtons: ['left'],
       movementInstructions: '',
       imageUrls: [],
+      imageCaptions: [],
       originX: 'invalid',
       originY: '20.00',
       originZ: '30.00',
