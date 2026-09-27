@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "shadcn": {
-      "command": "npx",
-      "args": ["shadcn@latest", "mcp"]
-    },
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp"
     }

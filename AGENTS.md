@@ -293,6 +293,7 @@ Decided choices are §3, §16 and §17. **Open:** a cheap header read · `.nav` 
 
 ## 21. When You Are Unsure
 
+For structural code discovery, use this repository's `codebase-memory-mcp` graph and `.agents/skills/codebase-memory/SKILL.md`; verify findings in source, index only this repository, and leave account-wide auto-indexing disabled.
 Ask rather than guess if a task would: add a runtime dependency or noticeably grow the bundle ·
 introduce async I/O into a scrub or render path · change the schema or `SCHEMA_VERSION` · require
 anything server-side · exceed a §16 budget · move `clock.frame` into a reactive store · add
