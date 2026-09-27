@@ -2,6 +2,7 @@
 
 This Cloudflare Worker is a separate deployment from the replay PWA. Replay files and parsed replay
 data stay in the browser; no route here accepts them. The first version only answers `GET /health`.
+Production: <https://disalytics-api.disa-67b.workers.dev>.
 
 From the repository root:
 
