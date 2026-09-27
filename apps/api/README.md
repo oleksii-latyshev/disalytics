@@ -27,8 +27,8 @@ Keep provider keys in Cloudflare Worker secrets, never in the web bundle or comm
 files. A public statistics route will need input validation, bounded upstream requests and a stable
 error shape. Allow the web app's origin explicitly when adding browser-facing CORS. Cache successful
 public responses with a short TTL using Cloudflare's Cache API before adding a separate storage
-service; the cache is local to each Cloudflare data center, so an upstream
-miss can still occur in another location. Do not cache authenticated or personal responses. The
+service; the cache is local to each Cloudflare data center, so an upstream miss can still occur in
+another location. Do not cache authenticated or personal responses. The
 health route sends `Cache-Control: no-store`.
 
 An image-upload route for Catbox needs its own provider contract, content-type and size limits,

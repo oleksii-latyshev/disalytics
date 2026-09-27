@@ -296,4 +296,4 @@ Decided choices are §3, §16 and §17. **Open:** a cheap header read · `.nav` 
 
 For structural discovery, use `codebase-memory-mcp` and `.agents/skills/codebase-memory/SKILL.md`; verify in source, index only this repository, and leave account-wide auto-indexing disabled.
 Ask rather than guess if a task would: add a runtime dependency or grow the bundle · introduce async
-I/O into scrub or render · change `SCHEMA_VERSION` · handle demos server-side or add an external provider · exceed §16 · move `clock.frame` into a reactive store · add `wasm-bindgen` to the core parser · hardcode user-facing strings or translate game vocabulary.
+I/O into scrub or render · change the schema or `SCHEMA_VERSION` · handle demos server-side or add an external provider · exceed §16 · move `clock.frame` into a reactive store · add `wasm-bindgen` to the core parser · hardcode user-facing strings or translate game vocabulary.
