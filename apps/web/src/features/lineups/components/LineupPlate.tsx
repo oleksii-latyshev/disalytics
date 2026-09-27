@@ -25,7 +25,13 @@ import {
 } from '@/features/radar/helpers/view';
 import { useRadarImage } from '@/features/radar/hooks/use-radar-image';
 import { lineupLayer } from '../helpers/lineup-layer';
-import { findNearestLineup, groupLineupsByOrigin, lineupPlot } from '../helpers/lineup-plot';
+import {
+  findNearestLineupTarget,
+  groupLineupsByLanding,
+  groupLineupsByOrigin,
+  type LineupHit,
+  lineupPlot,
+} from '../helpers/lineup-plot';
 
 const HIT_RADIUS_PX = 20;
 
@@ -33,7 +39,7 @@ interface Props {
   readonly map: string;
   readonly lineups: readonly Lineup[];
   readonly focused: number | null;
-  readonly onSelect: (index: number | null) => void;
+  readonly onSelect: (hit: LineupHit | null) => void;
   readonly onPlace?: ((point: { x: number; y: number }) => void) | undefined;
   readonly draftOrigin?: { x: number; y: number } | null | undefined;
 }
@@ -49,7 +55,7 @@ function LineupCanvas({
   readonly overview: MapOverview;
   readonly lineups: readonly Lineup[];
   readonly focused: number | null;
-  readonly onSelect: (index: number | null) => void;
+  readonly onSelect: (hit: LineupHit | null) => void;
   readonly onPlace?: ((point: { x: number; y: number }) => void) | undefined;
   readonly draftOrigin?: { x: number; y: number } | null | undefined;
 }) {
@@ -67,12 +73,14 @@ function LineupCanvas({
 
   const plot = useMemo(() => lineupPlot(overview, lineups), [overview, lineups]);
   const groups = useMemo(() => groupLineupsByOrigin(lineups), [lineups]);
+  const landingGroups = useMemo(() => groupLineupsByLanding(lineups), [lineups]);
 
   const layers = useMemo(() => {
     const layer = lineupLayer({
       lineups,
       plot,
       groups,
+      landingGroups,
       overview,
       colors,
       view: viewRef,
@@ -81,7 +89,7 @@ function LineupCanvas({
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), layer] : [layer];
-  }, [lineups, plot, groups, overview, colors, image, focused, draftOrigin]);
+  }, [lineups, plot, groups, landingGroups, overview, colors, image, focused, draftOrigin]);
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
 
@@ -124,7 +132,7 @@ function LineupCanvas({
     const scale = (extent * viewRef.current.zoom) / RADAR_IMAGE_SIZE;
     if (scale <= 0) return;
 
-    const hit = findNearestLineup(pt, plot, lineups.length, scale, HIT_RADIUS_PX);
+    const hit = findNearestLineupTarget(pt, plot, lineups.length, scale, HIT_RADIUS_PX);
     onSelect(hit);
   };
 

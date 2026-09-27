@@ -20,7 +20,11 @@ import { Download, Plus, Search, Upload, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { filterLineups } from '../helpers/lineup-filter';
-import { groupLineupsByOrigin } from '../helpers/lineup-plot';
+import {
+  groupLineupsByLanding,
+  groupLineupsByOrigin,
+  type LineupHit,
+} from '../helpers/lineup-plot';
 import { useMapLineups } from '../hooks/use-map-lineups';
 import { LineupDetailModal } from './LineupDetailModal';
 import { LineupFormModal } from './LineupFormModal';
@@ -30,6 +34,11 @@ import { LineupPlate } from './LineupPlate';
 type SideScope = 'ALL' | 'CT' | 'T';
 type KindScope = 'all' | UtilityKind;
 type Point = { readonly x: number; readonly y: number };
+
+interface SelectedVariants {
+  readonly type: 'origin' | 'landing';
+  readonly ids: readonly string[];
+}
 
 export function LineupsView() {
   const t = useT();
@@ -46,7 +55,7 @@ export function LineupsView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draftLanding, setDraftLanding] = useState<Point | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<readonly string[] | null>(null);
+  const [selectedVariants, setSelectedVariants] = useState<SelectedVariants | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { lineups, reload, deleteLineup, importLineups, exportLineups } = useMapLineups(map);
 
@@ -56,24 +65,30 @@ export function LineupsView() {
   );
   const selectedIndex = filteredLineups.findIndex((lineup) => lineup.id === selectedId);
   const originGroups = useMemo(() => groupLineupsByOrigin(filteredLineups), [filteredLineups]);
+  const landingGroups = useMemo(() => groupLineupsByLanding(filteredLineups), [filteredLineups]);
   const selectedGroup =
-    selectedGroupIds?.flatMap((id) => filteredLineups.filter((item) => item.id === id)) ?? [];
+    selectedVariants?.ids.flatMap((id) => filteredLineups.filter((item) => item.id === id)) ?? [];
 
-  const handleSelectMarker = (index: number | null) => {
-    if (index === null) {
+  const handleSelectMarker = (hit: LineupHit | null) => {
+    if (hit === null) {
       setSelectedId(null);
       return;
     }
-    const group = originGroups.find(({ indices }) => indices.includes(index));
+    const { index, target } = hit;
+    const targetGroups = target === 'landing' ? landingGroups : originGroups;
+    const group = targetGroups.find(({ indices }) => indices.includes(index));
+
     if (group !== undefined && group.indices.length > 1) {
-      setSelectedGroupIds(
-        group.indices.flatMap((position) => {
+      setSelectedVariants({
+        type: target,
+        ids: group.indices.flatMap((position) => {
           const lineup = filteredLineups[position];
           return lineup === undefined ? [] : [lineup.id];
         }),
-      );
+      });
       return;
     }
+
     const single = filteredLineups[index];
     if (single !== undefined) {
       setSelectedId(single.id);
@@ -368,19 +383,26 @@ export function LineupsView() {
       </div>
 
       {/* Variants Modal (Cluster on Map) */}
-      {selectedGroupIds !== null && (
+      {selectedVariants !== null && (
         <Dialog
           isOpen
-          onDismiss={() => setSelectedGroupIds(null)}
+          onDismiss={() => setSelectedVariants(null)}
           className="w-full max-w-[36rem] p-5"
         >
           <div className="flex items-center justify-between border-b border-line pb-3">
             <h3 className="font-ui text-16 font-medium text-ink">
-              <Text path="library.lineups.fromPosition" values={{ count: selectedGroup.length }} />
+              {selectedVariants.type === 'origin' ? (
+                <Text
+                  path="library.lineups.fromPosition"
+                  values={{ count: selectedGroup.length }}
+                />
+              ) : (
+                <Text path="library.lineups.toPosition" values={{ count: selectedGroup.length }} />
+              )}
             </h3>
             <button
               type="button"
-              onClick={() => setSelectedGroupIds(null)}
+              onClick={() => setSelectedVariants(null)}
               aria-label={t('library.lineups.form.close')}
               className="rounded-chip p-1 text-ink-dim hover:text-ink"
             >
@@ -400,7 +422,7 @@ export function LineupsView() {
                   type="button"
                   onClick={() => {
                     setSelectedId(lineup.id);
-                    setSelectedGroupIds(null);
+                    setSelectedVariants(null);
                     setDetailLineup(lineup);
                   }}
                   className="flex items-center gap-3 rounded-card border border-line bg-surface-1 p-2 text-left transition-colors hover:bg-surface-2"

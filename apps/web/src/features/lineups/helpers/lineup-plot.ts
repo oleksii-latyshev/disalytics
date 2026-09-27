@@ -4,22 +4,31 @@ import { type MapOverview, radarX, radarY } from '@disa/map-data';
 /** Origin radar x, origin radar y, landing radar x, landing radar y. */
 export const LINEUP_STRIDE = 4;
 
-export interface LineupOriginGroup {
+export interface LineupGroup {
   readonly indices: readonly number[];
   readonly countLabel: string;
 }
 
-export function groupLineupsByOrigin(lineups: readonly Lineup[]): readonly LineupOriginGroup[] {
+export type LineupOriginGroup = LineupGroup;
+
+const CLUSTER_THRESHOLD_SQ = 80 * 80;
+
+function groupLineupsByPoint(
+  lineups: readonly Lineup[],
+  getPoint: (lineup: Lineup) => { readonly x: number; readonly y: number },
+): readonly LineupGroup[] {
   const groups: { indices: number[]; countLabel: string }[] = [];
   for (let index = 0; index < lineups.length; index++) {
     const lineup = lineups[index];
     if (lineup === undefined) continue;
+    const pt = getPoint(lineup);
     const group = groups.find(({ indices }) => {
       const first = lineups[indices[0] ?? -1];
       if (first === undefined) return false;
-      const dx = first.origin.x - lineup.origin.x;
-      const dy = first.origin.y - lineup.origin.y;
-      return dx * dx + dy * dy < 80 * 80;
+      const firstPt = getPoint(first);
+      const dx = firstPt.x - pt.x;
+      const dy = firstPt.y - pt.y;
+      return dx * dx + dy * dy < CLUSTER_THRESHOLD_SQ;
     });
     if (group === undefined) {
       groups.push({ indices: [index], countLabel: '1' });
@@ -29,6 +38,14 @@ export function groupLineupsByOrigin(lineups: readonly Lineup[]): readonly Lineu
     }
   }
   return groups;
+}
+
+export function groupLineupsByOrigin(lineups: readonly Lineup[]): readonly LineupGroup[] {
+  return groupLineupsByPoint(lineups, (l) => l.origin);
+}
+
+export function groupLineupsByLanding(lineups: readonly Lineup[]): readonly LineupGroup[] {
+  return groupLineupsByPoint(lineups, (l) => l.landing);
 }
 
 /**
@@ -54,17 +71,24 @@ export function lineupPlot(overview: MapOverview, lineups: readonly Lineup[]): F
   return plot;
 }
 
+export type LineupMarkerTarget = 'origin' | 'landing';
+
+export interface LineupHit {
+  readonly index: number;
+  readonly target: LineupMarkerTarget;
+}
+
 /** Finds the nearest lineup origin or landing within `maxDistPx` of the click point, or `null`. */
-export function findNearestLineup(
+export function findNearestLineupTarget(
   pt: { x: number; y: number },
   plot: Float32Array,
   lineupsCount: number,
   scale: number,
   maxDistPx: number,
-): number | null {
+): LineupHit | null {
   const maxRadarDist = maxDistPx / scale;
   const maxRadarDistSq = maxRadarDist * maxRadarDist;
-  let bestIndex: number | null = null;
+  let bestHit: LineupHit | null = null;
   let bestDistSq = maxRadarDistSq;
 
   for (let i = 0; i < lineupsCount; i++) {
@@ -77,15 +101,32 @@ export function findNearestLineup(
 
     const dOx = ox - pt.x;
     const dOy = oy - pt.y;
+    const distSqOrigin = dOx * dOx + dOy * dOy;
+
     const dLx = lx - pt.x;
     const dLy = ly - pt.y;
+    const distSqLanding = dLx * dLx + dLy * dLy;
 
-    const distSq = Math.min(dOx * dOx + dOy * dOy, dLx * dLx + dLy * dLy);
-    if (distSq < bestDistSq) {
-      bestDistSq = distSq;
-      bestIndex = i;
+    if (distSqOrigin < bestDistSq) {
+      bestDistSq = distSqOrigin;
+      bestHit = { index: i, target: 'origin' };
+    }
+    if (distSqLanding < bestDistSq) {
+      bestDistSq = distSqLanding;
+      bestHit = { index: i, target: 'landing' };
     }
   }
 
-  return bestIndex;
+  return bestHit;
+}
+
+/** Finds the nearest lineup origin or landing within `maxDistPx` of the click point, or `null`. */
+export function findNearestLineup(
+  pt: { x: number; y: number },
+  plot: Float32Array,
+  lineupsCount: number,
+  scale: number,
+  maxDistPx: number,
+): number | null {
+  return findNearestLineupTarget(pt, plot, lineupsCount, scale, maxDistPx)?.index ?? null;
 }
