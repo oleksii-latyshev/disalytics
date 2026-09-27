@@ -291,7 +291,11 @@ gh api -X DELETE repos/oleksii-latyshev/disalytics/branches/main/protection   # 
 
 Lefthook installs on `bun install`; `bun lefthook install` restores missing hooks. Pre-commit runs
 only fast changed-file checks: Biome over staged web files and `cargo fmt --check` when Rust is
-staged. It never rewrites or stages files and is skipped during rebase. There is no pre-push hook.
+staged. It never rewrites or stages files and is skipped during rebase. Post-checkout, post-merge,
+post-rewrite and post-commit refresh this repository's local codebase-memory graph when the CLI is
+installed. The graph artifact is ignored by Git. Account-wide codebase-memory auto-indexing and
+watching remain disabled, so other repositories are not indexed by these hooks. There is no
+pre-push hook.
 
 Run focused tests while editing, then push and open a draft pull request. Required GitHub checks are
 the full verification gate and block merging; inspect detailed output only for failed jobs. This

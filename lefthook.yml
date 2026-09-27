@@ -1,5 +1,25 @@
 assert_lefthook_installed: true
 
+post-checkout:
+  jobs:
+    - name: codebase-memory
+      run: sh tools/scripts/index-codebase-memory.sh
+
+post-merge:
+  jobs:
+    - name: codebase-memory
+      run: sh tools/scripts/index-codebase-memory.sh
+
+post-rewrite:
+  jobs:
+    - name: codebase-memory
+      run: sh tools/scripts/index-codebase-memory.sh
+
+post-commit:
+  jobs:
+    - name: codebase-memory
+      run: sh tools/scripts/index-codebase-memory.sh
+
 pre-commit:
   parallel: true
   skip:
