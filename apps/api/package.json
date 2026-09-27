@@ -1,0 +1,21 @@
+{
+  "name": "@disa/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "effect": "4.0.0-rc.117"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.10",
+    "wrangler": "4.118.0"
+  }
+}

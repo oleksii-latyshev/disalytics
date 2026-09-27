@@ -10,9 +10,8 @@
 
 ## 1. Mission
 
-**disalytics** is a fully client-side PWA for reviewing Counter-Strike 2 replays (`.dem`), in English
-and Russian, live at https://disalytics.disa-67b.workers.dev. It turns a 40-minute match into a
-~10-minute review.
+**disalytics** is a client-side replay PWA with a separate metadata API, in English and Russian, live
+at https://disalytics.disa-67b.workers.dev. It turns a 40-minute match into a ~10-minute review.
 
 - **Review, not frame-perfect replay** — favour smoothness, label approximations in the UI.
 - **Game-agnostic name** — nothing outside `crates/demo-parser` assumes "CS2".
@@ -50,7 +49,7 @@ Bun 1.3+ and Turborepo · React 19 SPA on Vite, TypeScript `strict` · Biome · 
 `MotionProvider` (write `motion.*`) · react-intl with generated typed keys · Canvas 2D (`ogl` only for
 the way-in background) · Rust parser (upstream `demoparser`, vendored) via wasm-pack · OPFS +
 IndexedDB · Vitest (node environment) and `cargo test` · `vite-plugin-pwa` (`injectManifest`) ·
-Cloudflare Workers static assets. No Zustand: the playback transport is the store.
+Cloudflare Workers static assets plus a separate Effect API Worker. No Zustand: the playback transport is the store.
 **Rejected:** Go (15–25 MB WASM), signals, `SharedArrayBuffer`, react-three-fiber, Tauri for now.
 
 ## 4. Repository Layout
@@ -69,11 +68,12 @@ Cloudflare Workers static assets. No Zustand: the playback transport is the stor
 | `packages/i18n` · `packages/ui` | locales + typed keys + `<Text>`/`useT` · components, tokens, motion |
 | `apps/web/src/core` | playback, renderer, shortcuts, settings, parsing, events, glyphs, motion, pwa, samples |
 | `apps/web/src/features` | library (way in), review (stage + views), radar, timeline, controls |
+| `apps/api` | Cloudflare Worker for future external metadata and key-backed requests; never demos |
 | `crates/demo-parser` · `-wasm` | Rust core (no wasm-bindgen, forbid unsafe) · thin wrapper → `pkg/` (gitignored) |
 | `vendor/` · `tools/` | upstream parser, pinned and patched · `scripts/` behind `bun run`, `probes/` |
+| `repos/effect/` | pinned, read-only Effect source for reference; imports use the npm package |
 
-Packages are `@disa/<folder>`. Vite aliases `demo-parser-wasm` to `crates/demo-parser-wasm/pkg/`, so
-**`bun run build` needs a built `pkg/`**. `crates/demo-parser` must pass plain `cargo test`.
+Packages are `@disa/<folder>`. Vite aliases `demo-parser-wasm` to `crates/demo-parser-wasm/pkg/`, so **`bun run build` needs a built `pkg/`**. `crates/demo-parser` must pass plain `cargo test`.
 
 ## 5. Commands
 
@@ -199,9 +199,10 @@ per whole sentence. Locale: stored → `navigator.language` → `en`. Use the `i
 
 ## 13. Hosting — Cloudflare Workers (static assets)
 
-Assets-only Worker (`wrangler.jsonc`, no `main`, SPA fallback, `preview_urls: false`). `/assets/*`
-immutable, `index.html` and `/radar/*` revalidate, `.wasm` is `application/wasm`, **never COOP/COEP**,
-keep `.assetsignore`. `bun run smoke <url>` asserts all of it from the deployed page.
+The web remains an assets-only Worker (`wrangler.jsonc`, no `main`, SPA fallback, `preview_urls: false`).
+`/assets/*` immutable, `index.html` and `/radar/*` revalidate, `.wasm` is `application/wasm`, **never COOP/COEP**; keep `.assetsignore`. `bun run smoke <url>` checks the deployed page.
+`apps/api/wrangler.jsonc` is a separate Worker for metadata and secrets, never `.dem` or parsed-demo
+bytes. Its deployment is independent of the static Worker.
 
 ## 14. Contribution Flow
 
@@ -293,8 +294,6 @@ Decided choices are §3, §16 and §17. **Open:** a cheap header read · `.nav` 
 
 ## 21. When You Are Unsure
 
-For structural code discovery, use this repository's `codebase-memory-mcp` graph and `.agents/skills/codebase-memory/SKILL.md`; verify findings in source, index only this repository, and leave account-wide auto-indexing disabled.
-Ask rather than guess if a task would: add a runtime dependency or noticeably grow the bundle ·
-introduce async I/O into a scrub or render path · change the schema or `SCHEMA_VERSION` · require
-anything server-side · exceed a §16 budget · move `clock.frame` into a reactive store · add
-`wasm-bindgen` to `crates/demo-parser` · hardcode a user-facing string or translate game vocabulary.
+For structural discovery, use `codebase-memory-mcp` and `.agents/skills/codebase-memory/SKILL.md`; verify in source, index only this repository, and leave account-wide auto-indexing disabled.
+Ask rather than guess if a task would: add a runtime dependency or grow the bundle · introduce async
+I/O into scrub or render · change `SCHEMA_VERSION` · handle demos server-side or add an external provider · exceed §16 · move `clock.frame` into a reactive store · add `wasm-bindgen` to the core parser · hardcode user-facing strings or translate game vocabulary.

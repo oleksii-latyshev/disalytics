@@ -12,6 +12,7 @@
       "!**/.turbo",
       "!**/target",
       "!**/pkg",
+      "!repos/effect",
       "!bun.lock",
       "!crates/*/tests/snapshots",
       "!apps/web/assets/weapon-icons",
