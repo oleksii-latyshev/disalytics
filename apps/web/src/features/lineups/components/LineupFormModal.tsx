@@ -578,7 +578,7 @@ export function LineupFormModal({
       >
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 [border-block-end:1px_solid_var(--color-line)] bg-surface-0 py-5">
-          <h2 className="font-ui text-24 font-medium text-ink">
+          <h2 className="font-ui text-20 font-medium text-ink">
             <Text path={initialData?.id ? 'library.lineups.edit' : 'library.lineups.create'} />
           </h2>
           <button
