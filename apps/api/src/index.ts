@@ -74,6 +74,7 @@ async function verified(token: string, secret: string): Promise<boolean> {
     const response = await fetch(VERIFY_API, {
       method: 'POST',
       body: new URLSearchParams({ secret, response: token }),
+      redirect: 'error',
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return false;
@@ -180,6 +181,7 @@ async function upload(
     const response = await fetch(CATBOX_API, {
       method: 'POST',
       body: data,
+      redirect: 'error',
       signal: AbortSignal.timeout(20_000),
     });
     if (!response.ok) return json({ error: 'provider_failed' }, 502, headers);

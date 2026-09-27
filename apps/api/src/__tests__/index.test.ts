@@ -117,6 +117,7 @@ describe('API worker', () => {
         return Response.json({ success: true, hostname: 'disalytics.disa-67b.workers.dev' });
       }
       expect(init?.body).toBeInstanceOf(FormData);
+      expect(init?.redirect).toBe('error');
       const body = init?.body;
       if (!(body instanceof FormData)) throw new Error('missing form');
       expect(body.get('userhash')).toBe('private-hash');
