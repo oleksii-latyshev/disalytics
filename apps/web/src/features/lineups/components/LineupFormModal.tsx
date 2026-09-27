@@ -10,7 +10,16 @@ import {
 import { openLineupStore } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
-import { Button, Dialog } from '@disa/ui';
+import {
+  Button,
+  Dialog,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@disa/ui';
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
@@ -48,6 +57,8 @@ export interface LineupFormData {
   readonly movementInstructions?: string;
   readonly imageUrls?: readonly string[];
   readonly command?: string;
+  readonly landingCommand?: string;
+  readonly fromDemo?: boolean;
   readonly notes?: string;
   readonly mediaUrl?: string;
   readonly createdAt?: number;
@@ -71,6 +82,8 @@ export interface LineupFormValues {
   readonly pitch: string;
   readonly yaw: string;
   readonly command: string;
+  readonly landingCommand: string;
+  readonly fromDemo: boolean;
   readonly notes: string;
   readonly mediaUrl: string;
 }
@@ -106,36 +119,62 @@ function basicValidationKey(
   return null;
 }
 
+function defaultFormValues(defaultMap: string): LineupFormValues {
+  return {
+    title: '',
+    map: defaultMap,
+    side: 'T',
+    kind: 'smoke',
+    throwType: 'jump',
+    movementKeys: ['Jump'],
+    movementInstructions: '',
+    imageUrls: [],
+    originX: '0',
+    originY: '0',
+    originZ: '0',
+    landingX: '0',
+    landingY: '0',
+    landingZ: '0',
+    pitch: '0',
+    yaw: '0',
+    command: '',
+    landingCommand: '',
+    fromDemo: false,
+    notes: '',
+    mediaUrl: '',
+  };
+}
+
+function resolveDemoLandingCommand(isFromDemo: boolean, data?: LineupFormData | null): string {
+  if (!isFromDemo) return '';
+  if (data?.landingCommand) return data.landingCommand;
+  if (data?.landing?.z !== undefined) {
+    return `setpos ${formatCoord(data.landing.x)} ${formatCoord(data.landing.y)} ${formatCoord(data.landing.z)}`;
+  }
+  return '';
+}
+
+function extractCoords(coord?: { readonly x: number; readonly y: number; readonly z?: number }) {
+  return {
+    x: formatCoord(coord?.x),
+    y: formatCoord(coord?.y),
+    z: formatCoord(coord?.z),
+  };
+}
+
 export function initFormValues(
   data?: LineupFormData | null,
   defaultMap = 'de_mirage',
 ): LineupFormValues {
   if (!data) {
-    return {
-      title: '',
-      map: defaultMap,
-      side: 'T',
-      kind: 'smoke',
-      throwType: 'jump',
-      movementKeys: ['Jump'],
-      movementInstructions: '',
-      imageUrls: [],
-      originX: '0',
-      originY: '0',
-      originZ: '0',
-      landingX: '0',
-      landingY: '0',
-      landingZ: '0',
-      pitch: '0',
-      yaw: '0',
-      command: '',
-      notes: '',
-      mediaUrl: '',
-    };
+    return defaultFormValues(defaultMap);
   }
 
-  const origin = data.origin;
-  const landing = data.landing;
+  const isFromDemo = Boolean(data.fromDemo || (data.command && data.command.trim().length > 0));
+  const origin = extractCoords(data.origin);
+  const landing = extractCoords(data.landing);
+  const landingCmd = resolveDemoLandingCommand(isFromDemo, data);
+
   return {
     title: data.title ?? '',
     map: data.map ?? defaultMap,
@@ -145,26 +184,30 @@ export function initFormValues(
     movementKeys: data.movementKeys ?? ['Jump'],
     movementInstructions: data.movementInstructions ?? '',
     imageUrls: data.imageUrls ?? [],
-    originX: formatCoord(origin?.x),
-    originY: formatCoord(origin?.y),
-    originZ: formatCoord(origin?.z),
-    landingX: formatCoord(landing?.x),
-    landingY: formatCoord(landing?.y),
-    landingZ: formatCoord(landing?.z),
+    originX: origin.x,
+    originY: origin.y,
+    originZ: origin.z,
+    landingX: landing.x,
+    landingY: landing.y,
+    landingZ: landing.z,
     pitch: formatCoord(data.pitch),
     yaw: formatCoord(data.yaw),
-    command: data.command ?? '',
+    command: isFromDemo ? (data.command ?? '') : '',
+    landingCommand: landingCmd,
+    fromDemo: isFromDemo,
     notes: data.notes ?? '',
     mediaUrl: data.mediaUrl ?? '',
   };
 }
 
-export function buildLineupFromForm(
-  values: LineupFormValues,
-  initialId?: string,
-  initialCreatedAt?: number,
-  generateCommand = true,
-): Lineup | null {
+interface ParsedCoordinates {
+  readonly origin: { readonly x: number; readonly y: number; readonly z: number };
+  readonly landing: { readonly x: number; readonly y: number; readonly z: number };
+  readonly pitch: number;
+  readonly yaw: number;
+}
+
+function parseCoordinates(values: LineupFormValues): ParsedCoordinates | null {
   const ox = Number.parseFloat(values.originX);
   const oy = Number.parseFloat(values.originY);
   const oz = Number.parseFloat(values.originZ);
@@ -183,11 +226,51 @@ export function buildLineupFromForm(
     return null;
   }
 
+  return {
+    origin: { x: ox, y: oy, z: oz },
+    landing: { x: lx, y: ly, z: lz },
+    pitch: p,
+    yaw: y,
+  };
+}
+
+function resolveBuildCommands(
+  values: LineupFormValues,
+  coords: ParsedCoordinates,
+  generateCommand: boolean,
+): { readonly command: string; readonly landingCommand?: string } {
+  if (!values.fromDemo) {
+    return { command: '' };
+  }
+  const cmd = values.command.trim();
   const command =
-    values.command.trim() ||
+    cmd ||
     (generateCommand
-      ? `setpos ${ox.toFixed(2)} ${oy.toFixed(2)} ${oz.toFixed(2)}; setang ${p.toFixed(2)} ${y.toFixed(2)} 0`
+      ? `setpos ${coords.origin.x.toFixed(2)} ${coords.origin.y.toFixed(2)} ${coords.origin.z.toFixed(2)}; setang ${coords.pitch.toFixed(2)} ${coords.yaw.toFixed(2)} 0`
       : '');
+
+  const landCmd = values.landingCommand.trim();
+  const landingCommand =
+    landCmd ||
+    `setpos ${coords.landing.x.toFixed(2)} ${coords.landing.y.toFixed(2)} ${coords.landing.z.toFixed(2)}`;
+
+  return { command, landingCommand };
+}
+
+export function buildLineupFromForm(
+  values: LineupFormValues,
+  initialId?: string,
+  initialCreatedAt?: number,
+  generateCommand = true,
+): Lineup | null {
+  const coords = parseCoordinates(values);
+  if (!coords) {
+    return null;
+  }
+
+  const { command, landingCommand } = resolveBuildCommands(values, coords, generateCommand);
+  const movementSummary =
+    values.movementKeys.join(' + ') || (values.throwType === 'stand' ? 'Stand' : 'Jump');
 
   return {
     id: initialId ?? `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -195,19 +278,20 @@ export function buildLineupFromForm(
     map: values.map,
     side: values.side,
     kind: values.kind,
-    origin: { x: ox, y: oy, z: oz },
-    landing: { x: lx, y: ly, z: lz },
-    pitch: p,
-    yaw: y,
+    origin: coords.origin,
+    landing: coords.landing,
+    pitch: coords.pitch,
+    yaw: coords.yaw,
     throwType: values.throwType,
     movementKeys: values.movementKeys,
-    movementKeysSummary:
-      values.movementKeys.join(' + ') || (values.throwType === 'stand' ? 'Stand' : 'Jump'),
+    movementKeysSummary: movementSummary,
     ...(values.movementInstructions.trim()
       ? { movementInstructions: values.movementInstructions.trim() }
       : {}),
     ...(values.imageUrls.length > 0 ? { imageUrls: values.imageUrls } : {}),
     command,
+    ...(landingCommand ? { landingCommand } : {}),
+    ...(values.fromDemo ? { fromDemo: true } : {}),
     ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
     ...(values.mediaUrl.trim() ? { mediaUrl: values.mediaUrl.trim() } : {}),
     isBuiltIn: false,
@@ -327,7 +411,7 @@ export function LineupFormModal({
       values,
       initialData?.id,
       initialData?.createdAt,
-      initialData?.command !== undefined,
+      values.fromDemo,
     );
     if (!lineup) {
       setError(t('library.lineups.form.validation.coordinatesRequired'));
@@ -379,14 +463,13 @@ export function LineupFormModal({
             <label htmlFor="lineup-title" className="label-dense text-ink-dim">
               <Text path="library.lineups.form.title" /> *
             </label>
-            <input
+            <Input
               id="lineup-title"
               type="text"
               required
               value={values.title}
               onChange={(e) => updateValue('title', e.target.value)}
               placeholder={t('library.lineups.form.titlePlaceholder')}
-              className="h-8 rounded-card border border-line bg-surface-1 px-3 text-13 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
             />
           </div>
 
@@ -396,18 +479,21 @@ export function LineupFormModal({
               <label htmlFor="lineup-map" className="label-dense text-ink-dim">
                 <Text path="library.lineups.form.map" />
               </label>
-              <select
-                id="lineup-map"
+              <Select
                 value={values.map}
-                onChange={(e) => updateValue('map', e.target.value)}
-                className="h-8 rounded-card border border-line bg-surface-1 px-2.5 text-13 text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
+                onValueChange={(val) => updateValue('map', val ?? defaultMap)}
               >
-                {MAP_IDS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="lineup-map" className="h-8 bg-surface-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MAP_IDS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -434,18 +520,21 @@ export function LineupFormModal({
               <label htmlFor="lineup-kind" className="label-dense text-ink-dim">
                 <Text path="library.lineups.form.kind" />
               </label>
-              <select
-                id="lineup-kind"
+              <Select
                 value={values.kind}
-                onChange={(e) => updateValue('kind', e.target.value as UtilityKind)}
-                className="h-8 rounded-card border border-line bg-surface-1 px-2.5 text-13 text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
+                onValueChange={(val) => updateValue('kind', (val ?? 'smoke') as UtilityKind)}
               >
-                {THROWN_UTILITY_KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {UTILITY_NAMES[k]}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="lineup-kind" className="h-8 bg-surface-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {THROWN_UTILITY_KINDS.map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {UTILITY_NAMES[k]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -774,20 +863,39 @@ export function LineupFormModal({
                 </div>
               </div>
 
-              {/* Console Command */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="lineup-command" className="label-dense text-ink-dim">
-                  <Text path="library.lineups.form.command" />
-                </label>
-                <input
-                  id="lineup-command"
-                  type="text"
-                  value={values.command}
-                  onChange={(e) => updateValue('command', e.target.value)}
-                  placeholder="setpos ...; setang ..."
-                  className="h-8 rounded-card border border-line bg-surface-1 px-3 font-mono text-11 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
-                />
-              </div>
+              {/* Console Command (Only for demo-derived lineups) */}
+              {values.fromDemo && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="lineup-command" className="label-dense text-ink-dim">
+                      <Text path="library.lineups.form.command" />
+                    </label>
+                    <Input
+                      id="lineup-command"
+                      type="text"
+                      value={values.command}
+                      onChange={(e) => updateValue('command', e.target.value)}
+                      placeholder="setpos ...; setang ..."
+                      className="font-mono text-11"
+                    />
+                  </div>
+                  {values.landingCommand && (
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="lineup-landing-command" className="label-dense text-ink-dim">
+                        <Text path="library.lineups.commandLanding" />
+                      </label>
+                      <Input
+                        id="lineup-landing-command"
+                        type="text"
+                        value={values.landingCommand}
+                        onChange={(e) => updateValue('landingCommand', e.target.value)}
+                        placeholder="setpos ..."
+                        className="font-mono text-11"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </details>
         </div>

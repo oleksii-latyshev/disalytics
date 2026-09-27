@@ -28,6 +28,8 @@ export interface Lineup {
   readonly movementKeys: readonly MovementKey[];
   readonly movementKeysSummary: string;
   readonly command: string;
+  readonly landingCommand?: string;
+  readonly fromDemo?: boolean;
   readonly notes?: string;
   readonly movementInstructions?: string;
   readonly mediaUrl?: string;
@@ -117,11 +119,15 @@ function hasValidOptionals(
   mediaUrl: unknown,
   isBuiltIn: unknown,
   createdAt: unknown,
+  landingCommand: unknown,
+  fromDemo: unknown,
 ): boolean {
   if (notes !== undefined && typeof notes !== 'string') return false;
   if (mediaUrl !== undefined && typeof mediaUrl !== 'string') return false;
   if (isBuiltIn !== undefined && typeof isBuiltIn !== 'boolean') return false;
   if (createdAt !== undefined && !isFiniteNumber(createdAt)) return false;
+  if (landingCommand !== undefined && typeof landingCommand !== 'string') return false;
+  if (fromDemo !== undefined && typeof fromDemo !== 'boolean') return false;
   return true;
 }
 
@@ -150,7 +156,14 @@ export function isLineup(value: unknown): value is Lineup {
     hasValidGeometry(value.origin, value.landing, value.pitch, value.yaw) &&
     hasValidCommand(value.movementKeys, value.movementKeysSummary, value.command) &&
     hasValidInstructions(value.movementInstructions, value.imageUrls) &&
-    hasValidOptionals(value.notes, value.mediaUrl, value.isBuiltIn, value.createdAt)
+    hasValidOptionals(
+      value.notes,
+      value.mediaUrl,
+      value.isBuiltIn,
+      value.createdAt,
+      (value as Record<string, unknown>).landingCommand,
+      (value as Record<string, unknown>).fromDemo,
+    )
   );
 }
 

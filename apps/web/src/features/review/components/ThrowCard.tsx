@@ -69,6 +69,8 @@ export function ThrowCard({ detail, players, map }: Props) {
       throwType: detail.throwType,
       movementKeys: detail.movementKeys,
       command: detail.command,
+      landingCommand: `setpos ${detail.landing.x.toFixed(2)} ${detail.landing.y.toFixed(2)} ${detail.landing.z.toFixed(2)}`,
+      fromDemo: true,
     };
   }, [detail, map, nameOf]);
 

@@ -71,6 +71,8 @@ describe('lineup form helpers', () => {
       pitch: '-30.50',
       yaw: '45.00',
       command: 'custom setpos',
+      landingCommand: 'setpos -300.00 400.00 0.00',
+      fromDemo: true,
       notes: 'Throw over fence',
       mediaUrl: 'https://example.com/lineup.png',
     };
@@ -97,13 +99,15 @@ describe('lineup form helpers', () => {
     expect(lineup.pitch).toBe(-30.5);
     expect(lineup.yaw).toBe(45);
     expect(lineup.command).toBe('custom setpos');
+    expect(lineup.landingCommand).toBe('setpos -300.00 400.00 0.00');
+    expect(lineup.fromDemo).toBe(true);
     expect(lineup.notes).toBe('Throw over fence');
     expect(lineup.mediaUrl).toBe('https://example.com/lineup.png');
     expect(lineup.isBuiltIn).toBe(false);
     expect(lineup.createdAt).toBe(1000);
   });
 
-  it('compiles setpos and setang command automatically when command is blank', () => {
+  it('compiles setpos and setang command automatically when fromDemo is true and command is blank', () => {
     const values: LineupFormValues = {
       title: 'Auto Command Lineup',
       map: 'de_nuke',
@@ -122,6 +126,8 @@ describe('lineup form helpers', () => {
       pitch: '-15.00',
       yaw: '90.00',
       command: '',
+      landingCommand: '',
+      fromDemo: true,
       notes: '',
       mediaUrl: '',
     };
@@ -131,12 +137,21 @@ describe('lineup form helpers', () => {
     if (!lineup) return;
 
     expect(lineup.command).toBe('setpos 10.00 20.00 30.00; setang -15.00 90.00 0');
+    expect(lineup.landingCommand).toBe('setpos 40.00 50.00 60.00');
+    expect(lineup.fromDemo).toBe(true);
     expect(lineup.movementKeysSummary).toBe('W + Shift + Jump');
     expect(lineup.isBuiltIn).toBe(false);
     expect(lineup.id.startsWith('custom-')).toBe(true);
 
-    const mapPlaced = buildLineupFromForm(values, undefined, undefined, false);
+    const mapPlaced = buildLineupFromForm(
+      { ...values, fromDemo: false },
+      undefined,
+      undefined,
+      false,
+    );
     expect(mapPlaced?.command).toBe('');
+    expect(mapPlaced?.landingCommand).toBeUndefined();
+    expect(mapPlaced?.fromDemo).toBeUndefined();
   });
 
   it('returns null if coordinates are not finite numbers', () => {
@@ -158,6 +173,8 @@ describe('lineup form helpers', () => {
       pitch: '0',
       yaw: '0',
       command: '',
+      landingCommand: '',
+      fromDemo: false,
       notes: '',
       mediaUrl: '',
     };
