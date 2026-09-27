@@ -1,6 +1,6 @@
 import { type Lineup, type LineupSide, UTILITY_NAMES } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
-import { Button, Dialog } from '@disa/ui';
+import { Button, cn, Dialog } from '@disa/ui';
 import {
   Check,
   ChevronDown,
@@ -13,7 +13,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 
 interface Props {
@@ -52,11 +52,13 @@ function LineupDetailHeader({
   const t = useT();
 
   const handleDelete = () => {
-    if (onDelete !== undefined && !lineup.isBuiltIn) {
-      if (window.confirm(t('library.lineups.deleteConfirm'))) {
-        onDelete(lineup.id);
-        onDismiss();
-      }
+    if (
+      onDelete !== undefined &&
+      !lineup.isBuiltIn &&
+      window.confirm(t('library.lineups.deleteConfirm'))
+    ) {
+      onDelete(lineup.id);
+      onDismiss();
     }
   };
 
@@ -68,34 +70,35 @@ function LineupDetailHeader({
   };
 
   return (
-    <div className="flex shrink-0 items-center justify-between border-b border-line bg-surface-1 px-5 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 font-ui font-medium text-14 text-ink">
-          <Text path="library.lineups.detailsTitle" />
-        </span>
+    <div className="flex h-10 shrink-0 items-center justify-between border-b border-line bg-surface-1 px-3 sm:px-4">
+      <div className="flex min-w-0 items-center gap-2 mr-2">
+        <h2
+          id="lineup-detail-title"
+          className="truncate font-ui font-medium text-13 sm:text-14 text-ink max-w-[12rem] sm:max-w-xs md:max-w-md"
+          title={lineup.title}
+        >
+          {lineup.title}
+        </h2>
         <span
-          className={`rounded-chip border px-2 py-0.5 font-medium text-11 ${
+          className={`shrink-0 rounded-chip border px-1.5 py-0.5 font-medium text-10 ${
             SIDE_STYLES[lineup.side]
           }`}
         >
           {lineup.side === 'BOTH' ? <Text path="library.lineups.bothSides" /> : lineup.side}
         </span>
-
-        <span className="flex items-center gap-1 rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink">
+        <span className="hidden sm:inline-flex shrink-0 items-center gap-1 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-10 text-ink">
           <UtilityGlyph kind={lineup.kind} label={UTILITY_NAMES[lineup.kind]} size="control" />
           <span>{UTILITY_NAMES[lineup.kind]}</span>
         </span>
-
-        <span className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink-dim">
+        <span className="hidden md:inline-block shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-10 text-ink-dim">
           <Text path={`review.maps.throw.types.${lineup.throwType}`} />
         </span>
-
-        <span className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink-dim">
+        <span className="hidden lg:inline-block shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-10 text-ink-dim">
           <Text path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'} />
         </span>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         {!lineup.isBuiltIn && (
           <>
             {onEdit !== undefined && (
@@ -106,7 +109,7 @@ function LineupDetailHeader({
                 aria-label={t('library.lineups.edit')}
                 className="rounded-chip p-1.5 text-ink-dim transition-colors hover:bg-surface-3 hover:text-ink"
               >
-                <Pencil className="size-4" />
+                <Pencil className="size-3.5 sm:size-4" />
               </button>
             )}
             {onDelete !== undefined && (
@@ -117,7 +120,7 @@ function LineupDetailHeader({
                 aria-label={t('library.lineups.delete')}
                 className="rounded-chip p-1.5 text-ink-dim transition-colors hover:bg-surface-3 hover:text-ink"
               >
-                <Trash2 className="size-4" />
+                <Trash2 className="size-3.5 sm:size-4" />
               </button>
             )}
           </>
@@ -147,60 +150,168 @@ function LineupImageViewer({
   const t = useT();
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const zoomRef = useRef(1);
+  const panRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragRef = useRef<{
+    pointerId: number;
     startX: number;
     startY: number;
     initialPanX: number;
     initialPanY: number;
   } | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const activeUrl = imageUrls[activeIndex];
 
-  const handleZoom = (nextZoom: number) => {
-    const clamped = Math.max(1, Math.min(5, nextZoom));
-    setZoom(clamped);
-    if (clamped <= 1) {
-      setPan({ x: 0, y: 0 });
+  const getBounds = useCallback((currentZoom: number) => {
+    if (currentZoom <= 1 || !containerRef.current || !imageRef.current) {
+      return { maxPanX: 0, maxPanY: 0 };
     }
-  };
+    const cw = containerRef.current.clientWidth;
+    const ch = containerRef.current.clientHeight;
+    if (cw <= 0 || ch <= 0) return { maxPanX: 0, maxPanY: 0 };
+
+    const naturalWidth = imageRef.current.naturalWidth;
+    const naturalHeight = imageRef.current.naturalHeight;
+    if (naturalWidth <= 0 || naturalHeight <= 0) return { maxPanX: 0, maxPanY: 0 };
+    const fit = Math.min(cw / naturalWidth, ch / naturalHeight);
+    const iw = naturalWidth * fit;
+    const ih = naturalHeight * fit;
+    const enlargedWidth = iw * currentZoom;
+    const enlargedHeight = ih * currentZoom;
+
+    return {
+      maxPanX: Math.max(0, (enlargedWidth - cw) / 2),
+      maxPanY: Math.max(0, (enlargedHeight - ch) / 2),
+    };
+  }, []);
+
+  const clampPan = useCallback(
+    (x: number, y: number, currentZoom: number) => {
+      const { maxPanX, maxPanY } = getBounds(currentZoom);
+      return {
+        x: Math.max(-maxPanX, Math.min(maxPanX, x)),
+        y: Math.max(-maxPanY, Math.min(maxPanY, y)),
+      };
+    },
+    [getBounds],
+  );
+
+  const applyTransform = useCallback((x: number, y: number, currentZoom: number) => {
+    if (imageRef.current) {
+      imageRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${currentZoom})`;
+    }
+  }, []);
+
+  const handleZoom = useCallback(
+    (nextZoom: number) => {
+      const clampedZoom = Math.max(1, Math.min(5, Math.round(nextZoom * 100) / 100));
+      setZoom(clampedZoom);
+      zoomRef.current = clampedZoom;
+      const clamped = clampPan(panRef.current.x, panRef.current.y, clampedZoom);
+      panRef.current = clamped;
+      applyTransform(clamped.x, clamped.y, clampedZoom);
+    },
+    [applyTransform, clampPan],
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      handleZoom(zoomRef.current + (e.deltaY < 0 ? 0.25 : -0.25));
+    };
+
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            const clamped = clampPan(panRef.current.x, panRef.current.y, zoomRef.current);
+            panRef.current = clamped;
+            applyTransform(clamped.x, clamped.y, zoomRef.current);
+          })
+        : null;
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    observer?.observe(container);
+
+    return () => {
+      container.removeEventListener('wheel', onWheel);
+      observer?.disconnect();
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, [applyTransform, clampPan, handleZoom]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
     if (e.detail === 2) {
-      handleZoom(zoom > 1 ? 1 : 2.5);
+      handleZoom(zoomRef.current > 1 ? 1 : 2.5);
       return;
     }
-    if (zoom <= 1) return;
-    setIsDragging(true);
+    if (zoomRef.current <= 1) return;
+
+    const { maxPanX, maxPanY } = getBounds(zoomRef.current);
+    if (maxPanX <= 0 && maxPanY <= 0) return;
+
+    e.preventDefault();
     dragRef.current = {
+      pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
-      initialPanX: pan.x,
-      initialPanY: pan.y,
+      initialPanX: panRef.current.x,
+      initialPanY: panRef.current.y,
     };
+    setIsDragging(true);
+    if (imageRef.current) {
+      imageRef.current.style.transition = 'none';
+    }
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || !dragRef.current) return;
+    if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
-    setPan({
-      x: dragRef.current.initialPanX + dx,
-      y: dragRef.current.initialPanY + dy,
-    });
+    const targetX = dragRef.current.initialPanX + dx;
+    const targetY = dragRef.current.initialPanY + dy;
+    const clamped = clampPan(targetX, targetY, zoomRef.current);
+    panRef.current = clamped;
+
+    if (rafIdRef.current === null) {
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        applyTransform(panRef.current.x, panRef.current.y, zoomRef.current);
+      });
+    }
   };
 
-  const handlePointerUp = () => {
-    setIsDragging(false);
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current && e.currentTarget.hasPointerCapture(dragRef.current.pointerId)) {
+      e.currentTarget.releasePointerCapture(dragRef.current.pointerId);
+    }
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    applyTransform(panRef.current.x, panRef.current.y, zoomRef.current);
+    if (imageRef.current) {
+      imageRef.current.style.transition = '';
+    }
     dragRef.current = null;
+    setIsDragging(false);
   };
 
   if (!activeUrl) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-surface-0 p-6 text-center">
-        <span className="flex size-20 items-center justify-center rounded-card border border-line bg-surface-2 text-ink-dim">
+      <div className="flex flex-1 min-h-[220px] flex-col items-center justify-center gap-3 bg-surface-0 p-6 text-center">
+        <span className="flex size-16 sm:size-20 items-center justify-center rounded-card border border-line bg-surface-2 text-ink-dim">
           <UtilityGlyph kind={kind} label={UTILITY_NAMES[kind]} size="control" />
         </span>
         <span className="text-13 text-ink-dim">
@@ -210,10 +321,12 @@ function LineupImageViewer({
     );
   }
 
+  const { maxPanX, maxPanY } = getBounds(zoom);
+  const canPan = zoom > 1 && (maxPanX > 0 || maxPanY > 0);
+
   return (
-    <div className="relative flex flex-1 min-h-0 min-w-0 flex-col bg-surface-0 overflow-hidden select-none">
-      {/* Zoom toolbar */}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-card border border-line bg-surface-1/90 p-1 backdrop-blur-sm shadow-sm">
+    <div className="relative flex flex-col bg-surface-0 overflow-hidden select-none h-[42vh] min-h-[220px] shrink-0 lg:h-full lg:min-h-0 lg:flex-1">
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-card border border-line bg-surface-2 p-1 shadow-float">
         <Button
           type="button"
           variant="ghost"
@@ -221,7 +334,7 @@ function LineupImageViewer({
           onClick={() => handleZoom(zoom + 0.5)}
           title={t('library.lineups.zoomIn')}
           aria-label={t('library.lineups.zoomIn')}
-          className="size-7"
+          className="size-7 text-ink-dim hover:text-ink"
         >
           <ZoomIn className="size-3.5" />
         </Button>
@@ -232,7 +345,7 @@ function LineupImageViewer({
           onClick={() => handleZoom(zoom - 0.5)}
           title={t('library.lineups.zoomOut')}
           aria-label={t('library.lineups.zoomOut')}
-          className="size-7"
+          className="size-7 text-ink-dim hover:text-ink"
         >
           <ZoomOut className="size-3.5" />
         </Button>
@@ -243,7 +356,7 @@ function LineupImageViewer({
           onClick={() => handleZoom(1)}
           title={t('library.lineups.zoomReset')}
           aria-label={t('library.lineups.zoomReset')}
-          className="size-7"
+          className="size-7 text-ink-dim hover:text-ink"
         >
           <RotateCcw className="size-3.5" />
         </Button>
@@ -252,47 +365,57 @@ function LineupImageViewer({
         </span>
       </div>
 
-      {/* Main Image Viewport */}
       <div
-        className={`relative flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden p-4 ${
-          zoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
-        }`}
+        ref={containerRef}
+        className={cn(
+          'relative flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden select-none p-1 sm:p-2',
+          canPan ? 'touch-none' : 'touch-pan-y',
+          canPan ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default',
+        )}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        onWheel={(e) => {
-          e.preventDefault();
-          handleZoom(e.deltaY < 0 ? zoom + 0.25 : zoom - 0.25);
-        }}
       >
         <img
+          ref={imageRef}
           src={activeUrl}
           alt={title}
           draggable={false}
+          referrerPolicy="no-referrer"
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transform: 'translate3d(0px, 0px, 0) scale(1)',
             transformOrigin: 'center center',
           }}
-          className="max-h-full max-w-full rounded object-contain transition-transform duration-75 select-none"
+          onLoad={() => {
+            const clamped = clampPan(panRef.current.x, panRef.current.y, zoomRef.current);
+            panRef.current = clamped;
+            applyTransform(clamped.x, clamped.y, zoomRef.current);
+          }}
+          className={cn(
+            'size-full rounded object-contain select-none pointer-events-none',
+            isDragging
+              ? 'transition-none'
+              : 'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-reduce:transition-none',
+          )}
         />
       </div>
 
       {/* Thumbnails strip */}
       {imageUrls.length > 1 && (
-        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-surface-1 p-2.5 overflow-x-auto">
+        <div className="flex shrink-0 items-center gap-2 [border-block-start:1px_solid_var(--color-line)] bg-surface-1 p-2 overflow-x-auto">
           {imageUrls.map((url, idx) => (
             <button
               key={url}
               type="button"
+              aria-current={idx === activeIndex ? 'true' : undefined}
               onClick={() => {
                 setActiveIndex(idx);
-                setZoom(1);
-                setPan({ x: 0, y: 0 });
+                handleZoom(1);
               }}
-              className={`relative size-14 shrink-0 overflow-hidden rounded-chip border-2 transition-all ${
+              className={`relative size-12 sm:size-14 shrink-0 overflow-hidden rounded-chip border-2 transition-opacity ${
                 idx === activeIndex
-                  ? 'border-focus shadow-sm opacity-100'
+                  ? 'border-focus opacity-100'
                   : 'border-transparent opacity-60 hover:opacity-100'
               }`}
             >
@@ -301,7 +424,7 @@ function LineupImageViewer({
                 alt={`${title} ${idx + 1}`}
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                className="size-full object-cover"
+                className="size-full object-cover select-none pointer-events-none"
               />
             </button>
           ))}
@@ -331,22 +454,15 @@ function LineupExplanation({
   );
 }
 
-function LineupMovementCard({
-  throwType,
-  movementKeys,
-}: {
-  readonly throwType: Lineup['throwType'];
-  readonly movementKeys: readonly string[];
-}) {
+function LineupMovementCard({ movementKeys }: { readonly movementKeys: readonly string[] }) {
+  if (movementKeys.length === 0) return null;
+
   return (
     <div className="flex flex-col gap-2.5 rounded-card border border-line bg-surface-2 p-3.5">
       <span className="label-dense text-ink-dim">
         <Text path="library.lineups.movement" />
       </span>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-chip border border-line bg-surface-3 px-2.5 py-1 text-12 font-medium text-ink">
-          <Text path={`review.maps.throw.types.${throwType}`} />
-        </span>
         {movementKeys.map((key) => (
           <kbd
             key={key}
@@ -367,26 +483,18 @@ function LineupCoordinatesCollapsible({
   readonly lineup: Lineup;
   readonly landingCommand: string | null;
 }) {
-  const [copiedOrigin, setCopiedOrigin] = useState(false);
-  const [copiedLanding, setCopiedLanding] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<'origin' | 'landing' | null>(null);
 
   useEffect(() => {
-    if (!copiedOrigin) return;
-    const timer = setTimeout(() => setCopiedOrigin(false), 2000);
+    if (copiedKey === null) return;
+    const timer = setTimeout(() => setCopiedKey(null), 2000);
     return () => clearTimeout(timer);
-  }, [copiedOrigin]);
+  }, [copiedKey]);
 
-  useEffect(() => {
-    if (!copiedLanding) return;
-    const timer = setTimeout(() => setCopiedLanding(false), 2000);
-    return () => clearTimeout(timer);
-  }, [copiedLanding]);
-
-  const copyToClipboard = async (text: string, type: 'origin' | 'landing') => {
+  const copyToClipboard = async (text: string, key: 'origin' | 'landing') => {
     try {
       await navigator.clipboard.writeText(text);
-      if (type === 'origin') setCopiedOrigin(true);
-      else setCopiedLanding(true);
+      setCopiedKey(key);
     } catch {
       // Ignore clipboard write failure in non-secure context
     }
@@ -404,7 +512,7 @@ function LineupCoordinatesCollapsible({
         </span>
       </summary>
 
-      <div className="flex flex-col gap-3 border-t border-line/60 p-3 pt-2.5">
+      <div className="flex flex-col gap-3 [border-block-start:1px_solid_var(--color-line-soft)] p-3 pt-2.5">
         <div className="flex flex-col gap-1.5">
           <span className="label-dense text-11 text-ink-dim">
             <Text path="library.lineups.coordinatesOrigin" />
@@ -438,10 +546,10 @@ function LineupCoordinatesCollapsible({
               </code>
               <Button
                 variant="secondary"
-                onClick={() => copyToClipboard(lineup.command, 'origin')}
+                onClick={() => copyToClipboard(lineup.command ?? '', 'origin')}
                 className="h-6 shrink-0 gap-1 px-2 text-11"
               >
-                {copiedOrigin ? (
+                {copiedKey === 'origin' ? (
                   <>
                     <Check className="size-3 text-ct" />
                     <Text path="library.lineups.copied" />
@@ -471,7 +579,7 @@ function LineupCoordinatesCollapsible({
                 onClick={() => copyToClipboard(landingCommand, 'landing')}
                 className="h-6 shrink-0 gap-1 px-2 text-11"
               >
-                {copiedLanding ? (
+                {copiedKey === 'landing' ? (
                   <>
                     <Check className="size-3 text-ct" />
                     <Text path="library.lineups.copied" />
@@ -503,11 +611,13 @@ function LineupInfoSidebar({
   readonly mediaUrl: string | null;
 }) {
   return (
-    <div className="flex w-full min-h-0 shrink-0 flex-col gap-4 overflow-y-auto border-t border-line bg-surface-1 p-5 lg:w-[22rem] lg:border-l lg:border-t-0 xl:w-[26rem]">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-ui font-medium text-20 text-ink leading-dense">{lineup.title}</h2>
-        {mediaUrl && (
-          <div>
+    <div className="flex w-full min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden [border-block-start:1px_solid_var(--color-line)] bg-surface-1 p-4 sm:p-5 lg:w-[22rem] lg:flex-none lg:[border-block-start:0] lg:[border-inline-start:1px_solid_var(--color-line)] xl:w-[24rem]">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="label-dense text-ink-dim">
+            <Text path="library.lineups.detailsTitle" />
+          </span>
+          {mediaUrl && (
             <a
               href={mediaUrl}
               target="_blank"
@@ -517,13 +627,40 @@ function LineupInfoSidebar({
               <ExternalLink className="size-3.5" />
               <Text path="library.lineups.media" />
             </a>
-          </div>
-        )}
+          )}
+        </div>
+
+        <h2 className="font-ui font-medium text-16 text-ink leading-dense break-words">
+          {lineup.title}
+        </h2>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            className={`rounded-chip border px-2 py-0.5 font-medium text-11 ${
+              SIDE_STYLES[lineup.side]
+            }`}
+          >
+            {lineup.side === 'BOTH' ? <Text path="library.lineups.bothSides" /> : lineup.side}
+          </span>
+
+          <span className="flex items-center gap-1 rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink">
+            <UtilityGlyph kind={lineup.kind} label={UTILITY_NAMES[lineup.kind]} size="control" />
+            <span>{UTILITY_NAMES[lineup.kind]}</span>
+          </span>
+
+          <span className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink-dim">
+            <Text path={`review.maps.throw.types.${lineup.throwType}`} />
+          </span>
+
+          <span className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink-dim">
+            <Text path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'} />
+          </span>
+        </div>
       </div>
 
       <LineupExplanation instructions={lineup.movementInstructions} notes={lineup.notes} />
 
-      <LineupMovementCard throwType={lineup.throwType} movementKeys={lineup.movementKeys ?? []} />
+      <LineupMovementCard movementKeys={lineup.movementKeys ?? []} />
 
       {isFromDemo && (
         <LineupCoordinatesCollapsible lineup={lineup} landingCommand={landingCommand} />
@@ -554,7 +691,8 @@ export function LineupDetailModal({ lineup, isOpen, onDismiss, onEdit, onDelete 
     <Dialog
       isOpen={isOpen}
       onDismiss={onDismiss}
-      className="flex h-[92vh] max-h-[92vh] w-[96vw] max-w-[96rem] flex-col overflow-hidden p-0"
+      aria-labelledby="lineup-detail-title"
+      className="flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[120rem] flex-col overflow-hidden p-0"
     >
       <LineupDetailHeader
         lineup={lineup}
