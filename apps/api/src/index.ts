@@ -1,35 +1,25 @@
 import { Effect } from 'effect';
+import { routeHealth } from './modules/health';
+import { routeUpload, type UploadEnv, unavailableUploadResponse } from './modules/upload';
+import { jsonResponse } from './shared/http/response';
 
-const jsonResponse = (
-  body: Record<string, string>,
-  status: number,
-  headers?: Record<string, string>,
-): Response =>
-  Response.json(body, {
-    headers: {
-      'Cache-Control': 'no-store',
-      ...headers,
-    },
-    status,
-  });
-
-const handleRequest = (request: Request): Effect.Effect<Response> =>
-  Effect.sync(() => {
-    const url = new URL(request.url);
-
-    if (url.pathname === '/health') {
-      if (request.method !== 'GET') {
-        return jsonResponse({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
-      }
-
-      return jsonResponse({ status: 'ok' }, 200);
-    }
-
-    return jsonResponse({ error: 'not_found' }, 404);
-  });
+async function route(request: Request, env: UploadEnv): Promise<Response> {
+  const path = new URL(request.url).pathname;
+  if (path === '/health') {
+    return routeHealth(request);
+  }
+  if (path === '/images/config' || path === '/images/upload') {
+    return routeUpload(request, env);
+  }
+  return jsonResponse({ error: 'not_found' }, 404);
+}
 
 export default {
-  async fetch(request: Request): Promise<Response> {
-    return Effect.runPromise(handleRequest(request));
+  async fetch(request: Request, env: UploadEnv = {}): Promise<Response> {
+    try {
+      return await Effect.runPromise(Effect.tryPromise(() => route(request, env)));
+    } catch {
+      return unavailableUploadResponse(request);
+    }
   },
 };

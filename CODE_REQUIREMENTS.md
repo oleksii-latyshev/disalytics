@@ -43,6 +43,12 @@ apps/web/src/
 Every `core/` and `features/` folder groups its own `components/`, `helpers/`, `hooks/`,
 `constants/`, `__tests__/` as needed, plus an `index.ts` barrel.
 
+`apps/api` follows the same TypeScript, error, functional-style, async and testing rules in this
+document. Its entry point only dispatches requests; each domain route lives under
+`apps/api/src/modules/<domain>/` with `router.ts`, a public `index.ts` barrel, and focused
+`helpers/`, `constants/`, and `__tests__/` as needed. Put HTTP helpers that truly serve more
+than one module under `apps/api/src/shared/`. Modules do not import another module's internals.
+
 ### Package names
 
 Workspace packages are named `@disa/<folder>` — `@disa/demo-core`, `@disa/map-data`, `@disa/ui`.
@@ -250,6 +256,8 @@ app's own, and `OpenFailure` in `apps/web/src/core/parsing` is what that looks l
 
 - Prefer small, pure, named functions over inline logic. When a component grows a nontrivial
   computation, extract it into the slice's `helpers/` and unit test it there.
+- In API modules, keep request dispatch separate from parsing and provider calls. Make validation
+  and response shaping pure where possible; keep network and stream reads in named boundary helpers.
 - **No classes** except `Error` subclasses. No class components, no service classes, no singletons
   dressed as classes.
 - **Derive, don't duplicate.** Compute view data from the parsed demo on render instead of mirroring

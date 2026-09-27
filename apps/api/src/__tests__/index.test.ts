@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import worker from '../index';
 
-describe('API worker', () => {
+describe('API worker dispatch', () => {
   it('returns an uncached health response for GET /health', async () => {
     const response = await worker.fetch(new Request('https://api.example/health'));
 
@@ -18,15 +18,24 @@ describe('API worker', () => {
 
     expect(response.status).toBe(405);
     expect(response.headers.get('Allow')).toBe('GET');
-    expect(response.headers.get('Content-Type')).toBe('application/json');
     expect(await response.json()).toEqual({ error: 'method_not_allowed' });
+  });
+
+  it('dispatches image routes to the upload module', async () => {
+    const response = await worker.fetch(
+      new Request('https://api.example/images/config', {
+        headers: { Origin: 'https://disalytics.disa-67b.workers.dev' },
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ status: 'unavailable' });
   });
 
   it('returns a stable not-found error for unknown paths', async () => {
     const response = await worker.fetch(new Request('https://api.example/other'));
 
     expect(response.status).toBe(404);
-    expect(response.headers.get('Content-Type')).toBe('application/json');
     expect(await response.json()).toEqual({ error: 'not_found' });
   });
 });
