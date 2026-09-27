@@ -4,5 +4,13 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-07-01",
   "workers_dev": true,
-  "preview_urls": false
+  "preview_urls": false,
+  "keep_vars": true,
+  "ratelimits": [
+    {
+      "name": "UPLOAD_RATE_LIMITER",
+      "namespace_id": "460",
+      "simple": { "limit": 3, "period": 60 }
+    }
+  ]
 }

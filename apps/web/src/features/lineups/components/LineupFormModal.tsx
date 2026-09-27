@@ -23,6 +23,7 @@ import {
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
+import { loadTurnstile, uploadLineupImage, uploadSiteKey } from '../helpers/upload-image';
 
 const ALL_MOVEMENT_KEYS: readonly MovementKey[] = [
   'W',
@@ -339,6 +340,11 @@ export function LineupFormModal({
   const [newImageUrl, setNewImageUrl] = useState('');
   const [preparedImages, setPreparedImages] = useState<readonly PreparedImage[]>([]);
   const [isUploadConfirmed, setUploadConfirmed] = useState(false);
+  const [siteKey, setSiteKey] = useState<string | null | undefined>();
+  const [challengeToken, setChallengeToken] = useState('');
+  const [uploadingUrl, setUploadingUrl] = useState<string | null>(null);
+  const challengeRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<string | null>(null);
   const previewUrlsRef = useRef(new Set<string>());
 
   useEffect(
@@ -356,7 +362,71 @@ export function LineupFormModal({
     setNewImageUrl('');
     setPreparedImages([]);
     setUploadConfirmed(false);
+    setChallengeToken('');
   }, [isOpen, initialData, defaultMap]);
+
+  useEffect(() => {
+    if (!isOpen || !isUploadConfirmed) return;
+    let active = true;
+    setSiteKey(undefined);
+    void uploadSiteKey().then((key) => {
+      if (active) setSiteKey(key);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, isUploadConfirmed]);
+
+  useEffect(() => {
+    if (!isOpen || !isUploadConfirmed || !siteKey || !challengeRef.current) return;
+    let active = true;
+    let widget: string | null = null;
+    void loadTurnstile()
+      .then((turnstile) => {
+        if (!active || !challengeRef.current) return;
+        widget = turnstile.render(challengeRef.current, {
+          sitekey: siteKey,
+          callback: setChallengeToken,
+          'expired-callback': () => setChallengeToken(''),
+          'error-callback': () => setChallengeToken(''),
+        });
+        widgetRef.current = widget;
+      })
+      .catch(() => {
+        if (active) setSiteKey(null);
+      });
+    return () => {
+      active = false;
+      if (widget && window.turnstile) window.turnstile.remove(widget);
+      widgetRef.current = null;
+    };
+  }, [isOpen, isUploadConfirmed, siteKey]);
+
+  const handleUpload = async (image: PreparedImage) => {
+    if (!challengeToken) return;
+    setUploadingUrl(image.previewUrl);
+    setChallengeToken('');
+    try {
+      const url = await uploadLineupImage(image.file, challengeToken);
+      setValues((previous) => ({
+        ...previous,
+        imageUrls: previous.imageUrls.includes(url)
+          ? previous.imageUrls
+          : [...previous.imageUrls, url],
+      }));
+      URL.revokeObjectURL(image.previewUrl);
+      previewUrlsRef.current.delete(image.previewUrl);
+      setPreparedImages((previous) =>
+        previous.filter((item) => item.previewUrl !== image.previewUrl),
+      );
+      setError(null);
+    } catch {
+      setError(t('library.lineups.form.validation.uploadFailed'));
+    } finally {
+      setUploadingUrl(null);
+      if (widgetRef.current && window.turnstile) window.turnstile.reset(widgetRef.current);
+    }
+  };
 
   const updateValue = <K extends keyof LineupFormValues>(key: K, val: LineupFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: val }));
@@ -656,16 +726,20 @@ export function LineupFormModal({
                 <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
                   {file.name} · {Math.round(file.size / 1024)} KB
                 </span>
-                {isUploadConfirmed && (
+                {isUploadConfirmed && siteKey && (
                   <button
                     type="button"
-                    onClick={() => {
-                      try {
-                        submitImageToCatbox(file);
-                      } catch {
-                        setError(t('library.lineups.form.validation.uploadFailed'));
-                      }
-                    }}
+                    disabled={!challengeToken || uploadingUrl !== null}
+                    onClick={() => void handleUpload({ file, previewUrl })}
+                    className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
+                  >
+                    <Text path="library.lineups.form.uploadImage" />
+                  </button>
+                )}
+                {isUploadConfirmed && siteKey === null && (
+                  <button
+                    type="button"
+                    onClick={() => submitImageToCatbox(file)}
                     className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
                   >
                     <Text path="library.lineups.form.uploadImage" />
@@ -694,7 +768,10 @@ export function LineupFormModal({
                 </button>
               </div>
             ))}
-            {preparedImages.length > 0 && isUploadConfirmed && (
+            {preparedImages.length > 0 && isUploadConfirmed && siteKey && (
+              <div ref={challengeRef} />
+            )}
+            {preparedImages.length > 0 && isUploadConfirmed && siteKey === null && (
               <p className="text-11 text-ink-dim leading-prose">
                 <Text path="library.lineups.form.catboxCopyLink" />
               </p>
