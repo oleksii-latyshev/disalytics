@@ -130,9 +130,14 @@ export function LineupsView() {
     <div className="flex min-h-full w-full min-w-0 flex-col gap-3 lg:h-full lg:min-h-0">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pb-2">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="font-ui font-medium text-[clamp(2rem,3vw,3rem)] tracking-[-0.045em] text-ink leading-[1.05]">
-            <Text path="library.lineups.title" />
-          </h2>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h2 className="font-ui font-medium text-[clamp(2rem,3vw,3rem)] tracking-[-0.045em] text-ink leading-[1.05]">
+              <Text path="library.lineups.title" />
+            </h2>
+            <span className="numeric font-mono text-11 text-ink-dim">
+              <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
+            </span>
+          </div>
           <p className="text-13 text-ink-dim leading-prose">
             <Text path="library.lineups.note" />
           </p>
@@ -171,12 +176,12 @@ export function LineupsView() {
         </div>
       </header>
 
-      <div className="surface-hud flex w-full flex-wrap items-center justify-between gap-3 self-center rounded-card px-3.5 py-2 sm:w-auto sm:gap-8">
-        <div className="flex items-center gap-2.5">
-          <span className="label-dense text-ink-dim">
-            <Text path="library.lineups.map" />:
-          </span>
-          <div className="w-52">
+      <div className="relative grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(16rem,20rem)] xl:block">
+        <aside className="surface-card z-10 flex min-w-0 flex-col gap-4 rounded-float p-3 lg:min-h-0 lg:overflow-y-auto xl:absolute xl:inset-y-3 xl:left-3 xl:w-[14rem]">
+          <div className="flex flex-col gap-2">
+            <span className="label-dense text-ink-dim">
+              <Text path="library.lineups.map" />
+            </span>
             <Select
               value={map}
               onValueChange={(val) => {
@@ -187,7 +192,10 @@ export function LineupsView() {
                 setIsPlacing(false);
               }}
             >
-              <SelectTrigger aria-label={t('library.lineups.map')} className="h-8 bg-surface-0">
+              <SelectTrigger
+                aria-label={t('library.lineups.map')}
+                className="h-8 w-full bg-surface-0"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -199,17 +207,7 @@ export function LineupsView() {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 text-12 text-ink-dim">
-          <span className="numeric font-mono">
-            <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
-          </span>
-        </div>
-      </div>
-
-      <div className="relative grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(16rem,20rem)] xl:block">
-        <aside className="surface-card z-10 flex min-w-0 flex-col gap-4 rounded-float p-3 lg:min-h-0 lg:overflow-y-auto xl:absolute xl:inset-y-3 xl:left-3 xl:w-[14rem]">
           <fieldset
             aria-label={t('library.lineups.side')}
             className="m-0 flex flex-col gap-2 border-none p-0"
