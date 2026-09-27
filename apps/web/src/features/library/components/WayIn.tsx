@@ -132,7 +132,9 @@ export function WayIn({ state, onFile, onEnter, onSample, onClose, onUpdate }: P
 
       {/* The band the dock stands in is reserved here rather than drawn here: the dock is fixed, so
           only this padding keeps a scrolled library's last row from sliding under it. */}
-      <main className="relative min-w-0 overflow-y-auto px-6 pt-4 pb-24 wide:px-10 wide:pt-6">
+      <main
+        className={`relative min-w-0 overflow-y-auto px-6 pb-24 wide:px-10 ${view === 'lineups' ? 'pt-2 wide:pt-3' : 'pt-4 wide:pt-6'}`}
+      >
         {view === 'upload' && (
           <UploadView
             onEnter={enterMatch}

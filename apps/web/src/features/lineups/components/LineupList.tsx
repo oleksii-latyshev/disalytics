@@ -1,6 +1,6 @@
 import type { Lineup, LineupSide } from '@disa/demo-core';
 import { UTILITY_NAMES } from '@disa/demo-core';
-import { Text } from '@disa/i18n';
+import { Text, useT } from '@disa/i18n';
 import { UtilityGlyph } from '@/core/glyphs';
 
 interface Props {
@@ -18,6 +18,7 @@ const SIDE_INK: Readonly<Record<LineupSide, string>> = {
 };
 
 export function LineupList({ lineups, focused, selectedIndex, onHover, onSelect }: Props) {
+  const t = useT();
   if (lineups.length === 0) {
     return (
       <div className="flex min-h-[8rem] items-center justify-center p-4 text-center text-13 text-ink-dim">
@@ -30,7 +31,7 @@ export function LineupList({ lineups, focused, selectedIndex, onHover, onSelect 
 
   return (
     <ul
-      aria-label="Grenade lineups"
+      aria-label={t('library.lineups.title')}
       className="flex min-h-0 min-w-0 flex-1 list-none flex-col gap-1 overflow-y-auto p-0"
     >
       {lineups.map((lineup, index) => {
@@ -49,15 +50,14 @@ export function LineupList({ lineups, focused, selectedIndex, onHover, onSelect 
               }}
               onFocus={() => onHover(index)}
               onBlur={() => onHover(null)}
-              className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-card p-2 text-left text-13 transition-colors duration-(--duration-micro) ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
-                isSelected
-                  ? 'bg-surface-2 ring-1 ring-line'
-                  : isFocused
-                    ? 'bg-surface-2'
-                    : 'bg-surface-1'
+              className={`flex w-full min-w-0 items-center justify-between gap-2 px-2 py-3 text-left text-13 transition-colors duration-(--duration-micro) ease-out hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+                isSelected || isFocused ? 'bg-surface-2' : 'bg-transparent'
               }`}
             >
               <div className="flex min-w-0 items-center gap-2">
+                <span className="numeric w-5 shrink-0 font-mono text-10 text-ink-dim">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
                 <span
                   className={`w-8 shrink-0 font-mono text-11 font-medium ${SIDE_INK[lineup.side]}`}
                 >

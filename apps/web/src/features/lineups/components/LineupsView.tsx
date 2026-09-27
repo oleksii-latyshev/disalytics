@@ -127,17 +127,22 @@ export function LineupsView() {
   };
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-[112rem] flex-col gap-3 lg:h-full lg:min-h-0">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-ui font-medium text-28 text-ink leading-dense">
-            <Text path="library.lineups.title" />
-          </h2>
-          <p className="text-14 text-ink-dim leading-prose">
+    <div className="flex min-h-full w-full min-w-0 flex-col gap-3 lg:h-full lg:min-h-0">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pb-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h2 className="font-ui font-medium text-[clamp(2rem,3vw,3rem)] tracking-[-0.045em] text-ink leading-[1.05]">
+              <Text path="library.lineups.title" />
+            </h2>
+            <span className="numeric font-mono text-11 text-ink-dim">
+              <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
+            </span>
+          </div>
+          <p className="text-13 text-ink-dim leading-prose">
             <Text path="library.lineups.note" />
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pb-0.5">
           <Button
             onClick={() => {
               setIsPlacing(true);
@@ -171,13 +176,12 @@ export function LineupsView() {
         </div>
       </header>
 
-      {/* Eyebrow Toolbar with Map Select */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface-1 px-3.5 py-2">
-        <div className="flex items-center gap-2.5">
-          <span className="label-dense text-ink-dim">
-            <Text path="library.lineups.map" />:
-          </span>
-          <div className="w-52">
+      <div className="relative grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(16rem,20rem)] xl:block">
+        <aside className="surface-card z-10 flex min-w-0 flex-col gap-4 rounded-float p-3 lg:min-h-0 lg:overflow-y-auto xl:absolute xl:inset-y-3 xl:left-3 xl:w-[14rem]">
+          <div className="flex flex-col gap-2">
+            <span className="label-dense text-ink-dim">
+              <Text path="library.lineups.map" />
+            </span>
             <Select
               value={map}
               onValueChange={(val) => {
@@ -188,7 +192,10 @@ export function LineupsView() {
                 setIsPlacing(false);
               }}
             >
-              <SelectTrigger aria-label={t('library.lineups.map')} className="h-8 bg-surface-0">
+              <SelectTrigger
+                aria-label={t('library.lineups.map')}
+                className="h-8 w-full bg-surface-0"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -199,32 +206,6 @@ export function LineupsView() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-12 text-ink-dim">
-          <span className="numeric font-mono">
-            <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
-          </span>
-        </div>
-      </div>
-
-      <div className="grid min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(16rem,20rem)] xl:grid-cols-[minmax(12rem,15rem)_minmax(0,1fr)_minmax(18rem,22rem)]">
-        {/* Left Filter Sidebar */}
-        <aside className="flex min-w-0 flex-col gap-4 rounded-float border border-line bg-surface-1 p-3 lg:min-h-0 lg:overflow-y-auto">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-ink-dim" />
-            <Input
-              type="search"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setSelectedId(null);
-              }}
-              aria-label={t('library.lineups.searchPlaceholder')}
-              placeholder={t('library.lineups.searchPlaceholder')}
-              className="h-8 pl-8 pr-2 text-12"
-            />
           </div>
 
           <fieldset
@@ -335,10 +316,9 @@ export function LineupsView() {
           )}
         </aside>
 
-        {/* Radar Map Center */}
         <section
           aria-label={t('library.lineups.map')}
-          className="grid min-h-0 min-w-0 place-items-center lg:[container-type:size]"
+          className="grid min-h-[28rem] min-w-0 place-items-center overflow-hidden rounded-float border border-line bg-surface-1 lg:min-h-0 lg:[container-type:size] xl:absolute xl:inset-0"
         >
           <LineupPlate
             map={map}
@@ -350,18 +330,29 @@ export function LineupsView() {
           />
         </section>
 
-        {/* Right Lineups List */}
         <aside
           aria-label={t('library.lineups.title')}
-          className="flex min-w-0 flex-col gap-2.5 rounded-float border border-line bg-surface-1 p-3 lg:min-h-0 lg:overflow-hidden"
+          className="surface-card z-10 flex min-w-0 flex-col gap-2.5 rounded-float p-3 lg:min-h-0 lg:overflow-hidden xl:absolute xl:inset-y-3 xl:right-3 xl:w-[21rem]"
         >
-          <div className="flex items-center justify-between border-b border-line pb-2">
+          <div className="flex items-center justify-between">
             <span className="font-ui text-13 font-medium text-ink">
               <Text path="library.lineups.title" />
             </span>
-            <span className="numeric font-mono text-11 text-ink-dim">
-              <Text path="library.lineups.count" values={{ count: filteredLineups.length }} />
-            </span>
+          </div>
+
+          <div className="relative shrink-0">
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-ink-dim" />
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setSelectedId(null);
+              }}
+              aria-label={t('library.lineups.searchPlaceholder')}
+              placeholder={t('library.lineups.searchPlaceholder')}
+              className="h-8 pl-8 pr-2 text-12"
+            />
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
