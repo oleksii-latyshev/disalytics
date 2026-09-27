@@ -15,8 +15,9 @@ bun run --cwd apps/api build
 
 `build` is a Wrangler dry run: it checks the deployable Worker bundle without publishing it. The
 Worker configuration is `apps/api/wrangler.jsonc`; the static site keeps the root `wrangler.jsonc`.
-To deploy this API later, run `cd apps/api && bunx wrangler deploy` after reviewing the environment
-and credentials. Do not deploy it through the static site's workflow.
+The API is deployed by its own job in `.github/workflows/deploy.yml` after green `ci` on `main`; the
+job runs `bun run api:smoke <url>` against the deployed Worker. For a manual deploy, run
+`cd apps/api && bunx wrangler deploy` after reviewing the Cloudflare account and credentials.
 The API can use the [Workers Free plan](https://developers.cloudflare.com/workers/platform/pricing/)
 without a persistent server; its request and CPU quotas are account-level constraints. This setup
 does not provision KV, a database or a paid service.
