@@ -3,6 +3,8 @@ import { getMapOverview } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import {
   findNearestLineup,
+  findNearestLineupTarget,
+  groupLineupsByLanding,
   groupLineupsByOrigin,
   LINEUP_STRIDE,
   lineupPlot,
@@ -121,5 +123,51 @@ describe('groupLineupsByOrigin', () => {
     ]);
     expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1], [2]]);
     expect(grouped[0]?.countLabel).toBe('2');
+  });
+});
+
+describe('groupLineupsByLanding', () => {
+  it('groups several grenades landing at the same destination', () => {
+    const first = MOCK_LINEUPS[0];
+    const second = MOCK_LINEUPS[1];
+    if (first === undefined || second === undefined) throw new Error('Missing test lineups');
+    const grouped = groupLineupsByLanding([
+      first,
+      { ...second, id: 'third', landing: { x: -1060, y: -310, z: -160 } },
+      second,
+    ]);
+    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1], [2]]);
+    expect(grouped[0]?.countLabel).toBe('2');
+  });
+});
+
+describe('findNearestLineupTarget', () => {
+  const overview = getMapOverview('de_mirage');
+  if (overview === undefined) throw new Error('de_mirage overview missing');
+  const plot = lineupPlot(overview, MOCK_LINEUPS);
+  const scale = 0.5;
+
+  it('distinguishes origin vs landing targets', () => {
+    const ox = plot[0] ?? 0;
+    const oy = plot[1] ?? 0;
+    const hitOrigin = findNearestLineupTarget(
+      { x: ox + 2, y: oy + 2 },
+      plot,
+      MOCK_LINEUPS.length,
+      scale,
+      20,
+    );
+    expect(hitOrigin).toEqual({ index: 0, target: 'origin' });
+
+    const lx = plot[LINEUP_STRIDE + 2] ?? 0;
+    const ly = plot[LINEUP_STRIDE + 3] ?? 0;
+    const hitLanding = findNearestLineupTarget(
+      { x: lx + 2, y: ly + 2 },
+      plot,
+      MOCK_LINEUPS.length,
+      scale,
+      20,
+    );
+    expect(hitLanding).toEqual({ index: 1, target: 'landing' });
   });
 });

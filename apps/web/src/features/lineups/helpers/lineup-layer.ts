@@ -9,7 +9,7 @@ import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-da
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from '@/features/radar/helpers/colors';
 import { type PlateView, plateGeometry, readPlateGeometry } from '@/features/radar/helpers/view';
-import { LINEUP_STRIDE, type LineupOriginGroup } from './lineup-plot';
+import { LINEUP_STRIDE, type LineupGroup } from './lineup-plot';
 
 const FULL_TURN = 2 * Math.PI;
 
@@ -24,7 +24,8 @@ const FOCUSED_ALPHA = 1.0;
 export interface LineupLayerOptions {
   readonly lineups: readonly Lineup[];
   readonly plot: Float32Array;
-  readonly groups: readonly LineupOriginGroup[];
+  readonly groups: readonly LineupGroup[];
+  readonly landingGroups?: readonly LineupGroup[] | undefined;
   readonly overview: MapOverview;
   readonly colors: RadarColors;
   readonly view: { readonly current: PlateView };
@@ -178,8 +179,9 @@ function drawLandingMarker(
 
 function drawGroupBadges(
   context: CanvasRenderingContext2D,
-  groups: readonly LineupOriginGroup[],
+  groups: readonly LineupGroup[],
   plot: Float32Array,
+  target: 'origin' | 'landing',
   scale: number,
   color: string,
   textColor: string,
@@ -188,13 +190,14 @@ function drawGroupBadges(
   context.font = '600 11px Onest, sans-serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
+  const offset = target === 'origin' ? 0 : 2;
   for (let index = 0; index < groups.length; index++) {
     const group = groups[index];
     if (group === undefined) continue;
     if (group.indices.length < 2) continue;
     const first = group.indices[0];
     if (first === undefined) continue;
-    const base = first * LINEUP_STRIDE;
+    const base = first * LINEUP_STRIDE + offset;
     const x = (plot[base] ?? 0) * scale + 10;
     const y = (plot[base + 1] ?? 0) * scale + 10;
     context.fillStyle = color;
@@ -235,7 +238,8 @@ function drawDraftOrigin(
  * Lineups are drawn deterministically with zero allocations during paint.
  */
 export function lineupLayer(options: LineupLayerOptions): Layer {
-  const { lineups, plot, groups, overview, colors, view, focused, draftOrigin } = options;
+  const { lineups, plot, groups, landingGroups, overview, colors, view, focused, draftOrigin } =
+    options;
   const geometry = plateGeometry();
 
   const drawLineup = (
@@ -287,10 +291,22 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
       context,
       groups,
       plot,
+      'origin',
       geometry.scale,
       colors.selectionRing,
       colors.selectionEdge,
     );
+    if (landingGroups && landingGroups.length > 0) {
+      drawGroupBadges(
+        context,
+        landingGroups,
+        plot,
+        'landing',
+        geometry.scale,
+        colors.selectionRing,
+        colors.selectionEdge,
+      );
+    }
     drawDraftOrigin(context, draftOrigin, overview, geometry.scale, colors.selectionRing);
   };
 }

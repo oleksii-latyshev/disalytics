@@ -3,6 +3,7 @@ import { Text, useT } from '@disa/i18n';
 import { Button, Dialog } from '@disa/ui';
 import {
   Check,
+  ChevronDown,
   Copy,
   ExternalLink,
   Pencil,
@@ -12,7 +13,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 
 interface Props {
@@ -67,7 +68,7 @@ function LineupDetailHeader({
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-line px-5 py-4">
+    <div className="flex shrink-0 items-center justify-between border-b border-line bg-surface-1 px-5 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 font-ui font-medium text-14 text-ink">
           <Text path="library.lineups.detailsTitle" />
@@ -89,7 +90,7 @@ function LineupDetailHeader({
           <Text path={`review.maps.throw.types.${lineup.throwType}`} />
         </span>
 
-        <span className="rounded-chip border border-line bg-surface-1 px-2 py-0.5 text-11 text-ink-dim">
+        <span className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink-dim">
           <Text path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'} />
         </span>
       </div>
@@ -134,93 +135,237 @@ function LineupDetailHeader({
   );
 }
 
-function LineupMovementNotes({ lineup }: { readonly lineup: Lineup }) {
+function LineupImageViewer({
+  title,
+  imageUrls,
+  kind,
+}: {
+  readonly title: string;
+  readonly imageUrls: readonly string[];
+  readonly kind: Lineup['kind'];
+}) {
+  const t = useT();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialPanX: number;
+    initialPanY: number;
+  } | null>(null);
+
+  const activeUrl = imageUrls[activeIndex];
+
+  const handleZoom = (nextZoom: number) => {
+    const clamped = Math.max(1, Math.min(5, nextZoom));
+    setZoom(clamped);
+    if (clamped <= 1) {
+      setPan({ x: 0, y: 0 });
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.detail === 2) {
+      handleZoom(zoom > 1 ? 1 : 2.5);
+      return;
+    }
+    if (zoom <= 1) return;
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialPanX: pan.x,
+      initialPanY: pan.y,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    setPan({
+      x: dragRef.current.initialPanX + dx,
+      y: dragRef.current.initialPanY + dy,
+    });
+  };
+
+  const handlePointerUp = () => {
+    setIsDragging(false);
+    dragRef.current = null;
+  };
+
+  if (!activeUrl) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-surface-0 p-6 text-center">
+        <span className="flex size-20 items-center justify-center rounded-card border border-line bg-surface-2 text-ink-dim">
+          <UtilityGlyph kind={kind} label={UTILITY_NAMES[kind]} size="control" />
+        </span>
+        <span className="text-13 text-ink-dim">
+          <Text path="library.lineups.noImagesNotice" />
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-1 p-3">
-      {lineup.movementKeys && lineup.movementKeys.length > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="label-dense text-ink-dim">
-            <Text path="library.lineups.movement" />:
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {lineup.movementKeys.map((key) => (
-              <kbd
-                key={key}
-                className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 font-mono font-medium text-11 text-ink"
-              >
-                {key}
-              </kbd>
-            ))}
-          </div>
+    <div className="relative flex flex-1 min-h-0 min-w-0 flex-col bg-surface-0 overflow-hidden select-none">
+      {/* Zoom toolbar */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-card border border-line bg-surface-1/90 p-1 backdrop-blur-sm shadow-sm">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => handleZoom(zoom + 0.5)}
+          title={t('library.lineups.zoomIn')}
+          aria-label={t('library.lineups.zoomIn')}
+          className="size-7"
+        >
+          <ZoomIn className="size-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => handleZoom(zoom - 0.5)}
+          title={t('library.lineups.zoomOut')}
+          aria-label={t('library.lineups.zoomOut')}
+          className="size-7"
+        >
+          <ZoomOut className="size-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => handleZoom(1)}
+          title={t('library.lineups.zoomReset')}
+          aria-label={t('library.lineups.zoomReset')}
+          className="size-7"
+        >
+          <RotateCcw className="size-3.5" />
+        </Button>
+        <span className="px-1.5 font-mono text-11 text-ink-dim tabular-nums">
+          {Math.round(zoom * 100)}%
+        </span>
+      </div>
+
+      {/* Main Image Viewport */}
+      <div
+        className={`relative flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden p-4 ${
+          zoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
+        }`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onWheel={(e) => {
+          e.preventDefault();
+          handleZoom(e.deltaY < 0 ? zoom + 0.25 : zoom - 0.25);
+        }}
+      >
+        <img
+          src={activeUrl}
+          alt={title}
+          draggable={false}
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+          }}
+          className="max-h-full max-w-full rounded object-contain transition-transform duration-75 select-none"
+        />
+      </div>
+
+      {/* Thumbnails strip */}
+      {imageUrls.length > 1 && (
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-surface-1 p-2.5 overflow-x-auto">
+          {imageUrls.map((url, idx) => (
+            <button
+              key={url}
+              type="button"
+              onClick={() => {
+                setActiveIndex(idx);
+                setZoom(1);
+                setPan({ x: 0, y: 0 });
+              }}
+              className={`relative size-14 shrink-0 overflow-hidden rounded-chip border-2 transition-all ${
+                idx === activeIndex
+                  ? 'border-focus shadow-sm opacity-100'
+                  : 'border-transparent opacity-60 hover:opacity-100'
+              }`}
+            >
+              <img
+                src={url}
+                alt={`${title} ${idx + 1}`}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="size-full object-cover"
+              />
+            </button>
+          ))}
         </div>
       )}
-
-      {lineup.movementInstructions && (
-        <p className="text-13 text-ink leading-prose">{lineup.movementInstructions}</p>
-      )}
-
-      {lineup.notes && <p className="text-12 text-ink-dim leading-prose">{lineup.notes}</p>}
     </div>
   );
 }
 
-function LineupImageGallery({
-  title,
-  imageUrls,
-  onZoom,
+function LineupExplanation({
+  instructions,
+  notes,
 }: {
-  readonly title: string;
-  readonly imageUrls: readonly string[];
-  readonly onZoom: (url: string) => void;
+  readonly instructions?: string | undefined;
+  readonly notes?: string | undefined;
 }) {
-  if (imageUrls.length === 0) return null;
+  if (!instructions && !notes) return null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-2 p-3.5">
       <span className="label-dense text-ink-dim">
-        <Text path="library.lineups.form.imageUrls" /> ({imageUrls.length})
+        <Text path="library.lineups.explanation" />
       </span>
-      <div
-        className={`grid gap-3 ${imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
-      >
-        {Array.from(new Set(imageUrls)).map((url, idx) => (
-          <div
-            key={url}
-            className="group relative overflow-hidden rounded-card border border-line bg-surface-1"
+      {instructions && <p className="text-13 font-medium text-ink leading-prose">{instructions}</p>}
+      {notes && <p className="text-12 text-ink-dim leading-prose">{notes}</p>}
+    </div>
+  );
+}
+
+function LineupMovementCard({
+  throwType,
+  movementKeys,
+}: {
+  readonly throwType: Lineup['throwType'];
+  readonly movementKeys: readonly string[];
+}) {
+  return (
+    <div className="flex flex-col gap-2.5 rounded-card border border-line bg-surface-2 p-3.5">
+      <span className="label-dense text-ink-dim">
+        <Text path="library.lineups.movement" />
+      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-chip border border-line bg-surface-3 px-2.5 py-1 text-12 font-medium text-ink">
+          <Text path={`review.maps.throw.types.${throwType}`} />
+        </span>
+        {movementKeys.map((key) => (
+          <kbd
+            key={key}
+            className="rounded-chip border border-line bg-surface-3 px-2.5 py-1 font-mono font-medium text-12 text-ink shadow-sm"
           >
-            <img
-              src={url}
-              alt={`${title} ${idx + 1}`}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className="aspect-video w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-surface-0/60 opacity-0 backdrop-blur-[2px] transition-opacity duration-150 group-hover:opacity-100">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onZoom(url)}
-                className="h-7 gap-1.5 px-2.5 text-11 shadow-float"
-              >
-                <ZoomIn className="size-3.5" />
-                <Text path="library.lineups.zoomImage" />
-              </Button>
-            </div>
-          </div>
+            {key}
+          </kbd>
         ))}
       </div>
     </div>
   );
 }
 
-function LineupConsoleCommands({
+function LineupCoordinatesCollapsible({
   lineup,
   landingCommand,
-  isFromDemo,
 }: {
   readonly lineup: Lineup;
   readonly landingCommand: string | null;
-  readonly isFromDemo: boolean;
 }) {
   const [copiedOrigin, setCopiedOrigin] = useState(false);
   const [copiedLanding, setCopiedLanding] = useState(false);
@@ -247,169 +392,147 @@ function LineupConsoleCommands({
     }
   };
 
-  if (!isFromDemo) {
-    return (
-      <div className="rounded-card border border-line bg-surface-1 p-3">
-        <p className="text-11 text-ink-dim leading-prose">
-          <Text path="library.lineups.manualNotice" />
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-2.5 rounded-card border border-line bg-surface-1 p-3">
-      <div className="flex items-center justify-between">
-        <span className="rounded-chip border border-ct/30 bg-ct/10 px-2 py-0.5 text-11 text-ct">
+    <details className="group rounded-card border border-line bg-surface-2/60 overflow-hidden">
+      <summary className="flex cursor-pointer items-center justify-between p-3 select-none text-12 font-medium text-ink transition-colors hover:bg-surface-3/50">
+        <span className="flex items-center gap-2">
+          <ChevronDown className="size-4 text-ink-dim transition-transform duration-200 group-open:rotate-180" />
+          <Text path="library.lineups.coordinatesTitle" />
+        </span>
+        <span className="rounded-chip border border-ct/30 bg-ct/10 px-2 py-0.5 font-mono text-10 text-ct">
           <Text path="library.lineups.fromDemoNotice" />
         </span>
+      </summary>
+
+      <div className="flex flex-col gap-3 border-t border-line/60 p-3 pt-2.5">
+        <div className="flex flex-col gap-1.5">
+          <span className="label-dense text-11 text-ink-dim">
+            <Text path="library.lineups.coordinatesOrigin" />
+          </span>
+          <div className="rounded-card border border-line bg-surface-1 p-2 font-mono text-11 text-ink-dim">
+            X: {lineup.origin.x.toFixed(1)} · Y: {lineup.origin.y.toFixed(1)}
+            {lineup.origin.z !== undefined ? ` · Z: ${lineup.origin.z.toFixed(1)}` : ''}
+            <br />
+            Pitch: {lineup.pitch.toFixed(1)}° · Yaw: {lineup.yaw.toFixed(1)}°
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="label-dense text-11 text-ink-dim">
+            <Text path="library.lineups.coordinatesLanding" />
+          </span>
+          <div className="rounded-card border border-line bg-surface-1 p-2 font-mono text-11 text-ink-dim">
+            X: {lineup.landing.x.toFixed(1)} · Y: {lineup.landing.y.toFixed(1)}
+            {lineup.landing.z !== undefined ? ` · Z: ${lineup.landing.z.toFixed(1)}` : ''}
+          </div>
+        </div>
+
+        {lineup.command && (
+          <div className="flex flex-col gap-1.5">
+            <span className="label-dense text-11 text-ink-dim">
+              <Text path="library.lineups.commandOrigin" />
+            </span>
+            <div className="flex items-center gap-1.5 rounded-card border border-line bg-surface-1 p-1.5">
+              <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink">
+                {lineup.command}
+              </code>
+              <Button
+                variant="secondary"
+                onClick={() => copyToClipboard(lineup.command, 'origin')}
+                className="h-6 shrink-0 gap-1 px-2 text-11"
+              >
+                {copiedOrigin ? (
+                  <>
+                    <Check className="size-3 text-ct" />
+                    <Text path="library.lineups.copied" />
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3" />
+                    <Text path="library.lineups.copyCommand" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {landingCommand && (
+          <div className="flex flex-col gap-1.5">
+            <span className="label-dense text-11 text-ink-dim">
+              <Text path="library.lineups.commandLanding" />
+            </span>
+            <div className="flex items-center gap-1.5 rounded-card border border-line bg-surface-1 p-1.5">
+              <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink">
+                {landingCommand}
+              </code>
+              <Button
+                variant="secondary"
+                onClick={() => copyToClipboard(landingCommand, 'landing')}
+                className="h-6 shrink-0 gap-1 px-2 text-11"
+              >
+                {copiedLanding ? (
+                  <>
+                    <Check className="size-3 text-ct" />
+                    <Text path="library.lineups.copied" />
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3" />
+                    <Text path="library.lineups.copyLandingCommand" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function LineupInfoSidebar({
+  lineup,
+  landingCommand,
+  isFromDemo,
+  mediaUrl,
+}: {
+  readonly lineup: Lineup;
+  readonly landingCommand: string | null;
+  readonly isFromDemo: boolean;
+  readonly mediaUrl: string | null;
+}) {
+  return (
+    <div className="flex w-full min-h-0 shrink-0 flex-col gap-4 overflow-y-auto border-t border-line bg-surface-1 p-5 lg:w-[22rem] lg:border-l lg:border-t-0 xl:w-[26rem]">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-ui font-medium text-20 text-ink leading-dense">{lineup.title}</h2>
+        {mediaUrl && (
+          <div>
+            <a
+              href={mediaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-12 text-ink-dim transition-colors hover:text-ink"
+            >
+              <ExternalLink className="size-3.5" />
+              <Text path="library.lineups.media" />
+            </a>
+          </div>
+        )}
       </div>
 
-      {lineup.command && (
-        <div className="flex flex-col gap-1.5">
-          <span className="label-dense text-11 text-ink-dim">
-            <Text path="library.lineups.commandOrigin" />
-          </span>
-          <div className="flex items-center gap-1.5 rounded-card border border-line bg-surface-2 p-1.5">
-            <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink selection:bg-surface-3">
-              {lineup.command}
-            </code>
-            <Button
-              variant="secondary"
-              onClick={() => copyToClipboard(lineup.command, 'origin')}
-              className="h-6 shrink-0 gap-1 px-2 text-11"
-            >
-              {copiedOrigin ? (
-                <>
-                  <Check className="size-3 text-ct" />
-                  <Text path="library.lineups.copied" />
-                </>
-              ) : (
-                <>
-                  <Copy className="size-3" />
-                  <Text path="library.lineups.copyCommand" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
+      <LineupExplanation instructions={lineup.movementInstructions} notes={lineup.notes} />
 
-      {landingCommand && (
-        <div className="flex flex-col gap-1.5">
-          <span className="label-dense text-11 text-ink-dim">
-            <Text path="library.lineups.commandLanding" />
-          </span>
-          <div className="flex items-center gap-1.5 rounded-card border border-line bg-surface-2 p-1.5">
-            <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink selection:bg-surface-3">
-              {landingCommand}
-            </code>
-            <Button
-              variant="secondary"
-              onClick={() => copyToClipboard(landingCommand, 'landing')}
-              className="h-6 shrink-0 gap-1 px-2 text-11"
-            >
-              {copiedLanding ? (
-                <>
-                  <Check className="size-3 text-ct" />
-                  <Text path="library.lineups.copied" />
-                </>
-              ) : (
-                <>
-                  <Copy className="size-3" />
-                  <Text path="library.lineups.copyLandingCommand" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+      <LineupMovementCard throwType={lineup.throwType} movementKeys={lineup.movementKeys ?? []} />
+
+      {isFromDemo && (
+        <LineupCoordinatesCollapsible lineup={lineup} landingCommand={landingCommand} />
       )}
     </div>
   );
 }
 
-function LineupImageZoomDialog({
-  title,
-  url,
-  onClose,
-}: {
-  readonly title: string;
-  readonly url: string | null;
-  readonly onClose: () => void;
-}) {
-  const t = useT();
-  const [zoomScale, setZoomScale] = useState(1);
-
-  if (url === null) return null;
-
-  return (
-    <Dialog isOpen onDismiss={onClose} className="w-[95vw] max-w-[80rem] p-4">
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div className="flex items-center gap-2">
-          <span className="font-ui font-medium text-14 text-ink">{title}</span>
-          <span className="font-mono text-11 text-ink-dim">({Math.round(zoomScale * 100)}%)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={() => setZoomScale((s) => Math.min(4, s + 0.25))}
-            title={t('library.lineups.zoomIn')}
-            aria-label={t('library.lineups.zoomIn')}
-            className="size-7"
-          >
-            <ZoomIn className="size-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={() => setZoomScale((s) => Math.max(0.5, s - 0.25))}
-            title={t('library.lineups.zoomOut')}
-            aria-label={t('library.lineups.zoomOut')}
-            className="size-7"
-          >
-            <ZoomOut className="size-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={() => setZoomScale(1)}
-            title={t('library.lineups.zoomReset')}
-            aria-label={t('library.lineups.zoomReset')}
-            className="size-7"
-          >
-            <RotateCcw className="size-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label={t('library.lineups.form.close')}
-            className="size-7"
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="mt-3 flex max-h-[80vh] items-center justify-center overflow-auto rounded-card bg-surface-0 p-2">
-        <img
-          src={url}
-          alt={title}
-          style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center center' }}
-          className="max-h-[75vh] max-w-full rounded object-contain transition-transform duration-100"
-        />
-      </div>
-    </Dialog>
-  );
-}
-
 export function LineupDetailModal({ lineup, isOpen, onDismiss, onEdit, onDelete }: Props) {
-  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
-
   if (lineup === null) return null;
 
   const mediaUrl = safeMediaUrl(lineup.mediaUrl);
@@ -428,92 +551,28 @@ export function LineupDetailModal({ lineup, isOpen, onDismiss, onEdit, onDelete 
       : null);
 
   return (
-    <>
-      <Dialog
-        isOpen={isOpen}
+    <Dialog
+      isOpen={isOpen}
+      onDismiss={onDismiss}
+      className="flex h-[92vh] max-h-[92vh] w-[96vw] max-w-[96rem] flex-col overflow-hidden p-0"
+    >
+      <LineupDetailHeader
+        lineup={lineup}
         onDismiss={onDismiss}
-        className="w-full max-w-[44rem] overflow-hidden"
-      >
-        <LineupDetailHeader
-          lineup={lineup}
-          onDismiss={onDismiss}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-
-        <div className="flex max-h-[75vh] flex-col gap-4 overflow-y-auto px-5 py-4">
-          <h2 className="font-ui font-medium text-20 text-ink leading-dense">{lineup.title}</h2>
-
-          <LineupMovementNotes lineup={lineup} />
-
-          <LineupImageGallery
-            title={lineup.title}
-            imageUrls={imageUrls}
-            onZoom={setZoomedImageUrl}
-          />
-
-          <LineupConsoleCommands
-            lineup={lineup}
-            landingCommand={landingCommand}
-            isFromDemo={isFromDemo}
-          />
-
-          {mediaUrl && (
-            <div>
-              <a
-                href={mediaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-12 text-ink-dim transition-colors hover:text-ink"
-              >
-                <ExternalLink className="size-3.5" />
-                <Text path="library.lineups.media" />
-              </a>
-            </div>
-          )}
-
-          <details className="rounded-card border border-line bg-surface-1 p-3 text-11 text-ink-dim">
-            <summary className="cursor-pointer font-medium text-ink">
-              <Text path="library.lineups.form.technicalDetails" />
-            </summary>
-            <div className="mt-2 flex flex-col gap-1 font-mono">
-              <span>
-                <Text path="library.lineups.form.map" />: {lineup.map}
-              </span>
-              <span>
-                <Text path="library.lineups.form.origin" />: {lineup.origin.x.toFixed(2)},{' '}
-                {lineup.origin.y.toFixed(2)}, {lineup.origin.z.toFixed(2)}
-              </span>
-              <span>
-                <Text path="library.lineups.form.landing" />: {lineup.landing.x.toFixed(2)},{' '}
-                {lineup.landing.y.toFixed(2)}, {lineup.landing.z.toFixed(2)}
-              </span>
-              {isFromDemo && (
-                <>
-                  <span>
-                    <Text path="library.lineups.form.pitch" />: {lineup.pitch.toFixed(2)}°
-                  </span>
-                  <span>
-                    <Text path="library.lineups.form.yaw" />: {lineup.yaw.toFixed(2)}°
-                  </span>
-                </>
-              )}
-            </div>
-          </details>
-        </div>
-
-        <div className="flex items-center justify-end border-t border-line px-5 py-3">
-          <Button variant="secondary" onClick={onDismiss} className="h-8 px-4 text-12">
-            <Text path="library.lineups.form.close" />
-          </Button>
-        </div>
-      </Dialog>
-
-      <LineupImageZoomDialog
-        title={lineup.title}
-        url={zoomedImageUrl}
-        onClose={() => setZoomedImageUrl(null)}
+        onEdit={onEdit}
+        onDelete={onDelete}
       />
-    </>
+
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden lg:flex-row">
+        <LineupImageViewer title={lineup.title} imageUrls={imageUrls} kind={lineup.kind} />
+
+        <LineupInfoSidebar
+          lineup={lineup}
+          landingCommand={landingCommand}
+          isFromDemo={isFromDemo}
+          mediaUrl={mediaUrl}
+        />
+      </div>
+    </Dialog>
   );
 }
