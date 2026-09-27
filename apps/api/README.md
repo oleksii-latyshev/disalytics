@@ -24,6 +24,10 @@ The API can use the [Workers Free plan](https://developers.cloudflare.com/worker
 without a persistent server; its request and CPU quotas are account-level constraints. This setup
 does not provision KV, a database or a paid service.
 
+The Worker entry point dispatches to domain routers under `src/modules/`. The upload module keeps
+provider calls, bounded body reads, validation, CORS, and constants in focused helpers. Shared HTTP
+response shaping lives under `src/shared/`. The same `CODE_REQUIREMENTS.md` rules apply to this app.
+
 ## Future provider routes
 
 Keep provider keys in Cloudflare Worker secrets, never in the web bundle or committed environment
@@ -48,12 +52,22 @@ is a brake, not an accurate global quota.
 Provision a dedicated Catbox account in the [Catbox web UI](https://catbox.moe/) and get its
 userhash from the account management page. Catbox documents `userhash` on its
 [API tools page](https://catbox.moe/tools.php); there is no documented account-creation API.
-Provision a Turnstile widget restricted to `disalytics.disa-67b.workers.dev` (and a separate
-development widget for localhost if needed). Set `TURNSTILE_SITE_KEY` as a Worker variable and
-store `CATBOX_USERHASH` and `TURNSTILE_SECRET` as Worker secrets with `wrangler secret put`.
+In [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/get-started/), create a
+Managed widget named for lineup uploads and authorize `disalytics.disa-67b.workers.dev`.
+Cloudflare's [Free plan](https://developers.cloudflare.com/turnstile/plans/) currently includes
+20 widgets and unlimited challenges. Use a separate widget for localhost development if needed.
+The widget gives you a public sitekey and a private secret key. Set `TURNSTILE_SITE_KEY` as a Worker
+variable and store `CATBOX_USERHASH` and `TURNSTILE_SECRET` as Worker secrets with
+`wrangler secret put`.
 `keep_vars` in the Worker configuration preserves the dashboard variable on later CI deploys.
 The endpoint remains unavailable until all three values are set. Never put the hash or secret
 in a `VITE_*` variable or commit them.
+
+From `apps/api`, run `bunx wrangler secret put CATBOX_USERHASH` and paste the hash at its prompt;
+repeat with `TURNSTILE_SECRET`. A secret binding is delivered in the Worker's `env` argument at
+request time. Set the public `TURNSTILE_SITE_KEY` in the Worker's dashboard Variables and Secrets.
+For local development, put the same names in an ignored `apps/api/.dev.vars` file. Do not paste
+secret values into shell command arguments, source files, or a pull request.
 
 For deletion, use the Catbox account's management UI or call its `deletefiles` API privately,
 passing the userhash and a space-separated list of file basenames. No public deletion endpoint is

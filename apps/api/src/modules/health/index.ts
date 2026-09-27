@@ -1,0 +1,1 @@
+export { routeHealth } from './router';
