@@ -74,7 +74,7 @@ export function LineupList({ lineups, focused, selectedIndex, onHover, onSelect 
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="truncate font-medium text-ink">{lineup.title}</span>
                     {lineup.targetCallout && (
-                      <span className="shrink-0 rounded-chip border border-line bg-surface-3 px-1.5 py-0.2 text-10 font-mono text-ink-dim">
+                      <span className="shrink-0 rounded-chip border border-line bg-surface-3 px-1.5 py-0.5 text-10 font-mono text-ink-dim">
                         {lineup.targetCallout}
                       </span>
                     )}
