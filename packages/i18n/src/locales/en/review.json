@@ -50,6 +50,21 @@
     "players": "Players",
     "duelList": "Duels, in match order",
     "throwList": "Throws, in match order",
+    "round": "Round",
+    "allRounds": "All",
+    "roundNumber": "Round {round, number}",
+    "timing": {
+      "label": "Timing",
+      "all": "All",
+      "early": "0–20s",
+      "mid": "20–60s",
+      "late": "60s+"
+    },
+    "cluster": {
+      "title": "{count, plural, one {# throw in cluster} other {# throws in cluster}}",
+      "close": "Close",
+      "watchOnStage": "Watch on stage"
+    },
     "roundShort": "R{round, number}",
     "rowLabel": "Round {round, number}: {event}",
     "opensOnStage": "Opens on the stage",
