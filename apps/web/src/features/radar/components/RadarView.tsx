@@ -13,7 +13,6 @@ import type { KillLine, RowFocus } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
-import { PlayerKeysHud } from '@/shared/components';
 import { useFontReady } from '@/shared/hooks';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
@@ -69,10 +68,7 @@ export function RadarView({
   const [trajectories] = useSetting('trajectories');
   const [isDebugShown] = useSetting('isDebugShown');
   const [isPlayerKeysShown] = useSetting('isPlayerKeysShown');
-  const [isPlayerAccuracyShown] = useSetting('isPlayerAccuracyShown');
   const [isPlayerCrosshairShown] = useSetting('isPlayerCrosshairShown');
-  const isAnySpectatorHudShown =
-    isPlayerKeysShown || isPlayerAccuracyShown || isPlayerCrosshairShown;
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [pointer, setPointer] = useState<RadarPoint | null>(null);
 
@@ -89,7 +85,6 @@ export function RadarView({
   const roundIndex = roundIndexAtFrame(demo, frame);
   const teamBySlot = useMemo(() => sidesBySlotAtRound(demo, roundIndex), [demo, roundIndex]);
 
-  const detail = null;
   const colors = radarColors(palette);
   const labelStyle = useMemo(readLabelStyle, []);
 
@@ -135,8 +130,9 @@ export function RadarView({
       teamBySlot,
       labelBySlot,
       selectedSlot,
-      detail,
       isAudibilityShown,
+      isPlayerKeysShown,
+      isPlayerCrosshairShown,
       colors,
       labelStyle,
       view: viewRef,
@@ -176,6 +172,8 @@ export function RadarView({
     selectedSlot,
     secondsUnit,
     isAudibilityShown,
+    isPlayerKeysShown,
+    isPlayerCrosshairShown,
     trajectories,
     colors,
     labelStyle,
@@ -332,33 +330,6 @@ export function RadarView({
           <GraduationCap aria-hidden="true" />
         </Button>
       </div>
-
-      {selectedSlot !== null && isAnySpectatorHudShown && (
-        <div className="surface-hud pointer-events-auto absolute bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] left-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1.5 rounded-card p-2.5 shadow-card">
-          <div className="flex items-center justify-between gap-3 [border-block-end:1px_solid_var(--color-line)] pb-1">
-            <span className="truncate text-12 font-medium text-ink">
-              {demo.header.players[selectedSlot]?.name}
-            </span>
-            {teamBySlot[selectedSlot] !== undefined && (
-              <span
-                className={`rounded-xs px-1 text-10 font-mono font-semibold uppercase ${
-                  teamBySlot[selectedSlot] === 'CT' ? 'bg-ct/15 text-ct' : 'bg-t/15 text-t'
-                }`}
-              >
-                {teamBySlot[selectedSlot]}
-              </span>
-            )}
-          </div>
-          <PlayerKeysHud
-            demo={demo}
-            frame={frame}
-            slot={selectedSlot}
-            showKeys={isPlayerKeysShown}
-            showAccuracy={isPlayerAccuracyShown}
-            showCrosshair={isPlayerCrosshairShown}
-          />
-        </div>
-      )}
 
       {isCoachMode && (
         <div className="pointer-events-auto absolute bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] left-1/2 z-20 -translate-x-1/2">

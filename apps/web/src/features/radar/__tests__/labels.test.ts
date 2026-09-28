@@ -193,6 +193,7 @@ function subjectAt(
   detail: string | null = null,
   icon: WeaponIconId | undefined = undefined,
   damage: readonly number[] = [],
+  detailExtra: string | null = null,
 ) {
   return {
     isNamed: () => true,
@@ -203,6 +204,7 @@ function subjectAt(
     icon: () => icon,
     // The round goes under the selected player's name, which for these fixtures is the first slot.
     detail: (slot: number) => (slot === 0 ? detail : null),
+    detailExtra: (slot: number) => (slot === 0 ? detailExtra : null),
     damage: (slot: number) => damage[slot] ?? 0,
     damageLife: (slot: number) => ((damage[slot] ?? 0) > 0 ? 1 : 0),
   };
@@ -323,6 +325,21 @@ describe("the selected player's round", () => {
     expect(drawn.textX[1]).toBe(drawn.textX[0]);
   });
 
+  it('writes pressed keys and pitch angle under the selected player in label colors', () => {
+    const drawn = newDrawn();
+
+    pass().draw(
+      newContext(drawn),
+      PLATE,
+      subjectAt(400, 400, 'rifle', 'W D  215 u/s', undefined, [], 'PITCH -1.5°'),
+      TOKEN_RADIUS,
+    );
+
+    expect(drawn.text).toEqual(['s1mple', 'W D  215 u/s', 'PITCH -1.5°', 'ropz']);
+    expect(drawn.textX[1]).toBe(drawn.textX[0]);
+    expect(drawn.textX[2]).toBe(drawn.textX[0]);
+  });
+
   it('draws nothing extra while nobody is selected', () => {
     const drawn = newDrawn();
 
@@ -331,7 +348,7 @@ describe("the selected player's round", () => {
     expect(drawn.text).toEqual(['s1mple', 'ropz']);
   });
 
-  it('measures the round once per string rather than once per frame', () => {
+  it('measures the round during setup and zero times in draw', () => {
     let measured = 0;
     const drawn = newDrawn();
     const context = newContext(drawn);
@@ -358,9 +375,9 @@ describe("the selected player's round", () => {
     built.draw(spied, PLATE, subject, TOKEN_RADIUS);
     built.draw(spied, PLATE, subject, TOKEN_RADIUS);
 
-    // Three frames of the same round cost one measurement, not three: `measureText` allocates a
-    // `TextMetrics`, and this runs inside a draw.
-    expect(measured - afterNames).toBe(1);
+    // Frames cost zero measurements during draw: `measureText` allocates a
+    // `TextMetrics`, and nothing on the way to the canvas may allocate.
+    expect(measured - afterNames).toBe(0);
   });
 });
 

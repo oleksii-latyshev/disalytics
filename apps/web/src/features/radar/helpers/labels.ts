@@ -87,12 +87,14 @@ export function labelPass(
      which is what makes a figure give way to a name rather than the other way round. */
   const damage = damagePass(placer, style, colors.damage);
 
-  /* The detail's width, cached against the string it was measured from. It cannot join `widths`
-     above — those are measured once per demo, and this changes every round — and it may not be
-     measured per frame either, because `measureText` returns a `TextMetrics` and this runs inside a
-     draw. Measuring on change is once a round for one label. */
-  let detailText: string | null = null;
-  let detailWidth = 0;
+  /* The detail character width for the mono face, measured once in `measure` below. Monospace
+     characters have uniform advance width, which lets us compute any line width in O(1) without
+     calling `measureText` per frame or allocating `TextMetrics` inside a draw. */
+  let detailCharWidth = 0;
+
+  function detailLineWidth(line: string): number {
+    return line.length * detailCharWidth + WEAPON_BOX_PX + 2 * LABEL_HALO_PX;
+  }
 
   /** One placed label: the mark it leads with, then the name, both over the same halo. */
   function write(
@@ -104,6 +106,7 @@ export function labelPass(
     icon: WeaponIconId | undefined,
     alpha: number,
     detail: string | null,
+    detailExtra: string | null,
   ): void {
     const x = boxX + LABEL_HALO_PX;
     const y = boxY + LABEL_HEIGHT_PX / 2;
@@ -119,31 +122,36 @@ export function labelPass(
     context.fillStyle = colors.ink;
     context.fillText(label, x + WEAPON_BOX_PX, y);
 
-    if (detail === null) return;
+    if (detail === null && detailExtra === null) return;
 
-    // The round, under the name that owns it. It is set in the mono face and one rank down, so the
-    // name is still what the label reads as — and it goes through the same halo, because the ground
-    // under it is a map rather than a surface.
+    // The detail line(s), under the name that owns them. Set in the mono face and one rank down,
+    // so the name is still what the label reads as — and they go through the same halo and ink.
     context.font = style.detailFont;
-    context.strokeText(detail, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX);
-    context.fillText(detail, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX);
+    if (detail !== null) {
+      context.strokeText(detail, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX);
+      context.fillText(detail, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX);
+    }
+    if (detailExtra !== null) {
+      context.strokeText(detailExtra, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX * 2);
+      context.fillText(detailExtra, x + WEAPON_BOX_PX, y + DETAIL_LEAD_PX * 2);
+    }
     context.font = style.font;
   }
 
-  /**
-   * How wide the round's line is, measured on the frame the string changes on and cached after it.
-   * `measureText` returns a `TextMetrics`, so measuring per frame would allocate inside a draw —
-   * and this string changes once a round, for one player.
-   */
-  function measuredDetail(context: CanvasRenderingContext2D, detail: string): number {
-    if (detail !== detailText) {
-      context.font = style.detailFont;
-      detailText = detail;
-      detailWidth = context.measureText(detail).width + WEAPON_BOX_PX + 2 * LABEL_HALO_PX;
-      context.font = style.font;
-    }
+  let detailLines = 0;
+  let detailBlockWidth = 0;
 
-    return detailWidth;
+  function measureDetailLines(detail: string | null, detailExtra: string | null): void {
+    detailLines = 0;
+    detailBlockWidth = 0;
+    if (detail !== null) {
+      detailLines++;
+      detailBlockWidth = Math.max(detailBlockWidth, detailLineWidth(detail));
+    }
+    if (detailExtra !== null) {
+      detailLines++;
+      detailBlockWidth = Math.max(detailBlockWidth, detailLineWidth(detailExtra));
+    }
   }
 
   /**
@@ -153,7 +161,6 @@ export function labelPass(
    * the frame budget is read against, so it stays a loop and a call.
    */
   function place(
-    context: CanvasRenderingContext2D,
     slot: number,
     bounds: PlateBounds,
     subject: LabelSubject,
@@ -174,11 +181,14 @@ export function labelPass(
     const tokenY = subject.y(slot);
     if (!isOnPlate(tokenX, tokenY, bounds)) return;
 
-    // The selected player's label is two lines and as wide as the wider of them, so the placer
-    // keeps its neighbours clear of the round underneath rather than of the name alone.
+    // The selected player's label can carry one or two detail lines (keys/speed and pitch),
+    // so the placer keeps its neighbours clear of the full block rather than of the name alone.
     const detail = subject.detail(slot);
-    const boxWidth = detail === null ? width : Math.max(width, measuredDetail(context, detail));
-    const boxHeight = detail === null ? LABEL_HEIGHT_PX : LABEL_HEIGHT_PX + DETAIL_LEAD_PX;
+    const detailExtra = subject.detailExtra?.(slot) ?? null;
+    measureDetailLines(detail, detailExtra);
+
+    const boxWidth = detailLines === 0 ? width : Math.max(width, detailBlockWidth);
+    const boxHeight = LABEL_HEIGHT_PX + DETAIL_LEAD_PX * detailLines;
 
     placer.place(tokenX, tokenY, tokenRadius, boxWidth, bounds, boxHeight);
 
@@ -247,6 +257,7 @@ export function labelPass(
         subject.icon(slot),
         subject.alpha(slot),
         subject.detail(slot),
+        subject.detailExtra?.(slot) ?? null,
       );
     }
   }
@@ -264,6 +275,9 @@ export function labelPass(
             : WEAPON_BOX_PX + context.measureText(label).width + 2 * LABEL_HALO_PX;
       }
 
+      context.font = style.detailFont;
+      detailCharWidth = context.measureText('0').width;
+
       damage.measure(context);
     },
 
@@ -278,7 +292,7 @@ export function labelPass(
       placer.reset();
 
       for (let slot = 0; slot < slotCount; slot++) {
-        place(context, slot, bounds, subject, tokenRadius);
+        place(slot, bounds, subject, tokenRadius);
       }
 
       drawLeaders(context, subject, tokenRadius);

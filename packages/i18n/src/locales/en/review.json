@@ -29,23 +29,6 @@
     "abbr": {
       "kills": "K",
       "deaths": "D"
-    },
-    "inputs": {
-      "title": "Player input",
-      "lmb": "LMB",
-      "rmb": "RMB",
-      "jump": "Jump",
-      "duck": "Duck",
-      "walk": "Walk",
-      "speed": "{speed} u/s",
-      "accurate": "Accurate",
-      "inaccurate": "Inaccurate",
-      "speedMeter": "{speed} / {max} u/s",
-      "pitchTitle": "Pitch angle",
-      "pitchLevel": "Level",
-      "pitchUp": "Up",
-      "pitchDown": "Down",
-      "pitchDegrees": "{degrees}°"
     }
   },
   "maps": {

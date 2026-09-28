@@ -23,11 +23,13 @@ export interface LabelSubject {
    */
   icon(slot: number): WeaponIconId | undefined;
   /**
-   * The round's numbers for this slot, already formatted and translated, or `null` for every slot
-   * that is not the selected one. It arrives as a finished string because a canvas cannot reach the
-   * message catalogue and a draw may not allocate one.
+   * The live input/speed details for this slot, or null for every slot that is not the selected one.
    */
   detail(slot: number): string | null;
+  /**
+   * An optional second detail line (e.g. crosshair pitch angle), or null if disabled or not selected.
+   */
+  detailExtra?(slot: number): string | null;
   /** What this slot has just taken, in whole health, or 0 where it has taken nothing lately. */
   damage(slot: number): number;
   /** How much of that figure's life is left — 1 while it holds, 0 once it has gone. */

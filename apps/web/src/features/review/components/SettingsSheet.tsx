@@ -56,7 +56,6 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
   const [motion, setMotion] = useSetting('motion');
   const [isDebugShown, toggleDebug] = useSettingToggle('isDebugShown');
   const [isPlayerKeysShown, togglePlayerKeys] = useSettingToggle('isPlayerKeysShown');
-  const [isPlayerAccuracyShown, togglePlayerAccuracy] = useSettingToggle('isPlayerAccuracyShown');
   const [isPlayerCrosshairShown, togglePlayerCrosshair] =
     useSettingToggle('isPlayerCrosshairShown');
 
@@ -239,18 +238,6 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
                   checked={isPlayerKeysShown}
                   onChange={togglePlayerKeys}
                   aria-label={t('settings.spectatorKeys.label')}
-                />
-              }
-            />
-
-            <SettingRow
-              labelPath="settings.spectatorAccuracy.label"
-              notePath="settings.spectatorAccuracy.note"
-              control={
-                <Switch
-                  checked={isPlayerAccuracyShown}
-                  onChange={togglePlayerAccuracy}
-                  aria-label={t('settings.spectatorAccuracy.label')}
                 />
               }
             />

@@ -119,7 +119,6 @@ export function TeamCard({
               </p>
             ) : (
               <PlayerRow
-                demo={demo}
                 player={player}
                 side={side}
                 track={demo.track}

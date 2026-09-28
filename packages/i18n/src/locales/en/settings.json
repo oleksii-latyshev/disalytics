@@ -83,16 +83,12 @@
     "cyber": "Cyberpunk"
   },
   "spectatorKeys": {
-    "label": "Pressed keys",
-    "note": "Visual keyboard showing WASD, mouse clicks, jump, duck and walk for the selected player."
-  },
-  "spectatorAccuracy": {
-    "label": "Movement accuracy",
-    "note": "Counter-strafing indicator showing whether player speed is low enough for accurate shooting."
+    "label": "Pressed keys and speed",
+    "note": "Show pressed movement keys, mouse clicks and speed under the selected player on the radar."
   },
   "spectatorCrosshair": {
-    "label": "Crosshair vertical angle",
-    "note": "Pitch angle and elevation indicator showing vertical aim relative to head level."
+    "label": "Crosshair pitch angle",
+    "note": "Show vertical aim pitch angle under the selected player on the radar."
   },
   "debug": {
     "label": "Debug overlay",

@@ -51,7 +51,6 @@ export interface Settings {
   readonly motion: MotionPreference;
   readonly isDebugShown: boolean;
   readonly isPlayerKeysShown: boolean;
-  readonly isPlayerAccuracyShown: boolean;
   readonly isPlayerCrosshairShown: boolean;
 }
 
@@ -133,8 +132,7 @@ const DESCRIPTORS: { readonly [K in SettingKey]: Descriptor<Settings[K]> } = {
   motion: choice('disa.motion', MOTION_PREFERENCES, 'system'),
   isDebugShown: flag('disa.radar.debug', false),
   isPlayerKeysShown: flag('disa.spectator.keys', true),
-  isPlayerAccuracyShown: flag('disa.spectator.accuracy', true),
-  isPlayerCrosshairShown: flag('disa.spectator.crosshair', true),
+  isPlayerCrosshairShown: flag('disa.spectator.crosshair', false),
 };
 
 export const SETTING_KEYS = Object.keys(DESCRIPTORS) as readonly SettingKey[];
@@ -161,7 +159,6 @@ export const DEFAULT_SETTINGS: Settings = {
   motion: DESCRIPTORS.motion.fallback,
   isDebugShown: DESCRIPTORS.isDebugShown.fallback,
   isPlayerKeysShown: DESCRIPTORS.isPlayerKeysShown.fallback,
-  isPlayerAccuracyShown: DESCRIPTORS.isPlayerAccuracyShown.fallback,
   isPlayerCrosshairShown: DESCRIPTORS.isPlayerCrosshairShown.fallback,
 };
 
@@ -200,7 +197,6 @@ export function settingsFrom(read: StoredValues): Settings {
     motion: readOne('motion', read),
     isDebugShown: readOne('isDebugShown', read),
     isPlayerKeysShown: readOne('isPlayerKeysShown', read),
-    isPlayerAccuracyShown: readOne('isPlayerAccuracyShown', read),
     isPlayerCrosshairShown: readOne('isPlayerCrosshairShown', read),
   };
 }
