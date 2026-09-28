@@ -37,7 +37,15 @@
       "jump": "Прыжок",
       "duck": "Присед",
       "walk": "Шаг",
-      "speed": "{speed} u/s"
+      "speed": "{speed} u/s",
+      "accurate": "Точно",
+      "inaccurate": "Неточно",
+      "speedMeter": "{speed} / {max} u/s",
+      "pitchTitle": "Угол наклона",
+      "pitchLevel": "Горизонт",
+      "pitchUp": "Вверх",
+      "pitchDown": "Вниз",
+      "pitchDegrees": "{degrees}°"
     }
   },
   "maps": {

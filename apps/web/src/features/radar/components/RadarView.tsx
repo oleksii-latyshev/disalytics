@@ -68,6 +68,11 @@ export function RadarView({
   const [arePlayerNamesShown] = useSetting('arePlayerNamesShown');
   const [trajectories] = useSetting('trajectories');
   const [isDebugShown] = useSetting('isDebugShown');
+  const [isPlayerKeysShown] = useSetting('isPlayerKeysShown');
+  const [isPlayerAccuracyShown] = useSetting('isPlayerAccuracyShown');
+  const [isPlayerCrosshairShown] = useSetting('isPlayerCrosshairShown');
+  const isAnySpectatorHudShown =
+    isPlayerKeysShown || isPlayerAccuracyShown || isPlayerCrosshairShown;
   const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [pointer, setPointer] = useState<RadarPoint | null>(null);
 
@@ -328,7 +333,7 @@ export function RadarView({
         </Button>
       </div>
 
-      {selectedSlot !== null && (
+      {selectedSlot !== null && isAnySpectatorHudShown && (
         <div className="surface-hud pointer-events-auto absolute bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] left-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1.5 rounded-card p-2.5 shadow-card">
           <div className="flex items-center justify-between gap-3 [border-block-end:1px_solid_var(--color-line)] pb-1">
             <span className="truncate text-12 font-medium text-ink">
@@ -344,7 +349,14 @@ export function RadarView({
               </span>
             )}
           </div>
-          <PlayerKeysHud demo={demo} frame={frame} slot={selectedSlot} />
+          <PlayerKeysHud
+            demo={demo}
+            frame={frame}
+            slot={selectedSlot}
+            showKeys={isPlayerKeysShown}
+            showAccuracy={isPlayerAccuracyShown}
+            showCrosshair={isPlayerCrosshairShown}
+          />
         </div>
       )}
 

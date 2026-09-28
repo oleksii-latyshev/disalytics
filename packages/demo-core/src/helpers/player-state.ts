@@ -11,8 +11,10 @@ import {
   type PlayerSlot,
   type Tick,
   type TickTrack,
+  WEAPON_NONE,
 } from '../schema';
 import { lastIndexAtOrBefore, sampleAt, secondsAtFrame, tickAtFrame } from './selectors';
+import { ACCURACY_SPEED_THRESHOLD_RATIO, DEFAULT_RUN_SPEED, weaponMaxSpeed } from './weapons';
 
 /** How long a hit stays visible on the token, in **match** seconds — `docs/DESIGN.md` §7. */
 export const DAMAGE_FLASH_SECONDS = 0.25;
@@ -438,5 +440,78 @@ export function playerButtonsAt(demo: ParsedDemo, frame: number, slot: PlayerSlo
     walk,
     attack,
     attack2,
+  };
+}
+
+/**
+ * Vertical look angle (pitch) in degrees, in the Source engine range -89°..+89°.
+ * - 0° is level horizon (optimal head level).
+ * - Negative is aiming upward towards the sky.
+ * - Positive is aiming downward towards the floor.
+ */
+export function playerPitchAt(track: TickTrack, frame: number, slot: PlayerSlot): number {
+  if (track.frameCount === 0) return 0;
+  const currFrame = Math.min(Math.max(Math.floor(frame), 0), track.frameCount - 1);
+  return sampleAt(track.pitch, currFrame * track.slotCount + slot) / ANGLE_SCALE;
+}
+
+export interface PlayerMovementAccuracy {
+  speed: number;
+  maxSpeed: number;
+  accuracyThreshold: number;
+  isAccurate: boolean;
+  ratio: number;
+}
+
+/**
+ * Movement accuracy and counter-strafing readiness for the given player at a frame.
+ * When speed is at or below `accuracyThreshold` (34% of current weapon max running speed),
+ * the weapon incurs zero movement inaccuracy penalty.
+ */
+export function playerMovementAccuracy(
+  demo: ParsedDemo,
+  frame: number,
+  slot: PlayerSlot,
+): PlayerMovementAccuracy {
+  const { track } = demo;
+  if (track.frameCount === 0) {
+    return {
+      speed: 0,
+      maxSpeed: DEFAULT_RUN_SPEED,
+      accuracyThreshold: Math.round(DEFAULT_RUN_SPEED * ACCURACY_SPEED_THRESHOLD_RATIO),
+      isAccurate: true,
+      ratio: 0,
+    };
+  }
+
+  const currFrame = Math.min(Math.max(Math.floor(frame), 0), track.frameCount - 1);
+  const currSample = currFrame * track.slotCount + slot;
+  const flags = sampleAt(track.flags, currSample);
+
+  if ((flags & FLAG_ALIVE) === 0) {
+    return {
+      speed: 0,
+      maxSpeed: DEFAULT_RUN_SPEED,
+      accuracyThreshold: Math.round(DEFAULT_RUN_SPEED * ACCURACY_SPEED_THRESHOLD_RATIO),
+      isAccurate: false,
+      ratio: 0,
+    };
+  }
+
+  const speed = sampleAt(track.speed, currSample);
+  const weaponIndex = sampleAt(track.weapon, currSample);
+  const weapon = weaponIndex === WEAPON_NONE ? undefined : demo.header.weapons[weaponIndex];
+  const isScoped = (flags & FLAG_SCOPED) !== 0;
+  const maxSpeed = weaponMaxSpeed(weapon, isScoped);
+  const accuracyThreshold = Math.round(maxSpeed * ACCURACY_SPEED_THRESHOLD_RATIO);
+  const isAccurate = speed <= accuracyThreshold;
+  const ratio = maxSpeed > 0 ? Math.min(speed / maxSpeed, 1) : 0;
+
+  return {
+    speed,
+    maxSpeed,
+    accuracyThreshold,
+    isAccurate,
+    ratio,
   };
 }

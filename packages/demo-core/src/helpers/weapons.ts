@@ -90,6 +90,83 @@ const WEAPONS_BY_NAME: Readonly<Record<string, WeaponFacts>> = {
   'Smoke Grenade': { kind: 'smoke', icon: undefined },
 };
 
+export const DEFAULT_RUN_SPEED = 250;
+
+/**
+ * CS2 movement accuracy threshold ratio: when player speed is at or below 34% of maximum weapon
+ * running speed, weapon inaccuracy penalty is zero (the player has standing accuracy).
+ */
+export const ACCURACY_SPEED_THRESHOLD_RATIO = 0.34;
+
+const WEAPON_MAX_SPEED: Readonly<Record<string, number>> = {
+  'CZ75-Auto': 240,
+  'Desert Eagle': 230,
+  'Dual Berettas': 240,
+  'Five-SeveN': 240,
+  'Glock-18': 240,
+  P250: 240,
+  P2000: 240,
+  'R8 Revolver': 220,
+  'Tec-9': 240,
+  'USP-S': 240,
+
+  'MAC-10': 240,
+  'MP5-SD': 235,
+  MP7: 220,
+  MP9: 240,
+  P90: 230,
+  'PP-Bizon': 240,
+  'UMP-45': 230,
+
+  'AK-47': 215,
+  AUG: 220,
+  FAMAS: 220,
+  'Galil AR': 215,
+  'M4A1-S': 225,
+  M4A4: 225,
+  'SG 553': 220,
+
+  AWP: 200,
+  G3SG1: 215,
+  'SCAR-20': 215,
+  'SSG 08': 230,
+
+  'MAG-7': 225,
+  Nova: 220,
+  'Sawed-Off': 210,
+  XM1014: 215,
+
+  M249: 195,
+  Negev: 150,
+
+  Knife: 250,
+  'Zeus x27': 230,
+  'C4 Explosive': 250,
+
+  'Decoy Grenade': 245,
+  Flashbang: 245,
+  'High Explosive Grenade': 245,
+  'Incendiary Grenade': 245,
+  Molotov: 245,
+  'Smoke Grenade': 245,
+};
+
+/**
+ * Maximum running speed for a weapon in CS2 (units per second).
+ * Snipers and scoped rifles have a reduced speed cap while scoped.
+ */
+export function weaponMaxSpeed(weapon: WeaponId | undefined, isScoped = false): number {
+  if (weapon === undefined) return DEFAULT_RUN_SPEED;
+
+  if (isScoped) {
+    if (weapon === 'AWP') return 100;
+    if (weapon === 'SCAR-20' || weapon === 'G3SG1') return 120;
+    if (weapon === 'AUG' || weapon === 'SG 553') return 150;
+  }
+
+  return WEAPON_MAX_SPEED[weapon] ?? DEFAULT_RUN_SPEED;
+}
+
 /**
  * What class a weapon belongs to. Molotov and incendiary answer the same `fire`, for the reason the
  * `grenades` bitfield gives them one bit: they are the same thing to a reader deciding whether a

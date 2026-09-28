@@ -50,6 +50,9 @@ export interface Settings {
   readonly palette: Palette;
   readonly motion: MotionPreference;
   readonly isDebugShown: boolean;
+  readonly isPlayerKeysShown: boolean;
+  readonly isPlayerAccuracyShown: boolean;
+  readonly isPlayerCrosshairShown: boolean;
 }
 
 export type SettingKey = keyof Settings;
@@ -129,6 +132,9 @@ const DESCRIPTORS: { readonly [K in SettingKey]: Descriptor<Settings[K]> } = {
   palette: choice('disa.palette', PALETTES, 'default'),
   motion: choice('disa.motion', MOTION_PREFERENCES, 'system'),
   isDebugShown: flag('disa.radar.debug', false),
+  isPlayerKeysShown: flag('disa.spectator.keys', true),
+  isPlayerAccuracyShown: flag('disa.spectator.accuracy', true),
+  isPlayerCrosshairShown: flag('disa.spectator.crosshair', true),
 };
 
 export const SETTING_KEYS = Object.keys(DESCRIPTORS) as readonly SettingKey[];
@@ -154,6 +160,9 @@ export const DEFAULT_SETTINGS: Settings = {
   palette: DESCRIPTORS.palette.fallback,
   motion: DESCRIPTORS.motion.fallback,
   isDebugShown: DESCRIPTORS.isDebugShown.fallback,
+  isPlayerKeysShown: DESCRIPTORS.isPlayerKeysShown.fallback,
+  isPlayerAccuracyShown: DESCRIPTORS.isPlayerAccuracyShown.fallback,
+  isPlayerCrosshairShown: DESCRIPTORS.isPlayerCrosshairShown.fallback,
 };
 
 export type StoredValues = (storageKey: string) => string | null;
@@ -190,6 +199,9 @@ export function settingsFrom(read: StoredValues): Settings {
     palette: readOne('palette', read),
     motion: readOne('motion', read),
     isDebugShown: readOne('isDebugShown', read),
+    isPlayerKeysShown: readOne('isPlayerKeysShown', read),
+    isPlayerAccuracyShown: readOne('isPlayerAccuracyShown', read),
+    isPlayerCrosshairShown: readOne('isPlayerCrosshairShown', read),
   };
 }
 
