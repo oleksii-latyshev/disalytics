@@ -11,7 +11,9 @@ export interface LineupGroup {
 
 export type LineupOriginGroup = LineupGroup;
 
-const CLUSTER_THRESHOLD_SQ = 80 * 80;
+// Standard smoke radius in CS2 is 144 units. Grenades thrown to the same location
+// from different spawns naturally land within ~120-150 units of each other.
+const CLUSTER_THRESHOLD_SQ = 150 * 150;
 
 function groupLineupsByPoint(
   lineups: readonly Lineup[],

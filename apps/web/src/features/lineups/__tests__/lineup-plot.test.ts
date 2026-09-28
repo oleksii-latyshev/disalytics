@@ -139,6 +139,18 @@ describe('groupLineupsByLanding', () => {
     expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1], [2]]);
     expect(grouped[0]?.countLabel).toBe('2');
   });
+
+  it('groups grenades thrown to the same spot from different angles landing ~130 units apart', () => {
+    const first = MOCK_LINEUPS[0];
+    if (first === undefined) throw new Error('Missing test lineup');
+    // First landing is at (-1050, -300). Another landing at (-970, -220) is dist ~113 units apart
+    const grouped = groupLineupsByLanding([
+      first,
+      { ...first, id: 'smoke-alternate-spawn', landing: { x: -970, y: -220, z: -160 } },
+    ]);
+    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1]]);
+    expect(grouped[0]?.countLabel).toBe('2');
+  });
 });
 
 describe('findNearestLineupTarget', () => {
