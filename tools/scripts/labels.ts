@@ -49,6 +49,11 @@ const AREA_LABELS: Label[] = [
     color: AREA_COLOR,
     description: 'Workflows, gates, deployment, repository config',
   },
+  {
+    name: 'area:review',
+    color: AREA_COLOR,
+    description: 'Match review stage and match views',
+  },
   { name: 'area:docs', color: AREA_COLOR, description: 'Documentation only' },
 ];
 
