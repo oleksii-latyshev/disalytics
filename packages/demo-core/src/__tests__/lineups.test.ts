@@ -52,6 +52,14 @@ describe('isLineup', () => {
     expect(isLineup({ ...sampleLineup, imageUrls: [] })).toBe(true);
   });
 
+  it('accepts valid lineup with targetCallout', () => {
+    expect(isLineup({ ...sampleLineup, targetCallout: 'Xbox' })).toBe(true);
+  });
+
+  it('rejects lineup with non-string targetCallout', () => {
+    expect(isLineup({ ...sampleLineup, targetCallout: 123 as unknown as string })).toBe(false);
+  });
+
   it('rejects misaligned captions and unknown or repeated mouse buttons', () => {
     expect(isLineup({ ...sampleLineupWithExtras, imageCaptions: ['Only one'] })).toBe(false);
     expect(isLineup({ ...sampleLineupWithExtras, mouseButtons: ['left', 'middle'] })).toBe(false);

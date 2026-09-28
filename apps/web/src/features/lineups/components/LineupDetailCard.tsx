@@ -97,6 +97,12 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
                 path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'}
               />
             </span>
+
+            {lineup.targetCallout && (
+              <span className="rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 font-medium text-11 text-ink">
+                {lineup.targetCallout}
+              </span>
+            )}
           </div>
 
           {!lineup.isBuiltIn && (

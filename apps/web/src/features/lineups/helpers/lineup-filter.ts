@@ -27,7 +27,8 @@ export function filterLineups(
     if (q) {
       const inTitle = lineup.title.toLowerCase().includes(q);
       const inNotes = lineup.notes?.toLowerCase().includes(q) ?? false;
-      if (!inTitle && !inNotes) return false;
+      const inCallout = lineup.targetCallout?.toLowerCase().includes(q) ?? false;
+      if (!inTitle && !inNotes && !inCallout) return false;
     }
     return true;
   });

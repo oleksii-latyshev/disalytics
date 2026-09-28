@@ -273,6 +273,10 @@
     "form": {
       "title": "Название",
       "titlePlaceholder": "например, Смок на Xbox с базы атаки",
+      "callout": "Зона приземления (Callout)",
+      "calloutPlaceholder": "например, Window, A Site, Connector",
+      "suggestedCallouts": "Подсказки",
+      "clearCallout": "Очистить",
       "map": "Карта",
       "side": "Сторона",
       "kind": "Тип гранаты",

@@ -273,6 +273,10 @@
     "form": {
       "title": "Title",
       "titlePlaceholder": "e.g. Xbox Smoke from T Spawn",
+      "callout": "Target callout",
+      "calloutPlaceholder": "e.g. Window, A Site, Connector",
+      "suggestedCallouts": "Suggested",
+      "clearCallout": "Clear",
       "map": "Map",
       "side": "Side",
       "kind": "Utility kind",

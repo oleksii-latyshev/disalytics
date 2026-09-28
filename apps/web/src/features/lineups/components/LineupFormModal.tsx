@@ -10,7 +10,7 @@ import {
 } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
-import { MAP_IDS } from '@disa/map-data';
+import { findNearestCallout, getMapCallouts, MAP_IDS } from '@disa/map-data';
 import {
   Button,
   Dialog,
@@ -31,7 +31,7 @@ import {
   Maximize2,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
 import { loadTurnstile, uploadLineupImage, uploadSiteKey } from '../helpers/upload-image';
@@ -97,12 +97,14 @@ export interface LineupFormData {
   readonly fromDemo?: boolean;
   readonly notes?: string;
   readonly mediaUrl?: string;
+  readonly targetCallout?: string;
   readonly createdAt?: number;
 }
 
 export interface LineupFormValues {
   readonly title: string;
   readonly map: string;
+  readonly targetCallout: string;
   readonly side: LineupSide;
   readonly kind: UtilityKind;
   readonly throwType: ThrowType;
@@ -161,6 +163,7 @@ function defaultFormValues(defaultMap: string): LineupFormValues {
   return {
     title: '',
     map: defaultMap,
+    targetCallout: '',
     side: 'T',
     kind: 'smoke',
     throwType: 'jump',
@@ -210,6 +213,25 @@ function commandOf(data: LineupFormData, isFromDemo: boolean): string {
   return isFromDemo ? (data.command ?? '') : '';
 }
 
+function autoDetectCallout(map: string, xStr: string, yStr: string): string | null {
+  const lx = Number.parseFloat(xStr);
+  const ly = Number.parseFloat(yStr);
+  if (!Number.isFinite(lx) || !Number.isFinite(ly) || (lx === 0 && ly === 0)) {
+    return null;
+  }
+  return findNearestCallout(map, { x: lx, y: ly });
+}
+
+function resolveInitialCallout(
+  map: string,
+  targetCallout?: string,
+  landing?: { readonly x: string; readonly y: string },
+): string {
+  if (targetCallout) return targetCallout;
+  if (!landing) return '';
+  return autoDetectCallout(map, landing.x, landing.y) ?? '';
+}
+
 export function initFormValues(
   data?: LineupFormData | null,
   defaultMap = 'de_mirage',
@@ -221,11 +243,12 @@ export function initFormValues(
   const isFromDemo = Boolean(data.fromDemo || (data.command && data.command.trim().length > 0));
   const origin = extractCoords(data.origin);
   const landing = extractCoords(data.landing);
-  const landingCmd = resolveDemoLandingCommand(isFromDemo, data);
+  const resolvedMap = data.map ?? defaultMap;
 
   return {
     title: data.title ?? '',
-    map: data.map ?? defaultMap,
+    map: resolvedMap,
+    targetCallout: resolveInitialCallout(resolvedMap, data.targetCallout, landing),
     side: data.side ?? 'T',
     kind: data.kind ?? 'smoke',
     throwType: data.throwType ?? 'jump',
@@ -243,7 +266,7 @@ export function initFormValues(
     pitch: formatCoord(data.pitch),
     yaw: formatCoord(data.yaw),
     command: commandOf(data, isFromDemo),
-    landingCommand: landingCmd,
+    landingCommand: resolveDemoLandingCommand(isFromDemo, data),
     fromDemo: isFromDemo,
     notes: data.notes ?? '',
     mediaUrl: data.mediaUrl ?? '',
@@ -347,6 +370,7 @@ export function buildLineupFromForm(
     ...(values.fromDemo ? { fromDemo: true } : {}),
     ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
     ...(values.mediaUrl.trim() ? { mediaUrl: values.mediaUrl.trim() } : {}),
+    ...(values.targetCallout.trim() ? { targetCallout: values.targetCallout.trim() } : {}),
     isBuiltIn: false,
     createdAt: initialCreatedAt ?? Date.now(),
   };
@@ -554,6 +578,27 @@ export function LineupFormModal({
     setValues((prev) => ({ ...prev, [key]: val }));
   };
 
+  const updateMap = (val?: string | null) => {
+    const newMap = val ?? defaultMap;
+    setValues((prev) => {
+      const suggested = autoDetectCallout(newMap, prev.landingX, prev.landingY);
+      return {
+        ...prev,
+        map: newMap,
+        targetCallout: suggested ?? prev.targetCallout,
+      };
+    });
+  };
+
+  const updateLandingCoord = (axis: 'landingX' | 'landingY' | 'landingZ', val: string) => {
+    setValues((prev) => {
+      const next = { ...prev, [axis]: val };
+      if (prev.targetCallout || axis === 'landingZ') return next;
+      const detected = autoDetectCallout(next.map, next.landingX, next.landingY);
+      return detected ? { ...next, targetCallout: detected } : next;
+    });
+  };
+
   const toggleMovementKey = (key: MovementKey) => {
     setValues((prev) => ({
       ...prev,
@@ -731,10 +776,7 @@ export function LineupFormModal({
               <label htmlFor="lineup-map" className="label-dense text-ink-dim">
                 <Text path="library.lineups.form.map" />
               </label>
-              <Select
-                value={values.map}
-                onValueChange={(val) => updateValue('map', val ?? defaultMap)}
-              >
+              <Select value={values.map} onValueChange={updateMap}>
                 <SelectTrigger id="lineup-map" className="h-8 bg-surface-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -789,6 +831,13 @@ export function LineupFormModal({
               </Select>
             </div>
           </div>
+
+          {/* Target Callout */}
+          <LineupCalloutField
+            map={values.map}
+            value={values.targetCallout}
+            onChange={(val) => updateValue('targetCallout', val)}
+          />
 
           {/* Throw type & Movement keys */}
           <div className="flex flex-col gap-2">
@@ -1132,21 +1181,21 @@ export function LineupFormModal({
                   <input
                     type="text"
                     value={values.landingX}
-                    onChange={(e) => updateValue('landingX', e.target.value)}
+                    onChange={(e) => updateLandingCoord('landingX', e.target.value)}
                     placeholder="X"
                     className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
                   />
                   <input
                     type="text"
                     value={values.landingY}
-                    onChange={(e) => updateValue('landingY', e.target.value)}
+                    onChange={(e) => updateLandingCoord('landingY', e.target.value)}
                     placeholder="Y"
                     className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
                   />
                   <input
                     type="text"
                     value={values.landingZ}
-                    onChange={(e) => updateValue('landingZ', e.target.value)}
+                    onChange={(e) => updateLandingCoord('landingZ', e.target.value)}
                     placeholder="Z"
                     className="h-7 rounded-chip border border-line bg-surface-2 px-2 font-mono text-11 text-ink"
                   />
@@ -1623,5 +1672,71 @@ function CatboxNoticeDialog({
         </Button>
       </div>
     </Dialog>
+  );
+}
+
+interface LineupCalloutFieldProps {
+  readonly map: string;
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+}
+
+function LineupCalloutField({ map, value, onChange }: LineupCalloutFieldProps) {
+  const t = useT();
+  const callouts = useMemo(() => getMapCallouts(map), [map]);
+  const quickSuggestions = useMemo(() => callouts.slice(0, 8), [callouts]);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <label htmlFor="lineup-callout" className="label-dense text-ink-dim">
+          <Text path="library.lineups.form.callout" />
+        </label>
+        {value.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="text-11 text-ink-dim hover:text-ink"
+          >
+            <Text path="library.lineups.form.clearCallout" />
+          </button>
+        )}
+      </div>
+      <Input
+        id="lineup-callout"
+        type="text"
+        list="lineup-callout-suggestions"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t('library.lineups.form.calloutPlaceholder')}
+        className="h-8 bg-surface-1"
+      />
+      <datalist id="lineup-callout-suggestions">
+        {callouts.map((c) => (
+          <option key={c.name} value={c.name} />
+        ))}
+      </datalist>
+      {quickSuggestions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span className="text-10 text-ink-dim">
+            <Text path="library.lineups.form.suggestedCallouts" />:
+          </span>
+          {quickSuggestions.map((c) => (
+            <button
+              key={c.name}
+              type="button"
+              onClick={() => onChange(c.name)}
+              className={`rounded-chip border px-2 py-0.5 text-11 transition-colors ${
+                value === c.name
+                  ? 'border-line bg-surface-3 font-medium text-ink'
+                  : 'border-transparent bg-surface-1 text-ink-dim hover:bg-surface-2 hover:text-ink'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

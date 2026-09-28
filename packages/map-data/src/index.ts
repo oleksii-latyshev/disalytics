@@ -1,3 +1,5 @@
+export type { MapCallout } from './callouts';
+export { findNearestCallout, getMapCallouts } from './callouts';
 export type { MapId } from './generated/overviews';
 export { MAP_IDS, MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from './generated/overviews';
 export { loadMapLineups } from './lineups';
