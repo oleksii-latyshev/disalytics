@@ -7,6 +7,11 @@ import { useSetting } from '@/core/settings';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { levelAt } from '../helpers/levels';
+import {
+  findNearestCluster,
+  groupThrowsByLanding,
+  type ThrowCluster,
+} from '../helpers/throw-cluster';
 import { throwLayer, throwPlot } from '../helpers/throw-layer';
 import { plateView, radarPointAt } from '../helpers/view';
 import { useRadarImage } from '../hooks/use-radar-image';
@@ -62,18 +67,24 @@ interface Props {
   demo: ParsedDemo;
   /** Already narrowed by whatever the screen above is narrowing by. */
   throws: readonly UtilityThrow[];
+  /** Pre-grouped clusters over `throws`. Computed automatically if omitted. */
+  clusters?: readonly ThrowCluster[] | undefined;
   /** The index into `throws` of the one mark isolated from the list beside the map, or `null`. */
   focused: number | null;
   /** Invoked when a throw mark or empty plate is clicked. */
   onSelect?: ((index: number | null) => void) | undefined;
+  /** Invoked when a landing cluster with 2 or more throws is clicked. */
+  onSelectCluster?: ((cluster: ThrowCluster) => void) | undefined;
 }
 
 function UtilityCanvas({
   demo,
   throws,
+  clusters,
   focused,
   overview,
   onSelect,
+  onSelectCluster,
 }: Props & { overview: MapOverview }) {
   const t = useT();
 
@@ -86,6 +97,11 @@ function UtilityCanvas({
   // Fixed, the way the duel map's is: §6.3's zoom is a gesture on a match the reader is inside.
   const viewRef = useRef(plateView());
 
+  const computedClusters = useMemo(
+    () => clusters ?? groupThrowsByLanding(throws),
+    [clusters, throws],
+  );
+
   const plot = useMemo(
     () => throwPlot(demo.track, overview, LEVEL_INDEX, throws),
     [demo.track, overview, throws],
@@ -95,6 +111,7 @@ function UtilityCanvas({
     const utility = throwLayer({
       throws,
       plot,
+      clusters: computedClusters,
       overview,
       tickRate: demo.header.tickRate,
       colors,
@@ -103,16 +120,21 @@ function UtilityCanvas({
     });
 
     return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), utility] : [utility];
-  }, [throws, plot, overview, demo.header.tickRate, colors, image, focused]);
+  }, [throws, plot, computedClusters, overview, demo.header.tickRate, colors, image, focused]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
-  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onSelect === undefined) return;
+  /** Resolves the click into either a cluster, a single throw index, or null. */
+  const resolveHit = (
+    event: React.MouseEvent<HTMLCanvasElement>,
+  ):
+    | { kind: 'cluster'; cluster: ThrowCluster }
+    | { kind: 'throw'; index: number | null }
+    | null => {
     const canvas = canvasRef.current;
-    if (canvas === null) return;
+    if (canvas === null) return null;
     const box = canvas.getBoundingClientRect();
-    if (box.width === 0 || box.height === 0) return;
+    if (box.width === 0 || box.height === 0) return null;
 
     const pt = radarPointAt(
       viewRef.current,
@@ -123,10 +145,28 @@ function UtilityCanvas({
     );
     const extent = Math.min(box.width, box.height);
     const scale = extent / RADAR_IMAGE_SIZE;
-    if (scale <= 0) return;
+    if (scale <= 0) return null;
 
+    const clusterHit = findNearestCluster(pt, computedClusters, plot, scale, HIT_RADIUS_PX);
+    if (clusterHit !== null && clusterHit.indices.length >= 2) {
+      return { kind: 'cluster', cluster: clusterHit };
+    }
+    if (clusterHit !== null && clusterHit.indices.length === 1) {
+      return { kind: 'throw', index: clusterHit.indices[0] ?? null };
+    }
     const hit = findNearestThrow(pt, plot, throws.length, scale, HIT_RADIUS_PX);
-    onSelect(hit);
+    return { kind: 'throw', index: hit };
+  };
+
+  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (onSelect === undefined && onSelectCluster === undefined) return;
+    const result = resolveHit(event);
+    if (result === null) return;
+    if (result.kind === 'cluster' && onSelectCluster !== undefined) {
+      onSelectCluster(result.cluster);
+    } else if (result.kind === 'throw' && onSelect !== undefined) {
+      onSelect(result.index);
+    }
   };
 
   // Sized from the cell rather than capped against it — a canvas carries an intrinsic ratio from its
@@ -139,7 +179,7 @@ function UtilityCanvas({
         aria-label={t('radar.label', { map: overview.id })}
         onClick={handleClick}
         className={`aspect-square w-[min(100cqi,100cqb)] rounded-card bg-surface-0 ${
-          onSelect !== undefined ? 'cursor-pointer' : ''
+          onSelect !== undefined || onSelectCluster !== undefined ? 'cursor-pointer' : ''
         }`}
       />
     </div>
@@ -153,7 +193,14 @@ function UtilityCanvas({
  * `useCanvasLayers` paints when its layers change and when the element is resized, so nothing here
  * subscribes to a frame channel.
  */
-export function UtilityPlate({ demo, throws, focused, onSelect }: Props) {
+export function UtilityPlate({
+  demo,
+  throws,
+  clusters,
+  focused,
+  onSelect,
+  onSelectCluster,
+}: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return overview === undefined ? (
@@ -162,9 +209,11 @@ export function UtilityPlate({ demo, throws, focused, onSelect }: Props) {
     <UtilityCanvas
       demo={demo}
       throws={throws}
+      clusters={clusters}
       focused={focused}
       overview={overview}
       onSelect={onSelect}
+      onSelectCluster={onSelectCluster}
     />
   );
 }

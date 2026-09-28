@@ -38,6 +38,12 @@ export {
   tacticWorldToRadar,
 } from './helpers/tactic-plot';
 export {
+  CLUSTER_THRESHOLD_SQ,
+  findNearestCluster,
+  groupThrowsByLanding,
+  type ThrowCluster,
+} from './helpers/throw-cluster';
+export {
   drawNeedle,
   drawToken,
   drawWalkHollow,

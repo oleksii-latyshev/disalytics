@@ -50,6 +50,21 @@
     "players": "Игроки",
     "duelList": "Дуэли в порядке матча",
     "throwList": "Броски в порядке матча",
+    "round": "Раунд",
+    "allRounds": "Все",
+    "roundNumber": "Раунд {round, number}",
+    "timing": {
+      "label": "Тайминг",
+      "all": "Все",
+      "early": "0–20с",
+      "mid": "20–60с",
+      "late": "60с+"
+    },
+    "cluster": {
+      "title": "{count, plural, one {# бросок в кластере} few {# броска в кластере} many {# бросков в кластере} other {# броска в кластере}}",
+      "close": "Закрыть",
+      "watchOnStage": "Смотреть на сцене"
+    },
     "roundShort": "Р{round, number}",
     "rowLabel": "Раунд {round, number}: {event}",
     "opensOnStage": "Откроется на сцене",

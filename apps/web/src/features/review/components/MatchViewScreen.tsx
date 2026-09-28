@@ -66,7 +66,7 @@ export function MatchViewScreen({
         />
       )}
       {view === 'heatmap' && <MatchHeatmap demo={demo} />}
-      {view === 'utility' && <MatchUtility demo={demo} />}
+      {view === 'utility' && <MatchUtility demo={demo} onOpenOnStage={onOpenOnStage} />}
       {view === 'metrics' && <MatchMetrics demo={demo} />}
 
       <ReviewSheets

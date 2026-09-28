@@ -12,6 +12,7 @@ import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import { drawTrajectory, grenadeColor } from './grenades';
 import { levelIndexAt, OTHER_LEVEL_ALPHA } from './levels';
+import type { ThrowCluster } from './throw-cluster';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /** Screen `x`, screen `y` and the level's opacity, per end. */
@@ -142,6 +143,8 @@ export interface ThrowLayerOptions {
   readonly view: { readonly current: PlateView };
   /** The index into `throws` of the one throw isolated from the list, or `null` for all of them. */
   readonly focused: number | null;
+  /** Grouped clusters of throws by landing position. */
+  readonly clusters?: readonly ThrowCluster[] | undefined;
 }
 
 /**
@@ -161,7 +164,7 @@ export interface ThrowLayerOptions {
  * built. Nothing in the draw allocates.
  */
 export function throwLayer(options: ThrowLayerOptions): Layer {
-  const { throws, plot, overview, tickRate, colors, view, focused } = options;
+  const { throws, plot, overview, tickRate, colors, view, focused, clusters } = options;
   const geometry = plateGeometry();
 
   /** `markStrength` scales the two ends and `pathStrength` the flight between them. */
@@ -232,5 +235,52 @@ export function throwLayer(options: ThrowLayerOptions): Layer {
 
     // Last and at full strength, path included: the one flight being read is the whole reading.
     if (focused !== null) drawThrow(context, focused, 1, 1);
+
+    if (clusters !== undefined && clusters.length > 0) {
+      drawClusterBadges(
+        context,
+        clusters,
+        plot,
+        geometry.scale,
+        colors.selectionRing,
+        colors.selectionEdge,
+      );
+    }
   };
+}
+
+function drawClusterBadges(
+  context: CanvasRenderingContext2D,
+  clusters: readonly ThrowCluster[],
+  plot: Float32Array,
+  scale: number,
+  color: string,
+  textColor: string,
+): void {
+  context.globalAlpha = 1;
+  context.font = '600 11px Onest, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+
+  for (let index = 0; index < clusters.length; index++) {
+    const cluster = clusters[index];
+    if (cluster === undefined || cluster.indices.length < 2) continue;
+    const first = cluster.indices[0];
+    if (first === undefined) continue;
+
+    const base = first * ENDS_LENGTH;
+    const lx = sampleAt(plot, base + END_STRIDE);
+    const ly = sampleAt(plot, base + END_STRIDE + 1);
+
+    const x = lx * scale + 10;
+    const y = ly * scale + 10;
+
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 9, 0, FULL_TURN);
+    context.fill();
+
+    context.fillStyle = textColor;
+    context.fillText(cluster.countLabel, x, y + 0.5);
+  }
 }
