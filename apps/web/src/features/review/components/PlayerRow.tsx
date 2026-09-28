@@ -1,6 +1,7 @@
 import {
   FLAG_ALIVE,
   FLAG_HELMET,
+  type ParsedDemo,
   type PlayerInfo,
   type PlayerRoundStats,
   type PlayerSlot,
@@ -17,10 +18,12 @@ import {
 } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { ArmourGlyph, UtilityGlyph, WeaponGlyph } from '@/core/glyphs';
+import { PlayerKeysHud } from '@/shared/components';
 import type { MoneyShape } from '../helpers/money';
 import { Money } from './Money';
 
 interface Props {
+  demo: ParsedDemo;
   player: PlayerInfo;
   side: Team;
   track: TickTrack;
@@ -96,6 +99,7 @@ function HealthWash({ value, side }: { value: number; side: Team }) {
  * `sr-only` is out of flow, so it costs the row nothing and cannot bring the jump back.
  */
 export function PlayerRow({
+  demo,
   player,
   side,
   track,
@@ -224,6 +228,12 @@ export function PlayerRow({
             />
           </span>
         </span>
+
+        {isSelected && isAlive && (
+          <div className="w-full pt-1.5 [border-block-start:1px_solid_var(--color-line)]">
+            <PlayerKeysHud demo={demo} frame={frame} slot={player.slot} />
+          </div>
+        )}
 
         {isSelected && stats !== undefined && (
           <span className="sr-only">
