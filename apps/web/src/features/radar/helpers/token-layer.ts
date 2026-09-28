@@ -1,4 +1,5 @@
 import {
+  ANGLE_SCALE,
   asPlayerSlot,
   audibleRadiusAt,
   blindRemainingBySlot,
@@ -11,7 +12,9 @@ import {
   FLAG_SCOPED,
   FLAG_WALKING,
   type ParsedDemo,
+  type PlayerButtons,
   type PlayerSlot,
+  playerButtonsAt,
   sampleAt,
   type Team,
   visibleShots,
@@ -61,12 +64,9 @@ export interface PlayerTokensOptions {
   readonly teamBySlot: readonly (Team | undefined)[];
   readonly labelBySlot: readonly string[];
   readonly selectedSlot: PlayerSlot | null;
-  /**
-   * The selected player's round, formatted and translated by the caller, or `null` where nobody is
-   * selected. A canvas cannot reach the message catalogue, and a draw may not build a string.
-   */
-  readonly detail: string | null;
   readonly isAudibilityShown: boolean;
+  readonly isPlayerKeysShown: boolean;
+  readonly isPlayerCrosshairShown: boolean;
   readonly colors: RadarColors;
   readonly labelStyle: LabelStyle;
   /** Read at draw time, not captured: a pan repaints these layers rather than rebuilding them. */
@@ -80,13 +80,34 @@ export interface PlayerTokensOptions {
  */
 const MAX_TRACERS = 16;
 
+function pressedKeysText(buttons: PlayerButtons): string {
+  let keys = '';
+  if (buttons.forward) keys += 'W ';
+  if (buttons.left) keys += 'A ';
+  if (buttons.back) keys += 'S ';
+  if (buttons.right) keys += 'D ';
+  if (buttons.duck) keys += 'CTRL ';
+  if (buttons.jump) keys += 'SPACE ';
+  if (buttons.walk) keys += 'SHIFT ';
+  if (buttons.attack) keys += 'LMB ';
+  if (buttons.attack2) keys += 'RMB ';
+  return keys.length > 0 ? keys.slice(0, -1) : '';
+}
+
 /**
  * The clock is read at draw time rather than captured as a frame, which is what lets the rAF loop
  * repaint without rebuilding the layer — and so without allocating — every animation frame.
  */
 export function playerTokens(options: PlayerTokensOptions): Layer {
   const { demo, clock, overview, levelIndex, teamBySlot, colors, view } = options;
-  const { labelBySlot, selectedSlot, detail, isAudibilityShown, labelStyle } = options;
+  const {
+    labelBySlot,
+    selectedSlot,
+    isAudibilityShown,
+    isPlayerKeysShown,
+    isPlayerCrosshairShown,
+    labelStyle,
+  } = options;
   const { track } = demo;
 
   const positions = positionScratch(track);
@@ -133,6 +154,34 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
   const isAlive = (slot: number) => (sampleAt(track.flags, base + slot) & FLAG_ALIVE) !== 0;
 
+  let lastDetailFrame = -1;
+  let lastDetailSlot: number | null = null;
+  let cachedDetailLine: string | null = null;
+  let cachedPitchLine: string | null = null;
+
+  function updateDetailLines(slot: number): void {
+    if (clock.frame === lastDetailFrame && slot === lastDetailSlot) return;
+
+    lastDetailFrame = clock.frame;
+    lastDetailSlot = slot;
+
+    if (isPlayerKeysShown) {
+      const buttons = playerButtonsAt(demo, clock.frame, asPlayerSlot(slot));
+      const keys = pressedKeysText(buttons);
+      const speed = Math.round(sampleAt(track.speed, base + slot));
+      cachedDetailLine = keys.length > 0 ? `${keys}  ${speed} u/s` : `${speed} u/s`;
+    } else {
+      cachedDetailLine = null;
+    }
+
+    if (isPlayerCrosshairShown) {
+      const pitch = sampleAt(track.pitch, base + slot) / ANGLE_SCALE;
+      cachedPitchLine = `PITCH ${pitch > 0 ? `+${pitch.toFixed(1)}°` : `${pitch.toFixed(1)}°`}`;
+    } else {
+      cachedPitchLine = null;
+    }
+  }
+
   // Built once rather than per frame: the label pass reads this frame's values through it, and a
   // fresh object every draw is exactly the allocation the whole layer is written to avoid. A dead
   // player loses its name along with its needle and its ring — DESIGN.md §6.1.
@@ -145,9 +194,17 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     // saw holding anything — a different thing from `unknown`, and drawn as nothing at all.
     weapon: (slot) => classByWeapon[sampleAt(track.weapon, base + slot)] ?? null,
     icon: (slot) => iconByWeapon[sampleAt(track.weapon, base + slot)],
-    // The round goes under one name and only one: the reader asked about this player by selecting
-    // them, and ten labels each carrying four numbers is a plate nobody can read.
-    detail: (slot) => (slot === selectedSlot ? detail : null),
+    // The live keys, speed and crosshair pitch go under the selected player's name alone.
+    detail: (slot) => {
+      if (slot !== selectedSlot) return null;
+      updateDetailLines(slot);
+      return cachedDetailLine ?? cachedPitchLine;
+    },
+    detailExtra: (slot) => {
+      if (slot !== selectedSlot) return null;
+      updateDetailLines(slot);
+      return cachedDetailLine !== null ? cachedPitchLine : null;
+    },
     // Every player carries their own figure, not only the selected one. Measured over the fixture,
     // a second figure is on the plate at the same time as a first on 3.24% of a match's frames and
     // a fourth on 0.08% — a duel is two numbers, which is the reading, and never a wall of them.
