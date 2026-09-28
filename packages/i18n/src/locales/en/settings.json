@@ -5,6 +5,7 @@
     "playback": "Playback",
     "plate": "Plate",
     "interface": "Interface",
+    "spectator": "Spectator",
     "colour": "Colour",
     "developer": "Developer"
   },
@@ -80,6 +81,18 @@
     "default": "Default",
     "colour-blind": "Colour-blind-safe",
     "cyber": "Cyberpunk"
+  },
+  "spectatorKeys": {
+    "label": "Pressed keys",
+    "note": "Visual keyboard showing WASD, mouse clicks, jump, duck and walk for the selected player."
+  },
+  "spectatorAccuracy": {
+    "label": "Movement accuracy",
+    "note": "Counter-strafing indicator showing whether player speed is low enough for accurate shooting."
+  },
+  "spectatorCrosshair": {
+    "label": "Crosshair vertical angle",
+    "note": "Pitch angle and elevation indicator showing vertical aim relative to head level."
   },
   "debug": {
     "label": "Debug overlay",

@@ -28,8 +28,24 @@
     "equipment": "Снаряжение",
     "abbr": {
       "kills": "У",
-      "deaths": "С",
-      "damage": "УР"
+      "deaths": "С"
+    },
+    "inputs": {
+      "title": "Управление игрока",
+      "lmb": "ЛКМ",
+      "rmb": "ПКМ",
+      "jump": "Прыжок",
+      "duck": "Присед",
+      "walk": "Шаг",
+      "speed": "{speed} u/s",
+      "accurate": "Точно",
+      "inaccurate": "Неточно",
+      "speedMeter": "{speed} / {max} u/s",
+      "pitchTitle": "Угол наклона",
+      "pitchLevel": "Горизонт",
+      "pitchUp": "Вверх",
+      "pitchDown": "Вниз",
+      "pitchDegrees": "{degrees}°"
     }
   },
   "maps": {

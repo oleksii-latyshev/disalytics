@@ -110,7 +110,17 @@ export {
   serializeLineupFile,
   THROW_TYPES,
 } from './helpers/lineups';
+export type { PlayerButtons, PlayerMovementAccuracy } from './helpers/player-state';
 export {
+  BUTTON_ATTACK,
+  BUTTON_ATTACK2,
+  BUTTON_BACK,
+  BUTTON_DUCK,
+  BUTTON_FORWARD,
+  BUTTON_JUMP,
+  BUTTON_LEFT,
+  BUTTON_RIGHT,
+  BUTTON_WALK,
   blindRemainingBySlot,
   bombProgressAt,
   DAMAGE_FLASH_SECONDS,
@@ -124,6 +134,10 @@ export {
   deathProgressBySlot,
   GUNFIRE_TRACER_SECONDS,
   PLANT_SECONDS,
+  playerButtonsAt,
+  playerMovementAccuracy,
+  playerPitchAt,
+  playerSpeedAt,
   visibleShots,
 } from './helpers/player-state';
 export type {
@@ -203,6 +217,8 @@ export type { WeaponIconId } from './helpers/weapon-icons';
 export { isWeaponIconId, WEAPON_ICON_IDS } from './helpers/weapon-icons';
 export type { WeaponClass } from './helpers/weapons';
 export {
+  ACCURACY_SPEED_THRESHOLD_RATIO,
+  DEFAULT_RUN_SPEED,
   isUtilityKind,
   killWeaponClass,
   killWeaponIcon,
@@ -211,6 +227,7 @@ export {
   weaponClasses,
   weaponIcon,
   weaponIcons,
+  weaponMaxSpeed,
   weaponName,
 } from './helpers/weapons';
 export type { LocalizedMessage } from './message';
