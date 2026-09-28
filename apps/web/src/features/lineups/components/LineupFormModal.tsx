@@ -13,6 +13,7 @@ import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
 import {
   Button,
+  Dialog,
   Input,
   Select,
   SelectContent,
@@ -20,7 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@disa/ui';
-import { ArrowDown, ArrowLeft, ArrowUp, X } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  ExternalLink,
+  GripVertical,
+  Maximize2,
+  X,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
@@ -357,6 +367,63 @@ async function persistLineup(lineup: Lineup): Promise<boolean> {
   }
 }
 
+function useTurnstileChallenge(enabled: boolean) {
+  const [siteKey, setSiteKey] = useState<string | null | undefined>();
+  const [challengeToken, setChallengeToken] = useState('');
+  const challengeRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    setSiteKey(undefined);
+    void uploadSiteKey().then((key) => {
+      if (active) setSiteKey(key);
+    });
+    return () => {
+      active = false;
+    };
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || !siteKey || !challengeRef.current) return;
+    let active = true;
+    let widget: string | null = null;
+    void loadTurnstile()
+      .then((turnstile) => {
+        if (!active || !challengeRef.current) return;
+        try {
+          widget = turnstile.render(challengeRef.current, {
+            sitekey: siteKey,
+            callback: setChallengeToken,
+            'expired-callback': () => setChallengeToken(''),
+            'error-callback': () => {
+              setChallengeToken('');
+              if (active) setSiteKey(null);
+            },
+          });
+          widgetRef.current = widget;
+        } catch {
+          if (active) setSiteKey(null);
+        }
+      })
+      .catch(() => {
+        if (active) setSiteKey(null);
+      });
+    return () => {
+      active = false;
+      if (widget && window.turnstile) {
+        try {
+          window.turnstile.remove(widget);
+        } catch {}
+      }
+      widgetRef.current = null;
+    };
+  }, [enabled, siteKey]);
+
+  return { siteKey, challengeToken, challengeRef, widgetRef, setChallengeToken };
+}
+
 interface Props {
   readonly isOpen: boolean;
   readonly onDismiss: () => void;
@@ -378,17 +445,25 @@ export function LineupFormModal({
     initFormValues(initialData, defaultMap),
   );
   const [error, setError] = useState<string | null>(null);
+  const [errorSection, setErrorSection] = useState<
+    'title' | 'photos' | 'coordinates' | 'media' | null
+  >(null);
   const [saving, setSaving] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [preparedImages, setPreparedImages] = useState<readonly PreparedImage[]>([]);
-  const [siteKey, setSiteKey] = useState<string | null | undefined>();
-  const [challengeToken, setChallengeToken] = useState('');
+  const [previewEnlargedUrl, setPreviewEnlargedUrl] = useState<string | null>(null);
+  const [showCatboxModal, setShowCatboxModal] = useState(false);
+  const [pendingCatboxImage, setPendingCatboxImage] = useState<PreparedImage | null>(null);
+  const [dontRemindCatbox, setDontRemindCatbox] = useState(false);
   const [uploadingUrl, setUploadingUrl] = useState<string | null>(null);
-  const challengeRef = useRef<HTMLDivElement>(null);
-  const widgetRef = useRef<string | null>(null);
   const previewUrlsRef = useRef(new Set<string>());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const photosRef = useRef<HTMLDivElement>(null);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+
+  const { siteKey, challengeToken, challengeRef, widgetRef, setChallengeToken } =
+    useTurnstileChallenge(isOpen && preparedImages.length > 0);
 
   useEffect(
     () => () => {
@@ -411,42 +486,40 @@ export function LineupFormModal({
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen || preparedImages.length === 0) return;
-    let active = true;
-    setSiteKey(undefined);
-    void uploadSiteKey().then((key) => {
-      if (active) setSiteKey(key);
-    });
-    return () => {
-      active = false;
-    };
-  }, [isOpen, preparedImages.length]);
+  const handleManualUploadClick = (image: PreparedImage) => {
+    let isDismissed = false;
+    try {
+      isDismissed = localStorage.getItem('disa.lineup_catbox_notice_dismissed') === 'true';
+    } catch {}
+    if (isDismissed) {
+      try {
+        submitImageToCatbox(image.file);
+      } catch {
+        window.open('https://catbox.moe/', '_blank');
+      }
+    } else {
+      setPendingCatboxImage(image);
+      setDontRemindCatbox(false);
+      setShowCatboxModal(true);
+    }
+  };
 
-  useEffect(() => {
-    if (!isOpen || preparedImages.length === 0 || !siteKey || !challengeRef.current) return;
-    let active = true;
-    let widget: string | null = null;
-    void loadTurnstile()
-      .then((turnstile) => {
-        if (!active || !challengeRef.current) return;
-        widget = turnstile.render(challengeRef.current, {
-          sitekey: siteKey,
-          callback: setChallengeToken,
-          'expired-callback': () => setChallengeToken(''),
-          'error-callback': () => setChallengeToken(''),
-        });
-        widgetRef.current = widget;
-      })
-      .catch(() => {
-        if (active) setSiteKey(null);
-      });
-    return () => {
-      active = false;
-      if (widget && window.turnstile) window.turnstile.remove(widget);
-      widgetRef.current = null;
-    };
-  }, [isOpen, preparedImages.length, siteKey]);
+  const confirmManualUpload = () => {
+    if (dontRemindCatbox) {
+      try {
+        localStorage.setItem('disa.lineup_catbox_notice_dismissed', 'true');
+      } catch {}
+    }
+    if (pendingCatboxImage) {
+      try {
+        submitImageToCatbox(pendingCatboxImage.file);
+      } catch {
+        window.open('https://catbox.moe/', '_blank');
+      }
+    }
+    setShowCatboxModal(false);
+    setPendingCatboxImage(null);
+  };
 
   const handleUpload = async (image: PreparedImage) => {
     if (!challengeToken) return;
@@ -512,14 +585,26 @@ export function LineupFormModal({
     const validationKey = basicValidationKey(values);
     if (validationKey !== null) {
       setError(t(validationKey));
+      setErrorSection(validationKey.includes('title') ? 'title' : 'media');
+      requestAnimationFrame(() => {
+        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
     if (preparedImages.length > 0) {
       setError(t('library.lineups.form.validation.imageLinksRequired'));
+      setErrorSection('photos');
+      requestAnimationFrame(() => {
+        photosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
     if (newImageUrl.trim()) {
       setError(t('library.lineups.form.validation.imageLinkPending'));
+      setErrorSection('photos');
+      requestAnimationFrame(() => {
+        photosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
 
@@ -531,6 +616,10 @@ export function LineupFormModal({
     );
     if (!lineup) {
       setError(t('library.lineups.form.validation.coordinatesRequired'));
+      setErrorSection('coordinates');
+      requestAnimationFrame(() => {
+        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
 
@@ -568,6 +657,22 @@ export function LineupFormModal({
   return createPortal(
     <section
       data-shortcuts-suspended
+      onDragEnter={(e) => {
+        e.preventDefault();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = Array.from(e.dataTransfer.files).filter((file) =>
+          file.type.startsWith('image/'),
+        );
+        if (files.length > 0) {
+          void handleImages(files);
+        }
+      }}
       className="fixed inset-0 z-100 overflow-y-auto bg-surface-0"
       aria-label={t(initialData?.id ? 'library.lineups.edit' : 'library.lineups.create')}
     >
@@ -596,10 +701,12 @@ export function LineupFormModal({
         <div className="flex w-full max-w-[48rem] flex-1 flex-col gap-5 py-6 text-13">
           {error && (
             <div
+              ref={errorRef}
               role="alert"
-              className="rounded-card border border-line bg-surface-2 p-2.5 text-12 text-ink"
+              className="flex items-center gap-2 rounded-card border border-red-500/40 bg-red-500/10 p-3 text-12 text-ink"
             >
-              {error}
+              <AlertCircle className="size-4 shrink-0 text-red-400" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -806,10 +913,24 @@ export function LineupFormModal({
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div
+            ref={photosRef}
+            className={`flex flex-col gap-2 rounded-card p-2 transition-colors ${
+              errorSection === 'photos' ? 'border border-red-500/40 bg-red-500/5' : ''
+            }`}
+          >
             <label htmlFor="lineup-image-url" className="label-dense text-ink-dim">
               <Text path="library.lineups.form.imageUrls" />
             </label>
+            {errorSection === 'photos' && (
+              <div
+                role="alert"
+                className="flex items-center gap-1.5 rounded-card border border-red-500/40 bg-red-500/10 p-2 text-11 text-red-300"
+              >
+                <AlertCircle className="size-4 shrink-0 text-red-400" />
+                <Text path="library.lineups.form.validation.photosPendingHelp" />
+              </div>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -867,172 +988,56 @@ export function LineupFormModal({
                 <Text path="library.lineups.form.choosePhotos" />
               </Button>
             </fieldset>
-            {preparedImages.map((image, index) => (
-              <div
-                key={image.previewUrl}
-                className="flex flex-wrap items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
-              >
-                <img
-                  src={image.previewUrl}
-                  alt=""
-                  className="size-10 shrink-0 rounded-chip object-cover"
-                />
-                <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
-                  {image.file.name} · {Math.round(image.file.size / 1024)} KB
-                </span>
-                {siteKey && (
-                  <button
-                    type="button"
-                    disabled={!challengeToken || uploadingUrl !== null}
-                    onClick={() => void handleUpload(image)}
-                    className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
-                  >
-                    <Text
-                      path={
-                        uploadingUrl === image.previewUrl
-                          ? 'library.lineups.form.uploading'
-                          : 'library.lineups.form.uploadImage'
-                      }
-                    />
-                  </button>
-                )}
-                {siteKey === null && (
-                  <button
-                    type="button"
-                    onClick={() => submitImageToCatbox(image.file)}
-                    className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
-                  >
-                    <Text path="library.lineups.form.uploadImage" />
-                  </button>
-                )}
-                {siteKey === null && (
-                  <a
-                    href={image.previewUrl}
-                    download={image.file.name}
-                    className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink"
-                  >
-                    <Text path="library.lineups.form.downloadWebp" />
-                  </a>
-                )}
-                <button
-                  type="button"
-                  disabled={index === 0}
-                  onClick={() => setPreparedImages((current) => moved(current, index, index - 1))}
-                  aria-label={t('library.lineups.form.moveUp')}
-                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
-                >
-                  <ArrowUp className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={index === preparedImages.length - 1}
-                  onClick={() => setPreparedImages((current) => moved(current, index, index + 1))}
-                  aria-label={t('library.lineups.form.moveDown')}
-                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
-                >
-                  <ArrowDown className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    URL.revokeObjectURL(image.previewUrl);
-                    previewUrlsRef.current.delete(image.previewUrl);
-                    setPreparedImages((previous) => previous.filter((_, at) => at !== index));
-                  }}
-                  aria-label={t('library.lineups.form.removeImage')}
-                  className="p-1 text-ink-dim hover:text-ink"
-                >
-                  <X className="size-4" />
-                </button>
-                <input
-                  type="text"
-                  value={image.caption}
-                  onChange={(event) =>
-                    setPreparedImages((current) =>
-                      current.map((item) =>
-                        item.previewUrl === image.previewUrl
-                          ? { ...item, caption: event.target.value }
-                          : item,
-                      ),
-                    )
-                  }
-                  aria-label={t('library.lineups.form.photoCaption')}
-                  placeholder={t('library.lineups.form.photoCaptionPlaceholder')}
-                  className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-12 text-ink"
-                />
-              </div>
-            ))}
+            <PreparedImagesList
+              images={preparedImages}
+              siteKey={siteKey}
+              challengeToken={challengeToken}
+              uploadingUrl={uploadingUrl}
+              onPreviewEnlarged={setPreviewEnlargedUrl}
+              onUpload={(image) => void handleUpload(image)}
+              onManualUpload={handleManualUploadClick}
+              onReorder={(from, to) => setPreparedImages((current) => moved(current, from, to))}
+              onRemove={(index) => {
+                const image = preparedImages[index];
+                if (image) {
+                  URL.revokeObjectURL(image.previewUrl);
+                  previewUrlsRef.current.delete(image.previewUrl);
+                  setPreparedImages((previous) => previous.filter((_, at) => at !== index));
+                }
+              }}
+              onCaptionChange={(index, caption) =>
+                setPreparedImages((current) =>
+                  current.map((item, at) => (at === index ? { ...item, caption } : item)),
+                )
+              }
+            />
             {preparedImages.length > 0 && siteKey && <div ref={challengeRef} />}
             {preparedImages.length > 0 && siteKey === null && (
               <p className="text-11 text-ink-dim leading-prose">
                 <Text path="library.lineups.form.uploadUnavailable" />
               </p>
             )}
-            {values.imageUrls.map((url, index) => (
-              <div
-                key={url}
-                className="flex flex-wrap items-center gap-2 rounded-card border border-line bg-surface-1 p-2"
-              >
-                <img
-                  src={url}
-                  alt=""
-                  loading="lazy"
-                  className="size-10 shrink-0 rounded-chip object-cover"
-                />
-                <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">{url}</span>
-                <button
-                  type="button"
-                  disabled={index === 0}
-                  onClick={() =>
-                    setValues((current) => reorderLineupPhotos(current, index, index - 1))
-                  }
-                  aria-label={t('library.lineups.form.moveUp')}
-                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
-                >
-                  <ArrowUp className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={index === values.imageUrls.length - 1}
-                  onClick={() =>
-                    setValues((current) => reorderLineupPhotos(current, index, index + 1))
-                  }
-                  aria-label={t('library.lineups.form.moveDown')}
-                  className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
-                >
-                  <ArrowDown className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setValues((current) => ({
-                      ...current,
-                      imageUrls: current.imageUrls.filter((_, at) => at !== index),
-                      imageCaptions: current.imageCaptions.filter((_, at) => at !== index),
-                    }))
-                  }
-                  aria-label={t('library.lineups.form.removeImage')}
-                  className="rounded-chip p-1 text-ink-dim hover:text-ink"
-                >
-                  <X className="size-4" />
-                </button>
-                <input
-                  type="text"
-                  value={values.imageCaptions[index] ?? ''}
-                  onChange={(event) =>
-                    updateValue(
-                      'imageCaptions',
-                      values.imageCaptions.map((caption, at) =>
-                        at === index ? event.target.value : caption,
-                      ),
-                    )
-                  }
-                  aria-label={t('library.lineups.form.photoCaption')}
-                  placeholder={t('library.lineups.form.photoCaptionPlaceholder')}
-                  className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-12 text-ink"
-                />
-              </div>
-            ))}
+            <AddedImagesList
+              urls={values.imageUrls}
+              captions={values.imageCaptions}
+              onPreviewEnlarged={setPreviewEnlargedUrl}
+              onReorder={(from, to) =>
+                setValues((current) => reorderLineupPhotos(current, from, to))
+              }
+              onRemove={(index) =>
+                setValues((current) => ({
+                  ...current,
+                  imageUrls: current.imageUrls.filter((_, at) => at !== index),
+                  imageCaptions: current.imageCaptions.filter((_, at) => at !== index),
+                }))
+              }
+              onCaptionChange={(index, caption) =>
+                updateValue(
+                  'imageCaptions',
+                  values.imageCaptions.map((item, at) => (at === index ? caption : item)),
+                )
+              }
+            />
             <div className="flex gap-2">
               <input
                 id="lineup-image-url"
@@ -1213,16 +1218,410 @@ export function LineupFormModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 [border-block-start:1px_solid_var(--color-line)] bg-surface-0 py-3">
-          <Button type="button" variant="ghost" onClick={handleExit} className="h-8 px-3 text-12">
-            <Text path="library.lineups.form.cancel" />
-          </Button>
-          <Button render={<button type="submit" />} disabled={saving} className="h-8 px-4">
-            <Text path="library.lineups.form.save" />
-          </Button>
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 [border-block-start:1px_solid_var(--color-line)] bg-surface-0 py-3">
+          {error ? (
+            <div
+              role="alert"
+              className="flex items-center gap-1.5 text-11 font-medium text-red-400"
+            >
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : (
+            <div />
+          )}
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" onClick={handleExit} className="h-8 px-3 text-12">
+              <Text path="library.lineups.form.cancel" />
+            </Button>
+            <Button render={<button type="submit" />} disabled={saving} className="h-8 px-4">
+              <Text path="library.lineups.form.save" />
+            </Button>
+          </div>
         </div>
       </form>
+
+      <EnlargedPhotoDialog url={previewEnlargedUrl} onDismiss={() => setPreviewEnlargedUrl(null)} />
+
+      <CatboxNoticeDialog
+        isOpen={showCatboxModal}
+        dontRemind={dontRemindCatbox}
+        onDontRemindChange={setDontRemindCatbox}
+        onDismiss={() => setShowCatboxModal(false)}
+        onProceed={confirmManualUpload}
+      />
     </section>,
     document.body,
+  );
+}
+
+interface PreparedImagesListProps {
+  readonly images: readonly PreparedImage[];
+  readonly siteKey: string | null | undefined;
+  readonly challengeToken: string;
+  readonly uploadingUrl: string | null;
+  readonly onPreviewEnlarged: (url: string) => void;
+  readonly onUpload: (image: PreparedImage) => void;
+  readonly onManualUpload: (image: PreparedImage) => void;
+  readonly onReorder: (from: number, to: number) => void;
+  readonly onRemove: (index: number) => void;
+  readonly onCaptionChange: (index: number, caption: string) => void;
+}
+
+function PreparedImagesList({
+  images,
+  siteKey,
+  challengeToken,
+  uploadingUrl,
+  onPreviewEnlarged,
+  onUpload,
+  onManualUpload,
+  onReorder,
+  onRemove,
+  onCaptionChange,
+}: PreparedImagesListProps) {
+  const t = useT();
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  if (images.length === 0) return null;
+
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      {images.map((image, index) => (
+        <li
+          key={image.previewUrl}
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', `prepared:${index}`);
+            setDraggedIndex(index);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragOverIndex(index);
+          }}
+          onDragLeave={() => {
+            if (dragOverIndex === index) setDragOverIndex(null);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (draggedIndex !== null && draggedIndex !== index) {
+              onReorder(draggedIndex, index);
+            }
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+          }}
+          onDragEnd={() => {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+          }}
+          className={`flex flex-wrap items-center gap-2 rounded-card border bg-surface-1 p-2 transition-colors ${
+            dragOverIndex === index ? 'border-ink bg-surface-2' : 'border-line'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className="cursor-grab p-1 text-ink-dim hover:text-ink active:cursor-grabbing"
+            title={t('library.lineups.form.dragToReorder')}
+          >
+            <GripVertical className="size-4" />
+          </span>
+          <button
+            type="button"
+            onClick={() => onPreviewEnlarged(image.previewUrl)}
+            title={t('library.lineups.form.viewPhoto')}
+            aria-label={t('library.lineups.form.viewPhoto')}
+            className="group relative size-10 shrink-0 cursor-zoom-in overflow-hidden rounded-chip"
+          >
+            <img src={image.previewUrl} alt="" className="size-full object-cover" />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <Maximize2 className="size-3.5" />
+            </span>
+          </button>
+          <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
+            {image.file.name} · {Math.round(image.file.size / 1024)} KB
+          </span>
+          {siteKey && (
+            <button
+              type="button"
+              disabled={!challengeToken || uploadingUrl !== null}
+              onClick={() => onUpload(image)}
+              className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink disabled:opacity-50"
+            >
+              <Text
+                path={
+                  uploadingUrl === image.previewUrl
+                    ? 'library.lineups.form.uploading'
+                    : 'library.lineups.form.uploadImage'
+                }
+              />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onManualUpload(image)}
+            className="flex items-center gap-1 rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink hover:bg-surface-3"
+          >
+            <ExternalLink className="size-3" />
+            <Text path="library.lineups.form.uploadManual" />
+          </button>
+          <a
+            href={image.previewUrl}
+            download={image.file.name}
+            className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink hover:bg-surface-3"
+          >
+            <Text path="library.lineups.form.downloadWebp" />
+          </a>
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => onReorder(index, index - 1)}
+            aria-label={t('library.lineups.form.moveUp')}
+            className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+          <button
+            type="button"
+            disabled={index === images.length - 1}
+            onClick={() => onReorder(index, index + 1)}
+            aria-label={t('library.lineups.form.moveDown')}
+            className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+          >
+            <ArrowDown className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            aria-label={t('library.lineups.form.removeImage')}
+            className="p-1 text-ink-dim hover:text-ink"
+          >
+            <X className="size-4" />
+          </button>
+          <input
+            type="text"
+            value={image.caption}
+            onChange={(event) => onCaptionChange(index, event.target.value)}
+            aria-label={t('library.lineups.form.photoCaption')}
+            placeholder={t('library.lineups.form.photoCaptionPlaceholder')}
+            className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-12 text-ink"
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+interface AddedImagesListProps {
+  readonly urls: readonly string[];
+  readonly captions: readonly string[];
+  readonly onPreviewEnlarged: (url: string) => void;
+  readonly onReorder: (from: number, to: number) => void;
+  readonly onRemove: (index: number) => void;
+  readonly onCaptionChange: (index: number, caption: string) => void;
+}
+
+function AddedImagesList({
+  urls,
+  captions,
+  onPreviewEnlarged,
+  onReorder,
+  onRemove,
+  onCaptionChange,
+}: AddedImagesListProps) {
+  const t = useT();
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  if (urls.length === 0) return null;
+
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      {urls.map((url, index) => (
+        <li
+          key={url}
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', `url:${index}`);
+            setDraggedIndex(index);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragOverIndex(index);
+          }}
+          onDragLeave={() => {
+            if (dragOverIndex === index) setDragOverIndex(null);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (draggedIndex !== null && draggedIndex !== index) {
+              onReorder(draggedIndex, index);
+            }
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+          }}
+          onDragEnd={() => {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+          }}
+          className={`flex flex-wrap items-center gap-2 rounded-card border bg-surface-1 p-2 transition-colors ${
+            dragOverIndex === index ? 'border-ink bg-surface-2' : 'border-line'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className="cursor-grab p-1 text-ink-dim hover:text-ink active:cursor-grabbing"
+            title={t('library.lineups.form.dragToReorder')}
+          >
+            <GripVertical className="size-4" />
+          </span>
+          <button
+            type="button"
+            onClick={() => onPreviewEnlarged(url)}
+            title={t('library.lineups.form.viewPhoto')}
+            aria-label={t('library.lineups.form.viewPhoto')}
+            className="group relative size-10 shrink-0 cursor-zoom-in overflow-hidden rounded-chip"
+          >
+            <img src={url} alt="" loading="lazy" className="size-full object-cover" />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <Maximize2 className="size-3.5" />
+            </span>
+          </button>
+          <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">{url}</span>
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => onReorder(index, index - 1)}
+            aria-label={t('library.lineups.form.moveUp')}
+            className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+          <button
+            type="button"
+            disabled={index === urls.length - 1}
+            onClick={() => onReorder(index, index + 1)}
+            aria-label={t('library.lineups.form.moveDown')}
+            className="p-1 text-ink-dim hover:text-ink disabled:opacity-30"
+          >
+            <ArrowDown className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            aria-label={t('library.lineups.form.removeImage')}
+            className="rounded-chip p-1 text-ink-dim hover:text-ink"
+          >
+            <X className="size-4" />
+          </button>
+          <input
+            type="text"
+            value={captions[index] ?? ''}
+            onChange={(event) => onCaptionChange(index, event.target.value)}
+            aria-label={t('library.lineups.form.photoCaption')}
+            placeholder={t('library.lineups.form.photoCaptionPlaceholder')}
+            className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-12 text-ink"
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function EnlargedPhotoDialog({
+  url,
+  onDismiss,
+}: {
+  readonly url: string | null;
+  readonly onDismiss: () => void;
+}) {
+  const t = useT();
+  return (
+    <Dialog
+      isOpen={url !== null}
+      onDismiss={onDismiss}
+      aria-label={t('library.lineups.form.viewPhoto')}
+      className="max-h-[92dvh] max-w-[92dvw] p-2"
+    >
+      <div className="relative flex flex-col items-center justify-center">
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={t('library.lineups.form.closePhoto')}
+          className="absolute top-2 right-2 z-10 rounded-chip bg-surface-0/80 p-1.5 text-ink hover:bg-surface-2"
+        >
+          <X className="size-5" />
+        </button>
+        {url && (
+          <img
+            src={url}
+            alt=""
+            className="max-h-[85dvh] max-w-[85dvw] rounded-chip object-contain"
+          />
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
+function CatboxNoticeDialog({
+  isOpen,
+  dontRemind,
+  onDontRemindChange,
+  onDismiss,
+  onProceed,
+}: {
+  readonly isOpen: boolean;
+  readonly dontRemind: boolean;
+  readonly onDontRemindChange: (checked: boolean) => void;
+  readonly onDismiss: () => void;
+  readonly onProceed: () => void;
+}) {
+  const t = useT();
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onDismiss={onDismiss}
+      aria-label={t('library.lineups.form.catboxModal.title')}
+      className="flex max-w-md flex-col gap-4 p-5"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="font-ui text-16 font-medium text-ink">
+          <Text path="library.lineups.form.catboxModal.title" />
+        </h3>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={t('library.lineups.form.close')}
+          className="rounded-chip p-1 text-ink-dim hover:bg-surface-2 hover:text-ink"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <p className="text-12 text-ink-dim leading-relaxed">
+        <Text path="library.lineups.form.catboxModal.description" />
+      </p>
+      <label className="flex cursor-pointer items-center gap-2 text-12 text-ink">
+        <input
+          type="checkbox"
+          checked={dontRemind}
+          onChange={(e) => onDontRemindChange(e.target.checked)}
+          className="size-4 rounded-chip border-line bg-surface-2"
+        />
+        <Text path="library.lineups.form.catboxModal.dontShowAgain" />
+      </label>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="ghost" onClick={onDismiss} className="h-8 px-3 text-12">
+          <Text path="library.lineups.form.cancel" />
+        </Button>
+        <Button type="button" onClick={onProceed} className="h-8 px-4 text-12">
+          <Text path="library.lineups.form.catboxModal.proceed" />
+        </Button>
+      </div>
+    </Dialog>
   );
 }

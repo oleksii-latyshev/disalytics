@@ -303,6 +303,16 @@
       "moveDown": "Move photo later",
       "uploading": "Uploading…",
       "uploadUnavailable": "Server upload is unavailable. You can upload the WebP manually and paste its link below.",
+      "viewPhoto": "Enlarge photo",
+      "closePhoto": "Close photo preview",
+      "dragToReorder": "Drag to reorder",
+      "uploadManual": "Upload manually",
+      "catboxModal": {
+        "title": "Manual photo upload",
+        "description": "The photo upload page will open in a new tab. After uploading, copy the direct image link and paste it into the field below.",
+        "dontShowAgain": "Don't show this again",
+        "proceed": "Understood, open upload"
+      },
       "addImage": "Add link",
       "removeImage": "Remove photo",
       "uploadImage": "Upload photo",
@@ -322,6 +332,7 @@
         "uploadFailed": "Could not upload this photo. Try again or upload the WebP on Catbox directly.",
         "imageLinksRequired": "Upload each prepared photo and add its returned link, or remove the photo",
         "imageLinkPending": "Add the typed photo link before saving",
+        "photosPendingHelp": "Upload each prepared photo or remove it from the list before saving.",
         "saveFailed": "This lineup could not be saved on this device"
       }
     }
