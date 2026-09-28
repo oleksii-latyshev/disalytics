@@ -28,8 +28,16 @@
     "equipment": "Снаряжение",
     "abbr": {
       "kills": "У",
-      "deaths": "С",
-      "damage": "УР"
+      "deaths": "С"
+    },
+    "inputs": {
+      "title": "Управление игрока",
+      "lmb": "ЛКМ",
+      "rmb": "ПКМ",
+      "jump": "Прыжок",
+      "duck": "Присед",
+      "walk": "Шаг",
+      "speed": "{speed} u/s"
     }
   },
   "maps": {

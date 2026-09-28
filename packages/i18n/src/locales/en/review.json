@@ -28,8 +28,16 @@
     "equipment": "Equipment",
     "abbr": {
       "kills": "K",
-      "deaths": "D",
-      "damage": "DMG"
+      "deaths": "D"
+    },
+    "inputs": {
+      "title": "Player input",
+      "lmb": "LMB",
+      "rmb": "RMB",
+      "jump": "Jump",
+      "duck": "Duck",
+      "walk": "Walk",
+      "speed": "{speed} u/s"
     }
   },
   "maps": {
