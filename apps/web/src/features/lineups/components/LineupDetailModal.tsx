@@ -98,6 +98,11 @@ function LineupDetailHeader({
         <span className="hidden lg:inline-block shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-10 text-ink-dim">
           <Text path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'} />
         </span>
+        {lineup.targetCallout && (
+          <span className="shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 font-medium text-10 text-ink">
+            {lineup.targetCallout}
+          </span>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1">

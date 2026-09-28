@@ -60,6 +60,7 @@ describe('lineup form helpers', () => {
     const values: LineupFormValues = {
       title: 'B Site Flash',
       map: 'de_dust2',
+      targetCallout: 'B Site',
       side: 'CT',
       kind: 'flash',
       throwType: 'stand',
@@ -90,6 +91,7 @@ describe('lineup form helpers', () => {
     expect(lineup.id).toBe('custom-123');
     expect(lineup.title).toBe('B Site Flash');
     expect(lineup.map).toBe('de_dust2');
+    expect(lineup.targetCallout).toBe('B Site');
     expect(lineup.side).toBe('CT');
     expect(lineup.kind).toBe('flash');
     expect(lineup.throwType).toBe('stand');
@@ -126,6 +128,7 @@ describe('lineup form helpers', () => {
     const values: LineupFormValues = {
       title: 'Auto Command Lineup',
       map: 'de_nuke',
+      targetCallout: '',
       side: 'BOTH',
       kind: 'he',
       throwType: 'jump',
@@ -175,6 +178,7 @@ describe('lineup form helpers', () => {
     const values: LineupFormValues = {
       title: 'Invalid Lineup',
       map: 'de_dust2',
+      targetCallout: '',
       side: 'T',
       kind: 'smoke',
       throwType: 'stand',
@@ -200,5 +204,23 @@ describe('lineup form helpers', () => {
 
     const lineup = buildLineupFromForm(values);
     expect(lineup).toBeNull();
+  });
+
+  it('auto-detects callout from landing coordinates if not explicitly provided', () => {
+    const data: LineupFormData = {
+      title: 'Mirage Window Smoke',
+      map: 'de_mirage',
+      origin: { x: -120, y: -450, z: -100 },
+      landing: { x: -1050, y: -350, z: -100 },
+    };
+    const values = initFormValues(data);
+    expect(values.targetCallout).toBe('Window');
+
+    const explicitData: LineupFormData = {
+      ...data,
+      targetCallout: 'Custom Callout',
+    };
+    const explicitValues = initFormValues(explicitData);
+    expect(explicitValues.targetCallout).toBe('Custom Callout');
   });
 });

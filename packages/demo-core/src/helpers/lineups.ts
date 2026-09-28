@@ -21,6 +21,7 @@ export interface Lineup {
   readonly map: string;
   readonly side: LineupSide;
   readonly kind: UtilityKind;
+  readonly targetCallout?: string;
   readonly origin: WorldPoint;
   readonly landing: WorldPoint;
   readonly pitch: number;
@@ -124,6 +125,7 @@ function hasValidOptionals(
   createdAt: unknown,
   landingCommand: unknown,
   fromDemo: unknown,
+  targetCallout: unknown,
 ): boolean {
   if (notes !== undefined && typeof notes !== 'string') return false;
   if (mediaUrl !== undefined && typeof mediaUrl !== 'string') return false;
@@ -131,6 +133,7 @@ function hasValidOptionals(
   if (createdAt !== undefined && !isFiniteNumber(createdAt)) return false;
   if (landingCommand !== undefined && typeof landingCommand !== 'string') return false;
   if (fromDemo !== undefined && typeof fromDemo !== 'boolean') return false;
+  if (targetCallout !== undefined && typeof targetCallout !== 'string') return false;
   return true;
 }
 
@@ -194,6 +197,7 @@ export function isLineup(value: unknown): value is Lineup {
       value.createdAt,
       (value as Record<string, unknown>).landingCommand,
       (value as Record<string, unknown>).fromDemo,
+      (value as Record<string, unknown>).targetCallout,
     )
   );
 }

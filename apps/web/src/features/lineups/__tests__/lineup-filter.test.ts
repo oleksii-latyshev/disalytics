@@ -78,12 +78,23 @@ describe('filterLineups', () => {
     expect(smokes.map((l) => l.id)).toEqual(['1']);
   });
 
-  it('filters by search text in title or notes case-insensitively', () => {
+  it('filters by search text in title, notes, or callout case-insensitively', () => {
     const byTitle = filterLineups(TEST_LINEUPS, { side: 'ALL', kind: 'all', search: 'xBOx' });
     expect(byTitle.map((l) => l.id)).toEqual(['1']);
 
     const byNotes = filterLineups(TEST_LINEUPS, { side: 'ALL', kind: 'all', search: 'doorway' });
     expect(byNotes.map((l) => l.id)).toEqual(['2']);
+
+    const first = TEST_LINEUPS[0];
+    expect(first).toBeDefined();
+    if (!first) return;
+
+    const withCallout: readonly Lineup[] = [
+      ...TEST_LINEUPS,
+      { ...first, id: '4', title: 'A Smoke', targetCallout: 'A Site' },
+    ];
+    const byCallout = filterLineups(withCallout, { side: 'ALL', kind: 'all', search: 'site' });
+    expect(byCallout.map((l) => l.id)).toEqual(['4']);
   });
 
   it('combines side, kind, and search criteria', () => {
