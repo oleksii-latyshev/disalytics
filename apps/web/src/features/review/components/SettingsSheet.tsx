@@ -55,6 +55,10 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
   const [palette, setPalette] = useSetting('palette');
   const [motion, setMotion] = useSetting('motion');
   const [isDebugShown, toggleDebug] = useSettingToggle('isDebugShown');
+  const [isPlayerKeysShown, togglePlayerKeys] = useSettingToggle('isPlayerKeysShown');
+  const [isPlayerAccuracyShown, togglePlayerAccuracy] = useSettingToggle('isPlayerAccuracyShown');
+  const [isPlayerCrosshairShown, togglePlayerCrosshair] =
+    useSettingToggle('isPlayerCrosshairShown');
 
   return (
     <Sheet isOpen={isOpen} onDismiss={onDismiss} aria-label={t('settings.title')}>
@@ -78,7 +82,7 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
         {/* Every section open (#382): the reader collapses what they do not need. */}
         <Accordion
           multiple
-          defaultValue={['playback', 'plate', 'interface', 'colour', 'developer']}
+          defaultValue={['playback', 'plate', 'interface', 'spectator', 'colour', 'developer']}
           className="flex flex-col"
         >
           <SettingGroup value="playback" titlePath="settings.group.playback">
@@ -221,6 +225,44 @@ export function SettingsSheet({ isOpen, onDismiss }: Props) {
                   value={motion}
                   options={MOTION_OPTIONS}
                   onChange={setMotion}
+                />
+              }
+            />
+          </SettingGroup>
+
+          <SettingGroup value="spectator" titlePath="settings.group.spectator">
+            <SettingRow
+              labelPath="settings.spectatorKeys.label"
+              notePath="settings.spectatorKeys.note"
+              control={
+                <Switch
+                  checked={isPlayerKeysShown}
+                  onChange={togglePlayerKeys}
+                  aria-label={t('settings.spectatorKeys.label')}
+                />
+              }
+            />
+
+            <SettingRow
+              labelPath="settings.spectatorAccuracy.label"
+              notePath="settings.spectatorAccuracy.note"
+              control={
+                <Switch
+                  checked={isPlayerAccuracyShown}
+                  onChange={togglePlayerAccuracy}
+                  aria-label={t('settings.spectatorAccuracy.label')}
+                />
+              }
+            />
+
+            <SettingRow
+              labelPath="settings.spectatorCrosshair.label"
+              notePath="settings.spectatorCrosshair.note"
+              control={
+                <Switch
+                  checked={isPlayerCrosshairShown}
+                  onChange={togglePlayerCrosshair}
+                  aria-label={t('settings.spectatorCrosshair.label')}
                 />
               }
             />

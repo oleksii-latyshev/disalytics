@@ -18,6 +18,7 @@ import {
 } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { ArmourGlyph, UtilityGlyph, WeaponGlyph } from '@/core/glyphs';
+import { useSetting } from '@/core/settings';
 import { PlayerKeysHud } from '@/shared/components';
 import type { MoneyShape } from '../helpers/money';
 import { Money } from './Money';
@@ -119,6 +120,11 @@ export function PlayerRow({
   const weaponIndex = sampleAt(track.weapon, index);
   const weapon = weaponIndex === WEAPON_NONE ? undefined : weapons.at(weaponIndex);
   const utility = utilityHeld(sampleAt(track.grenades, index));
+  const [isPlayerKeysShown] = useSetting('isPlayerKeysShown');
+  const [isPlayerAccuracyShown] = useSetting('isPlayerAccuracyShown');
+  const [isPlayerCrosshairShown] = useSetting('isPlayerCrosshairShown');
+  const isAnySpectatorHudShown =
+    isPlayerKeysShown || isPlayerAccuracyShown || isPlayerCrosshairShown;
 
   return (
     <button
@@ -229,9 +235,16 @@ export function PlayerRow({
           </span>
         </span>
 
-        {isSelected && isAlive && (
+        {isSelected && isAlive && isAnySpectatorHudShown && (
           <div className="w-full pt-1.5 [border-block-start:1px_solid_var(--color-line)]">
-            <PlayerKeysHud demo={demo} frame={frame} slot={player.slot} />
+            <PlayerKeysHud
+              demo={demo}
+              frame={frame}
+              slot={player.slot}
+              showKeys={isPlayerKeysShown}
+              showAccuracy={isPlayerAccuracyShown}
+              showCrosshair={isPlayerCrosshairShown}
+            />
           </div>
         )}
 

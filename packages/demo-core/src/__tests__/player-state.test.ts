@@ -14,6 +14,8 @@ import {
   GUNFIRE_TRACER_SECONDS,
   PLANT_SECONDS,
   playerButtonsAt,
+  playerMovementAccuracy,
+  playerPitchAt,
   playerSpeedAt,
   visibleShots,
 } from '../helpers/player-state';
@@ -520,5 +522,89 @@ describe('playerButtonsAt', () => {
     expect(buttons.back).toBe(false);
     expect(buttons.left).toBe(false);
     expect(buttons.right).toBe(false);
+  });
+});
+
+describe('playerPitchAt', () => {
+  it('returns 0 for empty track', () => {
+    const track = newTrack({ frameCount: 0 });
+    expect(playerPitchAt(track, 0, asPlayerSlot(0))).toBe(0);
+  });
+
+  it('decodes pitch in degrees from ANGLE_SCALE scaled value', () => {
+    const track = newTrack({ frameCount: 5 });
+    const slot = asPlayerSlot(2);
+    const sample = 2 * track.slotCount + slot;
+
+    track.pitch[sample] = 0;
+    expect(playerPitchAt(track, 2, slot)).toBe(0);
+
+    track.pitch[sample] = -4500; // Looking up 45 deg
+    expect(playerPitchAt(track, 2, slot)).toBe(-45);
+
+    track.pitch[sample] = 3050; // Looking down 30.5 deg
+    expect(playerPitchAt(track, 2, slot)).toBe(30.5);
+  });
+});
+
+describe('playerMovementAccuracy', () => {
+  it('reports not accurate when player is dead', () => {
+    const track = newTrack({ frameCount: 5 });
+    const slot = asPlayerSlot(0);
+    track.flags[slot] = 0; // Not alive
+
+    const demo = newDemo(newEvents(), track);
+    const acc = playerMovementAccuracy(demo, 0, slot);
+
+    expect(acc.isAccurate).toBe(false);
+    expect(acc.speed).toBe(0);
+  });
+
+  it('calculates accuracy for AK-47 when stopped or counter-strafing', () => {
+    const track = newTrack({ frameCount: 5 });
+    const slot = asPlayerSlot(1);
+    track.flags[slot] = FLAG_ALIVE;
+    track.weapon[slot] = 0; // weapon index 0
+    track.speed[slot] = 50;
+
+    const demo: ParsedDemo = {
+      header: { map: 'de_dust2', tickRate: TICK_RATE, players: [], weapons: ['AK-47'] },
+      track,
+      events: newEvents(),
+    };
+
+    const acc = playerMovementAccuracy(demo, 0, slot);
+    expect(acc.maxSpeed).toBe(215);
+    expect(acc.accuracyThreshold).toBe(73); // Math.round(215 * 0.34)
+    expect(acc.isAccurate).toBe(true);
+
+    // When running full speed
+    track.speed[slot] = 215;
+    const runningAcc = playerMovementAccuracy(demo, 0, slot);
+    expect(runningAcc.isAccurate).toBe(false);
+    expect(runningAcc.ratio).toBe(1);
+  });
+
+  it('accounts for scoped speed limit on snipers', () => {
+    const track = newTrack({ frameCount: 5 });
+    const slot = asPlayerSlot(0);
+    track.flags[slot] = FLAG_ALIVE | FLAG_SCOPED;
+    track.weapon[slot] = 0; // AWP
+    track.speed[slot] = 30;
+
+    const demo: ParsedDemo = {
+      header: { map: 'de_dust2', tickRate: TICK_RATE, players: [], weapons: ['AWP'] },
+      track,
+      events: newEvents(),
+    };
+
+    const scopedAcc = playerMovementAccuracy(demo, 0, slot);
+    expect(scopedAcc.maxSpeed).toBe(100);
+    expect(scopedAcc.accuracyThreshold).toBe(34);
+    expect(scopedAcc.isAccurate).toBe(true);
+
+    track.speed[slot] = 40;
+    const inaccurateAcc = playerMovementAccuracy(demo, 0, slot);
+    expect(inaccurateAcc.isAccurate).toBe(false);
   });
 });
