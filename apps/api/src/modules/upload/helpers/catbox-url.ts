@@ -3,7 +3,7 @@ export function catboxImageUrl(raw: string): string | null {
   if (
     url.protocol !== 'https:' ||
     url.hostname !== 'files.catbox.moe' ||
-    !/^\/[a-zA-Z0-9]{6,12}\.webp$/.test(url.pathname) ||
+    !/^\/[a-zA-Z0-9]{6,12}\.(?:webp|png)$/.test(url.pathname) ||
     url.search ||
     url.hash
   ) {
