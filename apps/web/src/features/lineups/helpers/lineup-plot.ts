@@ -11,43 +11,41 @@ export interface LineupGroup {
 
 export type LineupOriginGroup = LineupGroup;
 
-// Standard smoke radius in CS2 is 144 units. Grenades thrown to the same location
-// from different spawns naturally land within ~120-150 units of each other.
-const CLUSTER_THRESHOLD_SQ = 150 * 150;
-
-function groupLineupsByPoint(
+function groupLineupsByTarget(
   lineups: readonly Lineup[],
-  getPoint: (lineup: Lineup) => { readonly x: number; readonly y: number },
+  target: 'origin' | 'landing',
 ): readonly LineupGroup[] {
-  const groups: { indices: number[]; countLabel: string }[] = [];
+  const groupsByGroupId = new Map<string, number[]>();
+
   for (let index = 0; index < lineups.length; index++) {
     const lineup = lineups[index];
-    if (lineup === undefined) continue;
-    const pt = getPoint(lineup);
-    const group = groups.find(({ indices }) => {
-      const first = lineups[indices[0] ?? -1];
-      if (first === undefined) return false;
-      const firstPt = getPoint(first);
-      const dx = firstPt.x - pt.x;
-      const dy = firstPt.y - pt.y;
-      return dx * dx + dy * dy < CLUSTER_THRESHOLD_SQ;
-    });
-    if (group === undefined) {
-      groups.push({ indices: [index], countLabel: '1' });
+    if (lineup === undefined || !lineup.groupId) continue;
+    const lineupTarget = lineup.groupTarget ?? 'landing';
+    if (lineupTarget !== target) continue;
+
+    const existing = groupsByGroupId.get(lineup.groupId);
+    if (existing) {
+      existing.push(index);
     } else {
-      group.indices.push(index);
-      group.countLabel = String(group.indices.length);
+      groupsByGroupId.set(lineup.groupId, [index]);
+    }
+  }
+
+  const groups: LineupGroup[] = [];
+  for (const indices of groupsByGroupId.values()) {
+    if (indices.length >= 2) {
+      groups.push({ indices, countLabel: String(indices.length) });
     }
   }
   return groups;
 }
 
 export function groupLineupsByOrigin(lineups: readonly Lineup[]): readonly LineupGroup[] {
-  return groupLineupsByPoint(lineups, (l) => l.origin);
+  return groupLineupsByTarget(lineups, 'origin');
 }
 
 export function groupLineupsByLanding(lineups: readonly Lineup[]): readonly LineupGroup[] {
-  return groupLineupsByPoint(lineups, (l) => l.landing);
+  return groupLineupsByTarget(lineups, 'landing');
 }
 
 /**
@@ -55,19 +53,48 @@ export function groupLineupsByLanding(lineups: readonly Lineup[]): readonly Line
  *
  * Radar coordinates are normalized to [0, RADAR_IMAGE_SIZE] (0..1024), so resizing
  * the canvas scales the precomputed plot without reprojecting world coordinates.
+ * Lineups manually merged with groupId share their primary group point coordinates.
  */
 export function lineupPlot(overview: MapOverview, lineups: readonly Lineup[]): Float32Array {
   const plot = new Float32Array(lineups.length * LINEUP_STRIDE);
+  const groupLandingMap = new Map<string, { x: number; y: number }>();
+  const groupOriginMap = new Map<string, { x: number; y: number }>();
 
   for (let i = 0; i < lineups.length; i++) {
     const lineup = lineups[i];
     if (lineup === undefined) continue;
 
     const at = i * LINEUP_STRIDE;
-    plot[at] = radarX(overview, lineup.origin.x);
-    plot[at + 1] = radarY(overview, lineup.origin.y);
-    plot[at + 2] = radarX(overview, lineup.landing.x);
-    plot[at + 3] = radarY(overview, lineup.landing.y);
+    let ox = radarX(overview, lineup.origin.x);
+    let oy = radarY(overview, lineup.origin.y);
+    let lx = radarX(overview, lineup.landing.x);
+    let ly = radarY(overview, lineup.landing.y);
+
+    if (lineup.groupId) {
+      const target = lineup.groupTarget ?? 'landing';
+      if (target === 'landing') {
+        const existing = groupLandingMap.get(lineup.groupId);
+        if (existing) {
+          lx = existing.x;
+          ly = existing.y;
+        } else {
+          groupLandingMap.set(lineup.groupId, { x: lx, y: ly });
+        }
+      } else if (target === 'origin') {
+        const existing = groupOriginMap.get(lineup.groupId);
+        if (existing) {
+          ox = existing.x;
+          oy = existing.y;
+        } else {
+          groupOriginMap.set(lineup.groupId, { x: ox, y: oy });
+        }
+      }
+    }
+
+    plot[at] = ox;
+    plot[at + 1] = oy;
+    plot[at + 2] = lx;
+    plot[at + 3] = ly;
   }
 
   return plot;

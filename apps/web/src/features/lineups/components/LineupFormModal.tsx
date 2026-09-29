@@ -1,5 +1,6 @@
 import {
   type Lineup,
+  type LineupGroupTarget,
   type LineupMouseButton,
   type LineupSide,
   type MovementKey,
@@ -84,6 +85,11 @@ export interface LineupFormData {
   readonly kind?: UtilityKind;
   readonly origin?: { readonly x: number; readonly y: number; readonly z?: number };
   readonly landing?: { readonly x: number; readonly y: number; readonly z?: number };
+  readonly waypoints?:
+    | readonly { readonly x: number; readonly y: number; readonly z?: number }[]
+    | undefined;
+  readonly groupId?: string | undefined;
+  readonly groupTarget?: LineupGroupTarget | undefined;
   readonly pitch?: number;
   readonly yaw?: number;
   readonly throwType?: ThrowType;
@@ -119,6 +125,11 @@ export interface LineupFormValues {
   readonly landingX: string;
   readonly landingY: string;
   readonly landingZ: string;
+  readonly waypoints?:
+    | readonly { readonly x: string; readonly y: string; readonly z: string }[]
+    | undefined;
+  readonly groupId?: string | undefined;
+  readonly groupTarget?: LineupGroupTarget | undefined;
   readonly pitch: string;
   readonly yaw: string;
   readonly command: string;
@@ -178,6 +189,7 @@ function defaultFormValues(defaultMap: string): LineupFormValues {
     landingX: '0',
     landingY: '0',
     landingZ: '0',
+    waypoints: [],
     pitch: '0',
     yaw: '0',
     command: '',
@@ -263,6 +275,9 @@ export function initFormValues(
     landingX: landing.x,
     landingY: landing.y,
     landingZ: landing.z,
+    waypoints: data.waypoints?.map((wp) => extractCoords(wp)) ?? [],
+    groupId: data.groupId,
+    groupTarget: data.groupTarget,
     pitch: formatCoord(data.pitch),
     yaw: formatCoord(data.yaw),
     command: commandOf(data, isFromDemo),
@@ -345,6 +360,14 @@ export function buildLineupFromForm(
   const movementSummary =
     values.movementKeys.join(' + ') || (values.throwType === 'stand' ? 'Stand' : 'Jump');
 
+  const parsedWaypoints = (values.waypoints ?? [])
+    .map((wp) => ({
+      x: Number.parseFloat(wp.x),
+      y: Number.parseFloat(wp.y),
+      z: Number.parseFloat(wp.z) || 0,
+    }))
+    .filter((wp) => Number.isFinite(wp.x) && Number.isFinite(wp.y));
+
   return {
     id: initialId ?? `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     title: values.title.trim(),
@@ -353,6 +376,9 @@ export function buildLineupFromForm(
     kind: values.kind,
     origin: coords.origin,
     landing: coords.landing,
+    ...(parsedWaypoints.length > 0 ? { waypoints: parsedWaypoints } : {}),
+    ...(values.groupId ? { groupId: values.groupId } : {}),
+    ...(values.groupTarget ? { groupTarget: values.groupTarget } : {}),
     pitch: coords.pitch,
     yaw: coords.yaw,
     throwType: values.throwType,
