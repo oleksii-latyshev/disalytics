@@ -2,7 +2,7 @@ import { jsonResponse } from '../../shared/http/response';
 import { MAX_BODY_BYTES } from './constants';
 import { uploadToCatbox } from './helpers/catbox';
 import { allowedOrigin, corsHeaders } from './helpers/cors';
-import { expectedUploadFields, validWebp } from './helpers/image';
+import { expectedUploadFields, validImage } from './helpers/image';
 import { readLimitedBody } from './helpers/limited-body';
 import { validChallenge } from './helpers/turnstile';
 import { configuredUploadEnv, type UploadEnv } from './types';
@@ -44,7 +44,7 @@ async function uploadImage(
   }
 
   const file = form.get('image');
-  if (!(file instanceof File) || !(await validWebp(file))) {
+  if (!(file instanceof File) || !(await validImage(file))) {
     return jsonResponse({ error: 'invalid_image' }, 400, headers);
   }
   if (!(await validChallenge(form.get('turnstile'), config.TURNSTILE_SECRET))) {

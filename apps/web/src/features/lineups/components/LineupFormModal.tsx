@@ -1589,31 +1589,48 @@ function EnlargedPhotoDialog({
   readonly onDismiss: () => void;
 }) {
   const t = useT();
+
+  useEffect(() => {
+    if (url === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onDismiss();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [url, onDismiss]);
+
+  if (url === null) return null;
+
   return (
-    <Dialog
-      isOpen={url !== null}
-      onDismiss={onDismiss}
-      aria-label={t('library.lineups.form.viewPhoto')}
-      className="max-h-[92dvh] max-w-[92dvw] p-2"
-    >
-      <div className="relative flex flex-col items-center justify-center">
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label={t('library.lineups.form.closePhoto')}
-          className="absolute top-2 right-2 z-10 rounded-chip bg-surface-0/80 p-1.5 text-ink hover:bg-surface-2"
+    <>
+      {/* Scrim */}
+      <div className="fixed inset-0 z-[200] bg-black/70" onClick={onDismiss} aria-hidden="true" />
+      {/* Card */}
+      <div className="pointer-events-none fixed inset-0 z-[200] grid place-items-center p-4">
+        <div
+          role="dialog"
+          aria-label={t('library.lineups.form.viewPhoto')}
+          className="pointer-events-auto relative max-h-[92dvh] max-w-[92dvw] rounded-sheet p-2"
         >
-          <X className="size-5" />
-        </button>
-        {url && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label={t('library.lineups.form.closePhoto')}
+            className="absolute top-2 right-2 z-10 rounded-chip bg-surface-0/80 p-1.5 text-ink hover:bg-surface-2"
+          >
+            <X className="size-5" />
+          </button>
           <img
             src={url}
             alt=""
             className="max-h-[85dvh] max-w-[85dvw] rounded-chip object-contain"
           />
-        )}
+        </div>
       </div>
-    </Dialog>
+    </>
   );
 }
 

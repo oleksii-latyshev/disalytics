@@ -5,27 +5,26 @@ export async function prepareLineupImage(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file);
   try {
     const ratio = Math.min(1, MAX_SIDE_PX / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
-    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    const w = Math.max(1, Math.round(bitmap.width * ratio));
+    const h = Math.max(1, Math.round(bitmap.height * ratio));
+
+    const canvas = new OffscreenCanvas(w, h);
     const context = canvas.getContext('2d');
     if (context === null) throw new Error('Canvas 2D unavailable');
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (output) => {
-          if (output === null || output.type !== 'image/webp') {
-            reject(new Error('WebP encoding unavailable'));
-          } else {
-            resolve(output);
-          }
-        },
-        'image/webp',
-        WEBP_QUALITY,
-      );
-    });
+    context.drawImage(bitmap, 0, 0, w, h);
+
+    // OffscreenCanvas.convertToBlob supports WebP on all major browsers.
+    // Fall back to PNG when the UA returns a different MIME (should not happen
+    // on Chromium or Firefox, but keeps the path safe).
+    let blob = await canvas.convertToBlob({ type: 'image/webp', quality: WEBP_QUALITY });
+    let ext = 'webp';
+    if (blob.type !== 'image/webp') {
+      blob = await canvas.convertToBlob({ type: 'image/png' });
+      ext = 'png';
+    }
+
     const stem = file.name.replace(/\.[^.]+$/, '') || 'lineup';
-    return new File([blob], `${stem}.webp`, { type: 'image/webp' });
+    return new File([blob], `${stem}.${ext}`, { type: blob.type });
   } finally {
     bitmap.close();
   }
@@ -37,6 +36,9 @@ export function submitImageToCatbox(file: File): void {
   form.action = 'https://catbox.moe/user/api.php';
   form.enctype = 'multipart/form-data';
   form.target = '_blank';
+  // Keep the form offscreen so it does not shift layout.
+  form.style.position = 'fixed';
+  form.style.left = '-9999px';
 
   const requestType = document.createElement('input');
   requestType.type = 'hidden';
@@ -54,5 +56,6 @@ export function submitImageToCatbox(file: File): void {
 
   document.body.append(form);
   form.submit();
-  form.remove();
+  // Defer removal so the browser's navigation/submission has time to start.
+  setTimeout(() => form.remove(), 2000);
 }
