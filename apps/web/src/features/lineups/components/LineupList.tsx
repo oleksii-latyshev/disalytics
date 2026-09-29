@@ -2,7 +2,7 @@ import type { Lineup, LineupSide } from '@disa/demo-core';
 import { UTILITY_NAMES } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { CheckSquare, CornerDownRight, Layers, Square, Unlink, X } from 'lucide-react';
+import { CheckSquare, CornerDownRight, Layers, Square, Trash2, Unlink, X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
   readonly onToggleSelectId: (id: string) => void;
   readonly onMergeSelected?: () => void;
   readonly onUnmergeSelected?: () => void;
+  readonly onDeleteSelected?: () => void;
   readonly onClearSelection?: () => void;
   readonly onContextMenu?: (event: React.MouseEvent, lineup: Lineup) => void;
 }
@@ -35,6 +36,7 @@ export function LineupList({
   onToggleSelectId,
   onMergeSelected,
   onUnmergeSelected,
+  onDeleteSelected,
   onClearSelection,
   onContextMenu,
 }: Props) {
@@ -77,6 +79,16 @@ export function LineupList({
               >
                 <Unlink className="size-3" />
                 <Text path="library.lineups.unmerge" />
+              </Button>
+            )}
+            {selectedIds.size >= 2 && onDeleteSelected && (
+              <Button
+                variant="destructive"
+                onClick={onDeleteSelected}
+                className="h-6 gap-1 px-2 text-10"
+              >
+                <Trash2 className="size-3" />
+                <Text path="library.lineups.deleteSelected" values={{ count: selectedIds.size }} />
               </Button>
             )}
             {onClearSelection && (

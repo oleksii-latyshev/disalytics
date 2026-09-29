@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   findNearestLineup,
   findNearestLineupTarget,
+  findNearestNode,
   groupLineupsByLanding,
   groupLineupsByOrigin,
   LINEUP_STRIDE,
@@ -189,5 +190,72 @@ describe('findNearestLineupTarget', () => {
       20,
     );
     expect(hitLanding).toEqual({ index: 1, target: 'landing' });
+  });
+});
+
+describe('findNearestNode', () => {
+  const overview = getMapOverview('de_mirage');
+  if (overview === undefined) throw new Error('de_mirage overview missing');
+
+  const first = MOCK_LINEUPS[0];
+  const second = MOCK_LINEUPS[1];
+  if (first === undefined || second === undefined) throw new Error('Missing test lineups');
+
+  const lineupsWithBounces: readonly Lineup[] = [
+    {
+      ...first,
+      waypoints: [{ x: -500, y: -500, z: -160 }],
+    },
+    second,
+  ];
+  const plot = lineupPlot(overview, lineupsWithBounces);
+  const scale = 0.5;
+
+  it('finds origin node', () => {
+    const ox = plot[0] ?? 0;
+    const oy = plot[1] ?? 0;
+    const node = findNearestNode(
+      { x: ox + 2, y: oy + 2 },
+      plot,
+      lineupsWithBounces,
+      overview,
+      scale,
+      20,
+    );
+    expect(node).toEqual({ lineupIndex: 0, target: 'origin' });
+  });
+
+  it('finds landing node', () => {
+    const lx = plot[2] ?? 0;
+    const ly = plot[3] ?? 0;
+    const node = findNearestNode(
+      { x: lx + 2, y: ly + 2 },
+      plot,
+      lineupsWithBounces,
+      overview,
+      scale,
+      20,
+    );
+    expect(node).toEqual({ lineupIndex: 0, target: 'landing' });
+  });
+
+  it('finds waypoint node', () => {
+    // waypoint x: -500, y: -500 in world coords
+    const wx = (-500 - overview.posX) / overview.scale;
+    const wy = (overview.posY - -500) / overview.scale;
+    const node = findNearestNode(
+      { x: wx + 2, y: wy + 2 },
+      plot,
+      lineupsWithBounces,
+      overview,
+      scale,
+      20,
+    );
+    expect(node).toEqual({ lineupIndex: 0, target: 'waypoint', waypointIndex: 0 });
+  });
+
+  it('returns null when no node is within range', () => {
+    const node = findNearestNode({ x: 0, y: 0 }, plot, lineupsWithBounces, overview, scale, 5);
+    expect(node).toBeNull();
   });
 });

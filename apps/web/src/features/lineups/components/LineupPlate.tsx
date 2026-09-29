@@ -40,9 +40,11 @@ import { useRadarImage } from '@/features/radar/hooks/use-radar-image';
 import { type ActiveDragPoint, lineupLayer } from '../helpers/lineup-layer';
 import {
   findNearestLineupTarget,
+  findNearestNode,
   groupLineupsByLanding,
   groupLineupsByOrigin,
   type LineupHit,
+  type LineupNode,
   lineupPlot,
 } from '../helpers/lineup-plot';
 
@@ -54,7 +56,10 @@ export interface LineupPlateProps {
   readonly lineups: readonly Lineup[];
   readonly focused: number | null;
   readonly selectedIds: ReadonlySet<string>;
+  readonly mode?: 'view' | 'edit' | undefined;
+  readonly selectedNodes?: readonly LineupNode[] | undefined;
   readonly onSelect: (hit: LineupHit | null, modifierKey?: boolean) => void;
+  readonly onSelectNode?: ((node: LineupNode | null, modifierKey?: boolean) => void) | undefined;
   readonly onPlacePoint?:
     | ((point: { readonly x: number; readonly y: number }, isBounce?: boolean) => void)
     | undefined;
@@ -73,6 +78,8 @@ export interface LineupPlateProps {
       ) => void)
     | undefined;
   readonly onMergeSelected?: (() => void) | undefined;
+  readonly onMergeLandings?: (() => void) | undefined;
+  readonly onMergeOrigins?: (() => void) | undefined;
   readonly onUnmergeLineup?: ((lineupId: string) => void) | undefined;
   readonly onAddBounceToLineup?: ((lineupId: string) => void) | undefined;
   readonly onDeleteBounceFromLineup?:
@@ -80,6 +87,7 @@ export interface LineupPlateProps {
     | undefined;
   readonly onEditLineup?: ((lineup: Lineup) => void) | undefined;
   readonly onDeleteLineup?: ((lineupId: string) => void) | undefined;
+  readonly onDeleteSelected?: (() => void) | undefined;
 }
 
 interface HandleTarget {
@@ -142,7 +150,10 @@ function LineupCanvas({
   lineups,
   focused,
   selectedIds,
+  mode = 'view',
+  selectedNodes,
   onSelect,
+  onSelectNode,
   onPlacePoint,
   isPlacing = false,
   isAddingBounce = false,
@@ -152,17 +163,23 @@ function LineupCanvas({
   draftWaypoints,
   onUpdatePoint,
   onMergeSelected,
+  onMergeLandings,
+  onMergeOrigins,
   onUnmergeLineup,
   onAddBounceToLineup,
   onDeleteBounceFromLineup,
   onEditLineup,
   onDeleteLineup,
+  onDeleteSelected,
 }: {
   readonly overview: MapOverview;
   readonly lineups: readonly Lineup[];
   readonly focused: number | null;
   readonly selectedIds: ReadonlySet<string>;
+  readonly mode?: 'view' | 'edit' | undefined;
+  readonly selectedNodes?: readonly LineupNode[] | undefined;
   readonly onSelect: (hit: LineupHit | null, modifierKey?: boolean) => void;
+  readonly onSelectNode?: ((node: LineupNode | null, modifierKey?: boolean) => void) | undefined;
   readonly onPlacePoint?:
     | ((point: { readonly x: number; readonly y: number }, isBounce?: boolean) => void)
     | undefined;
@@ -181,6 +198,8 @@ function LineupCanvas({
       ) => void)
     | undefined;
   readonly onMergeSelected?: (() => void) | undefined;
+  readonly onMergeLandings?: (() => void) | undefined;
+  readonly onMergeOrigins?: (() => void) | undefined;
   readonly onUnmergeLineup?: ((lineupId: string) => void) | undefined;
   readonly onAddBounceToLineup?: ((lineupId: string) => void) | undefined;
   readonly onDeleteBounceFromLineup?:
@@ -188,6 +207,7 @@ function LineupCanvas({
     | undefined;
   readonly onEditLineup?: ((lineup: Lineup) => void) | undefined;
   readonly onDeleteLineup?: ((lineupId: string) => void) | undefined;
+  readonly onDeleteSelected?: (() => void) | undefined;
 }) {
   const t = useT();
 
@@ -203,6 +223,7 @@ function LineupCanvas({
     target: 'origin' | 'landing' | 'waypoint';
     waypointIndex?: number | undefined;
     moved: boolean;
+    lineupId: string;
   } | null>(null);
 
   const [zoom, setZoom] = useState(1);
@@ -229,6 +250,8 @@ function LineupCanvas({
       colors,
       view: viewRef,
       focused,
+      mode,
+      selectedNodes,
       draftOrigin,
       draftWaypoints,
       hoverPoint: hoverWorldPoint,
@@ -246,6 +269,8 @@ function LineupCanvas({
     colors,
     image,
     focused,
+    mode,
+    selectedNodes,
     draftOrigin,
     draftWaypoints,
     hoverWorldPoint,
@@ -307,7 +332,9 @@ function LineupCanvas({
     if (isPlacing) {
       if (pt.x < 0 || pt.y < 0 || pt.x > RADAR_IMAGE_SIZE || pt.y > RADAR_IMAGE_SIZE) return;
       const worldPoint = radarToWorld(overview, pt);
-      onPlacePoint?.(worldPoint, isAddingBounce);
+      // Ctrl+click during placement = add bounce
+      const isBounce = isAddingBounce || event.ctrlKey || event.metaKey;
+      onPlacePoint?.(worldPoint, isBounce);
       return;
     }
 
@@ -315,9 +342,47 @@ function LineupCanvas({
     const scale = (extent * viewRef.current.zoom) / RADAR_IMAGE_SIZE;
     if (scale <= 0) return;
 
-    const hit = findNearestLineupTarget(pt, plot, lineups.length, scale, HIT_RADIUS_PX);
     const isModifier = event.shiftKey || event.ctrlKey || event.metaKey;
+
+    if (mode === 'edit' && onSelectNode) {
+      const node = findNearestNode(pt, plot, lineups, overview, scale, HIT_RADIUS_PX);
+      onSelectNode(node, isModifier);
+      // Also update the old onSelect for compatibility (focused index)
+      if (node !== null) {
+        onSelect(
+          { index: node.lineupIndex, target: node.target === 'waypoint' ? 'origin' : node.target },
+          isModifier,
+        );
+      } else if (!isModifier) {
+        onSelect(null);
+      }
+      return;
+    }
+
+    const hit = findNearestLineupTarget(pt, plot, lineups.length, scale, HIT_RADIUS_PX);
     onSelect(hit, isModifier);
+  };
+
+  /** Middle mouse button click: place bounce during creation */
+  const handleAuxClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (event.button !== 1) return;
+    if (!isPlacing || draftOrigin === undefined || draftOrigin === null) return;
+
+    const canvas = canvasRef.current;
+    if (canvas === null) return;
+    const box = canvas.getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) return;
+
+    const pt = radarPointAt(
+      viewRef.current,
+      event.clientX - box.left,
+      event.clientY - box.top,
+      box,
+      RADAR_IMAGE_SIZE,
+    );
+    if (pt.x < 0 || pt.y < 0 || pt.x > RADAR_IMAGE_SIZE || pt.y > RADAR_IMAGE_SIZE) return;
+    const worldPoint = radarToWorld(overview, pt);
+    onPlacePoint?.(worldPoint, true);
   };
 
   const handleContextMenu = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -365,6 +430,7 @@ function LineupCanvas({
           role="img"
           aria-label={t('radar.label', { map: overview.id })}
           onClick={handleClick}
+          onAuxClick={handleAuxClick}
           onContextMenu={handleContextMenu}
           onWheel={(event) => {
             event.preventDefault();
@@ -396,17 +462,36 @@ function LineupCanvas({
             const extent = Math.min(box.width, box.height);
             const scale = (extent * viewRef.current.zoom) / RADAR_IMAGE_SIZE;
 
-            if (selectedLineup && !isPlacing) {
-              const handle = findHandleUnderPoint(pt, selectedLineup, overview, scale);
-              if (handle !== null) {
-                pointDragRef.current = {
-                  target: handle.target,
-                  waypointIndex: handle.waypointIndex,
-                  moved: false,
-                };
-                event.currentTarget.setPointerCapture(event.pointerId);
-                setCursorStyle('grabbing');
-                return;
+            if (!isPlacing) {
+              if (mode === 'edit') {
+                const node = findNearestNode(pt, plot, lineups, overview, scale, HANDLE_RADIUS_PX);
+                if (node !== null) {
+                  const targetLineup = lineups[node.lineupIndex];
+                  if (targetLineup) {
+                    pointDragRef.current = {
+                      target: node.target,
+                      waypointIndex: node.waypointIndex,
+                      moved: false,
+                      lineupId: targetLineup.id,
+                    };
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    setCursorStyle('grabbing');
+                    return;
+                  }
+                }
+              } else if (selectedLineup) {
+                const handle = findHandleUnderPoint(pt, selectedLineup, overview, scale);
+                if (handle !== null) {
+                  pointDragRef.current = {
+                    target: handle.target,
+                    waypointIndex: handle.waypointIndex,
+                    moved: false,
+                    lineupId: selectedLineup.id,
+                  };
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setCursorStyle('grabbing');
+                  return;
+                }
               }
             }
 
@@ -468,11 +553,19 @@ function LineupCanvas({
             }
 
             // Dynamic cursor styling
-            if (selectedLineup && !isPlacing) {
-              const handle = findHandleUnderPoint(pt, selectedLineup, overview, scale);
-              if (handle !== null) {
-                setCursorStyle('grab');
-                return;
+            if (!isPlacing) {
+              if (mode === 'edit') {
+                const node = findNearestNode(pt, plot, lineups, overview, scale, HANDLE_RADIUS_PX);
+                if (node !== null) {
+                  setCursorStyle('grab');
+                  return;
+                }
+              } else if (selectedLineup) {
+                const handle = findHandleUnderPoint(pt, selectedLineup, overview, scale);
+                if (handle !== null) {
+                  setCursorStyle('grab');
+                  return;
+                }
               }
             }
             if (isPlacing) {
@@ -489,18 +582,13 @@ function LineupCanvas({
             }
 
             if (pointDragRef.current !== null) {
-              if (
-                pointDragRef.current.moved &&
-                activeDrag &&
-                selectedLineup &&
-                onUpdatePoint !== undefined
-              ) {
+              if (pointDragRef.current.moved && activeDrag && onUpdatePoint !== undefined) {
                 const worldPoint = radarToWorld(overview, {
                   x: activeDrag.radarX,
                   y: activeDrag.radarY,
                 });
                 onUpdatePoint(
-                  selectedLineup.id,
+                  pointDragRef.current.lineupId,
                   pointDragRef.current.target,
                   worldPoint,
                   pointDragRef.current.waypointIndex,
@@ -546,6 +634,11 @@ function LineupCanvas({
                   }
                 />
               </span>
+              {draftOrigin !== null && (
+                <span className="rounded-chip border border-primary/30 bg-primary/10 px-2 py-0.5 text-11 text-primary">
+                  <Text path="library.lineups.placeBounceHint" />
+                </span>
+              )}
               {draftWaypoints && draftWaypoints.length > 0 && (
                 <span className="rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-10 font-mono text-ink-dim">
                   <Text
@@ -580,8 +673,26 @@ function LineupCanvas({
           </div>
         )}
 
+        {/* Edit mode active indicator / node selected count */}
+        {mode === 'edit' && !isPlacing && (
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-2 rounded-card border border-primary/30 bg-surface-0/90 px-2.5 py-1 text-11 shadow-sm backdrop-blur-xs">
+            <span className="flex size-2 rounded-full bg-primary" />
+            <span className="font-medium text-primary">
+              <Text path="library.lineups.editModeActive" />
+            </span>
+            {selectedNodes && selectedNodes.length > 0 && (
+              <span className="border-l border-line pl-2 font-mono text-10 text-ink">
+                <Text
+                  path="library.lineups.nodeSelected"
+                  values={{ count: selectedNodes.length }}
+                />
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Drag to adjust prompt when selected */}
-        {selectedLineup !== null && !isPlacing && (
+        {selectedLineup !== null && !isPlacing && mode !== 'edit' && (
           <div className="absolute bottom-3 left-3 z-10 hidden sm:flex items-center gap-1.5 rounded-card border border-line bg-surface-0/80 px-2.5 py-1 text-10 text-ink-dim backdrop-blur-xs">
             <GripVertical className="size-3 text-ink-dim" />
             <Text path="library.lineups.dragToAdjust" />
@@ -622,7 +733,55 @@ function LineupCanvas({
           style={{ top: contextMenu.y, left: contextMenu.x }}
           className="fixed z-50 flex min-w-[12rem] flex-col gap-0.5 rounded-card border border-line bg-surface-1 p-1 text-12 shadow-card"
         >
-          {selectedIds.size >= 2 && onMergeSelected && (
+          {selectedIds.size >= 2 && onDeleteSelected && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onDeleteSelected();
+                setContextMenu(null);
+              }}
+              className="flex items-center gap-2 rounded-chip px-2.5 py-1.5 text-left text-damage hover:bg-surface-2"
+            >
+              <Trash2 className="size-3.5" />
+              <Text path="library.lineups.deleteSelected" values={{ count: selectedIds.size }} />
+            </button>
+          )}
+
+          {selectedIds.size >= 2 && mode === 'edit' && (onMergeLandings || onMergeOrigins) && (
+            <>
+              {onMergeLandings && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onMergeLandings();
+                    setContextMenu(null);
+                  }}
+                  className="flex items-center gap-2 rounded-chip px-2.5 py-1.5 text-left text-ink hover:bg-surface-2"
+                >
+                  <Layers className="size-3.5 text-primary" />
+                  <Text path="library.lineups.mergeLandings" />
+                </button>
+              )}
+              {onMergeOrigins && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onMergeOrigins();
+                    setContextMenu(null);
+                  }}
+                  className="flex items-center gap-2 rounded-chip px-2.5 py-1.5 text-left text-ink hover:bg-surface-2"
+                >
+                  <Layers className="size-3.5 text-primary" />
+                  <Text path="library.lineups.mergeOrigins" />
+                </button>
+              )}
+            </>
+          )}
+
+          {selectedIds.size >= 2 && mode !== 'edit' && onMergeSelected && (
             <button
               type="button"
               role="menuitem"

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@disa/ui';
-import { Download, Plus, Search, Upload, X } from 'lucide-react';
+import { Download, Eye, Pencil, Plus, Search, Upload, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { filterLineups } from '../helpers/lineup-filter';
@@ -26,6 +26,7 @@ import {
   groupLineupsByLanding,
   groupLineupsByOrigin,
   type LineupHit,
+  type LineupNode,
 } from '../helpers/lineup-plot';
 import { useMapLineups } from '../hooks/use-map-lineups';
 import { LineupDetailModal } from './LineupDetailModal';
@@ -33,6 +34,7 @@ import { LineupFormModal } from './LineupFormModal';
 import { LineupList } from './LineupList';
 import { LineupPlate } from './LineupPlate';
 
+type InteractionMode = 'view' | 'edit';
 type SideScope = 'ALL' | 'CT' | 'T';
 type KindScope = 'all' | UtilityKind;
 type Point = { readonly x: number; readonly y: number };
@@ -44,12 +46,15 @@ interface SelectedVariants {
 
 export function LineupsView() {
   const t = useT();
+  const [mode, setMode] = useState<InteractionMode>('view');
   const [map, setMap] = useState<MapId>('de_mirage');
   const [side, setSide] = useState<SideScope>('ALL');
   const [kind, setKind] = useState<KindScope>('all');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedNodes, setSelectedNodes] = useState<readonly LineupNode[]>([]);
+  const [editGrenadeKind, setEditGrenadeKind] = useState<UtilityKind>('smoke');
   const [origin, setOrigin] = useState<Point | null>(null);
   const [draftWaypoints, setDraftWaypoints] = useState<Point[]>([]);
   const [isAddingBounce, setIsAddingBounce] = useState(false);
@@ -100,6 +105,17 @@ export function LineupsView() {
     const single = filteredLineups[hit.index];
     if (single === undefined) return;
 
+    if (mode === 'edit') {
+      if (modifierKey) {
+        handleToggleSelectId(single.id);
+      } else {
+        setSelectedId(single.id);
+        setSelectedIds(new Set());
+      }
+      return;
+    }
+
+    // View mode: open detail or variants
     if (modifierKey) {
       handleToggleSelectId(single.id);
       return;
@@ -122,6 +138,42 @@ export function LineupsView() {
 
     setSelectedId(single.id);
     setDetailLineup(single);
+  };
+
+  const handleSelectNode = (node: LineupNode | null, modifierKey?: boolean) => {
+    if (node === null) {
+      if (!modifierKey) {
+        setSelectedNodes([]);
+        setSelectedId(null);
+      }
+      return;
+    }
+
+    const lineup = filteredLineups[node.lineupIndex];
+    if (lineup === undefined) return;
+    setSelectedId(lineup.id);
+
+    if (modifierKey) {
+      setSelectedNodes((prev) => {
+        const exists = prev.some(
+          (n) =>
+            n.lineupIndex === node.lineupIndex &&
+            n.target === node.target &&
+            n.waypointIndex === node.waypointIndex,
+        );
+        if (exists) {
+          return prev.filter(
+            (n) =>
+              n.lineupIndex !== node.lineupIndex ||
+              n.target !== node.target ||
+              n.waypointIndex !== node.waypointIndex,
+          );
+        }
+        return [...prev, node];
+      });
+    } else {
+      setSelectedNodes([node]);
+    }
   };
 
   const handlePlacePoint = (point: Point, isBounce?: boolean) => {
@@ -155,6 +207,42 @@ export function LineupsView() {
     setIsAddingBounce(false);
     setDraftLanding(null);
   };
+
+  const handleMergeByTarget = async (groupTarget: LineupGroupTarget) => {
+    const toMerge = filteredLineups.filter((l) => selectedIds.has(l.id));
+    if (toMerge.length < 2) return;
+
+    const first = toMerge[0];
+    if (first === undefined) return;
+
+    const targetPoint = groupTarget === 'landing' ? first.landing : first.origin;
+    const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const updated = toMerge.map((item) => ({
+      ...item,
+      groupId,
+      groupTarget,
+      landing: groupTarget === 'landing' ? targetPoint : item.landing,
+      origin: groupTarget === 'origin' ? targetPoint : item.origin,
+      isBuiltIn: false,
+    }));
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.putMany(updated);
+      } finally {
+        store.close();
+      }
+      setSelectedIds(new Set());
+      setSelectedNodes([]);
+      await reload();
+      setNotice(t('library.lineups.mergeSelected', { count: updated.length }));
+    }
+  };
+
+  const handleMergeLandings = () => void handleMergeByTarget('landing');
+  const handleMergeOrigins = () => void handleMergeByTarget('origin');
 
   const handleMergeSelected = async () => {
     const toMerge = filteredLineups.filter((l) => selectedIds.has(l.id));
@@ -192,9 +280,31 @@ export function LineupsView() {
         store.close();
       }
       setSelectedIds(new Set());
+      setSelectedNodes([]);
       await reload();
       setNotice(t('library.lineups.mergeSelected', { count: updated.length }));
     }
+  };
+
+  const handleDeleteSelected = async () => {
+    const customLineupsToDelete = lineups.filter(
+      (item) => selectedIds.has(item.id) && !item.isBuiltIn,
+    );
+    if (customLineupsToDelete.length === 0) return;
+    if (
+      !window.confirm(
+        t('library.lineups.deleteSelectedConfirm', { count: customLineupsToDelete.length }),
+      )
+    ) {
+      return;
+    }
+
+    for (const item of customLineupsToDelete) {
+      await deleteLineup(item.id);
+    }
+    setSelectedIds(new Set());
+    setSelectedNodes([]);
+    setSelectedId(null);
   };
 
   const handleUnmergeLineup = async (lineupId: string) => {
@@ -384,19 +494,47 @@ export function LineupsView() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 pb-0.5">
-          <Button
-            onClick={() => {
-              setIsPlacing(true);
-              setOrigin(null);
-              setDraftWaypoints([]);
-              setIsAddingBounce(false);
-              setSelectedId(null);
-            }}
-            className="gap-2"
-          >
-            <Plus className="size-4" />
-            <Text path="library.lineups.create" />
-          </Button>
+          <div className="flex items-center rounded-card border border-line bg-surface-1 p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('view');
+                setIsPlacing(false);
+                setOrigin(null);
+                setDraftWaypoints([]);
+                setIsAddingBounce(false);
+                setSelectedNodes([]);
+              }}
+              className={`flex items-center gap-1.5 rounded-chip px-2.5 py-1.5 text-11 font-medium ${mode === 'view' ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:text-ink'}`}
+            >
+              <Eye className="size-3.5" />
+              <Text path="library.lineups.viewMode" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('edit')}
+              className={`flex items-center gap-1.5 rounded-chip px-2.5 py-1.5 text-11 font-medium ${mode === 'edit' ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:text-ink'}`}
+            >
+              <Pencil className="size-3.5" />
+              <Text path="library.lineups.editMode" />
+            </button>
+          </div>
+          {mode === 'edit' && (
+            <Button
+              onClick={() => {
+                setIsPlacing(true);
+                setOrigin(null);
+                setDraftWaypoints([]);
+                setIsAddingBounce(false);
+                setSelectedId(null);
+                setSelectedNodes([]);
+              }}
+              className="gap-2"
+            >
+              <Plus className="size-4" />
+              <Text path="library.lineups.create" />
+            </Button>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -515,6 +653,43 @@ export function LineupsView() {
             </div>
           </div>
 
+          {mode === 'edit' && (
+            <div className="flex flex-col gap-2">
+              <span className="label-dense text-ink-dim">
+                <Text path="library.lineups.grenadeKind" />
+              </span>
+              <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
+                {THROWN_UTILITY_KINDS.map((utilityKind) => (
+                  <button
+                    key={utilityKind}
+                    type="button"
+                    onClick={() => setEditGrenadeKind(utilityKind)}
+                    aria-label={UTILITY_NAMES[utilityKind]}
+                    className={`flex items-center gap-2 rounded-card px-3 py-2 text-left text-12 ${editGrenadeKind === utilityKind ? 'bg-primary/15 text-ink ring-1 ring-primary/40' : 'text-ink-dim hover:bg-surface-2 hover:text-ink'}`}
+                  >
+                    <UtilityGlyph
+                      kind={utilityKind}
+                      label={UTILITY_NAMES[utilityKind]}
+                      size="control"
+                    />
+                    <span>{UTILITY_NAMES[utilityKind]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div
+            role="status"
+            className="rounded-card border border-line bg-surface-2 p-2.5 text-11 text-ink-dim"
+          >
+            <Text
+              path={
+                mode === 'edit' ? 'library.lineups.editModeHint' : 'library.lineups.viewModeHint'
+              }
+            />
+          </div>
+
           {notice && (
             <div
               role="status"
@@ -574,7 +749,10 @@ export function LineupsView() {
             lineups={filteredLineups}
             focused={selectedIndex >= 0 ? selectedIndex : hoveredIndex}
             selectedIds={selectedIds}
+            mode={mode}
+            selectedNodes={selectedNodes}
             onSelect={handleSelectMarker}
+            onSelectNode={handleSelectNode}
             onPlacePoint={handlePlacePoint}
             isPlacing={isPlacing}
             isAddingBounce={isAddingBounce}
@@ -584,6 +762,8 @@ export function LineupsView() {
             draftWaypoints={draftWaypoints}
             onUpdatePoint={handleUpdateLineupPoint}
             onMergeSelected={handleMergeSelected}
+            onMergeLandings={handleMergeLandings}
+            onMergeOrigins={handleMergeOrigins}
             onUnmergeLineup={handleUnmergeLineup}
             onAddBounceToLineup={handleAddBounceToLineup}
             onDeleteBounceFromLineup={handleDeleteBounceFromLineup}
@@ -595,6 +775,7 @@ export function LineupsView() {
             onDeleteLineup={(id) => {
               void deleteLineup(id).then(() => setSelectedId(null));
             }}
+            onDeleteSelected={handleDeleteSelected}
           />
         </section>
 
@@ -606,6 +787,31 @@ export function LineupsView() {
             <span className="font-ui text-13 font-medium text-ink">
               <Text path="library.lineups.title" />
             </span>
+            <div className="flex items-center rounded-card border border-line bg-surface-1 p-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('view');
+                  setIsPlacing(false);
+                  setOrigin(null);
+                  setDraftWaypoints([]);
+                  setIsAddingBounce(false);
+                  setSelectedNodes([]);
+                }}
+                className={`flex items-center gap-1.5 rounded-chip px-2 py-1 text-11 font-medium ${mode === 'view' ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:text-ink'}`}
+              >
+                <Eye className="size-3.5" />
+                <Text path="library.lineups.viewMode" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('edit')}
+                className={`flex items-center gap-1.5 rounded-chip px-2 py-1 text-11 font-medium ${mode === 'edit' ? 'bg-primary/20 text-primary font-semibold' : 'text-ink-dim hover:text-ink'}`}
+              >
+                <Pencil className="size-3.5" />
+                <Text path="library.lineups.editMode" />
+              </button>
+            </div>
           </div>
 
           <div className="relative shrink-0">
@@ -640,6 +846,7 @@ export function LineupsView() {
               onToggleSelectId={handleToggleSelectId}
               onMergeSelected={handleMergeSelected}
               onUnmergeSelected={handleUnmergeSelected}
+              onDeleteSelected={handleDeleteSelected}
               onClearSelection={handleClearSelection}
               onContextMenu={(_e, lineup) => {
                 setSelectedId(lineup.id);
@@ -754,8 +961,12 @@ export function LineupsView() {
                   landing: { ...draftLanding, z: 0 },
                   waypoints: draftWaypoints.map((wp) => ({ ...wp, z: 0 })),
                   map,
+                  kind: editGrenadeKind,
                 }
-              : undefined)
+              : {
+                  map,
+                  kind: editGrenadeKind,
+                })
           }
           defaultMap={map}
           onSaved={(lineup) => {

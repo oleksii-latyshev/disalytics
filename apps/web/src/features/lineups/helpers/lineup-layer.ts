@@ -9,7 +9,7 @@ import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-da
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from '@/features/radar/helpers/colors';
 import { type PlateView, plateGeometry, readPlateGeometry } from '@/features/radar/helpers/view';
-import { LINEUP_STRIDE, type LineupGroup } from './lineup-plot';
+import { LINEUP_STRIDE, type LineupGroup, type LineupNode } from './lineup-plot';
 
 const FULL_TURN = 2 * Math.PI;
 
@@ -37,6 +37,8 @@ export interface LineupLayerOptions {
   readonly colors: RadarColors;
   readonly view: { readonly current: PlateView };
   readonly focused: number | null;
+  readonly mode?: 'view' | 'edit' | undefined;
+  readonly selectedNodes?: readonly LineupNode[] | undefined;
   readonly draftOrigin?: { readonly x: number; readonly y: number } | null | undefined;
   readonly draftWaypoints?: readonly { readonly x: number; readonly y: number }[] | undefined;
   readonly hoverPoint?: { readonly x: number; readonly y: number } | null | undefined;
@@ -266,6 +268,29 @@ function drawDraggableHandle(
   context.setLineDash([]);
 }
 
+function drawSelectedNodeRing(
+  context: CanvasRenderingContext2D,
+  nx: number,
+  ny: number,
+  scale: number,
+  color: string,
+): void {
+  context.save();
+  context.lineWidth = 2 * scale;
+  context.strokeStyle = color;
+  context.beginPath();
+  context.arc(nx, ny, 6.5 * scale, 0, FULL_TURN);
+  context.stroke();
+
+  context.lineWidth = 1.2 * scale;
+  context.strokeStyle = '#ffffff';
+  context.setLineDash([2.5 * scale, 2 * scale]);
+  context.beginPath();
+  context.arc(nx, ny, 9 * scale, 0, FULL_TURN);
+  context.stroke();
+  context.restore();
+}
+
 function drawFlightTrajectory(
   context: CanvasRenderingContext2D,
   points: readonly { readonly x: number; readonly y: number }[],
@@ -381,6 +406,8 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
     colors,
     view,
     focused,
+    mode = 'view',
+    selectedNodes,
     draftOrigin,
     draftWaypoints,
     hoverPoint,
@@ -419,6 +446,17 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
     const utilityColor = grenadeColorOfKind(lineup.kind, colors);
     const originFill = sideColor(lineup.side, colors);
 
+    const isOriginSelected = selectedNodes?.some(
+      (n) => n.lineupIndex === index && n.target === 'origin',
+    );
+    const isLandingSelected = selectedNodes?.some(
+      (n) => n.lineupIndex === index && n.target === 'landing',
+    );
+    const isWpSelected = (w: number) =>
+      selectedNodes?.some(
+        (n) => n.lineupIndex === index && n.target === 'waypoint' && n.waypointIndex === w,
+      );
+
     const waypoints: { x: number; y: number }[] = [];
     if (lineup.waypoints && lineup.waypoints.length > 0) {
       for (let w = 0; w < lineup.waypoints.length; w++) {
@@ -448,7 +486,10 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
         const wp = waypoints[w];
         if (wp) {
           drawBounceMarker(context, wp.x, wp.y, scale, utilityColor, isFocused, w);
-          if (isFocused) {
+          if (isWpSelected(w)) {
+            drawSelectedNodeRing(context, wp.x, wp.y, scale, '#ffffff');
+          }
+          if (isFocused && mode === 'edit') {
             drawDraggableHandle(context, wp.x, wp.y, scale, colors.selectionRing);
           }
         }
@@ -458,9 +499,16 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
     }
 
     drawOriginMarker(context, ox, oy, scale, originFill, colors.selectionRing, isFocused);
-    drawLandingMarker(context, lx, ly, scale, lineup.kind, overview.scale, utilityColor, isFocused);
+    if (isOriginSelected) {
+      drawSelectedNodeRing(context, ox, oy, scale, colors.selectionRing);
+    }
 
-    if (isFocused) {
+    drawLandingMarker(context, lx, ly, scale, lineup.kind, overview.scale, utilityColor, isFocused);
+    if (isLandingSelected) {
+      drawSelectedNodeRing(context, lx, ly, scale, utilityColor);
+    }
+
+    if (isFocused && mode === 'edit') {
       drawDraggableHandle(context, ox, oy, scale, colors.selectionRing);
       drawDraggableHandle(context, lx, ly, scale, utilityColor);
     }

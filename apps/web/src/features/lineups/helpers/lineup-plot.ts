@@ -159,3 +159,77 @@ export function findNearestLineup(
 ): number | null {
   return findNearestLineupTarget(pt, plot, lineupsCount, scale, maxDistPx)?.index ?? null;
 }
+
+/** Identifies a specific draggable point on a lineup. */
+export interface LineupNode {
+  readonly lineupIndex: number;
+  readonly target: 'origin' | 'landing' | 'waypoint';
+  readonly waypointIndex?: number | undefined;
+}
+
+/**
+ * Finds the closest individual node (origin, landing, or waypoint) within
+ * `maxDistPx` of `pt`. Unlike `findNearestLineupTarget` which only checks
+ * origin/landing from the plot array, this also checks waypoints from the
+ * lineup data directly.
+ */
+export function findNearestNode(
+  pt: { x: number; y: number },
+  plot: Float32Array,
+  lineups: readonly {
+    readonly waypoints?: readonly { readonly x: number; readonly y: number }[] | undefined;
+  }[],
+  overview: { readonly posX: number; readonly posY: number; readonly scale: number },
+  scale: number,
+  maxDistPx: number,
+): LineupNode | null {
+  const maxRadarDist = maxDistPx / scale;
+  const maxRadarDistSq = maxRadarDist * maxRadarDist;
+  let bestNode: LineupNode | null = null;
+  let bestDistSq = maxRadarDistSq;
+
+  for (let i = 0; i < lineups.length; i++) {
+    const at = i * LINEUP_STRIDE;
+    const ox = plot[at];
+    const oy = plot[at + 1];
+    const lx = plot[at + 2];
+    const ly = plot[at + 3];
+    if (ox === undefined || oy === undefined || lx === undefined || ly === undefined) continue;
+
+    const dOx = ox - pt.x;
+    const dOy = oy - pt.y;
+    const distSqOrigin = dOx * dOx + dOy * dOy;
+    if (distSqOrigin < bestDistSq) {
+      bestDistSq = distSqOrigin;
+      bestNode = { lineupIndex: i, target: 'origin' };
+    }
+
+    const dLx = lx - pt.x;
+    const dLy = ly - pt.y;
+    const distSqLanding = dLx * dLx + dLy * dLy;
+    if (distSqLanding < bestDistSq) {
+      bestDistSq = distSqLanding;
+      bestNode = { lineupIndex: i, target: 'landing' };
+    }
+
+    const lineup = lineups[i];
+    if (lineup?.waypoints) {
+      for (let w = 0; w < lineup.waypoints.length; w++) {
+        const wp = lineup.waypoints[w];
+        if (!wp) continue;
+        // Convert waypoint world coords to radar coords inline
+        const wx = (wp.x - overview.posX) / overview.scale;
+        const wy = (overview.posY - wp.y) / overview.scale;
+        const dWx = wx - pt.x;
+        const dWy = wy - pt.y;
+        const distSqWp = dWx * dWx + dWy * dWy;
+        if (distSqWp < bestDistSq) {
+          bestDistSq = distSqWp;
+          bestNode = { lineupIndex: i, target: 'waypoint', waypointIndex: w };
+        }
+      }
+    }
+  }
+
+  return bestNode;
+}
