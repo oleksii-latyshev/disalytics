@@ -21,6 +21,13 @@ const UNFOCUSED_ALPHA = 0.15;
 const DEFAULT_ALPHA = 0.75;
 const FOCUSED_ALPHA = 1.0;
 
+export interface ActiveDragPoint {
+  readonly target: 'origin' | 'landing' | 'waypoint';
+  readonly waypointIndex?: number | undefined;
+  readonly radarX: number;
+  readonly radarY: number;
+}
+
 export interface LineupLayerOptions {
   readonly lineups: readonly Lineup[];
   readonly plot: Float32Array;
@@ -31,6 +38,10 @@ export interface LineupLayerOptions {
   readonly view: { readonly current: PlateView };
   readonly focused: number | null;
   readonly draftOrigin?: { readonly x: number; readonly y: number } | null | undefined;
+  readonly draftWaypoints?: readonly { readonly x: number; readonly y: number }[] | undefined;
+  readonly hoverPoint?: { readonly x: number; readonly y: number } | null | undefined;
+  readonly hideLineups?: boolean | undefined;
+  readonly activeDrag?: ActiveDragPoint | null | undefined;
 }
 
 function sideColor(side: LineupSide, colors: RadarColors): string {
@@ -209,37 +220,173 @@ function drawGroupBadges(
   }
 }
 
-function drawDraftOrigin(
+function drawBounceMarker(
   context: CanvasRenderingContext2D,
-  origin: { readonly x: number; readonly y: number } | null | undefined,
-  overview: MapOverview,
+  bx: number,
+  by: number,
+  scale: number,
+  color: string,
+  isFocused: boolean,
+  index?: number,
+): void {
+  const dotRadius = (isFocused ? 3.5 : 2.5) * scale;
+  context.fillStyle = color;
+  context.beginPath();
+  context.arc(bx, by, dotRadius, 0, FULL_TURN);
+  context.fill();
+
+  context.lineWidth = 1.2 * scale;
+  context.strokeStyle = '#ffffff';
+  context.beginPath();
+  context.arc(bx, by, (isFocused ? 5.5 : 4) * scale, 0, FULL_TURN);
+  context.stroke();
+
+  if (isFocused && index !== undefined) {
+    context.fillStyle = '#ffffff';
+    context.font = '600 10px Onest, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'bottom';
+    context.fillText(String(index + 1), bx, by - 6 * scale);
+  }
+}
+
+function drawDraggableHandle(
+  context: CanvasRenderingContext2D,
+  hx: number,
+  hy: number,
   scale: number,
   color: string,
 ): void {
-  if (origin === null || origin === undefined) return;
+  context.lineWidth = 1.5 * scale;
+  context.strokeStyle = color;
+  context.setLineDash([3 * scale, 2.5 * scale]);
+  context.beginPath();
+  context.arc(hx, hy, 9 * scale, 0, FULL_TURN);
+  context.stroke();
+  context.setLineDash([]);
+}
+
+function drawFlightTrajectory(
+  context: CanvasRenderingContext2D,
+  points: readonly { readonly x: number; readonly y: number }[],
+  scale: number,
+  lineWidth: number,
+  color: string,
+  isFocused: boolean,
+): void {
+  if (points.length < 2) return;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    if (p1 === undefined || p2 === undefined) continue;
+    const isLastSegment = i === points.length - 2;
+    drawFlightArc(
+      context,
+      p1.x,
+      p1.y,
+      p2.x,
+      p2.y,
+      scale,
+      lineWidth,
+      color,
+      isFocused && isLastSegment,
+    );
+  }
+}
+
+function drawDraftPlacement(
+  context: CanvasRenderingContext2D,
+  draftOrigin: { readonly x: number; readonly y: number } | null | undefined,
+  draftWaypoints: readonly { readonly x: number; readonly y: number }[] | undefined,
+  hoverPoint: { readonly x: number; readonly y: number } | null | undefined,
+  overview: MapOverview,
+  scale: number,
+  colors: RadarColors,
+): void {
+  if (!draftOrigin) return;
   context.globalAlpha = 1;
-  drawOriginMarker(
-    context,
-    radarX(overview, origin.x) * scale,
-    radarY(overview, origin.y) * scale,
-    scale,
-    color,
-    color,
-    true,
-  );
+  const ox = radarX(overview, draftOrigin.x) * scale;
+  const oy = radarY(overview, draftOrigin.y) * scale;
+
+  drawOriginMarker(context, ox, oy, scale, colors.selectionRing, colors.selectionRing, true);
+  drawDraggableHandle(context, ox, oy, scale, colors.selectionRing);
+
+  const points: { x: number; y: number }[] = [{ x: ox, y: oy }];
+  if (draftWaypoints && draftWaypoints.length > 0) {
+    for (let i = 0; i < draftWaypoints.length; i++) {
+      const wp = draftWaypoints[i];
+      if (!wp) continue;
+      const wx = radarX(overview, wp.x) * scale;
+      const wy = radarY(overview, wp.y) * scale;
+      points.push({ x: wx, y: wy });
+      drawBounceMarker(context, wx, wy, scale, colors.selectionRing, true, i);
+      drawDraggableHandle(context, wx, wy, scale, colors.selectionRing);
+    }
+  }
+
+  if (hoverPoint) {
+    const hx = radarX(overview, hoverPoint.x) * scale;
+    const hy = radarY(overview, hoverPoint.y) * scale;
+    const lastPoint = points[points.length - 1] ?? { x: ox, y: oy };
+    drawFlightArc(
+      context,
+      lastPoint.x,
+      lastPoint.y,
+      hx,
+      hy,
+      scale,
+      1.5 * scale,
+      colors.selectionRing,
+      true,
+    );
+    drawLandingMarker(context, hx, hy, scale, 'smoke', overview.scale, colors.selectionRing, true);
+  }
+
+  if (points.length > 1) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      if (p1 && p2) {
+        drawFlightArc(
+          context,
+          p1.x,
+          p1.y,
+          p2.x,
+          p2.y,
+          scale,
+          2 * scale,
+          colors.selectionRing,
+          false,
+        );
+      }
+    }
+  }
 }
 
 /**
  * Draws grenade lineups across the radar map:
  * - An origin marker where the player stands (color-coded by side).
- * - A curved trajectory flight arc from origin to landing.
+ * - A curved trajectory flight arc from origin to landing (with optional bounce waypoints).
  * - A landing marker with the grenade's effect radius ring.
  *
  * Lineups are drawn deterministically with zero allocations during paint.
  */
 export function lineupLayer(options: LineupLayerOptions): Layer {
-  const { lineups, plot, groups, landingGroups, overview, colors, view, focused, draftOrigin } =
-    options;
+  const {
+    lineups,
+    plot,
+    groups,
+    landingGroups,
+    overview,
+    colors,
+    view,
+    focused,
+    draftOrigin,
+    draftWaypoints,
+    hoverPoint,
+    hideLineups,
+    activeDrag,
+  } = options;
   const geometry = plateGeometry();
 
   const drawLineup = (
@@ -254,59 +401,120 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
 
     const { scale } = geometry;
     const base = index * LINEUP_STRIDE;
-    const ox = (plot[base] ?? 0) * scale;
-    const oy = (plot[base + 1] ?? 0) * scale;
-    const lx = (plot[base + 2] ?? 0) * scale;
-    const ly = (plot[base + 3] ?? 0) * scale;
+    let ox = (plot[base] ?? 0) * scale;
+    let oy = (plot[base + 1] ?? 0) * scale;
+    let lx = (plot[base + 2] ?? 0) * scale;
+    let ly = (plot[base + 3] ?? 0) * scale;
+
+    if (isFocused && activeDrag) {
+      if (activeDrag.target === 'origin') {
+        ox = activeDrag.radarX * scale;
+        oy = activeDrag.radarY * scale;
+      } else if (activeDrag.target === 'landing') {
+        lx = activeDrag.radarX * scale;
+        ly = activeDrag.radarY * scale;
+      }
+    }
 
     const utilityColor = grenadeColorOfKind(lineup.kind, colors);
     const originFill = sideColor(lineup.side, colors);
 
+    const waypoints: { x: number; y: number }[] = [];
+    if (lineup.waypoints && lineup.waypoints.length > 0) {
+      for (let w = 0; w < lineup.waypoints.length; w++) {
+        const wp = lineup.waypoints[w];
+        if (wp === undefined) continue;
+        let wx = radarX(overview, wp.x) * scale;
+        let wy = radarY(overview, wp.y) * scale;
+        if (
+          isFocused &&
+          activeDrag &&
+          activeDrag.target === 'waypoint' &&
+          activeDrag.waypointIndex === w
+        ) {
+          wx = activeDrag.radarX * scale;
+          wy = activeDrag.radarY * scale;
+        }
+        waypoints.push({ x: wx, y: wy });
+      }
+    }
+
     context.globalAlpha = alpha;
 
-    drawFlightArc(context, ox, oy, lx, ly, scale, lineWidth, utilityColor, isFocused);
+    if (waypoints.length > 0) {
+      const trajectory = [{ x: ox, y: oy }, ...waypoints, { x: lx, y: ly }];
+      drawFlightTrajectory(context, trajectory, scale, lineWidth, utilityColor, isFocused);
+      for (let w = 0; w < waypoints.length; w++) {
+        const wp = waypoints[w];
+        if (wp) {
+          drawBounceMarker(context, wp.x, wp.y, scale, utilityColor, isFocused, w);
+          if (isFocused) {
+            drawDraggableHandle(context, wp.x, wp.y, scale, colors.selectionRing);
+          }
+        }
+      }
+    } else {
+      drawFlightArc(context, ox, oy, lx, ly, scale, lineWidth, utilityColor, isFocused);
+    }
+
     drawOriginMarker(context, ox, oy, scale, originFill, colors.selectionRing, isFocused);
     drawLandingMarker(context, lx, ly, scale, lineup.kind, overview.scale, utilityColor, isFocused);
+
+    if (isFocused) {
+      drawDraggableHandle(context, ox, oy, scale, colors.selectionRing);
+      drawDraggableHandle(context, lx, ly, scale, utilityColor);
+    }
   };
 
   return (context, size) => {
     readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
-    const isAnyFocused = focused !== null;
-    const baseAlpha = isAnyFocused ? UNFOCUSED_ALPHA : DEFAULT_ALPHA;
-    const baseWidth = isAnyFocused ? 1 : 1.5;
+    if (!hideLineups) {
+      const isAnyFocused = focused !== null;
+      const baseAlpha = isAnyFocused ? UNFOCUSED_ALPHA : DEFAULT_ALPHA;
+      const baseWidth = isAnyFocused ? 1 : 1.5;
 
-    for (let i = 0; i < lineups.length; i++) {
-      if (i !== focused) {
-        drawLineup(context, i, baseAlpha, baseWidth * geometry.scale, false);
+      for (let i = 0; i < lineups.length; i++) {
+        if (i !== focused) {
+          drawLineup(context, i, baseAlpha, baseWidth * geometry.scale, false);
+        }
       }
-    }
 
-    if (focused !== null) {
-      drawLineup(context, focused, FOCUSED_ALPHA, 2.5 * geometry.scale, true);
-    }
+      if (focused !== null) {
+        drawLineup(context, focused, FOCUSED_ALPHA, 2.5 * geometry.scale, true);
+      }
 
-    drawGroupBadges(
-      context,
-      groups,
-      plot,
-      'origin',
-      geometry.scale,
-      colors.selectionRing,
-      colors.selectionEdge,
-    );
-    if (landingGroups && landingGroups.length > 0) {
       drawGroupBadges(
         context,
-        landingGroups,
+        groups,
         plot,
-        'landing',
+        'origin',
         geometry.scale,
         colors.selectionRing,
         colors.selectionEdge,
       );
+      if (landingGroups && landingGroups.length > 0) {
+        drawGroupBadges(
+          context,
+          landingGroups,
+          plot,
+          'landing',
+          geometry.scale,
+          colors.selectionRing,
+          colors.selectionEdge,
+        );
+      }
     }
-    drawDraftOrigin(context, draftOrigin, overview, geometry.scale, colors.selectionRing);
+
+    drawDraftPlacement(
+      context,
+      draftOrigin,
+      draftWaypoints,
+      hoverPoint,
+      overview,
+      geometry.scale,
+      colors,
+    );
   };
 }

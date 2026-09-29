@@ -114,6 +114,49 @@ describe('isLineup', () => {
       }),
     ).toBe(false);
   });
+
+  it('accepts valid lineup with waypoints, groupId, and groupTarget', () => {
+    expect(
+      isLineup({
+        ...sampleLineup,
+        waypoints: [
+          { x: -500, y: -200, z: 50 },
+          { x: -400, y: -100, z: 40 },
+        ],
+        groupId: 'grp-1',
+        groupTarget: 'landing',
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects lineup with invalid waypoints', () => {
+    expect(
+      isLineup({
+        ...sampleLineup,
+        waypoints: 'not-an-array' as unknown as readonly { x: number; y: number; z: number }[],
+      }),
+    ).toBe(false);
+    expect(
+      isLineup({
+        ...sampleLineup,
+        waypoints: [{ x: 'bad', y: 0, z: 0 }] as unknown as readonly {
+          x: number;
+          y: number;
+          z: number;
+        }[],
+      }),
+    ).toBe(false);
+  });
+
+  it('rejects lineup with invalid groupTarget', () => {
+    expect(
+      isLineup({
+        ...sampleLineup,
+        groupId: 'grp-1',
+        groupTarget: 'invalid' as unknown as 'landing',
+      }),
+    ).toBe(false);
+  });
 });
 
 describe('serializeLineupFile & parseLineupFile', () => {
@@ -156,6 +199,23 @@ describe('serializeLineupFile & parseLineupFile', () => {
     expect(item?.imageCaptions).toEqual(['Stand here', 'Aim here']);
     expect(item?.mouseButtons).toEqual(['left', 'right']);
     expect(item?.mediaUrl).toBe('https://example.com/lineup.mp4');
+  });
+
+  it('round-trips lineups with waypoints, groupId, and groupTarget', () => {
+    const lineupWithWaypoints: Lineup = {
+      ...sampleLineup,
+      waypoints: [
+        { x: -700, y: -400, z: 100 },
+        { x: -500, y: -200, z: 80 },
+      ],
+      groupId: 'grp-test',
+      groupTarget: 'landing',
+    };
+    const json = serializeLineupFile([lineupWithWaypoints]);
+    const parsed = parseLineupFile(json);
+
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toEqual(lineupWithWaypoints);
   });
 
   it('throws INVALID_JSON on malformed JSON string', () => {

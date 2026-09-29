@@ -1,11 +1,13 @@
 import {
   type Lineup,
+  type LineupGroupTarget,
   THROWN_UTILITY_KINDS,
   UTILITY_NAMES,
   type UtilityKind,
 } from '@disa/demo-core';
+import { openLineupStore } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
-import { MAP_IDS, type MapId } from '@disa/map-data';
+import { findNearestCallout, MAP_IDS, type MapId } from '@disa/map-data';
 import {
   Button,
   Dialog,
@@ -47,7 +49,10 @@ export function LineupsView() {
   const [kind, setKind] = useState<KindScope>('all');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [origin, setOrigin] = useState<Point | null>(null);
+  const [draftWaypoints, setDraftWaypoints] = useState<Point[]>([]);
+  const [isAddingBounce, setIsAddingBounce] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const [editingLineup, setEditingLineup] = useState<Lineup | null>(null);
   const [detailLineup, setDetailLineup] = useState<Lineup | null>(null);
@@ -69,11 +74,37 @@ export function LineupsView() {
   const selectedGroup =
     selectedVariants?.ids.flatMap((id) => filteredLineups.filter((item) => item.id === id)) ?? [];
 
-  const handleSelectMarker = (hit: LineupHit | null) => {
+  const handleToggleSelectId = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleSelectMarker = (hit: LineupHit | null, modifierKey?: boolean) => {
     if (hit === null) {
-      setSelectedId(null);
+      if (!modifierKey) {
+        setSelectedId(null);
+      }
       return;
     }
+    const single = filteredLineups[hit.index];
+    if (single === undefined) return;
+
+    if (modifierKey) {
+      handleToggleSelectId(single.id);
+      return;
+    }
+
     const { index, target } = hit;
     const targetGroups = target === 'landing' ? landingGroups : originGroups;
     const group = targetGroups.find(({ indices }) => indices.includes(index));
@@ -89,16 +120,18 @@ export function LineupsView() {
       return;
     }
 
-    const single = filteredLineups[index];
-    if (single !== undefined) {
-      setSelectedId(single.id);
-      setDetailLineup(single);
-    }
+    setSelectedId(single.id);
+    setDetailLineup(single);
   };
 
-  const handleMapPoint = (point: Point) => {
+  const handlePlacePoint = (point: Point, isBounce?: boolean) => {
     if (origin === null) {
       setOrigin(point);
+      return;
+    }
+    if (isBounce) {
+      setDraftWaypoints((prev) => [...prev, point]);
+      setIsAddingBounce(false);
       return;
     }
     setDraftLanding(point);
@@ -106,11 +139,219 @@ export function LineupsView() {
     setIsModalOpen(true);
   };
 
+  const handleCancelPlacement = () => {
+    setIsPlacing(false);
+    setOrigin(null);
+    setDraftWaypoints([]);
+    setIsAddingBounce(false);
+    setDraftLanding(null);
+  };
+
   const dismissForm = () => {
     setIsModalOpen(false);
     setEditingLineup(null);
     setOrigin(null);
+    setDraftWaypoints([]);
+    setIsAddingBounce(false);
     setDraftLanding(null);
+  };
+
+  const handleMergeSelected = async () => {
+    const toMerge = filteredLineups.filter((l) => selectedIds.has(l.id));
+    if (toMerge.length < 2) return;
+
+    const firstLanding = toMerge[0]?.landing ?? { x: 0, y: 0, z: 0 };
+    const firstOrigin = toMerge[0]?.origin ?? { x: 0, y: 0, z: 0 };
+    let landingDiffSum = 0;
+    let originDiffSum = 0;
+    for (const item of toMerge) {
+      landingDiffSum += Math.hypot(
+        item.landing.x - firstLanding.x,
+        item.landing.y - firstLanding.y,
+      );
+      originDiffSum += Math.hypot(item.origin.x - firstOrigin.x, item.origin.y - firstOrigin.y);
+    }
+    const groupTarget: LineupGroupTarget = landingDiffSum <= originDiffSum ? 'landing' : 'origin';
+    const targetPoint = groupTarget === 'landing' ? firstLanding : firstOrigin;
+    const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const updated = toMerge.map((item) => ({
+      ...item,
+      groupId,
+      groupTarget,
+      landing: groupTarget === 'landing' ? targetPoint : item.landing,
+      origin: groupTarget === 'origin' ? targetPoint : item.origin,
+      isBuiltIn: false,
+    }));
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.putMany(updated);
+      } finally {
+        store.close();
+      }
+      setSelectedIds(new Set());
+      await reload();
+      setNotice(t('library.lineups.mergeSelected', { count: updated.length }));
+    }
+  };
+
+  const handleUnmergeLineup = async (lineupId: string) => {
+    const lineup = lineups.find((item) => item.id === lineupId);
+    if (!lineup?.groupId) return;
+
+    const inGroup = lineups.filter((item) => item.groupId === lineup.groupId);
+    const updated: Lineup[] = inGroup.map((item) => {
+      const { groupId: _g, groupTarget: _gt, ...rest } = item;
+      return {
+        ...rest,
+        isBuiltIn: false,
+      };
+    });
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.putMany(updated);
+      } finally {
+        store.close();
+      }
+      await reload();
+      setNotice(t('library.lineups.unmerge'));
+    }
+  };
+
+  const handleUnmergeSelected = async () => {
+    const inSelection = lineups.filter((item) => selectedIds.has(item.id) && item.groupId);
+    if (inSelection.length === 0) return;
+
+    const groupIds = new Set(inSelection.map((item) => item.groupId));
+    const allInGroups = lineups.filter((item) => item.groupId && groupIds.has(item.groupId));
+    const updated: Lineup[] = allInGroups.map((item) => {
+      const { groupId: _g, groupTarget: _gt, ...rest } = item;
+      return {
+        ...rest,
+        isBuiltIn: false,
+      };
+    });
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.putMany(updated);
+      } finally {
+        store.close();
+      }
+      setSelectedIds(new Set());
+      await reload();
+      setNotice(t('library.lineups.unmerge'));
+    }
+  };
+
+  const handleUpdateLineupPoint = async (
+    lineupId: string,
+    target: 'origin' | 'landing' | 'waypoint',
+    point: Point,
+    waypointIndex?: number,
+  ) => {
+    const lineup = lineups.find((item) => item.id === lineupId);
+    if (!lineup) return;
+
+    let updatedLineup: Lineup;
+    if (target === 'origin') {
+      updatedLineup = {
+        ...lineup,
+        origin: { ...lineup.origin, x: point.x, y: point.y },
+        isBuiltIn: false,
+      };
+    } else if (target === 'landing') {
+      const newCallout = findNearestCallout(map, point) ?? lineup.targetCallout;
+      updatedLineup = {
+        ...lineup,
+        landing: { ...lineup.landing, x: point.x, y: point.y },
+        ...(newCallout ? { targetCallout: newCallout } : {}),
+        isBuiltIn: false,
+      };
+    } else if (target === 'waypoint' && waypointIndex !== undefined) {
+      const waypoints = [...(lineup.waypoints ?? [])];
+      const current = waypoints[waypointIndex];
+      if (current) {
+        waypoints[waypointIndex] = { ...current, x: point.x, y: point.y };
+        updatedLineup = {
+          ...lineup,
+          waypoints,
+          isBuiltIn: false,
+        };
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.put(updatedLineup);
+      } finally {
+        store.close();
+      }
+      await reload();
+      setNotice(t('library.lineups.positionUpdated'));
+    }
+  };
+
+  const handleAddBounceToLineup = async (lineupId: string) => {
+    const lineup = lineups.find((item) => item.id === lineupId);
+    if (!lineup) return;
+
+    const waypoints = [...(lineup.waypoints ?? [])];
+    const prev = waypoints.length > 0 ? waypoints[waypoints.length - 1] : lineup.origin;
+    const newWp = {
+      x: ((prev?.x ?? lineup.origin.x) + lineup.landing.x) / 2,
+      y: ((prev?.y ?? lineup.origin.y) + lineup.landing.y) / 2,
+      z: 0,
+    };
+    waypoints.push(newWp);
+    const updated: Lineup = {
+      ...lineup,
+      waypoints,
+      isBuiltIn: false,
+    };
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.put(updated);
+      } finally {
+        store.close();
+      }
+      await reload();
+      setSelectedId(updated.id);
+    }
+  };
+
+  const handleDeleteBounceFromLineup = async (lineupId: string, waypointIndex: number) => {
+    const lineup = lineups.find((item) => item.id === lineupId);
+    if (!lineup?.waypoints) return;
+
+    const waypoints = lineup.waypoints.filter((_, idx) => idx !== waypointIndex);
+    const updated: Lineup = {
+      ...lineup,
+      waypoints,
+      isBuiltIn: false,
+    };
+
+    const store = await openLineupStore();
+    if (store !== null) {
+      try {
+        await store.put(updated);
+      } finally {
+        store.close();
+      }
+      await reload();
+    }
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,6 +388,8 @@ export function LineupsView() {
             onClick={() => {
               setIsPlacing(true);
               setOrigin(null);
+              setDraftWaypoints([]);
+              setIsAddingBounce(false);
               setSelectedId(null);
             }}
             className="gap-2"
@@ -188,7 +431,10 @@ export function LineupsView() {
                 if (!val) return;
                 setMap(val as MapId);
                 setSelectedId(null);
+                setSelectedIds(new Set());
                 setOrigin(null);
+                setDraftWaypoints([]);
+                setIsAddingBounce(false);
                 setIsPlacing(false);
               }}
             >
@@ -281,11 +527,15 @@ export function LineupsView() {
           {isPlacing && (
             <div
               role="status"
-              className="flex flex-col gap-2 rounded-card border border-line bg-surface-2 p-3 text-12 text-ink"
+              className="flex flex-col gap-2 rounded-card border border-primary/40 bg-surface-2 p-3 text-12 text-ink"
             >
               <Text
                 path={
-                  origin === null ? 'library.lineups.placeOrigin' : 'library.lineups.placeLanding'
+                  origin === null
+                    ? 'library.lineups.placeOrigin'
+                    : isAddingBounce
+                      ? 'library.lineups.placeBouncePrompt'
+                      : 'library.lineups.placeLanding'
                 }
               />
               <div className="flex items-center justify-between gap-2">
@@ -294,6 +544,8 @@ export function LineupsView() {
                   onClick={() => {
                     setIsPlacing(false);
                     setOrigin(null);
+                    setDraftWaypoints([]);
+                    setIsAddingBounce(false);
                     setDraftLanding(null);
                     setIsModalOpen(true);
                   }}
@@ -303,10 +555,7 @@ export function LineupsView() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsPlacing(false);
-                    setOrigin(null);
-                  }}
+                  onClick={handleCancelPlacement}
                   aria-label={t('library.lineups.form.cancel')}
                 >
                   <X className="size-4" />
@@ -324,9 +573,28 @@ export function LineupsView() {
             map={map}
             lineups={filteredLineups}
             focused={selectedIndex >= 0 ? selectedIndex : hoveredIndex}
+            selectedIds={selectedIds}
             onSelect={handleSelectMarker}
-            onPlace={isPlacing ? handleMapPoint : undefined}
+            onPlacePoint={handlePlacePoint}
+            isPlacing={isPlacing}
+            isAddingBounce={isAddingBounce}
+            onToggleAddBounce={() => setIsAddingBounce((prev) => !prev)}
+            onCancelPlacement={handleCancelPlacement}
             draftOrigin={origin}
+            draftWaypoints={draftWaypoints}
+            onUpdatePoint={handleUpdateLineupPoint}
+            onMergeSelected={handleMergeSelected}
+            onUnmergeLineup={handleUnmergeLineup}
+            onAddBounceToLineup={handleAddBounceToLineup}
+            onDeleteBounceFromLineup={handleDeleteBounceFromLineup}
+            onEditLineup={(lineup) => {
+              setDetailLineup(null);
+              setEditingLineup(lineup);
+              setIsModalOpen(true);
+            }}
+            onDeleteLineup={(id) => {
+              void deleteLineup(id).then(() => setSelectedId(null));
+            }}
           />
         </section>
 
@@ -360,6 +628,7 @@ export function LineupsView() {
               lineups={filteredLineups}
               focused={hoveredIndex}
               selectedIndex={selectedIndex >= 0 ? selectedIndex : null}
+              selectedIds={selectedIds}
               onHover={setHoveredIndex}
               onSelect={(index) => {
                 const item = filteredLineups[index];
@@ -367,6 +636,14 @@ export function LineupsView() {
                   setSelectedId(item.id);
                   setDetailLineup(item);
                 }
+              }}
+              onToggleSelectId={handleToggleSelectId}
+              onMergeSelected={handleMergeSelected}
+              onUnmergeSelected={handleUnmergeSelected}
+              onClearSelection={handleClearSelection}
+              onContextMenu={(_e, lineup) => {
+                setSelectedId(lineup.id);
+                setDetailLineup(lineup);
               }}
             />
           </div>
@@ -472,7 +749,12 @@ export function LineupsView() {
           initialData={
             editingLineup ??
             (origin && draftLanding
-              ? { origin: { ...origin, z: 0 }, landing: { ...draftLanding, z: 0 }, map }
+              ? {
+                  origin: { ...origin, z: 0 },
+                  landing: { ...draftLanding, z: 0 },
+                  waypoints: draftWaypoints.map((wp) => ({ ...wp, z: 0 })),
+                  map,
+                }
               : undefined)
           }
           defaultMap={map}

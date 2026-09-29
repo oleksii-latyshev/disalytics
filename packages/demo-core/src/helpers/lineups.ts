@@ -4,6 +4,7 @@ import { THROWN_UTILITY_KINDS, type UtilityKind } from './utility';
 
 export type LineupSide = Team | 'BOTH';
 export type LineupMouseButton = 'left' | 'right';
+export type LineupGroupTarget = 'landing' | 'origin';
 
 export const LINEUP_SIDES: readonly LineupSide[] = ['CT', 'T', 'BOTH'] as const;
 
@@ -24,6 +25,9 @@ export interface Lineup {
   readonly targetCallout?: string;
   readonly origin: WorldPoint;
   readonly landing: WorldPoint;
+  readonly waypoints?: readonly WorldPoint[] | undefined;
+  readonly groupId?: string | undefined;
+  readonly groupTarget?: LineupGroupTarget | undefined;
   readonly pitch: number;
   readonly yaw: number;
   readonly throwType: ThrowType;
@@ -126,6 +130,9 @@ function hasValidOptionals(
   landingCommand: unknown,
   fromDemo: unknown,
   targetCallout: unknown,
+  waypoints: unknown,
+  groupId: unknown,
+  groupTarget: unknown,
 ): boolean {
   if (notes !== undefined && typeof notes !== 'string') return false;
   if (mediaUrl !== undefined && typeof mediaUrl !== 'string') return false;
@@ -134,6 +141,15 @@ function hasValidOptionals(
   if (landingCommand !== undefined && typeof landingCommand !== 'string') return false;
   if (fromDemo !== undefined && typeof fromDemo !== 'boolean') return false;
   if (targetCallout !== undefined && typeof targetCallout !== 'string') return false;
+  if (waypoints !== undefined) {
+    if (!Array.isArray(waypoints) || !waypoints.every(isWorldPoint)) return false;
+  }
+  if (groupId !== undefined && (typeof groupId !== 'string' || groupId.trim().length === 0)) {
+    return false;
+  }
+  if (groupTarget !== undefined && groupTarget !== 'landing' && groupTarget !== 'origin') {
+    return false;
+  }
   return true;
 }
 
@@ -198,6 +214,9 @@ export function isLineup(value: unknown): value is Lineup {
       (value as Record<string, unknown>).landingCommand,
       (value as Record<string, unknown>).fromDemo,
       (value as Record<string, unknown>).targetCallout,
+      (value as Record<string, unknown>).waypoints,
+      (value as Record<string, unknown>).groupId,
+      (value as Record<string, unknown>).groupTarget,
     )
   );
 }

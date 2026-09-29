@@ -664,6 +664,27 @@ function LineupCoordinatesCollapsible({
           </div>
         </div>
 
+        {lineup.waypoints && lineup.waypoints.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <span className="label-dense text-11 text-ink-dim">
+              <Text path="library.lineups.waypointsSection" />
+            </span>
+            <div className="flex flex-col gap-1">
+              {lineup.waypoints.map((wp, i) => (
+                <div
+                  key={`${wp.x}-${wp.y}-${wp.z ?? 0}`}
+                  className="flex items-center justify-between rounded-card border border-line bg-surface-1 p-2 font-mono text-11 text-ink-dim"
+                >
+                  <span className="font-semibold text-ink">#{i + 1}</span>
+                  <span>
+                    X: {wp.x.toFixed(1)} · Y: {wp.y.toFixed(1)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {lineup.command && (
           <div className="flex flex-col gap-1.5">
             <span className="label-dense text-11 text-ink-dim">

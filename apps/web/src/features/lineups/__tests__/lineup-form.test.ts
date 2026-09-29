@@ -223,4 +223,37 @@ describe('lineup form helpers', () => {
     const explicitValues = initFormValues(explicitData);
     expect(explicitValues.targetCallout).toBe('Custom Callout');
   });
+
+  it('preserves and parses waypoints, groupId, and groupTarget', () => {
+    const data: LineupFormData = {
+      title: 'Mirage Flash with Bounce',
+      map: 'de_mirage',
+      origin: { x: -100, y: -200, z: 0 },
+      landing: { x: -300, y: -400, z: 0 },
+      waypoints: [
+        { x: -150, y: -250, z: 10 },
+        { x: -200, y: -300, z: 20 },
+      ],
+      groupId: 'grp-42',
+      groupTarget: 'landing',
+    };
+
+    const values = initFormValues(data);
+    expect(values.waypoints).toHaveLength(2);
+    expect(values.waypoints?.[0]?.x).toBe('-150.00');
+    expect(values.waypoints?.[1]?.x).toBe('-200.00');
+    expect(values.groupId).toBe('grp-42');
+    expect(values.groupTarget).toBe('landing');
+
+    const lineup = buildLineupFromForm(values, 'test-bounce');
+    expect(lineup).not.toBeNull();
+    if (!lineup) return;
+
+    expect(lineup.waypoints).toEqual([
+      { x: -150, y: -250, z: 10 },
+      { x: -200, y: -300, z: 20 },
+    ]);
+    expect(lineup.groupId).toBe('grp-42');
+    expect(lineup.groupTarget).toBe('landing');
+  });
 });

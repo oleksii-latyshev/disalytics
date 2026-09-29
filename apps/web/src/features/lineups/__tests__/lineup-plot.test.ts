@@ -112,44 +112,52 @@ describe('findNearestLineup', () => {
 });
 
 describe('groupLineupsByOrigin', () => {
-  it('groups several grenades thrown from the same position', () => {
+  it('groups grenades sharing the same groupId for origin', () => {
     const first = MOCK_LINEUPS[0];
     const second = MOCK_LINEUPS[1];
     if (first === undefined || second === undefined) throw new Error('Missing test lineups');
     const grouped = groupLineupsByOrigin([
-      first,
-      { ...first, id: 'second', origin: { x: -180, y: -700, z: -160 } },
+      { ...first, groupId: 'origin-grp-1', groupTarget: 'origin' },
+      { ...first, id: 'second', groupId: 'origin-grp-1', groupTarget: 'origin' },
       second,
     ]);
-    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1], [2]]);
+    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1]]);
     expect(grouped[0]?.countLabel).toBe('2');
+  });
+
+  it('does not group lineups without groupId', () => {
+    const first = MOCK_LINEUPS[0];
+    if (first === undefined) throw new Error('Missing test lineup');
+    const grouped = groupLineupsByOrigin([
+      first,
+      { ...first, id: 'second', origin: { x: -200, y: -700, z: -160 } },
+    ]);
+    expect(grouped).toEqual([]);
   });
 });
 
 describe('groupLineupsByLanding', () => {
-  it('groups several grenades landing at the same destination', () => {
+  it('groups grenades sharing the same groupId for landing', () => {
     const first = MOCK_LINEUPS[0];
     const second = MOCK_LINEUPS[1];
     if (first === undefined || second === undefined) throw new Error('Missing test lineups');
     const grouped = groupLineupsByLanding([
-      first,
-      { ...second, id: 'third', landing: { x: -1060, y: -310, z: -160 } },
+      { ...first, groupId: 'landing-grp-1', groupTarget: 'landing' },
+      { ...second, id: 'third', groupId: 'landing-grp-1', groupTarget: 'landing' },
       second,
     ]);
-    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1], [2]]);
+    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1]]);
     expect(grouped[0]?.countLabel).toBe('2');
   });
 
-  it('groups grenades thrown to the same spot from different angles landing ~130 units apart', () => {
+  it('does not group lineups by proximity alone without groupId', () => {
     const first = MOCK_LINEUPS[0];
     if (first === undefined) throw new Error('Missing test lineup');
-    // First landing is at (-1050, -300). Another landing at (-970, -220) is dist ~113 units apart
     const grouped = groupLineupsByLanding([
       first,
       { ...first, id: 'smoke-alternate-spawn', landing: { x: -970, y: -220, z: -160 } },
     ]);
-    expect(grouped.map(({ indices }) => indices)).toEqual([[0, 1]]);
-    expect(grouped[0]?.countLabel).toBe('2');
+    expect(grouped).toEqual([]);
   });
 });
 
