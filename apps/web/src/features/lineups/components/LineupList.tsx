@@ -6,17 +6,19 @@ import { CheckSquare, CornerDownRight, Layers, Square, Trash2, Unlink, X } from 
 import { UtilityGlyph } from '@/core/glyphs';
 
 interface Props {
+  readonly mode: 'view' | 'edit';
   readonly lineups: readonly Lineup[];
   readonly focused: number | null;
   readonly selectedIndex: number | null;
   readonly selectedIds: ReadonlySet<string>;
+  readonly mergeTarget?: 'origin' | 'landing' | undefined;
   readonly onHover: (index: number | null) => void;
   readonly onSelect: (index: number, modifierKey?: boolean) => void;
   readonly onToggleSelectId: (id: string) => void;
-  readonly onMergeSelected?: () => void;
-  readonly onUnmergeSelected?: () => void;
-  readonly onDeleteSelected?: () => void;
-  readonly onClearSelection?: () => void;
+  readonly onMergeSelected?: (() => void) | undefined;
+  readonly onUnmergeSelected?: (() => void) | undefined;
+  readonly onDeleteSelected?: (() => void) | undefined;
+  readonly onClearSelection?: (() => void) | undefined;
   readonly onContextMenu?: (event: React.MouseEvent, lineup: Lineup) => void;
 }
 
@@ -27,10 +29,12 @@ const SIDE_INK: Readonly<Record<LineupSide, string>> = {
 };
 
 export function LineupList({
+  mode,
   lineups,
   focused,
   selectedIndex,
   selectedIds,
+  mergeTarget,
   onHover,
   onSelect,
   onToggleSelectId,
@@ -59,34 +63,40 @@ export function LineupList({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-      {selectedIds.size > 0 && (
+      {mode === 'edit' && selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-card border border-line bg-surface-2 p-2">
           <span className="font-mono text-11 text-ink font-medium">
             <Text path="library.lineups.selectedCount" values={{ count: selectedIds.size }} />
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-1">
             {selectedIds.size >= 2 && onMergeSelected && (
-              <Button onClick={onMergeSelected} className="h-6 gap-1 px-2 text-10">
+              <Button
+                variant="secondary"
+                onClick={onMergeSelected}
+                className="border border-line-strong text-ink hover:bg-surface-3"
+              >
                 <Layers className="size-3" />
-                <Text path="library.lineups.merge" />
+                {mergeTarget === 'origin' ? (
+                  <Text path="library.lineups.mergeOrigins" />
+                ) : mergeTarget === 'landing' ? (
+                  <Text path="library.lineups.mergeLandings" />
+                ) : (
+                  <Text path="library.lineups.mergeSelected" values={{ count: selectedIds.size }} />
+                )}
               </Button>
             )}
             {hasMergedInSelection && onUnmergeSelected && (
               <Button
                 variant="secondary"
                 onClick={onUnmergeSelected}
-                className="h-6 gap-1 px-2 text-10"
+                className="border border-line text-ink"
               >
                 <Unlink className="size-3" />
                 <Text path="library.lineups.unmerge" />
               </Button>
             )}
             {selectedIds.size >= 2 && onDeleteSelected && (
-              <Button
-                variant="destructive"
-                onClick={onDeleteSelected}
-                className="h-6 gap-1 px-2 text-10"
-              >
+              <Button variant="destructive" onClick={onDeleteSelected} className="text-ink">
                 <Trash2 className="size-3" />
                 <Text path="library.lineups.deleteSelected" values={{ count: selectedIds.size }} />
               </Button>
@@ -124,28 +134,34 @@ export function LineupList({
                 onContextMenu?.(e, lineup);
               }}
             >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleSelectId(lineup.id);
-                }}
-                aria-label={t('library.lineups.selectedCount', { count: isChecked ? 1 : 0 })}
-                className="flex size-7 shrink-0 items-center justify-center text-ink-dim hover:text-ink"
-              >
-                {isChecked ? (
-                  <CheckSquare className="size-3.5 text-primary" />
-                ) : (
-                  <Square className="size-3.5 text-ink-dim/40 group-hover:text-ink-dim" />
-                )}
-              </button>
+              {mode === 'edit' && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleSelectId(lineup.id);
+                  }}
+                  aria-label={t(
+                    isChecked ? 'library.lineups.deselectLineup' : 'library.lineups.selectLineup',
+                    { title: lineup.title },
+                  )}
+                  aria-pressed={isChecked}
+                  className="flex size-7 shrink-0 items-center justify-center text-ink-dim hover:text-ink"
+                >
+                  {isChecked ? (
+                    <CheckSquare className="size-3.5 text-primary" />
+                  ) : (
+                    <Square className="size-3.5 text-ink-dim/40 group-hover:text-ink-dim" />
+                  )}
+                </button>
+              )}
 
               <button
                 type="button"
                 aria-current={isSelected ? 'true' : undefined}
                 onClick={(event) => {
                   const isModifier = event.shiftKey || event.ctrlKey || event.metaKey;
-                  if (isModifier) {
+                  if (mode === 'edit' && isModifier) {
                     onToggleSelectId(lineup.id);
                   } else {
                     onSelect(index);
@@ -161,7 +177,7 @@ export function LineupList({
                   isSelected || isFocused ? 'bg-surface-2' : 'bg-transparent'
                 }`}
               >
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex w-full min-w-0 items-center gap-2">
                   <span className="numeric w-5 shrink-0 font-mono text-10 text-ink-dim">
                     {String(index + 1).padStart(2, '0')}
                   </span>
@@ -177,9 +193,12 @@ export function LineupList({
                     size="control"
                   />
 
-                  <div className="flex min-w-0 flex-col">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="truncate font-medium text-ink">{lineup.title}</span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate font-medium text-ink">{lineup.title}</span>
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                      <span className="rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-11 text-ink-dim">
+                        <Text path={`review.maps.throw.types.${lineup.throwType}`} />
+                      </span>
                       {lineup.targetCallout && (
                         <span className="shrink-0 rounded-chip border border-line bg-surface-3 px-1.5 py-0.5 text-10 font-mono text-ink-dim">
                           {lineup.targetCallout}
@@ -208,10 +227,6 @@ export function LineupList({
                     )}
                   </div>
                 </div>
-
-                <span className="shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-11 text-ink-dim">
-                  <Text path={`review.maps.throw.types.${lineup.throwType}`} />
-                </span>
               </button>
             </li>
           );
