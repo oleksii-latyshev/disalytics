@@ -221,7 +221,7 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
           <Text path="library.lineups.media" />
         </a>
       )}
-      <details className="border-t border-line pt-2 text-11 text-ink-dim">
+      <details className="[border-block-start:1px_solid_var(--color-line)] pt-2 text-11 text-ink-dim">
         <summary className="cursor-pointer">
           <Text path="library.lineups.form.technicalDetails" />
         </summary>

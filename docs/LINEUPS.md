@@ -1,6 +1,8 @@
 # Personal lineups
 
-The Lineups dock shows saved throws on each map. On desktop, map and utility filters sit to the left of the radar, and the selected throw sits to the right. The radar fits the available viewport height. Click **Create lineup**, mark the throw position and landing point, then enter a title, grenade kind, movement instructions, and optional media. Zoom with the wheel or the map controls; drag to pan while zoomed. A numbered marker opens the throws saved near the same origin.
+The Lineups dock shows saved throws on each map. On desktop, map and utility filters sit to the left of the radar, and the throw list sits to the right. The radar fits the available viewport height. **View** opens throw details and grouped variants without moving points. Zoom with the wheel or the map controls; drag to pan while zoomed. A numbered marker opens the throws saved near the same origin.
+
+Switch to **Edit** to create, import, move, or merge throws. Click **Create lineup**, mark the throw position and landing point, then enter a title, grenade kind, movement instructions, and optional media. Click nodes to add them to the selection; selecting another keeps previous nodes highlighted. Selected throw positions use a diamond outline, landings a circle, and bounces a square, with the throw title and point type shown above the radar. Shift, Ctrl, or Cmd-click toggles a node. Click empty space or use **Clear selection** to reset. Drag a node to save its new position; moving a shared group point updates every member of that group. Select origins from multiple throws to merge origins, or landings to merge landings; mixed point types cannot be merged. List checkboxes select whole throws for group actions and can also clear a throw’s selected nodes.
 
 The form keeps coordinates, view angles, and the `setpos` command under **Coordinates and console details**. Throws saved from a demo retain their captured `setpos` command and can be edited here.
 

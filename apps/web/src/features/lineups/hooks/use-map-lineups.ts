@@ -2,13 +2,18 @@ import type { Lineup } from '@disa/demo-core';
 import { parseLineupFile, serializeLineupFile } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { loadMapLineups } from '@disa/map-data';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { combineLineups } from '../helpers/lineup-catalog';
 
 export function useMapLineups(map: string) {
   const [builtInLineups, setBuiltInLineups] = useState<readonly Lineup[]>([]);
   const [customLineups, setCustomLineups] = useState<readonly Lineup[]>([]);
   const [loadedMap, setLoadedMap] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const combinedLineups = useMemo(
+    () => combineLineups(customLineups, builtInLineups),
+    [customLineups, builtInLineups],
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -91,7 +96,7 @@ export function useMapLineups(map: string) {
   }, []);
 
   return {
-    lineups: loadedMap === map ? [...customLineups, ...builtInLineups] : [],
+    lineups: loadedMap === map ? combinedLineups : [],
     loading: loading || loadedMap !== map,
     reload,
     deleteLineup,
