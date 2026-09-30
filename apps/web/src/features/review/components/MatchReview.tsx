@@ -13,6 +13,7 @@ import { type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
 import { type MatchView, nextMatchView } from '../helpers/match-views';
 import { useHotCorners } from '../hooks/use-hot-corners';
 import { useMatchReadout } from '../hooks/use-match-readout';
+import { useMatchRouteSync } from '../hooks/use-match-route-sync';
 import { useReviewSheets } from '../hooks/use-review-sheets';
 import { useReviewShortcuts } from '../hooks/use-review-shortcuts';
 import { CornerCluster } from './CornerCluster';
@@ -28,81 +29,42 @@ import { TimelineBlock } from './TimelineBlock';
 interface Props {
   demo: ParsedDemo;
   cache: CacheState;
-  /** Which round the match opens on — §10.2's dialog is what makes it anything but the first. */
+
   roundIndex: number;
+  urlRound: number;
+  view: MatchView;
+  onView: (view: MatchView) => void;
+  onRoundChange: (round: number) => void;
   onClose: () => void;
 }
 
-/**
- * The stage — DESIGN.md §5. A plate in the middle and four cards around it, and the grid is what
- * makes §5.1 structural rather than a promise: the middle column is exactly
- * `100cqi - 2 * (card + gap) - 2 * inset` wide and `100cqb - timeline-block - 2 * inset` tall, the
- * plate takes `min(100cqi, 100cqb)` of that cell, and **no card can overlap it because no card is
- * in it**. That is what pays for every `backdrop-filter` on this screen (§2.3).
- *
- * Two widths, both layout facts rather than device sizes. Below `wide` the cards dock to the
- * viewport edges — the stage inset goes, the plate takes what it leaves. Below `split` the side
- * columns go and the two team cards merge into one strip above the timeline block, which is still
- * not over the plate.
- *
- * **The screen assembles as it mounts** — §8's one orchestrated moment, and the only one the product
- * has. Each cell carries its own arrival rather than a parent orchestrating them, because the grid
- * is what knows which edge a card lives against; `core/motion` owns the timings, and the round strip
- * fills itself from the same place. It is a mount transition holding no state at all, so it runs
- * once per demo and nothing short of opening another match can replay it. The clock is paused at the
- * opening frame throughout, which is why a wall-time sequence is legitimate here and nowhere else.
- */
-export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClose }: Props) {
+export function MatchReview({
+  demo,
+  cache,
+  roundIndex: openingRoundIndex,
+  urlRound,
+  view,
+  onView,
+  onRoundChange,
+  onClose,
+}: Props) {
   const locale = useLocale();
   const transport = useTransport(demo, roundOpeningFrame(demo, openingRoundIndex));
   const fullscreen = useFullscreen();
-
-  // Discrete state, so it lives in React rather than on the clock — AGENTS.md §8. A team row is
-  // where it is set: a canvas hit test would put the one interaction on the screen that a keyboard
-  // cannot reach, which DESIGN.md §9 rules out.
   const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
-
-  // Whether the plate is zoomed, which the plate itself reports — #315. It changes what the grid
-  // is rather than what any cell contains, so it is the stage that holds it: the plate's cell takes
-  // the whole width of the stage and the cards stay where they are, over it. Discrete state written
-  // at most once per zoom step, so it is nowhere near the frame channel.
   const [isPlateExpanded, setPlateExpanded] = useState(false);
-
-  // Which reading of the match is open — `ROADMAP.md` M5's first row, decided on 12 September 2026:
-  // a view replaces the stage rather than covering it. The state lives here, above the stage, so
-  // every hook below keeps running while another view is open: the clock is still the match's, and
-  // coming back to the stage finds it where the reader left it.
-  const [view, setView] = useState<MatchView>('stage');
-
-  // The duel map's narrowing, held here rather than by that screen: a duel opened on the stage
-  // leaves the screen, and coming back to it finds the narrowing where the reader left it (#387).
   const [duelNarrowing, setDuelNarrowing] = useState<MapNarrowing>(WHOLE_MATCH);
-
-  // Paused at the lead-in rather than playing into the kill: the reader asked to watch it, and the
-  // space bar is theirs to press. The seek goes through the transport, never React (hard rule 4).
   const openOnStage = useCallback(
     (frame: Frame) => {
       transport.pause();
       transport.seek(frame);
-      setView('stage');
+      onView('stage');
     },
-    [transport],
+    [onView, transport],
   );
-
-  // DESIGN.md §9.3's two live regions. The block's own cell is what the hook watches for focus,
-  // because a block that has left the screen still holds every control the keyboard can reach.
   const timelineRef = useRef<HTMLDivElement>(null);
   const corners = useHotCorners(fullscreen.isFullscreen, timelineRef);
-
-  // The feed row the pointer or the keyboard is on, and the one thing on this screen that a *hover*
-  // sets — DESIGN.md §5.4. It is discrete state for the same reason the selection is, and the feed
-  // is what clears it: a row cannot report the pointer leaving once the row itself has gone. One
-  // state rather than one per row kind, because only one row is ever pointed at.
   const [focus, setFocus] = useState<RowFocus | null>(null);
-
-  // The brow is the default — DESIGN.md §5.2 — so this is the reader asking for the chip back over
-  // the plate, which is the only thing in the product allowed to cover it (§5.1). Every other row
-  // of §10.5's table is read where it is obeyed rather than here.
   const [scoreboard] = useSetting('scoreboard');
   const [isBuyPhaseSkipped] = useSetting('isBuyPhaseSkipped');
 
@@ -133,6 +95,13 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
   }, [view]);
 
   const { frame, roundIndex, ct, t, money, shape } = useMatchReadout(demo, transport, locale);
+  useMatchRouteSync({
+    demo,
+    transport,
+    urlRound,
+    transportRound: roundIndex === undefined ? undefined : roundIndex + 1,
+    onRoundChange,
+  });
 
   useReviewShortcuts({
     demo,
@@ -144,14 +113,11 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     onClearSelection: () => setSelectedSlot(null),
     onFullscreenToggle: fullscreen.toggle,
     onMatchOverlay: () => showSheet('match'),
-    onNextView: () => setView(nextMatchView(view)),
+    onNextView: () => onView(nextMatchView(view)),
     onCoachMode: toggleCoachMode,
     onHelp: () => showSheet('help'),
   });
 
-  /* The two cards, and the `z-10` on each of them is #315: an expanded plate is a positioned cell,
-     and a positioned cell paints over every static sibling whatever the DOM order says, so a card
-     that did not name a layer would go under the map rather than over it. */
   const teamCards = (
     <>
       <motion.div
@@ -190,11 +156,6 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
     </>
   );
 
-  /* A view that is not the stage takes the whole screen, and the stage's grid is left exactly as it
-     was — which is what keeps §5.1's plate figures unchanged by construction rather than by
-     measurement. The corner comes with it, because the way out, the map's name and which view is
-     open are the match's rather than the stage's. Every hook above has already run, so the clock,
-     the shortcuts and the sheets are the same ones the stage was using. */
   if (view !== 'stage') {
     return (
       <MatchViewScreen
@@ -203,7 +164,7 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         view={view}
         roundIndex={roundIndex}
         openSheet={openSheet}
-        onView={setView}
+        onView={onView}
         onClose={onClose}
         onDismissSheet={dismissSheet}
         duelNarrowing={duelNarrowing}
@@ -215,11 +176,6 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
 
   return (
     <div className="relative grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-3 overflow-hidden bg-surface-0 p-0 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)_minmax(min-content,17.5rem)] wide:p-6">
-      {/* The inset is this corner's own below `wide`, where the stage has none and the cards dock to
-          the viewport edges: a docked card still holds its content off the edge with its own
-          padding, and type with no card behind it would sit on the glass of the window. It has no
-          bottom half — the grid's own `gap-3` is already under this row, and a second 12px there
-          comes out of the plate's square. */}
       <motion.div
         {...assembly('stage')}
         className="flex flex-col items-start justify-self-start px-3 pt-3 wide:p-0 [grid-area:1/1/2/2]"
@@ -227,31 +183,14 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         <MatchCorner demo={demo} cache={cache} onClose={onClose} />
       </motion.div>
 
-      {/* The match's own navigation, at the top centre rather than in the corner — #364. It is out
-          of flow, so §5.1's plate figures are untouched by it, and where the reader has asked for
-          the score over the plate (§10.5) that chip hangs under the switch instead of standing on
-          the plate's own top edge. */}
-      <MatchViewBar view={view} onView={setView}>
+      <MatchViewBar view={view} onView={onView}>
         {scoreboard === 'plate' && (
           <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
         )}
       </MatchViewBar>
 
-      {/* The cluster and, under it, §5.4's feed. Above the split this spans rows 1 and 2 of the
-          right-hand column — the one cell on the stage that neither a card nor the plate is in — so
-          the feed costs the plate nothing but the column width the team card under it already
-          claims. Every row inside is `min-w-0` and truncates for that reason: the column is
-          `minmax(min-content, 17.5rem)`, so a long enough name would otherwise widen it and take
-          the difference out of the plate's square.
-
-          Below the split there is no such cell. Row 1 is shared with the top-left corner and row 2
-          *is* the plate, so a feed there would be §5.1's one rule broken; it is not drawn at those
-          widths rather than drawn somewhere it does not belong. */}
       <motion.div
         {...assembly('cardTop')}
-        /* This column is a full-height box with the cluster and the feed at the top of it, so while
-           an expanded plate is under it (#315) the empty part would take every drag aimed at the
-           map showing through — the two children take their own presses back. */
         className={`relative z-10 flex flex-col items-end gap-3 justify-self-end [grid-area:1/1/2/2] split:[grid-area:1/3/3/4] ${
           isPlateExpanded ? 'pointer-events-none [&>*]:pointer-events-auto' : ''
         }`}
@@ -276,15 +215,6 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         </div>
       </motion.div>
 
-      {/* The plate's cell carries no padding at all: `min(100cqi,100cqb)` inside it spends every
-          pixel on the map, which is why the cards are beside the cell rather than over it.
-
-          Zoomed it takes the stage's width and runs under them — #315, where the reasoning is —
-          and **every card stays where it is with every reading on it**. It keeps out of row 1 in
-          both layouts, because the way out of the match and the map's name are type on the app's
-          own ground (#205) and there is no reading of them over a radar image. Below the split it
-          does not move at all: the strip there is as wide as the stage, so taking its row would put
-          every gained pixel behind an opaque card. */}
       <motion.div
         {...assembly('stage')}
         className={`relative z-0 grid min-h-0 min-w-0 [grid-area:2/1/3/2] ${
@@ -303,14 +233,8 @@ export function MatchReview({ demo, cache, roundIndex: openingRoundIndex, onClos
         />
       </motion.div>
 
-      {/* `display: contents` above the split, so one pair of cards is a strip in one layout and two
-          grid columns in the other without being written out twice. A zoomed plate runs underneath
-          the cards (#315) and they keep every reading they had. */}
       <div className="flex gap-3 [grid-area:3/1/4/2] split:contents">{teamCards}</div>
 
-      {/* The cell keeps its height whether or not the block is in it — §5.1's plate is sized from
-          this row, so a block that collapsed would resize the plate under the reader mid-match. The
-          ref is how §9.3's hide knows to stand aside for a `Tab` that has landed inside. */}
       <motion.div
         ref={timelineRef}
         {...assembly('cardBottom')}

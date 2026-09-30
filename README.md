@@ -22,6 +22,10 @@ uploading the demo anywhere.
   matches to try without a demo of your own
 - **Keyboard first**, colour-blind palette, reduced-motion support
 
+The upload, library, tools, lineups, tactics and stats sections have direct routes. Match links use
+`/match/<local-cache-key>?round=<number>&view=<view>`; the round is one-based, and the selected
+view and round return when the local cache entry is still available.
+
 ## How it works
 
 ```mermaid

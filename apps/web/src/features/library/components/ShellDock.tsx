@@ -6,12 +6,29 @@ import { DockEntry } from './DockEntry';
 
 interface Props {
   view: ShellView;
-  onView: (view: ShellView) => void;
+  onNavigate: () => void;
   onSettingsOpen: () => void;
   onHelpOpen: () => void;
 }
 
-export function ShellDock({ view, onView, onSettingsOpen, onHelpOpen }: Props) {
+function pathFor(view: ShellView) {
+  switch (view) {
+    case 'upload':
+      return '/';
+    case 'library':
+      return '/library';
+    case 'tools':
+      return '/tools';
+    case 'lineups':
+      return '/lineups';
+    case 'tactics':
+      return '/tactics';
+    case 'stats':
+      return '/stats';
+  }
+}
+
+export function ShellDock({ view, onNavigate, onSettingsOpen, onHelpOpen }: Props) {
   const t = useT();
   const panelRef = useDockMagnify();
 
@@ -30,7 +47,8 @@ export function ShellDock({ view, onView, onSettingsOpen, onHelpOpen }: Props) {
                   isCurrent={section.view === view}
                   isSoon={section.isSoon}
                   tone={section.tone}
-                  onSelect={() => onView(section.view)}
+                  to={pathFor(section.view)}
+                  onSelect={onNavigate}
                 />
               </li>
             ))}

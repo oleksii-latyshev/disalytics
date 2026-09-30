@@ -1,5 +1,5 @@
 import { type Frame, openingFrame, type ParsedDemo } from '@disa/demo-core';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { frameElapsedMs } from '../helpers/frame-step';
 import { createTransport, type Transport } from '../helpers/transport';
 
@@ -13,9 +13,11 @@ import { createTransport, type Transport } from '../helpers/transport';
  * choose one in. It is read once: the transport is rebuilt only when the demo changes.
  */
 export function useTransport(demo: ParsedDemo, startFrame?: Frame): Transport {
+  const initial = useRef({ demo, frame: startFrame });
+  if (initial.current.demo !== demo) initial.current = { demo, frame: startFrame };
   const transport = useMemo(
-    () => createTransport(demo.track, startFrame ?? openingFrame(demo)),
-    [demo, startFrame],
+    () => createTransport(demo.track, initial.current.frame ?? openingFrame(demo)),
+    [demo],
   );
 
   useEffect(() => {

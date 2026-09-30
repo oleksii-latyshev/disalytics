@@ -1,5 +1,7 @@
 import { Text, type TranslationKey } from '@disa/i18n';
+import { Link } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
+import type { AppPath } from '@/core/navigation';
 
 interface Props {
   icon: LucideIcon;
@@ -7,32 +9,51 @@ interface Props {
   isCurrent?: boolean;
   isSoon?: boolean;
   tone: string;
-  onSelect: () => void;
+  onSelect?: () => void;
+  to?: AppPath;
 }
 
-export function DockEntry({ icon: Icon, labelPath, isCurrent, isSoon, tone, onSelect }: Props) {
+export function DockEntry({ icon: Icon, labelPath, isCurrent, isSoon, tone, onSelect, to }: Props) {
+  const content = (
+    <>
+      <Icon aria-hidden="true" className="size-6" strokeWidth={1.8} />
+
+      <span className="sr-only">
+        <Text path={labelPath} />
+        {isSoon && (
+          <>
+            {' '}
+            <Text path="common.soon" />
+          </>
+        )}
+      </span>
+    </>
+  );
+
   return (
     <span className="atlas-dock-seat group relative flex items-center justify-center">
-      <button
-        type="button"
-        data-dock-item
-        aria-current={isCurrent ? 'page' : undefined}
-        onClick={onSelect}
-        style={{ background: tone }}
-        className="atlas-dock-tile relative flex origin-bottom items-center justify-center text-white transition-[scale] duration-(--duration-micro) ease-out"
-      >
-        <Icon aria-hidden="true" className="size-6" strokeWidth={1.8} />
-
-        <span className="sr-only">
-          <Text path={labelPath} />
-          {isSoon && (
-            <>
-              {' '}
-              <Text path="common.soon" />
-            </>
-          )}
-        </span>
-      </button>
+      {to === undefined ? (
+        <button
+          type="button"
+          data-dock-item
+          onClick={onSelect}
+          style={{ background: tone }}
+          className="atlas-dock-tile relative flex origin-bottom items-center justify-center text-white transition-[scale] duration-(--duration-micro) ease-out"
+        >
+          {content}
+        </button>
+      ) : (
+        <Link
+          to={to}
+          data-dock-item
+          aria-current={isCurrent ? 'page' : undefined}
+          onClick={onSelect}
+          style={{ background: tone }}
+          className="atlas-dock-tile relative flex origin-bottom items-center justify-center text-white transition-[scale] duration-(--duration-micro) ease-out"
+        >
+          {content}
+        </Link>
+      )}
 
       {isCurrent && (
         <span aria-hidden="true" className="absolute -bottom-1 size-1 rounded-full bg-ink" />

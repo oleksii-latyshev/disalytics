@@ -2,7 +2,7 @@ import type { ParsedDemo } from '@disa/demo-core';
 import { errorCodeOf, parseDemo } from '@disa/demo-parser';
 import type { SavedDemo } from '@disa/demo-store';
 import { type ActionDispatch, useCallback, useEffect, useReducer, useRef } from 'react';
-import { loadSample, type SampleMatch, sampleKey } from '@/core/samples';
+import { loadSample, SAMPLE_MATCHES, type SampleMatch, sampleKey } from '@/core/samples';
 import { type DemoCache, openCacheAt, openCacheFor, readSavedDemo } from '../helpers/demo-cache';
 import { IDLE_PARSE, type ParseEvent, type ParseState, reduceParse } from '../helpers/parse-state';
 
@@ -19,6 +19,7 @@ export interface DemoParse {
    * before it, and the second press on the same sample reads them out of the store instead.
    */
   openSample: (sample: SampleMatch) => void;
+  restoreKey: (key: string, round: number) => () => void;
   // Abandons whatever is on screen. While a parse is running this is the cancel, and it terminates
   // the worker rather than asking it to stop.
   close: () => void;
@@ -64,13 +65,14 @@ function watchVisibility(dispatch: Dispatch): AbortController {
 
 async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Promise<void> {
   const cache = await openCacheFor(file);
+  const demoKey = cache?.key ?? `volatile:${crypto.randomUUID()}`;
   if (signal.aborted) return;
 
   const restored = cache === null ? null : await cache.read();
   if (signal.aborted) return;
 
   if (restored !== null) {
-    dispatch({ type: 'restored', demo: restored, roundIndex: 0 });
+    dispatch({ type: 'restored', demo: restored, demoKey, roundIndex: 0 });
     return;
   }
 
@@ -86,7 +88,13 @@ async function report(file: File, signal: AbortSignal, dispatch: Dispatch): Prom
 
     if (signal.aborted) return;
 
-    dispatch({ type: 'succeeded', demo, caching: cache !== null });
+    dispatch({
+      type: 'succeeded',
+      demo,
+      demoKey,
+      roundIndex: 0,
+      caching: cache !== null,
+    });
     if (cache !== null) void keep(cache, demo, signal, dispatch);
   } catch (thrown) {
     // An abort rejects with its own reason, which is not something to name on an error screen.
@@ -101,6 +109,7 @@ async function fromSample(
   sample: SampleMatch,
   signal: AbortSignal,
   dispatch: Dispatch,
+  roundIndex = 0,
 ): Promise<void> {
   const cache = await openCacheAt(sampleKey(sample.id), sample.sourceFile);
   if (signal.aborted) return;
@@ -109,7 +118,7 @@ async function fromSample(
   if (signal.aborted) return;
 
   if (stored !== null) {
-    dispatch({ type: 'restored', demo: stored, roundIndex: 0 });
+    dispatch({ type: 'restored', demo: stored, demoKey: sampleKey(sample.id), roundIndex });
     return;
   }
 
@@ -123,7 +132,13 @@ async function fromSample(
 
     if (signal.aborted) return;
 
-    dispatch({ type: 'succeeded', demo, caching: cache !== null });
+    dispatch({
+      type: 'succeeded',
+      demo,
+      demoKey: sampleKey(sample.id),
+      roundIndex,
+      caching: cache !== null,
+    });
     if (cache !== null) void keep(cache, demo, signal, dispatch);
   } catch {
     if (signal.aborted) return;
@@ -147,7 +162,7 @@ async function restore(
     return;
   }
 
-  dispatch({ type: 'restored', demo, roundIndex });
+  dispatch({ type: 'restored', demo, demoKey: key, roundIndex });
 }
 
 export function useDemoParse(): DemoParse {
@@ -190,11 +205,32 @@ export function useDemoParse(): DemoParse {
     [begin],
   );
 
+  const restoreKey = useCallback((key: string, round: number) => {
+    running.current?.abort();
+    const controller = new AbortController();
+    running.current = controller;
+    const sample = SAMPLE_MATCHES.find((item) => sampleKey(item.id) === key);
+    const fileName = sample?.sourceFile ?? key;
+    dispatch({ type: 'opened', fileName });
+    if (sample !== undefined) {
+      void fromSample(sample, controller.signal, dispatch, round - 1);
+    } else {
+      void restore(key, round - 1, controller.signal, dispatch);
+    }
+    return () => {
+      controller.abort();
+      if (running.current === controller) {
+        running.current = null;
+        dispatch({ type: 'closed' });
+      }
+    };
+  }, []);
+
   const close = useCallback(() => {
     running.current?.abort();
     running.current = null;
     dispatch({ type: 'closed' });
   }, []);
 
-  return { state, open, openSaved, openSample, close };
+  return { state, open, openSaved, openSample, restoreKey, close };
 }
