@@ -29,6 +29,8 @@ interface Params {
   readonly filteredLineups: readonly Lineup[];
   readonly originGroups: readonly LineupGroup[];
   readonly landingGroups: readonly LineupGroup[];
+  readonly selectedIds: ReadonlySet<string>;
+  readonly selectedNodes: readonly SelectedLineupNode[];
   readonly setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
   readonly setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   readonly setSelectedNodes: React.Dispatch<React.SetStateAction<readonly SelectedLineupNode[]>>;
@@ -55,11 +57,32 @@ export function updateSelectedNodes(
   return current.some(matches) ? current : [...current, selected];
 }
 
+export function toggleLineupSelection(
+  id: string,
+  selectedIds: ReadonlySet<string>,
+  selectedNodes: readonly SelectedLineupNode[],
+): {
+  readonly selectedIds: ReadonlySet<string>;
+  readonly selectedNodes: readonly SelectedLineupNode[];
+} {
+  const isSelected = selectedIds.has(id) || selectedNodes.some((node) => node.lineupId === id);
+  if (isSelected) {
+    return {
+      selectedIds: new Set([...selectedIds].filter((selectedId) => selectedId !== id)),
+      selectedNodes: selectedNodes.filter((node) => node.lineupId !== id),
+    };
+  }
+
+  return { selectedIds: new Set([...selectedIds, id]), selectedNodes };
+}
+
 export function createLineupSelectionActions({
   mode,
   filteredLineups,
   originGroups,
   landingGroups,
+  selectedIds,
+  selectedNodes,
   setSelectedId,
   setSelectedIds,
   setSelectedNodes,
@@ -67,15 +90,9 @@ export function createLineupSelectionActions({
   setDetailLineup,
 }: Params) {
   const handleToggleSelectId = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    const next = toggleLineupSelection(id, selectedIds, selectedNodes);
+    setSelectedIds(new Set(next.selectedIds));
+    setSelectedNodes(next.selectedNodes);
   };
 
   const handleClearSelection = () => {

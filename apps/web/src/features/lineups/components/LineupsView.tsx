@@ -77,6 +77,8 @@ export function LineupsView() {
       filteredLineups,
       originGroups,
       landingGroups,
+      selectedIds,
+      selectedNodes,
       setSelectedId,
       setSelectedIds,
       setSelectedNodes,

@@ -3,6 +3,7 @@ import { openLineupStore } from '@disa/demo-store';
 import { useT } from '@disa/i18n';
 import { findNearestCallout, type MapId } from '@disa/map-data';
 import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import { updateLineupsAtPoint } from '../helpers/update-lineup-point';
 
 export type LineupPoint = { readonly x: number; readonly y: number };
 
@@ -28,45 +29,20 @@ export function useLineupPointActions({
     point: LineupPoint,
     waypointIndex?: number,
   ) => {
-    const lineup = lineups.find((item) => item.id === lineupId);
-    if (!lineup) return;
-
-    let updatedLineup: Lineup;
-    if (target === 'origin') {
-      updatedLineup = {
-        ...lineup,
-        origin: { ...lineup.origin, x: point.x, y: point.y },
-        isBuiltIn: false,
-      };
-    } else if (target === 'landing') {
-      const newCallout = findNearestCallout(map, point) ?? lineup.targetCallout;
-      updatedLineup = {
-        ...lineup,
-        landing: { ...lineup.landing, x: point.x, y: point.y },
-        ...(newCallout ? { targetCallout: newCallout } : {}),
-        isBuiltIn: false,
-      };
-    } else if (target === 'waypoint' && waypointIndex !== undefined) {
-      const waypoints = [...(lineup.waypoints ?? [])];
-      const current = waypoints[waypointIndex];
-      if (current) {
-        waypoints[waypointIndex] = { ...current, x: point.x, y: point.y };
-        updatedLineup = {
-          ...lineup,
-          waypoints,
-          isBuiltIn: false,
-        };
-      } else {
-        return;
-      }
-    } else {
-      return;
-    }
+    const updatedLineups = updateLineupsAtPoint({
+      lineups,
+      lineupId,
+      target,
+      point,
+      ...(waypointIndex === undefined ? {} : { waypointIndex }),
+      resolveCallout: (landing) => findNearestCallout(map, landing),
+    });
+    if (updatedLineups === undefined) return;
 
     const store = await openLineupStore();
     if (store !== null) {
       try {
-        await store.put(updatedLineup);
+        await store.putMany(updatedLineups);
       } finally {
         store.close();
       }

@@ -188,7 +188,7 @@ export function LineupPlateContextMenu({
         </>
       )}
 
-      <div className="my-0.5 border-t border-line" />
+      <div className="my-0.5 [border-block-start:1px_solid_var(--color-line)]" />
       <button
         type="button"
         role="menuitem"

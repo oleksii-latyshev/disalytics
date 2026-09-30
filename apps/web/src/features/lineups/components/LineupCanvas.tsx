@@ -122,7 +122,7 @@ export function LineupCanvas(props: LineupCanvasProps) {
                 : cursorStyle === 'default'
                   ? 'cursor-default'
                   : 'cursor-crosshair'
-          } ${zoom > 1 ? 'touch-none' : 'touch-pan-y'}`}
+          } ${zoom > 1 || (mode === 'edit' && !isPlacing) ? 'touch-none' : 'touch-pan-y'}`}
         />
 
         <LineupPlateHud plateProps={props} />

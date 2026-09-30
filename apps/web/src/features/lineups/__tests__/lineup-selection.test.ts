@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { SelectedLineupNode } from '../helpers/lineup-layer';
-import { resolveMergeTarget, updateSelectedNodes } from '../hooks/use-lineup-selection';
+import {
+  resolveMergeTarget,
+  toggleLineupSelection,
+  updateSelectedNodes,
+} from '../hooks/use-lineup-selection';
 
 const origin: SelectedLineupNode = {
   lineupIndex: 0,
@@ -51,5 +55,28 @@ describe('selected lineup nodes', () => {
     expect(resolveMergeTarget([landing, bounce])).toBeUndefined();
     expect(resolveMergeTarget([origin, landing])).toBeUndefined();
     expect(resolveMergeTarget([origin, { ...origin, target: 'origin' }])).toBeUndefined();
+  });
+});
+
+describe('lineup checkbox selection', () => {
+  it('deselects node-derived lineup checks and the nodes that produced them', () => {
+    expect(toggleLineupSelection('lineup-a', new Set(), [origin, landing])).toEqual({
+      selectedIds: new Set(),
+      selectedNodes: [landing],
+    });
+  });
+
+  it('removes both checkbox and node selection when a lineup has both', () => {
+    expect(toggleLineupSelection('lineup-a', new Set(['lineup-a']), [origin])).toEqual({
+      selectedIds: new Set(),
+      selectedNodes: [],
+    });
+  });
+
+  it('adds an unselected lineup to checkbox selection', () => {
+    expect(toggleLineupSelection('lineup-b', new Set(['lineup-a']), [])).toEqual({
+      selectedIds: new Set(['lineup-a', 'lineup-b']),
+      selectedNodes: [],
+    });
   });
 });
