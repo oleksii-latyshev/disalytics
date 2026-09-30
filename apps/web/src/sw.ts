@@ -22,7 +22,5 @@ self.addEventListener('message', (event) => {
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Every navigation is the shell. The app has no routes of its own, and the paths that do arrive —
-// the manifest's `/open` file handler, or anything typed — are served by Cloudflare's SPA fallback,
-// which is not there offline.
+// Cloudflare supplies the online SPA fallback; the worker supplies it offline.
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));

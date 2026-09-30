@@ -1,46 +1,41 @@
 import { MotionProvider } from '@disa/ui';
+import { RouterProvider } from '@tanstack/react-router';
+import { useCallback, useRef, useState } from 'react';
+import { afterRouteNavigation } from '@/core/navigation';
 import { useDemoParse } from '@/core/parsing';
 import { useLaunchedFiles, useWorkerUpdate } from '@/core/pwa';
 import { useSetting } from '@/core/settings';
-import { WayIn } from '@/features/library';
-import { MatchReview } from '@/features/review';
+import { AppRouteContext } from '@/routes/context';
+import { createAppRouter } from '@/routes/router';
 
-/**
- * DESIGN.md §10.5's reduce-motion row, in the vocabulary `motion` uses. `user` is the device's own
- * answer, which is what `prefers-reduced-motion` alone would give; the other two are the reader
- * overriding it, and CSS gets the same two through `data-motion-reduce`.
- */
 const REDUCED_MOTION = { system: 'user', reduced: 'always', full: 'never' } as const;
 
-// A demo on screen takes the whole viewport: the plate is the stage and everything else is an
-// instrument arranged around it — DESIGN.md §5.
 export function App() {
   const parse = useDemoParse();
   const [motion] = useSetting('motion');
   const update = useWorkerUpdate();
-  const { state } = parse;
+  const parseOrigin = useRef<string | null>(null);
+  const [router] = useState(() => createAppRouter({ parse, onUpdate: update, parseOrigin }));
+  const openLaunchedFile = useCallback(
+    (file: File) => {
+      void afterRouteNavigation(
+        () => router.navigate({ to: '/' }),
+        () => {
+          parseOrigin.current = '/';
+          parse.open(file);
+        },
+      );
+    },
+    [parse.open, router],
+  );
 
-  useLaunchedFiles(parse.open);
+  useLaunchedFiles(openLaunchedFile);
 
   return (
     <MotionProvider reducedMotion={REDUCED_MOTION[motion]}>
-      {state.status === 'ready' ? (
-        <MatchReview
-          demo={state.demo}
-          cache={state.cache}
-          roundIndex={state.roundIndex}
-          onClose={parse.close}
-        />
-      ) : (
-        <WayIn
-          state={state}
-          onFile={parse.open}
-          onEnter={parse.openSaved}
-          onSample={parse.openSample}
-          onClose={parse.close}
-          onUpdate={update}
-        />
-      )}
+      <AppRouteContext.Provider value={{ parse, onUpdate: update, parseOrigin }}>
+        <RouterProvider router={router} context={{ parse, onUpdate: update, parseOrigin }} />
+      </AppRouteContext.Provider>
     </MotionProvider>
   );
 }

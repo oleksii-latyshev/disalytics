@@ -16,6 +16,7 @@ function sharedStore(): Promise<DemoStore | null> {
 }
 
 export interface DemoCache {
+  key: string;
   read(): Promise<ParsedDemo | null>;
   /** Rejects when the demo could not be stored; the reader is told, and keeps the demo it has. */
   write(demo: ParsedDemo): Promise<PersistenceStatus>;
@@ -23,6 +24,7 @@ export interface DemoCache {
 
 function cacheAt(store: DemoStore, key: string, fileName: string): DemoCache {
   return {
+    key,
     read: () => store.read(key).catch(() => null),
     write: async (demo) => {
       await store.write(key, demo, fileName);

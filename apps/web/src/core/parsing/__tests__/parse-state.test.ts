@@ -19,7 +19,13 @@ function parsing(fileName = 'match.dem'): ParseState {
 }
 
 function ready(fileName = 'match.dem'): ParseState {
-  return reduceParse(parsing(fileName), { type: 'succeeded', demo, caching: true });
+  return reduceParse(parsing(fileName), {
+    type: 'succeeded',
+    demo,
+    demoKey: 'match-key',
+    roundIndex: 0,
+    caching: true,
+  });
 }
 
 describe('reduceParse', () => {
@@ -56,9 +62,12 @@ describe('reduceParse', () => {
   });
 
   it('skips the parse entirely when the cache had the demo', () => {
-    expect(reduceParse(opened(), { type: 'restored', demo, roundIndex: 0 })).toEqual({
+    expect(
+      reduceParse(opened(), { type: 'restored', demo, demoKey: 'match-key', roundIndex: 0 }),
+    ).toEqual({
       status: 'ready',
       fileName: 'match.dem',
+      demoKey: 'match-key',
       demo,
       cache: { status: 'restored' },
       roundIndex: 0,
@@ -68,7 +77,12 @@ describe('reduceParse', () => {
   // DESIGN.md §10.2: the reader picks a round in the demo dialog, before there is a match on screen
   // to pick one in, so the choice has to survive the open that follows it.
   it('opens at the round the demo dialog was standing on', () => {
-    const entered = reduceParse(opened(), { type: 'restored', demo, roundIndex: 12 });
+    const entered = reduceParse(opened(), {
+      type: 'restored',
+      demo,
+      demoKey: 'match-key',
+      roundIndex: 12,
+    });
 
     expect(entered).toMatchObject({ status: 'ready', roundIndex: 12 });
   });
@@ -80,7 +94,15 @@ describe('reduceParse', () => {
   it('keeps the file name across every outcome', () => {
     const started = parsing('faceit-1-2-3.dem');
 
-    expect(reduceParse(started, { type: 'succeeded', demo, caching: true })).toMatchObject({
+    expect(
+      reduceParse(started, {
+        type: 'succeeded',
+        demo,
+        demoKey: 'match-key',
+        roundIndex: 0,
+        caching: true,
+      }),
+    ).toMatchObject({
       status: 'ready',
       fileName: 'faceit-1-2-3.dem',
     });
@@ -120,7 +142,15 @@ describe('reduceParse', () => {
 
   it('says the demo is on its way to the cache before it arrives', () => {
     expect(ready()).toMatchObject({ cache: { status: 'storing' } });
-    expect(reduceParse(parsing(), { type: 'succeeded', demo, caching: false })).toMatchObject({
+    expect(
+      reduceParse(parsing(), {
+        type: 'succeeded',
+        demo,
+        demoKey: 'match-key',
+        roundIndex: 0,
+        caching: false,
+      }),
+    ).toMatchObject({
       cache: { status: 'unavailable' },
     });
   });
@@ -144,7 +174,7 @@ describe('reduceParse', () => {
     for (const event of [
       { type: 'progressed', phase: 'parse', percent: 100 },
       { type: 'headerRead', header },
-      { type: 'succeeded', demo, caching: true },
+      { type: 'succeeded', demo, demoKey: 'match-key', roundIndex: 0, caching: true },
       { type: 'failed', failure: parseFailure('MALFORMED_DEMO') },
     ] as const) {
       expect(reduceParse(IDLE_PARSE, event)).toBe(IDLE_PARSE);
@@ -158,7 +188,9 @@ describe('reduceParse', () => {
     expect(reduceParse(done, { type: 'failed', failure: parseFailure('TRUNCATED_DEMO') })).toBe(
       done,
     );
-    expect(reduceParse(done, { type: 'restored', demo, roundIndex: 0 })).toBe(done);
+    expect(reduceParse(done, { type: 'restored', demo, demoKey: 'match-key', roundIndex: 0 })).toBe(
+      done,
+    );
   });
 
   it('does not let a cache answer arrive before the demo does', () => {
@@ -200,9 +232,18 @@ describe('a sample match', () => {
   it('arrives the way a parse does rather than the way a restore does', () => {
     const downloading = reduceParse(opened(), { type: 'downloading', percent: 100 });
 
-    expect(reduceParse(downloading, { type: 'succeeded', demo, caching: true })).toEqual({
+    expect(
+      reduceParse(downloading, {
+        type: 'succeeded',
+        demo,
+        demoKey: 'match-key',
+        roundIndex: 0,
+        caching: true,
+      }),
+    ).toEqual({
       status: 'ready',
       fileName: 'match.dem',
+      demoKey: 'match-key',
       demo,
       cache: { status: 'storing' },
       roundIndex: 0,

@@ -47,6 +47,7 @@ export type ParseState =
   | {
       status: 'ready';
       fileName: string;
+      demoKey: string;
       demo: ParsedDemo;
       cache: CacheState;
       /**
@@ -60,18 +61,23 @@ export type ParseState =
 export type ParseEvent =
   | { type: 'opened'; fileName: string }
   | { type: 'closed' }
-  | { type: 'restored'; demo: ParsedDemo; roundIndex: number }
+  | { type: 'restored'; demo: ParsedDemo; demoKey: string; roundIndex: number }
   | { type: 'downloading'; percent: number | null }
   | { type: 'parseStarted' }
   | { type: 'progressed'; phase: ParsePhase; percent: number }
   | { type: 'wentHidden' }
   | { type: 'headerRead'; header: MatchHeader }
-  | { type: 'succeeded'; demo: ParsedDemo; caching: boolean }
+  | { type: 'succeeded'; demo: ParsedDemo; demoKey: string; roundIndex: number; caching: boolean }
   | { type: 'stored'; persistence: PersistenceStatus }
   | { type: 'notStored' }
   | { type: 'failed'; failure: OpenFailure };
 
 export const IDLE_PARSE: ParseState = { status: 'idle' };
+
+export function nonReadyParseState(state: ParseState): Exclude<ParseState, { status: 'ready' }> {
+  if (state.status === 'ready') return { status: 'idle' };
+  return state;
+}
 
 function reduceRestoring(
   state: Extract<ParseState, { status: 'restoring' }>,
@@ -83,6 +89,7 @@ function reduceRestoring(
     return {
       status: 'ready',
       fileName,
+      demoKey: event.demoKey,
       demo: event.demo,
       cache: { status: 'restored' },
       roundIndex: event.roundIndex,
@@ -97,9 +104,10 @@ function reduceRestoring(
     return {
       status: 'ready',
       fileName,
+      demoKey: event.demoKey,
       demo: event.demo,
       cache: { status: event.caching ? 'storing' : 'unavailable' },
-      roundIndex: 0,
+      roundIndex: event.roundIndex,
     };
   }
 
@@ -140,9 +148,10 @@ function reduceParsing(
       return {
         status: 'ready',
         fileName: state.fileName,
+        demoKey: event.demoKey,
         demo: event.demo,
         cache: { status: event.caching ? 'storing' : 'unavailable' },
-        roundIndex: 0,
+        roundIndex: event.roundIndex,
       };
     case 'failed':
       return { status: 'failed', fileName: state.fileName, failure: event.failure };

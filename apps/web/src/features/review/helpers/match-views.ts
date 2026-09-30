@@ -9,12 +9,13 @@ import {
   Map as MapIcon,
   Table,
 } from 'lucide-react';
+import type { MatchView } from '@/core/navigation';
 
 /**
  * What a match can be showing, in the order the switch lists them. The stage is the match as it
  * plays; the rest are readings of the whole of it — `ROADMAP.md` M5, one screen per row.
  */
-export type MatchView = 'stage' | 'scoreboard' | 'duels' | 'heatmap' | 'utility' | 'metrics';
+export type { MatchView } from '@/core/navigation';
 
 export interface MatchViewSection {
   view: MatchView;
