@@ -130,6 +130,7 @@ export type {
   ParsedLineupFile,
 } from './helpers/lineups';
 export {
+  isBuiltInCopy,
   isLineup,
   isLocalImageRef,
   LINEUP_SIDES,

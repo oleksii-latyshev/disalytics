@@ -3,8 +3,13 @@ import { parseLineupFile, referencedLocalImageHashes, serializeLineupFile } from
 import { openLineupStore } from '@disa/demo-store';
 import { loadMapLineups } from '@disa/map-data';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { combineLineups } from '../helpers/lineup-catalog';
+import { combineLineups, withoutBuiltInCopies } from '../helpers/lineup-catalog';
 import { blobToDataUrl, dataUrlToBlob, sha256Hex } from '../helpers/lineup-photo-codec';
+
+async function loadBuiltInsFor(lineups: readonly Lineup[]): Promise<readonly Lineup[]> {
+  const maps = [...new Set(lineups.map((lineup) => lineup.map))];
+  return (await Promise.all(maps.map(loadMapLineups))).flat();
+}
 
 export function useMapLineups(map: string) {
   const [builtInLineups, setBuiltInLineups] = useState<readonly Lineup[]>([]);
@@ -60,7 +65,8 @@ export function useMapLineups(map: string) {
   const importLineups = useCallback(
     async (file: File): Promise<number> => {
       const text = await file.text();
-      const { lineups: parsed, images } = parseLineupFile(text);
+      const { lineups: inFile, images } = parseLineupFile(text);
+      const parsed = withoutBuiltInCopies(inFile, await loadBuiltInsFor(inFile));
       if (parsed.length === 0) return 0;
 
       const photos = new Map<string, Blob>();
@@ -93,7 +99,8 @@ export function useMapLineups(map: string) {
     let all: readonly Lineup[];
     const images: Record<string, string> = {};
     try {
-      all = await store.list();
+      const stored = await store.list();
+      all = withoutBuiltInCopies(stored, await loadBuiltInsFor(stored));
       for (const hash of referencedLocalImageHashes(all)) {
         const blob = await store.getPhoto(hash);
         if (blob !== null) images[hash] = await blobToDataUrl(blob);
