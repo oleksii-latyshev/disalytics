@@ -179,7 +179,7 @@ export function LineupPhotosField({
             setNewImageUrl('');
             setError(null);
           }}
-          className="h-8 px-3 text-12"
+          className="px-3 text-12"
         >
           <Text path="library.lineups.form.addImage" />
         </Button>

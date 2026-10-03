@@ -16,7 +16,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && bun tools/declaration-specifiers.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-rc.0",
@@ -31,7 +32,8 @@
   "devDependencies": {
     "@disa/tsconfig": "*",
     "@types/react": "19.2.2",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^4.1.10"
   },
   "imports": {
     "#components/*": "./src/components/*",
