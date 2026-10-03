@@ -1,47 +1,12 @@
 import type { Lineup } from '@disa/demo-core';
 import { parseLineupFile, referencedLocalImageHashes, serializeLineupFile } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
-import { loadMapLineups } from '@disa/map-data';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { combineLineups } from '../helpers/lineup-catalog';
+import { useCallback } from 'react';
+import { loadBuiltInsFor, useLineupCatalog, withoutBuiltInCopies } from '@/core/lineup-catalog';
 import { blobToDataUrl, dataUrlToBlob, sha256Hex } from '../helpers/lineup-photo-codec';
 
 export function useMapLineups(map: string) {
-  const [builtInLineups, setBuiltInLineups] = useState<readonly Lineup[]>([]);
-  const [customLineups, setCustomLineups] = useState<readonly Lineup[]>([]);
-  const [loadedMap, setLoadedMap] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const combinedLineups = useMemo(
-    () => combineLineups(customLineups, builtInLineups),
-    [customLineups, builtInLineups],
-  );
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [builtIn, store] = await Promise.all([loadMapLineups(map), openLineupStore()]);
-
-      setBuiltInLineups(builtIn);
-
-      if (store !== null) {
-        try {
-          const customs = await store.list({ map });
-          setCustomLineups(customs);
-        } finally {
-          store.close();
-        }
-      } else {
-        setCustomLineups([]);
-      }
-      setLoadedMap(map);
-    } finally {
-      setLoading(false);
-    }
-  }, [map]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const { lineups, loading, reload } = useLineupCatalog(map);
 
   const deleteLineup = useCallback(
     async (id: string) => {
@@ -60,7 +25,8 @@ export function useMapLineups(map: string) {
   const importLineups = useCallback(
     async (file: File): Promise<number> => {
       const text = await file.text();
-      const { lineups: parsed, images } = parseLineupFile(text);
+      const { lineups: inFile, images } = parseLineupFile(text);
+      const parsed = withoutBuiltInCopies(inFile, await loadBuiltInsFor(inFile));
       if (parsed.length === 0) return 0;
 
       const photos = new Map<string, Blob>();
@@ -93,7 +59,8 @@ export function useMapLineups(map: string) {
     let all: readonly Lineup[];
     const images: Record<string, string> = {};
     try {
-      all = await store.list();
+      const stored = await store.list();
+      all = withoutBuiltInCopies(stored, await loadBuiltInsFor(stored));
       for (const hash of referencedLocalImageHashes(all)) {
         const blob = await store.getPhoto(hash);
         if (blob !== null) images[hash] = await blobToDataUrl(blob);
@@ -112,8 +79,8 @@ export function useMapLineups(map: string) {
   }, []);
 
   return {
-    lineups: loadedMap === map ? combinedLineups : [],
-    loading: loading || loadedMap !== map,
+    lineups,
+    loading,
     reload,
     deleteLineup,
     importLineups,

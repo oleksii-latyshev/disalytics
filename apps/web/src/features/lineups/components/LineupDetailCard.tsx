@@ -194,11 +194,7 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
             <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink selection:bg-surface-3">
               {lineup.command}
             </code>
-            <Button
-              variant="secondary"
-              onClick={handleCopy}
-              className="h-6 shrink-0 gap-1 px-2 text-11"
-            >
+            <Button variant="secondary" onClick={handleCopy} className="shrink-0">
               {copied ? (
                 <>
                   <Check className="size-3 text-ct" />

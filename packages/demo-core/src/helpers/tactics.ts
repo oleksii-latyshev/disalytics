@@ -4,7 +4,15 @@ export type TacticSide = 'CT' | 'T';
 
 export const TACTIC_SIDES: readonly TacticSide[] = ['CT', 'T'] as const;
 
+export type TacticRound = 'pistol' | 'eco' | 'force' | 'full';
+
+export const TACTIC_ROUNDS: readonly TacticRound[] = ['pistol', 'eco', 'force', 'full'] as const;
+
 export const TACTIC_SCHEMA_VERSION = 1;
+
+export function isTacticRound(value: unknown): value is TacticRound {
+  return TACTIC_ROUNDS.some((round) => round === value);
+}
 
 export interface TacticPoint {
   readonly x: number;
@@ -27,6 +35,7 @@ export interface TacticThrow {
   readonly from: TacticPoint;
   readonly to: TacticPoint;
   readonly releaseTime: number;
+  readonly lineupId?: string | undefined;
   readonly notes?: string | undefined;
 }
 
@@ -51,6 +60,7 @@ export interface Tactic {
   readonly title: string;
   readonly map: string;
   readonly side: TacticSide;
+  readonly rounds?: readonly TacticRound[] | undefined;
   readonly steps: readonly TacticStep[];
   readonly author?: string | undefined;
   readonly description?: string | undefined;
@@ -116,6 +126,9 @@ function isTacticThrow(value: unknown): value is TacticThrow {
   if (!isFiniteNumber(value.releaseTime)) {
     return false;
   }
+  if (value.lineupId !== undefined && typeof value.lineupId !== 'string') {
+    return false;
+  }
   if (value.notes !== undefined && typeof value.notes !== 'string') {
     return false;
   }
@@ -158,6 +171,19 @@ function isTacticStep(value: unknown): value is TacticStep {
   return true;
 }
 
+function hasValidOptionalFields(value: Record<string, unknown>): boolean {
+  if (
+    value.rounds !== undefined &&
+    !(Array.isArray(value.rounds) && value.rounds.every(isTacticRound))
+  ) {
+    return false;
+  }
+  if (value.author !== undefined && typeof value.author !== 'string') {
+    return false;
+  }
+  return value.description === undefined || typeof value.description === 'string';
+}
+
 export function isTactic(value: unknown): value is Tactic {
   if (!isObject(value)) return false;
   if (
@@ -173,10 +199,7 @@ export function isTactic(value: unknown): value is Tactic {
   if (!Array.isArray(value.steps) || !value.steps.every(isTacticStep)) {
     return false;
   }
-  if (value.author !== undefined && typeof value.author !== 'string') {
-    return false;
-  }
-  if (value.description !== undefined && typeof value.description !== 'string') {
+  if (!hasValidOptionalFields(value)) {
     return false;
   }
   if (!isFiniteNumber(value.createdAt) || !isFiniteNumber(value.updatedAt)) {

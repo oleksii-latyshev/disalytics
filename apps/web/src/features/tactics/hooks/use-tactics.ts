@@ -128,12 +128,12 @@ export function useTactics() {
   }, []);
 
   const duplicateTactic = useCallback(
-    async (source: Tactic): Promise<Tactic> => {
+    async (source: Tactic, title: string): Promise<Tactic> => {
       const now = Date.now();
       const duplicated: Tactic = {
         ...source,
         id: generateId('tactic'),
-        title: `${source.title} (Copy)`,
+        title,
         createdAt: now,
         updatedAt: now,
         steps: source.steps.map((step) => ({

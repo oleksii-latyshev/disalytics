@@ -1,4 +1,12 @@
-import type { Tactic, TacticDrawingStroke, TacticThrow, UtilityKind } from '@disa/demo-core';
+import type {
+  Lineup,
+  Tactic,
+  TacticDrawingStroke,
+  TacticRound,
+  TacticSide,
+  TacticThrow,
+  UtilityKind,
+} from '@disa/demo-core';
 import { useCallback, useState } from 'react';
 import {
   addDrawingStrokeToStep,
@@ -19,7 +27,9 @@ import {
   updateStepOffset as updateStepOffsetAction,
   updateThrowPositionInStep,
 } from '../helpers/editor-actions';
+import { addLineupThrowToStep } from '../helpers/lineup-throw';
 import { updateStepAt } from '../helpers/step-update';
+import { changeTacticMap, changeTacticSide, toggleTacticRound } from '../helpers/tactic-setup';
 import { useTacticHistory } from './use-tactic-history';
 import { useTacticPlayback } from './use-tactic-playback';
 
@@ -221,6 +231,40 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     );
   }, [activeStepIndex, updateTactic]);
 
+  const addLineupThrow = useCallback(
+    (lineup: Lineup) => {
+      if (selectedSlot === null) return;
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) =>
+          addLineupThrowToStep(step, lineup, selectedSlot),
+        ),
+      );
+    },
+    [activeStepIndex, selectedSlot, updateTactic],
+  );
+
+  const changeMap = useCallback(
+    (map: string) => {
+      updateTactic((curr) => changeTacticMap(curr, map));
+      setSelectedThrowId(null);
+    },
+    [updateTactic],
+  );
+
+  const changeSide = useCallback(
+    (side: TacticSide) => {
+      updateTactic((curr) => changeTacticSide(curr, side));
+    },
+    [updateTactic],
+  );
+
+  const toggleRound = useCallback(
+    (round: TacticRound) => {
+      updateTactic((curr) => toggleTacticRound(curr, round));
+    },
+    [updateTactic],
+  );
+
   const updateTitle = useCallback(
     (title: string) => {
       updateTactic((curr) => ({ ...curr, title }));
@@ -277,16 +321,21 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     updatePlayerYaw,
     updatePlayerLabel,
     addThrow,
+    addLineupThrow,
     updateThrowPosition,
     deleteThrow,
     addDrawingStroke,
     deleteDrawingStroke,
     clearDrawings,
+    changeMap,
+    changeSide,
+    toggleRound,
     updateTitle,
     updateDescription,
     save,
     togglePlay: playback.togglePlay,
     seek: playback.seek,
     jumpStep: playback.jumpStep,
+    selectStep: playback.selectStep,
   };
 }

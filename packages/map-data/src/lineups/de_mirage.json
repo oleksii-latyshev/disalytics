@@ -1,0 +1,321 @@
+[
+  {
+    "id": "custom-1790442029063-xu54j",
+    "title": "Smoke kitchen from B-apps",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": -174.03,
+      "y": 896.41,
+      "z": 0
+    },
+    "landing": {
+      "x": -1928.089501446316,
+      "y": -319.00173248565284,
+      "z": 0
+    },
+    "pitch": 0,
+    "yaw": 0,
+    "throwType": "jump",
+    "movementKeys": ["Jump"],
+    "movementKeysSummary": "Jump",
+    "imageUrls": ["https://files.catbox.moe/3hm4hn.webp"],
+    "command": "",
+    "createdAt": 1790442029063,
+    "groupId": "group-1790692081522-sop6",
+    "groupTarget": "origin",
+    "targetCallout": "B Site"
+  },
+  {
+    "id": "custom-1790485996069-yx763",
+    "title": "Smoke short",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": -174.03,
+      "y": 896.41,
+      "z": 0
+    },
+    "landing": {
+      "x": -1174.21,
+      "y": 195.79,
+      "z": 0
+    },
+    "pitch": 0,
+    "yaw": 0,
+    "throwType": "stand",
+    "movementKeys": [],
+    "movementKeysSummary": "Stand",
+    "imageUrls": ["https://files.catbox.moe/4rbyuw.webp"],
+    "command": "",
+    "notes": "Целимся чуть левее от угла здания",
+    "createdAt": 1790485996069,
+    "groupId": "group-1790692081522-sop6",
+    "groupTarget": "origin"
+  },
+  {
+    "id": "custom-1790506156932-4r3jp",
+    "title": "Smoke stairs from pit",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 805.05,
+      "y": -1551.83,
+      "z": 0
+    },
+    "landing": {
+      "x": -477.35,
+      "y": -1567.04,
+      "z": 0
+    },
+    "pitch": 0,
+    "yaw": 0,
+    "throwType": "jump",
+    "movementKeys": ["Jump"],
+    "movementKeysSummary": "Jump",
+    "mouseButtons": ["left", "right"],
+    "imageUrls": [
+      "https://files.catbox.moe/1yxnmi.webp",
+      "https://files.catbox.moe/8fe609.webp",
+      "https://files.catbox.moe/qpsmel.webp"
+    ],
+    "imageCaptions": ["", "", ""],
+    "command": "",
+    "createdAt": 1790506156932,
+    "groupId": "group-1790692099725-9n3c",
+    "groupTarget": "origin"
+  },
+  {
+    "id": "custom-1790507742650-adnhf",
+    "title": "Smoke understairs",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 805.05,
+      "y": -1551.83,
+      "z": 0
+    },
+    "landing": {
+      "x": -700.37,
+      "y": -1607.59,
+      "z": 0
+    },
+    "pitch": 0,
+    "yaw": 0,
+    "throwType": "stand",
+    "movementKeys": [],
+    "movementKeysSummary": "Stand",
+    "imageUrls": [
+      "https://files.catbox.moe/q7pcia.webp",
+      "https://files.catbox.moe/8fe609.webp",
+      "https://files.catbox.moe/xlb9sf.webp"
+    ],
+    "command": "",
+    "notes": "Нужно навестись по центру зубчика на скриншоте и отпустить ЛКМ",
+    "createdAt": 1790507742650,
+    "groupId": "group-1790692099725-9n3c",
+    "groupTarget": "origin"
+  },
+  {
+    "id": "custom-1790527480377-0n72u",
+    "title": "1th instant window smoke",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 1290.87,
+      "y": 30.71,
+      "z": -167.97
+    },
+    "landing": {
+      "x": -1163.51,
+      "y": -633.64,
+      "z": -165.97
+    },
+    "groupId": "group-1790692037698-lpi3",
+    "groupTarget": "landing",
+    "pitch": -29,
+    "yaw": -165.93,
+    "throwType": "jump",
+    "movementKeys": ["Jump", "W"],
+    "movementKeysSummary": "Jump + W",
+    "mouseButtons": ["left"],
+    "movementInstructions": "Нажать легонько W и прыжок",
+    "imageUrls": ["https://files.catbox.moe/y0lwy7.jpg"],
+    "imageCaptions": [""],
+    "command": "setpos 1290.87 30.71 -167.97; setang -29.00 -165.93 0 // Jump",
+    "landingCommand": "setpos -1163.51 -633.64 -165.97",
+    "fromDemo": true,
+    "targetCallout": "Window",
+    "createdAt": 1790527480377
+  },
+  {
+    "id": "custom-1790527500018-xgwvv",
+    "title": "3th instant window smoke",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 1209.54,
+      "y": -116.24,
+      "z": -163.97
+    },
+    "landing": {
+      "x": -1163.51,
+      "y": -633.64,
+      "z": -165.97
+    },
+    "pitch": -45.9,
+    "yaw": -169.14,
+    "throwType": "jump",
+    "movementKeys": ["Jump", "W"],
+    "movementKeysSummary": "Jump + W",
+    "mouseButtons": ["left"],
+    "movementInstructions": "Нажать легонько W и прыжок",
+    "imageUrls": ["https://files.catbox.moe/9eje7t.webp"],
+    "imageCaptions": [""],
+    "command": "setpos 1216.000244 -115.000008 -101.936905;setang -46.022442 -168.740463 0.000000 // Jump",
+    "landingCommand": "setpos -1211.13 -599.96 -165.97",
+    "fromDemo": true,
+    "targetCallout": "Underpass",
+    "createdAt": 1790527500018,
+    "groupId": "group-1790692037698-lpi3",
+    "groupTarget": "landing"
+  },
+  {
+    "id": "custom-1790527520387-akepd",
+    "title": "connector smoke from T spawn",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 1422.96,
+      "y": 36.47,
+      "z": -167.97
+    },
+    "landing": {
+      "x": -625.27,
+      "y": -885.8,
+      "z": -253.97
+    },
+    "pitch": -19.56,
+    "yaw": -158.25,
+    "throwType": "jump",
+    "movementKeys": ["Stand", "Jump"],
+    "movementKeysSummary": "Stand + Jump",
+    "mouseButtons": ["left"],
+    "imageUrls": ["https://files.catbox.moe/chpvni.webp", "https://files.catbox.moe/i40uf4.webp"],
+    "imageCaptions": ["", ""],
+    "command": "setpos 1422.96 36.47 -167.97; setang -19.56 -158.25 0 // Stand + Jump",
+    "landingCommand": "setpos -625.27 -885.80 -253.97",
+    "fromDemo": true,
+    "notes": "Целится по центру этой ступеньки. Довольно строгий смок, потому правее или левее нельзя",
+    "targetCallout": "Connector",
+    "createdAt": 1790527520387
+  },
+  {
+    "id": "custom-1790527541738-g4v2v",
+    "title": "2th instant window smoke",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 1209.36,
+      "y": -17.57,
+      "z": -163.97
+    },
+    "landing": {
+      "x": -1163.51,
+      "y": -633.64,
+      "z": -165.97
+    },
+    "pitch": -44.92,
+    "yaw": -166.71,
+    "throwType": "jump",
+    "movementKeys": ["Jump", "W"],
+    "movementKeysSummary": "Jump + W",
+    "mouseButtons": ["left"],
+    "movementInstructions": "Нажать легонько W и прыжок",
+    "imageUrls": ["https://files.catbox.moe/dbqipg.webp"],
+    "imageCaptions": ["Целится в уголок белый что между решеткой виднеется"],
+    "command": "setpos 1216.000000 -16.000000 -101.936905;setang -44.092194 -166.320923 0.000000 // Jump",
+    "landingCommand": "setpos -1209.28 -613.53 -165.97",
+    "fromDemo": true,
+    "targetCallout": "Window",
+    "createdAt": 1790527541738,
+    "groupId": "group-1790692037698-lpi3",
+    "groupTarget": "landing"
+  },
+  {
+    "id": "custom-1790613364469-yitgs",
+    "title": "5th instant window smoke",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 1290.76,
+      "y": -352.57,
+      "z": -167.97
+    },
+    "landing": {
+      "x": -1163.51,
+      "y": -633.64,
+      "z": -165.97
+    },
+    "pitch": -42.58,
+    "yaw": -173.81,
+    "throwType": "jump",
+    "movementKeys": ["Jump", "W"],
+    "movementKeysSummary": "Jump + W",
+    "mouseButtons": ["left"],
+    "movementInstructions": "Нажать легонько W и прыжок",
+    "imageUrls": ["https://files.catbox.moe/kubrtl.webp"],
+    "imageCaptions": [""],
+    "command": "setpos 1290.76 -352.57 -167.97; setang -42.58 -173.81 0 // Jump",
+    "landingCommand": "setpos -1195.67 -636.65 -165.97",
+    "fromDemo": true,
+    "notes": "По темной точке, что немного правее от трещины на стене и левее от окна",
+    "targetCallout": "Underpass",
+    "createdAt": 1790613364469,
+    "groupId": "group-1790692037698-lpi3",
+    "groupTarget": "landing"
+  },
+  {
+    "id": "custom-1790614018899-39utz",
+    "title": "4th instant window smoke",
+    "map": "de_mirage",
+    "side": "T",
+    "kind": "smoke",
+    "origin": {
+      "x": 1209.63,
+      "y": -212.08,
+      "z": -163.97
+    },
+    "landing": {
+      "x": -1163.51,
+      "y": -633.64,
+      "z": -165.97
+    },
+    "groupId": "group-1790692037698-lpi3",
+    "groupTarget": "landing",
+    "mouseButtons": ["left"],
+    "movementInstructions": "Нажать легонько W и прыжок",
+    "imageUrls": ["https://files.catbox.moe/lgj24v.webp"],
+    "imageCaptions": [""],
+    "landingCommand": "setpos -1205.95 -643.17 -165.97",
+    "fromDemo": true,
+    "notes": "На четвертой фигуре на решетке, по левой ее половины, по концу внутренней заветушки",
+    "targetCallout": "Underpass",
+    "pitch": -45.84,
+    "yaw": -170.32,
+    "throwType": "jump",
+    "movementKeys": ["Jump", "W"],
+    "movementKeysSummary": "Jump + W",
+    "command": "setpos 1216.000000 -211.000000 -100.616211;setang -45.990883 -170.314789 0.000000 // Jump",
+    "createdAt": 1790614018899
+  }
+]

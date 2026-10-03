@@ -44,7 +44,7 @@ export function TacticTransport({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface-1 px-4 py-2.5 text-ink">
+    <div className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface-1 px-3 py-2 text-ink">
       {/* Play/Pause & Step Navigation Buttons */}
       <div className="flex items-center gap-1">
         <Button
@@ -53,14 +53,14 @@ export function TacticTransport({
           onClick={() => onJumpStep('prev')}
           aria-label={t('library.tactics.transport.prevStep')}
           title={t('library.tactics.transport.prevStep')}
-          className="h-8 w-8 text-ink-dim hover:text-ink"
+          className="text-ink-dim hover:text-ink"
         >
-          <SkipBack className="h-4 w-4" />
+          <SkipBack />
         </Button>
 
         <Button
           variant="secondary"
-          size="icon"
+          size="icon-lg"
           onClick={onTogglePlay}
           aria-label={
             isPlaying ? t('library.tactics.transport.pause') : t('library.tactics.transport.play')
@@ -68,9 +68,8 @@ export function TacticTransport({
           title={
             isPlaying ? t('library.tactics.transport.pause') : t('library.tactics.transport.play')
           }
-          className="h-9 w-9 text-ink"
         >
-          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          {isPlaying ? <Pause /> : <Play />}
         </Button>
 
         <Button
@@ -79,9 +78,9 @@ export function TacticTransport({
           onClick={() => onJumpStep('next')}
           aria-label={t('library.tactics.transport.nextStep')}
           title={t('library.tactics.transport.nextStep')}
-          className="h-8 w-8 text-ink-dim hover:text-ink"
+          className="text-ink-dim hover:text-ink"
         >
-          <SkipForward className="h-4 w-4" />
+          <SkipForward />
         </Button>
       </div>
 
@@ -116,7 +115,7 @@ export function TacticTransport({
       </div>
 
       {/* Time display & Speed toggle */}
-      <div className="flex items-center gap-3 font-mono text-xs text-ink-dim">
+      <div className="flex items-center gap-3 font-mono text-12 text-ink-dim">
         <span className="tabular-nums">
           {t('library.tactics.transport.time', {
             current: playbackTime,
@@ -129,7 +128,7 @@ export function TacticTransport({
           onClick={handleCycleSpeed}
           aria-label={t('library.tactics.transport.speed')}
           title={t('library.tactics.transport.speed')}
-          className="h-7 px-2 font-mono text-xs font-medium text-ink"
+          className="font-mono text-ink"
         >
           {playbackSpeed}×
         </Button>

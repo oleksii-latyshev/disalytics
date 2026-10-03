@@ -1,4 +1,4 @@
-import type { TacticSide } from '@disa/demo-core';
+import { TACTIC_ROUNDS, type TacticRound, type TacticSide } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
 import { Search } from 'lucide-react';
@@ -6,7 +6,9 @@ import { Search } from 'lucide-react';
 interface TacticsFilterBarProps {
   readonly selectedMap: string;
   readonly selectedSide: TacticSide | 'ALL';
+  readonly selectedRound: TacticRound | 'ALL';
   readonly searchQuery: string;
+  readonly onSelectRound: (round: TacticRound | 'ALL') => void;
   readonly onSelectMap: (map: string) => void;
   readonly onSelectSide: (side: TacticSide | 'ALL') => void;
   readonly onSearch: (query: string) => void;
@@ -15,7 +17,9 @@ interface TacticsFilterBarProps {
 export function TacticsFilterBar({
   selectedMap,
   selectedSide,
+  selectedRound,
   searchQuery,
+  onSelectRound,
   onSelectMap,
   onSelectSide,
   onSearch,
@@ -78,6 +82,28 @@ export function TacticsFilterBar({
             </button>
           ))}
         </fieldset>
+
+        {/* Round Type Selector */}
+        <fieldset
+          aria-label={t('library.tactics.library.roundFilter')}
+          className="m-0 flex items-center gap-1 rounded-chip border-none bg-surface-1 p-0.5"
+        >
+          {(['ALL', ...TACTIC_ROUNDS] as const).map((roundOption) => (
+            <button
+              key={roundOption}
+              type="button"
+              onClick={() => onSelectRound(roundOption)}
+              aria-pressed={selectedRound === roundOption}
+              className={`h-7 rounded-chip px-2.5 font-mono text-11 font-medium transition-colors ${
+                selectedRound === roundOption
+                  ? 'bg-surface-3 text-ink'
+                  : 'text-ink-dim hover:text-ink'
+              }`}
+            >
+              {roundOption === 'ALL' ? t('library.tactics.library.allRounds') : roundOption}
+            </button>
+          ))}
+        </fieldset>
       </div>
 
       {/* Search Input */}
@@ -89,7 +115,7 @@ export function TacticsFilterBar({
           onChange={(e) => onSearch(e.target.value)}
           placeholder={t('library.tactics.library.searchPlaceholder')}
           aria-label={t('library.tactics.library.searchPlaceholder')}
-          className="h-8 w-full rounded-chip border border-line bg-surface-1 pl-8 pr-3 text-xs text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
+          className="h-8 w-full rounded-chip border border-line bg-surface-1 pl-8 pr-3 text-12 text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
         />
       </div>
     </div>

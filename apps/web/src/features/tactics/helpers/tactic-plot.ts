@@ -1,4 +1,9 @@
-import type { TacticDrawingStroke, TacticPlayerPosition, TacticThrow } from '@disa/demo-core';
+import type {
+  Lineup,
+  TacticDrawingStroke,
+  TacticPlayerPosition,
+  TacticThrow,
+} from '@disa/demo-core';
 import { type MapOverview, type RadarPoint, radarToWorld, radarX, radarY } from '@disa/map-data';
 import { pointDistance, pointToSegmentDistance } from '@/features/radar';
 
@@ -180,4 +185,28 @@ export function findNearestTacticDrawing(
   }
 
   return bestIndex;
+}
+
+/**
+ * Finds the lineup whose landing is nearest the pointer within the screen distance threshold.
+ */
+export function findNearestTacticLineup(
+  radarPt: RadarPoint,
+  lineups: readonly Lineup[],
+  overview: MapOverview,
+  scale: number,
+  maxDistPx = 14,
+): Lineup | null {
+  let best: Lineup | null = null;
+  let bestDist = maxDistPx / scale;
+
+  for (const lineup of lineups) {
+    const dist = pointDistance(tacticWorldToRadar(overview, lineup.landing), radarPt);
+    if (dist <= bestDist) {
+      bestDist = dist;
+      best = lineup;
+    }
+  }
+
+  return best;
 }

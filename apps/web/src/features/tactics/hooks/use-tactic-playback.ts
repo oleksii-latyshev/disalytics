@@ -1,6 +1,7 @@
 import type { TacticStep } from '@disa/demo-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { computeTotalDuration } from '../helpers/editor-actions';
+import { findActiveStepIndex } from '../helpers/tactic-interpolation';
 
 interface UseTacticPlaybackOptions {
   readonly steps: readonly TacticStep[];
@@ -21,6 +22,14 @@ export function useTacticPlayback({
   const totalDuration = useMemo(() => computeTotalDuration(steps), [steps]);
 
   const lastTimeRef = useRef<number | null>(null);
+  const wasPlayingRef = useRef(false);
+
+  useEffect(() => {
+    if (wasPlayingRef.current && !isPlaying) {
+      setActiveStepIndex(findActiveStepIndex(steps, playbackTime));
+    }
+    wasPlayingRef.current = isPlaying;
+  }, [isPlaying, playbackTime, steps, setActiveStepIndex]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -68,8 +77,20 @@ export function useTacticPlayback({
     (time: number) => {
       const clamped = Math.max(0, Math.min(totalDuration, time));
       setPlaybackTime(clamped);
+      setActiveStepIndex(findActiveStepIndex(steps, clamped));
     },
-    [totalDuration],
+    [totalDuration, steps, setActiveStepIndex],
+  );
+
+  const selectStep = useCallback(
+    (index: number) => {
+      setActiveStepIndex(index);
+      const step = steps[index];
+      if (step !== undefined) {
+        setPlaybackTime(step.timeOffsetSeconds);
+      }
+    },
+    [steps, setActiveStepIndex],
   );
 
   const jumpStep = useCallback(
@@ -79,13 +100,9 @@ export function useTacticPlayback({
           ? Math.max(0, activeStepIndex - 1)
           : Math.min(steps.length - 1, activeStepIndex + 1);
 
-      setActiveStepIndex(targetIndex);
-      const step = steps[targetIndex];
-      if (step !== undefined) {
-        setPlaybackTime(step.timeOffsetSeconds);
-      }
+      selectStep(targetIndex);
     },
-    [activeStepIndex, steps, setActiveStepIndex],
+    [activeStepIndex, steps.length, selectStep],
   );
 
   return {
@@ -94,5 +111,6 @@ export function useTacticPlayback({
     togglePlay,
     seek,
     jumpStep,
+    selectStep,
   };
 }

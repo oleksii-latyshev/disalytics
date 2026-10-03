@@ -1,9 +1,10 @@
-import type { Tactic, TacticSide } from '@disa/demo-core';
+import type { Tactic, TacticRound, TacticSide } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Download, Plus, Search, Upload } from 'lucide-react';
 import { type ChangeEvent, useMemo, useRef, useState } from 'react';
-import { createNewTactic } from '../helpers/editor-actions';
+import { nameOrFallback } from '../helpers/tactic-names';
+import { createNewTactic } from '../helpers/tactic-setup';
 import { filterTactics } from '../helpers/tactics-filter';
 import { useTactics } from '../hooks/use-tactics';
 import { SharedTacticBanner } from './SharedTacticBanner';
@@ -36,6 +37,7 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
 
   const [selectedMap, setSelectedMap] = useState<string>('all');
   const [selectedSide, setSelectedSide] = useState<TacticSide | 'ALL'>('ALL');
+  const [selectedRound, setSelectedRound] = useState<TacticRound | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [notice, setNotice] = useState<{ message: string; isError: boolean } | null>(null);
@@ -44,9 +46,10 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
     return filterTactics(tactics, {
       map: selectedMap,
       side: selectedSide,
+      round: selectedRound,
       search: searchQuery,
     });
-  }, [tactics, selectedMap, selectedSide, searchQuery]);
+  }, [tactics, selectedMap, selectedSide, selectedRound, searchQuery]);
 
   const handleCreateNew = () => {
     const map = selectedMap !== 'all' ? selectedMap : 'de_mirage';
@@ -54,6 +57,14 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
     const newTactic = createNewTactic(map, side);
     setEditingTactic(newTactic);
   };
+
+  const handleDuplicate = (source: Tactic) =>
+    duplicateTactic(
+      source,
+      t('library.tactics.library.copyTitle', {
+        title: nameOrFallback(source.title, t('library.tactics.untitled')),
+      }),
+    );
 
   const handleSaveTactic = async (tacticToSave: Tactic) => {
     await saveTactic(tacticToSave);
@@ -149,17 +160,13 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="primary" onClick={handleCreateNew} className="h-8 gap-1.5 px-3 text-xs">
-            <Plus className="h-3.5 w-3.5" />
+          <Button variant="primary" onClick={handleCreateNew}>
+            <Plus />
             <span>{t('library.tactics.library.newTactic')}</span>
           </Button>
 
-          <Button
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-8 gap-1.5 px-3 text-xs"
-          >
-            <Upload className="h-3.5 w-3.5" />
+          <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            <Upload />
             <span>{t('library.tactics.library.import')}</span>
           </Button>
 
@@ -167,9 +174,8 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
             variant="secondary"
             onClick={() => exportTactics(filteredTactics)}
             disabled={filteredTactics.length === 0}
-            className="h-8 gap-1.5 px-3 text-xs"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download />
             <span>{t('library.tactics.library.export')}</span>
           </Button>
         </div>
@@ -178,9 +184,11 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
       <TacticsFilterBar
         selectedMap={selectedMap}
         selectedSide={selectedSide}
+        selectedRound={selectedRound}
         searchQuery={searchQuery}
         onSelectMap={setSelectedMap}
         onSelectSide={setSelectedSide}
+        onSelectRound={setSelectedRound}
         onSearch={setSearchQuery}
       />
 
@@ -198,12 +206,8 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
               {t('library.tactics.library.emptyHint')}
             </p>
           </div>
-          <Button
-            variant="secondary"
-            onClick={handleCreateNew}
-            className="mt-2 h-8 gap-1.5 px-3 text-xs"
-          >
-            <Plus className="h-3.5 w-3.5" />
+          <Button variant="secondary" onClick={handleCreateNew} className="mt-2">
+            <Plus />
             <span>{t('library.tactics.library.newTactic')}</span>
           </Button>
         </div>
@@ -215,7 +219,7 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
               tactic={tactic}
               onOpen={setEditingTactic}
               onShare={setSharingTactic}
-              onDuplicate={duplicateTactic}
+              onDuplicate={handleDuplicate}
               onExport={exportSingleTactic}
               onDelete={deleteTactic}
             />

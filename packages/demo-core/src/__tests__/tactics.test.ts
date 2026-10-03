@@ -259,3 +259,38 @@ describe('encodeTacticToHash and decodeTacticFromHash', () => {
     expect(decodeTacticFromHash('#other-hash=123')).toBeNull();
   });
 });
+
+describe('round types and lineup references', () => {
+  it('accepts a tactic called on listed rounds', () => {
+    expect(isTactic({ ...validTactic, rounds: ['pistol', 'eco'] })).toBe(true);
+    expect(isTactic({ ...validTactic, rounds: [] })).toBe(true);
+  });
+
+  it('rejects an unknown round type or a non-array', () => {
+    expect(isTactic({ ...validTactic, rounds: ['half'] })).toBe(false);
+    expect(isTactic({ ...validTactic, rounds: 'eco' })).toBe(false);
+  });
+
+  it('accepts empty titles and names so the UI can show its own fallback', () => {
+    const [step] = validTactic.steps;
+    expect(
+      isTactic({ ...validTactic, title: '', steps: step ? [{ ...step, name: '' }] : [] }),
+    ).toBe(true);
+  });
+
+  it('validates a throw lineupId', () => {
+    const [step] = validTactic.steps;
+    const [thrown] = step?.throws ?? [];
+    if (step === undefined || thrown === undefined) throw new Error('fixture has no throw');
+    const withId = {
+      ...validTactic,
+      steps: [{ ...step, throws: [{ ...thrown, lineupId: 'l1' }] }],
+    };
+    const withBadId = {
+      ...validTactic,
+      steps: [{ ...step, throws: [{ ...thrown, lineupId: 3 }] }],
+    };
+    expect(isTactic(withId)).toBe(true);
+    expect(isTactic(withBadId)).toBe(false);
+  });
+});

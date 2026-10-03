@@ -30,12 +30,12 @@ function handleNavigationShortcut(
     togglePlay();
     return true;
   }
-  if (event.key === '[') {
+  if (event.key === 'ArrowLeft' || event.key === '[') {
     event.preventDefault();
     jumpStep('prev');
     return true;
   }
-  if (event.key === ']') {
+  if (event.key === 'ArrowRight' || event.key === ']') {
     event.preventDefault();
     jumpStep('next');
     return true;
@@ -83,10 +83,17 @@ export interface TacticShortcutActions {
   readonly selectTool: (tool: TacticTool) => void;
 }
 
+/** Whether the keys belong to what has focus: a text field, a menu, or an editable region. A range slider does not keep them, so the arrows keep stepping after it was dragged. */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (target instanceof HTMLInputElement) return target.type !== 'range';
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+  return target instanceof HTMLElement && target.isContentEditable;
+}
+
 export function handleTacticShortcut(event: KeyboardEvent, actions: TacticShortcutActions): void {
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-    return;
-  }
+  if (event.defaultPrevented || isTypingTarget(event.target)) return;
+  if (event.code === 'Space' && event.target instanceof HTMLButtonElement) return;
+  if ((event.altKey || event.shiftKey) && !event.ctrlKey && !event.metaKey) return;
 
   if (handleModifierShortcut(event, actions.undo, actions.redo, actions.save)) return;
   if (handleNavigationShortcut(event, actions.togglePlay, actions.jumpStep)) return;

@@ -1,9 +1,13 @@
-import type { Tactic } from '@disa/demo-core';
+import { type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLineupCatalog } from '@/core/lineup-catalog';
+import { selectableLineups } from '../helpers/lineup-throw';
+import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { useTacticEditor } from '../hooks/use-tactic-editor';
 import { TacticEditorHeader } from './TacticEditorHeader';
+import { TacticLoadoutPanel } from './TacticLoadoutPanel';
 import { TacticPlate } from './TacticPlate';
 import { TacticStepPanel } from './TacticStepPanel';
 import { TacticToolbar } from './TacticToolbar';
@@ -40,7 +44,6 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     playbackTime,
     playbackSpeed,
     totalDuration,
-    setActiveStepIndex,
     setSelectedSlot,
     setSelectedThrowId,
     setActiveTool,
@@ -60,18 +63,45 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     updatePlayerYaw,
     updatePlayerLabel,
     addThrow,
+    addLineupThrow,
     updateThrowPosition,
     deleteThrow,
     addDrawingStroke,
     deleteDrawingStroke,
     clearDrawings,
+    changeMap,
+    changeSide,
+    toggleRound,
     updateTitle,
     updateDescription,
     save,
     togglePlay,
     seek,
     jumpStep,
+    selectStep,
   } = editor;
+
+  const { lineups } = useLineupCatalog(tactic.map);
+  const loadout = useMemo(() => tacticLoadout(tactic), [tactic]);
+  const pickableLineups = useMemo(
+    () => selectableLineups(lineups, tactic.side, newThrowKind),
+    [lineups, tactic.side, newThrowKind],
+  );
+
+  const handleChangeMap = (map: string) => {
+    if (map === tactic.map) return;
+    if (hasEditorWork(tactic) && !window.confirm(t('library.tactics.editor.mapChangeConfirm'))) {
+      return;
+    }
+    changeMap(map);
+  };
+
+  const throwHint =
+    selectedSlot === null
+      ? t('library.tactics.throw.pickPlayer')
+      : pickableLineups.length === 0
+        ? t('library.tactics.throw.noLineups')
+        : t('library.tactics.throw.pickLineup', { slot: selectedSlot + 1 });
 
   const handleSave = useCallback(() => {
     save();
@@ -122,13 +152,14 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         onBack={onBack}
         onUpdateTitle={updateTitle}
         onUpdateDescription={updateDescription}
+        onChangeMap={handleChangeMap}
+        onChangeSide={changeSide}
+        onToggleRound={toggleRound}
         onSave={handleSave}
       />
 
-      {/* Main Board Work Area */}
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-between gap-3 overflow-hidden p-3">
-        {/* Floating / Docked Toolbar */}
-        <div className="z-10 w-full max-w-4xl">
+      <main className="flex min-h-0 flex-1 gap-3 overflow-hidden p-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
           <TacticToolbar
             activeTool={activeTool}
             pencilColor={pencilColor}
@@ -147,36 +178,40 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
             onUpdatePlayerLabel={updatePlayerLabel}
             onDeleteThrow={deleteThrow}
           />
-        </div>
 
-        {/* Tactical Radar Canvas Plate */}
-        <div className="relative flex min-h-0 w-full min-w-0 flex-1 items-center justify-center [container-type:size]">
-          <TacticPlate
-            map={tactic.map}
-            side={tactic.side}
-            steps={tactic.steps}
-            activeStepIndex={activeStepIndex}
-            currentTime={isPlaying ? playbackTime : undefined}
-            selectedSlot={selectedSlot}
-            selectedThrowId={selectedThrowId}
-            onSelectSlot={setSelectedSlot}
-            onSelectThrow={setSelectedThrowId}
-            onPlayerDrag={updatePlayerPosition}
-            onThrowDrag={updateThrowPosition}
-            isEditable={!isPlaying}
-            activeTool={activeTool}
-            pencilColor={pencilColor}
-            newThrowKind={newThrowKind}
-            onAddDrawingStroke={addDrawingStroke}
-            onAddThrow={addThrow}
-            onDeleteThrow={deleteThrow}
-            onDeleteDrawingStroke={deleteDrawingStroke}
-            className="aspect-square h-[min(100cqi,100cqb)] max-h-[720px] max-w-[720px] select-none rounded-card border border-line bg-surface-0 shadow-lg"
-          />
-        </div>
+          {activeTool === 'throw' && (
+            <p role="status" className="text-12 text-ink-dim leading-prose">
+              {throwHint}
+            </p>
+          )}
 
-        {/* Playback Transport Controls */}
-        <div className="z-10 w-full max-w-3xl">
+          <div className="relative flex min-h-0 w-full min-w-0 flex-1 items-center justify-center [container-type:size]">
+            <TacticPlate
+              map={tactic.map}
+              side={tactic.side}
+              steps={tactic.steps}
+              activeStepIndex={activeStepIndex}
+              currentTime={isPlaying ? playbackTime : undefined}
+              selectedSlot={selectedSlot}
+              selectedThrowId={selectedThrowId}
+              onSelectSlot={setSelectedSlot}
+              onSelectThrow={setSelectedThrowId}
+              onPlayerDrag={updatePlayerPosition}
+              onThrowDrag={updateThrowPosition}
+              isEditable={!isPlaying}
+              activeTool={isPlaying ? 'select' : activeTool}
+              pencilColor={pencilColor}
+              newThrowKind={newThrowKind}
+              lineups={pickableLineups}
+              onPickLineup={addLineupThrow}
+              onAddDrawingStroke={addDrawingStroke}
+              onAddThrow={addThrow}
+              onDeleteThrow={deleteThrow}
+              onDeleteDrawingStroke={deleteDrawingStroke}
+              className="aspect-square h-[min(100cqi,100cqb)] max-h-[720px] max-w-[720px] select-none rounded-card border border-line bg-surface-0 shadow-lg"
+            />
+          </div>
+
           <TacticTransport
             isPlaying={isPlaying}
             playbackTime={playbackTime}
@@ -189,14 +224,22 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
             onSpeedChange={setPlaybackSpeed}
           />
         </div>
+
+        <aside className="w-72 shrink-0 overflow-y-auto">
+          <TacticLoadoutPanel
+            loadout={loadout}
+            players={activeStep?.players ?? []}
+            selectedSlot={selectedSlot}
+            onSelectSlot={setSelectedSlot}
+          />
+        </aside>
       </main>
 
-      {/* Bottom Step Strip Panel */}
       <footer className="shrink-0 [border-block-start:1px_solid_var(--color-line)] bg-surface-0 p-3">
         <TacticStepPanel
           steps={tactic.steps}
           activeStepIndex={activeStepIndex}
-          onSelectStep={setActiveStepIndex}
+          onSelectStep={selectStep}
           onAddStep={addStep}
           onDuplicateStep={duplicateStep}
           onDeleteStep={deleteStep}

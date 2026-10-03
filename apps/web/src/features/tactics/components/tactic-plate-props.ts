@@ -1,4 +1,5 @@
 import type {
+  Lineup,
   TacticDrawingStroke,
   TacticSide,
   TacticStep,
@@ -35,5 +36,7 @@ export interface TacticPlateProps {
     | ((throwData: Partial<TacticThrow> & Pick<TacticThrow, 'kind' | 'from' | 'to'>) => void)
     | undefined;
   readonly onDeleteThrow?: ((throwId: string) => void) | undefined;
+  readonly lineups?: readonly Lineup[] | undefined;
+  readonly onPickLineup?: ((lineup: Lineup) => void) | undefined;
   readonly onDeleteDrawingStroke?: ((index: number) => void) | undefined;
 }

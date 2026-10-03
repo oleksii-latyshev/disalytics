@@ -64,7 +64,6 @@ export function LineupPlateHud({ plateProps }: { readonly plateProps: LineupPlat
               <Button
                 variant={isAddingBounce ? 'primary' : 'secondary'}
                 onClick={onToggleAddBounce}
-                className="h-7 text-11"
               >
                 <Plus className="size-3.5" />
                 <Text path="library.lineups.addBounce" />
@@ -74,7 +73,7 @@ export function LineupPlateHud({ plateProps }: { readonly plateProps: LineupPlat
               <Button
                 variant="ghost"
                 onClick={onCancelPlacement}
-                className="h-7 text-11 text-ink-dim hover:text-ink"
+                className="text-ink-dim hover:text-ink"
               >
                 <X className="size-3.5" />
                 <Text path="library.lineups.form.cancel" />

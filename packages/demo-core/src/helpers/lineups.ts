@@ -79,6 +79,25 @@ export function localImageRef(hash: string): string {
   return `${LOCAL_IMAGE_PREFIX}${hash}`;
 }
 
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (!isObject(value)) return value;
+  const entries = Object.entries(value)
+    .filter(([key, item]) => key !== 'isBuiltIn' && item !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, item]) => [key, canonical(item)]);
+  return Object.fromEntries(entries);
+}
+
+/** Whether a stored lineup is an unchanged copy of a built-in: same id and content, any key order. */
+export function isBuiltInCopy(lineup: Lineup, builtIns: readonly Lineup[]): boolean {
+  const builtIn = builtIns.find((candidate) => candidate.id === lineup.id);
+  return (
+    builtIn !== undefined &&
+    JSON.stringify(canonical(lineup)) === JSON.stringify(canonical(builtIn))
+  );
+}
+
 /** Every distinct local photo hash the given lineups reference. */
 export function referencedLocalImageHashes(lineups: readonly Lineup[]): ReadonlySet<string> {
   const hashes = new Set<string>();
