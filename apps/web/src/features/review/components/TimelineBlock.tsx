@@ -1,6 +1,7 @@
 import type { ParsedDemo, PlayerSlot } from '@disa/demo-core';
-import type { Transport } from '@/core/playback';
+import { type Transport, useIsPlaying } from '@/core/playback';
 import { PlaybackControls, SpeedControl } from '@/features/controls';
+import { CoachBrow, type CoachSession } from '@/features/radar';
 import { RoundStrip, RoundTimeline } from '@/features/timeline';
 import { Scoreboard } from './Scoreboard';
 
@@ -10,6 +11,7 @@ interface Props {
   selectedSlot: PlayerSlot | null;
   frame: number;
   locale: string;
+  coach: CoachSession;
   hasScoreboard: boolean;
   /** Whether fullscreen stillness has sent the block off the bottom of the screen. */
   isAway: boolean;
@@ -47,9 +49,12 @@ export function TimelineBlock({
   selectedSlot,
   frame,
   locale,
+  coach,
   hasScoreboard,
   isAway,
 }: Props) {
+  const isPlaying = useIsPlaying(transport);
+
   return (
     // The fullscreen auto-hide, and it **keeps its space**: the cell's height is what the plate's
     // axis is short of, so a block that collapsed would resize the plate under the reader in the
@@ -79,7 +84,9 @@ export function TimelineBlock({
         </div>
       )}
 
-      <section className="surface-card flex flex-col rounded-float">
+      <section className="surface-card relative flex flex-col rounded-float">
+        <CoachBrow session={coach} isVisible={!isPlaying} />
+
         <RoundStrip demo={demo} transport={transport} selectedSlot={selectedSlot} />
 
         {/* 64px: the 40px primary control plus 12px either side, which is the whole control row and

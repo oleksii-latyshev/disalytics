@@ -1,5 +1,6 @@
 import type { PlayerSlot } from '@disa/demo-core';
 import type { RadarPoint } from '@disa/map-data';
+import type { RadarColors } from './colors';
 
 export type CoachTool = 'pencil' | 'eraser' | 'move' | 'smoke' | 'molotov' | 'flash' | 'he';
 
@@ -101,4 +102,29 @@ export function redoCoachHistory(history: CoachHistory): CoachHistory | null {
     present: next,
     future,
   };
+}
+
+export function replaceCoachPresent(history: CoachHistory, next: CoachAnnotations): CoachHistory {
+  return { ...history, present: next };
+}
+
+export function commitCoachGesture(history: CoachHistory, base: CoachAnnotations): CoachHistory {
+  if (history.present === base) return history;
+
+  return pushCoachSnapshot({ ...history, present: base }, history.present);
+}
+
+export function resolvePencilColor(color: CoachPencilColor, colors: RadarColors): string {
+  switch (color) {
+    case 'objective':
+      return colors.objective;
+    case 'ct':
+      return colors.team.CT;
+    case 't':
+      return colors.team.T;
+    case 'damage':
+      return colors.damage;
+    case 'ink':
+      return colors.selectionRing;
+  }
 }

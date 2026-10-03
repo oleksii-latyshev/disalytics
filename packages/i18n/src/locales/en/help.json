@@ -23,13 +23,13 @@
     "nextRound": "Next round",
     "selectTRow": "Select the T player in that row",
     "selectCtRow": "Select the CT player in that row",
-    "clearSelection": "Clear the selected player, or close this sheet",
+    "clearSelection": "Put down the pencil, clear the selected player, or close this sheet",
     "fullscreen": "Fullscreen",
     "matchOverlay": "Show the whole match",
     "zoomIn": "Zoom the map in",
     "zoomOut": "Zoom the map out, and all the way out puts it back",
     "help": "Open this help",
-    "coachMode": "Coach mode (draw and place utility)",
+    "coachMode": "Take or put down the pencil (draw and place utility)",
     "nextView": "Next view of the match"
   },
   "legend": {

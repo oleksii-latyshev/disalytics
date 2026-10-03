@@ -17,9 +17,9 @@ import {
   EMPTY_COACH_ANNOTATIONS,
   pushCoachSnapshot,
   redoCoachHistory,
+  resolvePencilColor,
   undoCoachHistory,
 } from '../helpers/coach-types';
-import { resolvePencilColor } from '../hooks/use-coach-mode';
 import { stubPath2D } from './canvas-globals';
 
 stubPath2D();

@@ -1,3 +1,4 @@
+export { CoachBrow } from './components/CoachBrow';
 export { DuelPlate } from './components/DuelPlate';
 export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
@@ -5,6 +6,7 @@ export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export { PlateStill } from './components/PlateStill';
 export { TacticPlate, type TacticPlateProps } from './components/TacticPlate';
 export { UtilityPlate } from './components/UtilityPlate';
+export type { CoachSession } from './helpers/coach-session';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
 export {
@@ -58,3 +60,5 @@ export {
   drawSmokeBody,
   resolveCountdownFont,
 } from './helpers/utility-body';
+export { useCoachKeys } from './hooks/use-coach-keys';
+export { useCoachSession } from './hooks/use-coach-session';
