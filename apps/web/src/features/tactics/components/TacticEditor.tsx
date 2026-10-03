@@ -1,7 +1,7 @@
 import { type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLineupCatalog } from '@/core/lineups';
+import { useLineupCatalog } from '@/core/lineup-catalog';
 import { selectableLineups } from '../helpers/lineup-throw';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';

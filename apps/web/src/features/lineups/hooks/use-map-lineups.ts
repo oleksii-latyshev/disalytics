@@ -2,7 +2,7 @@ import type { Lineup } from '@disa/demo-core';
 import { parseLineupFile, referencedLocalImageHashes, serializeLineupFile } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { useCallback } from 'react';
-import { loadBuiltInsFor, useLineupCatalog, withoutBuiltInCopies } from '@/core/lineups';
+import { loadBuiltInsFor, useLineupCatalog, withoutBuiltInCopies } from '@/core/lineup-catalog';
 import { blobToDataUrl, dataUrlToBlob, sha256Hex } from '../helpers/lineup-photo-codec';
 
 export function useMapLineups(map: string) {
