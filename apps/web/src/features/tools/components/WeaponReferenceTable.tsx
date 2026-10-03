@@ -5,19 +5,8 @@ import {
 } from '@disa/demo-core';
 import { Text, useLocale, useT } from '@disa/i18n';
 import { useMemo, useState } from 'react';
-
-type SortKey =
-  | 'name'
-  | 'category'
-  | 'team'
-  | 'price'
-  | 'killReward'
-  | 'rpm'
-  | 'armorPen'
-  | 'head'
-  | 'chest'
-  | 'stomach'
-  | 'legs';
+import { compareWeapons, type SortKey } from '../helpers/weapon-sort';
+import { WeaponRow } from './WeaponRow';
 
 const CATEGORIES: readonly (WeaponReferenceCategory | 'all')[] = [
   'all',
@@ -30,114 +19,21 @@ const CATEGORIES: readonly (WeaponReferenceCategory | 'all')[] = [
   'equipment',
 ];
 
+const COLUMNS = [
+  { key: 'name', label: 'library.tools.weapons.columns.weapon' },
+  { key: 'category', label: 'library.tools.weapons.columns.category' },
+  { key: 'team', label: 'library.tools.weapons.columns.side' },
+  { key: 'price', label: 'library.tools.weapons.columns.price' },
+  { key: 'killReward', label: 'library.tools.weapons.columns.killReward' },
+  { key: 'rpm', label: 'library.tools.weapons.columns.rpm' },
+  { key: 'armorPen', label: 'library.tools.weapons.columns.armorPen' },
+  { key: 'head', label: 'library.tools.weapons.columns.head' },
+  { key: 'chest', label: 'library.tools.weapons.columns.chest' },
+  { key: 'stomach', label: 'library.tools.weapons.columns.stomach' },
+  { key: 'legs', label: 'library.tools.weapons.columns.legs' },
+] as const satisfies readonly { key: SortKey; label: string }[];
+
 const SIDES = ['all', 'ct', 't'] as const;
-
-function getWeaponSortValue(w: WeaponReference, key: SortKey, isArmored: boolean): number | string {
-  switch (key) {
-    case 'name':
-      return w.name;
-    case 'category':
-      return w.category;
-    case 'team':
-      return w.team;
-    case 'price':
-      return w.price;
-    case 'killReward':
-      return w.killReward;
-    case 'rpm':
-      return w.fireRateRpm;
-    case 'armorPen':
-      return w.armorPenetration;
-    case 'head':
-      return isArmored ? w.hitgroupDamage.head.armored : w.hitgroupDamage.head.unarmored;
-    case 'chest':
-      return isArmored ? w.hitgroupDamage.chestArms.armored : w.hitgroupDamage.chestArms.unarmored;
-    case 'stomach':
-      return isArmored ? w.hitgroupDamage.stomach.armored : w.hitgroupDamage.stomach.unarmored;
-    case 'legs':
-      return w.hitgroupDamage.legs.unarmored;
-  }
-}
-
-function compareWeapons(
-  a: WeaponReference,
-  b: WeaponReference,
-  key: SortKey,
-  asc: boolean,
-  isArmored: boolean,
-): number {
-  const valA = getWeaponSortValue(a, key, isArmored);
-  const valB = getWeaponSortValue(b, key, isArmored);
-
-  if (typeof valA === 'string' && typeof valB === 'string') {
-    const comp = valA.localeCompare(valB);
-    return asc ? comp : -comp;
-  }
-  return asc ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
-}
-
-function WeaponRow({
-  weapon,
-  isArmored,
-  moneyFormat,
-}: {
-  weapon: WeaponReference;
-  isArmored: boolean;
-  moneyFormat: Intl.NumberFormat;
-}) {
-  const headDmg = isArmored
-    ? weapon.hitgroupDamage.head.armored
-    : weapon.hitgroupDamage.head.unarmored;
-  const chestDmg = isArmored
-    ? weapon.hitgroupDamage.chestArms.armored
-    : weapon.hitgroupDamage.chestArms.unarmored;
-  const stomachDmg = isArmored
-    ? weapon.hitgroupDamage.stomach.armored
-    : weapon.hitgroupDamage.stomach.unarmored;
-  const legsDmg = weapon.hitgroupDamage.legs.unarmored;
-
-  return (
-    <tr className="transition-colors hover:bg-hover">
-      <td className="p-3 font-medium text-ink">{weapon.name}</td>
-      <td className="p-3 text-12 text-ink-dim capitalize">{weapon.category}</td>
-      <td className="p-3">
-        <span
-          className={`label-dense rounded-chip px-1.5 py-0.5 text-10 font-medium ${
-            weapon.team === 'ct'
-              ? 'bg-surface-2 text-ct'
-              : weapon.team === 't'
-                ? 'bg-surface-2 text-t'
-                : 'bg-surface-2 text-ink-dim'
-          }`}
-        >
-          {weapon.team.toUpperCase()}
-        </span>
-      </td>
-      <td className="numeric p-3 text-ink">{moneyFormat.format(weapon.price)}</td>
-      <td className="numeric p-3 text-ink-dim">
-        {weapon.killReward > 0 ? moneyFormat.format(weapon.killReward) : '—'}
-      </td>
-      <td className="numeric p-3 text-ink-dim">{weapon.fireRateRpm}</td>
-      <td className="numeric p-3 text-ink-dim">{weapon.armorPenetration}%</td>
-      <td className={`numeric p-3 font-medium ${headDmg >= 100 ? 'text-damage' : 'text-ink'}`}>
-        {headDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
-      </td>
-      <td className="numeric p-3 text-ink-dim">
-        {chestDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
-      </td>
-      <td className="numeric p-3 text-ink-dim">
-        {stomachDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
-      </td>
-      <td className="numeric p-3 text-ink-dim">
-        {legsDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
-      </td>
-    </tr>
-  );
-}
 
 export function WeaponReferenceTable() {
   const t = useT();
@@ -279,116 +175,18 @@ export function WeaponReferenceTable() {
         <table className="w-full min-w-[50rem] border-collapse text-left">
           <thead>
             <tr className="[border-block-end:1px_solid_var(--color-line)] bg-surface-2 text-11 text-ink-dim">
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('name')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.weapon" />
-                  {renderSortArrow('name')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('category')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.category" />
-                  {renderSortArrow('category')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('team')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.side" />
-                  {renderSortArrow('team')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('price')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.price" />
-                  {renderSortArrow('price')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('killReward')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.killReward" />
-                  {renderSortArrow('killReward')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('rpm')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.rpm" />
-                  {renderSortArrow('rpm')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('armorPen')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.armorPen" />
-                  {renderSortArrow('armorPen')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('head')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.head" />
-                  {renderSortArrow('head')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('chest')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.chest" />
-                  {renderSortArrow('chest')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('stomach')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.stomach" />
-                  {renderSortArrow('stomach')}
-                </button>
-              </th>
-              <th scope="col" className="p-3 font-medium">
-                <button
-                  type="button"
-                  onClick={() => handleSort('legs')}
-                  className="flex items-center gap-1 hover:text-ink"
-                >
-                  <Text path="library.tools.weapons.columns.legs" />
-                  {renderSortArrow('legs')}
-                </button>
-              </th>
+              {COLUMNS.map(({ key, label }) => (
+                <th key={key} scope="col" className="p-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort(key)}
+                    className="flex items-center gap-1 hover:text-ink"
+                  >
+                    <Text path={label} />
+                    {renderSortArrow(key)}
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-line text-13">

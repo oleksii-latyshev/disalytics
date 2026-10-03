@@ -169,6 +169,7 @@ export {
   DEFAULT_BOMB_TIMER_SECONDS,
   roundClockAtFrame,
 } from './helpers/round-clock';
+export { oppositeSide, sideAtRound } from './helpers/round-sides';
 export type { PlayerRoundStats, SideEquipment, SideSurvivors } from './helpers/round-stats';
 export { playerRoundStats, roundEquipment, roundSurvivors } from './helpers/round-stats';
 export type { MatchScore, OpeningSide, SideScore } from './helpers/score';
