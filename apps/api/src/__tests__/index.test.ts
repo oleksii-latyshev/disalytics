@@ -21,17 +21,6 @@ describe('API worker dispatch', () => {
     expect(await response.json()).toEqual({ error: 'method_not_allowed' });
   });
 
-  it('dispatches image routes to the upload module', async () => {
-    const response = await worker.fetch(
-      new Request('https://api.example/images/config', {
-        headers: { Origin: 'https://disalytics.disa-67b.workers.dev' },
-      }),
-    );
-
-    expect(response.status).toBe(503);
-    expect(await response.json()).toEqual({ status: 'unavailable' });
-  });
-
   it('returns a stable not-found error for unknown paths', async () => {
     const response = await worker.fetch(new Request('https://api.example/other'));
 

@@ -107,16 +107,14 @@ export function LineupsHeader({
           onChange={handleFileChange}
           className="hidden"
         />
-        {mode === 'edit' && (
-          <Button
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-            className="gap-1.5"
-          >
-            <Upload className="size-3.5" />
-            <Text path="library.lineups.import" />
-          </Button>
-        )}
+        <Button
+          variant="secondary"
+          onClick={() => fileInputRef.current?.click()}
+          className="gap-1.5"
+        >
+          <Upload className="size-3.5" />
+          <Text path="library.lineups.import" />
+        </Button>
         <Button variant="secondary" onClick={() => void exportLineups()} className="gap-1.5">
           <Download className="size-3.5" />
           <Text path="library.lineups.export" />

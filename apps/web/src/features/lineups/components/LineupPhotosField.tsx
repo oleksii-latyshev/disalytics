@@ -20,11 +20,6 @@ export function LineupPhotosField({
   isDraggingFiles,
   setIsDraggingFiles,
   handleImages,
-  siteKey,
-  challengeToken,
-  uploadingUrl,
-  challengeRef,
-  handleUpload,
   handleManualUploadClick,
   setPreviewEnlargedUrl,
   previewUrlsRef,
@@ -46,11 +41,6 @@ export function LineupPhotosField({
   readonly isDraggingFiles: boolean;
   readonly setIsDraggingFiles: (value: boolean) => void;
   readonly handleImages: (files: readonly File[]) => void;
-  readonly siteKey: string | null | undefined;
-  readonly challengeToken: string;
-  readonly uploadingUrl: string | null;
-  readonly challengeRef: React.RefObject<HTMLDivElement | null>;
-  readonly handleUpload: (image: PreparedImage) => void;
   readonly handleManualUploadClick: (image: PreparedImage) => void;
   readonly setPreviewEnlargedUrl: (value: string | null) => void;
   readonly previewUrlsRef: React.RefObject<Set<string>>;
@@ -129,11 +119,7 @@ export function LineupPhotosField({
       </fieldset>
       <PreparedImagesList
         images={preparedImages}
-        siteKey={siteKey}
-        challengeToken={challengeToken}
-        uploadingUrl={uploadingUrl}
         onPreviewEnlarged={setPreviewEnlargedUrl}
-        onUpload={(image) => void handleUpload(image)}
         onManualUpload={handleManualUploadClick}
         onReorder={(from, to) => setPreparedImages((current) => moved(current, from, to))}
         onRemove={(index) => {
@@ -150,12 +136,6 @@ export function LineupPhotosField({
           )
         }
       />
-      {preparedImages.length > 0 && siteKey && <div ref={challengeRef} />}
-      {preparedImages.length > 0 && siteKey === null && (
-        <p className="text-11 text-ink-dim leading-prose">
-          <Text path="library.lineups.form.uploadUnavailable" />
-        </p>
-      )}
       <AddedImagesList
         urls={values.imageUrls}
         captions={values.imageCaptions}

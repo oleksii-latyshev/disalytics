@@ -52,19 +52,14 @@ export function LineupFormModal({
     setShowCatboxModal,
     dontRemindCatbox,
     setDontRemindCatbox,
-    uploadingUrl,
     previewUrlsRef,
     fileInputRef,
     errorRef,
     photosRef,
     isDraggingFiles,
     setIsDraggingFiles,
-    siteKey,
-    challengeToken,
-    challengeRef,
     handleManualUploadClick,
     confirmManualUpload,
-    handleUpload,
     updateValue,
     updateMap,
     updateLandingCoord,
@@ -94,7 +89,7 @@ export function LineupFormModal({
           void handleImages(files);
         }
       }}
-      className="fixed inset-0 z-100 overflow-y-auto bg-surface-0"
+      className="fixed inset-0 z-30 overflow-y-auto bg-surface-0"
       aria-label={t(initialData?.id ? 'library.lineups.edit' : 'library.lineups.create')}
     >
       <form
@@ -152,11 +147,6 @@ export function LineupFormModal({
             isDraggingFiles={isDraggingFiles}
             setIsDraggingFiles={setIsDraggingFiles}
             handleImages={(files) => void handleImages(files)}
-            siteKey={siteKey}
-            challengeToken={challengeToken}
-            uploadingUrl={uploadingUrl}
-            challengeRef={challengeRef}
-            handleUpload={(image) => void handleUpload(image)}
             handleManualUploadClick={handleManualUploadClick}
             setPreviewEnlargedUrl={setPreviewEnlargedUrl}
             previewUrlsRef={previewUrlsRef}
