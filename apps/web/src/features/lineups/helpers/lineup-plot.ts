@@ -48,6 +48,15 @@ export function groupLineupsByLanding(lineups: readonly Lineup[]): readonly Line
   return groupLineupsByTarget(lineups, 'landing');
 }
 
+type Anchor = { readonly x: number; readonly y: number };
+
+function sharedAnchor(anchors: Map<string, Anchor>, groupId: string, own: Anchor): Anchor {
+  const existing = anchors.get(groupId);
+  if (existing) return existing;
+  anchors.set(groupId, own);
+  return own;
+}
+
 /**
  * Computes radar coordinates for a list of lineups on the given map overview.
  *
@@ -57,44 +66,35 @@ export function groupLineupsByLanding(lineups: readonly Lineup[]): readonly Line
  */
 export function lineupPlot(overview: MapOverview, lineups: readonly Lineup[]): Float32Array {
   const plot = new Float32Array(lineups.length * LINEUP_STRIDE);
-  const groupLandingMap = new Map<string, { x: number; y: number }>();
-  const groupOriginMap = new Map<string, { x: number; y: number }>();
+  const landingAnchors = new Map<string, Anchor>();
+  const originAnchors = new Map<string, Anchor>();
 
   for (let i = 0; i < lineups.length; i++) {
     const lineup = lineups[i];
     if (lineup === undefined) continue;
 
-    const at = i * LINEUP_STRIDE;
-    let ox = radarX(overview, lineup.origin.x);
-    let oy = radarY(overview, lineup.origin.y);
-    let lx = radarX(overview, lineup.landing.x);
-    let ly = radarY(overview, lineup.landing.y);
+    let origin: Anchor = {
+      x: radarX(overview, lineup.origin.x),
+      y: radarY(overview, lineup.origin.y),
+    };
+    let landing: Anchor = {
+      x: radarX(overview, lineup.landing.x),
+      y: radarY(overview, lineup.landing.y),
+    };
 
     if (lineup.groupId) {
-      const target = lineup.groupTarget ?? 'landing';
-      if (target === 'landing') {
-        const existing = groupLandingMap.get(lineup.groupId);
-        if (existing) {
-          lx = existing.x;
-          ly = existing.y;
-        } else {
-          groupLandingMap.set(lineup.groupId, { x: lx, y: ly });
-        }
-      } else if (target === 'origin') {
-        const existing = groupOriginMap.get(lineup.groupId);
-        if (existing) {
-          ox = existing.x;
-          oy = existing.y;
-        } else {
-          groupOriginMap.set(lineup.groupId, { x: ox, y: oy });
-        }
+      if ((lineup.groupTarget ?? 'landing') === 'landing') {
+        landing = sharedAnchor(landingAnchors, lineup.groupId, landing);
+      } else {
+        origin = sharedAnchor(originAnchors, lineup.groupId, origin);
       }
     }
 
-    plot[at] = ox;
-    plot[at + 1] = oy;
-    plot[at + 2] = lx;
-    plot[at + 3] = ly;
+    const at = i * LINEUP_STRIDE;
+    plot[at] = origin.x;
+    plot[at + 1] = origin.y;
+    plot[at + 2] = landing.x;
+    plot[at + 3] = landing.y;
   }
 
   return plot;
@@ -167,6 +167,44 @@ export interface LineupNode {
   readonly waypointIndex?: number | undefined;
 }
 
+interface NodeSearch {
+  readonly pt: { readonly x: number; readonly y: number };
+  bestDistSq: number;
+  bestNode: LineupNode | null;
+}
+
+function considerNode(
+  search: NodeSearch,
+  x: number,
+  y: number,
+  lineupIndex: number,
+  target: LineupNode['target'],
+  waypointIndex?: number,
+): void {
+  const dx = x - search.pt.x;
+  const dy = y - search.pt.y;
+  const distSq = dx * dx + dy * dy;
+  if (distSq >= search.bestDistSq) return;
+  search.bestDistSq = distSq;
+  search.bestNode =
+    waypointIndex === undefined ? { lineupIndex, target } : { lineupIndex, target, waypointIndex };
+}
+
+function considerWaypoints(
+  search: NodeSearch,
+  waypoints: readonly { readonly x: number; readonly y: number }[],
+  overview: { readonly posX: number; readonly posY: number; readonly scale: number },
+  lineupIndex: number,
+): void {
+  for (let w = 0; w < waypoints.length; w++) {
+    const wp = waypoints[w];
+    if (!wp) continue;
+    const wx = (wp.x - overview.posX) / overview.scale;
+    const wy = (overview.posY - wp.y) / overview.scale;
+    considerNode(search, wx, wy, lineupIndex, 'waypoint', w);
+  }
+}
+
 /**
  * Finds the closest individual node (origin, landing, or waypoint) within
  * `maxDistPx` of `pt`. Unlike `findNearestLineupTarget` which only checks
@@ -184,9 +222,7 @@ export function findNearestNode(
   maxDistPx: number,
 ): LineupNode | null {
   const maxRadarDist = maxDistPx / scale;
-  const maxRadarDistSq = maxRadarDist * maxRadarDist;
-  let bestNode: LineupNode | null = null;
-  let bestDistSq = maxRadarDistSq;
+  const search: NodeSearch = { pt, bestDistSq: maxRadarDist * maxRadarDist, bestNode: null };
 
   for (let i = 0; i < lineups.length; i++) {
     const at = i * LINEUP_STRIDE;
@@ -196,40 +232,11 @@ export function findNearestNode(
     const ly = plot[at + 3];
     if (ox === undefined || oy === undefined || lx === undefined || ly === undefined) continue;
 
-    const dOx = ox - pt.x;
-    const dOy = oy - pt.y;
-    const distSqOrigin = dOx * dOx + dOy * dOy;
-    if (distSqOrigin < bestDistSq) {
-      bestDistSq = distSqOrigin;
-      bestNode = { lineupIndex: i, target: 'origin' };
-    }
-
-    const dLx = lx - pt.x;
-    const dLy = ly - pt.y;
-    const distSqLanding = dLx * dLx + dLy * dLy;
-    if (distSqLanding < bestDistSq) {
-      bestDistSq = distSqLanding;
-      bestNode = { lineupIndex: i, target: 'landing' };
-    }
-
-    const lineup = lineups[i];
-    if (lineup?.waypoints) {
-      for (let w = 0; w < lineup.waypoints.length; w++) {
-        const wp = lineup.waypoints[w];
-        if (!wp) continue;
-        // Convert waypoint world coords to radar coords inline
-        const wx = (wp.x - overview.posX) / overview.scale;
-        const wy = (overview.posY - wp.y) / overview.scale;
-        const dWx = wx - pt.x;
-        const dWy = wy - pt.y;
-        const distSqWp = dWx * dWx + dWy * dWy;
-        if (distSqWp < bestDistSq) {
-          bestDistSq = distSqWp;
-          bestNode = { lineupIndex: i, target: 'waypoint', waypointIndex: w };
-        }
-      }
-    }
+    considerNode(search, ox, oy, i, 'origin');
+    considerNode(search, lx, ly, i, 'landing');
+    const waypoints = lineups[i]?.waypoints;
+    if (waypoints) considerWaypoints(search, waypoints, overview, i);
   }
 
-  return bestNode;
+  return search.bestNode;
 }

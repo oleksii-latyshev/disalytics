@@ -1,7 +1,7 @@
 import type { Lineup } from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
 import type { MutableRefObject } from 'react';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import type { LineupHit, LineupNode } from '../helpers/lineup-plot';
 
 export interface LineupPlateProps {

@@ -1,5 +1,5 @@
 import { getMapOverview } from '@disa/map-data';
-import { UnknownMap } from '@/features/radar/components/UnknownMap';
+import { UnknownMap } from '@/features/radar';
 import { LineupCanvas } from './LineupCanvas';
 import type { LineupPlateProps } from './lineup-plate-types';
 

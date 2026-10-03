@@ -1,7 +1,7 @@
 import { RADAR_IMAGE_SIZE, radarToWorld } from '@disa/map-data';
 import { useEffect } from 'react';
 import type { CanvasLayers } from '@/core/renderer';
-import { type PlateView, radarPointAt, SQUARE_PLATE } from '@/features/radar/helpers/view';
+import { type PlateView, radarPointAt, SQUARE_PLATE } from '@/features/radar';
 import type {
   CanvasNodeDrag,
   CanvasPanDrag,

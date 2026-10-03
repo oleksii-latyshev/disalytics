@@ -1,7 +1,7 @@
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Download, Eye, Pencil, Plus, Upload } from 'lucide-react';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import type { InteractionMode } from '../hooks/use-lineup-selection';
 
 type Point = { readonly x: number; readonly y: number };

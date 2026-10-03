@@ -2,7 +2,8 @@ import type { Lineup } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { useT } from '@disa/i18n';
 import { findNearestCallout, type MapId } from '@disa/map-data';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
+import { shiftNodesAfterWaypointRemoval } from '../helpers/lineup-waypoint-nodes';
 import { updateLineupsAtPoint } from '../helpers/update-lineup-point';
 
 export type LineupPoint = { readonly x: number; readonly y: number };
@@ -100,17 +101,7 @@ export function useLineupPointActions({
         store.close();
       }
       await reload();
-      setSelectedNodes((prev) =>
-        prev.flatMap((node) => {
-          if (node.lineupId !== lineupId || node.target !== 'waypoint') return [node];
-          if (node.waypointIndex === waypointIndex) return [];
-          return [
-            node.waypointIndex !== undefined && node.waypointIndex > waypointIndex
-              ? { ...node, waypointIndex: node.waypointIndex - 1 }
-              : node,
-          ];
-        }),
-      );
+      setSelectedNodes((prev) => shiftNodesAfterWaypointRemoval(prev, lineupId, waypointIndex));
     }
   };
 

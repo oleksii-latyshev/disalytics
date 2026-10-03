@@ -1,10 +1,11 @@
 import type { UtilityKind } from '@disa/demo-core';
 import { THROWN_UTILITY_KINDS, UTILITY_NAMES } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
-import { MAP_IDS, type MapId } from '@disa/map-data';
+import { isMapId, MAP_IDS, type MapId } from '@disa/map-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@disa/ui';
 import { X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import type { InteractionMode } from '../hooks/use-lineup-selection';
 
 type SideScope = 'ALL' | 'CT' | 'T';
@@ -46,9 +47,7 @@ export function LineupsFilterSidebar({
   readonly setEditGrenadeKind: React.Dispatch<React.SetStateAction<UtilityKind>>;
   readonly setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
   readonly setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  readonly setSelectedNodes: React.Dispatch<
-    React.SetStateAction<readonly import('../helpers/lineup-layer').SelectedLineupNode[]>
-  >;
+  readonly setSelectedNodes: React.Dispatch<React.SetStateAction<readonly SelectedLineupNode[]>>;
   readonly setHoveredId: React.Dispatch<React.SetStateAction<string | null>>;
   readonly setOrigin: React.Dispatch<React.SetStateAction<Point | null>>;
   readonly setDraftWaypoints: React.Dispatch<React.SetStateAction<Point[]>>;
@@ -71,8 +70,8 @@ export function LineupsFilterSidebar({
         <Select
           value={map}
           onValueChange={(val) => {
-            if (!val) return;
-            setMap(val as MapId);
+            if (!val || !isMapId(val)) return;
+            setMap(val);
             setSelectedId(null);
             setSelectedIds(new Set());
             setSelectedNodes([]);

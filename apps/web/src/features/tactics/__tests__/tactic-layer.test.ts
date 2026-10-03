@@ -1,11 +1,12 @@
 import type { MapOverview } from '@disa/map-data';
 import { describe, expect, it, vi } from 'vitest';
-import type { RadarColors } from '../helpers/colors';
+import { plateView, type RadarColors } from '@/features/radar';
 import { grenadeColorOfKind, tacticLayer } from '../helpers/tactic-layer';
-import { plateView } from '../helpers/view';
-import { stubPath2D } from './canvas-globals';
 
-stubPath2D();
+class StubPath2D {
+  addPath(): void {}
+}
+Reflect.set(globalThis, 'Path2D', StubPath2D);
 
 const OVERVIEW: MapOverview = {
   id: 'de_mirage',

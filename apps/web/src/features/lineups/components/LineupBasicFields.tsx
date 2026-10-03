@@ -1,8 +1,8 @@
 import {
+  isThrownUtilityKind,
   type MovementKey,
   THROWN_UTILITY_KINDS,
   UTILITY_NAMES,
-  type UtilityKind,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
@@ -99,7 +99,7 @@ export function LineupBasicFields({
           </label>
           <Select
             value={values.kind}
-            onValueChange={(val) => updateValue('kind', (val ?? 'smoke') as UtilityKind)}
+            onValueChange={(val) => updateValue('kind', isThrownUtilityKind(val) ? val : 'smoke')}
           >
             <SelectTrigger id="lineup-kind" className="h-8 bg-surface-1">
               <SelectValue />

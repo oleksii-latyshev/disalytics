@@ -1,7 +1,7 @@
 import type { Lineup, UtilityKind } from '@disa/demo-core';
 import { useMemo } from 'react';
 import { filterLineups } from '../helpers/lineup-filter';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import { groupLineupsByLanding, groupLineupsByOrigin } from '../helpers/lineup-plot';
 import { visibleLineupSelection } from '../helpers/lineup-visible-selection';
 import type { SelectedVariants } from './use-lineup-selection';

@@ -2,7 +2,8 @@ import type { Lineup, UtilityKind } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import type { MapId } from '@disa/map-data';
 import { useRef, useState } from 'react';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
+import { focusedLineupIndex, mergeAvailability } from '../helpers/lineup-view-rules';
 import { useLineupGroupActions } from '../hooks/use-lineup-group-actions';
 import { useLineupImport } from '../hooks/use-lineup-import';
 import { useLineupPlacement } from '../hooks/use-lineup-placement';
@@ -127,6 +128,29 @@ export function LineupsView() {
 
   const handleFileChange = useLineupImport(importLineups, setNotice);
 
+  const isEditing = mode === 'edit';
+  const merge = mergeAvailability(mode, visibleSelectedNodes.length, mergeTarget);
+  const editOnly = <T,>(handler: T): T | undefined => (isEditing ? handler : undefined);
+
+  const handleEnterCoordinates = () => {
+    setIsPlacing(false);
+    setOrigin(null);
+    setDraftWaypoints([]);
+    setIsAddingBounce(false);
+    setDraftLanding(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditLineup = (lineup: Lineup) => {
+    setDetailLineup(null);
+    setEditingLineup(lineup);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteLineup = (id: string) => {
+    void deleteLineup(id).then(() => setSelectedId(null));
+  };
+
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col gap-3 lg:h-full lg:min-h-0">
       <LineupsHeader
@@ -170,14 +194,7 @@ export function LineupsView() {
           isAddingBounce={isAddingBounce}
           notice={notice}
           handleCancelPlacement={handleCancelPlacement}
-          onEnterCoordinates={() => {
-            setIsPlacing(false);
-            setOrigin(null);
-            setDraftWaypoints([]);
-            setIsAddingBounce(false);
-            setDraftLanding(null);
-            setIsModalOpen(true);
-          }}
+          onEnterCoordinates={handleEnterCoordinates}
         />
 
         <section
@@ -187,7 +204,7 @@ export function LineupsView() {
           <LineupPlate
             map={map}
             lineups={filteredLineups}
-            focused={selectedIndex >= 0 ? selectedIndex : hoveredIndex >= 0 ? hoveredIndex : null}
+            focused={focusedLineupIndex(selectedIndex, hoveredIndex)}
             selectedIds={selectedLineupIds}
             mode={mode}
             selectedNodes={visibleSelectedNodes}
@@ -200,40 +217,16 @@ export function LineupsView() {
             onCancelPlacement={handleCancelPlacement}
             draftOrigin={origin}
             draftWaypoints={draftWaypoints}
-            onUpdatePoint={mode === 'edit' ? handleUpdateLineupPoint : undefined}
-            onMergeSelected={
-              mode === 'edit' && visibleSelectedNodes.length === 0 ? handleMergeSelected : undefined
-            }
-            onMergeLandings={
-              mode === 'edit' && (visibleSelectedNodes.length === 0 || mergeTarget === 'landing')
-                ? handleMergeLandings
-                : undefined
-            }
-            onMergeOrigins={
-              mode === 'edit' && (visibleSelectedNodes.length === 0 || mergeTarget === 'origin')
-                ? handleMergeOrigins
-                : undefined
-            }
-            onUnmergeLineup={mode === 'edit' ? handleUnmergeLineup : undefined}
-            onAddBounceToLineup={mode === 'edit' ? handleAddBounceToLineup : undefined}
-            onDeleteBounceFromLineup={mode === 'edit' ? handleDeleteBounceFromLineup : undefined}
-            onEditLineup={
-              mode === 'edit'
-                ? (lineup) => {
-                    setDetailLineup(null);
-                    setEditingLineup(lineup);
-                    setIsModalOpen(true);
-                  }
-                : undefined
-            }
-            onDeleteLineup={
-              mode === 'edit'
-                ? (id) => {
-                    void deleteLineup(id).then(() => setSelectedId(null));
-                  }
-                : undefined
-            }
-            onDeleteSelected={mode === 'edit' ? handleDeleteSelected : undefined}
+            onUpdatePoint={editOnly(handleUpdateLineupPoint)}
+            onMergeSelected={merge.selected ? handleMergeSelected : undefined}
+            onMergeLandings={merge.landings ? handleMergeLandings : undefined}
+            onMergeOrigins={merge.origins ? handleMergeOrigins : undefined}
+            onUnmergeLineup={editOnly(handleUnmergeLineup)}
+            onAddBounceToLineup={editOnly(handleAddBounceToLineup)}
+            onDeleteBounceFromLineup={editOnly(handleDeleteBounceFromLineup)}
+            onEditLineup={editOnly(handleEditLineup)}
+            onDeleteLineup={editOnly(handleDeleteLineup)}
+            onDeleteSelected={editOnly(handleDeleteSelected)}
           />
         </section>
 
@@ -250,11 +243,7 @@ export function LineupsView() {
           setSelectedId={setSelectedId}
           setDetailLineup={setDetailLineup}
           handleToggleSelectId={handleToggleSelectId}
-          handleMergeSelected={
-            visibleSelectedNodes.length === 0 || mergeTarget !== undefined
-              ? handleMergeSelected
-              : undefined
-          }
+          handleMergeSelected={merge.list ? handleMergeSelected : undefined}
           handleUnmergeSelected={handleUnmergeSelected}
           handleDeleteSelected={handleDeleteSelected}
           handleClearSelection={handleClearSelection}

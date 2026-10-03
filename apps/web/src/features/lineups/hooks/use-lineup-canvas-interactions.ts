@@ -9,14 +9,14 @@ import {
   ZOOM_STEP,
   zoomAbout,
   zoomByStep,
-} from '@/features/radar/helpers/view';
+} from '@/features/radar';
 import type {
   CanvasNodeDrag,
   CanvasPanDrag,
   ContextMenuData,
   LineupCanvasProps,
 } from '../components/lineup-plate-types';
-import type { ActiveDragPoint } from '../helpers/lineup-layer';
+import type { ActiveDragPoint } from '../helpers/lineup-nodes';
 import { HANDLE_RADIUS_PX } from '../helpers/lineup-plate-hit-testing';
 import { findNearestNode } from '../helpers/lineup-plot';
 import { useLineupCanvasSelectionInteractions } from './use-lineup-canvas-selection-interactions';

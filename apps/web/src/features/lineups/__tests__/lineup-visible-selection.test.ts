@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import { visibleLineupSelection } from '../helpers/lineup-visible-selection';
 import { resolveMergeTarget } from '../hooks/use-lineup-selection';
 

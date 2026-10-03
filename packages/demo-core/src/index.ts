@@ -232,6 +232,7 @@ export type { MovementKey, ThrowDetail, ThrowType } from './helpers/throw-detail
 export { throwDetail } from './helpers/throw-detail';
 export type { UtilityHeld, UtilityKind } from './helpers/utility';
 export {
+  isThrownUtilityKind,
   THROWN_UTILITY_KINDS,
   UTILITY_NAMES,
   utilityHeld,

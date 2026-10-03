@@ -113,7 +113,7 @@ export function TacticShareModal({ isOpen, onClose, tactic, onExportFile }: Tact
               type="text"
               readOnly
               value={shareUrl}
-              onClick={(e) => (e.target as HTMLInputElement).select()}
+              onClick={(e) => e.currentTarget.select()}
               aria-label={t('library.tactics.share.title')}
               className="flex-1 rounded-chip border border-line bg-surface-2 px-3 py-2 font-mono text-11 text-ink focus:border-white focus:outline-none select-all"
             />
