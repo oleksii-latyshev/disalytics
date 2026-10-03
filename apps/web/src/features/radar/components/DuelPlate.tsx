@@ -1,25 +1,16 @@
 import type { Duel, ParsedDemo } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
+import { getMapOverview, type MapOverview } from '@disa/map-data';
 import { useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { duelLayer, duelPlot } from '../helpers/duel-layer';
-import { levelAt } from '../helpers/levels';
+import { plateBox } from '../helpers/plate-box';
 import { plateView } from '../helpers/view';
-import { useRadarImage } from '../hooks/use-radar-image';
+import { useRadarPlate } from '../hooks/use-radar-plate';
 import { UnknownMap } from './UnknownMap';
-
-/**
- * The level the map is drawn at. A whole match has no single level to choose — `busiestLevelIndex`
- * answers for one frame, and this screen is every frame a kill happened on — so the map shows its
- * default level and an end standing on another is drawn at `OTHER_LEVEL_ALPHA`, which is the rule
- * §6.3 already applies to a player seen through a floor. Giving the reader the choice is #86's, and
- * that row waits on a Nuke demo.
- */
-const LEVEL_INDEX = 0;
 
 interface Props {
   demo: ParsedDemo;
@@ -35,31 +26,37 @@ function DuelCanvas({ demo, duels, focused, overview }: Props & { overview: MapO
   const [theme] = useSetting('radarTheme');
   const [palette] = useSetting('palette');
 
-  const image = useRadarImage(radarAssetPath(levelAt(overview, LEVEL_INDEX), theme));
+  const { layout, images, floorLabels } = useRadarPlate(overview, theme);
   const colors = radarColors(palette);
 
   // Fixed: §6.3's zoom is a gesture on a match the reader is inside, and this is a reading of one
   // they have stepped out of. The layers read it through a box all the same.
   const viewRef = useRef(plateView());
 
-  const plot = useMemo(
-    () => duelPlot(demo.track, overview, LEVEL_INDEX, duels),
-    [demo.track, overview, duels],
-  );
+  const plot = useMemo(() => duelPlot(demo.track, overview, duels), [demo.track, overview, duels]);
 
   const layers = useMemo(() => {
-    const duelsLayer = duelLayer({ duels, plot, colors, view: viewRef, focused });
+    const duelsLayer = duelLayer({ duels, plot, overview, colors, view: viewRef, focused });
 
-    return image.status === 'ready'
-      ? [radarBackdrop(image.image, viewRef), duelsLayer]
+    return images.status === 'ready'
+      ? [
+          radarBackdrop({
+            images: images.images,
+            layout,
+            floorLabels,
+            labelColor: colors.dead,
+            view: viewRef,
+          }),
+          duelsLayer,
+        ]
       : [duelsLayer];
-  }, [duels, plot, colors, image, focused]);
+  }, [duels, plot, overview, colors, images, layout, floorLabels, focused]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
-  // The map is never cropped or letterboxed, so the canvas takes the smaller of the two axes its
-  // cell offers — `min(100cqi,100cqb)` of a `container-type: size` box, which is the stage's own
-  // rule (#147) and the only one that works here. A canvas carries an intrinsic ratio from its
+  // The map is never cropped or letterboxed, so the canvas takes the largest box of the plate's own
+  // shape its cell offers — container units of a `container-type: size` box, which is the stage's
+  // own rule (#147) and the only one that works here. A canvas carries an intrinsic ratio from its
   // backing store, so `aspect-square max-h-full` measured 1100×1100 in a 793px cell and ran off the
   // bottom of the screen: it has to be *sized* from the cell rather than capped against it (#315).
   return (
@@ -68,7 +65,8 @@ function DuelCanvas({ demo, duels, focused, overview }: Props & { overview: MapO
         ref={canvasRef}
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
-        className="aspect-square w-[min(100cqi,100cqb)] rounded-card bg-surface-0"
+        className="rounded-card bg-surface-0"
+        style={plateBox(layout).style}
       />
     </div>
   );

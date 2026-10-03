@@ -6,19 +6,18 @@ import {
   trajectoryClipCount,
   type UtilityThrow,
 } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { type MapOverview, plateLayout, plateX, plateY } from '@disa/map-data';
 import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import { drawTrajectory, grenadeColor } from './grenades';
-import { levelIndexAt, OTHER_LEVEL_ALPHA } from './levels';
 import type { ThrowCluster } from './throw-cluster';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
-/** Screen `x`, screen `y` and the level's opacity, per end. */
-const END_STRIDE = 3;
+/** Plate `x` and plate `y`, per end. */
+export const END_STRIDE = 2;
 /** Where it was thrown from first, where it went off second. */
-const ENDS_LENGTH = END_STRIDE * 2;
+export const ENDS_LENGTH = END_STRIDE * 2;
 
 const FULL_TURN = 2 * Math.PI;
 
@@ -43,7 +42,7 @@ const LANDING_RADIUS_PX = 2;
 const LANDING_RING_WIDTH_PX = 1;
 
 /**
- * Where every throw's two ends fall on the radar image, computed once for a list of throws.
+ * Where every throw's two ends fall on the plate, computed once for a list of throws.
  *
  * The two ends come from two places and that is the point of the reading: the origin is the
  * *thrower's own position* at the frame the grenade left their hand, read from `TickTrack` the way a
@@ -57,14 +56,10 @@ const LANDING_RING_WIDTH_PX = 1;
 export function throwPlot(
   track: TickTrack,
   overview: MapOverview,
-  levelIndex: number,
   throws: readonly UtilityThrow[],
 ): Float32Array {
   const positions = positionScratch(track);
   const plot = new Float32Array(throws.length * ENDS_LENGTH);
-
-  const levelAlpha = (z: number) =>
-    levelIndexAt(overview, z) === levelIndex ? 1 : OTHER_LEVEL_ALPHA;
 
   throws.forEach((thrown, index) => {
     readPositions(track, thrown.frame, positions);
@@ -72,12 +67,12 @@ export function throwPlot(
     const offset = thrown.grenade.thrower * POSITION_STRIDE;
     const at = index * ENDS_LENGTH;
 
-    plot[at] = radarX(overview, sampleAt(positions, offset));
-    plot[at + 1] = radarY(overview, sampleAt(positions, offset + 1));
-    plot[at + 2] = levelAlpha(sampleAt(positions, offset + 2));
-    plot[at + END_STRIDE] = radarX(overview, thrown.landing.x);
-    plot[at + END_STRIDE + 1] = radarY(overview, thrown.landing.y);
-    plot[at + END_STRIDE + 2] = levelAlpha(thrown.landing.z);
+    const originZ = sampleAt(positions, offset + 2);
+
+    plot[at] = plateX(overview, sampleAt(positions, offset), originZ);
+    plot[at + 1] = plateY(overview, sampleAt(positions, offset + 1), originZ);
+    plot[at + END_STRIDE] = plateX(overview, thrown.landing.x, thrown.landing.z);
+    plot[at + END_STRIDE + 1] = plateY(overview, thrown.landing.y, thrown.landing.z);
   });
 
   return plot;
@@ -166,6 +161,7 @@ export interface ThrowLayerOptions {
 export function throwLayer(options: ThrowLayerOptions): Layer {
   const { throws, plot, overview, tickRate, colors, view, focused, clusters } = options;
   const geometry = plateGeometry();
+  const plateSize = plateLayout(overview);
 
   /** `markStrength` scales the two ends and `pathStrength` the flight between them. */
   const drawThrow = (
@@ -181,8 +177,6 @@ export function throwLayer(options: ThrowLayerOptions): Layer {
     const { grenade } = thrown;
     const color = grenadeColor(grenade.type, colors);
     const base = index * ENDS_LENGTH;
-    const originAlpha = sampleAt(plot, base + 2) * markStrength;
-    const landingAlpha = sampleAt(plot, base + END_STRIDE + 2) * markStrength;
 
     // One tick short of the detonation is the flight: `trajectoryClipCount` answers with the whole
     // trajectory from the detonation onwards, by design, because that is what the plate draws once
@@ -192,21 +186,13 @@ export function throwLayer(options: ThrowLayerOptions): Layer {
         ? 0
         : trajectoryClipCount(grenade, asTick((grenade.detonationTick as number) - 1), tickRate);
 
-    drawTrajectory(
-      context,
-      grenade.trajectory,
-      flight,
-      overview,
-      scale,
-      color,
-      Math.min(sampleAt(plot, base + 2), sampleAt(plot, base + END_STRIDE + 2)) * pathStrength,
-    );
+    drawTrajectory(context, grenade.trajectory, flight, overview, scale, color, pathStrength);
 
     drawOrigin(
       context,
       sampleAt(plot, base) * scale,
       sampleAt(plot, base + 1) * scale,
-      originAlpha,
+      markStrength,
       color,
     );
 
@@ -215,7 +201,7 @@ export function throwLayer(options: ThrowLayerOptions): Layer {
       sampleAt(plot, base + END_STRIDE) * scale,
       sampleAt(plot, base + END_STRIDE + 1) * scale,
       (grenadeRadiusUnits(grenade.type) / overview.scale) * scale,
-      landingAlpha,
+      markStrength,
       color,
     );
   };
@@ -223,7 +209,7 @@ export function throwLayer(options: ThrowLayerOptions): Layer {
   return (context, size) => {
     if (throws.length === 0) return;
 
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(view.current, size, plateSize, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
     const dim = focused === null ? 1 : UNFOCUSED_ALPHA;

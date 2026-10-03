@@ -11,13 +11,15 @@
   "debug": {
     "map": "Map",
     "frame": "Frame",
-    "level": "Level",
+    "level": "Level under pointer",
     "altitudeBand": "{min, number} to {max, number}",
     "pointer": "Pointer",
     "pointerHint": "Move the pointer over the radar.",
-    "pointerValue": "world {worldX, number}, {worldY, number} · radar {radarX, number}, {radarY, number}",
-    "levelOverride": "Draw level",
-    "levelAuto": "Auto"
+    "pointerValue": "world {worldX, number}, {worldY, number} · radar {radarX, number}, {radarY, number}"
+  },
+  "floor": {
+    "upper": "Upper level",
+    "lower": "Lower level"
   },
   "utility": {
     "secondsUnit": "s"

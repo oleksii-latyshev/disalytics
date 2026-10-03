@@ -1,4 +1,5 @@
 import type { UtilityThrow, WorldPoint } from '@disa/demo-core';
+import { END_STRIDE, ENDS_LENGTH } from './throw-layer';
 
 /** Standard smoke radius in CS2 is 144 units; throws landing within 150 units form a cluster. */
 export const CLUSTER_THRESHOLD_SQ = 150 * 150;
@@ -61,9 +62,9 @@ export function findNearestCluster(
     const firstIndex = cluster.indices[0];
     if (firstIndex === undefined) continue;
 
-    const base = firstIndex * 6;
-    const lx = plot[base + 3];
-    const ly = plot[base + 4];
+    const base = firstIndex * ENDS_LENGTH;
+    const lx = plot[base + END_STRIDE];
+    const ly = plot[base + END_STRIDE + 1];
     if (lx === undefined || ly === undefined) continue;
 
     const dLandingPx = Math.hypot(lx - pt.x, ly - pt.y) * scale;

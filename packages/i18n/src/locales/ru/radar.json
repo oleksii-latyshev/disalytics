@@ -11,13 +11,15 @@
   "debug": {
     "map": "Карта",
     "frame": "Кадр",
-    "level": "Уровень",
+    "level": "Уровень под курсором",
     "altitudeBand": "от {min, number} до {max, number}",
     "pointer": "Курсор",
     "pointerHint": "Наведите курсор на радар.",
-    "pointerValue": "мир {worldX, number}, {worldY, number} · радар {radarX, number}, {radarY, number}",
-    "levelOverride": "Рисовать уровень",
-    "levelAuto": "Авто"
+    "pointerValue": "мир {worldX, number}, {worldY, number} · радар {radarX, number}, {radarY, number}"
+  },
+  "floor": {
+    "upper": "Верхний уровень",
+    "lower": "Нижний уровень"
   },
   "utility": {
     "secondsUnit": "с"

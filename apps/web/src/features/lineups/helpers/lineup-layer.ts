@@ -1,8 +1,13 @@
 import type { Lineup } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { type MapOverview, radarX, radarY } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from '@/features/radar/helpers/colors';
-import { type PlateView, plateGeometry, readPlateGeometry } from '@/features/radar/helpers/view';
+import {
+  type PlateView,
+  plateGeometry,
+  readPlateGeometry,
+  SQUARE_PLATE,
+} from '@/features/radar/helpers/view';
 import { drawDraftPlacement, drawFlightArc } from './lineup-layer-drawing';
 import {
   drawBounceMarker,
@@ -203,7 +208,7 @@ export function lineupLayer(options: LineupLayerOptions): Layer {
   };
 
   return (context, size) => {
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(view.current, size, SQUARE_PLATE, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
     if (!hideLineups) {

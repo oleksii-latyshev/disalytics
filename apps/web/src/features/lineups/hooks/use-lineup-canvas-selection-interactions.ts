@@ -1,7 +1,7 @@
 import { RADAR_IMAGE_SIZE, radarToWorld } from '@disa/map-data';
 import { useEffect } from 'react';
 import type { CanvasLayers } from '@/core/renderer';
-import { type PlateView, radarPointAt } from '@/features/radar/helpers/view';
+import { type PlateView, radarPointAt, SQUARE_PLATE } from '@/features/radar/helpers/view';
 import type {
   CanvasNodeDrag,
   CanvasPanDrag,
@@ -84,7 +84,7 @@ export function useLineupCanvasSelectionInteractions(
         event.clientX - box.left,
         event.clientY - box.top,
         box,
-        RADAR_IMAGE_SIZE,
+        SQUARE_PLATE,
       ),
     };
   };

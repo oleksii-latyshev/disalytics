@@ -65,7 +65,7 @@ export function damagePass(placer: LabelPlacer, style: LabelStyle, ink: string):
 
       // The figure fades over match time along with the token's own flash, so scrubbing backwards
       // through a spray counts it up again rather than replaying a wall-clock animation.
-      context.globalAlpha = subject.alpha(slot) * life;
+      context.globalAlpha = life;
       drawDamageFigure(
         context,
         placer.x + LABEL_HALO_PX,

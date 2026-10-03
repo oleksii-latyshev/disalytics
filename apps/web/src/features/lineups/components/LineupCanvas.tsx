@@ -3,7 +3,7 @@ import { radarAssetPath } from '@disa/map-data';
 import { useMemo, useRef, useState } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
-import { radarBackdrop } from '@/features/radar/helpers/backdrop';
+import { squareBackdrop } from '@/features/radar/helpers/backdrop';
 import { radarColors } from '@/features/radar/helpers/colors';
 import { levelAt } from '@/features/radar/helpers/levels';
 import { plateView } from '@/features/radar/helpers/view';
@@ -66,7 +66,7 @@ export function LineupCanvas(props: LineupCanvasProps) {
       activeDrag,
     });
 
-    return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), layer] : [layer];
+    return image.status === 'ready' ? [squareBackdrop(image.image, viewRef), layer] : [layer];
   }, [
     lineups,
     plot,

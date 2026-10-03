@@ -202,7 +202,7 @@ export const TOKEN_MARKS: readonly PlateMark[] = [
     id: 'blinded',
     draw: (context, colors) => {
       drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawBlindDisc(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, PART_WAY, colors.blind, 1);
+      drawBlindDisc(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, PART_WAY, colors.blind);
     },
   },
   {
@@ -223,7 +223,7 @@ export const TOKEN_MARKS: readonly PlateMark[] = [
     id: 'audible',
     draw: (context, colors) => {
       drawToken(context, CENTRE_X, CENTRE_Y, TOKEN_RADIUS_PX, colors.team.CT);
-      drawAudibleRing(context, CENTRE_X, CENTRE_Y, AUDIBLE_RADIUS_PX, colors.dead, 1);
+      drawAudibleRing(context, CENTRE_X, CENTRE_Y, AUDIBLE_RADIUS_PX, colors.dead);
     },
   },
 ];

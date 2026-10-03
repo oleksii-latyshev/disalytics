@@ -2,6 +2,14 @@ export type { MapCallout } from './callouts';
 export { findNearestCallout, getMapCallouts } from './callouts';
 export type { MapId } from './generated/overviews';
 export { MAP_IDS, MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from './generated/overviews';
+export {
+  plateLayout,
+  plateLevelIndex,
+  plateToRadar,
+  plateX,
+  plateY,
+  SQUARE_PLATE_LAYOUT,
+} from './layout';
 export { loadMapLineups } from './lineups';
 export type { RadarTheme } from './themes';
 export { DEFAULT_RADAR_THEME, isRadarTheme, RADAR_THEMES, radarAssetPath } from './themes';
@@ -14,4 +22,11 @@ export {
   radarY,
   worldToRadar,
 } from './transform';
-export type { MapOverview, RadarLevel, RadarPoint, WorldPlanePoint } from './types';
+export type {
+  MapOverview,
+  PlateLayout,
+  PlateSlot,
+  RadarLevel,
+  RadarPoint,
+  WorldPlanePoint,
+} from './types';

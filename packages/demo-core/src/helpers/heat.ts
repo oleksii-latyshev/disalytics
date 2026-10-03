@@ -30,8 +30,8 @@ export interface HeatScope {
   readonly subject: PlayerSlot | null;
 }
 
-/** One point to weigh, in world units. */
-export type HeatVisit = (worldX: number, worldY: number, weight: number) => void;
+/** One point to weigh, in world units — the altitude too, because a floor is told apart by it. */
+export type HeatVisit = (worldX: number, worldY: number, worldZ: number, weight: number) => void;
 
 export interface HeatTally {
   /**
@@ -59,6 +59,7 @@ function weigh(
   actor: PlayerSlot,
   worldX: number,
   worldY: number,
+  worldZ: number,
   weight: number,
 ): void {
   const { scope, bySlot } = walk;
@@ -69,7 +70,7 @@ function weigh(
   if (scope.subject !== null && actor !== scope.subject) return;
 
   walk.total += weight;
-  walk.visit(worldX, worldY, weight);
+  walk.visit(worldX, worldY, worldZ, weight);
 }
 
 /** The sample `slot` stands at on the frame an event happened. */
@@ -121,7 +122,7 @@ function eachInRounds<T>(
 function walkPresence(walk: Walk): void {
   const { demo } = walk;
   const { track } = demo;
-  const { flags, posX, posY, slotCount } = track;
+  const { flags, posX, posY, posZ, slotCount } = track;
   const secondsPerSample = 1 / track.sampleHz;
 
   for (const [roundIndex, round] of demo.events.rounds.entries()) {
@@ -144,6 +145,7 @@ function walkPresence(walk: Walk): void {
           asPlayerSlot(slot),
           posX[sample] ?? 0,
           posY[sample] ?? 0,
+          posZ[sample] ?? 0,
           secondsPerSample,
         );
       }
@@ -175,7 +177,15 @@ function walkDamage(walk: Walk, end: 'attacker' | 'victim'): void {
       const actor = end === 'attacker' ? attacker : victim;
       const at = sampleIndex(demo, hit.tick, actor);
 
-      weigh(walk, sides, actor, sampleAt(track.posX, at), sampleAt(track.posY, at), lost);
+      weigh(
+        walk,
+        sides,
+        actor,
+        sampleAt(track.posX, at),
+        sampleAt(track.posY, at),
+        sampleAt(track.posZ, at),
+        lost,
+      );
     },
   );
 }
@@ -196,13 +206,29 @@ function walkKills(walk: Walk, end: 'attacker' | 'victim'): void {
         if (attacker === null || sides[attacker] === sides[victim]) return;
 
         const at = sampleIndex(demo, kill.tick, attacker);
-        weigh(walk, sides, attacker, sampleAt(track.posX, at), sampleAt(track.posY, at), 1);
+        weigh(
+          walk,
+          sides,
+          attacker,
+          sampleAt(track.posX, at),
+          sampleAt(track.posY, at),
+          sampleAt(track.posZ, at),
+          1,
+        );
         return;
       }
 
       // A death is a death whoever or whatever caused it.
       const at = sampleIndex(demo, kill.tick, victim);
-      weigh(walk, sides, victim, sampleAt(track.posX, at), sampleAt(track.posY, at), 1);
+      weigh(
+        walk,
+        sides,
+        victim,
+        sampleAt(track.posX, at),
+        sampleAt(track.posY, at),
+        sampleAt(track.posZ, at),
+        1,
+      );
     },
   );
 }
@@ -219,7 +245,7 @@ function walkUtility(walk: Walk): void {
       const landing = grenade.detonationPosition;
       if (landing === null) return;
 
-      weigh(walk, sides, grenade.thrower, landing.x, landing.y, 1);
+      weigh(walk, sides, grenade.thrower, landing.x, landing.y, landing.z, 1);
     },
   );
 }

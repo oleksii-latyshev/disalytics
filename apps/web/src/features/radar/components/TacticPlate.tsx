@@ -23,7 +23,7 @@ import {
 } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
-import { radarBackdrop } from '../helpers/backdrop';
+import { squareBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { levelAt } from '../helpers/levels';
 import {
@@ -36,7 +36,14 @@ import {
   findNearestTacticThrow,
   tacticRadarToWorld,
 } from '../helpers/tactic-plot';
-import { type PlateView, panBy, plateView, radarPointAt, zoomAbout } from '../helpers/view';
+import {
+  type PlateView,
+  panBy,
+  plateView,
+  radarPointAt,
+  SQUARE_PLATE,
+  zoomAbout,
+} from '../helpers/view';
 import { useRadarImage } from '../hooks/use-radar-image';
 import { UnknownMap } from './UnknownMap';
 
@@ -232,7 +239,7 @@ function performDragMove(options: PerformDragOptions): void {
   if (dragState.type === 'pan') {
     const dx = clientX - dragState.startX;
     const dy = clientY - dragState.startY;
-    panBy(view, dx, dy, box);
+    panBy(view, dx, dy, box, SQUARE_PLATE);
     dragState.startX = clientX;
     dragState.startY = clientY;
     repaint?.();
@@ -326,7 +333,7 @@ function TacticCanvas({
       liveThrow: liveThrowRef,
     });
 
-    return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), layer] : [layer];
+    return image.status === 'ready' ? [squareBackdrop(image.image, viewRef), layer] : [layer];
   }, [
     overview,
     colors,
@@ -353,7 +360,7 @@ function TacticCanvas({
         clientX - box.left,
         clientY - box.top,
         box,
-        RADAR_IMAGE_SIZE,
+        SQUARE_PLATE,
       );
       const extent = Math.min(box.width, box.height) * viewRef.current.zoom;
       const scale = extent / RADAR_IMAGE_SIZE;
@@ -587,7 +594,14 @@ function TacticCanvas({
 
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
-    zoomAbout(viewRef.current, factor, event.clientX - box.left, event.clientY - box.top, box);
+    zoomAbout(
+      viewRef.current,
+      factor,
+      event.clientX - box.left,
+      event.clientY - box.top,
+      box,
+      SQUARE_PLATE,
+    );
     repaint();
   };
 

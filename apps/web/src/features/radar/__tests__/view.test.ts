@@ -12,6 +12,7 @@ import {
   readPlateBounds,
   readPlateGeometry,
   resetView,
+  SQUARE_PLATE,
   zoomAbout,
   zoomByStep,
 } from '../helpers/view';
@@ -28,7 +29,7 @@ const EXPANDED: CanvasSize = { width: 1392, height: 716 };
 /** Where a radar-image coordinate lands on the canvas under a given view. */
 function project(view: { zoom: number; panX: number; panY: number }, radar: number): number {
   const out = plateGeometry();
-  readPlateGeometry(view, PLATE, RADAR_SIZE, out);
+  readPlateGeometry(view, PLATE, SQUARE_PLATE, out);
 
   return radar * out.scale + out.offsetX;
 }
@@ -39,7 +40,7 @@ describe('zoomAbout', () => {
     const anchor = 480;
     const radarUnderAnchor = (anchor - view.panX) / ((PLATE.width / RADAR_SIZE) * view.zoom);
 
-    zoomAbout(view, 2, anchor, anchor, PLATE);
+    zoomAbout(view, 2, anchor, anchor, PLATE, SQUARE_PLATE);
 
     expect(project(view, radarUnderAnchor)).toBeCloseTo(anchor, 6);
   });
@@ -49,7 +50,7 @@ describe('zoomAbout', () => {
     const anchor = 200;
     const radarUnderAnchor = (anchor - view.panX) / ((PLATE.width / RADAR_SIZE) * view.zoom);
 
-    for (let step = 0; step < 5; step++) zoomAbout(view, 1.25, anchor, anchor, PLATE);
+    for (let step = 0; step < 5; step++) zoomAbout(view, 1.25, anchor, anchor, PLATE, SQUARE_PLATE);
 
     expect(project(view, radarUnderAnchor)).toBeCloseTo(anchor, 6);
   });
@@ -57,10 +58,10 @@ describe('zoomAbout', () => {
   it('stops at the ends of the range rather than running past them', () => {
     const view = plateView();
 
-    zoomAbout(view, 100, 0, 0, PLATE);
+    zoomAbout(view, 100, 0, 0, PLATE, SQUARE_PLATE);
     expect(view.zoom).toBe(MAX_ZOOM);
 
-    zoomAbout(view, 0.001, 0, 0, PLATE);
+    zoomAbout(view, 0.001, 0, 0, PLATE, SQUARE_PLATE);
     expect(view.zoom).toBe(MIN_ZOOM);
   });
 });
@@ -69,29 +70,29 @@ describe('panBy', () => {
   it('is pinned at rest, where the map already fills the plate', () => {
     const view = plateView();
 
-    panBy(view, -200, -200, PLATE);
+    panBy(view, -200, -200, PLATE, SQUARE_PLATE);
 
     expect({ x: view.panX, y: view.panY }).toEqual({ x: 0, y: 0 });
   });
 
   it('never lets an edge of the map come inside the plate', () => {
     const view = plateView();
-    zoomByStep(view, 2, PLATE);
+    zoomByStep(view, 2, PLATE, SQUARE_PLATE);
 
-    panBy(view, 5000, 5000, PLATE);
+    panBy(view, 5000, 5000, PLATE, SQUARE_PLATE);
     expect({ x: view.panX, y: view.panY }).toEqual({ x: 0, y: 0 });
 
-    panBy(view, -5000, -5000, PLATE);
+    panBy(view, -5000, -5000, PLATE, SQUARE_PLATE);
     expect(view.panX).toBe(PLATE.width * (1 - view.zoom));
     expect(view.panY).toBe(PLATE.height * (1 - view.zoom));
   });
 
   it('returns the pan to zero when the zoom comes back to rest', () => {
     const view = plateView();
-    zoomByStep(view, 2, PLATE);
-    panBy(view, -300, -300, PLATE);
+    zoomByStep(view, 2, PLATE, SQUARE_PLATE);
+    panBy(view, -300, -300, PLATE, SQUARE_PLATE);
 
-    zoomByStep(view, 0.5, PLATE);
+    zoomByStep(view, 0.5, PLATE, SQUARE_PLATE);
 
     expect({ zoom: view.zoom, x: view.panX, y: view.panY }).toEqual({
       zoom: MIN_ZOOM,
@@ -106,11 +107,11 @@ describe('readPlateGeometry', () => {
     const view = plateView();
     const out = plateGeometry();
 
-    readPlateGeometry(view, PLATE, RADAR_SIZE, out);
+    readPlateGeometry(view, PLATE, SQUARE_PLATE, out);
     expect(out.scale).toBe(PLATE.width / RADAR_SIZE);
 
-    zoomByStep(view, 2, PLATE);
-    readPlateGeometry(view, PLATE, RADAR_SIZE, out);
+    zoomByStep(view, 2, PLATE, SQUARE_PLATE);
+    readPlateGeometry(view, PLATE, SQUARE_PLATE, out);
     expect(out.scale).toBe((PLATE.width / RADAR_SIZE) * 2);
   });
 
@@ -118,18 +119,18 @@ describe('readPlateGeometry', () => {
     const view = plateView();
     const out = plateGeometry();
 
-    readPlateGeometry(view, PLATE, RADAR_SIZE, out);
+    readPlateGeometry(view, PLATE, SQUARE_PLATE, out);
     expect(out.tokenRadius).toBe(TOKEN_RADIUS_PX);
 
-    zoomByStep(view, MAX_ZOOM, PLATE);
-    readPlateGeometry(view, PLATE, RADAR_SIZE, out);
+    zoomByStep(view, MAX_ZOOM, PLATE, SQUARE_PLATE);
+    readPlateGeometry(view, PLATE, SQUARE_PLATE, out);
     expect(out.tokenRadius).toBe(TOKEN_MAX_RADIUS_PX);
   });
 
   it('never draws a token below the floor, whatever a future range does', () => {
     const out = plateGeometry();
 
-    readPlateGeometry({ zoom: 0.1, panX: 0, panY: 0 }, PLATE, RADAR_SIZE, out);
+    readPlateGeometry({ zoom: 0.1, panX: 0, panY: 0 }, PLATE, SQUARE_PLATE, out);
 
     expect(out.tokenRadius).toBe(TOKEN_MIN_RADIUS_PX);
   });
@@ -138,7 +139,7 @@ describe('readPlateGeometry', () => {
     const out = plateGeometry();
     const before = out;
 
-    readPlateGeometry(plateView(), PLATE, RADAR_SIZE, out);
+    readPlateGeometry(plateView(), PLATE, SQUARE_PLATE, out);
 
     expect(out).toBe(before);
   });
@@ -149,7 +150,7 @@ describe('readPlateBounds', () => {
     const geometry = plateGeometry();
     const bounds = plateBounds();
 
-    readPlateGeometry({ zoom: 2, panX: -100, panY: -60 }, PLATE, RADAR_SIZE, geometry);
+    readPlateGeometry({ zoom: 2, panX: -100, panY: -60 }, PLATE, SQUARE_PLATE, geometry);
     readPlateBounds(geometry, PLATE, bounds);
 
     // The map's corner sits 100px off the top-left of the plate, so what the reader can see starts
@@ -161,8 +162,8 @@ describe('readPlateBounds', () => {
 describe('resetView', () => {
   it('puts the whole map back, whatever the reader had done to it', () => {
     const view = plateView();
-    zoomByStep(view, 3, PLATE);
-    panBy(view, -400, 120, PLATE);
+    zoomByStep(view, 3, PLATE, SQUARE_PLATE);
+    panBy(view, -400, 120, PLATE, SQUARE_PLATE);
 
     resetView(view);
 
@@ -184,14 +185,14 @@ describe('radarPointAt', () => {
     const geometry = plateGeometry();
 
     for (const view of views) {
-      readPlateGeometry(view, PLATE, RADAR_SIZE, geometry);
+      readPlateGeometry(view, PLATE, SQUARE_PLATE, geometry);
 
       for (const radar of [0, 137, 512, 1024]) {
         // `project` is the x axis only, and the two pans differ — which is the asymmetry a readout
         // that reuses one offset for both axes gets wrong.
         const x = radar * geometry.scale + geometry.offsetX;
         const y = radar * geometry.scale + geometry.offsetY;
-        const point = radarPointAt(view, x, y, PLATE, RADAR_SIZE);
+        const point = radarPointAt(view, x, y, PLATE, SQUARE_PLATE);
 
         expect(point.x, `x at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
         expect(point.y, `y at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
@@ -200,11 +201,11 @@ describe('radarPointAt', () => {
   });
 
   it("reads the plate's own corner as the map's corner while nothing is panned", () => {
-    expect(radarPointAt(plateView(), 0, 0, PLATE, RADAR_SIZE)).toEqual({ x: 0, y: 0 });
+    expect(radarPointAt(plateView(), 0, 0, PLATE, SQUARE_PLATE)).toEqual({ x: 0, y: 0 });
   });
 
   it('answers outside the map for a pointer past its edge, rather than clamping to it', () => {
-    const point = radarPointAt(plateView(), PLATE.width + 64, -32, PLATE, RADAR_SIZE);
+    const point = radarPointAt(plateView(), PLATE.width + 64, -32, PLATE, SQUARE_PLATE);
 
     expect(point.x).toBeGreaterThan(RADAR_SIZE);
     expect(point.y).toBeLessThan(0);
@@ -219,8 +220,8 @@ describe('an expanded plate', () => {
     const atRest = plateGeometry();
     const expanded = plateGeometry();
 
-    readPlateGeometry(plateView(), AT_REST, RADAR_SIZE, atRest);
-    readPlateGeometry(plateView(), EXPANDED, RADAR_SIZE, expanded);
+    readPlateGeometry(plateView(), AT_REST, SQUARE_PLATE, atRest);
+    readPlateGeometry(plateView(), EXPANDED, SQUARE_PLATE, expanded);
 
     expect(expanded.scale).toBe(atRest.scale);
   });
@@ -231,18 +232,18 @@ describe('an expanded plate', () => {
     // 895px of map across 1392px of plate: there is nothing off screen to pan to.
     const centred = (EXPANDED.width - EXPANDED.height * view.zoom) / 2;
 
-    readPlateGeometry(view, EXPANDED, RADAR_SIZE, out);
+    readPlateGeometry(view, EXPANDED, SQUARE_PLATE, out);
     expect(out.offsetX).toBeCloseTo(centred, 9);
 
-    panBy(view, -400, 0, EXPANDED);
-    readPlateGeometry(view, EXPANDED, RADAR_SIZE, out);
+    panBy(view, -400, 0, EXPANDED, SQUARE_PLATE);
+    readPlateGeometry(view, EXPANDED, SQUARE_PLATE, out);
     expect(out.offsetX).toBeCloseTo(centred, 9);
   });
 
   it('still pans the axis the map does overflow, at the same zoom', () => {
     const view = { zoom: 1.25, panX: 0, panY: 0 };
 
-    panBy(view, 0, -5000, EXPANDED);
+    panBy(view, 0, -5000, EXPANDED, SQUARE_PLATE);
 
     expect(view.panY).toBeCloseTo(EXPANDED.height - EXPANDED.height * view.zoom, 9);
   });
@@ -250,7 +251,7 @@ describe('an expanded plate', () => {
   it('lets the long axis pan once the zoom has filled it', () => {
     const view = { zoom: 2, panX: 0, panY: 0 };
 
-    panBy(view, -5000, 0, EXPANDED);
+    panBy(view, -5000, 0, EXPANDED, SQUARE_PLATE);
 
     // 1432px of map across 1392px of plate, so the far edge comes flush and stops.
     expect(view.panX).toBeCloseTo(EXPANDED.width - EXPANDED.height * view.zoom, 9);
@@ -266,7 +267,7 @@ describe('an expanded plate', () => {
     const geometry = plateGeometry();
 
     for (const view of views) {
-      readPlateGeometry(view, EXPANDED, RADAR_SIZE, geometry);
+      readPlateGeometry(view, EXPANDED, SQUARE_PLATE, geometry);
 
       for (const radar of [0, 137, 512, 1024]) {
         const point = radarPointAt(
@@ -274,7 +275,7 @@ describe('an expanded plate', () => {
           radar * geometry.scale + geometry.offsetX,
           radar * geometry.scale + geometry.offsetY,
           EXPANDED,
-          RADAR_SIZE,
+          SQUARE_PLATE,
         );
 
         expect(point.x, `x at ${view.zoom}× and ${radar}`).toBeCloseTo(radar, 9);
@@ -289,10 +290,86 @@ describe('an expanded plate', () => {
     const view = { zoom: 1.25, panX: 0, panY: 0 };
     const out = plateGeometry();
 
-    panBy(view, 0, -300, EXPANDED);
-    readPlateGeometry(view, AT_REST, RADAR_SIZE, out);
+    panBy(view, 0, -300, EXPANDED, SQUARE_PLATE);
+    readPlateGeometry(view, AT_REST, SQUARE_PLATE, out);
 
     expect(out.offsetY).toBeGreaterThanOrEqual(AT_REST.height - AT_REST.height * view.zoom);
     expect(out.offsetY).toBeLessThanOrEqual(0);
+  });
+});
+
+describe('a plate that is not square', () => {
+  // Two floors stacked: 952 wide, 1040 tall. The canvas takes the plate's own shape at rest, so the
+  // map fills it on both axes; expanded, it is wider and the map keeps the height that binds it.
+  const STACKED = { width: 952, height: 1040 };
+  const AT_REST_STACKED: CanvasSize = { width: 476, height: 520 };
+  const EXPANDED_STACKED: CanvasSize = { width: 808, height: 520 };
+
+  it('fits the whole plate to the canvas at rest', () => {
+    const out = plateGeometry();
+
+    readPlateGeometry(plateView(), AT_REST_STACKED, STACKED, out);
+
+    expect(out.scale).toBe(0.5);
+    expect({ x: out.offsetX, y: out.offsetY }).toEqual({ x: 0, y: 0 });
+  });
+
+  it('fits to the axis that binds when the canvas is wider, and centres the other', () => {
+    const out = plateGeometry();
+
+    readPlateGeometry(plateView(), EXPANDED_STACKED, STACKED, out);
+
+    expect(out.scale).toBe(0.5);
+    expect(out.offsetX).toBe((EXPANDED_STACKED.width - STACKED.width * 0.5) / 2);
+    expect(out.offsetY).toBe(0);
+  });
+
+  it('pins the plate at rest on both axes', () => {
+    const view = plateView();
+
+    panBy(view, -300, -300, AT_REST_STACKED, STACKED);
+
+    expect({ x: view.panX, y: view.panY }).toEqual({ x: 0, y: 0 });
+  });
+
+  it('stops the far edge of each axis at its own extent once zoomed', () => {
+    const view = plateView();
+    zoomByStep(view, 2, AT_REST_STACKED, STACKED);
+
+    panBy(view, -5000, -5000, AT_REST_STACKED, STACKED);
+
+    expect(view.panX).toBe(AT_REST_STACKED.width * (1 - view.zoom));
+    expect(view.panY).toBe(AT_REST_STACKED.height * (1 - view.zoom));
+  });
+
+  it('keeps the point under the pointer under the pointer while zooming', () => {
+    const view = plateView();
+    const out = plateGeometry();
+    const anchor = { x: 300, y: 200 };
+
+    const under = radarPointAt(view, anchor.x, anchor.y, AT_REST_STACKED, STACKED);
+
+    zoomAbout(view, 2, anchor.x, anchor.y, AT_REST_STACKED, STACKED);
+    readPlateGeometry(view, AT_REST_STACKED, STACKED, out);
+
+    expect(under.x * out.scale + out.offsetX).toBeCloseTo(anchor.x, 6);
+    expect(under.y * out.scale + out.offsetY).toBeCloseTo(anchor.y, 6);
+  });
+
+  it('reads a pointer back through the geometry it drew with', () => {
+    const view = { zoom: 2, panX: -120, panY: -400 };
+    const out = plateGeometry();
+
+    readPlateGeometry(view, AT_REST_STACKED, STACKED, out);
+    const point = radarPointAt(
+      view,
+      300 * out.scale + out.offsetX,
+      900 * out.scale + out.offsetY,
+      AT_REST_STACKED,
+      STACKED,
+    );
+
+    expect(point.x).toBeCloseTo(300, 9);
+    expect(point.y).toBeCloseTo(900, 9);
   });
 });

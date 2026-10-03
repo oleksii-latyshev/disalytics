@@ -1,14 +1,13 @@
 import { type Clock, type ParsedDemo, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { type MapOverview, plateLayout, plateX, plateY } from '@disa/map-data';
 import type { KillLine } from '@/core/events';
 import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
-import { levelIndexAt, OTHER_LEVEL_ALPHA } from './levels';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
-/** Screen `x`, screen `y` and the level's opacity, per end. */
-export const END_STRIDE = 3;
+/** Plate `x` and plate `y`, per end. */
+export const END_STRIDE = 2;
 /** The attacker's end first, the victim's second. */
 export const ENDS_LENGTH = END_STRIDE * 2;
 
@@ -32,7 +31,7 @@ const FALL_RADIUS_PX = 3;
 /**
  * The three marks §5.4 settled on, each on its own so that a drawing which is not the plate —
  * §10.6's legend — draws the same ring, the same disc and the same line rather than a second
- * copy of them. The alpha is the caller's, because on the plate it carries the level the end is on.
+ * copy of them.
  */
 export function drawKillPath(
   context: CanvasRenderingContext2D,
@@ -100,11 +99,7 @@ export interface KillLineGeometry {
  *
  * It owns its scratch and rewrites it, so a draw that needs the ends allocates nothing to get them.
  */
-export function killLineGeometry(
-  track: TickTrack,
-  overview: MapOverview,
-  levelIndex: number,
-): KillLineGeometry {
+export function killLineGeometry(track: TickTrack, overview: MapOverview): KillLineGeometry {
   const positions = positionScratch(track);
   const ends = new Float32Array(ENDS_LENGTH);
 
@@ -112,12 +107,10 @@ export function killLineGeometry(
     const offset = slot * POSITION_STRIDE;
     const target = index * END_STRIDE;
 
-    ends[target] = radarX(overview, sampleAt(positions, offset)) * scale;
-    ends[target + 1] = radarY(overview, sampleAt(positions, offset + 1)) * scale;
-    ends[target + 2] =
-      levelIndexAt(overview, sampleAt(positions, offset + 2)) === levelIndex
-        ? 1
-        : OTHER_LEVEL_ALPHA;
+    const z = sampleAt(positions, offset + 2);
+
+    ends[target] = plateX(overview, sampleAt(positions, offset), z) * scale;
+    ends[target + 1] = plateY(overview, sampleAt(positions, offset + 1), z) * scale;
   }
 
   return {
@@ -135,7 +128,6 @@ export interface KillLineLayerOptions {
   readonly demo: ParsedDemo;
   readonly clock: Clock;
   readonly overview: MapOverview;
-  readonly levelIndex: number;
   readonly colors: RadarColors;
   /**
    * The hovered row, read at draw time. It is a box rather than a value so that hovering repaints
@@ -159,12 +151,13 @@ export interface KillLineLayerOptions {
  * plate's width changes, and while no row is hovered the layer returns before it touches anything.
  */
 export function killLineLayer(options: KillLineLayerOptions): Layer {
-  const { demo, clock, overview, levelIndex, colors, hovered, view } = options;
+  const { demo, clock, overview, colors, hovered, view } = options;
   const { track } = demo;
 
-  const geometry = killLineGeometry(track, overview, levelIndex);
+  const geometry = killLineGeometry(track, overview);
   const { ends } = geometry;
   const plate = plateGeometry();
+  const plateSize = plateLayout(overview);
 
   let lastKill: KillLine | null = null;
   let lastScale = 0;
@@ -182,7 +175,7 @@ export function killLineLayer(options: KillLineLayerOptions): Layer {
     // back past the kill takes it away rather than drawing a shot out of the future.
     if (kill.frame > clock.frame) return;
 
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, plate);
+    readPlateGeometry(view.current, size, plateSize, plate);
     context.translate(plate.offsetX, plate.offsetY);
 
     const scale = plate.scale;
@@ -195,23 +188,12 @@ export function killLineLayer(options: KillLineLayerOptions): Layer {
 
     const originX = sampleAt(ends, 0);
     const originY = sampleAt(ends, 1);
-    const originAlpha = sampleAt(ends, 2);
     const fallX = sampleAt(ends, END_STRIDE);
     const fallY = sampleAt(ends, END_STRIDE + 1);
-    const fallAlpha = sampleAt(ends, END_STRIDE + 2);
 
-    // A line crossing a floor the map is not showing is as faint as its fainter end.
-    drawKillPath(
-      context,
-      originX,
-      originY,
-      fallX,
-      fallY,
-      Math.min(originAlpha, fallAlpha),
-      colors.killLine,
-    );
+    drawKillPath(context, originX, originY, fallX, fallY, 1, colors.killLine);
 
-    drawKillOrigin(context, originX, originY, originAlpha, sideColor(kill.attackerSide));
-    drawKillFall(context, fallX, fallY, fallAlpha, sideColor(kill.victimSide));
+    drawKillOrigin(context, originX, originY, 1, sideColor(kill.attackerSide));
+    drawKillFall(context, fallX, fallY, 1, sideColor(kill.victimSide));
   };
 }
