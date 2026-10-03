@@ -21,6 +21,7 @@ import {
 import { decodeDemo } from './decode';
 import { byteLengthOf, encodeDemo } from './encode';
 import { canFingerprint, demoKeyFor } from './fingerprint';
+import { forgetCoachNotes } from './note-store';
 
 export interface DemoStore {
   readonly kind: BackendKind;
@@ -87,6 +88,7 @@ async function discard(
   keys: readonly string[],
 ): Promise<readonly CatalogEntry[]> {
   for (const key of keys) await backend.remove(nameFor(key));
+  await forgetCoachNotes(keys);
 
   return withoutKeys(entries, keys);
 }

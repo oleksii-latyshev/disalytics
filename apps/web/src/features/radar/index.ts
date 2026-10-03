@@ -7,6 +7,7 @@ export { PlateStill } from './components/PlateStill';
 export { TacticPlate, type TacticPlateProps } from './components/TacticPlate';
 export { UtilityPlate } from './components/UtilityPlate';
 export type { CoachSession } from './helpers/coach-session';
+export { EMPTY_COACH_ANNOTATIONS } from './helpers/coach-types';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
 export {

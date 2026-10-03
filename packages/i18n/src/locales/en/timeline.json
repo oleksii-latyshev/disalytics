@@ -33,5 +33,6 @@
     "draw": "Round {round, number}, draw"
   },
   "events": "Round events",
-  "unknownPlayer": "Unknown player"
+  "unknownPlayer": "Unknown player",
+  "roundNoted": "A coach note is saved on this round."
 }

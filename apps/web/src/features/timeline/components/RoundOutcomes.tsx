@@ -19,6 +19,8 @@ interface Props {
   /** Whether the survivor tracks are showing. The disclosure at the strip's end sets it. */
   isExpanded: boolean;
   litIndex: number | undefined;
+  /** Rounds that carry a coach note, which the pill marks. */
+  notedRounds: ReadonlySet<number>;
   onSeek: (roundIndex: number) => void;
   /** A pointer resting on a pill. The tooltip waits its dwell before it answers. */
   onPoint: (roundIndex: number | null) => void;
@@ -63,6 +65,16 @@ function SurvivorTrack({ side, alive }: { side: Team; alive: number }) {
   );
 }
 
+function roundLabel(t: ReturnType<typeof useT>, cell: RoundCell): string {
+  return t('timeline.roundLabel', {
+    outcome: t(roundOutcomeKey(cell.reason), { round: cell.number, side: cell.winner }),
+    ct: cell.survivors.CT,
+    t: cell.survivors.T,
+    startedCt: cell.score.startedCt,
+    startedT: cell.score.startedT,
+  });
+}
+
 /** The ink a round number takes: the one being played, one already watched, or one still ahead. */
 function numberInk(lit: boolean, ahead: boolean): string {
   if (lit) return 'font-medium text-ink';
@@ -77,6 +89,7 @@ interface PillProps {
   isExpanded: boolean;
   lit: boolean;
   ahead: boolean;
+  isNoted: boolean;
   label: string;
   onPoint: (roundIndex: number | null) => void;
   onReveal: (roundIndex: number | null) => void;
@@ -101,6 +114,7 @@ function RoundPill({
   isExpanded,
   lit,
   ahead,
+  isNoted,
   label,
   onPoint,
   onReveal,
@@ -131,6 +145,14 @@ function RoundPill({
           <SurvivorTrack side="CT" alive={cell.survivors.CT} />
           <SurvivorTrack side="T" alive={cell.survivors.T} />
         </span>
+      )}
+
+      {/* A note is a mark of luminance and shape, never of hue: a quiet dot in the corner. */}
+      {isNoted && (
+        <span
+          aria-hidden="true"
+          className="absolute top-1 right-1 size-1 rounded-full bg-ink-dim"
+        />
       )}
 
       {/* Every pill keeps its winner bar, the lit one included. It used to drop the bar for a fill,
@@ -175,6 +197,7 @@ export const RoundOutcomes = memo(function RoundOutcomes({
   hasNumbers,
   isExpanded,
   litIndex,
+  notedRounds,
   onSeek,
   onPoint,
   onReveal,
@@ -237,16 +260,12 @@ export const RoundOutcomes = memo(function RoundOutcomes({
                 isExpanded={isExpanded}
                 lit={index === litIndex}
                 ahead={litIndex !== undefined && index > litIndex}
-                label={t('timeline.roundLabel', {
-                  outcome: t(roundOutcomeKey(cell.reason), {
-                    round: cell.number,
-                    side: cell.winner,
-                  }),
-                  ct: cell.survivors.CT,
-                  t: cell.survivors.T,
-                  startedCt: cell.score.startedCt,
-                  startedT: cell.score.startedT,
-                })}
+                isNoted={notedRounds.has(index)}
+                label={
+                  notedRounds.has(index)
+                    ? `${roundLabel(t, cell)} ${t('timeline.roundNoted')}`
+                    : roundLabel(t, cell)
+                }
                 onPoint={onPoint}
                 onReveal={onReveal}
               />

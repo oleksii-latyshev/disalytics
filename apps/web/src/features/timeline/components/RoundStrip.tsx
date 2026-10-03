@@ -26,6 +26,8 @@ interface Props {
   demo: ParsedDemo;
   transport: Transport;
   selectedSlot: PlayerSlot | null;
+  /** Indices of the rounds that carry a coach note — owned by the stage, which stores them. */
+  notedRounds: ReadonlySet<number>;
 }
 
 /** The dwell: a tooltip answers a pointer that stayed, never one that passed through. */
@@ -64,7 +66,7 @@ function namingOf(cells: readonly RoundCell[], index: number | null): Naming | u
  * the pills beside it, the switches to the axis beneath — and each still sits next to what it
  * changes.
  */
-export function RoundStrip({ demo, transport, selectedSlot }: Props) {
+export function RoundStrip({ demo, transport, selectedSlot, notedRounds }: Props) {
   const t = useT();
 
   const frame = useFrameReadout(transport);
@@ -136,6 +138,7 @@ export function RoundStrip({ demo, transport, selectedSlot }: Props) {
           hasNumbers={hasRoomForNumbers(widthPx, cells)}
           isExpanded={isExpanded}
           litIndex={litIndex}
+          notedRounds={notedRounds}
           onSeek={seekToRound}
           onPoint={point}
           onReveal={reveal}

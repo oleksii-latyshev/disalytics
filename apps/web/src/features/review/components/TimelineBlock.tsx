@@ -12,6 +12,10 @@ interface Props {
   frame: number;
   locale: string;
   coach: CoachSession;
+  notedRounds: ReadonlySet<number>;
+  hasNote: boolean;
+  onSaveNote: () => void;
+  onDeleteNote: () => void;
   hasScoreboard: boolean;
   /** Whether fullscreen stillness has sent the block off the bottom of the screen. */
   isAway: boolean;
@@ -50,6 +54,10 @@ export function TimelineBlock({
   frame,
   locale,
   coach,
+  notedRounds,
+  hasNote,
+  onSaveNote,
+  onDeleteNote,
   hasScoreboard,
   isAway,
 }: Props) {
@@ -85,9 +93,20 @@ export function TimelineBlock({
       )}
 
       <section className="surface-card relative flex flex-col rounded-float">
-        <CoachBrow session={coach} isVisible={!isPlaying} />
+        <CoachBrow
+          session={coach}
+          isVisible={!isPlaying}
+          hasNote={hasNote}
+          onSaveNote={onSaveNote}
+          onDeleteNote={onDeleteNote}
+        />
 
-        <RoundStrip demo={demo} transport={transport} selectedSlot={selectedSlot} />
+        <RoundStrip
+          demo={demo}
+          transport={transport}
+          selectedSlot={selectedSlot}
+          notedRounds={notedRounds}
+        />
 
         {/* 64px: the 40px primary control plus 12px either side, which is the whole control row and
             has no slack left in it. */}
