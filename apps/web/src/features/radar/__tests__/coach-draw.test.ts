@@ -79,6 +79,7 @@ function createMockContext() {
     fill: vi.fn(),
     stroke: vi.fn(),
     fillText: vi.fn(),
+    strokeText: vi.fn(),
     translate: vi.fn(),
     setLineDash: vi.fn(),
     setTransform: vi.fn(),
@@ -270,10 +271,28 @@ describe('coach drawing execution', () => {
     const moved = { slot: asPlayerSlot(2), point: { x: 100, y: 100 } };
     const orig = { x: 50, y: 50 };
 
-    drawCoachMovedPlayer(ctx, moved, orig, 'CT', 3, GEOMETRY, COLORS, true);
+    drawCoachMovedPlayer(ctx, moved, orig, 'CT', 'donk', '12px sans-serif', GEOMETRY, COLORS, true);
 
     expect(ctx.setLineDash).toHaveBeenCalledWith([4, 4]);
-    expect(ctx.fillText).toHaveBeenCalledWith('3', expect.any(Number), expect.any(Number));
+    expect(ctx.fillText).toHaveBeenCalledWith('donk', expect.any(Number), expect.any(Number));
+  });
+
+  it('draws no name for an empty label', () => {
+    const moved = { slot: asPlayerSlot(2), point: { x: 100, y: 100 } };
+
+    drawCoachMovedPlayer(
+      ctx,
+      moved,
+      { x: 50, y: 50 },
+      'CT',
+      '',
+      '12px sans-serif',
+      GEOMETRY,
+      COLORS,
+      false,
+    );
+
+    expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
   it('resolves pencil colors from radarColors', () => {

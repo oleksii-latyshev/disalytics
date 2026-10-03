@@ -16,6 +16,7 @@ import { playerPointsAtFrame } from '../helpers/coach-originals';
 import { type CoachSession, coachDisplay } from '../helpers/coach-session';
 import { type CoachAnnotations, type CoachTool, resolvePencilColor } from '../helpers/coach-types';
 import type { RadarColors } from '../helpers/colors';
+import type { LabelStyle } from '../helpers/label-box';
 import type { PlateBox } from '../helpers/plate-box';
 import {
   type PlateGeometry,
@@ -25,6 +26,7 @@ import {
   readPlateGeometry,
 } from '../helpers/view';
 import { useCoachState } from '../hooks/use-coach-session';
+import type { PlateNavigation } from '../hooks/use-plate-navigation';
 
 interface Props {
   readonly session: CoachSession;
@@ -39,6 +41,11 @@ interface Props {
   readonly frame: number;
   readonly teamBySlot: readonly (Team | undefined)[];
   readonly colors: RadarColors;
+  /** The text the plate writes beside each token; empty while the reader has names switched off. */
+  readonly labelBySlot: readonly string[];
+  readonly labelStyle: LabelStyle;
+  /** The plate's own pan and zoom, which a press that hits nothing of the drawing falls through to. */
+  readonly navigation: PlateNavigation['canvasProps'];
 }
 
 const NO_HOVER: CoachHover = { utilityId: null, playerSlot: null };
@@ -72,13 +79,15 @@ interface PaintScene {
   readonly hover: CoachHover;
   readonly originals: ReadonlyMap<PlayerSlot, RadarPoint>;
   readonly teamBySlot: readonly (Team | undefined)[];
+  readonly labelBySlot: readonly string[];
+  readonly labelStyle: LabelStyle;
 }
 
 function paintCoach(
   context: CanvasRenderingContext2D,
   geometry: PlateGeometry,
   annotations: CoachAnnotations,
-  { overview, colors, hover, originals, teamBySlot }: PaintScene,
+  { overview, colors, hover, originals, teamBySlot, labelBySlot, labelStyle }: PaintScene,
 ): void {
   for (const stroke of annotations.strokes) drawCoachStroke(context, stroke, geometry);
 
@@ -95,7 +104,8 @@ function paintCoach(
       moved,
       origin,
       teamBySlot[moved.slot],
-      moved.slot + 1,
+      labelBySlot[moved.slot] ?? '',
+      labelStyle.font,
       geometry,
       colors,
       moved.slot === hover.playerSlot,
@@ -120,6 +130,9 @@ export function CoachOverlay({
   frame,
   teamBySlot,
   colors,
+  labelBySlot,
+  labelStyle,
+  navigation,
 }: Props) {
   const state = useCoachState(session);
   const { tool, color } = state;
@@ -150,8 +163,28 @@ export function CoachOverlay({
 
     const geometry = geometryRef.current;
     readPlateGeometry(view.current, { width, height }, layout, geometry);
-    paintCoach(context, geometry, annotations, { overview, colors, hover, originals, teamBySlot });
-  }, [canvasRef, view, layout, annotations, overview, colors, hover, originals, teamBySlot]);
+    paintCoach(context, geometry, annotations, {
+      overview,
+      colors,
+      hover,
+      originals,
+      teamBySlot,
+      labelBySlot,
+      labelStyle,
+    });
+  }, [
+    canvasRef,
+    view,
+    layout,
+    annotations,
+    overview,
+    colors,
+    hover,
+    originals,
+    teamBySlot,
+    labelBySlot,
+    labelStyle,
+  ]);
 
   useEffect(() => {
     paintRef.current = paint;
@@ -181,8 +214,14 @@ export function CoachOverlay({
   const target = { originals, strokeColor };
 
   const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>): void => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    session.pointerDown(pointAt(event), target);
+    // A press with the move tool that lands on nothing is the reader panning, exactly as with no
+    // tool armed; the plate's navigation takes it and declines it at 1x on its own.
+    if (session.pointerDown(pointAt(event), target)) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
+    }
+
+    if (tool === 'move') navigation.onPointerDown(event);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>): void => {
@@ -190,9 +229,15 @@ export function CoachOverlay({
     session.pointerMove(point, target);
 
     if (tool !== 'move') return;
+    navigation.onPointerMove(event);
 
     const next = hoverAt(annotations, originals, point);
     setPointed((current) => (sameHover(current, next) ? current : next));
+  };
+
+  const handlePointerEnd = (event: PointerEvent<HTMLCanvasElement>): void => {
+    session.pointerUp();
+    navigation.onPointerUp(event);
   };
 
   const style = isExpanded ? undefined : { width: box.width, height: box.height };
@@ -202,12 +247,13 @@ export function CoachOverlay({
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute touch-none ${placement} ${pointers}`}
+      className={`absolute touch-none data-[panning]:cursor-grabbing ${placement} ${pointers}`}
       style={style}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={session.pointerUp}
-      onPointerCancel={session.pointerUp}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onDoubleClick={tool === 'move' ? navigation.onDoubleClick : undefined}
     />
   );
 }

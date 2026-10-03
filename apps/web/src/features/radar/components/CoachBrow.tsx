@@ -1,20 +1,17 @@
 import { useT } from '@disa/i18n';
 import { Button, Popover, PopoverPanel, PopoverTrigger } from '@disa/ui';
 import {
-  Bomb,
   BookmarkMinus,
   BookmarkPlus,
-  Cloud,
   Eraser,
-  Flame,
   Move,
   Pencil,
   Redo2,
   Trash2,
   Undo2,
-  Zap,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
+import { UtilityGlyph } from '@/core/glyphs';
 import { useSetting } from '@/core/settings';
 import type { CoachSession } from '../helpers/coach-session';
 import {
@@ -39,13 +36,17 @@ const TOOLS: readonly { readonly tool: CoachTool; readonly icon: ReactNode }[] =
   { tool: 'move', icon: <Move /> },
   { tool: 'pencil', icon: <Pencil /> },
   { tool: 'eraser', icon: <Eraser /> },
-  { tool: 'smoke', icon: <Cloud /> },
-  { tool: 'molotov', icon: <Flame /> },
-  { tool: 'flash', icon: <Zap /> },
-  { tool: 'he', icon: <Bomb /> },
+  { tool: 'smoke', icon: <UtilityGlyph kind="smoke" size="control" /> },
+  { tool: 'molotov', icon: <UtilityGlyph kind="fire" size="control" /> },
+  { tool: 'flash', icon: <UtilityGlyph kind="flash" size="control" /> },
+  { tool: 'he', icon: <UtilityGlyph kind="he" size="control" /> },
 ];
 
 const BUTTON = 'size-6 rounded-chip';
+
+/** Luminance alone, §17.4: the armed tool is lit and ringed in ink, the rest sit dim. */
+const ARMED = 'bg-selected text-ink shadow-[inset_0_0_0_1px_var(--color-ink)]';
+const IDLE = 'text-ink-dim';
 
 function Divider() {
   return <span aria-hidden="true" className="mx-1 h-4 w-px bg-line" />;
@@ -64,7 +65,7 @@ export function CoachBrow({ session, isVisible, hasNote, onSaveNote, onDeleteNot
       role="toolbar"
       aria-label={t('radar.coach.label')}
       inert={!isVisible}
-      className={`surface-brow absolute bottom-full left-4 z-1 flex h-8 items-center gap-0.5 rounded-t-card px-2 transition-opacity duration-(--duration-base) ease-out ${
+      className={`surface-brow absolute bottom-full left-0 z-1 flex h-8 items-center gap-0.5 rounded-t-card px-2 transition-opacity duration-(--duration-base) ease-out ${
         isVisible ? '' : 'pointer-events-none opacity-0'
       }`}
     >
@@ -72,9 +73,9 @@ export function CoachBrow({ session, isVisible, hasNote, onSaveNote, onDeleteNot
         <Button
           key={entry.tool}
           type="button"
-          variant={tool === entry.tool ? 'secondary' : 'ghost'}
+          variant="ghost"
           size="icon"
-          className={BUTTON}
+          className={`${BUTTON} ${tool === entry.tool ? ARMED : IDLE}`}
           aria-label={t(`radar.coach.tools.${entry.tool}`)}
           title={t(`radar.coach.tools.${entry.tool}`)}
           aria-pressed={tool === entry.tool}
