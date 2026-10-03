@@ -46,6 +46,7 @@ export function duplicateStep(
     id: generateId('step'),
     name: source.name,
     timeOffsetSeconds: source.timeOffsetSeconds + 2,
+    throws: source.throws.map((thrown) => ({ ...thrown, id: generateId('throw') })),
   };
 
   const nextSteps = [

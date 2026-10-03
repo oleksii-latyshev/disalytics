@@ -149,6 +149,9 @@ describe('editor-actions', () => {
       expect(duplicated?.name).toBe('Spawn Setup');
       expect(duplicated?.timeOffsetSeconds).toBe(2); // 0 + 2
       expect(duplicated?.players).toEqual(tactic.steps[0]?.players);
+      const sourceIds = new Set(tactic.steps[0]?.throws.map((thrown) => thrown.id));
+      expect(duplicated?.throws).toHaveLength(tactic.steps[0]?.throws.length ?? 0);
+      expect(duplicated?.throws.some((thrown) => sourceIds.has(thrown.id))).toBe(false);
     });
 
     it('returns same tactic when duplicating non-existent index', () => {

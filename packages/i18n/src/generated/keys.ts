@@ -375,6 +375,7 @@ export const TRANSLATION_KEYS = [
   'library.tactics.steps.notes',
   'library.tactics.steps.notesPlaceholder',
   'library.tactics.steps.offset',
+  'library.tactics.steps.secondsUnit',
   'library.tactics.steps.step',
   'library.tactics.steps.title',
   'library.tactics.throw.delete',

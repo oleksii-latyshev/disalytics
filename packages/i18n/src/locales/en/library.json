@@ -398,6 +398,7 @@
       "name": "Step name",
       "namePlaceholder": "e.g. A Execute",
       "offset": "Delay (+{seconds}s)",
+      "secondsUnit": "s",
       "notes": "Step notes",
       "notesPlaceholder": "Execution instructions, callouts...",
       "cannotDeleteLast": "A tactic must have at least one step."

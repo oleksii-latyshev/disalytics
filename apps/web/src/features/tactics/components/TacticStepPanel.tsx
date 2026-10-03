@@ -115,7 +115,7 @@ export function TacticStepPanel({
                   })}
                   className="w-16 rounded-chip border border-line bg-surface-1 px-1.5 py-0.5 text-center font-mono text-12 text-ink focus:border-white focus:outline-none"
                 />
-                <span>s</span>
+                <span>{t('library.tactics.steps.secondsUnit')}</span>
               </label>
 
               <div className="ml-2 flex items-center gap-0.5 border-l border-line pl-2">
