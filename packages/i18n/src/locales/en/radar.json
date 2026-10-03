@@ -2,8 +2,6 @@
   "title": "Radar",
   "label": "Radar of {map}",
   "imageUnavailable": "The radar image did not load. The players are drawn without it.",
-  "zoomIn": "Zoom in",
-  "zoomOut": "Zoom out",
   "unknownMap": {
     "title": "No radar for this map",
     "hint": "disalytics carries radars for the active duty maps. {map} is not one of them, so there is nothing to draw the players on."
@@ -25,8 +23,8 @@
     "secondsUnit": "s"
   },
   "coach": {
-    "enter": "Enter coach mode",
-    "exit": "Exit coach mode",
+    "label": "Coach tools",
+    "color": "Colour",
     "tools": {
       "pencil": "Pencil",
       "eraser": "Eraser",
@@ -40,10 +38,10 @@
       "clear": "Clear drawings"
     },
     "colors": {
-      "objective": "Yellow",
-      "ct": "Cyan",
-      "t": "Amber",
-      "damage": "Red",
+      "objective": "Objective",
+      "ct": "CT",
+      "t": "T",
+      "damage": "Damage",
       "ink": "White"
     }
   }

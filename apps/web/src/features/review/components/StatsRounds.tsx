@@ -7,11 +7,13 @@ import {
   openingDuels,
   type ParsedDemo,
   type Team,
+  teamRoundStats,
   tradeKills,
 } from '@disa/demo-core';
 import { Text, type TranslationKey, useLocale, useT } from '@disa/i18n';
 import { type ReactNode, useMemo } from 'react';
 import { EconomyGaps, economySteps } from '@/features/timeline';
+import { StatsTeamFigures } from './StatsTeamFigures';
 
 const CENTRE = 50;
 const REACH = 42;
@@ -100,10 +102,11 @@ export function StatsRounds({ demo }: { demo: ParsedDemo }) {
   const utilityDamage = useMemo(() => matchUtilityDamage(demo), [demo]);
   const enemyBlindTime = useMemo(() => matchEnemyBlindTime(demo), [demo]);
   const hasFlashData = useMemo(() => hasBlindEvents(demo), [demo]);
+  const teamStats = useMemo(() => teamRoundStats(demo), [demo]);
 
   if (steps.length === 0) {
     return (
-      <div className="flex min-h-full items-center justify-center text-13 text-ink-dim">
+      <div className="flex items-center justify-center py-16 text-13 text-ink-dim">
         <Text path="review.metrics.empty" />
       </div>
     );
@@ -123,8 +126,8 @@ export function StatsRounds({ demo }: { demo: ParsedDemo }) {
         <Text path="timeline.economy.label" />
       </p>
 
-      <figure className="surface-card m-0 flex min-h-[12rem] flex-1 flex-col gap-3 rounded-card p-3">
-        <div className="relative min-h-[10rem] flex-1 pl-7">
+      <figure className="surface-card m-0 flex flex-col gap-3 rounded-card p-3">
+        <div className="relative h-40 pl-7">
           <span aria-hidden="true" className="absolute top-1 left-0 label-dense text-ct">
             CT
           </span>
@@ -192,6 +195,8 @@ export function StatsRounds({ demo }: { demo: ParsedDemo }) {
           </span>
         </figcaption>
       </figure>
+
+      <StatsTeamFigures teams={teamStats} />
 
       <FigureCard
         titlePath="review.metrics.opening.title"

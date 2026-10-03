@@ -1,3 +1,4 @@
+export { CoachBrow } from './components/CoachBrow';
 export { DuelPlate } from './components/DuelPlate';
 export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
@@ -7,6 +8,7 @@ export { UnknownMap } from './components/UnknownMap';
 export { UtilityPlate } from './components/UtilityPlate';
 export { squareBackdrop } from './helpers/backdrop';
 export { pointDistance, pointToSegmentDistance } from './helpers/coach-draw';
+export type { CoachSession } from './helpers/coach-session';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
 export { drawGrenadeMark } from './helpers/equipment-marks';
@@ -57,4 +59,6 @@ export {
   zoomAbout,
   zoomByStep,
 } from './helpers/view';
+export { useCoachKeys } from './hooks/use-coach-keys';
+export { useCoachSession } from './hooks/use-coach-session';
 export { useRadarImage } from './hooks/use-radar-image';

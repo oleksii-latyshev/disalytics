@@ -3,6 +3,7 @@ import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
 import type { RowFocus } from '@/core/events';
 import type { Transport } from '@/core/playback';
+import type { CoachSession } from '../helpers/coach-session';
 import { RadarView } from './RadarView';
 import { UnknownMap } from './UnknownMap';
 
@@ -14,8 +15,7 @@ interface Props {
   focus: RowFocus | null;
   /** Something in the top layer owns the keyboard, so §6.3's two zoom keys stand down. */
   isSuspended: boolean;
-  isCoachMode: boolean;
-  onCoachModeChange: (active: boolean) => void;
+  coach: CoachSession;
   /** That the reader has zoomed in, which is the stage's business rather than the plate's — #315. */
   onExpandedChange: (isExpanded: boolean) => void;
 }
@@ -26,8 +26,7 @@ export function MatchRadar({
   selectedSlot,
   focus,
   isSuspended,
-  isCoachMode,
-  onCoachModeChange,
+  coach,
   onExpandedChange,
 }: Props) {
   const t = useT();
@@ -47,8 +46,7 @@ export function MatchRadar({
           selectedSlot={selectedSlot}
           focus={focus}
           isSuspended={isSuspended}
-          isCoachMode={isCoachMode}
-          onCoachModeChange={onCoachModeChange}
+          coach={coach}
           onExpandedChange={onExpandedChange}
         />
       )}
