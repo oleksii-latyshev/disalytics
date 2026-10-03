@@ -1,7 +1,9 @@
+import { isLocalImageRef } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { ArrowDown, ArrowUp, ExternalLink, GripVertical, Maximize2, X } from 'lucide-react';
 import { useState } from 'react';
 import type { PreparedImage } from '../helpers/prepared-image';
+import { LineupPhoto } from './LineupPhoto';
 
 interface PreparedImagesListProps {
   readonly images: readonly PreparedImage[];
@@ -210,12 +212,14 @@ export function AddedImagesList({
             aria-label={t('library.lineups.form.viewPhoto')}
             className="group relative size-10 shrink-0 cursor-zoom-in overflow-hidden rounded-chip"
           >
-            <img src={url} alt="" loading="lazy" className="size-full object-cover" />
+            <LineupPhoto src={url} alt="" loading="lazy" className="size-full object-cover" />
             <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
               <Maximize2 className="size-3.5" />
             </span>
           </button>
-          <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">{url}</span>
+          <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
+            {isLocalImageRef(url) ? t('library.lineups.form.storedOnDevice') : url}
+          </span>
           <button
             type="button"
             disabled={index === 0}

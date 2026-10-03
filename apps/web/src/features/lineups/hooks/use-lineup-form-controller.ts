@@ -9,10 +9,25 @@ import {
   type LineupFormData,
   type LineupFormValues,
 } from '../helpers/lineup-form-model';
-import { persistLineup } from '../helpers/persist-lineup';
+import { persistLineup, storePreparedPhotos } from '../helpers/persist-lineup';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
 import type { PreparedImage } from '../helpers/prepared-image';
 import { useLineupFormExitGuard } from './use-lineup-form-exit-guard';
+
+function withLocalPhotos(
+  values: LineupFormValues,
+  refs: readonly string[],
+  images: readonly PreparedImage[],
+): LineupFormValues {
+  const imageUrls = [...values.imageUrls];
+  const imageCaptions = [...values.imageCaptions];
+  refs.forEach((ref, index) => {
+    if (imageUrls.includes(ref)) return;
+    imageUrls.push(ref);
+    imageCaptions.push(images[index]?.caption ?? '');
+  });
+  return { ...values, imageUrls, imageCaptions };
+}
 
 export function useLineupFormController({
   isOpen,
@@ -166,14 +181,6 @@ export function useLineupFormController({
       });
       return;
     }
-    if (preparedImages.length > 0) {
-      setError(t('library.lineups.form.validation.imageLinksRequired'));
-      setErrorSection('photos');
-      requestAnimationFrame(() => {
-        photosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-      return;
-    }
     if (newImageUrl.trim()) {
       setError(t('library.lineups.form.validation.imageLinkPending'));
       setErrorSection('photos');
@@ -183,13 +190,22 @@ export function useLineupFormController({
       return;
     }
 
+    setSaving(true);
+    const localRefs = await storePreparedPhotos(preparedImages);
+    if (localRefs === null) {
+      setSaving(false);
+      setError(t('library.lineups.form.validation.saveFailed'));
+      return;
+    }
+
     const lineup = buildLineupFromForm(
-      values,
+      withLocalPhotos(values, localRefs, preparedImages),
       initialData?.id,
       initialData?.createdAt,
       values.fromDemo,
     );
     if (!lineup) {
+      setSaving(false);
       setError(t('library.lineups.form.validation.coordinatesRequired'));
       setErrorSection('coordinates');
       requestAnimationFrame(() => {
@@ -198,7 +214,6 @@ export function useLineupFormController({
       return;
     }
 
-    setSaving(true);
     const saved = await persistLineup(lineup);
     setSaving(false);
     if (!saved) {

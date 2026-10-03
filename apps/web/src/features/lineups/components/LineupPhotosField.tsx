@@ -1,6 +1,5 @@
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { AlertCircle } from 'lucide-react';
 import type { LineupFormValues } from '../helpers/lineup-form-model';
 import { isHttpUrl, moved, reorderLineupPhotos } from '../helpers/lineup-form-model';
 import type { PreparedImage } from '../helpers/prepared-image';
@@ -57,15 +56,6 @@ export function LineupPhotosField({
       <label htmlFor="lineup-image-url" className="label-dense text-ink-dim">
         <Text path="library.lineups.form.imageUrls" />
       </label>
-      {errorSection === 'photos' && (
-        <div
-          role="alert"
-          className="flex items-center gap-1.5 rounded-card border border-red-500/40 bg-red-500/10 p-2 text-11 text-red-300"
-        >
-          <AlertCircle className="size-4 shrink-0 text-red-400" />
-          <Text path="library.lineups.form.validation.photosPendingHelp" />
-        </div>
-      )}
       <input
         ref={fileInputRef}
         type="file"

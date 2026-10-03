@@ -1,9 +1,10 @@
 import type { Lineup } from '@disa/demo-core';
-import { parseLineupFile, serializeLineupFile } from '@disa/demo-core';
+import { parseLineupFile, referencedLocalImageHashes, serializeLineupFile } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { loadMapLineups } from '@disa/map-data';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { combineLineups } from '../helpers/lineup-catalog';
+import { blobToDataUrl, dataUrlToBlob, sha256Hex } from '../helpers/lineup-photo-codec';
 
 export function useMapLineups(map: string) {
   const [builtInLineups, setBuiltInLineups] = useState<readonly Lineup[]>([]);
@@ -59,12 +60,22 @@ export function useMapLineups(map: string) {
   const importLineups = useCallback(
     async (file: File): Promise<number> => {
       const text = await file.text();
-      const parsed = parseLineupFile(text);
+      const { lineups: parsed, images } = parseLineupFile(text);
       if (parsed.length === 0) return 0;
+
+      const photos = new Map<string, Blob>();
+      for (const [hash, dataUrl] of Object.entries(images)) {
+        const blob = dataUrlToBlob(dataUrl);
+        if (blob === null || (await sha256Hex(blob)) !== hash) {
+          throw new Error(`photo ${hash} does not match its hash`);
+        }
+        photos.set(hash, blob);
+      }
 
       const store = await openLineupStore();
       if (store === null) throw new Error('lineup storage is unavailable');
       try {
+        await store.putPhotos(photos);
         await store.putMany(parsed.map((lineup) => ({ ...lineup, isBuiltIn: false })));
       } finally {
         store.close();
@@ -80,12 +91,17 @@ export function useMapLineups(map: string) {
     const store = await openLineupStore();
     if (store === null) return;
     let all: readonly Lineup[];
+    const images: Record<string, string> = {};
     try {
       all = await store.list();
+      for (const hash of referencedLocalImageHashes(all)) {
+        const blob = await store.getPhoto(hash);
+        if (blob !== null) images[hash] = await blobToDataUrl(blob);
+      }
     } finally {
       store.close();
     }
-    const json = serializeLineupFile(all);
+    const json = serializeLineupFile(all, images);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
