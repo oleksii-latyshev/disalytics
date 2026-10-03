@@ -226,11 +226,27 @@ export {
   tickAtFrame,
 } from './helpers/selectors';
 export type {
+  CarryWarning,
+  GrenadeCounts,
+  GrenadeKind,
+  PlayerLoadout,
+  TacticLoadout,
+} from './helpers/tactic-loadout';
+export {
+  GRENADE_KINDS,
+  grenadePrice,
+  MAX_FLASHES_CARRIED,
+  MAX_GRENADES_CARRIED,
+  MAX_OF_OTHER_KIND_CARRIED,
+  tacticLoadout,
+} from './helpers/tactic-loadout';
+export type {
   Tactic,
   TacticDrawingStroke,
   TacticFile,
   TacticPlayerPosition,
   TacticPoint,
+  TacticRound,
   TacticSide,
   TacticStep,
   TacticThrow,
@@ -239,8 +255,10 @@ export {
   decodeTacticFromHash,
   encodeTacticToHash,
   isTactic,
+  isTacticRound,
   parseTacticFile,
   serializeTacticFile,
+  TACTIC_ROUNDS,
   TACTIC_SCHEMA_VERSION,
   TACTIC_SIDES,
   TacticFileError,
