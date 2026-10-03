@@ -5,6 +5,7 @@ import { Dialog } from '@disa/ui';
 import { X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
 import type { SelectedVariants } from '../hooks/use-lineup-selection';
+import { LineupPhoto } from './LineupPhoto';
 
 export function LineupVariantsDialog({
   selectedVariants,
@@ -54,7 +55,7 @@ export function LineupVariantsDialog({
               className="flex items-center gap-3 rounded-card border border-line bg-surface-1 p-2 text-left transition-colors hover:bg-surface-2"
             >
               {preview ? (
-                <img
+                <LineupPhoto
                   src={preview}
                   alt=""
                   loading="lazy"

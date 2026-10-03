@@ -2,6 +2,7 @@ import { Text, useT } from '@disa/i18n';
 import { Button, Dialog } from '@disa/ui';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
+import { LineupPhoto } from './LineupPhoto';
 
 export function EnlargedPhotoDialog({
   url,
@@ -45,7 +46,7 @@ export function EnlargedPhotoDialog({
           >
             <X className="size-5" />
           </button>
-          <img
+          <LineupPhoto
             src={url}
             alt=""
             className="max-h-[85dvh] max-w-[85dvw] rounded-chip object-contain"

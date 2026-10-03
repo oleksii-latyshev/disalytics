@@ -107,12 +107,17 @@ export type {
   LineupGroupTarget,
   LineupMouseButton,
   LineupSide,
+  ParsedLineupFile,
 } from './helpers/lineups';
 export {
   isLineup,
+  isLocalImageRef,
   LINEUP_SIDES,
   LineupFileError,
+  localImageHash,
+  localImageRef,
   parseLineupFile,
+  referencedLocalImageHashes,
   serializeLineupFile,
   THROW_TYPES,
 } from './helpers/lineups';
