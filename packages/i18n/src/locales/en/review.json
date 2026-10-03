@@ -25,11 +25,7 @@
     "kills": "Kills",
     "deaths": "Deaths",
     "damage": "Damage",
-    "equipment": "Equipment",
-    "abbr": {
-      "kills": "K",
-      "deaths": "D"
-    }
+    "equipment": "Equipment"
   },
   "maps": {
     "controls": "What the map draws",
@@ -146,17 +142,8 @@
     "started": "Started {side}",
     "player": "Player",
     "assists": "Assists",
-    "diff": "Kills minus deaths",
-    "adr": "Damage per round",
-    "headshots": "Headshot share",
     "detail": "Round by round",
-    "roundLine": "Round {round, number}: {kills, plural, one {# kill} other {# kills}}, {damage} damage",
-    "abbr": {
-      "assists": "A",
-      "diff": "+/−",
-      "adr": "ADR",
-      "headshots": "HS%"
-    }
+    "roundLine": "Round {round, number}: {kills, plural, one {# kill} other {# kills}}, {damage} damage"
   },
   "stats": {
     "nav": "Stats sections",
@@ -166,44 +153,29 @@
     },
     "players": {
       "sortHint": "Select a column heading to sort the players of each team by it.",
+      "table": {
+        "overview": "Overview",
+        "opening": "Opening duels & trades",
+        "multi": "Multi-kills & clutches",
+        "utility": "Flashes & utility"
+      },
       "col": {
-        "kast": {
-          "name": "KAST: rounds with a kill, an assist, survival or a traded death",
-          "abbr": "KAST"
-        },
-        "opening": {
-          "name": "Opening duels won–lost",
-          "abbr": "OD"
-        },
-        "tradeKills": {
-          "name": "Trade kills",
-          "abbr": "TK"
-        },
-        "deathsTraded": {
-          "name": "Deaths traded",
-          "abbr": "TD"
-        },
-        "multi": "Rounds with {count, plural, one {# kill} other {# kills}}",
-        "clutches": {
-          "name": "Clutches won",
-          "abbr": "CL"
-        },
-        "utilityDamage": {
-          "name": "Utility damage",
-          "abbr": "UD"
-        },
-        "flashAssists": {
-          "name": "Flash assists",
-          "abbr": "FA"
-        },
-        "blind": {
-          "name": "Enemy blind time, seconds",
-          "abbr": "BT"
-        },
-        "rating": {
-          "name": "Rating 1.0",
-          "abbr": "Rating 1.0"
-        }
+        "diff": "K–D",
+        "adr": "ADR",
+        "headshots": "HS %",
+        "kast": "KAST",
+        "rating": "Rating 1.0",
+        "openingKills": "Opening kills",
+        "openingDeaths": "Opening deaths",
+        "openingSuccess": "Opening success",
+        "tradeKills": "Trade kills",
+        "deathsTraded": "Deaths traded",
+        "multi": "{count}K",
+        "multiName": "Rounds with {count, plural, one {# kill} other {# kills}}",
+        "clutches": "Clutches won",
+        "utilityDamage": "Utility damage",
+        "flashAssists": "Flash assists",
+        "blind": "Enemy blind time, s"
       },
       "notes": {
         "title": "How these are counted",
@@ -211,7 +183,8 @@
         "trade": "A trade is an opponent kill within {seconds, plural, one {# second} other {# seconds}} of a teammate's death.",
         "multi": "2K to 5K count the rounds with exactly that many opponent kills.",
         "flash": "A flash assist is a teammate's kill on an opponent whose blindness from your flash was still running; your own kills do not count.",
-        "rating": "Rating 1.0 is HLTV's published formula; later versions are not public and are not approximated."
+        "rating": "Rating 1.0 is HLTV's published formula; later versions are not public and are not approximated.",
+        "opening": "An opening duel is the first kill of a round. Opening success is the share of the opening duels a player took part in that they won."
       }
     },
     "unknown": "Not recorded in this demo",
