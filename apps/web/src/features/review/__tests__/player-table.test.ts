@@ -1,6 +1,14 @@
 import { asPlayerSlot, type PlayerStats } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { nextPlayerSort, PLAYER_COLUMNS, sortPlayers } from '../helpers/player-table';
+import {
+  bestValue,
+  nextPlayerSort,
+  openingSuccessPercent,
+  PLAYER_COLUMNS,
+  PLAYER_TABLES,
+  type PlayerColumnId,
+  sortPlayers,
+} from '../helpers/player-table';
 
 function newStats(slot: number, overrides: Partial<PlayerStats> = {}): PlayerStats {
   return {
@@ -78,5 +86,79 @@ describe('PLAYER_COLUMNS', () => {
   it('has one column per id', () => {
     const ids = PLAYER_COLUMNS.map((column) => column.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+const column = (id: PlayerColumnId) => {
+  const found = PLAYER_COLUMNS.find((entry) => entry.id === id);
+  if (found === undefined) throw new Error(id);
+  return found;
+};
+
+describe('PLAYER_TABLES', () => {
+  it('states every column once, across the four tables', () => {
+    expect(PLAYER_TABLES.map((table) => table.id)).toEqual([
+      'overview',
+      'opening',
+      'multi',
+      'utility',
+    ]);
+    expect(PLAYER_COLUMNS).toHaveLength(21);
+  });
+});
+
+describe('openingSuccessPercent', () => {
+  it('is kills over the duels taken part in', () => {
+    expect(openingSuccessPercent(newStats(0, { openingWon: 3, openingLost: 1 }))).toBe(75);
+    expect(openingSuccessPercent(newStats(0, { openingWon: 0, openingLost: 2 }))).toBe(0);
+  });
+
+  it('does not exist with no opening duels', () => {
+    expect(openingSuccessPercent(newStats(0))).toBeNull();
+  });
+
+  it('sorts a player with no duels last in either direction', () => {
+    const players = [
+      newStats(0),
+      newStats(1, { openingWon: 1, openingLost: 1 }),
+      newStats(2, { openingWon: 2, openingLost: 0 }),
+    ];
+    expect(slotsOf(sortPlayers(players, { column: 'openingSuccess', direction: 'desc' }))).toEqual([
+      2, 1, 0,
+    ]);
+    expect(slotsOf(sortPlayers(players, { column: 'openingSuccess', direction: 'asc' }))).toEqual([
+      1, 2, 0,
+    ]);
+  });
+});
+
+describe('bestValue', () => {
+  const players = [
+    newStats(0, { kills: 20, deaths: 10 }),
+    newStats(1, { kills: 25, deaths: 15 }),
+    newStats(2, { kills: 12, deaths: 18 }),
+  ];
+
+  it('is the highest figure where more is better', () => {
+    expect(bestValue(players, column('kills'))).toBe(25);
+  });
+
+  it('is the lowest figure where fewer is better', () => {
+    expect(bestValue(players, column('deaths'))).toBe(10);
+    expect(bestValue(players, column('openingDeaths'))).toBeNull();
+  });
+
+  it('marks nothing when every player has the same figure', () => {
+    expect(bestValue(players, column('clutches'))).toBeNull();
+    expect(bestValue([newStats(0, { kills: 4 })], column('kills'))).toBeNull();
+  });
+
+  it('ignores a figure that does not exist', () => {
+    const duelists = [
+      newStats(0),
+      newStats(1, { openingWon: 1, openingLost: 1 }),
+      newStats(2, { openingWon: 1, openingLost: 0 }),
+    ];
+    expect(bestValue(duelists, column('openingSuccess'))).toBe(100);
   });
 });

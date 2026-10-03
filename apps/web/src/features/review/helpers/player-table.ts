@@ -3,13 +3,16 @@ import type { TranslationKey } from '@disa/i18n';
 
 export type PlayerColumnId =
   | 'kills'
-  | 'assists'
   | 'deaths'
+  | 'assists'
   | 'diff'
   | 'adr'
   | 'headshots'
   | 'kast'
-  | 'opening'
+  | 'rating'
+  | 'openingKills'
+  | 'openingDeaths'
+  | 'openingSuccess'
   | 'tradeKills'
   | 'deathsTraded'
   | 'multi2'
@@ -19,152 +22,211 @@ export type PlayerColumnId =
   | 'clutches'
   | 'utilityDamage'
   | 'flashAssists'
-  | 'blind'
-  | 'rating';
+  | 'blind';
+
+export type PlayerTableId = 'overview' | 'opening' | 'multi' | 'utility';
 
 /** How a figure is written; the formatting itself is the locale's, so it lives in the component. */
-export type PlayerColumnFormat =
-  | 'integer'
-  | 'signed'
-  | 'percent'
-  | 'decimal1'
-  | 'decimal2'
-  | 'record';
+export type PlayerColumnFormat = 'integer' | 'signed' | 'percent' | 'decimal1' | 'decimal2';
 
 export interface PlayerColumn {
   readonly id: PlayerColumnId;
-  /** The full name, read by a screen reader and shown as the header's tooltip. */
-  readonly namePath: TranslationKey;
-  readonly nameValues?: { readonly count: number };
-  /** What fits over a column of figures; a column with none states `abbrLiteral` in every locale. */
-  readonly abbrPath?: TranslationKey;
-  readonly abbrLiteral?: string;
+  /** The heading, in words a reader needs no tooltip for. */
+  readonly labelPath: TranslationKey;
+  readonly labelValues?: { readonly count: number };
   readonly format: PlayerColumnFormat;
-  /** The figure the column sorts by. */
-  readonly read: (player: PlayerStats) => number;
+  /** Which end of the column is the good one: more kills is, more deaths is not. */
+  readonly better: 'higher' | 'lower';
+  /** Set for the two figures a recording without flash events cannot state. */
+  readonly needsFlashData?: true;
+  /** The figure shown and sorted by; `null` is a figure that does not exist, such as 0 of 0. */
+  readonly read: (player: PlayerStats) => number | null;
+}
+
+/** Opening kills as a share of the opening duels the player took part in; `null` with none. */
+export function openingSuccessPercent(player: PlayerStats): number | null {
+  const attempts = player.openingWon + player.openingLost;
+  return attempts === 0 ? null : (player.openingWon / attempts) * 100;
 }
 
 const multiColumn = (size: 2 | 3 | 4 | 5): PlayerColumn => ({
   id: `multi${size}`,
-  namePath: 'review.stats.players.col.multi',
-  nameValues: { count: size },
-  abbrLiteral: `${size}K`,
+  labelPath: 'review.stats.players.col.multi',
+  labelValues: { count: size },
   format: 'integer',
+  better: 'higher',
   read: (player) => player.multiKillRounds[size - 2] ?? 0,
 });
 
-/** What a row states, in the order the table reads them. */
-export const PLAYER_COLUMNS: readonly PlayerColumn[] = [
+const OVERVIEW: readonly PlayerColumn[] = [
   {
     id: 'kills',
-    namePath: 'review.player.kills',
-    abbrPath: 'review.player.abbr.kills',
+    labelPath: 'review.player.kills',
     format: 'integer',
+    better: 'higher',
     read: (player) => player.kills,
   },
   {
-    id: 'assists',
-    namePath: 'review.board.assists',
-    abbrPath: 'review.board.abbr.assists',
-    format: 'integer',
-    read: (player) => player.assists,
-  },
-  {
     id: 'deaths',
-    namePath: 'review.player.deaths',
-    abbrPath: 'review.player.abbr.deaths',
+    labelPath: 'review.player.deaths',
     format: 'integer',
+    better: 'lower',
     read: (player) => player.deaths,
   },
   {
+    id: 'assists',
+    labelPath: 'review.board.assists',
+    format: 'integer',
+    better: 'higher',
+    read: (player) => player.assists,
+  },
+  {
     id: 'diff',
-    namePath: 'review.board.diff',
-    abbrPath: 'review.board.abbr.diff',
+    labelPath: 'review.stats.players.col.diff',
     format: 'signed',
+    better: 'higher',
     read: (player) => player.kills - player.deaths,
   },
   {
     id: 'adr',
-    namePath: 'review.board.adr',
-    abbrPath: 'review.board.abbr.adr',
+    labelPath: 'review.stats.players.col.adr',
     format: 'integer',
+    better: 'higher',
     read: (player) => player.adr,
   },
   {
     id: 'headshots',
-    namePath: 'review.board.headshots',
-    abbrPath: 'review.board.abbr.headshots',
+    labelPath: 'review.stats.players.col.headshots',
     format: 'percent',
+    better: 'higher',
     read: (player) => player.headshotPercent,
   },
   {
     id: 'kast',
-    namePath: 'review.stats.players.col.kast.name',
-    abbrPath: 'review.stats.players.col.kast.abbr',
+    labelPath: 'review.stats.players.col.kast',
     format: 'percent',
+    better: 'higher',
     read: (player) => player.kastPercent,
   },
   {
-    id: 'opening',
-    namePath: 'review.stats.players.col.opening.name',
-    abbrPath: 'review.stats.players.col.opening.abbr',
-    format: 'record',
+    id: 'rating',
+    labelPath: 'review.stats.players.col.rating',
+    format: 'decimal2',
+    better: 'higher',
+    read: (player) => player.rating,
+  },
+];
+
+const OPENING: readonly PlayerColumn[] = [
+  {
+    id: 'openingKills',
+    labelPath: 'review.stats.players.col.openingKills',
+    format: 'integer',
+    better: 'higher',
     read: (player) => player.openingWon,
   },
   {
-    id: 'tradeKills',
-    namePath: 'review.stats.players.col.tradeKills.name',
-    abbrPath: 'review.stats.players.col.tradeKills.abbr',
+    id: 'openingDeaths',
+    labelPath: 'review.stats.players.col.openingDeaths',
     format: 'integer',
+    better: 'lower',
+    read: (player) => player.openingLost,
+  },
+  {
+    id: 'openingSuccess',
+    labelPath: 'review.stats.players.col.openingSuccess',
+    format: 'percent',
+    better: 'higher',
+    read: openingSuccessPercent,
+  },
+  {
+    id: 'tradeKills',
+    labelPath: 'review.stats.players.col.tradeKills',
+    format: 'integer',
+    better: 'higher',
     read: (player) => player.tradeKills,
   },
   {
     id: 'deathsTraded',
-    namePath: 'review.stats.players.col.deathsTraded.name',
-    abbrPath: 'review.stats.players.col.deathsTraded.abbr',
+    labelPath: 'review.stats.players.col.deathsTraded',
     format: 'integer',
+    better: 'higher',
     read: (player) => player.deathsTraded,
   },
+];
+
+const MULTI: readonly PlayerColumn[] = [
   multiColumn(2),
   multiColumn(3),
   multiColumn(4),
   multiColumn(5),
   {
     id: 'clutches',
-    namePath: 'review.stats.players.col.clutches.name',
-    abbrPath: 'review.stats.players.col.clutches.abbr',
+    labelPath: 'review.stats.players.col.clutches',
     format: 'integer',
+    better: 'higher',
     read: (player) => player.clutchesWon,
   },
+];
+
+const UTILITY: readonly PlayerColumn[] = [
   {
     id: 'utilityDamage',
-    namePath: 'review.stats.players.col.utilityDamage.name',
-    abbrPath: 'review.stats.players.col.utilityDamage.abbr',
+    labelPath: 'review.stats.players.col.utilityDamage',
     format: 'integer',
+    better: 'higher',
     read: (player) => player.utilityDamage,
   },
   {
     id: 'flashAssists',
-    namePath: 'review.stats.players.col.flashAssists.name',
-    abbrPath: 'review.stats.players.col.flashAssists.abbr',
+    labelPath: 'review.stats.players.col.flashAssists',
     format: 'integer',
+    better: 'higher',
+    needsFlashData: true,
     read: (player) => player.flashAssists,
   },
   {
     id: 'blind',
-    namePath: 'review.stats.players.col.blind.name',
-    abbrPath: 'review.stats.players.col.blind.abbr',
+    labelPath: 'review.stats.players.col.blind',
     format: 'decimal1',
+    better: 'higher',
+    needsFlashData: true,
     read: (player) => player.enemyBlindSeconds,
   },
-  {
-    id: 'rating',
-    namePath: 'review.stats.players.col.rating.name',
-    abbrPath: 'review.stats.players.col.rating.abbr',
-    format: 'decimal2',
-    read: (player) => player.rating,
-  },
 ];
+
+export interface PlayerTable {
+  readonly id: PlayerTableId;
+  readonly titlePath: TranslationKey;
+  readonly columns: readonly PlayerColumn[];
+}
+
+/** One table per question, in the order a reader asks them. */
+export const PLAYER_TABLES: readonly PlayerTable[] = [
+  { id: 'overview', titlePath: 'review.stats.players.table.overview', columns: OVERVIEW },
+  { id: 'opening', titlePath: 'review.stats.players.table.opening', columns: OPENING },
+  { id: 'multi', titlePath: 'review.stats.players.table.multi', columns: MULTI },
+  { id: 'utility', titlePath: 'review.stats.players.table.utility', columns: UTILITY },
+];
+
+export const PLAYER_COLUMNS: readonly PlayerColumn[] = PLAYER_TABLES.flatMap(
+  (table) => table.columns,
+);
+
+/**
+ * The figure that stands out in a column across every player shown, or `null` when nothing does.
+ *
+ * Nothing does when fewer than two distinct figures exist: a column of zeros, or of one shared
+ * value, has no best, and marking all ten rows is the same as marking none.
+ */
+export function bestValue(players: readonly PlayerStats[], column: PlayerColumn): number | null {
+  const values = players
+    .map((player) => column.read(player))
+    .filter((value): value is number => value !== null);
+
+  if (new Set(values).size < 2) return null;
+  return column.better === 'higher' ? Math.max(...values) : Math.min(...values);
+}
 
 export interface PlayerSort {
   readonly column: PlayerColumnId;
@@ -183,7 +245,7 @@ export function nextPlayerSort(
   return current.direction === 'desc' ? { column, direction: 'asc' } : null;
 }
 
-/** A stable sort: two players level on the figure keep the order they arrived in. */
+/** A stable sort: players level on the figure keep the order they arrived in, and a missing one goes last. */
 export function sortPlayers(
   players: readonly PlayerStats[],
   sort: PlayerSort | null,
@@ -193,7 +255,12 @@ export function sortPlayers(
 
   const sign = sort.direction === 'desc' ? -1 : 1;
   return players
-    .map((player, index) => ({ player, index }))
-    .sort((a, b) => sign * (column.read(a.player) - column.read(b.player)) || a.index - b.index)
+    .map((player, index) => ({ player, index, value: column.read(player) }))
+    .sort((a, b) => {
+      if (a.value === null || b.value === null) {
+        return (a.value === null ? 1 : 0) - (b.value === null ? 1 : 0) || a.index - b.index;
+      }
+      return sign * (a.value - b.value) || a.index - b.index;
+    })
     .map(({ player }) => player);
 }
