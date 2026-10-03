@@ -228,6 +228,14 @@ export {
   TACTIC_SIDES,
   TacticFileError,
 } from './helpers/tactics';
+export type {
+  SideTally,
+  Tally,
+  TeamBuy,
+  TeamBuyClass,
+  TeamRoundStats,
+} from './helpers/team-stats';
+export { isPistolRound, TEAM_BUYS, teamBuyClass, teamRoundStats } from './helpers/team-stats';
 export type { MovementKey, ThrowDetail, ThrowType } from './helpers/throw-detail';
 export { throwDetail } from './helpers/throw-detail';
 export type { UtilityHeld, UtilityKind } from './helpers/utility';
