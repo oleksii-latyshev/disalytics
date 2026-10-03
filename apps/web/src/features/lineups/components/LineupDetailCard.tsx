@@ -5,6 +5,8 @@ import { Button } from '@disa/ui';
 import { Check, Copy, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
+import { useLineupPhotoSrc } from '../hooks/use-lineup-photo-src';
+import { LineupPhoto } from './LineupPhoto';
 
 interface Props {
   readonly lineup: Lineup | null;
@@ -24,6 +26,26 @@ function safeMediaUrl(url: string | undefined): string | null {
 
 function imageUrlOf(url: string | null): string | null {
   return url && /\.(?:png|jpe?g|webp|gif)(?:\?[^\s]*)?$/i.test(url) ? url : null;
+}
+
+function DetailPhoto({ url, alt }: { readonly url: string; readonly alt: string }) {
+  const href = useLineupPhotoSrc(url);
+  return (
+    <a
+      href={href ?? undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block aspect-video"
+    >
+      <LineupPhoto
+        src={url}
+        alt={alt}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        className="aspect-video w-full rounded-card object-cover"
+      />
+    </a>
+  );
 }
 
 export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
@@ -196,15 +218,7 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
       {imageUrls.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
           {Array.from(new Set(imageUrls)).map((url, index) => (
-            <a key={url} href={url} target="_blank" rel="noopener noreferrer">
-              <img
-                src={url}
-                alt={`${lineup.title} ${index + 1}`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="aspect-video w-full rounded-card object-cover"
-              />
-            </a>
+            <DetailPhoto key={url} url={url} alt={`${lineup.title} ${index + 1}`} />
           ))}
         </div>
       )}

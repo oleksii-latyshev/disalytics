@@ -157,4 +157,45 @@ describe('LineupStore (IndexedDB)', () => {
     await store.clear();
     expect(await store.list()).toHaveLength(0);
   });
+
+  describe('photos', () => {
+    const kept = 'a'.repeat(64);
+    const orphan = 'b'.repeat(64);
+    const photo = (text: string) => new Blob([text], { type: 'image/webp' });
+    const withPhoto: Lineup = { ...lineupA, imageUrls: [`local:${kept}`], imageCaptions: [''] };
+
+    it('puts and gets a photo', async () => {
+      await store.putPhotos(new Map([[kept, photo('one')]]));
+      const blob = await store.getPhoto(kept);
+
+      expect(blob).not.toBeNull();
+      expect(blob?.size).toBe(3);
+      expect(await store.getPhoto(orphan)).toBeNull();
+    });
+
+    it('prunes unreferenced photos after a lineup write and keeps referenced ones', async () => {
+      await store.putPhotos(
+        new Map([
+          [kept, photo('one')],
+          [orphan, photo('two')],
+        ]),
+      );
+      await store.put(withPhoto);
+
+      expect(await store.getPhoto(kept)).not.toBeNull();
+      expect(await store.getPhoto(orphan)).toBeNull();
+    });
+
+    it('prunes a photo once its lineup is deleted or cleared', async () => {
+      await store.putPhotos(new Map([[kept, photo('one')]]));
+      await store.put(withPhoto);
+      await store.delete(withPhoto.id);
+      expect(await store.getPhoto(kept)).toBeNull();
+
+      await store.putPhotos(new Map([[kept, photo('one')]]));
+      await store.putMany([withPhoto]);
+      await store.clear();
+      expect(await store.getPhoto(kept)).toBeNull();
+    });
+  });
 });

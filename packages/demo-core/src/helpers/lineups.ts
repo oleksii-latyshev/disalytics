@@ -47,10 +47,48 @@ export interface Lineup {
 }
 
 export interface LineupFile {
-  readonly version: 1;
+  readonly version: 2;
   readonly generator: 'disalytics';
   readonly exportedAt: string;
   readonly lineups: readonly Lineup[];
+  /** Lowercase hex SHA-256 of the photo bytes → `data:image/…;base64,…`. */
+  readonly images: Readonly<Record<string, string>>;
+}
+
+export interface ParsedLineupFile {
+  readonly lineups: readonly Lineup[];
+  readonly images: Readonly<Record<string, string>>;
+}
+
+const LOCAL_IMAGE_PREFIX = 'local:';
+const LOCAL_IMAGE_REF = /^local:([0-9a-f]{64})$/;
+const IMAGE_HASH = /^[0-9a-f]{64}$/;
+const IMAGE_DATA_URL = /^data:image\/(?:webp|png);base64,[A-Za-z0-9+/]+={0,2}$/;
+
+/** True for an `imageUrls` entry that points at a photo kept on this device. */
+export function isLocalImageRef(value: string): boolean {
+  return LOCAL_IMAGE_REF.test(value);
+}
+
+/** The SHA-256 hex a `local:` reference names, or null for any other string. */
+export function localImageHash(value: string): string | null {
+  return LOCAL_IMAGE_REF.exec(value)?.[1] ?? null;
+}
+
+export function localImageRef(hash: string): string {
+  return `${LOCAL_IMAGE_PREFIX}${hash}`;
+}
+
+/** Every distinct local photo hash the given lineups reference. */
+export function referencedLocalImageHashes(lineups: readonly Lineup[]): ReadonlySet<string> {
+  const hashes = new Set<string>();
+  for (const lineup of lineups) {
+    for (const url of lineup.imageUrls ?? []) {
+      const hash = localImageHash(url);
+      if (hash !== null) hashes.add(hash);
+    }
+  }
+  return hashes;
 }
 
 export class LineupFileError extends Error {
@@ -154,7 +192,9 @@ function hasValidOptionals(
 }
 
 function isImageUrl(value: unknown): value is string {
-  return typeof value === 'string' && /^https?:\/\/[^\s]+$/i.test(value);
+  return (
+    typeof value === 'string' && (/^https?:\/\/[^\s]+$/i.test(value) || isLocalImageRef(value))
+  );
 }
 
 function hasValidInstructions(
@@ -221,20 +261,52 @@ export function isLineup(value: unknown): value is Lineup {
   );
 }
 
-/** Serializes a list of lineups into a versioned JSON envelope for file export. */
-export function serializeLineupFile(lineups: readonly Lineup[]): string {
+/**
+ * Serializes lineups into a versioned JSON envelope. `images` maps a photo hash to its data URL;
+ * only hashes the lineups reference are written.
+ */
+export function serializeLineupFile(
+  lineups: readonly Lineup[],
+  images: Readonly<Record<string, string>> = {},
+): string {
+  const referenced = referencedLocalImageHashes(lineups);
+  const included: Record<string, string> = {};
+  for (const hash of [...referenced].sort()) {
+    const dataUrl = images[hash];
+    if (dataUrl !== undefined) included[hash] = dataUrl;
+  }
+
   const file: LineupFile = {
-    version: 1,
+    version: 2,
     generator: 'disalytics',
     exportedAt: new Date().toISOString(),
     lineups,
+    images: included,
   };
 
   return JSON.stringify(file, null, 2);
 }
 
-/** Parses and validates a JSON string as a `LineupFile`, returning its lineups. */
-export function parseLineupFile(json: string): readonly Lineup[] {
+function parseImages(value: unknown): Record<string, string> {
+  if (value === undefined) return {};
+  if (!isObject(value) || Array.isArray(value)) {
+    throw new LineupFileError('Field "images" must be an object', 'INVALID_SCHEMA');
+  }
+  const images: Record<string, string> = {};
+  for (const [hash, dataUrl] of Object.entries(value)) {
+    if (!IMAGE_HASH.test(hash)) {
+      throw new LineupFileError(`Invalid image key "${hash}"`, 'INVALID_SCHEMA');
+    }
+    if (typeof dataUrl !== 'string' || !IMAGE_DATA_URL.test(dataUrl)) {
+      throw new LineupFileError(`Invalid image data for "${hash}"`, 'INVALID_SCHEMA');
+    }
+    images[hash] = dataUrl;
+  }
+  return images;
+}
+
+/** Parses and validates a JSON string as a version 1 or 2 `LineupFile`. */
+export function parseLineupFile(json: string): ParsedLineupFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -249,9 +321,9 @@ export function parseLineupFile(json: string): readonly Lineup[] {
     throw new LineupFileError('Root of lineup file must be an object', 'INVALID_SCHEMA');
   }
 
-  if (parsed.version !== 1 || parsed.generator !== 'disalytics') {
+  if ((parsed.version !== 1 && parsed.version !== 2) || parsed.generator !== 'disalytics') {
     throw new LineupFileError(
-      `Unsupported lineup file format (expected generator 'disalytics' version 1, got generator '${String(
+      `Unsupported lineup file format (expected generator 'disalytics' version 1 or 2, got generator '${String(
         parsed.generator,
       )}' version '${String(parsed.version)}')`,
       'UNSUPPORTED_VERSION',
@@ -262,6 +334,8 @@ export function parseLineupFile(json: string): readonly Lineup[] {
     throw new LineupFileError('Field "lineups" must be an array', 'INVALID_SCHEMA');
   }
 
+  const images = parsed.version === 2 ? parseImages(parsed.images) : {};
+
   const validLineups: Lineup[] = [];
   for (let i = 0; i < parsed.lineups.length; i++) {
     const item = parsed.lineups[i];
@@ -271,5 +345,14 @@ export function parseLineupFile(json: string): readonly Lineup[] {
     validLineups.push(item);
   }
 
-  return validLineups;
+  for (const hash of referencedLocalImageHashes(validLineups)) {
+    if (!(hash in images)) {
+      throw new LineupFileError(
+        `Lineup references photo ${hash} that the file does not include`,
+        'INVALID_SCHEMA',
+      );
+    }
+  }
+
+  return { lineups: validLineups, images };
 }

@@ -4,6 +4,7 @@ import { Button, cn } from '@disa/ui';
 import { ChevronLeft, ChevronRight, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { useLineupImageViewer } from '../hooks/use-lineup-image-viewer';
+import { LineupPhoto } from './LineupPhoto';
 
 export function LineupImageViewer({
   title,
@@ -105,7 +106,7 @@ export function LineupImageViewer({
         onPointerCancel={handlePointerCancel}
         onKeyDown={handleKeyDown}
       >
-        <img
+        <LineupPhoto
           key={activeUrl}
           ref={imageRef}
           src={activeUrl}
@@ -176,7 +177,7 @@ export function LineupImageViewer({
                   : 'border-transparent opacity-60 hover:opacity-100'
               }`}
             >
-              <img
+              <LineupPhoto
                 src={url}
                 alt={imageCaptions[idx]?.trim() || `${title} ${idx + 1}`}
                 loading="lazy"

@@ -1,10 +1,11 @@
-import type {
-  LineupGroupTarget,
-  LineupMouseButton,
-  LineupSide,
-  MovementKey,
-  ThrowType,
-  UtilityKind,
+import {
+  isLocalImageRef,
+  type LineupGroupTarget,
+  type LineupMouseButton,
+  type LineupSide,
+  type MovementKey,
+  type ThrowType,
+  type UtilityKind,
 } from '@disa/demo-core';
 import { findNearestCallout } from '@disa/map-data';
 
@@ -107,7 +108,7 @@ export function isHttpUrl(value: string): boolean {
 function hasInvalidMediaUrl(values: LineupFormValues): boolean {
   return (
     (values.mediaUrl.trim().length > 0 && !isHttpUrl(values.mediaUrl.trim())) ||
-    values.imageUrls.some((url) => !isHttpUrl(url))
+    values.imageUrls.some((url) => !isHttpUrl(url) && !isLocalImageRef(url))
   );
 }
 

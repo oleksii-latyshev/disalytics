@@ -3,6 +3,7 @@ import {
   isLineup,
   type Lineup,
   LineupFileError,
+  localImageHash,
   parseLineupFile,
   serializeLineupFile,
 } from '../helpers/lineups';
@@ -162,7 +163,7 @@ describe('isLineup', () => {
 describe('serializeLineupFile & parseLineupFile', () => {
   it('round-trips lineups through JSON serialization and parsing', () => {
     const json = serializeLineupFile([sampleLineup]);
-    const parsed = parseLineupFile(json);
+    const parsed = parseLineupFile(json).lineups;
 
     expect(parsed).toHaveLength(1);
     expect(parsed[0]).toEqual(sampleLineup);
@@ -175,7 +176,7 @@ describe('serializeLineupFile & parseLineupFile', () => {
       exportedAt: '2026-09-18T12:00:00Z',
       lineups: [sampleLineup],
     });
-    const parsed = parseLineupFile(legacyJson);
+    const parsed = parseLineupFile(legacyJson).lineups;
 
     expect(parsed).toHaveLength(1);
     expect(parsed[0]).toEqual(sampleLineup);
@@ -186,7 +187,7 @@ describe('serializeLineupFile & parseLineupFile', () => {
 
   it('round-trips lineups with movementInstructions and multiple imageUrls', () => {
     const json = serializeLineupFile([sampleLineupWithExtras]);
-    const parsed = parseLineupFile(json);
+    const parsed = parseLineupFile(json).lineups;
 
     expect(parsed).toHaveLength(1);
     expect(parsed[0]).toEqual(sampleLineupWithExtras);
@@ -212,7 +213,7 @@ describe('serializeLineupFile & parseLineupFile', () => {
       groupTarget: 'landing',
     };
     const json = serializeLineupFile([lineupWithWaypoints]);
-    const parsed = parseLineupFile(json);
+    const parsed = parseLineupFile(json).lineups;
 
     expect(parsed).toHaveLength(1);
     expect(parsed[0]).toEqual(lineupWithWaypoints);
@@ -229,7 +230,7 @@ describe('serializeLineupFile & parseLineupFile', () => {
 
   it('throws UNSUPPORTED_VERSION on incompatible generator or version', () => {
     const badVersion = JSON.stringify({
-      version: 2,
+      version: 3,
       generator: 'disalytics',
       exportedAt: '2026-09-18T12:00:00Z',
       lineups: [],
@@ -328,5 +329,68 @@ describe('serializeLineupFile & parseLineupFile', () => {
     } catch (error) {
       expect(error instanceof LineupFileError && error.code === 'INVALID_SCHEMA').toBe(true);
     }
+  });
+});
+
+describe('local photos in lineup files', () => {
+  const hash = 'a'.repeat(64);
+  const other = 'b'.repeat(64);
+  const dataUrl = 'data:image/webp;base64,UklGRg==';
+  const withPhoto: Lineup = {
+    ...sampleLineup,
+    imageUrls: [`local:${hash}`, 'https://example.com/a.png'],
+    imageCaptions: ['a', 'b'],
+  };
+
+  it('round-trips a version-2 file with only referenced images', () => {
+    const json = serializeLineupFile([withPhoto], { [hash]: dataUrl, [other]: dataUrl });
+    const parsed = parseLineupFile(json);
+
+    expect(parsed.lineups).toEqual([withPhoto]);
+    expect(parsed.images).toEqual({ [hash]: dataUrl });
+    expect(JSON.parse(json).version).toBe(2);
+  });
+
+  it('still parses a version-1 file with no images', () => {
+    const json = JSON.stringify({
+      version: 1,
+      generator: 'disalytics',
+      exportedAt: '2026-09-18T12:00:00Z',
+      lineups: [sampleLineup],
+    });
+    expect(parseLineupFile(json).images).toEqual({});
+  });
+
+  it('rejects a lineup whose local photo is absent from images', () => {
+    const json = serializeLineupFile([withPhoto], {});
+    expect(() => parseLineupFile(json)).toThrow(LineupFileError);
+  });
+
+  it('rejects malformed image keys and data URLs', () => {
+    const file = (images: unknown) =>
+      JSON.stringify({
+        version: 2,
+        generator: 'disalytics',
+        exportedAt: '2026-09-18T12:00:00Z',
+        lineups: [withPhoto],
+        images,
+      });
+    expect(() => parseLineupFile(file({ short: dataUrl }))).toThrow(LineupFileError);
+    expect(() => parseLineupFile(file({ [hash]: 'data:text/html;base64,AAAA' }))).toThrow(
+      LineupFileError,
+    );
+    expect(() => parseLineupFile(file({ [hash]: 'https://example.com/a.png' }))).toThrow(
+      LineupFileError,
+    );
+    expect(() => parseLineupFile(file({ [hash]: 5 }))).toThrow(LineupFileError);
+  });
+
+  it('accepts local refs in isLineup and rejects malformed ones', () => {
+    expect(isLineup(withPhoto)).toBe(true);
+    expect(isLineup({ ...sampleLineup, imageUrls: ['local:xyz'], imageCaptions: [''] })).toBe(
+      false,
+    );
+    expect(localImageHash(`local:${hash}`)).toBe(hash);
+    expect(localImageHash('https://example.com/a.png')).toBeNull();
   });
 });
