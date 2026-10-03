@@ -110,10 +110,9 @@
   "views": {
     "nav": "Views",
     "stage": "Stage",
-    "scoreboard": "Scoreboard",
+    "stats": "Stats",
     "duels": "Duels",
     "heatmap": "Heat map",
-    "metrics": "Metrics",
     "utility": "Utility"
   },
   "metrics": {
@@ -158,5 +157,64 @@
       "adr": "ADR",
       "headshots": "HS%"
     }
+  },
+  "stats": {
+    "nav": "Stats sections",
+    "tabs": {
+      "players": "Players",
+      "rounds": "Rounds & economy"
+    },
+    "players": {
+      "sortHint": "Select a column heading to sort the players of each team by it.",
+      "col": {
+        "kast": {
+          "name": "KAST: rounds with a kill, an assist, survival or a traded death",
+          "abbr": "KAST"
+        },
+        "opening": {
+          "name": "Opening duels won–lost",
+          "abbr": "OD"
+        },
+        "tradeKills": {
+          "name": "Trade kills",
+          "abbr": "TK"
+        },
+        "deathsTraded": {
+          "name": "Deaths traded",
+          "abbr": "TD"
+        },
+        "multi": "Rounds with {count, plural, one {# kill} other {# kills}}",
+        "clutches": {
+          "name": "Clutches won",
+          "abbr": "CL"
+        },
+        "utilityDamage": {
+          "name": "Utility damage",
+          "abbr": "UD"
+        },
+        "flashAssists": {
+          "name": "Flash assists",
+          "abbr": "FA"
+        },
+        "blind": {
+          "name": "Enemy blind time, seconds",
+          "abbr": "BT"
+        },
+        "rating": {
+          "name": "Rating 1.0",
+          "abbr": "Rating 1.0"
+        }
+      },
+      "notes": {
+        "title": "How these are counted",
+        "kast": "KAST is the share of rounds played in which the player got a kill or an assist, survived, or had their death traded.",
+        "trade": "A trade is an opponent kill within {seconds, plural, one {# second} other {# seconds}} of a teammate's death.",
+        "multi": "2K to 5K count the rounds with exactly that many opponent kills.",
+        "flash": "A flash assist is a teammate's kill on an opponent whose blindness from your flash was still running; your own kills do not count.",
+        "rating": "Rating 1.0 is HLTV's published formula; later versions are not public and are not approximated."
+      }
+    },
+    "unknown": "Not recorded in this demo",
+    "noFlashEvents": "This recording carries no flash events, so flash assists and enemy blind time cannot be shown."
   }
 }

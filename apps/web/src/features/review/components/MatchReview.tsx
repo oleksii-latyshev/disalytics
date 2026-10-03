@@ -4,6 +4,7 @@ import { motion } from '@disa/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RowFocus } from '@/core/events';
 import { assembly } from '@/core/motion';
+import type { StatsTab } from '@/core/navigation';
 import type { CacheState } from '@/core/parsing';
 import { useBuyPhaseSkip, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
@@ -34,6 +35,8 @@ interface Props {
   urlRound: number;
   view: MatchView;
   onView: (view: MatchView) => void;
+  statsTab: StatsTab;
+  onStatsTab: (tab: StatsTab) => void;
   onRoundChange: (round: number) => void;
   onClose: () => void;
 }
@@ -45,6 +48,8 @@ export function MatchReview({
   urlRound,
   view,
   onView,
+  statsTab,
+  onStatsTab,
   onRoundChange,
   onClose,
 }: Props) {
@@ -165,6 +170,8 @@ export function MatchReview({
         roundIndex={roundIndex}
         openSheet={openSheet}
         onView={onView}
+        statsTab={statsTab}
+        onStatsTab={onStatsTab}
         onClose={onClose}
         onDismissSheet={dismissSheet}
         duelNarrowing={duelNarrowing}

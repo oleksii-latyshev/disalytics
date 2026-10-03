@@ -1,6 +1,6 @@
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { afterRouteNavigation, clampMatchRound } from '@/core/navigation';
+import { afterRouteNavigation, clampMatchRound, type StatsTab } from '@/core/navigation';
 import { nonReadyParseState } from '@/core/parsing';
 import { sampleKey } from '@/core/samples';
 import { UploadView, WayIn } from '@/features/library';
@@ -26,9 +26,18 @@ export function MatchPage() {
   const onView = useCallback(
     (view: typeof search.view) => {
       if (search.view === view) return;
-      void navigate({ search: (previous: typeof search) => ({ ...previous, view }) });
+      void navigate({
+        search: (previous: typeof search) => ({ round: previous.round, view }),
+      });
     },
     [navigate, search.view],
+  );
+  const onStatsTab = useCallback(
+    (tab: StatsTab) => {
+      if (search.tab === tab) return;
+      void navigate({ search: (previous: typeof search) => ({ ...previous, tab }) });
+    },
+    [navigate, search.tab],
   );
   const closeRestore = () => {
     parse.close();
@@ -109,6 +118,8 @@ export function MatchPage() {
       urlRound={round}
       view={search.view}
       onView={onView}
+      statsTab={search.tab ?? 'players'}
+      onStatsTab={onStatsTab}
       onRoundChange={onRoundChange}
       onClose={() => {
         parse.close();

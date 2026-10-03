@@ -7,7 +7,6 @@ import {
   Flame,
   type LucideIcon,
   Map as MapIcon,
-  Table,
 } from 'lucide-react';
 import type { MatchView } from '@/core/navigation';
 
@@ -31,11 +30,10 @@ export interface MatchViewSection {
 
 export const MATCH_VIEWS: readonly MatchViewSection[] = [
   { view: 'stage', labelPath: 'review.views.stage', icon: MapIcon },
-  { view: 'scoreboard', labelPath: 'review.views.scoreboard', icon: Table },
+  { view: 'stats', labelPath: 'review.views.stats', icon: ChartColumn },
   { view: 'duels', labelPath: 'review.views.duels', icon: Crosshair },
   { view: 'heatmap', labelPath: 'review.views.heatmap', icon: Flame },
   { view: 'utility', labelPath: 'review.views.utility', icon: Cloud },
-  { view: 'metrics', labelPath: 'review.views.metrics', icon: ChartColumn },
 ];
 
 /** The next view in the order above, wrapping — §9.1's `V`. */

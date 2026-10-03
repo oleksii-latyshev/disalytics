@@ -1,4 +1,4 @@
-import type { Blind, ParsedDemo, Team } from '../schema';
+import type { Blind, ParsedDemo, PlayerSlot, Team } from '../schema';
 import { sidesBySlotAtRound } from './selectors';
 
 function opponentAttackerSide(
@@ -14,9 +14,13 @@ function opponentAttackerSide(
     : undefined;
 }
 
-/** Opponent blind duration attributed to the side the attacker held that round. */
-export function matchEnemyBlindTime(demo: ParsedDemo): Readonly<Record<Team, number>> {
-  const totals: Record<Team, number> = { CT: 0, T: 0 };
+interface OpponentBlind {
+  readonly attacker: PlayerSlot;
+  readonly side: Team;
+  readonly durationSeconds: number;
+}
+
+function* opponentBlinds(demo: ParsedDemo): Generator<OpponentBlind> {
   const { blinds, rounds } = demo.events;
   let first = 0;
 
@@ -30,9 +34,35 @@ export function matchEnemyBlindTime(demo: ParsedDemo): Readonly<Record<Team, num
       if (blind === undefined || blind.tick > round.endTick) break;
 
       const side = opponentAttackerSide(blind, sides);
-      if (side !== undefined) totals[side] += blind.durationSeconds;
+      if (side !== undefined && blind.attacker !== null) {
+        yield { attacker: blind.attacker, side, durationSeconds: blind.durationSeconds };
+      }
     }
   }
+}
 
+/**
+ * Whether the recording can say anything about flashes. Some GOTV recordings carry no
+ * `player_blind` events at all, and then a total of zero is an absence of data rather than a
+ * measurement — unless no flashbang was thrown, in which case zero is genuine.
+ */
+export function hasBlindEvents(demo: ParsedDemo): boolean {
+  const { blinds, grenades } = demo.events;
+  return blinds.length > 0 || !grenades.some((grenade) => grenade.type === 'flashbang');
+}
+
+/** Opponent blind duration attributed to the side the attacker held that round. */
+export function matchEnemyBlindTime(demo: ParsedDemo): Readonly<Record<Team, number>> {
+  const totals: Record<Team, number> = { CT: 0, T: 0 };
+  for (const blind of opponentBlinds(demo)) totals[blind.side] += blind.durationSeconds;
+  return totals;
+}
+
+/** The same duration, attributed to the player whose flash caused it. */
+export function matchPlayerEnemyBlindTime(demo: ParsedDemo): ReadonlyMap<PlayerSlot, number> {
+  const totals = new Map<PlayerSlot, number>();
+  for (const blind of opponentBlinds(demo)) {
+    totals.set(blind.attacker, (totals.get(blind.attacker) ?? 0) + blind.durationSeconds);
+  }
   return totals;
 }

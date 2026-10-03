@@ -14,9 +14,43 @@ describe('match route search', () => {
   });
 
   it('accepts valid round and view values', () => {
-    expect(validateMatchSearch({ round: 5, view: 'scoreboard' })).toEqual({
+    expect(validateMatchSearch({ round: 5, view: 'duels' })).toEqual({
       round: 5,
-      view: 'scoreboard',
+      view: 'duels',
+    });
+  });
+
+  it('opens Stats on the players tab unless another is named', () => {
+    expect(validateMatchSearch({ view: 'stats' })).toEqual({
+      round: 1,
+      view: 'stats',
+      tab: 'players',
+    });
+    expect(validateMatchSearch({ view: 'stats', tab: 'rounds' })).toEqual({
+      round: 1,
+      view: 'stats',
+      tab: 'rounds',
+    });
+    expect(validateMatchSearch({ view: 'stats', tab: 'nope' })).toMatchObject({ tab: 'players' });
+  });
+
+  it('keeps the tab out of the other views', () => {
+    expect(validateMatchSearch({ view: 'duels', tab: 'rounds' })).toEqual({
+      round: 1,
+      view: 'duels',
+    });
+  });
+
+  it('sends the retired scoreboard and metrics views to their tabs', () => {
+    expect(validateMatchSearch({ round: 3, view: 'scoreboard' })).toEqual({
+      round: 3,
+      view: 'stats',
+      tab: 'players',
+    });
+    expect(validateMatchSearch({ round: 3, view: 'metrics' })).toEqual({
+      round: 3,
+      view: 'stats',
+      tab: 'rounds',
     });
   });
 

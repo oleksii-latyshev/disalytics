@@ -1,4 +1,5 @@
 import type { Frame, ParsedDemo } from '@disa/demo-core';
+import type { StatsTab } from '@/core/navigation';
 import type { CacheState } from '@/core/parsing';
 import type { MapNarrowing } from '../helpers/map-scope';
 import type { MatchView } from '../helpers/match-views';
@@ -6,8 +7,7 @@ import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
 import { MatchDuels } from './MatchDuels';
 import { MatchHeatmap } from './MatchHeatmap';
-import { MatchMetrics } from './MatchMetrics';
-import { MatchScoreboard } from './MatchScoreboard';
+import { MatchStats } from './MatchStats';
 import { MatchUtility } from './MatchUtility';
 import { MatchViewBar } from './MatchViewBar';
 import { ReviewSheets } from './ReviewSheets';
@@ -19,6 +19,8 @@ interface Props {
   roundIndex: number | undefined;
   openSheet: Sheet | null;
   onView: (view: MatchView) => void;
+  statsTab: StatsTab;
+  onStatsTab: (tab: StatsTab) => void;
   onClose: () => void;
   onDismissSheet: () => void;
   duelNarrowing: MapNarrowing;
@@ -42,6 +44,8 @@ export function MatchViewScreen({
   roundIndex,
   openSheet,
   onView,
+  statsTab,
+  onStatsTab,
   onClose,
   onDismissSheet,
   duelNarrowing,
@@ -56,7 +60,7 @@ export function MatchViewScreen({
           own to state, so nothing hangs under it here. */}
       <MatchViewBar view={view} onView={onView} />
 
-      {view === 'scoreboard' && <MatchScoreboard demo={demo} />}
+      {view === 'stats' && <MatchStats demo={demo} tab={statsTab} onTab={onStatsTab} />}
       {view === 'duels' && (
         <MatchDuels
           demo={demo}
@@ -67,7 +71,6 @@ export function MatchViewScreen({
       )}
       {view === 'heatmap' && <MatchHeatmap demo={demo} />}
       {view === 'utility' && <MatchUtility demo={demo} onOpenOnStage={onOpenOnStage} />}
-      {view === 'metrics' && <MatchMetrics demo={demo} />}
 
       <ReviewSheets
         demo={demo}
