@@ -9,6 +9,22 @@ export {
 } from './helpers/audibility';
 export type { Clutch } from './helpers/clutches';
 export { matchClutches } from './helpers/clutches';
+export type {
+  CoachNote,
+  CoachNoteAnnotations,
+  CoachNoteMovedPlayer,
+  CoachNotePoint,
+  CoachNoteStroke,
+  CoachNoteUtility,
+  CoachNoteUtilityKind,
+} from './helpers/coach-notes';
+export {
+  isCoachNote,
+  notedRounds,
+  noteForRound,
+  withNote,
+  withoutNote,
+} from './helpers/coach-notes';
 export type { Duel, MultiKill, TradeKill } from './helpers/duels';
 export {
   matchDuels,

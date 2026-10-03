@@ -35,7 +35,9 @@
       "he": "HE grenade",
       "undo": "Undo",
       "redo": "Redo",
-      "clear": "Clear drawings"
+      "clear": "Clear drawings",
+      "saveNote": "Save to round",
+      "deleteNote": "Delete note"
     },
     "colors": {
       "objective": "Objective",

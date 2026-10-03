@@ -113,6 +113,7 @@ export function MatchPage() {
     <MatchReview
       key={demoKey}
       demo={state.demo}
+      demoKey={demoKey}
       cache={state.cache}
       roundIndex={round - 1}
       urlRound={round}

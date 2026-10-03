@@ -13,7 +13,7 @@ import {
 import { drawCoachMovedPlayer, drawCoachStroke, drawCoachUtility } from '../helpers/coach-draw';
 import { type CoachHover, hoverAt } from '../helpers/coach-edit';
 import { playerPointsAtFrame } from '../helpers/coach-originals';
-import type { CoachSession } from '../helpers/coach-session';
+import { type CoachSession, coachDisplay } from '../helpers/coach-session';
 import { type CoachAnnotations, type CoachTool, resolvePencilColor } from '../helpers/coach-types';
 import type { RadarColors } from '../helpers/colors';
 import type { PlateBox } from '../helpers/plate-box';
@@ -121,15 +121,18 @@ export function CoachOverlay({
   teamBySlot,
   colors,
 }: Props) {
-  const { tool, color, history } = useCoachState(session);
-  const annotations = history.present;
+  const state = useCoachState(session);
+  const { tool, color } = state;
+  const display = coachDisplay(state);
+  const annotations = display.annotations;
+  const originalsFrame = display.frame ?? frame;
   const geometryRef = useRef<PlateGeometry>(plateGeometry());
   const [pointed, setPointed] = useState(NO_HOVER);
   const hover = tool === 'move' ? pointed : NO_HOVER;
 
   const originals = useMemo(
-    () => playerPointsAtFrame(demo, overview, frame, teamBySlot),
-    [demo, overview, frame, teamBySlot],
+    () => playerPointsAtFrame(demo, overview, originalsFrame, teamBySlot),
+    [demo, overview, originalsFrame, teamBySlot],
   );
   const strokeColor = resolvePencilColor(color, colors);
 

@@ -12,6 +12,7 @@ import { MatchRadar, useCoachKeys, useCoachSession } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
 import { type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
 import { type MatchView, nextMatchView } from '../helpers/match-views';
+import { useCoachNotes } from '../hooks/use-coach-notes';
 import { useHotCorners } from '../hooks/use-hot-corners';
 import { useMatchReadout } from '../hooks/use-match-readout';
 import { useMatchRouteSync } from '../hooks/use-match-route-sync';
@@ -29,6 +30,7 @@ import { TimelineBlock } from './TimelineBlock';
 
 interface Props {
   demo: ParsedDemo;
+  demoKey: string;
   cache: CacheState;
 
   roundIndex: number;
@@ -43,6 +45,7 @@ interface Props {
 
 export function MatchReview({
   demo,
+  demoKey,
   cache,
   roundIndex: openingRoundIndex,
   urlRound,
@@ -99,6 +102,8 @@ export function MatchReview({
   }, [coach, isPlaying, view]);
 
   const { frame, roundIndex, ct, t, money, shape } = useMatchReadout(demo, transport, locale);
+
+  const notes = useCoachNotes({ demoKey, coach, transport, roundIndex, isPlaying });
 
   const drawnRoundRef = useRef(roundIndex);
   useEffect(() => {
@@ -262,6 +267,10 @@ export function MatchReview({
           frame={frame}
           locale={locale}
           coach={coach}
+          notedRounds={notes.notedRounds}
+          hasNote={notes.hasNote}
+          onSaveNote={notes.save}
+          onDeleteNote={notes.remove}
           hasScoreboard={scoreboard === 'block'}
           isAway={corners.isTimelineAway}
         />

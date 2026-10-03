@@ -2,7 +2,7 @@ import { asPlayerSlot } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import { advanceGesture, beginGesture, eraseAt, hoverAt, nextCoachId } from '../helpers/coach-edit';
 import { coachKeyIntent } from '../helpers/coach-keys';
-import { createCoachSession } from '../helpers/coach-session';
+import { coachDisplay, createCoachSession } from '../helpers/coach-session';
 import { EMPTY_COACH_ANNOTATIONS } from '../helpers/coach-types';
 
 const SLOT = asPlayerSlot(2);
@@ -197,5 +197,75 @@ describe('coach key intent', () => {
     expect(coachKeyIntent({ ...press, ctrlKey: false })).toBeNull();
     expect(coachKeyIntent({ ...press, altKey: true })).toBeNull();
     expect(coachKeyIntent({ ...press, key: 'x' })).toBeNull();
+  });
+});
+
+describe('saved notes on the plate', () => {
+  const NOTE = {
+    roundIndex: 2,
+    frame: 40,
+    annotations: {
+      strokes: [{ id: 's', color: '#fff', points: [{ x: 1, y: 1 }] }],
+      utilities: [],
+      movedPlayers: [],
+    },
+  };
+
+  it('draws the note while nothing is drawn', () => {
+    const session = createCoachSession();
+    session.setNote(NOTE);
+
+    expect(coachDisplay(session.getState())).toEqual({ annotations: NOTE.annotations, frame: 40 });
+  });
+
+  it('draws nothing once the note is withdrawn, as it is while playing', () => {
+    const session = createCoachSession();
+    session.setNote(NOTE);
+    session.setNote(null);
+
+    expect(coachDisplay(session.getState()).annotations).toBe(EMPTY_COACH_ANNOTATIONS);
+  });
+
+  it('loads the note for editing when a tool is armed', () => {
+    const session = createCoachSession();
+    session.setNote(NOTE);
+    session.setTool('pencil');
+
+    const state = session.getState();
+    expect(state.history.present).toBe(NOTE.annotations);
+    expect(state.frame).toBe(40);
+  });
+
+  it('keeps editing the note rather than a blank page', () => {
+    const session = createCoachSession();
+    session.setNote(NOTE);
+    session.setTool('smoke');
+    session.pointerDown({ x: 5, y: 5 }, TARGET);
+    session.pointerUp();
+
+    const { present } = session.getState().history;
+    expect(present.strokes).toHaveLength(1);
+    expect(present.utilities).toHaveLength(1);
+  });
+
+  it('shows the note again once the edited drawing is dropped', () => {
+    const session = createCoachSession();
+    session.setNote(NOTE);
+    session.setTool('smoke');
+    session.pointerDown({ x: 5, y: 5 }, TARGET);
+    session.pointerUp();
+    session.discardDrawings();
+
+    expect(session.getState().frame).toBeNull();
+    expect(coachDisplay(session.getState()).annotations).toBe(NOTE.annotations);
+  });
+
+  it('does not show the note after the drawing is cleared', () => {
+    const session = createCoachSession();
+    session.setNote(NOTE);
+    session.setTool('pencil');
+    session.clear();
+
+    expect(coachDisplay(session.getState()).annotations).toBe(EMPTY_COACH_ANNOTATIONS);
   });
 });

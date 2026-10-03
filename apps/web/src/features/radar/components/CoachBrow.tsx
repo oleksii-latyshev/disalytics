@@ -1,6 +1,19 @@
 import { useT } from '@disa/i18n';
 import { Button, Popover, PopoverPanel, PopoverTrigger } from '@disa/ui';
-import { Bomb, Cloud, Eraser, Flame, Move, Pencil, Redo2, Trash2, Undo2, Zap } from 'lucide-react';
+import {
+  Bomb,
+  BookmarkMinus,
+  BookmarkPlus,
+  Cloud,
+  Eraser,
+  Flame,
+  Move,
+  Pencil,
+  Redo2,
+  Trash2,
+  Undo2,
+  Zap,
+} from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { useSetting } from '@/core/settings';
 import type { CoachSession } from '../helpers/coach-session';
@@ -16,6 +29,10 @@ import { useCoachState } from '../hooks/use-coach-session';
 interface Props {
   readonly session: CoachSession;
   readonly isVisible: boolean;
+  /** Whether the round the plate is paused in carries a saved note. */
+  readonly hasNote: boolean;
+  readonly onSaveNote: () => void;
+  readonly onDeleteNote: () => void;
 }
 
 const TOOLS: readonly { readonly tool: CoachTool; readonly icon: ReactNode }[] = [
@@ -34,7 +51,7 @@ function Divider() {
   return <span aria-hidden="true" className="mx-1 h-4 w-px bg-line" />;
 }
 
-export function CoachBrow({ session, isVisible }: Props) {
+export function CoachBrow({ session, isVisible, hasNote, onSaveNote, onDeleteNote }: Props) {
   const t = useT();
   const [palette] = useSetting('palette');
   const [isColorOpen, setColorOpen] = useState(false);
@@ -105,6 +122,34 @@ export function CoachBrow({ session, isVisible }: Props) {
       >
         <Trash2 />
       </Button>
+
+      <Divider />
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={BUTTON}
+        aria-label={t('radar.coach.tools.saveNote')}
+        title={t('radar.coach.tools.saveNote')}
+        disabled={!hasDrawings}
+        onClick={onSaveNote}
+      >
+        <BookmarkPlus />
+      </Button>
+      {hasNote && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={BUTTON}
+          aria-label={t('radar.coach.tools.deleteNote')}
+          title={t('radar.coach.tools.deleteNote')}
+          onClick={onDeleteNote}
+        >
+          <BookmarkMinus />
+        </Button>
+      )}
 
       <Divider />
 
