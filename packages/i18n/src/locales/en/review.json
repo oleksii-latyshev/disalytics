@@ -188,6 +188,33 @@
       }
     },
     "unknown": "Not recorded in this demo",
-    "noFlashEvents": "This recording carries no flash events, so flash assists and enemy blind time cannot be shown."
+    "noFlashEvents": "This recording carries no flash events, so flash assists and enemy blind time cannot be shown.",
+    "rounds": {
+      "all": "All",
+      "none": "No rounds to measure",
+      "fig": {
+        "pistol": "Pistol rounds won",
+        "eco": "Won with an eco",
+        "force": "Won with a force",
+        "full": "Won with a full buy",
+        "antiEco": "Anti-eco rounds lost",
+        "firstKillGot": "Won after the first kill",
+        "firstKillConceded": "Won after conceding the first kill",
+        "fiveVsFour": "Won 5v4",
+        "fourVsFive": "Won 4v5",
+        "plants": "Rounds with a plant",
+        "postPlant": "Post-plant rounds won",
+        "retakes": "Retakes won"
+      },
+      "notes": {
+        "pistol": "Pistol rounds are round 1 and round 13; overtime has none.",
+        "buy": "A team's buy is the one more than half of its players made: eco, force (force or semi-buy) or full. Rounds where no buy has a majority are left out of all three.",
+        "antiEco": "An anti-eco round is a team's full buy against an opposing eco; the figure is how many of those it lost.",
+        "firstKill": "The first kill is the round's first opponent kill. Rounds without one are left out.",
+        "manAdvantage": "5v4 and 4v5 are read after the round's first death, from five players a side; rounds that cannot say are left out.",
+        "bomb": "Plants are counted over T rounds, post-plant wins over T rounds with a plant, retakes over CT rounds facing one. Totals only: the demo does not name the bombsite, so there is no split by site yet.",
+        "split": "Each figure is split by the side played in that round; a dash means there were no rounds to measure, not zero."
+      }
+    }
   }
 }
