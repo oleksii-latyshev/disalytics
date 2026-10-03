@@ -24,6 +24,8 @@ apps/web/src/
     parsing/      Parse worker lifecycle, progress state machine, cancellation.
     pwa/          Service worker registration and the update it offers the reader.
     shortcuts/    Keyboard registry and scope handling.
+    lineups/      The read side of the lineup catalog (built-ins plus the user's own), shared by
+                  the lineup library and the tactics board.
     motion/       The one orchestrated moment, as timings two slices read.
     settings/     UI preferences: playback rules, plate options, locale, palette.
                   There is no theme provider — dark is unconditional (AGENTS.md §20).

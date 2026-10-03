@@ -66,7 +66,7 @@ Cloudflare Workers static assets plus a separate Effect API Worker. No Zustand: 
 | `packages/demo-store` | OPFS/IndexedDB cache, catalog, container codec (`@disa/demo-store/codec`) |
 | `packages/map-data` | overview constants, world→radar transform, themed radar images |
 | `packages/i18n` · `packages/ui` | locales + typed keys + `<Text>`/`useT` · components, tokens, motion |
-| `apps/web/src/core` | playback, renderer, shortcuts, settings, parsing, events, glyphs, motion, pwa, samples |
+| `apps/web/src/core` | playback, renderer, shortcuts, settings, parsing, events, glyphs, lineups (read side), motion, pwa, samples |
 | `apps/web/src/features` | library (way in), review (stage + views), radar, timeline, controls |
 | `apps/api` | Cloudflare Worker for future external metadata and key-backed requests; never demos |
 | `crates/demo-parser` · `-wasm` | Rust core (no wasm-bindgen, forbid unsafe) · thin wrapper → `pkg/` (gitignored) |
