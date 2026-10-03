@@ -96,7 +96,7 @@ export function LineupCoordinatesCollapsible({
               <Button
                 variant="secondary"
                 onClick={() => copyToClipboard(lineup.command ?? '', 'origin')}
-                className="h-6 shrink-0 gap-1 px-2 text-11"
+                className="shrink-0"
               >
                 {copiedKey === 'origin' ? (
                   <>
@@ -126,7 +126,7 @@ export function LineupCoordinatesCollapsible({
               <Button
                 variant="secondary"
                 onClick={() => copyToClipboard(landingCommand, 'landing')}
-                className="h-6 shrink-0 gap-1 px-2 text-11"
+                className="shrink-0"
               >
                 {copiedKey === 'landing' ? (
                   <>
