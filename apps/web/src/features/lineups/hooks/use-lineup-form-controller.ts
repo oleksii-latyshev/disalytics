@@ -12,9 +12,7 @@ import {
 import { persistLineup } from '../helpers/persist-lineup';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
 import type { PreparedImage } from '../helpers/prepared-image';
-import { uploadLineupImage } from '../helpers/upload-image';
 import { useLineupFormExitGuard } from './use-lineup-form-exit-guard';
-import { useTurnstileChallenge } from './use-turnstile-challenge';
 
 export function useLineupFormController({
   isOpen,
@@ -44,15 +42,11 @@ export function useLineupFormController({
   const [showCatboxModal, setShowCatboxModal] = useState(false);
   const [pendingCatboxImage, setPendingCatboxImage] = useState<PreparedImage | null>(null);
   const [dontRemindCatbox, setDontRemindCatbox] = useState(false);
-  const [uploadingUrl, setUploadingUrl] = useState<string | null>(null);
   const previewUrlsRef = useRef(new Set<string>());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const photosRef = useRef<HTMLDivElement>(null);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
-
-  const { siteKey, challengeToken, challengeRef, widgetRef, setChallengeToken } =
-    useTurnstileChallenge(isOpen && preparedImages.length > 0);
 
   useEffect(
     () => () => {
@@ -108,35 +102,6 @@ export function useLineupFormController({
     }
     setShowCatboxModal(false);
     setPendingCatboxImage(null);
-  };
-
-  const handleUpload = async (image: PreparedImage) => {
-    if (!challengeToken) return;
-    setUploadingUrl(image.previewUrl);
-    setChallengeToken('');
-    try {
-      const url = await uploadLineupImage(image.file, challengeToken);
-      setValues((previous) => ({
-        ...previous,
-        imageUrls: previous.imageUrls.includes(url)
-          ? previous.imageUrls
-          : [...previous.imageUrls, url],
-        imageCaptions: previous.imageUrls.includes(url)
-          ? previous.imageCaptions
-          : [...previous.imageCaptions, image.caption],
-      }));
-      URL.revokeObjectURL(image.previewUrl);
-      previewUrlsRef.current.delete(image.previewUrl);
-      setPreparedImages((previous) =>
-        previous.filter((item) => item.previewUrl !== image.previewUrl),
-      );
-      setError(null);
-    } catch {
-      setError(t('library.lineups.form.validation.uploadFailed'));
-    } finally {
-      setUploadingUrl(null);
-      if (widgetRef.current && window.turnstile) window.turnstile.reset(widgetRef.current);
-    }
   };
 
   const updateValue = <K extends keyof LineupFormValues>(key: K, val: LineupFormValues[K]) => {
@@ -269,19 +234,14 @@ export function useLineupFormController({
     setShowCatboxModal,
     dontRemindCatbox,
     setDontRemindCatbox,
-    uploadingUrl,
     previewUrlsRef,
     fileInputRef,
     errorRef,
     photosRef,
     isDraggingFiles,
     setIsDraggingFiles,
-    siteKey,
-    challengeToken,
-    challengeRef,
     handleManualUploadClick,
     confirmManualUpload,
-    handleUpload,
     updateValue,
     updateMap,
     updateLandingCoord,

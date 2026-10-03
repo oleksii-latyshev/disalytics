@@ -4,14 +4,5 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-07-01",
   "workers_dev": true,
-  "preview_urls": false,
-  "keep_vars": true,
-  "vars": { "TURNSTILE_SITE_KEY": "0x4AAAAAAFE_B-qzAtGhuFmM" },
-  "ratelimits": [
-    {
-      "name": "UPLOAD_RATE_LIMITER",
-      "namespace_id": "460",
-      "simple": { "limit": 3, "period": 60 }
-    }
-  ]
+  "preview_urls": false
 }

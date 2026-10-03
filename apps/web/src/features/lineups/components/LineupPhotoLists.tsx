@@ -5,11 +5,7 @@ import type { PreparedImage } from '../helpers/prepared-image';
 
 interface PreparedImagesListProps {
   readonly images: readonly PreparedImage[];
-  readonly siteKey: string | null | undefined;
-  readonly challengeToken: string;
-  readonly uploadingUrl: string | null;
   readonly onPreviewEnlarged: (url: string) => void;
-  readonly onUpload: (image: PreparedImage) => void;
   readonly onManualUpload: (image: PreparedImage) => void;
   readonly onReorder: (from: number, to: number) => void;
   readonly onRemove: (index: number) => void;
@@ -18,11 +14,7 @@ interface PreparedImagesListProps {
 
 export function PreparedImagesList({
   images,
-  siteKey,
-  challengeToken,
-  uploadingUrl,
   onPreviewEnlarged,
-  onUpload,
   onManualUpload,
   onReorder,
   onRemove,
@@ -91,22 +83,6 @@ export function PreparedImagesList({
           <span className="min-w-0 flex-1 truncate text-11 text-ink-dim">
             {image.file.name} · {Math.round(image.file.size / 1024)} KB
           </span>
-          {siteKey && (
-            <button
-              type="button"
-              disabled={!challengeToken || uploadingUrl !== null}
-              onClick={() => onUpload(image)}
-              className="rounded-chip border border-line bg-surface-2 px-2 py-1 text-11 text-ink disabled:opacity-50"
-            >
-              <Text
-                path={
-                  uploadingUrl === image.previewUrl
-                    ? 'library.lineups.form.uploading'
-                    : 'library.lineups.form.uploadImage'
-                }
-              />
-            </button>
-          )}
           <button
             type="button"
             onClick={() => onManualUpload(image)}

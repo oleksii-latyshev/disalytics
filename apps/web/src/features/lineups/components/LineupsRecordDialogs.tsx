@@ -45,15 +45,11 @@ export function LineupsRecordDialogs({
           isOpen
           lineup={detailLineup}
           onDismiss={() => setDetailLineup(null)}
-          onEdit={
-            mode === 'edit'
-              ? (lineup) => {
-                  setDetailLineup(null);
-                  setEditingLineup(lineup);
-                  setIsModalOpen(true);
-                }
-              : undefined
-          }
+          onEdit={(lineup) => {
+            setDetailLineup(null);
+            setEditingLineup(lineup);
+            setIsModalOpen(true);
+          }}
           onDelete={
             mode === 'edit'
               ? (id) => {
@@ -65,7 +61,7 @@ export function LineupsRecordDialogs({
         />
       )}
 
-      {mode === 'edit' && isModalOpen && (
+      {isModalOpen && (
         <LineupFormModal
           isOpen
           onDismiss={dismissForm}

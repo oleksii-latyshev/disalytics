@@ -1,8 +1,7 @@
 # API Worker
 
 This Cloudflare Worker is a separate deployment from the replay PWA. Replay files and parsed replay
-data stay in the browser; no route here accepts them. It answers `GET /health` and serves the
-lineup image routes described below.
+data stay in the browser; no route here accepts them. It answers `GET /health`.
 Production: <https://disalytics-api.disa-67b.workers.dev>.
 
 From the repository root:
@@ -38,45 +37,9 @@ service; the cache is local to each Cloudflare data center, so an upstream miss 
 another location. Do not cache authenticated or personal responses. The
 health route sends `Cache-Control: no-store`.
 
-## Lineup photo uploads
+## Lineup photos
 
-`GET /images/config` returns the public Turnstile site key when uploads are configured.
-`POST /images/upload` accepts a multipart form with one `image` WebP file (at most 2 MiB) and
-one `turnstile` token. It returns `{ "url": "https://files.catbox.moe/..." }` on success.
-Only the production web origin and local Vite development origins receive CORS access.
-Origin checks do not authenticate callers; Turnstile and the rate limit protect the public route.
-The route verifies the single-use Turnstile token, rate limits to three attempts per minute per
-Cloudflare location and visitor IP, checks WebP magic bytes, then posts to Catbox. Rate limiting
-is a brake, not an accurate global quota.
-
-Provision a dedicated Catbox account in the [Catbox web UI](https://catbox.moe/) and get its
-userhash from the account management page. Catbox documents `userhash` on its
-[API tools page](https://catbox.moe/tools.php); there is no documented account-creation API.
-In [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/get-started/), create a
-Managed widget named for lineup uploads and authorize `disalytics.disa-67b.workers.dev`.
-Cloudflare's [Free plan](https://developers.cloudflare.com/turnstile/plans/) currently includes
-20 widgets and unlimited challenges. Use a separate widget for localhost development if needed.
-The widget gives you a public sitekey and a private secret key. Keep the public
-`TURNSTILE_SITE_KEY` in `wrangler.jsonc` under `vars`, and store `CATBOX_USERHASH` and
-`TURNSTILE_SECRET` as Worker secrets with `wrangler secret put`. Dashboard-only plain-text
-variables were absent from a later deployed Worker version despite `keep_vars`; declaring the
-public sitekey in the deploy configuration keeps it attached to every release.
-The endpoint remains unavailable until all three values are set. Never put the hash or secret
-in a `VITE_*` variable or commit them.
-
-From `apps/api`, run `bunx wrangler secret put CATBOX_USERHASH` and paste the hash at its prompt;
-repeat with `TURNSTILE_SECRET`. A secret binding is delivered in the Worker's `env` argument at
-request time. For local development, put the same names in an ignored `apps/api/.dev.vars` file. Do not paste
-secret values into shell command arguments, source files, or a pull request.
-
-For deletion, use the Catbox account's management UI or call its `deletefiles` API privately,
-passing the userhash and a space-separated list of file basenames. No public deletion endpoint is
-exposed. Removing a lineup from the local IndexedDB store does not delete its Catbox files; users
-can also share the same image link across lineups, so automatic deletion would need reference
-tracking and ownership rules.
-
-The upload guard does not inspect whether a picture violates Catbox's content rules. Catbox says
-it may delete offending files, purge an account, and blacklist an IP. Keep the dedicated account
-separate from personal files, review its uploads, and disable the Worker secrets if abuse appears.
-Catbox also requires prior approval for commercial hotlinking; confirm the intended usage with
-Catbox before using it for a monetized service. A generic URL fetch/proxy route must not be added.
+There is no upload route. Catbox rejects anonymous uploads from Cloudflare's egress
+(`412 Invalid uploader`), and uploading under a project account would make the project answerable
+for whatever visitors post. The web app submits the photo to Catbox from the visitor's own browser
+in a new tab; the visitor pastes the returned link back.
