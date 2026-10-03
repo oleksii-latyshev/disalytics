@@ -268,4 +268,17 @@ describe('saved notes on the plate', () => {
 
     expect(coachDisplay(session.getState()).annotations).toBe(EMPTY_COACH_ANNOTATIONS);
   });
+
+  it('reports whether a press started a gesture, so a miss can pan the plate', () => {
+    const session = createCoachSession();
+    expect(session.pointerDown({ x: 0, y: 0 }, TARGET)).toBe(false);
+
+    session.setTool('move');
+    expect(session.pointerDown({ x: 0, y: 0 }, TARGET)).toBe(false);
+    expect(session.pointerDown({ x: 300, y: 300 }, TARGET)).toBe(true);
+    session.pointerUp();
+
+    session.setTool('pencil');
+    expect(session.pointerDown({ x: 0, y: 0 }, TARGET)).toBe(true);
+  });
 });

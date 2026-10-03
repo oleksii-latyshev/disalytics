@@ -3,6 +3,7 @@ import type { MapOverview, RadarPoint } from '@disa/map-data';
 import type { CoachMovedPlayer, CoachStroke, CoachUtility } from './coach-types';
 import type { RadarColors } from './colors';
 import { drawGrenadeMark } from './equipment-marks';
+import { haloStroke, LABEL_HALO_PX } from './label-box';
 import { drawSelectionRing, drawToken } from './tokens';
 import type { PlateGeometry } from './view';
 
@@ -259,7 +260,8 @@ export function drawCoachMovedPlayer(
   moved: CoachMovedPlayer,
   origPoint: RadarPoint,
   team: Team | undefined,
-  slotNumber: number,
+  label: string,
+  labelFont: string,
   geometry: PlateGeometry,
   colors: RadarColors,
   isHovered: boolean,
@@ -301,14 +303,19 @@ export function drawCoachMovedPlayer(
   // Moved token at new spot
   drawToken(context, p1.x, p1.y, radius, teamColor);
 
-  // Number label in center of token
-  context.save();
-  context.fillStyle = colors.hollow;
-  context.font = `bold ${Math.round(radius * 1.1)}px system-ui, sans-serif`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(String(slotNumber), p1.x, p1.y + 0.5);
-  context.restore();
+  // The name, drawn as the plate draws one: its own halo under ink, beside the token. An empty
+  // label is the reader having names switched off.
+  if (label !== '') {
+    context.save();
+    context.font = labelFont;
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+    haloStroke(context, colors.label.halo);
+    context.strokeText(label, p1.x + radius + LABEL_HALO_PX, p1.y);
+    context.fillStyle = colors.label.ink;
+    context.fillText(label, p1.x + radius + LABEL_HALO_PX, p1.y);
+    context.restore();
+  }
 
   if (isHovered) {
     drawSelectionRing(context, p1.x, p1.y, radius, colors.selectionRing, colors.selectionEdge);

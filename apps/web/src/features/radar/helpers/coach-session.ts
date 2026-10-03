@@ -47,7 +47,8 @@ export interface CoachSession {
   readonly discardDrawings: () => void;
   readonly reset: () => void;
   readonly setNote: (note: CoachNote | null) => void;
-  readonly pointerDown: (point: RadarPoint, target: CoachTarget) => void;
+  /** Whether the press started a gesture; `false` is a miss the plate's own navigation may take. */
+  readonly pointerDown: (point: RadarPoint, target: CoachTarget) => boolean;
   readonly pointerMove: (point: RadarPoint, target: CoachTarget) => void;
   readonly pointerUp: () => void;
 }
@@ -150,15 +151,17 @@ export function createCoachSession(): CoachSession {
     },
     setNote: (note) => update(note === state.note ? state : { ...state, note }),
     pointerDown: (point, { originals, strokeColor }) => {
-      if (state.tool === null) return;
+      if (state.tool === null) return false;
       adoptNote();
       const { tool, history } = state;
 
       const start = beginGesture(tool, history.present, originals, point, strokeColor);
-      if (start === null) return;
+      if (start === null) return false;
 
       active = { gesture: start.gesture, base: history.present };
       updateHistory(replaceCoachPresent(history, start.annotations));
+
+      return true;
     },
     pointerMove: (point, { originals }) => {
       if (active === null) return;

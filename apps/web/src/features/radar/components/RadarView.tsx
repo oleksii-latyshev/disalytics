@@ -256,6 +256,9 @@ export function RadarView({
         frame={frame}
         teamBySlot={teamBySlot}
         colors={colors}
+        labelBySlot={labelBySlot}
+        labelStyle={labelStyle}
+        navigation={navigation.canvasProps}
       />
 
       {/* The two surfaces allowed over the live canvas, and neither is chrome the reader did not

@@ -92,7 +92,12 @@ export function TimelineBlock({
         </div>
       )}
 
-      <section className="surface-card relative flex flex-col rounded-float">
+      {/* While the coach brow is out it is a tab of this card, flush to its left edge, so the card's
+          top-left corner is squared and the two read as one shape. */}
+      <section
+        data-coach-brow={isPlaying ? undefined : ''}
+        className="surface-card relative flex flex-col rounded-float data-[coach-brow]:rounded-tl-none"
+      >
         <CoachBrow
           session={coach}
           isVisible={!isPlaying}
