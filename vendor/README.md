@@ -10,6 +10,7 @@ in this file. Changing anything without adding a line here makes the copy unread
 | Revision | `ba39cc44cd5abfd7f34df2b3c0a7dd3630048311` (2026-07-07) |
 | Crates | `src/parser` → `vendor/parser`, `src/csgoproto` → `vendor/csgoproto` |
 | Crate version | `parser` 0.1.1, `csgoproto` 0.1.5 — neither is published to crates.io |
+| Licence | MIT, upstream's `LICENSE` kept byte for byte in `vendor/LICENSE` |
 
 `demoparser2` is the name of the PyPI and npm bindings. The Rust crate is called `parser`, which is
 why the dependency in `crates/demo-parser/Cargo.toml` reads `parser` and not `demoparser2`.

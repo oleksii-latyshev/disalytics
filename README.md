@@ -64,3 +64,9 @@ plans in [issues and milestones](https://github.com/oleksii-latyshev/disalytics/
 
 Counter-Strike 2, the `.dem` format and the map and weapon art are Valve Corporation's. disalytics is
 an unofficial tool, not affiliated with or endorsed by Valve.
+
+## License
+
+[AGPL-3.0-or-later](LICENSE), for this revision and every earlier one. Running a modified copy as a
+service means offering its users that copy's source under the same licence. Code in `vendor/` keeps
+its upstream MIT licence ([`vendor/LICENSE`](vendor/LICENSE)).
