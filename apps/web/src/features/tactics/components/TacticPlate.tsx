@@ -32,6 +32,7 @@ function TacticCanvas({
     levelIndex = 0,
     className,
     activeTool = 'select',
+    lineups,
   } = props;
 
   const [theme] = useSetting('radarTheme');
@@ -46,6 +47,8 @@ function TacticCanvas({
 
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [hoveredThrowId, setHoveredThrowId] = useState<string | null>(null);
+  const [hoveredLineupId, setHoveredLineupId] = useState<string | null>(null);
+  const shownLineups = activeTool === 'throw' ? lineups : undefined;
 
   const interpolated = useMemo(
     () => tacticStateAt(steps, activeStepIndex, currentTime),
@@ -67,6 +70,8 @@ function TacticCanvas({
       selectedThrowId,
       hoveredSlot,
       hoveredThrowId,
+      lineups: shownLineups,
+      hoveredLineupId,
       liveStroke: liveStrokeRef,
       liveThrow: liveThrowRef,
     });
@@ -81,6 +86,8 @@ function TacticCanvas({
     selectedThrowId,
     hoveredSlot,
     hoveredThrowId,
+    shownLineups,
+    hoveredLineupId,
     image,
   ]);
 
@@ -95,7 +102,15 @@ function TacticCanvas({
       viewRef,
       liveStrokeRef,
       liveThrowRef,
-      hover: { hoveredSlot, hoveredThrowId, setHoveredSlot, setHoveredThrowId },
+      hover: {
+        hoveredSlot,
+        hoveredThrowId,
+        hoveredLineupId,
+        setHoveredSlot,
+        setHoveredThrowId,
+        setHoveredLineupId,
+      },
+      lineups: shownLineups,
       props,
     });
 

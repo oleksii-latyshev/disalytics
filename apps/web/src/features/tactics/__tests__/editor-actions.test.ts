@@ -131,14 +131,14 @@ describe('editor-actions', () => {
       expect(result.newIndex).toBe(2);
 
       const newStep = result.tactic.steps[2];
-      expect(newStep?.name).toBe('Step 3');
+      expect(newStep?.name).toBe('');
       expect(newStep?.timeOffsetSeconds).toBe(10); // 5 + 5
       expect(newStep?.players).toEqual(tactic.steps[1]?.players);
       expect(newStep?.throws).toEqual([]);
       expect(newStep?.drawings).toEqual([]);
     });
 
-    it('duplicates a step at the given index with (Copy) name', () => {
+    it('duplicates a step at the given index keeping its name', () => {
       const tactic = createMockTactic();
       const result = duplicateStep(tactic, 0);
 
@@ -146,7 +146,7 @@ describe('editor-actions', () => {
       expect(result.newIndex).toBe(1);
 
       const duplicated = result.tactic.steps[1];
-      expect(duplicated?.name).toBe('Spawn Setup (Copy)');
+      expect(duplicated?.name).toBe('Spawn Setup');
       expect(duplicated?.timeOffsetSeconds).toBe(2); // 0 + 2
       expect(duplicated?.players).toEqual(tactic.steps[0]?.players);
     });

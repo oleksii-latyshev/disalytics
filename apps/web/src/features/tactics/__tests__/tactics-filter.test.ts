@@ -1,7 +1,7 @@
 import { decodeTacticFromHash, encodeTacticToHash, type Tactic } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { createNewTactic } from '../helpers/editor-actions';
-import { filterTactics } from '../helpers/tactics-filter';
+import { createNewTactic } from '../helpers/tactic-setup';
+import { filterTactics, isCalledOn } from '../helpers/tactics-filter';
 
 function makeMockTactic(
   id: string,
@@ -111,21 +111,36 @@ describe('filterTactics', () => {
   });
 });
 
-describe('createNewTactic', () => {
-  it('initializes a tactic with default 5 players and 1 step', () => {
-    const tactic = createNewTactic('de_dust2', 'CT', 'Dust2 Defense');
-    expect(tactic.map).toBe('de_dust2');
-    expect(tactic.side).toBe('CT');
-    expect(tactic.title).toBe('Dust2 Defense');
-    expect(tactic.steps).toHaveLength(1);
-    expect(tactic.steps[0]?.players).toHaveLength(5);
-    expect(tactic.steps[0]?.timeOffsetSeconds).toBe(0);
+describe('filtering by round type', () => {
+  const pistol = {
+    ...makeMockTactic('p', 'Pistol rush', 'de_mirage', 'T', 3),
+    rounds: ['pistol'] as const,
+  };
+  const ecoForce = {
+    ...makeMockTactic('ef', 'Cheap A', 'de_mirage', 'T', 2),
+    rounds: ['eco', 'force'] as const,
+  };
+  const anyRound = makeMockTactic('any', 'Default', 'de_mirage', 'T', 1);
+  const all = [pistol, ecoForce, anyRound];
+
+  it('keeps tactics called on the round and those that name no round', () => {
+    expect(filterTactics(all, { round: 'pistol' }).map((t) => t.id)).toEqual(['p', 'any']);
+    expect(filterTactics(all, { round: 'force' }).map((t) => t.id)).toEqual(['ef', 'any']);
+    expect(filterTactics(all, { round: 'full' }).map((t) => t.id)).toEqual(['any']);
+  });
+
+  it('shows everything for ALL', () => {
+    expect(filterTactics(all, { round: 'ALL' })).toHaveLength(3);
+  });
+
+  it('treats an empty round list as any round', () => {
+    expect(isCalledOn({ ...anyRound, rounds: [] }, 'eco')).toBe(true);
   });
 });
 
 describe('link sharing codec round-trip', () => {
   it('encodes tactic into a URL fragment and decodes accurately', () => {
-    const tactic = createNewTactic('de_anubis', 'T', 'Anubis Mid Rush');
+    const tactic = { ...createNewTactic('de_anubis', 'T'), title: 'Anubis Mid Rush' };
     const hash = encodeTacticToHash(tactic);
     expect(hash.startsWith('#tactic=')).toBe(true);
 

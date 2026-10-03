@@ -1,4 +1,4 @@
-import type { TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
+import type { Lineup, TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
 import type { MapOverview, RadarPoint } from '@disa/map-data';
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react';
 import type { TacticPlateProps } from '../components/tactic-plate-props';
@@ -8,7 +8,7 @@ import {
   type DragState,
   findNearestDrawingStroke,
 } from '../helpers/tactic-plate-drag';
-import { tacticRadarToWorld } from '../helpers/tactic-plot';
+import { findNearestTacticLineup, tacticRadarToWorld } from '../helpers/tactic-plot';
 
 type WorldPoint = { x: number; y: number };
 
@@ -26,6 +26,7 @@ interface TacticToolGestureOptions {
   readonly pendingThrowStartRef: RefObject<WorldPoint | null>;
   readonly liveStrokeRef: RefObject<TacticDrawingStroke | null>;
   readonly liveThrowRef: RefObject<TacticThrow | null>;
+  readonly lineups: readonly Lineup[] | undefined;
   readonly props: Omit<TacticPlateProps, 'map'>;
 }
 
@@ -38,6 +39,7 @@ export function createTacticToolGestures({
   pendingThrowStartRef,
   liveStrokeRef,
   liveThrowRef,
+  lineups,
   props,
 }: TacticToolGestureOptions) {
   const {
@@ -46,6 +48,8 @@ export function createTacticToolGestures({
     newThrowKind = 'smoke',
     onAddDrawingStroke,
     onAddThrow,
+    onPickLineup,
+    onSelectSlot,
     onDeleteThrow,
     onDeleteDrawingStroke,
   } = props;
@@ -87,8 +91,22 @@ export function createTacticToolGestures({
 
   const handleThrowDown = (
     event: ReactPointerEvent<HTMLCanvasElement>,
+    info: RadarPointerInfo,
     worldPos: { x: number; y: number },
   ) => {
+    const hit = checkPointerHit(info.pt, info.scale, interpolated, overview);
+    if (hit?.type === 'player') {
+      onSelectSlot?.(hit.slot);
+      return;
+    }
+    const lineup =
+      lineups === undefined
+        ? null
+        : findNearestTacticLineup(info.pt, lineups, overview, info.scale);
+    if (lineup !== null) {
+      onPickLineup?.(lineup);
+      return;
+    }
     const roundedPos = { x: Math.round(worldPos.x), y: Math.round(worldPos.y) };
     if (pendingThrowStartRef.current !== null) {
       onAddThrow?.({

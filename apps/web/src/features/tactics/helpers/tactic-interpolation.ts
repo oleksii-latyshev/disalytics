@@ -104,7 +104,7 @@ export function grenadeControlPoint(
   };
 }
 
-function findActiveStepIndex(steps: readonly TacticStep[], currentTime: number): number {
+export function findActiveStepIndex(steps: readonly TacticStep[], currentTime: number): number {
   for (let i = 0; i < steps.length - 1; i++) {
     const s = steps[i];
     const nextS = steps[i + 1];

@@ -35,7 +35,7 @@ export function TacticStepPanel({
     <div className="flex flex-col gap-3 rounded-card border border-line bg-surface-1 p-3 text-ink">
       {/* Horizontal Step Timeline Strip */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-ink-dim">
+        <span className="shrink-0 text-12 font-semibold uppercase tracking-wider text-ink-dim">
           {t('library.tactics.steps.title')}
         </span>
 
@@ -47,17 +47,19 @@ export function TacticStepPanel({
                 key={step.id}
                 type="button"
                 onClick={() => onSelectStep(index)}
-                className={`group flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`group flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-12 font-medium transition-colors ${
                   isActive
                     ? 'border border-white/40 bg-surface-2 text-ink shadow-sm'
                     : 'border border-line/60 bg-surface-0 text-ink-dim hover:border-line hover:text-ink'
                 }`}
               >
-                <span className="font-mono text-[10px] text-ink-faint group-hover:text-ink-dim">
+                <span className="font-mono text-10 text-ink-faint group-hover:text-ink-dim">
                   #{index + 1}
                 </span>
-                <span className="truncate max-w-[120px]">{step.name}</span>
-                <span className="flex items-center gap-0.5 rounded-full bg-surface-3/50 px-1.5 py-0.5 font-mono text-[10px] text-ink-dim">
+                {step.name.trim() !== '' && (
+                  <span className="max-w-[120px] truncate">{step.name}</span>
+                )}
+                <span className="flex items-center gap-0.5 rounded-full bg-surface-3/50 px-1.5 py-0.5 font-mono text-10 text-ink-dim">
                   <Clock className="h-2.5 w-2.5" />+{step.timeOffsetSeconds}s
                 </span>
               </button>
@@ -67,9 +69,9 @@ export function TacticStepPanel({
           <Button
             variant="outline"
             onClick={onAddStep}
-            className="flex shrink-0 items-center gap-1 rounded-full border-dashed border-line px-2.5 py-1 text-xs text-ink-dim hover:border-white/50 hover:text-ink"
+            className="shrink-0 rounded-full border-dashed text-ink-dim hover:text-ink"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus />
             <span>{t('library.tactics.steps.add')}</span>
           </Button>
         </div>
@@ -80,7 +82,7 @@ export function TacticStepPanel({
         <div className="flex flex-col gap-3 rounded-card border border-line/50 bg-surface-0/60 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-ink-dim">
+              <span className="font-mono text-12 font-semibold text-ink-dim">
                 {t('library.tactics.steps.step', { index: activeStepIndex + 1 })}
               </span>
               <input
@@ -89,7 +91,7 @@ export function TacticStepPanel({
                 onChange={(e) => onUpdateName(activeStepIndex, e.target.value)}
                 aria-label={t('library.tactics.steps.name')}
                 placeholder={t('library.tactics.steps.namePlaceholder')}
-                className="rounded-chip border border-line bg-surface-1 px-2.5 py-1 text-xs font-medium text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
+                className="rounded-chip border border-line bg-surface-1 px-2.5 py-1 text-12 font-medium text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
               />
             </div>
 
@@ -99,7 +101,7 @@ export function TacticStepPanel({
                   seconds: activeStep.timeOffsetSeconds,
                 })}
                 title={t('library.tactics.steps.offset', { seconds: activeStep.timeOffsetSeconds })}
-                className="flex items-center gap-1 font-mono text-xs text-ink-dim"
+                className="flex items-center gap-1 font-mono text-12 text-ink-dim"
               >
                 <Clock className="h-3.5 w-3.5" />
                 <input
@@ -111,7 +113,7 @@ export function TacticStepPanel({
                   aria-label={t('library.tactics.steps.offset', {
                     seconds: activeStep.timeOffsetSeconds,
                   })}
-                  className="w-16 rounded-chip border border-line bg-surface-1 px-1.5 py-0.5 text-center font-mono text-xs text-ink focus:border-white focus:outline-none"
+                  className="w-16 rounded-chip border border-line bg-surface-1 px-1.5 py-0.5 text-center font-mono text-12 text-ink focus:border-white focus:outline-none"
                 />
                 <span>s</span>
               </label>
@@ -123,9 +125,9 @@ export function TacticStepPanel({
                   onClick={() => onMoveStep(activeStepIndex, 'earlier')}
                   disabled={activeStepIndex === 0}
                   title={t('library.tactics.steps.moveEarlier')}
-                  className="h-7 w-7 text-ink-dim hover:text-ink disabled:opacity-30"
+                  className="text-ink-dim hover:text-ink"
                 >
-                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <ArrowLeft />
                 </Button>
                 <Button
                   variant="ghost"
@@ -133,18 +135,18 @@ export function TacticStepPanel({
                   onClick={() => onMoveStep(activeStepIndex, 'later')}
                   disabled={activeStepIndex === steps.length - 1}
                   title={t('library.tactics.steps.moveLater')}
-                  className="h-7 w-7 text-ink-dim hover:text-ink disabled:opacity-30"
+                  className="text-ink-dim hover:text-ink"
                 >
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onDuplicateStep(activeStepIndex)}
                   title={t('library.tactics.steps.duplicate')}
-                  className="h-7 w-7 text-ink-dim hover:text-ink"
+                  className="text-ink-dim hover:text-ink"
                 >
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy />
                 </Button>
                 <Button
                   variant="ghost"
@@ -156,9 +158,9 @@ export function TacticStepPanel({
                       ? t('library.tactics.steps.cannotDeleteLast')
                       : t('library.tactics.steps.delete')
                   }
-                  className="h-7 w-7 text-damage/80 hover:bg-damage/20 hover:text-damage disabled:opacity-30"
+                  className="text-damage/80 hover:bg-damage/20 hover:text-damage"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 />
                 </Button>
               </div>
             </div>
@@ -172,7 +174,7 @@ export function TacticStepPanel({
               onChange={(e) => onUpdateNotes(activeStepIndex, e.target.value)}
               aria-label={t('library.tactics.steps.notes')}
               placeholder={t('library.tactics.steps.notesPlaceholder')}
-              className="w-full resize-y rounded-chip border border-line bg-surface-1 px-2.5 py-1.5 text-xs text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
+              className="w-full resize-y rounded-chip border border-line bg-surface-1 px-2.5 py-1.5 text-12 text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
             />
           </div>
         </div>

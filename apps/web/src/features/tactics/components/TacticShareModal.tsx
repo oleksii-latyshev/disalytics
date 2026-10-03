@@ -3,6 +3,7 @@ import { useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Check, Copy, Download, Link2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { nameOrFallback } from '../helpers/tactic-names';
 
 export interface TacticShareModalProps {
   readonly isOpen: boolean;
@@ -87,15 +88,17 @@ export function TacticShareModal({ isOpen, onClose, tactic, onExportFile }: Tact
             size="icon"
             onClick={onClose}
             aria-label={t('library.tactics.share.close')}
-            className="h-8 w-8 text-ink-dim hover:text-ink"
+            className="text-ink-dim hover:text-ink"
           >
-            <X className="h-4 w-4" />
+            <X />
           </Button>
         </div>
 
         {/* Tactic Info Pill */}
-        <div className="flex items-center gap-2 rounded-chip border border-line/60 bg-surface-0 px-3 py-2 text-xs">
-          <span className="font-semibold text-ink">{tactic.title}</span>
+        <div className="flex items-center gap-2 rounded-chip border border-line/60 bg-surface-0 px-3 py-2 text-12">
+          <span className="font-semibold text-ink">
+            {nameOrFallback(tactic.title, t('library.tactics.untitled'))}
+          </span>
           <span className="text-ink-faint">·</span>
           <span className="font-mono text-ink-dim">{tactic.map}</span>
           <span className="text-ink-faint">·</span>
@@ -117,19 +120,15 @@ export function TacticShareModal({ isOpen, onClose, tactic, onExportFile }: Tact
               aria-label={t('library.tactics.share.title')}
               className="flex-1 rounded-chip border border-line bg-surface-2 px-3 py-2 font-mono text-11 text-ink focus:border-white focus:outline-none select-all"
             />
-            <Button
-              variant={isCopied ? 'outline' : 'primary'}
-              onClick={handleCopy}
-              className="h-9 gap-1.5 px-3 text-xs"
-            >
+            <Button variant={isCopied ? 'outline' : 'primary'} onClick={handleCopy}>
               {isCopied ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-ink" />
+                  <Check />
                   <span>{t('library.tactics.share.copied')}</span>
                 </>
               ) : (
                 <>
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy />
                   <span>{t('library.tactics.share.copyLink')}</span>
                 </>
               )}
@@ -143,20 +142,16 @@ export function TacticShareModal({ isOpen, onClose, tactic, onExportFile }: Tact
             <Button
               variant="outline"
               onClick={onExportFile}
-              className="h-8 gap-1.5 px-3 text-xs text-ink-dim hover:text-ink"
+              className="text-ink-dim hover:text-ink"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download />
               <span>{t('library.tactics.share.downloadFile')}</span>
             </Button>
           ) : (
             <div />
           )}
 
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="h-8 px-3 text-xs text-ink-dim hover:text-ink"
-          >
+          <Button variant="ghost" onClick={onClose} className="text-ink-dim hover:text-ink">
             {t('library.tactics.share.close')}
           </Button>
         </div>

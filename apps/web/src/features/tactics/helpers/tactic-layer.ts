@@ -1,4 +1,5 @@
 import type {
+  Lineup,
   TacticDrawingStroke,
   TacticPlayerPosition,
   TacticSide,
@@ -27,6 +28,7 @@ import {
   projectWorldToScreen,
   renderSingleDrawingStroke,
 } from './tactic-layer-drawing';
+import { drawLineupMarkers } from './tactic-lineup-markers';
 
 export interface TacticLayerOptions {
   readonly overview: MapOverview;
@@ -42,6 +44,8 @@ export interface TacticLayerOptions {
   readonly selectedThrowId?: string | null | undefined;
   readonly hoveredSlot?: number | null | undefined;
   readonly hoveredThrowId?: string | null | undefined;
+  readonly lineups?: readonly Lineup[] | undefined;
+  readonly hoveredLineupId?: string | null | undefined;
   readonly liveStroke?: { readonly current: TacticDrawingStroke | null } | undefined;
   readonly liveThrow?: { readonly current: TacticThrow | null } | undefined;
 }
@@ -226,7 +230,8 @@ function renderTacticPlayers(
 
     drawToken(context, p.x, p.y, radius, teamColor);
 
-    const labelText = player.label ?? String(player.slot + 1);
+    const labelText =
+      player.label !== undefined && player.label !== '' ? player.label : String(player.slot + 1);
     context.save();
     context.fillStyle = colors.hollow;
     context.font = `bold ${Math.round(radius * 1.05)}px IBM Plex Mono, monospace`;
@@ -273,9 +278,12 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
       selectedThrowId,
       hoveredSlot,
       hoveredThrowId,
+      lineups = [],
+      hoveredLineupId,
     } = options;
 
     renderTacticDrawings(context, drawings, overview, geometry);
+    drawLineupMarkers(context, lineups, hoveredLineupId, overview, geometry, colors);
     if (options.liveStroke?.current !== null && options.liveStroke?.current !== undefined) {
       renderSingleDrawingStroke(context, options.liveStroke.current, overview, geometry);
     }

@@ -58,16 +58,15 @@ export function TacticToolbar({
   const t = useT();
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface-1 px-4 py-2.5 text-ink">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-line bg-surface-1 px-3 py-2 text-ink">
       {/* Primary Tool Buttons */}
       <div className="flex items-center gap-1">
         <Button
           variant={activeTool === 'select' ? 'secondary' : 'ghost'}
           onClick={() => onSelectTool('select')}
           title={t('library.tactics.tools.select')}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs"
         >
-          <MousePointer className="h-4 w-4" />
+          <MousePointer />
           <span>{t('library.tactics.tools.select')}</span>
         </Button>
 
@@ -75,9 +74,8 @@ export function TacticToolbar({
           variant={activeTool === 'pencil' ? 'secondary' : 'ghost'}
           onClick={() => onSelectTool('pencil')}
           title={t('library.tactics.tools.pencil')}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs"
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil />
           <span>{t('library.tactics.tools.pencil')}</span>
         </Button>
 
@@ -85,9 +83,8 @@ export function TacticToolbar({
           variant={activeTool === 'throw' ? 'secondary' : 'ghost'}
           onClick={() => onSelectTool('throw')}
           title={t('library.tactics.tools.throw')}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs"
         >
-          <Bomb className="h-4 w-4" />
+          <Bomb />
           <span>{t('library.tactics.tools.throw')}</span>
         </Button>
 
@@ -95,9 +92,8 @@ export function TacticToolbar({
           variant={activeTool === 'eraser' ? 'secondary' : 'ghost'}
           onClick={() => onSelectTool('eraser')}
           title={t('library.tactics.tools.eraser')}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs"
         >
-          <Eraser className="h-4 w-4" />
+          <Eraser />
           <span>{t('library.tactics.tools.eraser')}</span>
         </Button>
       </div>
@@ -133,7 +129,7 @@ export function TacticToolbar({
                 key={kind}
                 type="button"
                 onClick={() => onSelectThrowKind(kind)}
-                className={`rounded-full px-2 py-0.5 text-xs font-medium uppercase transition-colors ${
+                className={`rounded-full px-2 py-0.5 text-12 font-medium uppercase transition-colors ${
                   isSelected
                     ? 'border border-white/40 bg-surface-2 text-ink shadow-sm'
                     : 'bg-surface-0 text-ink-dim hover:text-ink'
@@ -148,7 +144,7 @@ export function TacticToolbar({
 
       {/* Selected Player Properties Panel */}
       {selectedPlayer !== undefined && activeTool === 'select' && (
-        <div className="flex items-center gap-3 border-x border-line px-3 text-xs">
+        <div className="flex items-center gap-3 border-x border-line px-3 text-12">
           <span className="font-semibold text-ink">
             {t('library.tactics.player.selected', { slot: selectedPlayer.slot + 1 })}
           </span>
@@ -160,7 +156,7 @@ export function TacticToolbar({
               value={selectedPlayer.label ?? ''}
               onChange={(e) => onUpdatePlayerLabel(selectedPlayer.slot, e.target.value)}
               placeholder={t('library.tactics.player.labelPlaceholder')}
-              className="w-24 rounded-chip border border-line bg-surface-0 px-2 py-0.5 text-xs text-ink focus:border-white focus:outline-none"
+              className="w-24 rounded-chip border border-line bg-surface-0 px-2 py-0.5 text-12 text-ink focus:border-white focus:outline-none"
             />
           </label>
 
@@ -180,7 +176,7 @@ export function TacticToolbar({
               aria-label={t('library.tactics.player.yaw')}
               className="h-1.5 w-20 cursor-pointer accent-white"
             />
-            <span className="w-8 font-mono text-[11px] tabular-nums">
+            <span className="w-8 font-mono text-11 tabular-nums">
               {Math.round(selectedPlayer.yaw ?? 0)}°
             </span>
           </label>
@@ -189,7 +185,7 @@ export function TacticToolbar({
 
       {/* Selected Throw Properties */}
       {selectedThrow !== undefined && activeTool === 'select' && (
-        <div className="flex items-center gap-2 border-x border-line px-3 text-xs">
+        <div className="flex items-center gap-2 border-x border-line px-3 text-12">
           <span className="text-ink-dim">{t('library.tactics.throw.selected')}:</span>
           <span className="font-semibold text-ink" title={t('library.tactics.throw.kind')}>
             {selectedThrow.kind !== 'kit'
@@ -211,16 +207,16 @@ export function TacticToolbar({
             onClick={() => onDeleteThrow(selectedThrow.id)}
             title={t('library.tactics.throw.delete')}
             aria-label={t('library.tactics.throw.delete')}
-            className="h-6 px-2 text-damage hover:bg-damage/20 hover:text-damage"
+            className="text-damage hover:bg-damage/20 hover:text-damage"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span className="ml-1 text-[11px]">{t('library.tactics.throw.delete')}</span>
+            <Trash2 />
+            <span>{t('library.tactics.throw.delete')}</span>
           </Button>
         </div>
       )}
 
       {/* Action Buttons: Undo, Redo, Clear */}
-      <div className="flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
@@ -228,9 +224,9 @@ export function TacticToolbar({
           disabled={!canUndo}
           title={t('library.tactics.tools.undo')}
           aria-label={t('library.tactics.tools.undo')}
-          className="h-8 w-8 text-ink-dim hover:text-ink disabled:opacity-30"
+          className="text-ink-dim hover:text-ink"
         >
-          <Undo2 className="h-4 w-4" />
+          <Undo2 />
         </Button>
 
         <Button
@@ -240,19 +236,19 @@ export function TacticToolbar({
           disabled={!canRedo}
           title={t('library.tactics.tools.redo')}
           aria-label={t('library.tactics.tools.redo')}
-          className="h-8 w-8 text-ink-dim hover:text-ink disabled:opacity-30"
+          className="text-ink-dim hover:text-ink"
         >
-          <Redo2 className="h-4 w-4" />
+          <Redo2 />
         </Button>
 
         <Button
           variant="ghost"
           onClick={onClearDrawings}
           title={t('library.tactics.tools.clearDrawings')}
-          className="h-8 px-2 text-xs text-ink-dim hover:text-damage"
+          className="text-ink-dim hover:text-damage"
         >
-          <Trash2 className="h-3.5 w-3.5" />
-          <span className="ml-1">{t('library.tactics.tools.clearDrawings')}</span>
+          <Trash2 />
+          <span>{t('library.tactics.tools.clearDrawings')}</span>
         </Button>
       </div>
     </div>

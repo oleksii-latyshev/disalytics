@@ -1,7 +1,22 @@
-import type { Tactic } from '@disa/demo-core';
+import {
+  TACTIC_ROUNDS,
+  TACTIC_SIDES,
+  type Tactic,
+  type TacticRound,
+  type TacticSide,
+} from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { Button } from '@disa/ui';
-import { ArrowLeft, Check, HelpCircle, Save } from 'lucide-react';
+import { MAP_IDS } from '@disa/map-data';
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@disa/ui';
+import { ArrowLeft, Check, Save } from 'lucide-react';
 
 interface TacticEditorHeaderProps {
   readonly tactic: Tactic;
@@ -9,6 +24,9 @@ interface TacticEditorHeaderProps {
   readonly onBack?: (() => void) | undefined;
   readonly onUpdateTitle: (title: string) => void;
   readonly onUpdateDescription: (description: string) => void;
+  readonly onChangeMap: (map: string) => void;
+  readonly onChangeSide: (side: TacticSide) => void;
+  readonly onToggleRound: (round: TacticRound) => void;
   readonly onSave: () => void;
 }
 
@@ -18,105 +36,112 @@ export function TacticEditorHeader({
   onBack,
   onUpdateTitle,
   onUpdateDescription,
+  onChangeMap,
+  onChangeSide,
+  onToggleRound,
   onSave,
 }: TacticEditorHeaderProps) {
   const t = useT();
+  const maps = MAP_IDS.some((map) => map === tactic.map) ? MAP_IDS : [tactic.map, ...MAP_IDS];
+  const rounds = tactic.rounds ?? [];
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-line px-4">
-      <div className="flex items-center gap-3">
-        {onBack !== undefined && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            title={t('library.tactics.editor.exit')}
-            aria-label={t('library.tactics.editor.exit')}
-            className="h-8 w-8 text-ink-dim hover:text-ink"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        )}
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-ink-dim" title={t('library.tactics.note')}>
-            {t('library.tactics.title')}
-          </span>
-          <span className="text-ink-faint">/</span>
-          <input
-            type="text"
-            value={tactic.title}
-            onChange={(e) => onUpdateTitle(e.target.value)}
-            aria-label={t('library.tactics.editor.tacticTitle')}
-            placeholder={t('library.tactics.editor.tacticTitle')}
-            className="rounded-chip border border-transparent bg-transparent px-2 py-0.5 text-sm font-semibold text-ink transition-colors hover:border-line focus:border-white focus:bg-surface-1 focus:outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <span
-            className="rounded-full border border-line bg-surface-1 px-2.5 py-0.5 font-mono text-[11px] text-ink-dim"
-            title={t('library.tactics.editor.map')}
-          >
-            {tactic.map}
-          </span>
-          <span
-            className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${
-              tactic.side === 'CT' ? 'border-ct/40 bg-ct/10 text-ct' : 'border-t/40 bg-t/10 text-t'
-            }`}
-            title={t('library.tactics.editor.side')}
-          >
-            {tactic.side}
-          </span>
-          {tactic.author !== undefined && tactic.author.length > 0 && (
-            <span
-              className="font-mono text-[11px] text-ink-faint"
-              title={t('library.tactics.editor.author')}
-            >
-              {tactic.author}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          value={tactic.description ?? ''}
-          onChange={(e) => onUpdateDescription(e.target.value)}
-          aria-label={t('library.tactics.editor.description')}
-          placeholder={t('library.tactics.editor.descriptionPlaceholder')}
-          className="w-48 rounded-chip border border-line/60 bg-surface-1 px-2 py-1 text-xs text-ink placeholder:text-ink-faint focus:border-white focus:outline-none"
-        />
-
-        <span
-          className="cursor-help text-ink-faint hover:text-ink-dim"
-          title={t('library.tactics.note')}
-        >
-          <HelpCircle className="h-4 w-4" />
-        </span>
-
+    <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 [border-block-end:1px_solid_var(--color-line)] px-4 py-2">
+      {onBack !== undefined && (
         <Button
-          variant={isSaved ? 'outline' : 'primary'}
-          onClick={onSave}
-          aria-label={
-            isSaved ? t('library.tactics.editor.saved') : t('library.tactics.editor.save')
-          }
-          className="h-8 gap-1.5 px-3 text-xs"
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          title={t('library.tactics.editor.exit')}
+          aria-label={t('library.tactics.editor.exit')}
+          className="text-ink-dim hover:text-ink"
         >
-          {isSaved ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-ink" />
-              <span className="text-ink">{t('library.tactics.editor.saved')}</span>
-            </>
-          ) : (
-            <>
-              <Save className="h-3.5 w-3.5" />
-              <span>{t('library.tactics.editor.save')}</span>
-            </>
-          )}
+          <ArrowLeft />
         </Button>
-      </div>
+      )}
+
+      <Input
+        type="text"
+        value={tactic.title}
+        onChange={(e) => onUpdateTitle(e.target.value)}
+        aria-label={t('library.tactics.editor.tacticTitle')}
+        placeholder={t('library.tactics.untitled')}
+        className="w-56 font-semibold"
+      />
+
+      <Select value={tactic.map} onValueChange={(map) => map !== null && onChangeMap(map)}>
+        <SelectTrigger aria-label={t('library.tactics.editor.map')} className="w-40 font-mono">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {maps.map((map) => (
+            <SelectItem key={map} value={map}>
+              {map}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <fieldset
+        aria-label={t('library.tactics.editor.side')}
+        className="m-0 flex items-center gap-1 border-none p-0"
+      >
+        {TACTIC_SIDES.map((side) => (
+          <Button
+            key={side}
+            variant={tactic.side === side ? 'secondary' : 'ghost'}
+            aria-pressed={tactic.side === side}
+            onClick={() => onChangeSide(side)}
+            className={`font-mono ${tactic.side === side ? (side === 'CT' ? 'text-ct' : 'text-t') : 'text-ink-dim'}`}
+          >
+            {side}
+          </Button>
+        ))}
+      </fieldset>
+
+      <fieldset
+        aria-label={t('library.tactics.editor.rounds')}
+        title={t('library.tactics.editor.roundsHint')}
+        className="m-0 flex items-center gap-1 border-none p-0"
+      >
+        <legend className="sr-only">{t('library.tactics.editor.rounds')}</legend>
+        <span className="mr-1 text-12 text-ink-dim">{t('library.tactics.editor.rounds')}</span>
+        {TACTIC_ROUNDS.map((round) => {
+          const isOn = rounds.includes(round);
+          return (
+            <Button
+              key={round}
+              variant={isOn ? 'secondary' : 'ghost'}
+              aria-pressed={isOn}
+              onClick={() => onToggleRound(round)}
+              className={`font-mono ${isOn ? 'text-ink' : 'text-ink-dim'}`}
+            >
+              {round}
+            </Button>
+          );
+        })}
+      </fieldset>
+
+      <Input
+        type="text"
+        value={tactic.description ?? ''}
+        onChange={(e) => onUpdateDescription(e.target.value)}
+        aria-label={t('library.tactics.editor.description')}
+        placeholder={t('library.tactics.editor.descriptionPlaceholder')}
+        className="min-w-40 flex-1"
+      />
+
+      <Button
+        variant={isSaved ? 'outline' : 'primary'}
+        onClick={onSave}
+        aria-label={isSaved ? t('library.tactics.editor.saved') : t('library.tactics.editor.save')}
+        className="ml-auto"
+      >
+        {isSaved ? <Check /> : <Save />}
+        <span>
+          {isSaved ? t('library.tactics.editor.saved') : t('library.tactics.editor.save')}
+        </span>
+      </Button>
     </header>
   );
 }

@@ -1,4 +1,4 @@
-import type { TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
+import type { Lineup, TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE, type RadarPoint } from '@disa/map-data';
 import {
   type PointerEvent as ReactPointerEvent,
@@ -16,14 +16,16 @@ import {
   performDragMove,
   resolveHitDragState,
 } from '../helpers/tactic-plate-drag';
-import { tacticRadarToWorld } from '../helpers/tactic-plot';
+import { findNearestTacticLineup, tacticRadarToWorld } from '../helpers/tactic-plot';
 import { createTacticToolGestures } from './tactic-tool-gestures';
 
 interface HoverState {
   readonly hoveredSlot: number | null;
   readonly hoveredThrowId: string | null;
+  readonly hoveredLineupId: string | null;
   readonly setHoveredSlot: (slot: number | null) => void;
   readonly setHoveredThrowId: (throwId: string | null) => void;
+  readonly setHoveredLineupId: (lineupId: string | null) => void;
 }
 
 interface UseTacticPlatePointerOptions {
@@ -35,6 +37,7 @@ interface UseTacticPlatePointerOptions {
   readonly liveStrokeRef: RefObject<TacticDrawingStroke | null>;
   readonly liveThrowRef: RefObject<TacticThrow | null>;
   readonly hover: HoverState;
+  readonly lineups: readonly Lineup[] | undefined;
   readonly props: Omit<TacticPlateProps, 'map'>;
 }
 
@@ -47,6 +50,7 @@ export function useTacticPlatePointer({
   liveStrokeRef,
   liveThrowRef,
   hover,
+  lineups,
   props,
 }: UseTacticPlatePointerOptions) {
   const {
@@ -59,7 +63,14 @@ export function useTacticPlatePointer({
     activeTool = 'select',
     newThrowKind = 'smoke',
   } = props;
-  const { hoveredSlot, hoveredThrowId, setHoveredSlot, setHoveredThrowId } = hover;
+  const {
+    hoveredSlot,
+    hoveredThrowId,
+    hoveredLineupId,
+    setHoveredSlot,
+    setHoveredThrowId,
+    setHoveredLineupId,
+  } = hover;
   const dragStateRef = useRef<DragState>(null);
   const pendingThrowStartRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -99,6 +110,7 @@ export function useTacticPlatePointer({
     pendingThrowStartRef,
     liveStrokeRef,
     liveThrowRef,
+    lineups,
     props,
   });
 
@@ -118,7 +130,7 @@ export function useTacticPlatePointer({
     }
 
     if (activeTool === 'throw') {
-      handleThrowDown(event, worldPos);
+      handleThrowDown(event, info, worldPos);
       return;
     }
 
@@ -157,12 +169,18 @@ export function useTacticPlatePointer({
     if (info === null) {
       setHoveredSlot(null);
       setHoveredThrowId(null);
+      setHoveredLineupId(null);
       return;
     }
 
     const hit = checkPointerHit(info.pt, info.scale, interpolated, overview);
     setHoveredSlot(hit?.type === 'player' ? hit.slot : null);
     setHoveredThrowId(hit?.type === 'throw' ? hit.throwId : null);
+    setHoveredLineupId(
+      lineups === undefined
+        ? null
+        : (findNearestTacticLineup(info.pt, lineups, overview, info.scale)?.id ?? null),
+    );
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -214,6 +232,7 @@ export function useTacticPlatePointer({
   const handlePointerLeave = () => {
     if (hoveredSlot !== null) setHoveredSlot(null);
     if (hoveredThrowId !== null) setHoveredThrowId(null);
+    if (hoveredLineupId !== null) setHoveredLineupId(null);
   };
 
   const handleWheel = (event: ReactWheelEvent<HTMLCanvasElement>) => {

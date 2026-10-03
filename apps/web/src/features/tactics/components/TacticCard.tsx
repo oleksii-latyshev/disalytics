@@ -1,8 +1,10 @@
-import type { Tactic } from '@disa/demo-core';
+import { type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Bomb, Clock, Copy, Download, Layers, Link2, Play, Trash2 } from 'lucide-react';
 import { computeTotalDuration } from '../helpers/editor-actions';
+import { nameOrFallback } from '../helpers/tactic-names';
+import { GrenadeTally } from './GrenadeTally';
 
 export interface TacticCardProps {
   readonly tactic: Tactic;
@@ -25,6 +27,8 @@ export function TacticCard({
 
   const totalDuration = computeTotalDuration(tactic.steps);
   const totalThrows = tactic.steps.reduce((acc, step) => acc + step.throws.length, 0);
+  const loadout = tacticLoadout(tactic);
+  const rounds = tactic.rounds ?? [];
 
   const handleDelete = () => {
     if (window.confirm(t('library.tactics.library.deleteConfirm'))) {
@@ -37,15 +41,15 @@ export function TacticCard({
       <div className="flex flex-col gap-2.5">
         {/* Top Badges */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span
-              className="rounded-full border border-line bg-surface-0 px-2.5 py-0.5 font-mono text-[11px] text-ink-dim"
+              className="rounded-full border border-line bg-surface-0 px-2.5 py-0.5 font-mono text-11 text-ink-dim"
               title={tactic.map}
             >
               {tactic.map}
             </span>
             <span
-              className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${
+              className={`rounded-full border px-2.5 py-0.5 font-mono text-11 font-semibold ${
                 tactic.side === 'CT'
                   ? 'border-ct/40 bg-ct/10 text-ct'
                   : 'border-t/40 bg-t/10 text-t'
@@ -54,11 +58,25 @@ export function TacticCard({
             >
               {tactic.side}
             </span>
+            {rounds.length === 0 ? (
+              <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-11 text-ink-faint">
+                {t('library.tactics.library.anyRound')}
+              </span>
+            ) : (
+              rounds.map((round) => (
+                <span
+                  key={round}
+                  className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-11 text-ink"
+                >
+                  {round}
+                </span>
+              ))
+            )}
           </div>
 
           {tactic.author !== undefined && tactic.author.length > 0 && (
             <span
-              className="truncate font-mono text-[11px] text-ink-faint max-w-[120px]"
+              className="truncate font-mono text-11 text-ink-faint max-w-[120px]"
               title={tactic.author}
             >
               {tactic.author}
@@ -69,16 +87,21 @@ export function TacticCard({
         {/* Title and description */}
         <div className="flex flex-col gap-1">
           <h3 className="truncate font-ui text-16 font-semibold text-ink leading-dense">
-            {tactic.title}
+            {nameOrFallback(tactic.title, t('library.tactics.untitled'))}
           </h3>
-          {tactic.description !== undefined && tactic.description.length > 0 ? (
+          {tactic.description !== undefined && tactic.description.length > 0 && (
             <p className="line-clamp-2 text-13 text-ink-dim leading-prose">{tactic.description}</p>
-          ) : (
-            <p className="text-13 text-ink-faint italic leading-prose">
-              {tactic.map} {tactic.side} strategy
-            </p>
           )}
         </div>
+
+        {loadout.teamTotal > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <GrenadeTally counts={loadout.teamCounts} />
+            <span className="font-mono text-12 text-ink-dim tabular-nums">
+              {t('library.tactics.library.utilityCost', { amount: loadout.teamCost })}
+            </span>
+          </div>
+        )}
 
         {/* Tactical statistics pills */}
         <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-11 text-ink-dim">
@@ -105,12 +128,8 @@ export function TacticCard({
 
       {/* Card Actions Footer */}
       <div className="flex items-center justify-between gap-2 [border-block-start:1px_solid_var(--color-line)] pt-3 mt-4">
-        <Button
-          variant="secondary"
-          onClick={() => onOpen(tactic)}
-          className="h-8 gap-1.5 px-3 text-xs"
-        >
-          <Play className="h-3.5 w-3.5" />
+        <Button variant="secondary" onClick={() => onOpen(tactic)}>
+          <Play />
           <span>{t('library.tactics.library.openWithoutSaving')}</span>
         </Button>
 
@@ -121,9 +140,9 @@ export function TacticCard({
             onClick={() => onShare(tactic)}
             title={t('library.tactics.library.share')}
             aria-label={t('library.tactics.library.share')}
-            className="h-8 w-8 text-ink-dim hover:text-ink"
+            className="text-ink-dim hover:text-ink"
           >
-            <Link2 className="h-4 w-4" />
+            <Link2 />
           </Button>
 
           <Button
@@ -132,9 +151,9 @@ export function TacticCard({
             onClick={() => onDuplicate(tactic)}
             title={t('library.tactics.library.duplicate')}
             aria-label={t('library.tactics.library.duplicate')}
-            className="h-8 w-8 text-ink-dim hover:text-ink"
+            className="text-ink-dim hover:text-ink"
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy />
           </Button>
 
           <Button
@@ -143,9 +162,9 @@ export function TacticCard({
             onClick={() => onExport(tactic)}
             title={t('library.tactics.library.exportOne')}
             aria-label={t('library.tactics.library.exportOne')}
-            className="h-8 w-8 text-ink-dim hover:text-ink"
+            className="text-ink-dim hover:text-ink"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download />
           </Button>
 
           <Button
@@ -154,9 +173,9 @@ export function TacticCard({
             onClick={handleDelete}
             title={t('library.tactics.library.delete')}
             aria-label={t('library.tactics.library.delete')}
-            className="h-8 w-8 text-ink-dim hover:text-damage"
+            className="text-ink-dim hover:text-damage"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 />
           </Button>
         </div>
       </div>

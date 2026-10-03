@@ -2,6 +2,7 @@ import type { Tactic } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Share2, X } from 'lucide-react';
+import { nameOrFallback } from '../helpers/tactic-names';
 
 interface SharedTacticBannerProps {
   readonly tactic: Tactic;
@@ -20,7 +21,7 @@ export function SharedTacticBanner({ tactic, onSave, onOpen, onDismiss }: Shared
         <div className="flex flex-col">
           <span className="text-14 font-medium">
             {t('library.tactics.library.sharedBanner', {
-              title: tactic.title,
+              title: nameOrFallback(tactic.title, t('library.tactics.untitled')),
             })}
           </span>
           <span className="font-mono text-12 text-ink-dim">
@@ -30,10 +31,10 @@ export function SharedTacticBanner({ tactic, onSave, onOpen, onDismiss }: Shared
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="primary" onClick={onSave} className="h-8 px-3 text-xs">
+        <Button variant="primary" onClick={onSave}>
           <Text path="library.tactics.library.saveToLibrary" />
         </Button>
-        <Button variant="secondary" onClick={onOpen} className="h-8 px-3 text-xs">
+        <Button variant="secondary" onClick={onOpen}>
           <Text path="library.tactics.library.openWithoutSaving" />
         </Button>
         {onDismiss && (
@@ -42,9 +43,9 @@ export function SharedTacticBanner({ tactic, onSave, onOpen, onDismiss }: Shared
             size="icon"
             onClick={onDismiss}
             aria-label={t('library.tactics.library.dismiss')}
-            className="h-8 w-8 text-ink-dim hover:text-ink"
+            className="text-ink-dim hover:text-ink"
           >
-            <X className="h-4 w-4" />
+            <X />
           </Button>
         )}
       </div>

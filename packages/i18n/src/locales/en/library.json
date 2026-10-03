@@ -381,9 +381,11 @@
       "tacticTitle": "Tactic title",
       "map": "Map",
       "side": "Side",
-      "author": "Author",
       "description": "Description",
-      "descriptionPlaceholder": "Brief strategy overview..."
+      "descriptionPlaceholder": "Brief strategy overview...",
+      "mapChangeConfirm": "Changing the map resets player positions, throws and drawings. Continue?",
+      "rounds": "Called on",
+      "roundsHint": "Round types this tactic is called on. None selected means any round."
     },
     "steps": {
       "title": "Steps",
@@ -443,7 +445,10 @@
       "kind": "Utility kind",
       "thrower": "Thrower",
       "releaseTime": "Release delay (+{seconds}s)",
-      "delete": "Delete throw"
+      "delete": "Delete throw",
+      "pickPlayer": "Select a player on the board or in the utility list, then click a lineup.",
+      "pickLineup": "Click a lineup on the map to give it to player {slot}, or drag on the map to draw a throw.",
+      "noLineups": "This map has no matching lineups for this kind. Drag on the map to draw a throw."
     },
     "library": {
       "newTactic": "New tactic",
@@ -467,7 +472,12 @@
       "sharedBanner": "Shared tactic received: \"{title}\"",
       "saveToLibrary": "Save to library",
       "openWithoutSaving": "Open editor",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "copyTitle": "{title} (copy)",
+      "allRounds": "All rounds",
+      "roundFilter": "Round type",
+      "anyRound": "Any round",
+      "utilityCost": "Utility ${amount, number}"
     },
     "share": {
       "title": "Share tactic",
@@ -476,6 +486,19 @@
       "copied": "Copied!",
       "downloadFile": "Download JSON file",
       "close": "Close"
+    },
+    "untitled": "Untitled tactic",
+    "loadout": {
+      "title": "Utility to buy",
+      "player": "Player {slot}",
+      "total": "Team total",
+      "cost": "${amount, number}",
+      "empty": "No throws yet. Add throws to see what this tactic needs.",
+      "warn": {
+        "flashLimit": "Player {slot} would carry {count} flashbangs; the limit is 2.",
+        "kindLimit": "Player {slot} would carry {count} × {kind}; the limit is 1.",
+        "totalLimit": "Player {slot} would carry {count} grenades; the limit is 4."
+      }
     }
   },
   "grid": {
