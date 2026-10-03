@@ -175,10 +175,10 @@ export function LineupFormModal({
             <div />
           )}
           <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" onClick={handleExit} className="h-8 px-3 text-12">
+            <Button type="button" variant="ghost" onClick={handleExit} className="px-3 text-12">
               <Text path="library.lineups.form.cancel" />
             </Button>
-            <Button render={<button type="submit" />} disabled={saving} className="h-8 px-4">
+            <Button render={<button type="submit" />} disabled={saving} className="px-4">
               <Text path="library.lineups.form.save" />
             </Button>
           </div>

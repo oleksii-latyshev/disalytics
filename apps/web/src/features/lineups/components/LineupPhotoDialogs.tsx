@@ -104,10 +104,10 @@ export function CatboxNoticeDialog({
         <Text path="library.lineups.form.catboxModal.dontShowAgain" />
       </label>
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="ghost" onClick={onDismiss} className="h-8 px-3 text-12">
+        <Button type="button" variant="ghost" onClick={onDismiss} className="px-3 text-12">
           <Text path="library.lineups.form.cancel" />
         </Button>
-        <Button type="button" onClick={onProceed} className="h-8 px-4 text-12">
+        <Button type="button" onClick={onProceed} className="px-4 text-12">
           <Text path="library.lineups.form.catboxModal.proceed" />
         </Button>
       </div>
