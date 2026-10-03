@@ -4,7 +4,7 @@ import {
   type LineupSide,
   type UtilityKind,
 } from '@disa/demo-core';
-import type { RadarColors } from '@/features/radar/helpers/colors';
+import type { RadarColors } from '@/features/radar';
 import { LINEUP_STRIDE, type LineupGroup } from './lineup-plot';
 
 const FULL_TURN = 2 * Math.PI;

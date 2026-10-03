@@ -1,5 +1,5 @@
 import type { Lineup } from '@disa/demo-core';
-import type { SelectedLineupNode } from './lineup-layer';
+import type { SelectedLineupNode } from './lineup-nodes';
 
 export interface VisibleLineupSelection {
   readonly selectedNodes: readonly SelectedLineupNode[];

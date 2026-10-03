@@ -1,6 +1,6 @@
 import type { TacticDrawingStroke, TacticPlayerPosition, TacticThrow } from '@disa/demo-core';
 import { type MapOverview, type RadarPoint, radarToWorld, radarX, radarY } from '@disa/map-data';
-import { pointDistance, pointToSegmentDistance } from './coach-draw';
+import { pointDistance, pointToSegmentDistance } from '@/features/radar';
 
 /**
  * Transforms a world point to 1024x1024 radar coordinates.

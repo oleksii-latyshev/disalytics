@@ -1,0 +1,94 @@
+import type { TacticTool } from '../hooks/use-tactic-editor';
+
+function handleToolShortcut(key: string, onSelectTool: (tool: TacticTool) => void): boolean {
+  if (key === '1') {
+    onSelectTool('select');
+    return true;
+  }
+  if (key === '2') {
+    onSelectTool('pencil');
+    return true;
+  }
+  if (key === '3') {
+    onSelectTool('throw');
+    return true;
+  }
+  if (key === '4') {
+    onSelectTool('eraser');
+    return true;
+  }
+  return false;
+}
+
+function handleNavigationShortcut(
+  event: KeyboardEvent,
+  togglePlay: () => void,
+  jumpStep: (dir: 'prev' | 'next') => void,
+): boolean {
+  if (event.code === 'Space') {
+    event.preventDefault();
+    togglePlay();
+    return true;
+  }
+  if (event.key === '[') {
+    event.preventDefault();
+    jumpStep('prev');
+    return true;
+  }
+  if (event.key === ']') {
+    event.preventDefault();
+    jumpStep('next');
+    return true;
+  }
+  return false;
+}
+
+function handleModifierShortcut(
+  event: KeyboardEvent,
+  undo: () => void,
+  redo: () => void,
+  onSave: () => void,
+): boolean {
+  if (!event.ctrlKey && !event.metaKey) return false;
+  const key = event.key.toLowerCase();
+
+  if (key === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) {
+      redo();
+    } else {
+      undo();
+    }
+    return true;
+  }
+  if (key === 'y') {
+    event.preventDefault();
+    redo();
+    return true;
+  }
+  if (key === 's') {
+    event.preventDefault();
+    onSave();
+    return true;
+  }
+  return false;
+}
+
+export interface TacticShortcutActions {
+  readonly undo: () => void;
+  readonly redo: () => void;
+  readonly save: () => void;
+  readonly togglePlay: () => void;
+  readonly jumpStep: (dir: 'prev' | 'next') => void;
+  readonly selectTool: (tool: TacticTool) => void;
+}
+
+export function handleTacticShortcut(event: KeyboardEvent, actions: TacticShortcutActions): void {
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    return;
+  }
+
+  if (handleModifierShortcut(event, actions.undo, actions.redo, actions.save)) return;
+  if (handleNavigationShortcut(event, actions.togglePlay, actions.jumpStep)) return;
+  handleToolShortcut(event.key, actions.selectTool);
+}

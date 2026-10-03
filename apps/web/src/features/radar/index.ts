@@ -4,12 +4,15 @@ export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export { PlateStill } from './components/PlateStill';
-export { TacticPlate, type TacticPlateProps } from './components/TacticPlate';
+export { UnknownMap } from './components/UnknownMap';
 export { UtilityPlate } from './components/UtilityPlate';
+export { squareBackdrop } from './helpers/backdrop';
+export { pointDistance, pointToSegmentDistance } from './helpers/coach-draw';
 export type { CoachSession } from './helpers/coach-session';
 export { EMPTY_COACH_ANNOTATIONS } from './helpers/coach-types';
 export type { RadarColors } from './helpers/colors';
 export { radarColors } from './helpers/colors';
+export { drawGrenadeMark } from './helpers/equipment-marks';
 export {
   drawDecoyPulse,
   drawFlashMark,
@@ -19,27 +22,9 @@ export {
 export type { HeatField } from './helpers/heat-field';
 export { heatField } from './helpers/heat-field';
 export { labelPass, readLabelStyle } from './helpers/labels';
+export { levelAt } from './helpers/levels';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';
-export {
-  GRENADE_FLIGHT_DURATION,
-  type InterpolatedGrenadeFlight,
-  type InterpolatedTacticState,
-  type InterpolatedUtilityActive,
-  interpolateAngleDeg,
-  interpolateTacticStep,
-  quadraticBezierPoint,
-  UTILITY_ACTIVE_DURATIONS,
-} from './helpers/tactic-interpolation';
-export {
-  findNearestTacticDrawing,
-  findNearestTacticPlayer,
-  findNearestTacticThrow,
-  type PlayerHitResult,
-  type ThrowHitResult,
-  tacticRadarToWorld,
-  tacticWorldToRadar,
-} from './helpers/tactic-plot';
 export {
   CLUSTER_THRESHOLD_SQ,
   findNearestCluster,
@@ -48,6 +33,7 @@ export {
 } from './helpers/throw-cluster';
 export {
   drawNeedle,
+  drawSelectionRing,
   drawToken,
   drawWalkHollow,
   screenAngleOf,
@@ -61,5 +47,19 @@ export {
   drawSmokeBody,
   resolveCountdownFont,
 } from './helpers/utility-body';
+export {
+  type PlateGeometry,
+  type PlateView,
+  panBy,
+  plateGeometry,
+  plateView,
+  radarPointAt,
+  readPlateGeometry,
+  SQUARE_PLATE,
+  ZOOM_STEP,
+  zoomAbout,
+  zoomByStep,
+} from './helpers/view';
 export { useCoachKeys } from './hooks/use-coach-keys';
 export { useCoachSession } from './hooks/use-coach-session';
+export { useRadarImage } from './hooks/use-radar-image';

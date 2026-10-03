@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLineupNodeSelected, type SelectedLineupNode } from '../helpers/lineup-layer';
+import { isLineupNodeSelected, type SelectedLineupNode } from '../helpers/lineup-nodes';
 
 const selectedNodes: readonly SelectedLineupNode[] = [
   { lineupId: 'lineup-a', lineupIndex: 0, target: 'origin' },

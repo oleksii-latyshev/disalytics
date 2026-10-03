@@ -1,7 +1,7 @@
 import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
 import { openLineupStore } from '@disa/demo-store';
 import { useT } from '@disa/i18n';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 
 export function useLineupGroupActions({
   lineups,

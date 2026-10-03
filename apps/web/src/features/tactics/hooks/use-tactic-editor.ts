@@ -1,20 +1,16 @@
 import type { Tactic, TacticDrawingStroke, TacticThrow, UtilityKind } from '@disa/demo-core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   addDrawingStrokeToStep,
   addStep as addStepAction,
   addThrowToStep,
   clearDrawingsFromStep,
-  computeTotalDuration,
   deleteDrawingStrokeFromStep,
   deleteStep as deleteStepAction,
   deleteThrowFromStep,
   duplicateStep as duplicateStepAction,
   generateId,
   moveStep as moveStepAction,
-  pushHistoryState,
-  redoHistoryState,
-  undoHistoryState,
   updatePlayerLabel as updatePlayerLabelAction,
   updatePlayerPosition as updatePlayerPositionAction,
   updatePlayerYaw as updatePlayerYawAction,
@@ -23,6 +19,9 @@ import {
   updateStepOffset as updateStepOffsetAction,
   updateThrowPositionInStep,
 } from '../helpers/editor-actions';
+import { updateStepAt } from '../helpers/step-update';
+import { useTacticHistory } from './use-tactic-history';
+import { useTacticPlayback } from './use-tactic-playback';
 
 export type TacticTool = 'select' | 'pencil' | 'throw' | 'eraser';
 
@@ -42,32 +41,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   const [pencilColor, setPencilColor] = useState('var(--color-ct)');
   const [newThrowKind, setNewThrowKind] = useState<UtilityKind>('smoke');
 
-  // History for Undo/Redo
-  const [history, setHistory] = useState<{
-    readonly past: readonly Tactic[];
-    readonly future: readonly Tactic[];
-  }>({
-    past: [],
-    future: [],
-  });
-
-  // Playback state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackTime, setPlaybackTime] = useState(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-
-  // Total duration of the tactic (last step offset + 3s margin, min 5s)
-  const totalDuration = useMemo(() => {
-    return computeTotalDuration(tactic.steps);
-  }, [tactic.steps]);
-
-  // Push snapshot to undo stack before mutation
-  const pushHistory = useCallback((prevTactic: Tactic) => {
-    setHistory((curr) => ({
-      past: pushHistoryState(curr.past, prevTactic),
-      future: [],
-    }));
-  }, []);
+  const { canUndo, canRedo, pushHistory, undo, redo } = useTacticHistory(tactic, setTactic);
 
   const updateTactic = useCallback(
     (updater: (prev: Tactic) => Tactic) => {
@@ -79,32 +53,6 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     },
     [pushHistory],
   );
-
-  const undo = useCallback(() => {
-    setHistory((curr) => {
-      const nextState = undoHistoryState(curr.past, curr.future, tactic);
-      if (nextState === null) return curr;
-
-      setTactic(nextState.current);
-      return {
-        past: nextState.past,
-        future: nextState.future,
-      };
-    });
-  }, [tactic]);
-
-  const redo = useCallback(() => {
-    setHistory((curr) => {
-      const nextState = redoHistoryState(curr.past, curr.future, tactic);
-      if (nextState === null) return curr;
-
-      setTactic(nextState.current);
-      return {
-        past: nextState.past,
-        future: nextState.future,
-      };
-    });
-  }, [tactic]);
 
   // Step operations
   const addStep = useCallback(() => {
@@ -172,42 +120,29 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   // Player position updates on the active step
   const updatePlayerPosition = useCallback(
     (slot: number, worldPos: { x: number; y: number }) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = updatePlayerPositionAction(step, slot, worldPos);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) =>
+          updatePlayerPositionAction(step, slot, worldPos),
+        ),
+      );
     },
     [activeStepIndex, updateTactic],
   );
 
   const updatePlayerYaw = useCallback(
     (slot: number, yaw: number) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = updatePlayerYawAction(step, slot, yaw);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) => updatePlayerYawAction(step, slot, yaw)),
+      );
     },
     [activeStepIndex, updateTactic],
   );
 
   const updatePlayerLabel = useCallback(
     (slot: number, label: string) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = updatePlayerLabelAction(step, slot, label);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) => updatePlayerLabelAction(step, slot, label)),
+      );
     },
     [activeStepIndex, updateTactic],
   );
@@ -220,15 +155,13 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
         | (Pick<TacticThrow, 'kind' | 'from' | 'to'> & Partial<TacticThrow>),
     ) => {
       let createdThrowId: string | null = null;
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const { step: updatedStep, newThrow } = addThrowToStep(step, t, selectedSlot ?? 0);
-        createdThrowId = newThrow.id;
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) => {
+          const { step: updatedStep, newThrow } = addThrowToStep(step, t, selectedSlot ?? 0);
+          createdThrowId = newThrow.id;
+          return updatedStep;
+        }),
+      );
 
       if (createdThrowId !== null) {
         setSelectedThrowId(createdThrowId);
@@ -239,28 +172,20 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
 
   const updateThrowPosition = useCallback(
     (throwId: string, end: 'from' | 'to', worldPos: { x: number; y: number }) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = updateThrowPositionInStep(step, throwId, end, worldPos);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) =>
+          updateThrowPositionInStep(step, throwId, end, worldPos),
+        ),
+      );
     },
     [activeStepIndex, updateTactic],
   );
 
   const deleteThrow = useCallback(
     (throwId: string) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = deleteThrowFromStep(step, throwId);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) => deleteThrowFromStep(step, throwId)),
+      );
 
       if (selectedThrowId === throwId) {
         setSelectedThrowId(null);
@@ -272,41 +197,28 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   // Drawing operations on the active step
   const addDrawingStroke = useCallback(
     (stroke: TacticDrawingStroke | Omit<TacticDrawingStroke, 'id'>) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = addDrawingStrokeToStep(step, stroke);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) => addDrawingStrokeToStep(step, stroke)),
+      );
     },
     [activeStepIndex, updateTactic],
   );
 
   const deleteDrawingStroke = useCallback(
     (strokeIndex: number) => {
-      updateTactic((curr) => {
-        const step = curr.steps[activeStepIndex];
-        if (step === undefined) return curr;
-
-        const updatedStep = deleteDrawingStrokeFromStep(step, strokeIndex);
-        const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-        return { ...curr, steps: nextSteps };
-      });
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) =>
+          deleteDrawingStrokeFromStep(step, strokeIndex),
+        ),
+      );
     },
     [activeStepIndex, updateTactic],
   );
 
   const clearDrawings = useCallback(() => {
-    updateTactic((curr) => {
-      const step = curr.steps[activeStepIndex];
-      if (step === undefined) return curr;
-
-      const updatedStep = clearDrawingsFromStep(step);
-      const nextSteps = curr.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s));
-      return { ...curr, steps: nextSteps };
-    });
+    updateTactic((curr) =>
+      updateStepAt(curr, activeStepIndex, (step) => clearDrawingsFromStep(step)),
+    );
   }, [activeStepIndex, updateTactic]);
 
   const updateTitle = useCallback(
@@ -327,74 +239,11 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     onSave?.(tactic);
   }, [tactic, onSave]);
 
-  // Playback loop (rAF)
-  const lastTimeRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!isPlaying) {
-      lastTimeRef.current = null;
-      return;
-    }
-
-    let animationFrameId: number;
-
-    const tick = (now: number) => {
-      if (lastTimeRef.current === null) {
-        lastTimeRef.current = now;
-      } else {
-        const deltaSeconds = ((now - lastTimeRef.current) / 1000) * playbackSpeed;
-        lastTimeRef.current = now;
-
-        setPlaybackTime((prev) => {
-          const next = prev + deltaSeconds;
-          if (next >= totalDuration) {
-            setIsPlaying(false);
-            return totalDuration;
-          }
-          return next;
-        });
-      }
-
-      animationFrameId = requestAnimationFrame(tick);
-    };
-
-    animationFrameId = requestAnimationFrame(tick);
-
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, playbackSpeed, totalDuration]);
-
-  const togglePlay = useCallback(() => {
-    setIsPlaying((prev) => {
-      if (!prev && playbackTime >= totalDuration) {
-        setPlaybackTime(0);
-      }
-      return !prev;
-    });
-  }, [playbackTime, totalDuration]);
-
-  const seek = useCallback(
-    (time: number) => {
-      const clamped = Math.max(0, Math.min(totalDuration, time));
-      setPlaybackTime(clamped);
-    },
-    [totalDuration],
-  );
-
-  const jumpStep = useCallback(
-    (direction: 'prev' | 'next') => {
-      const targetIndex =
-        direction === 'prev'
-          ? Math.max(0, activeStepIndex - 1)
-          : Math.min(tactic.steps.length - 1, activeStepIndex + 1);
-
-      setActiveStepIndex(targetIndex);
-      const step = tactic.steps[targetIndex];
-      if (step !== undefined) {
-        setPlaybackTime(step.timeOffsetSeconds);
-      }
-    },
-    [activeStepIndex, tactic.steps],
-  );
+  const playback = useTacticPlayback({
+    steps: tactic.steps,
+    activeStepIndex,
+    setActiveStepIndex,
+  });
 
   return {
     tactic,
@@ -405,19 +254,16 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     activeTool,
     pencilColor,
     newThrowKind,
-    canUndo: history.past.length > 0,
-    canRedo: history.future.length > 0,
-    isPlaying,
-    playbackTime,
-    playbackSpeed,
-    totalDuration,
+    canUndo,
+    canRedo,
+    ...playback.state,
     setActiveStepIndex,
     setSelectedSlot,
     setSelectedThrowId,
     setActiveTool,
     setPencilColor,
     setNewThrowKind,
-    setPlaybackSpeed,
+    setPlaybackSpeed: playback.setPlaybackSpeed,
     undo,
     redo,
     addStep,
@@ -439,8 +285,8 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     updateTitle,
     updateDescription,
     save,
-    togglePlay,
-    seek,
-    jumpStep,
+    togglePlay: playback.togglePlay,
+    seek: playback.seek,
+    jumpStep: playback.jumpStep,
   };
 }

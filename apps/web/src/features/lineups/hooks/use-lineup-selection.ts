@@ -1,5 +1,5 @@
 import type { Lineup } from '@disa/demo-core';
-import type { SelectedLineupNode } from '../helpers/lineup-layer';
+import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import type { LineupGroup, LineupHit, LineupNode } from '../helpers/lineup-plot';
 
 export type InteractionMode = 'view' | 'edit';
@@ -76,6 +76,25 @@ export function toggleLineupSelection(
   return { selectedIds: new Set([...selectedIds, id]), selectedNodes };
 }
 
+export function variantsAtHit(
+  hit: LineupHit,
+  filteredLineups: readonly Pick<Lineup, 'id'>[],
+  originGroups: readonly LineupGroup[],
+  landingGroups: readonly LineupGroup[],
+): SelectedVariants | null {
+  const targetGroups = hit.target === 'landing' ? landingGroups : originGroups;
+  const group = targetGroups.find(({ indices }) => indices.includes(hit.index));
+  if (group === undefined || group.indices.length < 2) return null;
+
+  return {
+    type: hit.target,
+    ids: group.indices.flatMap((position) => {
+      const lineup = filteredLineups[position];
+      return lineup === undefined ? [] : [lineup.id];
+    }),
+  };
+}
+
 export function createLineupSelectionActions({
   mode,
   filteredLineups,
@@ -123,18 +142,9 @@ export function createLineupSelectionActions({
     }
 
     // View mode inspects the clicked marker, regardless of modifiers.
-    const { index, target } = hit;
-    const targetGroups = target === 'landing' ? landingGroups : originGroups;
-    const group = targetGroups.find(({ indices }) => indices.includes(index));
-
-    if (group !== undefined && group.indices.length > 1) {
-      setSelectedVariants({
-        type: target,
-        ids: group.indices.flatMap((position) => {
-          const lineup = filteredLineups[position];
-          return lineup === undefined ? [] : [lineup.id];
-        }),
-      });
+    const variants = variantsAtHit(hit, filteredLineups, originGroups, landingGroups);
+    if (variants !== null) {
+      setSelectedVariants(variants);
       return;
     }
 

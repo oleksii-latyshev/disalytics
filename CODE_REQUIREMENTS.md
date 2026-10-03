@@ -31,10 +31,12 @@ apps/web/src/
     library/      Open/drop a demo, parse progress, error screens, cached demo list.
     review/       The stage: the four cards, the timeline block, and what they compose.
     timeline/     The match ribbon and the round timeline: bands, density, economy, scrubber.
-    radar/        Map rendering: layers, player tokens, grenades, sound circles.
-    filters/      Filter builder UI and highlight extraction controls.
+    radar/        Map rendering: layers, player tokens, grenades, sound circles, and the plate
+                  plumbing (view, backdrop, levels) other map-based slices build on.
     controls/     Playback transport: play/pause, speed, tick stepping.
-    settings/     Locale, colour-blind mode, debug/calibration overlay.
+    lineups/      The lineup library: catalog, plate editing, photos, import and export.
+    tactics/      The tactics board: editor, step playback, its own plate and layer.
+    tools/        Economy calculator and the weapon and grenade reference tables.
   shared/         App-agnostic code any layer may use — nothing here knows about CS2.
     hooks/          Generic React hooks (reduced motion, media query, resize observer).
     lib/            `cn()` and similar tiny utilities.
@@ -92,8 +94,13 @@ One-way flow: `features → core → shared`, never the reverse.
 - `features → features`: only through the other feature's barrel, and only downward:
 
   ```
-  library → review → timeline → filters
-  radar, controls, settings are leaves
+  review → lineups → radar
+  review → timeline
+  review → controls
+  review → radar
+  library → radar
+  tactics → radar
+  timeline, controls, tools, radar are leaves
   ```
 
   There is no `inspector/` slice. #113 removed the column and the drawer both —

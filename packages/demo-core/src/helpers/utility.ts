@@ -44,6 +44,10 @@ export const THROWN_UTILITY_KINDS: readonly UtilityKind[] = [
   ...new Set(GRENADE_TYPES.map(utilityKindOfGrenade)),
 ];
 
+export function isThrownUtilityKind(value: unknown): value is UtilityKind {
+  return THROWN_UTILITY_KINDS.some((kind) => kind === value);
+}
+
 /**
  * Canonical names for what a player is carrying — game vocabulary, never translated (`AGENTS.md`
  * §11). Molotov and incendiary share `fire` and therefore share a name; the distinction is one the

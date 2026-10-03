@@ -1,5 +1,5 @@
 import { type MapOverview, radarX, radarY } from '@disa/map-data';
-import type { RadarColors } from '@/features/radar/helpers/colors';
+import type { RadarColors } from '@/features/radar';
 import {
   drawBounceMarker,
   drawDraggableHandle,

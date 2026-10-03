@@ -1,6 +1,6 @@
 import { useT } from '@disa/i18n';
 import { Minus, Plus } from 'lucide-react';
-import { ZOOM_STEP } from '@/features/radar/helpers/view';
+import { ZOOM_STEP } from '@/features/radar';
 
 export function LineupPlateZoomControls({
   zoom,

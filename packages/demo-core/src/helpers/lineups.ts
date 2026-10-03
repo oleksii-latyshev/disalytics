@@ -1,6 +1,6 @@
 import type { Team, WorldPoint } from '../schema';
 import type { MovementKey, ThrowType } from './throw-detail';
-import { THROWN_UTILITY_KINDS, type UtilityKind } from './utility';
+import { isThrownUtilityKind, type UtilityKind } from './utility';
 
 export type LineupSide = Team | 'BOTH';
 export type LineupMouseButton = 'left' | 'right';
@@ -129,11 +129,11 @@ function hasValidText(id: unknown, title: unknown, map: unknown): boolean {
 function hasValidClassification(side: unknown, kind: unknown, throwType: unknown): boolean {
   return (
     typeof side === 'string' &&
-    LINEUP_SIDES.includes(side as LineupSide) &&
+    LINEUP_SIDES.some((candidate) => candidate === side) &&
     typeof kind === 'string' &&
-    THROWN_UTILITY_KINDS.includes(kind as UtilityKind) &&
+    isThrownUtilityKind(kind) &&
     typeof throwType === 'string' &&
-    THROW_TYPES.includes(throwType as ThrowType)
+    THROW_TYPES.some((candidate) => candidate === throwType)
   );
 }
 
@@ -160,35 +160,43 @@ function hasValidCommand(
   );
 }
 
-function hasValidOptionals(
-  notes: unknown,
-  mediaUrl: unknown,
-  isBuiltIn: unknown,
-  createdAt: unknown,
-  landingCommand: unknown,
-  fromDemo: unknown,
-  targetCallout: unknown,
-  waypoints: unknown,
-  groupId: unknown,
-  groupTarget: unknown,
-): boolean {
-  if (notes !== undefined && typeof notes !== 'string') return false;
-  if (mediaUrl !== undefined && typeof mediaUrl !== 'string') return false;
-  if (isBuiltIn !== undefined && typeof isBuiltIn !== 'boolean') return false;
-  if (createdAt !== undefined && !isFiniteNumber(createdAt)) return false;
-  if (landingCommand !== undefined && typeof landingCommand !== 'string') return false;
-  if (fromDemo !== undefined && typeof fromDemo !== 'boolean') return false;
-  if (targetCallout !== undefined && typeof targetCallout !== 'string') return false;
-  if (waypoints !== undefined) {
-    if (!Array.isArray(waypoints) || !waypoints.every(isWorldPoint)) return false;
-  }
-  if (groupId !== undefined && (typeof groupId !== 'string' || groupId.trim().length === 0)) {
-    return false;
-  }
-  if (groupTarget !== undefined && groupTarget !== 'landing' && groupTarget !== 'origin') {
-    return false;
-  }
-  return true;
+function isOptional(value: unknown, isValid: (present: unknown) => boolean): boolean {
+  return value === undefined || isValid(value);
+}
+
+function isString(value: unknown): boolean {
+  return typeof value === 'string';
+}
+
+function isBoolean(value: unknown): boolean {
+  return typeof value === 'boolean';
+}
+
+function isNonBlankString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isWorldPointList(value: unknown): boolean {
+  return Array.isArray(value) && value.every(isWorldPoint);
+}
+
+function isGroupTarget(value: unknown): boolean {
+  return value === 'landing' || value === 'origin';
+}
+
+function hasValidOptionals(value: Record<string, unknown>): boolean {
+  return (
+    isOptional(value.notes, isString) &&
+    isOptional(value.mediaUrl, isString) &&
+    isOptional(value.isBuiltIn, isBoolean) &&
+    isOptional(value.createdAt, isFiniteNumber) &&
+    isOptional(value.landingCommand, isString) &&
+    isOptional(value.fromDemo, isBoolean) &&
+    isOptional(value.targetCallout, isString) &&
+    isOptional(value.waypoints, isWorldPointList) &&
+    isOptional(value.groupId, isNonBlankString) &&
+    isOptional(value.groupTarget, isGroupTarget)
+  );
 }
 
 function isImageUrl(value: unknown): value is string {
@@ -246,18 +254,7 @@ export function isLineup(value: unknown): value is Lineup {
       value.imageCaptions,
       value.mouseButtons,
     ) &&
-    hasValidOptionals(
-      value.notes,
-      value.mediaUrl,
-      value.isBuiltIn,
-      value.createdAt,
-      (value as Record<string, unknown>).landingCommand,
-      (value as Record<string, unknown>).fromDemo,
-      (value as Record<string, unknown>).targetCallout,
-      (value as Record<string, unknown>).waypoints,
-      (value as Record<string, unknown>).groupId,
-      (value as Record<string, unknown>).groupTarget,
-    )
+    hasValidOptionals(value)
   );
 }
 
