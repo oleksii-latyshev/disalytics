@@ -1,4 +1,4 @@
-import type { Damage, ParsedDemo, Team } from '../schema';
+import type { Damage, ParsedDemo, PlayerSlot, Team } from '../schema';
 import { sidesBySlotAtRound } from './selectors';
 import { isUtilityKind, killWeaponClass } from './weapons';
 
@@ -12,9 +12,13 @@ function utilityAttackerSide(hit: Damage, sides: readonly (Team | undefined)[]):
     : undefined;
 }
 
-/** Opponent health damage dealt with utility, attributed to the side held that round. */
-export function matchUtilityDamage(demo: ParsedDemo): Readonly<Record<Team, number>> {
-  const totals: Record<Team, number> = { CT: 0, T: 0 };
+interface UtilityHit {
+  readonly attacker: PlayerSlot;
+  readonly side: Team;
+  readonly healthDamage: number;
+}
+
+function* opponentUtilityHits(demo: ParsedDemo): Generator<UtilityHit> {
   const { damage, rounds } = demo.events;
   let first = 0;
 
@@ -28,9 +32,25 @@ export function matchUtilityDamage(demo: ParsedDemo): Readonly<Record<Team, numb
       if (hit === undefined || hit.tick > round.endTick) break;
 
       const side = utilityAttackerSide(hit, sides);
-      if (side !== undefined) totals[side] += hit.healthDamage;
+      if (side !== undefined && hit.attacker !== null) {
+        yield { attacker: hit.attacker, side, healthDamage: hit.healthDamage };
+      }
     }
   }
+}
 
+/** Opponent health damage dealt with utility, attributed to the side held that round. */
+export function matchUtilityDamage(demo: ParsedDemo): Readonly<Record<Team, number>> {
+  const totals: Record<Team, number> = { CT: 0, T: 0 };
+  for (const hit of opponentUtilityHits(demo)) totals[hit.side] += hit.healthDamage;
+  return totals;
+}
+
+/** The same damage, attributed to the player who dealt it. */
+export function matchPlayerUtilityDamage(demo: ParsedDemo): ReadonlyMap<PlayerSlot, number> {
+  const totals = new Map<PlayerSlot, number>();
+  for (const hit of opponentUtilityHits(demo)) {
+    totals.set(hit.attacker, (totals.get(hit.attacker) ?? 0) + hit.healthDamage);
+  }
   return totals;
 }

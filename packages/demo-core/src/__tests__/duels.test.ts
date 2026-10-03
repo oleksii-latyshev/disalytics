@@ -238,7 +238,7 @@ describe('tradeKills', () => {
     });
 
     expect(tradeKills(newDemo(events, [round]))).toEqual([
-      { roundIndex: 0, killIndex: 1, player: ctTeammate, side: 'CT' },
+      { roundIndex: 0, killIndex: 1, player: ctTeammate, side: 'CT', avenged: ct },
     ]);
   });
 

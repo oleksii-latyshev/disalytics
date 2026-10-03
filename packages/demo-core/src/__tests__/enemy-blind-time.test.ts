@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { matchEnemyBlindTime } from '../helpers/enemy-blind-time';
+import { hasBlindEvents, matchEnemyBlindTime } from '../helpers/enemy-blind-time';
 import { asPlayerSlot, asTick, type MatchEvents, type ParsedDemo, type Round } from '../schema';
-import { newEvents, newTrack, withBlind } from './helpers';
+import { newEvents, newTrack, withBlind, withGrenade } from './helpers';
 
 const first = asPlayerSlot(0);
 const enemy = asPlayerSlot(1);
@@ -85,5 +85,22 @@ describe('matchEnemyBlindTime', () => {
     });
 
     expect(matchEnemyBlindTime(newDemo(events))).toEqual({ CT: 0, T: 0 });
+  });
+});
+
+describe('hasBlindEvents', () => {
+  it('is true when the recording carries blinds', () => {
+    expect(hasBlindEvents(newDemo(withBlind(newEvents(), { tick: asTick(300) })))).toBe(true);
+  });
+
+  it('is true when no flashbang was thrown, so zero is genuine', () => {
+    const events = withGrenade(newEvents(), { type: 'smokegrenade' });
+    expect(hasBlindEvents(newDemo(events))).toBe(true);
+    expect(hasBlindEvents(newDemo(newEvents()))).toBe(true);
+  });
+
+  it('is false when flashbangs were thrown and no blind was recorded', () => {
+    const events = withGrenade(newEvents(), { type: 'flashbang' });
+    expect(hasBlindEvents(newDemo(events))).toBe(false);
   });
 });

@@ -36,13 +36,15 @@ export interface TradeKill {
   readonly killIndex: number;
   readonly player: PlayerSlot;
   readonly side: Team;
+  /** The teammate whose death this kill answered — the one who was traded. */
+  readonly avenged: PlayerSlot;
 }
 
 export const TRADE_WINDOW_SECONDS = 5;
 
-type OpponentDuel = Duel & { readonly attackerSide: Team; readonly victimSide: Team };
+export type OpponentDuel = Duel & { readonly attackerSide: Team; readonly victimSide: Team };
 
-function isOpponentDuel(duel: Duel): duel is OpponentDuel {
+export function isOpponentDuel(duel: Duel): duel is OpponentDuel {
   return (
     duel.attackerSide !== undefined &&
     duel.victimSide !== undefined &&
@@ -112,8 +114,8 @@ export function openingDuels(demo: ParsedDemo): readonly Duel[] {
   return openings;
 }
 
-/** Players who killed at least two opponents in one round, oldest round first. */
-export function multiKills(demo: ParsedDemo): readonly MultiKill[] {
+/** Every player's opponent-kill count in every round they killed at least once, oldest round first. */
+export function roundKillCounts(demo: ParsedDemo): readonly MultiKill[] {
   const counts = new Map<number, MultiKill>();
 
   for (const duel of matchDuels(demo)) {
@@ -129,7 +131,12 @@ export function multiKills(demo: ParsedDemo): readonly MultiKill[] {
     });
   }
 
-  return [...counts.values()].filter(({ kills }) => kills >= 2);
+  return [...counts.values()];
+}
+
+/** Players who killed at least two opponents in one round, oldest round first. */
+export function multiKills(demo: ParsedDemo): readonly MultiKill[] {
+  return roundKillCounts(demo).filter(({ kills }) => kills >= 2);
 }
 
 /** Opponent kills that answer a teammate's death inside the trade window, oldest first. */
@@ -160,6 +167,7 @@ export function tradeKills(demo: ParsedDemo): readonly TradeKill[] {
           killIndex: duel.killIndex,
           player: duel.attacker,
           side: duel.attackerSide,
+          avenged: previous.victim,
         });
       }
     }
