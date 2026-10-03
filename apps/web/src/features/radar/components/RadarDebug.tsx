@@ -1,15 +1,11 @@
 import { Text } from '@disa/i18n';
-import { type MapOverview, type RadarPoint, radarToWorld } from '@disa/map-data';
-import { Button } from '@disa/ui';
-import { levelAt } from '../helpers/levels';
+import { type MapOverview, plateToRadar, type RadarPoint, radarToWorld } from '@disa/map-data';
 
 interface Props {
   overview: MapOverview;
   frame: number;
-  levelIndex: number;
-  isLevelForced: boolean;
+  /** In plate coordinates, which are what a hover over the plate reports. */
   pointer: RadarPoint | null;
-  onLevelChange: (index: number | null) => void;
 }
 
 function PointerReadout({ overview, pointer }: Pick<Props, 'overview' | 'pointer'>) {
@@ -21,7 +17,8 @@ function PointerReadout({ overview, pointer }: Pick<Props, 'overview' | 'pointer
     );
   }
 
-  const world = radarToWorld(overview, pointer);
+  const radar = plateToRadar(overview, pointer.x, pointer.y);
+  const world = radarToWorld(overview, radar);
 
   return (
     <span className="numeric">
@@ -30,24 +27,34 @@ function PointerReadout({ overview, pointer }: Pick<Props, 'overview' | 'pointer
         values={{
           worldX: Math.round(world.x),
           worldY: Math.round(world.y),
-          radarX: Math.round(pointer.x),
-          radarY: Math.round(pointer.y),
+          radarX: Math.round(radar.x),
+          radarY: Math.round(radar.y),
         }}
       />
     </span>
   );
 }
 
-export function RadarDebug({
-  overview,
-  frame,
-  levelIndex,
-  isLevelForced,
-  pointer,
-  onLevelChange,
-}: Props) {
-  const level = levelAt(overview, levelIndex);
+function LevelReadout({ overview, pointer }: Pick<Props, 'overview' | 'pointer'>) {
+  if (pointer === null) return <span>–</span>;
 
+  const level = overview.levels[plateToRadar(overview, pointer.x, pointer.y).levelIndex];
+  if (level === undefined) return <span>–</span>;
+
+  return (
+    <>
+      {level.image}{' '}
+      <span className="numeric">
+        <Text
+          path="radar.debug.altitudeBand"
+          values={{ min: level.altitudeMin, max: level.altitudeMax }}
+        />
+      </span>
+    </>
+  );
+}
+
+export function RadarDebug({ overview, frame, pointer }: Props) {
   return (
     <div className="pointer-events-auto flex flex-col gap-3 rounded-float border border-line bg-surface-1 p-4 text-ink">
       <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-6 gap-y-1 text-13">
@@ -65,13 +72,7 @@ export function RadarDebug({
           <Text path="radar.debug.level" />
         </dt>
         <dd>
-          {level.image}{' '}
-          <span className="numeric">
-            <Text
-              path="radar.debug.altitudeBand"
-              values={{ min: level.altitudeMin, max: level.altitudeMax }}
-            />
-          </span>
+          <LevelReadout overview={overview} pointer={pointer} />
         </dd>
 
         <dt className="label-dense text-ink">
@@ -81,33 +82,6 @@ export function RadarDebug({
           <PointerReadout overview={overview} pointer={pointer} />
         </dd>
       </dl>
-
-      {overview.levels.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="label-dense text-ink">
-            <Text path="radar.debug.levelOverride" />
-          </span>
-
-          <Button
-            type="button"
-            variant={isLevelForced ? 'outline' : 'secondary'}
-            onClick={() => onLevelChange(null)}
-          >
-            <Text path="radar.debug.levelAuto" />
-          </Button>
-
-          {overview.levels.map((option, index) => (
-            <Button
-              key={option.image}
-              type="button"
-              variant={isLevelForced && index === levelIndex ? 'secondary' : 'outline'}
-              onClick={() => onLevelChange(index)}
-            >
-              {option.image}
-            </Button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

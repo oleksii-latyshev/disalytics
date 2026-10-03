@@ -199,7 +199,6 @@ function subjectAt(
     isNamed: () => true,
     x: (slot: number) => (slot === 0 ? 320 : x),
     y: (slot: number) => (slot === 0 ? 320 : y),
-    alpha: () => 1,
     weapon: () => weapon,
     icon: () => icon,
     // The round goes under the selected player's name, which for these fixtures is the first slot.
@@ -405,7 +404,6 @@ describe('the line back to the token', () => {
     isNamed: () => true,
     x: () => CLUSTER_X,
     y: () => CLUSTER_Y,
-    alpha: () => 1,
     weapon: () => 'rifle' as const,
     icon: () => undefined,
     detail: () => null,

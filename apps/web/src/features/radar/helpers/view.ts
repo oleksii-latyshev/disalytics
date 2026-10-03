@@ -1,3 +1,4 @@
+import { RADAR_IMAGE_SIZE } from '@disa/map-data';
 import type { CanvasSize } from '@/core/renderer';
 import { TOKEN_MAX_RADIUS_PX, TOKEN_MIN_RADIUS_PX, TOKEN_RADIUS_PX } from './tokens';
 
@@ -43,13 +44,20 @@ function clamp(value: number, min: number, max: number): number {
   return value > max ? max : value;
 }
 
+/** What the plate holds, in radar pixels — the layout's composite, or the whole square image. */
+export interface PlateSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+export const SQUARE_PLATE: PlateSize = { width: RADAR_IMAGE_SIZE, height: RADAR_IMAGE_SIZE };
+
 /**
- * The map's own side on the canvas. The map is square whatever the plate is, so the plate's short
- * axis is what fits it — and that is what keeps the scale continuous when a zoomed plate takes the
- * whole stage: the axis that was binding the square is the axis it keeps.
+ * Canvas pixels per radar pixel at 1×: the plate's content fits whole on whichever axis binds it,
+ * which is what keeps the scale continuous when a zoomed plate takes the whole stage.
  */
-function plateExtent(size: CanvasSize, zoom: number): number {
-  return Math.min(size.width, size.height) * zoom;
+function fitScale(size: CanvasSize, plate: PlateSize): number {
+  return Math.min(size.width / plate.width, size.height / plate.height);
 }
 
 /**
@@ -62,11 +70,17 @@ function offsetOn(pan: number, length: number, extent: number): number {
   return extent >= length ? clamp(pan, length - extent, 0) : (length - extent) / 2;
 }
 
-export function panBy(view: PlateView, dx: number, dy: number, size: CanvasSize): void {
-  const extent = plateExtent(size, view.zoom);
+export function panBy(
+  view: PlateView,
+  dx: number,
+  dy: number,
+  size: CanvasSize,
+  plate: PlateSize,
+): void {
+  const scale = fitScale(size, plate) * view.zoom;
 
-  view.panX = offsetOn(view.panX + dx, size.width, extent);
-  view.panY = offsetOn(view.panY + dy, size.height, extent);
+  view.panX = offsetOn(view.panX + dx, size.width, plate.width * scale);
+  view.panY = offsetOn(view.panY + dy, size.height, plate.height * scale);
 }
 
 /**
@@ -74,24 +88,36 @@ export function panBy(view: PlateView, dx: number, dy: number, size: CanvasSize)
  * the plate's centre instead is the thing that makes a zoom feel broken — the reader is looking at a
  * duel, and the duel is what has to hold still.
  */
-export function zoomAbout(view: PlateView, factor: number, x: number, y: number, size: CanvasSize) {
+export function zoomAbout(
+  view: PlateView,
+  factor: number,
+  x: number,
+  y: number,
+  size: CanvasSize,
+  plate: PlateSize,
+) {
   const next = clamp(view.zoom * factor, MIN_ZOOM, MAX_ZOOM);
   const ratio = next / view.zoom;
 
-  const extent = plateExtent(size, next);
+  const scale = fitScale(size, plate) * next;
 
   view.zoom = next;
-  view.panX = offsetOn(x - (x - view.panX) * ratio, size.width, extent);
-  view.panY = offsetOn(y - (y - view.panY) * ratio, size.height, extent);
+  view.panX = offsetOn(x - (x - view.panX) * ratio, size.width, plate.width * scale);
+  view.panY = offsetOn(y - (y - view.panY) * ratio, size.height, plate.height * scale);
 }
 
 /** Zoom on the plate's own centre, which is what a keypress and the `+`/`−` pair have to use. */
-export function zoomByStep(view: PlateView, factor: number, size: CanvasSize): void {
-  zoomAbout(view, factor, size.width / 2, size.height / 2, size);
+export function zoomByStep(
+  view: PlateView,
+  factor: number,
+  size: CanvasSize,
+  plate: PlateSize,
+): void {
+  zoomAbout(view, factor, size.width / 2, size.height / 2, size, plate);
 }
 
 /**
- * The radar-image coordinate under a point on the canvas — `readPlateGeometry` run backwards, so a
+ * The plate coordinate under a point on the canvas — `readPlateGeometry` run backwards, so a
  * readout answers for the world the layers actually drew rather than for the plate at rest.
  *
  * A fresh object, unlike everything below it: this answers a pointer event, and a pointer event is
@@ -102,14 +128,13 @@ export function radarPointAt(
   x: number,
   y: number,
   size: CanvasSize,
-  radarImageSize: number,
+  plate: PlateSize,
 ): { x: number; y: number } {
-  const extent = plateExtent(size, view.zoom);
-  const pixelsPerRadarPixel = extent / radarImageSize;
+  const scale = fitScale(size, plate) * view.zoom;
 
   return {
-    x: (x - offsetOn(view.panX, size.width, extent)) / pixelsPerRadarPixel,
-    y: (y - offsetOn(view.panY, size.height, extent)) / pixelsPerRadarPixel,
+    x: (x - offsetOn(view.panX, size.width, plate.width * scale)) / scale,
+    y: (y - offsetOn(view.panY, size.height, plate.height * scale)) / scale,
   };
 }
 
@@ -134,17 +159,17 @@ export function plateGeometry(): PlateGeometry {
 export function readPlateGeometry(
   view: PlateView,
   size: CanvasSize,
-  radarImageSize: number,
+  plate: PlateSize,
   out: PlateGeometry,
 ): void {
-  const extent = plateExtent(size, view.zoom);
+  const scale = fitScale(size, plate) * view.zoom;
 
   // The offsets are read through the same clamp the pan is written through, so a plate that changed
   // shape under a stale pan — a window resized while zoomed, an expansion — draws the map where it
   // belongs on the axis it now has rather than where the last drag left it.
-  out.scale = extent / radarImageSize;
-  out.offsetX = offsetOn(view.panX, size.width, extent);
-  out.offsetY = offsetOn(view.panY, size.height, extent);
+  out.scale = scale;
+  out.offsetX = offsetOn(view.panX, size.width, plate.width * scale);
+  out.offsetY = offsetOn(view.panY, size.height, plate.height * scale);
   out.tokenRadius = clamp(TOKEN_RADIUS_PX * view.zoom, TOKEN_MIN_RADIUS_PX, TOKEN_MAX_RADIUS_PX);
 }
 

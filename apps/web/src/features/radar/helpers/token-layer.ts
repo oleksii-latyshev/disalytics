@@ -21,7 +21,7 @@ import {
   weaponClasses,
   weaponIcons,
 } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE } from '@disa/map-data';
+import { type MapOverview, plateLayout } from '@disa/map-data';
 import { positionScratch, readPositions } from '@/core/playback';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
@@ -60,7 +60,6 @@ export interface PlayerTokensOptions {
   readonly demo: ParsedDemo;
   readonly clock: Clock;
   readonly overview: MapOverview;
-  readonly levelIndex: number;
   readonly teamBySlot: readonly (Team | undefined)[];
   readonly labelBySlot: readonly string[];
   readonly selectedSlot: PlayerSlot | null;
@@ -99,7 +98,7 @@ function pressedKeysText(buttons: PlayerButtons): string {
  * repaint without rebuilding the layer — and so without allocating — every animation frame.
  */
 export function playerTokens(options: PlayerTokensOptions): Layer {
-  const { demo, clock, overview, levelIndex, teamBySlot, colors, view } = options;
+  const { demo, clock, overview, teamBySlot, colors, view } = options;
   const {
     labelBySlot,
     selectedSlot,
@@ -114,7 +113,8 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
   const labels = labelPass(labelBySlot, track.slotCount, labelStyle, colors.label);
   let areLabelsMeasured = false;
 
-  const plate = plateProjection(overview, levelIndex, track.slotCount);
+  const plate = plateProjection(overview, track.slotCount);
+  const plateSize = plateLayout(overview);
 
   // Everything else a frame derives before it draws, owned by the layer for the same reason
   // `positionScratch` is: nothing on the way to the canvas allocates.
@@ -189,7 +189,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     isNamed: (slot) => teamBySlot[slot] !== undefined && isAlive(slot),
     x: plate.x,
     y: plate.y,
-    alpha: plate.alpha,
     // `WEAPON_NONE` falls off the end of the table, which is the answer for a slot no sample ever
     // saw holding anything — a different thing from `unknown`, and drawn as nothing at all.
     weapon: (slot) => classByWeapon[sampleAt(track.weapon, base + slot)] ?? null,
@@ -219,7 +218,6 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     const team = teamBySlot[selectedSlot];
     if (team === undefined) return;
     if (!isAlive(selectedSlot)) return;
-    if (plate.alpha(selectedSlot) !== 1) return;
 
     wedge(
       context,
@@ -265,7 +263,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
         needleReach(tokenRadius, isScoped),
         length,
         colors.gunfire,
-        plate.alpha(slot) * sampleAt(shotLife, index),
+        sampleAt(shotLife, index),
       );
     }
   }
@@ -278,14 +276,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       : 0;
 
     if (audible > 0) {
-      drawAudibleRing(
-        context,
-        plate.x(slot),
-        plate.y(slot),
-        audible,
-        colors.dead,
-        plate.alpha(slot),
-      );
+      drawAudibleRing(context, plate.x(slot), plate.y(slot), audible, colors.dead);
     }
 
     const angle = screenAngle(track, sample);
@@ -310,9 +301,9 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
     const flash = sampleAt(damageFlashes, slot);
 
     if (flash > 0) {
-      context.globalAlpha = plate.alpha(slot) * flash;
+      context.globalAlpha = flash;
       drawDamageFlash(context, plate.x(slot), plate.y(slot), tokenRadius, colors.damage);
-      context.globalAlpha = plate.alpha(slot);
+      context.globalAlpha = 1;
     }
 
     // After the hit rather than under it: a flash repaints the whole token, and a player being shot
@@ -324,15 +315,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
     const remaining = sampleAt(blindRemaining, slot);
     if (remaining > 0) {
-      drawBlindDisc(
-        context,
-        plate.x(slot),
-        plate.y(slot),
-        tokenRadius,
-        remaining,
-        colors.blind,
-        plate.alpha(slot),
-      );
+      drawBlindDisc(context, plate.x(slot), plate.y(slot), tokenRadius, remaining, colors.blind);
     }
 
     if (slot === selectedSlot) {
@@ -357,7 +340,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       const team = teamBySlot[slot];
       if (team === undefined) continue;
 
-      context.globalAlpha = plate.alpha(slot);
+      context.globalAlpha = 1;
 
       if (isAlive(slot)) {
         drawUnderToken(context, slot, team);
@@ -371,7 +354,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
       // time, so scrubbing back through the kill plays the settle again.
       const settled = sampleAt(deathProgress, slot);
 
-      context.globalAlpha = plate.alpha(slot) * (1 - (1 - DEAD_ALPHA) * settled);
+      context.globalAlpha = 1 - (1 - DEAD_ALPHA) * settled;
       drawToken(
         context,
         plate.x(slot),
@@ -387,7 +370,7 @@ export function playerTokens(options: PlayerTokensOptions): Layer {
 
     base = readPositions(track, clock.frame, positions) * track.slotCount;
 
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(view.current, size, plateSize, geometry);
     readPlateBounds(geometry, size, bounds);
     scale = geometry.scale;
     tokenRadius = geometry.tokenRadius;

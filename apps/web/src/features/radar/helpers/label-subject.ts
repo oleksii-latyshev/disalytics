@@ -14,7 +14,6 @@ export interface LabelSubject {
   isNamed(slot: number): boolean;
   x(slot: number): number;
   y(slot: number): number;
-  alpha(slot: number): number;
   /** What the slot is holding this frame, or `null` where no sample ever saw it holding anything. */
   weapon(slot: number): WeaponClass | null;
   /**

@@ -111,8 +111,8 @@ describe('findNearestCluster', () => {
     const t0 = makeMockThrow(0, 0);
     const clusters = groupThrowsByLanding([t0]);
 
-    // plot has stride 6: [ox, oy, oAlpha, lx, ly, lAlpha]
-    const plot = new Float32Array([10, 10, 1, 200, 300, 1]);
+    // plot has stride 4: [ox, oy, lx, ly]
+    const plot = new Float32Array([10, 10, 200, 300]);
 
     // Click at (205, 302) on scale 1 -> dist = Math.hypot(5, 2) ~ 5.38px <= 16px
     const hit = findNearestCluster({ x: 205, y: 302 }, clusters, plot, 1, 16);
@@ -124,8 +124,8 @@ describe('findNearestCluster', () => {
     const t1 = makeMockThrow(10, 10);
     const clusters = groupThrowsByLanding([t0, t1]);
 
-    // plot for 2 throws: 12 elements
-    const plot = new Float32Array([10, 10, 1, 200, 300, 1, 12, 12, 1, 205, 305, 1]);
+    // plot for 2 throws: 8 elements
+    const plot = new Float32Array([10, 10, 200, 300, 12, 12, 205, 305]);
 
     // Badge is at (lx * scale + 10, ly * scale + 10) = (210, 310)
     // Click at (212, 311) -> dist to badge is Math.hypot(2, 1) ~ 2.23px <= 16px
@@ -136,7 +136,7 @@ describe('findNearestCluster', () => {
   it('returns null when click is farther than maxDistPx', () => {
     const t0 = makeMockThrow(0, 0);
     const clusters = groupThrowsByLanding([t0]);
-    const plot = new Float32Array([10, 10, 1, 200, 300, 1]);
+    const plot = new Float32Array([10, 10, 200, 300]);
 
     // Click far away at (500, 500)
     const hit = findNearestCluster({ x: 500, y: 500 }, clusters, plot, 1, 16);

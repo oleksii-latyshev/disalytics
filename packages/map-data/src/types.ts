@@ -37,3 +37,27 @@ export interface WorldPlanePoint {
   readonly x: number;
   readonly y: number;
 }
+
+/** Where one level's image lands on the plate, and which part of the image is kept. */
+export interface PlateSlot {
+  /** The kept rectangle of the level's image, in image pixels. */
+  readonly cropX: number;
+  readonly cropY: number;
+  readonly width: number;
+  readonly height: number;
+  /** Where the kept rectangle's upper-left corner sits on the plate, in radar pixels. */
+  readonly x: number;
+  readonly y: number;
+  /** Which floor to name on the plate, or `null` when the map has only one. */
+  readonly floor: 'upper' | 'lower' | null;
+}
+
+/**
+ * The composite a map is drawn on. `slots` follow `MapOverview.levels` one for one; a single-level
+ * map's plate is its image as it is.
+ */
+export interface PlateLayout {
+  readonly width: number;
+  readonly height: number;
+  readonly slots: readonly [PlateSlot, ...PlateSlot[]];
+}

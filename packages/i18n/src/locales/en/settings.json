@@ -92,6 +92,6 @@
   },
   "debug": {
     "label": "Debug overlay",
-    "note": "Map, frame, drawn level, and the world coordinate under the pointer. Built for working on the tool rather than on a match."
+    "note": "Map, frame, and the level and world coordinate under the pointer. Built for working on the tool rather than on a match."
   }
 }

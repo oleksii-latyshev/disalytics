@@ -1,9 +1,8 @@
 import { asFrame, asPlayerSlot, type TickTrack, WEAPON_NONE } from '@disa/demo-core';
-import { MAP_OVERVIEWS, radarX, radarY } from '@disa/map-data';
+import { MAP_OVERVIEWS, plateY, radarX, radarY } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import type { KillLine } from '@/core/events';
 import { END_STRIDE, killLineGeometry } from '../helpers/kill-line';
-import { OTHER_LEVEL_ALPHA } from '../helpers/levels';
 
 const dust2 = MAP_OVERVIEWS.de_dust2;
 const nuke = MAP_OVERVIEWS.de_nuke;
@@ -76,7 +75,7 @@ const LATER: readonly [Position, Position] = [
 
 describe('killLineGeometry', () => {
   it("reads both ends at the kill's own frame rather than at the playhead", () => {
-    const geometry = killLineGeometry(newTrack([AT_KILL, LATER]), dust2, 0);
+    const geometry = killLineGeometry(newTrack([AT_KILL, LATER]), dust2);
 
     geometry.read(newKillLine(0), 1);
 
@@ -89,7 +88,7 @@ describe('killLineGeometry', () => {
   });
 
   it('scales both ends with the plate', () => {
-    const geometry = killLineGeometry(newTrack([AT_KILL, LATER]), dust2, 0);
+    const geometry = killLineGeometry(newTrack([AT_KILL, LATER]), dust2);
 
     geometry.read(newKillLine(0), 1);
     const [x, y] = Array.from(geometry.ends);
@@ -100,21 +99,22 @@ describe('killLineGeometry', () => {
     expect(geometry.ends[1]).toBeCloseTo((y ?? 0) * 2);
   });
 
-  it('fades an end standing on a level the map is not showing', () => {
+  it('puts each end on the floor its altitude says', () => {
     const frame: readonly [Position, Position] = [
       { x: 100, y: 200, z: UPPER_Z },
-      { x: 300, y: 400, z: LOWER_Z },
+      { x: 100, y: 200, z: LOWER_Z },
     ];
-    const geometry = killLineGeometry(newTrack([frame, frame]), nuke, 0);
+    const geometry = killLineGeometry(newTrack([frame, frame]), nuke);
 
     geometry.read(newKillLine(0), 1);
 
-    expect(geometry.ends[2]).toBe(1);
-    expect(geometry.ends[END_STRIDE + 2]).toBe(OTHER_LEVEL_ALPHA);
+    expect(geometry.ends[1]).toBeCloseTo(plateY(nuke, 200, UPPER_Z));
+    expect(geometry.ends[END_STRIDE + 1]).toBeCloseTo(plateY(nuke, 200, LOWER_Z));
+    expect(geometry.ends[END_STRIDE + 1]).toBeGreaterThan(geometry.ends[1] ?? 0);
   });
 
   it('rewrites its own scratch rather than handing back a new array', () => {
-    const geometry = killLineGeometry(newTrack([AT_KILL, LATER]), dust2, 0);
+    const geometry = killLineGeometry(newTrack([AT_KILL, LATER]), dust2);
     const { ends } = geometry;
 
     geometry.read(newKillLine(0), 1);

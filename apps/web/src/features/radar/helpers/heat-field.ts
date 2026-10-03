@@ -1,8 +1,9 @@
 import { type HeatMode, type HeatScope, type ParsedDemo, walkHeat } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { type MapOverview, plateLayout, plateX, plateY, RADAR_IMAGE_SIZE } from '@disa/map-data';
 
 /**
- * How many bins the map is divided into on each axis — #384. A bin is 2.7 radar pixels, about 12
+ * How many bins a square map is divided into on each axis — #384; a plate that is not square keeps
+ * the bin's size and has the bins its own sides take. A bin is 2.7 radar pixels, about 12
  * world units on dust2, and two plate pixels at the plate's largest (793 at 1440×900), so the
  * picture is resolved by the kernel below rather than by the grid. It was 128 until #384, and a bin
  * of 8 radar pixels upscaled by `drawImage` read as a low-resolution photograph over the map. 512
@@ -32,7 +33,10 @@ const LIT_SHARE = 0.002;
 const HISTOGRAM_BUCKETS = 4096;
 
 export interface HeatField {
-  /** `HEAT_GRID²` weights in 0..1, row-major, `HOT_QUANTILE` of the lit ground and above at 1. */
+  /** Bins across and down — `HEAT_GRID` each for a square plate. */
+  readonly width: number;
+  readonly height: number;
+  /** `width × height` weights in 0..1, row-major, `HOT_QUANTILE` of the lit ground and above at 1. */
   readonly bins: Float32Array;
   /** Each slot's figure inside the side scope (`HeatTally.bySlot`). */
   readonly bySlot: Float32Array;
@@ -53,6 +57,7 @@ function boxPass(
   stride: number,
   step: number,
   lines: number,
+  length: number,
 ): void {
   const width = 2 * BLUR_RADIUS + 1;
 
@@ -63,24 +68,24 @@ function boxPass(
     // The window starts centred on the first bin with its left half off the grid, which is empty.
     for (let at = 0; at <= BLUR_RADIUS; at++) sum += source[origin + at * step] ?? 0;
 
-    for (let at = 0; at < HEAT_GRID; at++) {
+    for (let at = 0; at < length; at++) {
       target[origin + at * step] = sum / width;
 
       const entering = at + BLUR_RADIUS + 1;
       const leaving = at - BLUR_RADIUS;
-      if (entering < HEAT_GRID) sum += source[origin + entering * step] ?? 0;
+      if (entering < length) sum += source[origin + entering * step] ?? 0;
       if (leaving >= 0) sum -= source[origin + leaving * step] ?? 0;
     }
   }
 }
 
 /** Blurs `bins` in place, using `scratch` for the half-way pass. */
-function blur(bins: Float32Array, scratch: Float32Array): void {
+function blur(bins: Float32Array, scratch: Float32Array, width: number, height: number): void {
   for (let pass = 0; pass < BLUR_PASSES; pass++) {
-    // Along rows: each row starts at `row * HEAT_GRID` and walks by 1.
-    boxPass(bins, scratch, HEAT_GRID, 1, HEAT_GRID);
+    // Along rows: each row starts at `row * width` and walks by 1.
+    boxPass(bins, scratch, width, 1, height, width);
     // Along columns: each column starts at `column` and walks by a row.
-    boxPass(scratch, bins, 1, HEAT_GRID, HEAT_GRID);
+    boxPass(scratch, bins, 1, width, width, height);
   }
 }
 
@@ -119,7 +124,7 @@ function hotCeiling(bins: Float32Array): number {
  * image, smoothed, and scaled to a ramp.
  *
  * **The field has no level.** A whole match stands on every floor the map has, so every point is
- * binned where it stands on the plan and a two-storey map reads as both floors at once.
+ * binned on the floor its altitude puts it on and a two-storey map reads as both floors at once.
  *
  * **The ramp tops out at a quantile rather than at the densest bin**, #366's reason: a match's time
  * is spent very unevenly, and against the peak alone half the ground is a tenth of the ramp. The
@@ -131,24 +136,27 @@ export function heatField(
   mode: HeatMode,
   scope: HeatScope,
 ): HeatField {
-  const bins = new Float32Array(HEAT_GRID * HEAT_GRID);
   const binScale = HEAT_GRID / RADAR_IMAGE_SIZE;
+  const layout = plateLayout(overview);
+  const width = Math.ceil(layout.width * binScale);
+  const height = Math.ceil(layout.height * binScale);
+  const bins = new Float32Array(width * height);
 
-  const tally = walkHeat(demo, mode, scope, (worldX, worldY, weight) => {
-    const x = Math.floor(radarX(overview, worldX) * binScale);
-    const y = Math.floor(radarY(overview, worldY) * binScale);
-    if (x < 0 || y < 0 || x >= HEAT_GRID || y >= HEAT_GRID) return;
+  const tally = walkHeat(demo, mode, scope, (worldX, worldY, worldZ, weight) => {
+    const x = Math.floor(plateX(overview, worldX, worldZ) * binScale);
+    const y = Math.floor(plateY(overview, worldY, worldZ) * binScale);
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
 
-    const bin = y * HEAT_GRID + x;
+    const bin = y * width + x;
     bins[bin] = (bins[bin] ?? 0) + weight;
   });
 
-  blur(bins, new Float32Array(bins.length));
+  blur(bins, new Float32Array(bins.length), width, height);
 
   const ceiling = hotCeiling(bins);
   for (let bin = 0; ceiling > 0 && bin < bins.length; bin++) {
     bins[bin] = Math.min((bins[bin] ?? 0) / ceiling, 1);
   }
 
-  return { bins, bySlot: tally.bySlot, total: tally.total };
+  return { width, height, bins, bySlot: tally.bySlot, total: tally.total };
 }

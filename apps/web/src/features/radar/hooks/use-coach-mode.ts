@@ -6,13 +6,7 @@ import {
   sampleAt,
   type Team,
 } from '@disa/demo-core';
-import {
-  type MapOverview,
-  RADAR_IMAGE_SIZE,
-  type RadarPoint,
-  radarX,
-  radarY,
-} from '@disa/map-data';
+import { type MapOverview, plateLayout, plateX, plateY, type RadarPoint } from '@disa/map-data';
 import { type PointerEvent, type RefObject, useCallback, useMemo, useRef, useState } from 'react';
 import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
 import {
@@ -295,10 +289,11 @@ export function useCoachMode({
 
       const wx = positions[slot * POSITION_STRIDE];
       const wy = positions[slot * POSITION_STRIDE + 1];
-      if (wx !== undefined && wy !== undefined) {
+      const wz = positions[slot * POSITION_STRIDE + 2];
+      if (wx !== undefined && wy !== undefined && wz !== undefined) {
         map.set(asPlayerSlot(slot), {
-          x: radarX(overview, wx),
-          y: radarY(overview, wy),
+          x: plateX(overview, wx, wz),
+          y: plateY(overview, wy, wz),
         });
       }
     }
@@ -346,10 +341,10 @@ export function useCoachMode({
         clientX - box.left,
         clientY - box.top,
         box,
-        RADAR_IMAGE_SIZE,
+        plateLayout(overview),
       );
     },
-    [canvasRef, view],
+    [canvasRef, overview, view],
   );
 
   const handlePointerDown = useCallback(

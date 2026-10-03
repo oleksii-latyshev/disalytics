@@ -14,7 +14,7 @@ import {
   utilityKindOfGrenade,
   visibleGrenades,
 } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { type MapOverview, plateLayout, plateX, plateY } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { TrajectoryVisibility } from '@/core/settings';
 import type { RadarColors } from './colors';
@@ -120,10 +120,11 @@ function drawFlight(context: CanvasRenderingContext2D, grenade: Grenade, draw: U
   );
 
   const head = clipCount - 1;
+  const headZ = sampleAt(grenade.trajectory.z, head);
   drawGrenadeMark(
     context,
-    radarX(draw.overview, sampleAt(grenade.trajectory.x, head)) * draw.scale,
-    radarY(draw.overview, sampleAt(grenade.trajectory.y, head)) * draw.scale,
+    plateX(draw.overview, sampleAt(grenade.trajectory.x, head), headZ) * draw.scale,
+    plateY(draw.overview, sampleAt(grenade.trajectory.y, head), headZ) * draw.scale,
     utilityKindOfGrenade(grenade.type),
     grenadeColor(grenade.type, draw.colors),
   );
@@ -264,8 +265,9 @@ function drawGrenade(
   // ground is what the reader is being pointed at.
   if (index === draw.hovered) drawHoveredPath(context, grenade, draw);
 
-  draw.markX = radarX(draw.overview, grenade.detonationPosition.x) * draw.scale;
-  draw.markY = radarY(draw.overview, grenade.detonationPosition.y) * draw.scale;
+  const landing = grenade.detonationPosition;
+  draw.markX = plateX(draw.overview, landing.x, landing.z) * draw.scale;
+  draw.markY = plateY(draw.overview, landing.y, landing.z) * draw.scale;
 
   drawDetonation(context, grenade, draw);
 }
@@ -291,6 +293,7 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
   // Pre-allocated scratch — reused every frame.
   const visibleIndices = new Int32Array(grenades.length);
   const geometry = plateGeometry();
+  const plate = plateLayout(overview);
   const draw: UtilityDraw = {
     overview,
     colors,
@@ -310,7 +313,7 @@ export function utilityLayer(options: UtilityLayerOptions): Layer {
   };
 
   return (context, size) => {
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(view.current, size, plate, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
     draw.scale = geometry.scale;

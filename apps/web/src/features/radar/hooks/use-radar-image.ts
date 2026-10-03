@@ -37,3 +37,49 @@ export function useRadarImage(assetPath: string): RadarImageState {
 
   return state;
 }
+
+export type RadarImagesState =
+  | { status: 'loading' }
+  | { status: 'ready'; images: readonly HTMLImageElement[] }
+  | { status: 'failed' };
+
+const IMAGES_LOADING: RadarImagesState = { status: 'loading' };
+
+const PATH_SEPARATOR = '\n';
+
+/**
+ * Every level of a map's plate at once, in the order given. The plate is drawn only when all of them
+ * are in — a floor that arrived without the other would be a plate with half its map missing — and
+ * a single image that fails fails the lot.
+ */
+export function useRadarImages(assetPaths: readonly string[]): RadarImagesState {
+  const [state, setState] = useState<RadarImagesState>(IMAGES_LOADING);
+  const key = assetPaths.join(PATH_SEPARATOR);
+
+  useEffect(() => {
+    setState(IMAGES_LOADING);
+
+    const paths = key.split(PATH_SEPARATOR);
+    const images = paths.map(() => new Image());
+    let isCurrent = true;
+    let remaining = paths.length;
+
+    for (const [index, image] of images.entries()) {
+      image.addEventListener('load', () => {
+        remaining -= 1;
+        if (isCurrent && remaining === 0) setState({ status: 'ready', images });
+      });
+      image.addEventListener('error', () => {
+        if (isCurrent) setState({ status: 'failed' });
+      });
+
+      image.src = `${import.meta.env.BASE_URL}${paths[index]}`;
+    }
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [key]);
+
+  return state;
+}

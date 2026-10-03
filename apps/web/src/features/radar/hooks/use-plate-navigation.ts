@@ -1,9 +1,10 @@
-import { RADAR_IMAGE_SIZE, type RadarPoint } from '@disa/map-data';
+import type { RadarPoint } from '@disa/map-data';
 import { type PointerEvent, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { useShortcuts } from '@/core/shortcuts';
 import {
   MAX_ZOOM,
   MIN_ZOOM,
+  type PlateSize,
   type PlateView,
   panBy,
   radarPointAt,
@@ -19,11 +20,13 @@ interface Options {
   readonly view: RefObject<PlateView>;
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
   readonly overlayCanvasRef?: RefObject<HTMLCanvasElement | null>;
+  /** What the plate holds, which is what the view fits to the canvas. */
+  readonly plate: PlateSize;
   readonly repaint: () => void;
   /** DESIGN.md §9.1's `+` and `−` stand down while a sheet is open. */
   readonly isSuspended: boolean;
   /**
-   * Where the pointer is over the map. Omitted when nobody is reading it, which is what keeps an
+   * Where the pointer is over the plate, in plate coordinates. Omitted when nobody is reading it, which is what keeps an
    * idle plate from setting state on every move. Leaving the plate is not reported here: clearing
    * the readout is the readout's business and has to happen whether or not it is switched on.
    */
@@ -58,6 +61,7 @@ export function usePlateNavigation({
   view,
   canvasRef,
   overlayCanvasRef,
+  plate,
   repaint,
   isSuspended,
   onHover,
@@ -72,11 +76,11 @@ export function usePlateNavigation({
       const box = canvasRef.current?.getBoundingClientRect();
       if (box === undefined || box.width === 0) return;
 
-      zoomByStep(view.current, factor, box);
+      zoomByStep(view.current, factor, box, plate);
       setZoom(view.current.zoom);
       repaint();
     },
-    [canvasRef, repaint, view],
+    [canvasRef, plate, repaint, view],
   );
 
   // Bound here rather than on the stage: the view they move is this plate's own box, and reaching
@@ -111,7 +115,7 @@ export function usePlateNavigation({
       const box = canvas.getBoundingClientRect();
       if (box.width === 0) return;
 
-      zoomAbout(view.current, factor, clientX - box.left, clientY - box.top, box);
+      zoomAbout(view.current, factor, clientX - box.left, clientY - box.top, box, plate);
       syncZoom();
       repaint();
     };
@@ -128,7 +132,7 @@ export function usePlateNavigation({
       const box = canvas.getBoundingClientRect();
       if (box.width === 0) return;
 
-      panBy(view.current, intent.dx, intent.dy, box);
+      panBy(view.current, intent.dx, intent.dy, box, plate);
       repaint();
     };
 
@@ -168,7 +172,7 @@ export function usePlateNavigation({
         target.removeEventListener('gesturechange', handleGestureChange);
       }
     };
-  }, [canvasRef, overlayCanvasRef, repaint, view]);
+  }, [canvasRef, overlayCanvasRef, plate, repaint, view]);
 
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {
     if (view.current.zoom === MIN_ZOOM) return;
@@ -191,7 +195,7 @@ export function usePlateNavigation({
 
     const pan = panRef.current;
     if (pan.isPanning) {
-      panBy(view.current, event.clientX - pan.x, event.clientY - pan.y, box);
+      panBy(view.current, event.clientX - pan.x, event.clientY - pan.y, box, plate);
       pan.x = event.clientX;
       pan.y = event.clientY;
       repaint();
@@ -203,13 +207,7 @@ export function usePlateNavigation({
     // The readout answers for the world under the pointer, so it reads through the same zoom and
     // pan the layers draw with — DESIGN.md §9.2.
     onHover(
-      radarPointAt(
-        view.current,
-        event.clientX - box.left,
-        event.clientY - box.top,
-        box,
-        RADAR_IMAGE_SIZE,
-      ),
+      radarPointAt(view.current, event.clientX - box.left, event.clientY - box.top, box, plate),
     );
   }
 

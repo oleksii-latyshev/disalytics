@@ -1,9 +1,8 @@
 import { sampleAt } from '@disa/demo-core';
-import { RADAR_IMAGE_SIZE } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
-import { HEAT_GRID, type HeatField } from './heat-field';
-import { type PlateView, plateGeometry, readPlateGeometry } from './view';
+import type { HeatField } from './heat-field';
+import { type PlateSize, type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /** What the densest bin is drawn at. The map underneath has to stay readable through the field. */
 const PEAK_ALPHA = 0.82;
@@ -29,13 +28,13 @@ function mix(from: number, to: number, weight: number): number {
  */
 export function fieldImage(field: HeatField, colors: RadarColors): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  canvas.width = HEAT_GRID;
-  canvas.height = HEAT_GRID;
+  canvas.width = field.width;
+  canvas.height = field.height;
 
   const context = canvas.getContext('2d');
   if (context === null) throw new Error('The browser gave no 2D context for the heat field.');
 
-  const image = context.createImageData(HEAT_GRID, HEAT_GRID);
+  const image = context.createImageData(field.width, field.height);
   const { low, high } = colors.heat;
 
   for (let bin = 0; bin < field.bins.length; bin++) {
@@ -57,6 +56,7 @@ export function fieldImage(field: HeatField, colors: RadarColors): HTMLCanvasEle
 
 export interface HeatLayerOptions {
   readonly image: HTMLCanvasElement;
+  readonly plate: PlateSize;
   /** Read at draw time, the way every layer on the plate reads it. */
   readonly view: { readonly current: PlateView };
 }
@@ -69,14 +69,18 @@ export interface HeatLayerOptions {
  * picture that was built when the narrowing changed, so it allocates nothing and costs the same at
  * any zoom.
  */
-export function heatLayer({ image, view }: HeatLayerOptions): Layer {
+export function heatLayer({ image, plate, view }: HeatLayerOptions): Layer {
   const geometry = plateGeometry();
 
   return (context, size) => {
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(view.current, size, plate, geometry);
 
-    const extent = geometry.scale * RADAR_IMAGE_SIZE;
-
-    context.drawImage(image, geometry.offsetX, geometry.offsetY, extent, extent);
+    context.drawImage(
+      image,
+      geometry.offsetX,
+      geometry.offsetY,
+      geometry.scale * plate.width,
+      geometry.scale * plate.height,
+    );
   };
 }

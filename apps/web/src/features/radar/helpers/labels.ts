@@ -104,14 +104,11 @@ export function labelPass(
     label: string,
     weapon: WeaponClass | null,
     icon: WeaponIconId | undefined,
-    alpha: number,
     detail: string | null,
     detailExtra: string | null,
   ): void {
     const x = boxX + LABEL_HALO_PX;
     const y = boxY + LABEL_HEIGHT_PX / 2;
-
-    context.globalAlpha = alpha;
 
     // The mark leads the name rather than trailing it, and is right-aligned in a box the name
     // always starts after, so ten labels line their weapons up in one column — DESIGN.md §6.1.
@@ -217,12 +214,12 @@ export function labelPass(
     tokenRadius: number,
   ): void {
     leaderStroke(context, colors.leader);
+    context.globalAlpha = 1;
 
     for (let slot = 0; slot < slotCount; slot++) {
       if (hasBox[slot] === 0 || isDisplaced[slot] === 0) continue;
 
       const offset = slot * 4;
-      context.globalAlpha = subject.alpha(slot);
       drawLeaderLine(
         context,
         subject.x(slot),
@@ -241,6 +238,8 @@ export function labelPass(
 
   /** Every placed name, written after every line, so no line is laid over a name. */
   function writeNames(context: CanvasRenderingContext2D, subject: LabelSubject): void {
+    context.globalAlpha = 1;
+
     for (let slot = 0; slot < slotCount; slot++) {
       if (hasBox[slot] === 0) continue;
 
@@ -255,7 +254,6 @@ export function labelPass(
         label,
         subject.weapon(slot),
         subject.icon(slot),
-        subject.alpha(slot),
         subject.detail(slot),
         subject.detailExtra?.(slot) ?? null,
       );

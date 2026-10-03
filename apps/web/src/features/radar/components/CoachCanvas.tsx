@@ -1,9 +1,10 @@
 import type { PlayerSlot, Team } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, type RadarPoint } from '@disa/map-data';
+import { type MapOverview, plateLayout, type RadarPoint } from '@disa/map-data';
 import { type PointerEvent, type RefObject, useEffect, useRef } from 'react';
 import { drawCoachMovedPlayer, drawCoachStroke, drawCoachUtility } from '../helpers/coach-draw';
 import type { CoachAnnotations, CoachTool } from '../helpers/coach-types';
 import type { RadarColors } from '../helpers/colors';
+import { plateBox } from '../helpers/plate-box';
 import {
   type PlateGeometry,
   type PlateView,
@@ -75,7 +76,7 @@ function paintCoachOverlay(
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   context.clearRect(0, 0, width, height);
 
-  readPlateGeometry(view, { width, height }, RADAR_IMAGE_SIZE, geometry);
+  readPlateGeometry(view, { width, height }, plateLayout(overview), geometry);
 
   for (const stroke of annotations.strokes) {
     drawCoachStroke(context, stroke, geometry);
@@ -159,9 +160,8 @@ export function CoachCanvas({
   return (
     <canvas
       ref={canvasRef}
-      className={`touch-none ${cursorClass} ${
-        isExpanded ? 'absolute inset-0 size-full' : 'aspect-square w-[min(100cqi,100cqb)]'
-      }`}
+      className={`touch-none ${cursorClass} ${isExpanded ? 'absolute inset-0 size-full' : ''}`}
+      style={isExpanded ? undefined : plateBox(plateLayout(overview)).style}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

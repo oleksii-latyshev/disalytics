@@ -5,13 +5,19 @@ import type {
   TacticThrow,
   UtilityKind,
 } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE, radarX, radarY } from '@disa/map-data';
+import { type MapOverview, radarX, radarY } from '@disa/map-data';
 import type { CanvasSize, Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import { drawGrenadeMark } from './equipment-marks';
 import type { InterpolatedGrenadeFlight, InterpolatedUtilityActive } from './tactic-interpolation';
 import { drawNeedle, drawSelectionRing, drawToken } from './tokens';
-import { type PlateGeometry, type PlateView, plateGeometry, readPlateGeometry } from './view';
+import {
+  type PlateGeometry,
+  type PlateView,
+  plateGeometry,
+  readPlateGeometry,
+  SQUARE_PLATE,
+} from './view';
 
 const SMOKE_RADIUS_UNITS = 144;
 const MOLOTOV_RADIUS_UNITS = 160;
@@ -456,7 +462,7 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
   const geometry: PlateGeometry = plateGeometry();
 
   return (context: CanvasRenderingContext2D, size: CanvasSize) => {
-    readPlateGeometry(options.view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(options.view.current, size, SQUARE_PLATE, geometry);
 
     const {
       overview,

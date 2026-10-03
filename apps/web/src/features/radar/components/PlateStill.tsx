@@ -6,7 +6,7 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
+import { getMapOverview, type MapOverview } from '@disa/map-data';
 import { useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
@@ -14,10 +14,9 @@ import { useFontReady } from '@/shared/hooks';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
-import { busiestLevelIndex, levelAt } from '../helpers/levels';
 import { playerTokens } from '../helpers/token-layer';
 import { plateView } from '../helpers/view';
-import { useRadarImage } from '../hooks/use-radar-image';
+import { useRadarPlate } from '../hooks/use-radar-plate';
 import { UnknownMap } from './UnknownMap';
 
 /** Held outside the component so an unmeasurable font does not remount the layer every render. */
@@ -36,8 +35,7 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
   const [palette] = useSetting('palette');
   const [arePlayerNamesShown] = useSetting('arePlayerNamesShown');
 
-  const levelIndex = busiestLevelIndex(overview, demo.track, frame);
-  const image = useRadarImage(radarAssetPath(levelAt(overview, levelIndex), theme));
+  const { layout, images, floorLabels } = useRadarPlate(overview, theme);
 
   // The side a slot holds follows the round being shown rather than the end of the match, which is
   // §10.2's own rule and §6.1's reason for it: sides swap.
@@ -66,7 +64,6 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
       demo,
       clock: createClock(frame),
       overview,
-      levelIndex,
       teamBySlot,
       labelBySlot,
       selectedSlot: null,
@@ -78,8 +75,30 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
       view: viewRef,
     });
 
-    return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), tokens] : [tokens];
-  }, [demo, frame, overview, levelIndex, teamBySlot, labelBySlot, colors, labelStyle, image]);
+    return images.status === 'ready'
+      ? [
+          radarBackdrop({
+            images: images.images,
+            layout,
+            floorLabels,
+            labelColor: colors.dead,
+            view: viewRef,
+          }),
+          tokens,
+        ]
+      : [tokens];
+  }, [
+    demo,
+    frame,
+    overview,
+    teamBySlot,
+    labelBySlot,
+    colors,
+    labelStyle,
+    images,
+    layout,
+    floorLabels,
+  ]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
@@ -88,7 +107,8 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
       ref={canvasRef}
       role="img"
       aria-label={t('radar.label', { map: overview.id })}
-      className="aspect-square w-full rounded-card bg-surface-0"
+      className="w-full rounded-card bg-surface-0"
+      style={{ aspectRatio: `${layout.width} / ${layout.height}` }}
     />
   );
 }

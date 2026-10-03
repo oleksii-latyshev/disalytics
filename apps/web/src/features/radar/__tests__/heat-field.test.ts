@@ -10,11 +10,12 @@ import {
   type TickTrack,
   WEAPON_NONE,
 } from '@disa/demo-core';
-import { MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from '@disa/map-data';
+import { MAP_OVERVIEWS, plateLayout, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import { HEAT_GRID, heatField } from '../helpers/heat-field';
+import { HEAT_GRID, type HeatField, heatField } from '../helpers/heat-field';
 
 const dust2 = MAP_OVERVIEWS.de_dust2;
+const nuke = MAP_OVERVIEWS.de_nuke;
 
 const TICK_RATE = 64;
 const SAMPLE_HZ = 16;
@@ -165,5 +166,45 @@ describe('heatField', () => {
 
     expect(total).toBe(0);
     expect(bins.every((weight) => weight === 0)).toBe(true);
+  });
+
+  it('is as square as the grid on a single-level map', () => {
+    const field = heatField(newDemo(), dust2, 'presence', wholeMatch);
+
+    expect({ width: field.width, height: field.height }).toEqual({
+      width: HEAT_GRID,
+      height: HEAT_GRID,
+    });
+  });
+
+  it('spans the stacked plate of a two-floor map, with each floor on its own half', () => {
+    const layout = plateLayout(nuke);
+    const [, lowerSlot] = layout.slots;
+    const lowerStart = Math.floor(((lowerSlot?.y ?? 0) * HEAT_GRID) / RADAR_IMAGE_SIZE);
+    const centre = { x: nuke.posX + 500 * nuke.scale, y: nuke.posY - 500 * nuke.scale };
+
+    const fieldAtAltitude = (z: number) => {
+      const demo = newDemo();
+      demo.track.posX.fill(centre.x);
+      demo.track.posY.fill(centre.y);
+      demo.track.posZ.fill(z);
+
+      return heatField(demo, nuke, 'presence', wholeMatch);
+    };
+
+    const lit = (field: HeatField, from: number, to: number) =>
+      field.bins.slice(from * field.width, to * field.width).some((weight) => weight > 0);
+
+    const upper = fieldAtAltitude(0);
+    const lower = fieldAtAltitude(-700);
+
+    expect(upper.bins).toHaveLength(upper.width * upper.height);
+    expect(upper.width).toBe(Math.ceil((layout.width * HEAT_GRID) / RADAR_IMAGE_SIZE));
+    expect(upper.height).toBe(Math.ceil((layout.height * HEAT_GRID) / RADAR_IMAGE_SIZE));
+
+    expect(lit(upper, 0, lowerStart)).toBe(true);
+    expect(lit(upper, lowerStart, upper.height)).toBe(false);
+    expect(lit(lower, 0, lowerStart)).toBe(false);
+    expect(lit(lower, lowerStart, lower.height)).toBe(true);
   });
 });

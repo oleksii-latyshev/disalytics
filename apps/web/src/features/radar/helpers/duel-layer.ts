@@ -1,5 +1,5 @@
 import { type Duel, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
-import { type MapOverview, RADAR_IMAGE_SIZE } from '@disa/map-data';
+import { type MapOverview, plateLayout } from '@disa/map-data';
 import type { Layer } from '@/core/renderer';
 import type { RadarColors } from './colors';
 import {
@@ -29,10 +29,10 @@ const MATCH_ALPHA = 0.7;
 const UNFOCUSED_ALPHA = 0.12;
 
 /**
- * Where every duel's two ends fall on the radar image, computed once for a list of duels.
+ * Where every duel's two ends fall on the plate, computed once for a list of duels.
  *
  * It is `killLineGeometry` run at scale 1 and copied out, rather than a second reader of
- * `TickTrack`: the rule for where a kill's ends are — the kill's own frame, the level each end
+ * `TickTrack`: the rule for where a kill's ends are — the kill's own frame, the floor each end
  * stands on — is one rule, and this is a match's worth of the same question §5.4 asks about one.
  *
  * The draw then multiplies by the plate's scale, so resizing the screen re-reads nothing.
@@ -40,10 +40,9 @@ const UNFOCUSED_ALPHA = 0.12;
 export function duelPlot(
   track: TickTrack,
   overview: MapOverview,
-  levelIndex: number,
   duels: readonly Duel[],
 ): Float32Array {
-  const geometry = killLineGeometry(track, overview, levelIndex);
+  const geometry = killLineGeometry(track, overview);
   const plot = new Float32Array(duels.length * ENDS_LENGTH);
 
   duels.forEach((duel, index) => {
@@ -58,6 +57,7 @@ export interface DuelLayerOptions {
   readonly duels: readonly Duel[];
   /** `duelPlot` of exactly those duels, in the same order. */
   readonly plot: Float32Array;
+  readonly overview: MapOverview;
   readonly colors: RadarColors;
   /** Read at draw time, the way every layer on the plate reads it. */
   readonly view: { readonly current: PlateView };
@@ -76,8 +76,9 @@ export interface DuelLayerOptions {
  * duel that owns them.
  */
 export function duelLayer(options: DuelLayerOptions): Layer {
-  const { duels, plot, colors, view, focused } = options;
+  const { duels, plot, overview, colors, view, focused } = options;
   const geometry = plateGeometry();
+  const plateSize = plateLayout(overview);
 
   const sideColor = (side: Team | undefined) =>
     side === undefined ? colors.dead : colors.team[side];
@@ -90,31 +91,19 @@ export function duelLayer(options: DuelLayerOptions): Layer {
     const base = index * ENDS_LENGTH;
     const originX = sampleAt(plot, base) * scale;
     const originY = sampleAt(plot, base + 1) * scale;
-    const originAlpha = sampleAt(plot, base + 2) * strength;
     const fallX = sampleAt(plot, base + END_STRIDE) * scale;
     const fallY = sampleAt(plot, base + END_STRIDE + 1) * scale;
-    const fallAlpha = sampleAt(plot, base + END_STRIDE + 2) * strength;
 
-    // A line crossing a floor the map is not showing is as faint as its fainter end — §6.3, and
-    // the same rule the hovered line obeys.
-    drawKillPath(
-      context,
-      originX,
-      originY,
-      fallX,
-      fallY,
-      Math.min(originAlpha, fallAlpha),
-      colors.killLine,
-    );
+    drawKillPath(context, originX, originY, fallX, fallY, strength, colors.killLine);
 
-    drawKillOrigin(context, originX, originY, originAlpha, sideColor(duel.attackerSide));
-    drawKillFall(context, fallX, fallY, fallAlpha, sideColor(duel.victimSide));
+    drawKillOrigin(context, originX, originY, strength, sideColor(duel.attackerSide));
+    drawKillFall(context, fallX, fallY, strength, sideColor(duel.victimSide));
   };
 
   return (context, size) => {
     if (duels.length === 0) return;
 
-    readPlateGeometry(view.current, size, RADAR_IMAGE_SIZE, geometry);
+    readPlateGeometry(view.current, size, plateSize, geometry);
     context.translate(geometry.offsetX, geometry.offsetY);
 
     const rest = focused === null ? MATCH_ALPHA : MATCH_ALPHA * UNFOCUSED_ALPHA;

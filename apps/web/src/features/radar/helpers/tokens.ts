@@ -83,12 +83,11 @@ export function drawBlindDisc(
   radius: number,
   remaining: number,
   color: string,
-  alpha: number,
 ): void {
   const start = -Math.PI / 2;
 
   context.save();
-  context.globalAlpha = alpha * BLIND_DISC_ALPHA;
+  context.globalAlpha = BLIND_DISC_ALPHA;
   context.fillStyle = color;
 
   context.beginPath();
@@ -167,10 +166,9 @@ export function drawAudibleRing(
   y: number,
   radius: number,
   color: string,
-  alpha: number,
 ): void {
   context.save();
-  context.globalAlpha = alpha * AUDIBLE_RING_ALPHA;
+  context.globalAlpha = AUDIBLE_RING_ALPHA;
   context.lineWidth = AUDIBLE_RING_WIDTH_PX;
   context.strokeStyle = color;
 

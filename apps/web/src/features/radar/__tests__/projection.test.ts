@@ -1,7 +1,6 @@
-import { MAP_OVERVIEWS, radarX, radarY } from '@disa/map-data';
+import { MAP_OVERVIEWS, plateX, plateY, radarX, radarY } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import { POSITION_STRIDE } from '@/core/playback';
-import { OTHER_LEVEL_ALPHA } from '../helpers/levels';
 import { plateProjection } from '../helpers/projection';
 
 const dust2 = MAP_OVERVIEWS.de_dust2;
@@ -25,7 +24,7 @@ describe('plateProjection', () => {
   // `Math.fround` rather than `toBeCloseTo`: the scratch is a `Float32Array`, so the exact answer
   // is the single-precision one and a tolerance would be hiding that rather than allowing for it.
   it("puts a slot where the overview says, at the plate's own scale", () => {
-    const plate = plateProjection(dust2, 0, 1);
+    const plate = plateProjection(dust2, 1);
 
     plate.read(newPositions([500, -1200, UPPER_Z]), 2);
 
@@ -33,26 +32,27 @@ describe('plateProjection', () => {
     expect(plate.y(0)).toBe(Math.fround(radarY(dust2, -1200) * 2));
   });
 
-  it('shows a player on another level through the floor rather than at full strength', () => {
-    const plate = plateProjection(nuke, 0, 2);
+  it('puts a player on the floor their altitude says, one plate row apart', () => {
+    const plate = plateProjection(nuke, 2);
 
     plate.read(newPositions([0, 0, UPPER_Z], [0, 0, LOWER_Z]), 1);
 
-    expect(plate.alpha(0)).toBe(1);
-    expect(plate.alpha(1)).toBe(OTHER_LEVEL_ALPHA);
+    expect(plate.x(0)).toBe(Math.fround(plateX(nuke, 0, UPPER_Z)));
+    expect(plate.y(0)).toBe(Math.fround(plateY(nuke, 0, UPPER_Z)));
+    expect(plate.y(1)).toBe(Math.fround(plateY(nuke, 0, LOWER_Z)));
+    expect(plate.y(1)).toBeGreaterThan(plate.y(0));
   });
 
-  it('gives every slot on a single-level map the same full strength', () => {
-    const plate = plateProjection(dust2, 0, 2);
+  it('leaves every slot of a single-level map where the overview puts it, whatever its altitude', () => {
+    const plate = plateProjection(dust2, 2);
 
     plate.read(newPositions([0, 0, UPPER_Z], [0, 0, LOWER_Z]), 1);
 
-    expect(plate.alpha(0)).toBe(1);
-    expect(plate.alpha(1)).toBe(1);
+    expect(plate.y(0)).toBe(plate.y(1));
   });
 
   it('overwrites its scratch each frame rather than growing one per frame', () => {
-    const plate = plateProjection(dust2, 0, 1);
+    const plate = plateProjection(dust2, 1);
 
     plate.read(newPositions([500, -1200, UPPER_Z]), 1);
     const first = plate.x(0);

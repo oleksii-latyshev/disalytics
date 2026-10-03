@@ -5,6 +5,7 @@ import {
   type PlateView,
   panBy,
   radarPointAt,
+  SQUARE_PLATE,
   ZOOM_STEP,
   zoomAbout,
   zoomByStep,
@@ -84,7 +85,7 @@ export function useLineupCanvasInteractions(
   const changeZoom = (factor: number) => {
     const size = canvasSize();
     if (size === null) return;
-    zoomByStep(viewRef.current, factor, size);
+    zoomByStep(viewRef.current, factor, size, SQUARE_PLATE);
     setZoom(viewRef.current.zoom);
     repaint();
   };
@@ -100,6 +101,7 @@ export function useLineupCanvasInteractions(
       event.clientX - box.left,
       event.clientY - box.top,
       size,
+      SQUARE_PLATE,
     );
     setZoom(viewRef.current.zoom);
     repaint();
@@ -142,7 +144,7 @@ export function useLineupCanvasInteractions(
       event.clientX - box.left,
       event.clientY - box.top,
       box,
-      RADAR_IMAGE_SIZE,
+      SQUARE_PLATE,
     );
     const extent = Math.min(box.width, box.height);
     const scale = (extent * viewRef.current.zoom) / RADAR_IMAGE_SIZE;
@@ -177,7 +179,7 @@ export function useLineupCanvasInteractions(
     const size = canvasSize();
     if (size === null) return true;
     if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
-    panBy(viewRef.current, dx, dy, size);
+    panBy(viewRef.current, dx, dy, size, SQUARE_PLATE);
     drag.x = event.clientX;
     drag.y = event.clientY;
     repaint();
@@ -220,7 +222,7 @@ export function useLineupCanvasInteractions(
       event.clientX - box.left,
       event.clientY - box.top,
       box,
-      RADAR_IMAGE_SIZE,
+      SQUARE_PLATE,
     );
     const extent = Math.min(box.width, box.height);
     const scale = (extent * viewRef.current.zoom) / RADAR_IMAGE_SIZE;

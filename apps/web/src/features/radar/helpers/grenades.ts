@@ -5,7 +5,7 @@ import {
   sampleAt,
 } from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
-import { radarX, radarY } from '@disa/map-data';
+import { plateX, plateY } from '@disa/map-data';
 import type { TrajectoryVisibility } from '@/core/settings';
 import type { RadarColors } from './colors';
 
@@ -93,13 +93,15 @@ export function drawTrajectory(
   trajectoryStroke(context, color, alpha);
   context.beginPath();
 
-  const startX = radarX(overview, sampleAt(trajectory.x, 0)) * scale;
-  const startY = radarY(overview, sampleAt(trajectory.y, 0)) * scale;
+  const startZ = sampleAt(trajectory.z, 0);
+  const startX = plateX(overview, sampleAt(trajectory.x, 0), startZ) * scale;
+  const startY = plateY(overview, sampleAt(trajectory.y, 0), startZ) * scale;
   context.moveTo(startX, startY);
 
   for (let i = 1; i < clipCount; i++) {
-    const px = radarX(overview, sampleAt(trajectory.x, i)) * scale;
-    const py = radarY(overview, sampleAt(trajectory.y, i)) * scale;
+    const pz = sampleAt(trajectory.z, i);
+    const px = plateX(overview, sampleAt(trajectory.x, i), pz) * scale;
+    const py = plateY(overview, sampleAt(trajectory.y, i), pz) * scale;
     context.lineTo(px, py);
   }
 

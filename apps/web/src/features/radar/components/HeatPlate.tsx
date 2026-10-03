@@ -1,6 +1,6 @@
 import type { ParsedDemo } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
+import { getMapOverview, type MapOverview } from '@disa/map-data';
 import { useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
@@ -8,17 +8,10 @@ import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import type { HeatField } from '../helpers/heat-field';
 import { fieldImage, heatLayer } from '../helpers/heat-layer';
-import { levelAt } from '../helpers/levels';
+import { plateBox } from '../helpers/plate-box';
 import { plateView } from '../helpers/view';
-import { useRadarImage } from '../hooks/use-radar-image';
+import { useRadarPlate } from '../hooks/use-radar-plate';
 import { UnknownMap } from './UnknownMap';
-
-/**
- * The level the map is drawn at. A field of a whole match stands on every floor at once — which is
- * what `heatField` bins — so there is no level to choose between, and the map shows its default
- * the way the duel map does. Giving the reader the choice is #86's, and that row waits on a demo.
- */
-const LEVEL_INDEX = 0;
 
 interface Props {
   demo: ParsedDemo;
@@ -32,7 +25,7 @@ function HeatCanvas({ field, overview }: { field: HeatField | null; overview: Ma
   const [theme] = useSetting('radarTheme');
   const [palette] = useSetting('palette');
 
-  const image = useRadarImage(radarAssetPath(levelAt(overview, LEVEL_INDEX), theme));
+  const { layout, images, floorLabels } = useRadarPlate(overview, theme);
   const colors = radarColors(palette);
 
   // Fixed, for `DuelPlate`'s reason: §6.3's zoom is a gesture on a match the reader is inside.
@@ -42,10 +35,23 @@ function HeatCanvas({ field, overview }: { field: HeatField | null; overview: Ma
   // leaves the draw itself one `drawImage` — a resize re-reads nothing.
   const layers = useMemo(() => {
     const heat =
-      field === null ? [] : [heatLayer({ image: fieldImage(field, colors), view: viewRef })];
+      field === null
+        ? []
+        : [heatLayer({ image: fieldImage(field, colors), plate: layout, view: viewRef })];
 
-    return image.status === 'ready' ? [radarBackdrop(image.image, viewRef), ...heat] : heat;
-  }, [field, colors, image]);
+    return images.status === 'ready'
+      ? [
+          radarBackdrop({
+            images: images.images,
+            layout,
+            floorLabels,
+            labelColor: colors.dead,
+            view: viewRef,
+          }),
+          ...heat,
+        ]
+      : heat;
+  }, [field, colors, images, layout, floorLabels]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
@@ -56,7 +62,8 @@ function HeatCanvas({ field, overview }: { field: HeatField | null; overview: Ma
         ref={canvasRef}
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
-        className="aspect-square w-[min(100cqi,100cqb)] rounded-card bg-surface-0"
+        className="rounded-card bg-surface-0"
+        style={plateBox(layout).style}
       />
     </div>
   );

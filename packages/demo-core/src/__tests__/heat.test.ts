@@ -56,7 +56,7 @@ const WHOLE: HeatScope = { side: null, subject: null };
 
 function visits(demo: ParsedDemo, mode: HeatMode, scope: HeatScope = WHOLE) {
   const points: [number, number, number][] = [];
-  const tally = walkHeat(demo, mode, scope, (x, y, weight) => points.push([x, y, weight]));
+  const tally = walkHeat(demo, mode, scope, (x, y, _z, weight) => points.push([x, y, weight]));
 
   return { points, tally };
 }
@@ -138,5 +138,17 @@ describe('walkHeat', () => {
     expect(points).toEqual([[-300, 400, 1]]);
     expect([...tally.bySlot]).toEqual([1, 1]);
     expect(tally.total).toBe(1);
+  });
+
+  it('hands over the altitude each point stands at, so a floor can be told apart', () => {
+    const demo = newDemo(newEvents());
+    for (let frame = 0; frame < 8; frame++) {
+      atFrame(demo.track, asFrame(frame), ct, { posZ: -700 });
+    }
+
+    const altitudes: number[] = [];
+    walkHeat(demo, 'presence', WHOLE, (_x, _y, z) => altitudes.push(z));
+
+    expect(new Set(altitudes)).toEqual(new Set([-700, 0]));
   });
 });

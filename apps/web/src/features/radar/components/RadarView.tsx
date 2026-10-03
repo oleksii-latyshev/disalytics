@@ -5,7 +5,7 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
-import { type MapOverview, type RadarPoint, radarAssetPath } from '@disa/map-data';
+import type { MapOverview, RadarPoint } from '@disa/map-data';
 import { Button } from '@disa/ui';
 import { GraduationCap, Minus, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,13 +18,13 @@ import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { killLineLayer } from '../helpers/kill-line';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
-import { busiestLevelIndex, levelAt } from '../helpers/levels';
+import { plateBox } from '../helpers/plate-box';
 import { playerTokens } from '../helpers/token-layer';
 import { utilityLayer } from '../helpers/utility-layer';
 import { MAX_ZOOM, MIN_ZOOM, plateView, ZOOM_STEP } from '../helpers/view';
 import { useCoachMode } from '../hooks/use-coach-mode';
 import { usePlateNavigation } from '../hooks/use-plate-navigation';
-import { useRadarImage } from '../hooks/use-radar-image';
+import { useRadarPlate } from '../hooks/use-radar-plate';
 import { CoachCanvas } from './CoachCanvas';
 import { CoachToolbar } from './CoachToolbar';
 import { RadarDebug } from './RadarDebug';
@@ -69,15 +69,11 @@ export function RadarView({
   const [isDebugShown] = useSetting('isDebugShown');
   const [isPlayerKeysShown] = useSetting('isPlayerKeysShown');
   const [isPlayerCrosshairShown] = useSetting('isPlayerCrosshairShown');
-  const [forcedLevelIndex, setForcedLevelIndex] = useState<number | null>(null);
   const [pointer, setPointer] = useState<RadarPoint | null>(null);
 
-  // Which level is drawn follows the players, but off the 10 Hz readout rather than off the clock —
-  // re-deciding it 60 times a second would flicker between floors as players cross the split.
   const frame = useFrameReadout(transport);
-  const levelIndex = forcedLevelIndex ?? busiestLevelIndex(overview, demo.track, frame);
-  const level = levelAt(overview, levelIndex);
-  const image = useRadarImage(radarAssetPath(level, theme));
+  const { layout, images, floorLabels } = useRadarPlate(overview, theme);
+  const box = plateBox(layout);
 
   // The side a slot holds changes at halftime, so a token's colour follows the round rather than
   // the end-of-match roster — the same reasoning that put `PlayerEconomy.team` in the schema. The
@@ -126,7 +122,6 @@ export function RadarView({
       demo,
       clock: transport.clock,
       overview,
-      levelIndex,
       teamBySlot,
       labelBySlot,
       selectedSlot,
@@ -153,20 +148,29 @@ export function RadarView({
       demo,
       clock: transport.clock,
       overview,
-      levelIndex,
       colors,
       hovered: hoveredKillRef,
       view: viewRef,
     });
 
-    return image.status === 'ready'
-      ? [radarBackdrop(image.image, viewRef), utility, killLine, tokens]
+    return images.status === 'ready'
+      ? [
+          radarBackdrop({
+            images: images.images,
+            layout,
+            floorLabels,
+            labelColor: colors.dead,
+            view: viewRef,
+          }),
+          utility,
+          killLine,
+          tokens,
+        ]
       : [utility, killLine, tokens];
   }, [
     demo,
     transport,
     overview,
-    levelIndex,
     teamBySlot,
     labelBySlot,
     selectedSlot,
@@ -177,7 +181,9 @@ export function RadarView({
     trajectories,
     colors,
     labelStyle,
-    image,
+    images,
+    layout,
+    floorLabels,
   ]);
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
@@ -236,6 +242,7 @@ export function RadarView({
     overlayCanvasRef: coachCanvasRef,
     repaint: triggerRepaint,
     isSuspended,
+    plate: layout,
     onHover: isDebugShown ? setPointer : undefined,
   });
 
@@ -246,7 +253,7 @@ export function RadarView({
   }, [isExpanded, onExpandedChange]);
 
   // The radar is never cropped or letterboxed — DESIGN.md §4 — so at rest the canvas takes the
-  // smaller of the two axes the cell offers it, which is what the container units read. Everything
+  // largest box of the plate's own shape the cell offers it, which is what the container units read. Everything
   // else on the stage floats over it: a row of its own would come straight out of the map's short
   // axis, which is the whole thing #110 set out to stop.
   //
@@ -261,10 +268,9 @@ export function RadarView({
         role="img"
         aria-label={t('radar.label', { map: overview.id })}
         className={`touch-none bg-surface-0 data-[panning]:cursor-grabbing ${
-          isExpanded
-            ? 'absolute inset-0 size-full cursor-grab'
-            : 'aspect-square w-[min(100cqi,100cqb)]'
+          isExpanded ? 'absolute inset-0 size-full cursor-grab' : ''
         }`}
+        style={isExpanded ? undefined : box.style}
         {...navigation.canvasProps}
         onPointerLeave={() => setPointer(null)}
       />
@@ -288,13 +294,19 @@ export function RadarView({
       )}
 
       {/* DESIGN.md §6.3 puts the pair on the plate's bottom-right, and the plate is not the cell:
-          the cell is wider than the square it centres, so the offset is half the slack on each axis
+          the cell is wider than the box it centres, so the offset is half the slack on each axis
           plus the stage inset. **Written against the cell instead, it lands under the CT card when
-          the plate is expanded** (#315) — `min(100cqi,100cqb)` is the map's own square either way,
-          which is what keeps the pair on the map in both states. Colour and a hairline, never
+          the plate is expanded** (#315) — the plate's own box is the map's either way, which is
+          what keeps the pair on the map in both states. Colour and a hairline, never
           `.glass-panel` — §2.3 grants the one `backdrop-filter` over the live plate to the
           scoreboard and to nothing else. */}
-      <div className="absolute right-[calc((100cqi-min(100cqi,100cqb))/2+1rem)] bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1">
+      <div
+        className="absolute flex flex-col gap-1 rounded-float border border-line bg-surface-1 p-1"
+        style={{
+          right: `calc((100cqi - ${box.width}) / 2 + 1rem)`,
+          bottom: `calc((100cqb - ${box.height}) / 2 + 1rem)`,
+        }}
+      >
         <Button
           type="button"
           variant="ghost"
@@ -332,7 +344,10 @@ export function RadarView({
       </div>
 
       {isCoachMode && (
-        <div className="pointer-events-auto absolute bottom-[calc((100cqb-min(100cqi,100cqb))/2+1rem)] left-1/2 z-20 -translate-x-1/2">
+        <div
+          className="pointer-events-auto absolute left-1/2 z-20 -translate-x-1/2"
+          style={{ bottom: `calc((100cqb - ${box.height}) / 2 + 1rem)` }}
+        >
           <CoachToolbar
             tool={coach.tool}
             colorName={coach.colorName}
@@ -357,22 +372,13 @@ export function RadarView({
           so that with both children silent it is a zero-height box and not 32px of nothing over the
           plate — which is what a §5.1 overlap sweep walking every element sees. */}
       <div className="pointer-events-none absolute inset-x-4 top-4 flex flex-wrap items-start gap-3">
-        {image.status === 'failed' && (
+        {images.status === 'failed' && (
           <p className="rounded-float border border-line bg-surface-1 px-3 py-2 text-13 text-ink leading-prose">
             <Text path="radar.imageUnavailable" />
           </p>
         )}
 
-        {isDebugShown && (
-          <RadarDebug
-            overview={overview}
-            frame={frame}
-            levelIndex={levelIndex}
-            isLevelForced={forcedLevelIndex !== null}
-            pointer={pointer}
-            onLevelChange={setForcedLevelIndex}
-          />
-        )}
+        {isDebugShown && <RadarDebug overview={overview} frame={frame} pointer={pointer} />}
       </div>
     </div>
   );
