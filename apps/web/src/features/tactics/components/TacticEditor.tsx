@@ -150,7 +150,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         </div>
 
         {/* Tactical Radar Canvas Plate */}
-        <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center [container-type:size]">
+        <div className="relative flex min-h-0 w-full min-w-0 flex-1 items-center justify-center [container-type:size]">
           <TacticPlate
             map={tactic.map}
             side={tactic.side}

@@ -107,7 +107,7 @@ function TacticCanvas({
         : 'cursor-default';
 
   return (
-    <div className="grid min-h-0 min-w-0 place-items-center [container-type:size]">
+    <div className="grid size-full min-h-0 min-w-0 place-items-center [container-type:size]">
       <canvas
         ref={canvasRef}
         role="img"
