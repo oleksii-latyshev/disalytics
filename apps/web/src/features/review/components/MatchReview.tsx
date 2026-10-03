@@ -6,9 +6,9 @@ import type { RowFocus } from '@/core/events';
 import { assembly } from '@/core/motion';
 import type { StatsTab } from '@/core/navigation';
 import type { CacheState } from '@/core/parsing';
-import { useBuyPhaseSkip, useTransport } from '@/core/playback';
+import { useBuyPhaseSkip, useIsPlaying, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
-import { MatchRadar } from '@/features/radar';
+import { MatchRadar, useCoachKeys, useCoachSession } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
 import { type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
 import { type MatchView, nextMatchView } from '../helpers/match-views';
@@ -81,25 +81,34 @@ export function MatchReview({
     setSelectedSlot((current) => (current === slot ? null : slot));
   }, []);
 
-  const [isCoachMode, setIsCoachMode] = useState(false);
+  const coach = useCoachSession();
+  const isPlaying = useIsPlaying(transport);
 
-  const toggleCoachMode = useCallback(() => {
-    setIsCoachMode((prev) => {
-      if (!prev) {
-        transport.pause();
-        return true;
-      }
-      return false;
-    });
-  }, [transport]);
+  const toggleCoachPencil = useCallback(() => {
+    if (coach.getState().tool === null) transport.pause();
+    coach.toggleTool('pencil');
+  }, [coach, transport]);
+
+  const clearSelectionOrTool = useCallback(() => {
+    if (coach.getState().tool === null) setSelectedSlot(null);
+    else coach.setTool(null);
+  }, [coach]);
 
   useEffect(() => {
-    if (view !== 'stage') {
-      setIsCoachMode(false);
-    }
-  }, [view]);
+    if (isPlaying || view !== 'stage') coach.reset();
+  }, [coach, isPlaying, view]);
 
   const { frame, roundIndex, ct, t, money, shape } = useMatchReadout(demo, transport, locale);
+
+  const drawnRoundRef = useRef(roundIndex);
+  useEffect(() => {
+    if (drawnRoundRef.current === roundIndex) return;
+    drawnRoundRef.current = roundIndex;
+    coach.discardDrawings();
+  }, [coach, roundIndex]);
+
+  useCoachKeys(coach, openSheet !== null);
+
   useMatchRouteSync({
     demo,
     transport,
@@ -115,11 +124,11 @@ export function MatchReview({
     t,
     isSuspended: openSheet !== null,
     onToggleSelected: toggleSelected,
-    onClearSelection: () => setSelectedSlot(null),
+    onClearSelection: clearSelectionOrTool,
     onFullscreenToggle: fullscreen.toggle,
     onMatchOverlay: () => showSheet('match'),
     onNextView: () => onView(nextMatchView(view)),
-    onCoachMode: toggleCoachMode,
+    onCoachMode: toggleCoachPencil,
     onHelp: () => showSheet('help'),
   });
 
@@ -234,8 +243,7 @@ export function MatchReview({
           selectedSlot={selectedSlot}
           focus={focus}
           isSuspended={openSheet !== null}
-          isCoachMode={isCoachMode}
-          onCoachModeChange={setIsCoachMode}
+          coach={coach}
           onExpandedChange={setPlateExpanded}
         />
       </motion.div>
@@ -253,6 +261,7 @@ export function MatchReview({
           selectedSlot={selectedSlot}
           frame={frame}
           locale={locale}
+          coach={coach}
           hasScoreboard={scoreboard === 'block'}
           isAway={corners.isTimelineAway}
         />
