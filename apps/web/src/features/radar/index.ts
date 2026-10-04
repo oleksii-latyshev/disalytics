@@ -3,6 +3,7 @@ export { DuelPlate } from './components/DuelPlate';
 export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
+export type { PlateReplay } from './components/PlateStill';
 export { PlateStill } from './components/PlateStill';
 export { UnknownMap } from './components/UnknownMap';
 export { UtilityPlate } from './components/UtilityPlate';

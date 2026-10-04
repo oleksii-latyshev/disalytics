@@ -13,7 +13,7 @@ interface Props {
 
 function pathFor(view: ShellView) {
   switch (view) {
-    case 'upload':
+    case 'home':
       return '/';
     case 'library':
       return '/library';

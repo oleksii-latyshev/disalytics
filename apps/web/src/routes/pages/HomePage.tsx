@@ -1,11 +1,10 @@
-import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useRouterState } from '@tanstack/react-router';
 import { nonReadyParseState } from '@/core/parsing';
-import { UploadView } from '@/features/library';
+import { HomeView } from '@/features/library';
 import { useAppRouteContext, useShellDragState } from '../context';
 
-export function UploadPage() {
+export function HomePage() {
   const { parse, parseOrigin } = useAppRouteContext();
-  const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isDraggedOver = useShellDragState();
   const state = nonReadyParseState(parse.state);
@@ -24,14 +23,13 @@ export function UploadPage() {
   };
 
   return (
-    <UploadView
+    <HomeView
       state={state}
       onFile={openFile}
       onClose={parse.close}
       isDraggedOver={isDraggedOver}
       onEnter={openSaved}
       onSample={openSample}
-      onLibrary={() => void navigate({ to: '/library' })}
     />
   );
 }

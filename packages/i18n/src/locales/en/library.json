@@ -6,12 +6,7 @@
     "hint": "Recorded demos are kept in your match history folder.",
     "hintFolder": "Recorded demos are kept in {folder}.",
     "action": "Choose demo to review",
-    "eyebrow": "Every round matters",
-    "promise": "Open a match recording to review rounds, positions and player decisions.",
-    "formats": "Browser-based review · No account needed",
-    "start": "Start reviewing your match",
-    "result": "The file is processed in your browser and opens on the map.",
-    "detail": "In detail."
+    "start": "Start reviewing your match"
   },
   "preview": {
     "label": "Live preview of a sample round",
@@ -73,16 +68,16 @@
       "reload": "Reload"
     },
     "nav": "Sections",
-    "upload": "Upload",
     "library": "Library",
     "tools": "Tools",
-    "lineups": "Utility lineups",
+    "lineups": "Lineups",
     "tactics": "Tactics",
     "stats": "Player stats",
     "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
     "soonNote": {
       "stats": "What each player did across the match — opening duels, trades, utility, damage. Not built yet."
-    }
+    },
+    "home": "Home"
   },
   "tools": {
     "title": "Tools",
@@ -559,12 +554,140 @@
     }
   },
   "home": {
-    "recent": "Return to your matches",
-    "samples": "Start with a professional match",
-    "all": "All matches →",
-    "explore": "Two matches to explore ↗",
-    "saved": "{map} · Saved on this device",
-    "try": "No demo? Review NAVI — Vitality"
+    "title": "Your next round starts here",
+    "titleFirst": "A 40-minute match, reviewed in ten",
+    "subtitle": "Pick up the review, rehearse a play, or check what the enemy can buy.",
+    "subtitleFirst": "Open your own demo, or start with a professional match that ships with the app.",
+    "footer": "Demos never leave this device · works offline",
+    "customize": {
+      "open": "Customize",
+      "openLabel": "Customize home",
+      "title": "Customize home",
+      "hint": "Drag widgets to reorder, pick a size, remove with −, add more from the gallery. Kept on this device.",
+      "add": "Add widgets",
+      "reset": "Reset",
+      "done": "Done",
+      "gallery": "All widgets · {count, number}",
+      "on": "On home",
+      "addAction": "Add",
+      "needsMatch": "Needs a match",
+      "remove": "Remove {widget} from home",
+      "removeShort": "Remove from home",
+      "size": "Size of {widget}",
+      "earlier": "Move {widget} earlier",
+      "later": "Move {widget} later",
+      "moved": "{widget} is now number {position, number} of {total, number}",
+      "position": "Position {position, number}"
+    },
+    "hero": {
+      "continue": "Continue review",
+      "sample": "Sample match",
+      "stopped": "You stopped at round {round, number} of {total, number}",
+      "moments": "Jump to a moment",
+      "momentRound": "R{round, number}",
+      "momentClutch": "{player} · 1v{count, number}",
+      "momentMulti": "{player} · {count, number}k",
+      "momentsMore": "+{count, number} more",
+      "resume": "Resume at round {round, number}",
+      "review": "Review this match",
+      "readAt": "Last read {when, date, medium}, {when, time, short} · from this device",
+      "openYours": "Open your demo",
+      "reviewSample": "Review this match",
+      "formats": ".dem · .dem.zst · .dem.bz2 — read in this browser, never uploaded"
+    },
+    "widget": {
+      "hero": {
+        "title": "Continue review",
+        "blurb": "The last match with a round replaying beside it."
+      },
+      "stats": {
+        "title": "Your stats",
+        "blurb": "Your numbers from the last match, found by SteamID.",
+        "eyebrow": "Your stats",
+        "eyebrowKnown": "You in the last match",
+        "notYou": "Not you?",
+        "prompt": "Enter your SteamID64 — we'll find you in your last match.",
+        "label": "Your SteamID64",
+        "find": "Find me",
+        "noteHint": "A /profiles/ link works too. Kept on this device.",
+        "noteFormat": "A SteamID64 is 17 digits and starts with 7656119.",
+        "noteVanity": "Short /id/ links are not supported yet — paste the number.",
+        "noteAbsent": "Not in your last match.",
+        "team": "Started {side}",
+        "kd": "kills–deaths",
+        "adr": "damage / round",
+        "rank": "by kills, of {count, number}",
+        "open": "Open this match"
+      },
+      "tactics": {
+        "title": "Tactics",
+        "blurb": "Your last tactic, or a way to draw the first one.",
+        "eyebrow": "Last tactic",
+        "eyebrowEmpty": "Tactics",
+        "emptyTitle": "Draw your first tactic",
+        "emptyHint": "Place players, throw utility, play it back step by step.",
+        "draw": "Open the tactics board",
+        "open": "Open tactic",
+        "meta": "{map} · {side} · {count, plural, one {# step} other {# steps}}"
+      },
+      "lineup": {
+        "title": "Lineup to practise",
+        "blurb": "A built-in or saved lineup to practise.",
+        "eyebrow": "Lineup to practise",
+        "another": "Show another lineup",
+        "emptyTitle": "No lineups on this map yet",
+        "emptyHint": "Save a throw on the map and it turns up here to practise.",
+        "meta": "{map} · {kind} · {side}",
+        "practise": "Practise it",
+        "save": "Open lineups"
+      },
+      "open": {
+        "title": "Open demo",
+        "blurb": "A drop zone for the next demo.",
+        "action": "Open a demo",
+        "hint": "or drop it anywhere on this page"
+      },
+      "recent": {
+        "title": "Recent work",
+        "blurb": "Matches and tactics, newest first.",
+        "samples": "Start with a professional match",
+        "library": "Library →",
+        "tacticMeta": "Tactic · {map} · {count, plural, one {# step} other {# steps}}",
+        "matchTitle": "{map} {startedCt, number} : {startedT, number}",
+        "matchMeta": "Match · {count, plural, one {# round} other {# rounds}}"
+      },
+      "coach": {
+        "title": "Coach note",
+        "blurb": "A drawing you left on a round.",
+        "eyebrow": "Coach note",
+        "round": "Round {round, number}",
+        "meta": "Drawn on the plate · {map}",
+        "open": "Open that round",
+        "emptyTitle": "No notes on this match",
+        "emptyHint": "Draw on a round in review and it is kept here."
+      },
+      "economy": {
+        "title": "Enemy economy",
+        "blurb": "Their likely cash for the next buy, round by round."
+      },
+      "refs": {
+        "title": "Weapons & grenades",
+        "blurb": "Prices, kill rewards and grenade timings."
+      },
+      "soon": {
+        "title": "Player stats across matches",
+        "blurb": "Coming later — not built yet."
+      },
+      "keys": {
+        "title": "Keyboard first",
+        "blurb": "Space play · [ ] rounds · V views · 1–0 players"
+      },
+      "storage": {
+        "title": "On this device",
+        "blurb": "Matches saved here, and what works offline.",
+        "status": "{count, plural, one {# match} other {# matches}} saved · ready offline"
+      }
+    }
   },
   "storage": {
     "title": "On this device",

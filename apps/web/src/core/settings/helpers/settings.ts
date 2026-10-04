@@ -52,6 +52,12 @@ export interface Settings {
   readonly isDebugShown: boolean;
   readonly isPlayerKeysShown: boolean;
   readonly isPlayerCrosshairShown: boolean;
+  /** The Home grid the reader arranged, as the JSON `features/library` writes. Empty is the default. */
+  readonly homeLayout: string;
+  /** The SteamID64 the Home stats widget looks for in the last match. Empty is unset. */
+  readonly homeSteamId: string;
+  /** Where the last opened match was left, as the JSON `features/library` writes. Empty is none. */
+  readonly homeReading: string;
 }
 
 export type SettingKey = keyof Settings;
@@ -71,6 +77,10 @@ function flag(storageKey: string, fallback: boolean): Descriptor<boolean> {
     parse: (raw) => (raw === 'true' ? true : raw === 'false' ? false : undefined),
     format: String,
   };
+}
+
+function text(storageKey: string): Descriptor<string> {
+  return { storageKey, fallback: '', parse: (raw) => raw, format: (value) => value };
 }
 
 function choice<T extends string>(
@@ -133,6 +143,9 @@ const DESCRIPTORS: { readonly [K in SettingKey]: Descriptor<Settings[K]> } = {
   isDebugShown: flag('disa.radar.debug', false),
   isPlayerKeysShown: flag('disa.spectator.keys', true),
   isPlayerCrosshairShown: flag('disa.spectator.crosshair', false),
+  homeLayout: text('disa.home.layout'),
+  homeSteamId: text('disa.home.steamId'),
+  homeReading: text('disa.home.reading'),
 };
 
 export const SETTING_KEYS = Object.keys(DESCRIPTORS) as readonly SettingKey[];
@@ -160,6 +173,9 @@ export const DEFAULT_SETTINGS: Settings = {
   isDebugShown: DESCRIPTORS.isDebugShown.fallback,
   isPlayerKeysShown: DESCRIPTORS.isPlayerKeysShown.fallback,
   isPlayerCrosshairShown: DESCRIPTORS.isPlayerCrosshairShown.fallback,
+  homeLayout: DESCRIPTORS.homeLayout.fallback,
+  homeSteamId: DESCRIPTORS.homeSteamId.fallback,
+  homeReading: DESCRIPTORS.homeReading.fallback,
 };
 
 export type StoredValues = (storageKey: string) => string | null;
@@ -198,6 +214,9 @@ export function settingsFrom(read: StoredValues): Settings {
     isDebugShown: readOne('isDebugShown', read),
     isPlayerKeysShown: readOne('isPlayerKeysShown', read),
     isPlayerCrosshairShown: readOne('isPlayerCrosshairShown', read),
+    homeLayout: readOne('homeLayout', read),
+    homeSteamId: readOne('homeSteamId', read),
+    homeReading: readOne('homeReading', read),
   };
 }
 

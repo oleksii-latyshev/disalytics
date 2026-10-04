@@ -20,7 +20,13 @@ function timestamp(seconds: number): string {
     .padStart(2, '0')}`;
 }
 
-export function RoundPreview({ suspended }: { suspended: boolean }) {
+interface PreviewProps {
+  suspended: boolean;
+  /** The plate alone, for a tile that supplies its own caption and has no room for a transport. */
+  compact?: boolean;
+}
+
+export function RoundPreview({ suspended, compact = false }: PreviewProps) {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const seekRef = useRef<HTMLInputElement>(null);
@@ -154,16 +160,18 @@ export function RoundPreview({ suspended }: { suspended: boolean }) {
 
   if (level === undefined) return null;
   return (
-    <section aria-label={t('library.preview.label')}>
-      <div className="mb-1 flex flex-wrap justify-between gap-2 text-11 text-ink-dim">
-        <span>
-          <strong className="font-medium text-ink">Dust2</strong> ·{' '}
-          <Text path="library.preview.round" values={{ round: WAY_IN_REEL.round }} />
-        </span>
-        <span>
-          <Text path="library.preview.liveRound" />
-        </span>
-      </div>
+    <section aria-label={t('library.preview.label')} className={compact ? 'size-full' : undefined}>
+      {!compact && (
+        <div className="mb-1 flex flex-wrap justify-between gap-2 text-11 text-ink-dim">
+          <span>
+            <strong className="font-medium text-ink">Dust2</strong> ·{' '}
+            <Text path="library.preview.round" values={{ round: WAY_IN_REEL.round }} />
+          </span>
+          <span>
+            <Text path="library.preview.liveRound" />
+          </span>
+        </div>
+      )}
       <div className="relative aspect-square">
         <img
           src={`${import.meta.env.BASE_URL}${radarAssetPath(level, theme)}`}
@@ -177,50 +185,52 @@ export function RoundPreview({ suspended }: { suspended: boolean }) {
           className="absolute inset-0 size-full"
         />
       </div>
-      <div className="mt-2 pt-3 [border-block-start:1px_solid_var(--color-line)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-11">
-          <span className="text-t">
-            ● NAVI · T <span ref={tRef} className="font-mono text-ink" />
-          </span>
-          <span className="text-10 text-ink-dim">IEM ATLANTA 2026</span>
-          <span className="text-ct">
-            ● Vitality · CT <span ref={ctRef} className="font-mono text-ink" />
-          </span>
+      {!compact && (
+        <div className="mt-2 pt-3 [border-block-start:1px_solid_var(--color-line)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-11">
+            <span className="text-t">
+              ● NAVI · T <span ref={tRef} className="font-mono text-ink" />
+            </span>
+            <span className="text-10 text-ink-dim">IEM ATLANTA 2026</span>
+            <span className="text-ct">
+              ● Vitality · CT <span ref={ctRef} className="font-mono text-ink" />
+            </span>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              disabled={reduced || suspended}
+              onClick={() => setPlaying((value) => !value)}
+              aria-label={t(active ? 'library.preview.pause' : 'library.preview.play')}
+              className="flex size-8 shrink-0 items-center justify-center rounded-chip border border-line-strong bg-surface-2 text-ink disabled:opacity-50"
+            >
+              {active ? (
+                <Pause aria-hidden="true" className="size-4" />
+              ) : (
+                <Play aria-hidden="true" className="size-4" />
+              )}
+            </button>
+            <input
+              ref={seekRef}
+              type="range"
+              min={0}
+              max={duration}
+              step={0.1}
+              defaultValue={68}
+              aria-label={t('library.preview.seek')}
+              onInput={(event) => {
+                position.current = event.currentTarget.valueAsNumber;
+                repaint.current?.();
+              }}
+              className="h-1 min-w-0 flex-1 accent-ink"
+            />
+            <output ref={timeRef} className="shrink-0 font-mono text-11 text-ink-dim" />
+          </div>
+          <p ref={eventRef} className="mt-3 min-h-8 text-11 text-ink-dim leading-prose">
+            {note}
+          </p>
         </div>
-        <div className="mt-3 flex items-center gap-3">
-          <button
-            type="button"
-            disabled={reduced || suspended}
-            onClick={() => setPlaying((value) => !value)}
-            aria-label={t(active ? 'library.preview.pause' : 'library.preview.play')}
-            className="flex size-8 shrink-0 items-center justify-center rounded-chip border border-line-strong bg-surface-2 text-ink disabled:opacity-50"
-          >
-            {active ? (
-              <Pause aria-hidden="true" className="size-4" />
-            ) : (
-              <Play aria-hidden="true" className="size-4" />
-            )}
-          </button>
-          <input
-            ref={seekRef}
-            type="range"
-            min={0}
-            max={duration}
-            step={0.1}
-            defaultValue={68}
-            aria-label={t('library.preview.seek')}
-            onInput={(event) => {
-              position.current = event.currentTarget.valueAsNumber;
-              repaint.current?.();
-            }}
-            className="h-1 min-w-0 flex-1 accent-ink"
-          />
-          <output ref={timeRef} className="shrink-0 font-mono text-11 text-ink-dim" />
-        </div>
-        <p ref={eventRef} className="mt-3 min-h-8 text-11 text-ink-dim leading-prose">
-          {note}
-        </p>
-      </div>
+      )}
     </section>
   );
 }

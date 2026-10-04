@@ -49,12 +49,12 @@ const shellLayoutTree = shellLayoutRoute.addChildren([
   createRoute({
     getParentRoute: () => shellLayoutRoute,
     path: '/',
-    component: lazyRouteComponent(() => import('./pages/UploadPage'), 'UploadPage'),
+    component: lazyRouteComponent(() => import('./pages/HomePage'), 'HomePage'),
   }),
   createRoute({
     getParentRoute: () => shellLayoutRoute,
     path: '/open',
-    component: lazyRouteComponent(() => import('./pages/UploadPage'), 'UploadPage'),
+    component: lazyRouteComponent(() => import('./pages/HomePage'), 'HomePage'),
   }),
   createRoute({
     getParentRoute: () => shellLayoutRoute,

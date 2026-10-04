@@ -7,7 +7,7 @@ import {
 } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview } from '@disa/map-data';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { useFontReady } from '@/shared/hooks';
@@ -22,13 +22,33 @@ import { UnknownMap } from './UnknownMap';
 /** Held outside the component so an unmeasurable font does not remount the layer every render. */
 const NO_LABELS: readonly string[] = [];
 
+/**
+ * A span of a match the plate plays on its own, outside React: the home screen's hero. The clock is
+ * a plain object a rAF loop moves and the canvas reads at draw time; `onSample` reports where it
+ * stands ten times a second so a readout beside the plate can follow without a frame channel.
+ */
+export interface PlateReplay {
+  readonly from: Frame;
+  readonly to: Frame;
+  /** Match seconds per real second. */
+  readonly rate: number;
+  /** Real seconds the plate rests on its last frame before it starts again. */
+  readonly holdSeconds: number;
+  readonly isPlaying: boolean;
+  readonly onSample?: ((frame: number) => void) | undefined;
+}
+
 interface Props {
   demo: ParsedDemo;
   /** One position on the sample axis. Nothing here advances it — DESIGN.md §10.2. */
   frame: Frame;
+  replay?: PlateReplay | undefined;
 }
 
-function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview }) {
+const MAX_STEP_SECONDS = 0.05;
+const SAMPLE_INTERVAL_MS = 100;
+
+function StillCanvas({ demo, frame, replay, overview }: Props & { overview: MapOverview }) {
   const t = useT();
 
   const [theme] = useSetting('radarTheme');
@@ -58,11 +78,12 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
   // Fixed at rest: §6.3's zoom is a reading gesture on a match the reader is inside, and this is a
   // picture of one they have not opened yet. The layers read it through a box all the same.
   const viewRef = useRef(plateView());
+  const clock = useRef(createClock(frame)).current;
 
   const layers = useMemo(() => {
     const tokens = playerTokens({
       demo,
-      clock: createClock(frame),
+      clock,
       overview,
       teamBySlot,
       labelBySlot,
@@ -89,7 +110,7 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
       : [tokens];
   }, [
     demo,
-    frame,
+    clock,
     overview,
     teamBySlot,
     labelBySlot,
@@ -100,7 +121,65 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
     floorLabels,
   ]);
 
-  const { canvasRef } = useCanvasLayers(layers);
+  const { canvasRef, repaint } = useCanvasLayers(layers);
+
+  const from = replay?.from;
+  const to = replay?.to;
+  const rate = replay?.rate;
+  const holdSeconds = replay?.holdSeconds;
+  const isPlaying = replay?.isPlaying === true;
+
+  useEffect(() => {
+    if (!isPlaying) {
+      clock.frame = frame;
+      repaint();
+    }
+  }, [clock, frame, isPlaying, repaint]);
+  const onSample = replay?.onSample;
+
+  useEffect(() => {
+    if (!isPlaying || from === undefined || to === undefined) return;
+    if (rate === undefined || holdSeconds === undefined) return;
+
+    const framesPerSecond = demo.track.sampleHz * rate;
+    let request = 0;
+    let previous = 0;
+    let held = 0;
+    const step = (now: number) => {
+      const elapsed = previous === 0 ? 0 : Math.min((now - previous) / 1000, MAX_STEP_SECONDS);
+      previous = now;
+
+      if (clock.frame >= to) {
+        held += elapsed;
+        if (held >= holdSeconds) {
+          held = 0;
+          clock.frame = from;
+        }
+      } else {
+        clock.frame = Math.min(to, Math.max(from, clock.frame) + elapsed * framesPerSecond);
+      }
+      repaint();
+      request = requestAnimationFrame(step);
+    };
+    const follow = () => {
+      cancelAnimationFrame(request);
+      previous = 0;
+      if (!document.hidden) request = requestAnimationFrame(step);
+    };
+
+    clock.frame = from;
+    follow();
+    const sampler = window.setInterval(() => {
+      if (!document.hidden) onSample?.(clock.frame);
+    }, SAMPLE_INTERVAL_MS);
+    document.addEventListener('visibilitychange', follow);
+
+    return () => {
+      cancelAnimationFrame(request);
+      window.clearInterval(sampler);
+      document.removeEventListener('visibilitychange', follow);
+    };
+  }, [clock, demo.track.sampleHz, from, holdSeconds, isPlaying, onSample, rate, repaint, to]);
 
   return (
     <canvas
@@ -127,12 +206,12 @@ function StillCanvas({ demo, frame, overview }: Props & { overview: MapOverview 
  * no now to be inside of. Names, theme and palette are the reader's, read where they are obeyed for
  * the reason `RadarView` reads its own — the plate is their only consumer.
  */
-export function PlateStill({ demo, frame }: Props) {
+export function PlateStill({ demo, frame, replay }: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return overview === undefined ? (
     <UnknownMap map={demo.header.map} />
   ) : (
-    <StillCanvas demo={demo} frame={frame} overview={overview} />
+    <StillCanvas demo={demo} frame={frame} replay={replay} overview={overview} />
   );
 }
