@@ -1,5 +1,6 @@
-import type { ParsedDemo, PlayerSlot, Team } from '@disa/demo-core';
-import { matchClutches, multiKills } from '@disa/demo-core';
+import type { ParsedDemo, PlayerSlot, Team } from '../schema';
+import { matchClutches } from './clutches';
+import { multiKills } from './duels';
 
 export interface Moment {
   readonly roundIndex: number;

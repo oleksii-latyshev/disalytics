@@ -75,9 +75,6 @@
     "tactics": "Tactics",
     "stats": "Player stats",
     "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
-    "soonNote": {
-      "stats": "What each player did across the match — opening duels, trades, utility, damage. Not built yet."
-    },
     "home": "Home"
   },
   "tools": {
@@ -703,7 +700,7 @@
       },
       "soon": {
         "title": "Player stats across matches",
-        "blurb": "Coming later — not built yet."
+        "blurb": "Find a player by SteamID64 across every saved match."
       },
       "keys": {
         "title": "Keyboard first",
@@ -729,5 +726,94 @@
     "sample": "Sample",
     "overtime": "OT{index, number}",
     "overtimeMeta": "overtime"
+  },
+  "stats": {
+    "eyebrow": "Across every saved match",
+    "label": "SteamID64",
+    "find": "Find",
+    "hint": "A /profiles/ link works too. Counted over every match saved on this device.",
+    "noteFormat": "A SteamID64 is 17 digits and starts with 7656119.",
+    "noteVanity": "Short /id/ links are not supported yet — paste the number.",
+    "loading": {
+      "title": "Reading your matches",
+      "progress": "{done, number} of {total, number} read"
+    },
+    "empty": {
+      "title": "No saved matches yet",
+      "body": "A demo you open is kept on this device, and player stats are counted from those. Open one and come back.",
+      "open": "Open a demo"
+    },
+    "start": {
+      "title": "Find a player",
+      "body": "Enter a SteamID64 to total up one player over every match saved on this device."
+    },
+    "absent": {
+      "title": "Not found in your matches",
+      "body": "{id} did not play in any of the {count, plural, one {# saved match} other {# saved matches}}."
+    },
+    "found": {
+      "you": "This is you",
+      "team": "Started {side}",
+      "line": "{id} · found in {found, number} of {total, number} saved {total, plural, one {match} other {matches}} · {rounds, number} {rounds, plural, one {round} other {rounds}}"
+    },
+    "maps": {
+      "label": "Map",
+      "all": "All maps"
+    },
+    "kpi": {
+      "kd": {
+        "label": "Kills – deaths",
+        "sub": "K/D {kd, number, ::.00} · {assists, number} {assists, plural, one {assist} other {assists}}"
+      },
+      "adr": {
+        "label": "Damage per round",
+        "subRounds": "{rounds, number} {rounds, plural, one {round} other {rounds}}"
+      },
+      "hs": {
+        "label": "Headshot kills",
+        "sub": "{headshots, number} of {kills, number}"
+      },
+      "kast": {
+        "label": "KAST",
+        "sub": "{kast, number} of {rounds, number} {rounds, plural, one {round} other {rounds}}"
+      },
+      "opening": {
+        "label": "Opening duels",
+        "sub": "won / taken"
+      },
+      "clutch": {
+        "label": "Clutches won",
+        "best": "best 1v{count, number}",
+        "none": "none yet"
+      }
+    },
+    "matches": {
+      "title": "Matches",
+      "columns": "K–D · ADR · KAST · HS",
+      "meta": "{rounds, number} {rounds, plural, one {round} other {rounds}}",
+      "win": "Win",
+      "loss": "Loss",
+      "draw": "Draw",
+      "winMark": "W",
+      "lossMark": "L",
+      "drawMark": "D",
+      "phone": "{kd} · {adr} ADR · {kast} KAST"
+    },
+    "moments": {
+      "title": "Moments",
+      "clutch": "{map} · R{round, number} · 1v{count, number} clutch",
+      "multi": "{map} · R{round, number} · {count, number}k",
+      "empty": "No clutches or multi-kill rounds yet."
+    },
+    "side": {
+      "title": "By side",
+      "record": "{kills, number}–{deaths, number} · won {won, number} of {rounds, number}",
+      "note": "Bars are rounds won on that side."
+    },
+    "weapons": {
+      "title": "Kills by weapon",
+      "empty": "No kills yet."
+    },
+    "footnote": "Counted from the demos saved on this device — nothing is fetched. Profiles from Steam and FACEIT come later."
   }
 }

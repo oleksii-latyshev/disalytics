@@ -22,9 +22,8 @@ export interface DockSection {
    */
   icon: LucideIcon;
   /**
-   * Two of the four are honest about being unfinished. They are focusable and pressing one says
-   * what the screen will do and nothing else — the navigation shape exists now so that adding
-   * those screens later is not a redesign.
+   * An entry that is honest about being unfinished is focusable and says so in its label — the
+   * navigation shape exists before the screen does. Every entry has a screen now.
    */
   isSoon: boolean;
   /** A way-in-only identity colour. The review stage still reserves these hues for demo data. */
@@ -71,7 +70,7 @@ export const DOCK_SECTIONS: readonly DockSection[] = [
     view: 'stats',
     labelPath: 'library.shell.stats',
     icon: ChartColumn,
-    isSoon: true,
+    isSoon: false,
     tone: 'linear-gradient(160deg, #ae7feb, #7442b5)',
   },
 ];

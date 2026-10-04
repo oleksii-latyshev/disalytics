@@ -146,6 +146,17 @@ export {
   serializeLineupFile,
   THROW_TYPES,
 } from './helpers/lineups';
+export type { Moment } from './helpers/moments';
+export { momentsOf } from './helpers/moments';
+export type {
+  MatchResult,
+  PlayerMatchLine,
+  PlayerMoment,
+  PlayerSummary,
+  SideRecord,
+  WeaponKills,
+} from './helpers/player-profile';
+export { foldPlayerLines, playerMatchLine } from './helpers/player-profile';
 export type { PlayerButtons, PlayerMovementAccuracy } from './helpers/player-state';
 export {
   BUTTON_ATTACK,
