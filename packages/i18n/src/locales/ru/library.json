@@ -38,7 +38,7 @@
   "saved": {
     "emptyTitle": "Здесь начнётся ваш следующий разбор.",
     "note": "Удаление матча стирает только сохранённую копию — файл .dem на вашем диске не затрагивается.",
-    "score": "{startedCt} : {startedT}",
+    "score": "{startedCt} – {startedT}",
     "rounds": "{count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}",
     "duration": "{minutes} мин",
     "size": "{megabytes, number, ::.#} МБ",
@@ -587,7 +587,7 @@
       "open": "Настроить",
       "openLabel": "Настроить главную",
       "title": "Настройка главной",
-      "hint": "Перетаскивайте виджеты, выбирайте размер, убирайте кнопкой −, добавляйте новые из галереи. Хранится на этом устройстве.",
+      "hint": "Перетаскивайте виджеты, выбирайте размер, убирайте корзиной, добавляйте новые из галереи. Хранится на этом устройстве.",
       "add": "Добавить виджеты",
       "reset": "Сбросить",
       "done": "Готово",
@@ -598,8 +598,14 @@
       "remove": "Убрать «{widget}» с главной",
       "removeShort": "Убрать с главной",
       "size": "Размер виджета «{widget}»",
-      "earlier": "Сдвинуть «{widget}» раньше",
-      "later": "Сдвинуть «{widget}» позже",
+      "handle": "Переместить «{widget}». Перетащите или используйте стрелки.",
+      "sizeName": {
+        "S": "Маленький",
+        "M": "Средний",
+        "L": "Большой",
+        "XL": "Огромный"
+      },
+      "sizeOption": "{name} · {dimensions}",
       "moved": "«{widget}» теперь {position, number}-й из {total, number}",
       "position": "Позиция {position, number}"
     },
@@ -611,6 +617,8 @@
       "momentRound": "R{round, number}",
       "momentClutch": "{player} · 1v{count, number}",
       "momentMulti": "{player} · {count, number}k",
+      "score": "{startedCt, number} – {startedT, number}",
+      "scoreNote": "Раунды команды, начавшей за CT, и команды, начавшей за T",
       "momentsMore": "ещё {count, number}",
       "resume": "Продолжить с раунда {round, number}",
       "review": "Открыть этот матч",
@@ -677,7 +685,7 @@
         "samples": "Начните с профессионального матча",
         "library": "Библиотека →",
         "tacticMeta": "Тактика · {map} · {count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}",
-        "matchTitle": "{map} {startedCt, number} : {startedT, number}",
+        "matchTitle": "{map} · {startedCt, number} – {startedT, number}",
         "matchMeta": "Матч · {count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}"
       },
       "coach": {

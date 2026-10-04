@@ -163,3 +163,10 @@ export function spanOf(size: WidgetSize): { columns: number; rows: number } {
       return { columns: 2, rows: 4 };
   }
 }
+
+/** A size as the picker writes it beside its name: columns by rows. */
+export function sizeDimensions(size: WidgetSize): string {
+  const { columns, rows } = spanOf(size);
+
+  return `${columns}×${rows}`;
+}

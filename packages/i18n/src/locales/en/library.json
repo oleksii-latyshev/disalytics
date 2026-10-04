@@ -38,7 +38,7 @@
   "saved": {
     "emptyTitle": "Your next review starts here.",
     "note": "Removing a match clears the saved copy only — the .dem file on your disk is untouched.",
-    "score": "{startedCt} : {startedT}",
+    "score": "{startedCt} – {startedT}",
     "rounds": "{count, plural, one {# round} other {# rounds}}",
     "duration": "{minutes} min",
     "size": "{megabytes, number, ::.#} MB",
@@ -587,7 +587,7 @@
       "open": "Customize",
       "openLabel": "Customize home",
       "title": "Customize home",
-      "hint": "Drag widgets to reorder, pick a size, remove with −, add more from the gallery. Kept on this device.",
+      "hint": "Drag widgets to reorder, pick a size, remove with the bin, add more from the gallery. Kept on this device.",
       "add": "Add widgets",
       "reset": "Reset",
       "done": "Done",
@@ -598,8 +598,14 @@
       "remove": "Remove {widget} from home",
       "removeShort": "Remove from home",
       "size": "Size of {widget}",
-      "earlier": "Move {widget} earlier",
-      "later": "Move {widget} later",
+      "handle": "Move {widget}. Drag it, or use the arrow keys.",
+      "sizeName": {
+        "S": "Small",
+        "M": "Medium",
+        "L": "Large",
+        "XL": "Extra large"
+      },
+      "sizeOption": "{name} · {dimensions}",
       "moved": "{widget} is now number {position, number} of {total, number}",
       "position": "Position {position, number}"
     },
@@ -611,6 +617,8 @@
       "momentRound": "R{round, number}",
       "momentClutch": "{player} · 1v{count, number}",
       "momentMulti": "{player} · {count, number}k",
+      "score": "{startedCt, number} – {startedT, number}",
+      "scoreNote": "Rounds won by the team that started CT, and by the one that started T",
       "momentsMore": "+{count, number} more",
       "resume": "Resume at round {round, number}",
       "review": "Review this match",
@@ -677,7 +685,7 @@
         "samples": "Start with a professional match",
         "library": "Library →",
         "tacticMeta": "Tactic · {map} · {count, plural, one {# step} other {# steps}}",
-        "matchTitle": "{map} {startedCt, number} : {startedT, number}",
+        "matchTitle": "{map} · {startedCt, number} – {startedT, number}",
         "matchMeta": "Match · {count, plural, one {# round} other {# rounds}}"
       },
       "coach": {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { carriesFiles } from '../helpers/demo-file';
 
 function isDemoFile(file: File): boolean {
   const name = file.name.toLowerCase();
@@ -23,6 +24,7 @@ export function useFileDrop(onFile: (file: File) => void): boolean {
   useEffect(() => {
     const allow = (event: DragEvent) => {
       if (event.defaultPrevented || isModalOpen()) return;
+      if (!carriesFiles(Array.from(event.dataTransfer?.types ?? []))) return;
       event.preventDefault();
       setIsDraggedOver(true);
     };

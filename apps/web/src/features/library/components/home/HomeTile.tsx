@@ -1,7 +1,8 @@
 import { Text, useT } from '@disa/i18n';
-import { ArrowLeft, ArrowRight, Minus } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
-import type { Placement } from '../../helpers/home-layout';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@disa/ui';
+import { GripVertical, Trash2 } from 'lucide-react';
+import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from 'react';
+import { type Placement, sizeDimensions } from '../../helpers/home-layout';
 import type { WidgetId, WidgetSize, WidgetSpec } from '../../helpers/home-widgets';
 
 /** Spelled out in full, because Tailwind reads class names off the page and not off a template. */
@@ -38,13 +39,33 @@ interface Props {
   onHide: (id: WidgetId) => void;
   onResize: (id: WidgetId, size: WidgetSize) => void;
   onMove: (id: WidgetId, delta: -1 | 1) => void;
-  isFirst: boolean;
-  isLast: boolean;
   children: ReactNode;
 }
 
 const CONTROL =
-  'flex h-7 min-w-7 items-center justify-center rounded-chip px-1.5 text-ink-dim hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-30';
+  'flex size-8 items-center justify-center rounded-chip text-ink-dim hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus';
+
+/** The pointer's place in the tile, written straight onto it: a spotlight must not render React. */
+function followPointer(event: PointerEvent<HTMLLIElement>) {
+  const tile = event.currentTarget;
+  const box = tile.getBoundingClientRect();
+  tile.style.setProperty('--mx', `${Math.round(event.clientX - box.left)}px`);
+  tile.style.setProperty('--my', `${Math.round(event.clientY - box.top)}px`);
+}
+
+/** Arrow keys on the handle: left and up go earlier, right and down later. */
+function stepOf(event: KeyboardEvent): -1 | 1 | null {
+  switch (event.key) {
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      return -1;
+    case 'ArrowRight':
+    case 'ArrowDown':
+      return 1;
+    default:
+      return null;
+  }
+}
 
 export function HomeTile({
   placement,
@@ -59,11 +80,14 @@ export function HomeTile({
   onHide,
   onResize,
   onMove,
-  isFirst,
-  isLast,
   children,
 }: Props) {
   const t = useT();
+  const sizeLabel = (size: WidgetSize) =>
+    t('library.home.customize.sizeOption', {
+      name: t(`library.home.customize.sizeName.${size}`),
+      dimensions: sizeDimensions(size),
+    });
   const title = t(spec.titlePath);
   const span = `${PHONE_SPAN_BY_ID[spec.id] ?? PHONE_SPAN[placement.size]} ${DESKTOP_SPAN[placement.size]}`;
   const border = isEditing
@@ -88,8 +112,9 @@ export function HomeTile({
       }}
       onDrop={(event) => event.preventDefault()}
       onDragEnd={onDragEnd}
+      onPointerMove={isEditing || spec.isSoon ? undefined : followPointer}
       style={{ '--tile-index': index } as CSSProperties}
-      className={`home-tile group relative min-w-0 overflow-hidden rounded-float border ${border} ${
+      className={`home-tile ${isEditing || spec.isSoon ? '' : 'home-tile-lit'} group relative min-w-0 overflow-hidden rounded-float border ${border} ${
         spec.isSoon ? 'bg-transparent' : 'bg-surface-1'
       } ${span} ${isEditing ? 'home-tile-editing cursor-grab' : ''} ${
         isDragging ? 'opacity-35 outline-2 -outline-offset-2 outline-dashed outline-ink-dim' : ''
@@ -101,7 +126,44 @@ export function HomeTile({
       </div>
 
       {isEditing && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-card border border-line-strong bg-surface-0/90 p-0.5">
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-card border border-line-strong bg-surface-0/90 p-1">
+          <button
+            type="button"
+            title={t('library.home.customize.handle', { widget: title })}
+            aria-label={t('library.home.customize.handle', { widget: title })}
+            onKeyDown={(event) => {
+              const step = stepOf(event);
+              if (step === null) return;
+              event.preventDefault();
+              onMove(spec.id, step);
+            }}
+            className={`${CONTROL} cursor-grab`}
+          >
+            <GripVertical aria-hidden="true" className="size-4" />
+          </button>
+          {spec.sizes.length > 1 && (
+            <Select
+              value={placement.size}
+              onValueChange={(next) => {
+                const size = spec.sizes.find((candidate) => candidate === next);
+                if (size !== undefined) onResize(spec.id, size);
+              }}
+            >
+              <SelectTrigger
+                aria-label={t('library.home.customize.size', { widget: title })}
+                className="h-8 w-auto gap-1.5 border-0 bg-transparent px-2 text-12"
+              >
+                <SelectValue>{() => sizeLabel(placement.size)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent align="end">
+                {spec.sizes.map((size) => (
+                  <SelectItem key={size} value={size}>
+                    {sizeLabel(size)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <button
             type="button"
             title={t('library.home.customize.removeShort')}
@@ -109,47 +171,7 @@ export function HomeTile({
             onClick={() => onHide(spec.id)}
             className={CONTROL}
           >
-            <Minus aria-hidden="true" className="size-4" />
-          </button>
-          {spec.sizes.length > 1 && (
-            <fieldset className="m-0 flex min-w-0 border-0 p-0">
-              <legend className="sr-only">
-                {t('library.home.customize.size', { widget: title })}
-              </legend>
-              {spec.sizes.map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  aria-pressed={size === placement.size}
-                  onClick={() => onResize(spec.id, size)}
-                  className={`${CONTROL} font-mono text-12 ${
-                    size === placement.size
-                      ? 'bg-ink text-surface-0 hover:bg-ink hover:text-surface-0'
-                      : ''
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </fieldset>
-          )}
-          <button
-            type="button"
-            disabled={isFirst}
-            aria-label={t('library.home.customize.earlier', { widget: title })}
-            onClick={() => onMove(spec.id, -1)}
-            className={CONTROL}
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </button>
-          <button
-            type="button"
-            disabled={isLast}
-            aria-label={t('library.home.customize.later', { widget: title })}
-            onClick={() => onMove(spec.id, 1)}
-            className={CONTROL}
-          >
-            <ArrowRight aria-hidden="true" className="size-4" />
+            <Trash2 aria-hidden="true" className="size-4" />
           </button>
           <span className="sr-only">
             <Text path="library.home.customize.position" values={{ position }} />

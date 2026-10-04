@@ -8,7 +8,7 @@ import { useShellActions } from '../../hooks/use-shell-actions';
 import { WidgetBadge } from './WidgetBadge';
 
 const STRIP =
-  'relative flex h-full min-w-0 flex-col items-start justify-center gap-2 text-left md:flex-row md:items-center md:gap-3.5';
+  'relative flex h-full p-4 md:px-5 md:py-[18px] min-w-0 flex-col items-start justify-center gap-2 text-left md:flex-row md:items-center md:gap-3.5';
 
 function StripBody({ id, children }: { id: WidgetId; children?: ReactNode }) {
   const spec = widgetSpec(id);

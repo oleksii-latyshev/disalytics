@@ -14,3 +14,11 @@ export function takeChosenFile(input: HTMLInputElement): File | null {
 
   return chosen;
 }
+
+/**
+ * Whether a drag is carrying files from outside the page. A tile being rearranged drags text, and
+ * must not light the app-wide drop-a-demo overlay.
+ */
+export function carriesFiles(types: readonly string[] | undefined): boolean {
+  return types?.includes('Files') === true;
+}

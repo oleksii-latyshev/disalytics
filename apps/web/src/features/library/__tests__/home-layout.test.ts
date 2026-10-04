@@ -9,10 +9,11 @@ import {
   reorder,
   resize,
   setShown,
+  sizeDimensions,
   spanOf,
   visiblePlacements,
 } from '../helpers/home-layout';
-import { WIDGETS } from '../helpers/home-widgets';
+import { WIDGETS, type WidgetSize } from '../helpers/home-widgets';
 
 const ids = (layout: HomeLayout) => layout.map((placement) => placement.id);
 
@@ -130,5 +131,12 @@ describe('spanOf', () => {
     expect(spanOf('M')).toEqual({ columns: 1, rows: 2 });
     expect(spanOf('L')).toEqual({ columns: 2, rows: 2 });
     expect(spanOf('XL')).toEqual({ columns: 2, rows: 4 });
+  });
+});
+
+describe('sizeDimensions', () => {
+  it('writes columns by rows for every size', () => {
+    const sizes: readonly WidgetSize[] = ['S', 'M', 'L', 'XL'];
+    expect(sizes.map(sizeDimensions)).toEqual(['1×1', '1×2', '2×2', '2×4']);
   });
 });
