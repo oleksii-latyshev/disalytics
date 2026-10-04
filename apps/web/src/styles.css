@@ -69,6 +69,10 @@
 /* The spotlight: a glow and a bright hairline that follow the pointer, both read from `--mx`/`--my`,
    which `HomeTile` writes straight onto the element. Nothing here is state, and it is off while the
    tiles are being rearranged and for the dashed "soon" tile. */
+.home-tile-lit {
+  --mx: 50%;
+  --my: 50%;
+}
 .home-tile-lit::before,
 .home-tile-lit::after {
   content: "";
@@ -81,19 +85,11 @@
   transition: opacity 200ms;
 }
 .home-tile-lit::before {
-  background: radial-gradient(
-    360px circle at var(--mx, 50%) var(--my, 50%),
-    #ffffff12,
-    transparent 65%
-  );
+  background: radial-gradient(360px circle at var(--mx) var(--my), #ffffff12, transparent 65%);
 }
 .home-tile-lit::after {
   padding: 1px;
-  background: radial-gradient(
-    240px circle at var(--mx, 50%) var(--my, 50%),
-    #ffffff8c,
-    transparent 70%
-  );
+  background: radial-gradient(240px circle at var(--mx) var(--my), #ffffff8c, transparent 70%);
   mask:
     linear-gradient(#000 0 0) content-box exclude,
     linear-gradient(#000 0 0);
