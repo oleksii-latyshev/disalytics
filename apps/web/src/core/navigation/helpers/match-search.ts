@@ -1,7 +1,7 @@
 export type MatchView = 'stage' | 'stats' | 'duels' | 'heatmap' | 'utility';
-export type StatsTab = 'players' | 'rounds';
+export type StatsTab = 'players' | 'rounds' | 'utility';
 
-export const STATS_TABS: readonly StatsTab[] = ['players', 'rounds'];
+export const STATS_TABS: readonly StatsTab[] = ['players', 'rounds', 'utility'];
 export type AppPath = '/' | '/open' | '/library' | '/tools' | '/lineups' | '/tactics' | '/stats';
 /** `tab` is only carried by the Stats view; every other view leaves it out. */
 export type MatchSearch = { round: number; view: MatchView; tab?: StatsTab };
@@ -75,7 +75,7 @@ function isMatchView(value: unknown): value is MatchView {
 }
 
 export function isStatsTab(value: unknown): value is StatsTab {
-  return value === 'players' || value === 'rounds';
+  return value === 'players' || value === 'rounds' || value === 'utility';
 }
 
 /**

@@ -73,9 +73,11 @@ export {
   WIN_REWARD_ELIMINATION,
   WIN_REWARD_TIME_EXPIRED,
 } from './helpers/economy-rules';
+export type { PlayerBlinds } from './helpers/enemy-blind-time';
 export {
   hasBlindEvents,
   matchEnemyBlindTime,
+  matchPlayerBlinds,
   matchPlayerEnemyBlindTime,
 } from './helpers/enemy-blind-time';
 export type {
@@ -194,6 +196,7 @@ export type {
 } from './helpers/player-stats';
 export {
   MULTI_KILL_SIZES,
+  matchPlayerFlashAssists,
   matchPlayerStats,
   RATING_1_0,
   rating1,
@@ -300,6 +303,19 @@ export {
   utilityKindOfGrenade,
 } from './helpers/utility';
 export { matchPlayerUtilityDamage, matchUtilityDamage } from './helpers/utility-damage';
+export type {
+  PlayerUtilityStats,
+  TeamUtilityStats,
+  ThrownCounts,
+  ThrownKind,
+  UtilityFigures,
+} from './helpers/utility-stats';
+export {
+  averageEnemyBlind,
+  enemiesPerFlash,
+  matchUtilityStats,
+  totalThrown,
+} from './helpers/utility-stats';
 export type { UtilityThrow } from './helpers/utility-throws';
 export { matchUtility } from './helpers/utility-throws';
 export type { WeaponIconId } from './helpers/weapon-icons';

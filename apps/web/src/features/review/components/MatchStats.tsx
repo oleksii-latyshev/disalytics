@@ -3,6 +3,7 @@ import { Text, type TranslationKey, useT } from '@disa/i18n';
 import { STATS_TABS, type StatsTab } from '@/core/navigation';
 import { StatsPlayers } from './StatsPlayers';
 import { StatsRounds } from './StatsRounds';
+import { StatsUtility } from './StatsUtility';
 
 interface Props {
   demo: ParsedDemo;
@@ -13,6 +14,7 @@ interface Props {
 const TAB_LABELS: Record<StatsTab, TranslationKey> = {
   players: 'review.stats.tabs.players',
   rounds: 'review.stats.tabs.rounds',
+  utility: 'review.stats.tabs.utility',
 };
 
 /**
@@ -59,7 +61,9 @@ export function MatchStats({ demo, tab, onTab }: Props) {
           </nav>
         </header>
 
-        {tab === 'players' ? <StatsPlayers demo={demo} /> : <StatsRounds demo={demo} />}
+        {tab === 'players' && <StatsPlayers demo={demo} />}
+        {tab === 'rounds' && <StatsRounds demo={demo} />}
+        {tab === 'utility' && <StatsUtility demo={demo} />}
       </div>
     </div>
   );

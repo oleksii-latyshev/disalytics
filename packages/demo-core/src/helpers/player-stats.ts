@@ -155,6 +155,40 @@ function flashAssistersOf(
   return flashers;
 }
 
+/**
+ * Flash assists per player, from the same `flashAssistersOf` the Players tab counts through, so a
+ * figure on the Utility tab and the one on the Players tab are one rule and cannot drift.
+ */
+export function matchPlayerFlashAssists(demo: ParsedDemo): ReadonlyMap<PlayerSlot, number> {
+  const totals = new Map<PlayerSlot, number>();
+  const contexts = new Map<number, RoundContext>();
+
+  for (const duel of matchDuels(demo)) {
+    if (!isOpponentDuel(duel)) continue;
+
+    const kill = demo.events.kills[duel.killIndex];
+    const round = demo.events.rounds[duel.roundIndex];
+    if (kill === undefined || round === undefined) continue;
+
+    let context = contexts.get(duel.roundIndex);
+    if (context === undefined) {
+      context = {
+        demo,
+        round,
+        roundIndex: duel.roundIndex,
+        sides: sidesBySlotAtRound(demo, duel.roundIndex),
+      };
+      contexts.set(duel.roundIndex, context);
+    }
+
+    for (const flasher of flashAssistersOf(context, kill.tick, duel.attacker, duel.victim)) {
+      totals.set(flasher, (totals.get(flasher) ?? 0) + 1);
+    }
+  }
+
+  return totals;
+}
+
 type Tallies = (slot: PlayerSlot) => Tally;
 
 interface RoundOutcome {

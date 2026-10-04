@@ -17,7 +17,7 @@ at https://disalytics.disa-67b.workers.dev. It turns a 40-minute match into a ~1
 - **Game-agnostic name** — nothing outside `crates/demo-parser` assumes "CS2".
 
 **What ships:** way in (home widgets, library, samples, dock, player stats) · review stage (plate, team cards, feed, round
-strip and axis, transport) · match views (`V`): stats (players, rounds & economy tabs), duels, heat map, utility ·
+strip and axis, transport) · match views (`V`): stats (players, rounds & economy, utility tabs), duels, heat map, utility ·
 settings and help sheets · offline shell, update prompt, OS file handling.
 
 ## 2. Hard Rules
