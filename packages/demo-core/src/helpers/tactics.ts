@@ -36,6 +36,8 @@ export interface TacticThrow {
   readonly to: TacticPoint;
   readonly releaseTime: number;
   readonly lineupId?: string | undefined;
+  /** The teammate who buys this grenade and drops it to the thrower, when the thrower does not carry it. */
+  readonly droppedBy?: number | undefined;
   readonly notes?: string | undefined;
 }
 
@@ -127,6 +129,9 @@ function isTacticThrow(value: unknown): value is TacticThrow {
     return false;
   }
   if (value.lineupId !== undefined && typeof value.lineupId !== 'string') {
+    return false;
+  }
+  if (value.droppedBy !== undefined && !isFiniteNumber(value.droppedBy)) {
     return false;
   }
   if (value.notes !== undefined && typeof value.notes !== 'string') {

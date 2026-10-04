@@ -433,7 +433,11 @@
       "noThrows": "No throws in this step",
       "notesHeading": "Notes",
       "throwMeta": "{player} · +{seconds, number, ::.#}s",
-      "throwFromLineup": "{kind} · {lineup}"
+      "throwFromLineup": "{kind} · {lineup}",
+      "addNext": "Add next step",
+      "pickSpawn": "Select a player, then click a spawn spot to place them there. Dragging near a spot snaps to it.",
+      "addHint": "This tactic has one step so far. Add the next one to move the team on from the spawn.",
+      "spawn": "Spawn"
     },
     "transport": {
       "play": "Play",
@@ -473,13 +477,18 @@
       "selected": "Player {slot}",
       "label": "Role / Name",
       "labelPlaceholder": "e.g. IGL, Entry",
-      "yaw": "Facing angle (°)"
+      "yaw": "Facing angle (°)",
+      "spawn": "Spawn spot",
+      "spawnSpot": "Spot {number}",
+      "spawnCustom": "Custom"
     },
     "throw": {
       "delete": "Delete throw",
       "pickPlayer": "Select a player on the board or in the utility list, then click a lineup.",
       "pickLineup": "Click a lineup on the map to give it to player {slot}, or drag on the map to draw a throw.",
-      "noLineups": "This map has no matching lineups for this kind. Drag on the map to draw a throw."
+      "noLineups": "This map has no matching lineups for this kind. Drag on the map to draw a throw.",
+      "droppedBy": "Dropped by",
+      "droppedByNone": "No one, thrower carries it"
     },
     "library": {
       "newTactic": "New tactic",
@@ -538,7 +547,8 @@
       },
       "rail": "{side} · {count, plural, one {# player} other {# players}}",
       "utility": "Utility",
-      "noUtility": "No utility"
+      "noUtility": "No utility",
+      "drops": "drops {count, number} {kind} to P{slot}"
     },
     "tabs": {
       "label": "Editor panels",

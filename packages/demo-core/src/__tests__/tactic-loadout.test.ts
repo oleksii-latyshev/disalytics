@@ -3,8 +3,14 @@ import { grenadePrice, tacticLoadout } from '../helpers/tactic-loadout';
 import type { Tactic, TacticSide, TacticThrow } from '../helpers/tactics';
 import type { UtilityKind } from '../helpers/utility';
 
-function thrown(id: string, throwerSlot: number, kind: UtilityKind): TacticThrow {
+function thrown(
+  id: string,
+  throwerSlot: number,
+  kind: UtilityKind,
+  droppedBy?: number,
+): TacticThrow {
   return {
+    ...(droppedBy === undefined ? {} : { droppedBy }),
     id,
     throwerSlot,
     kind,
@@ -108,5 +114,70 @@ describe('tacticLoadout', () => {
       ]),
     );
     expect(loadout.warnings).toEqual([]);
+  });
+
+  describe('with drops', () => {
+    it('buys a dropped grenade for the dropper, so the thrower carries one smoke', () => {
+      const loadout = tacticLoadout(
+        tacticWith('T', [thrown('a', 1, 'smoke'), thrown('b', 1, 'smoke', 3)]),
+      );
+      const byslot = new Map(loadout.players.map((player) => [player.slot, player]));
+      expect(byslot.get(1)?.counts.smoke).toBe(1);
+      expect(byslot.get(3)?.counts.smoke).toBe(1);
+      expect(byslot.get(3)?.cost).toBe(300);
+      expect(byslot.get(3)?.drops).toEqual([{ toSlot: 1, kind: 'smoke', count: 1 }]);
+      expect(byslot.get(1)?.drops).toEqual([]);
+      expect(loadout.warnings).toEqual([]);
+    });
+
+    it('leaves the team totals as they were without the drop', () => {
+      const plain = tacticLoadout(
+        tacticWith('T', [thrown('a', 1, 'smoke'), thrown('b', 1, 'smoke')]),
+      );
+      const dropped = tacticLoadout(
+        tacticWith('T', [thrown('a', 1, 'smoke'), thrown('b', 1, 'smoke', 3)]),
+      );
+      expect(dropped.teamCounts).toEqual(plain.teamCounts);
+      expect(dropped.teamTotal).toBe(plain.teamTotal);
+      expect(dropped.teamCost).toBe(plain.teamCost);
+      expect(plain.warnings).toHaveLength(1);
+    });
+
+    it('warns about the dropper when what they buy passes the limits', () => {
+      const loadout = tacticLoadout(
+        tacticWith('T', [
+          thrown('a', 3, 'smoke'),
+          thrown('b', 1, 'smoke', 3),
+          thrown('c', 2, 'smoke', 3),
+        ]),
+      );
+      expect(loadout.warnings).toContainEqual({
+        code: 'kindLimit',
+        slot: 3,
+        kind: 'smoke',
+        count: 3,
+      });
+      expect(loadout.warnings.every((warning) => warning.slot === 3)).toBe(true);
+      const dropper = loadout.players.find((player) => player.slot === 3);
+      expect(dropper?.drops).toEqual([
+        { toSlot: 1, kind: 'smoke', count: 1 },
+        { toSlot: 2, kind: 'smoke', count: 1 },
+      ]);
+    });
+
+    it('merges repeated drops of one kind to one teammate', () => {
+      const loadout = tacticLoadout(
+        tacticWith('T', [thrown('a', 1, 'flash', 3), thrown('b', 1, 'flash', 3)]),
+      );
+      expect(loadout.players.find((player) => player.slot === 3)?.drops).toEqual([
+        { toSlot: 1, kind: 'flash', count: 2 },
+      ]);
+    });
+
+    it('treats a player dropping to themselves as carrying it', () => {
+      const loadout = tacticLoadout(tacticWith('T', [thrown('a', 1, 'smoke', 1)]));
+      expect(loadout.players.find((player) => player.slot === 1)?.drops).toEqual([]);
+      expect(loadout.players.find((player) => player.slot === 1)?.counts.smoke).toBe(1);
+    });
   });
 });

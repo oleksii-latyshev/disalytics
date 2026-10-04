@@ -20,6 +20,10 @@ export interface TacticPlateProps {
   readonly onPlayerDrag?:
     | ((slot: number, worldPoint: { x: number; y: number }) => void)
     | undefined;
+  /** The player was let go after a drag; the opening step snaps it onto a spawn spot. */
+  readonly onPlayerDragEnd?: ((slot: number) => void) | undefined;
+  /** A free spawn spot was clicked with a player selected. */
+  readonly onPickSpawn?: ((spot: number) => void) | undefined;
   readonly onThrowDrag?:
     | ((throwId: string, end: 'from' | 'to', worldPoint: { x: number; y: number }) => void)
     | undefined;

@@ -24,6 +24,7 @@ const step: TacticStep = {
       from: { x: 0, y: 0 },
       to: { x: 1, y: 1 },
       releaseTime: 0,
+      droppedBy: 4,
     },
   ],
 };
@@ -34,6 +35,7 @@ describe('stepThrowRows', () => {
     const rows = stepThrowRows(step, lineups);
     expect(rows[0]).toMatchObject({ lineupTitle: 'Connector smoke', label: 'Entry', slot: 1 });
     expect(rows[1]).toMatchObject({ lineupTitle: undefined, label: '', slot: 3 });
+    expect(rows.map((row) => row.droppedBy)).toEqual([undefined, 4]);
   });
 
   it('is empty without a step', () => {

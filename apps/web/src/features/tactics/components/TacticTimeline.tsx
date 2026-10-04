@@ -86,19 +86,18 @@ export function TacticTimeline({
                   isActive ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-hover hover:text-ink',
                 )}
               >
-                {name === '' ? index + 1 : `${index + 1} ${name}`}
+                {`${index + 1} ${name === '' && index === 0 ? t('library.tactics.steps.spawn') : name}`.trim()}
               </button>
             );
           })}
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
             onClick={onAddStep}
-            aria-label={t('library.tactics.steps.add')}
             title={t('library.tactics.steps.add')}
-            className="size-7 text-ink-dim hover:text-ink"
+            className="h-7 shrink-0 gap-1 px-2.5 text-12"
           >
             <Plus />
+            {t('library.tactics.steps.add')}
           </Button>
         </div>
       </div>

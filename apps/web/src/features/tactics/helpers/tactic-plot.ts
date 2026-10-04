@@ -3,6 +3,7 @@ import type {
   TacticDrawingStroke,
   TacticPlayerPosition,
   TacticThrow,
+  WorldPoint,
 } from '@disa/demo-core';
 import { type MapOverview, type RadarPoint, radarToWorld, radarX, radarY } from '@disa/map-data';
 import { pointDistance, pointToSegmentDistance } from '@/features/radar';
@@ -205,6 +206,30 @@ export function findNearestTacticLineup(
     if (dist <= bestDist) {
       bestDist = dist;
       best = lineup;
+    }
+  }
+
+  return best;
+}
+
+/** The index of the spawn spot under the pointer within the screen distance threshold. */
+export function findNearestTacticSpawn(
+  radarPt: RadarPoint,
+  spawns: readonly WorldPoint[],
+  overview: MapOverview,
+  scale: number,
+  maxDistPx = 14,
+): number | null {
+  let best: number | null = null;
+  let bestDist = maxDistPx / scale;
+
+  for (let i = 0; i < spawns.length; i++) {
+    const spawn = spawns[i];
+    if (spawn === undefined) continue;
+    const dist = pointDistance(tacticWorldToRadar(overview, spawn), radarPt);
+    if (dist <= bestDist) {
+      bestDist = dist;
+      best = i;
     }
   }
 

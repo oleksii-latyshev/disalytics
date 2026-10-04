@@ -189,6 +189,20 @@ export function updateThrowPositionInStep(
   return { ...step, throws: nextThrows };
 }
 
+/** Names the teammate who buys and drops this throw's grenade, or clears it with `undefined`. */
+export function updateThrowDroppedBy(
+  step: TacticStep,
+  throwId: string,
+  droppedBy: number | undefined,
+): TacticStep {
+  const nextThrows = step.throws.map((t) => {
+    if (t.id !== throwId) return t;
+    const { droppedBy: _previous, ...rest } = t;
+    return droppedBy === undefined ? rest : { ...rest, droppedBy };
+  });
+  return { ...step, throws: nextThrows };
+}
+
 export function deleteThrowFromStep(step: TacticStep, throwId: string): TacticStep {
   const nextThrows = step.throws.filter((t) => t.id !== throwId);
   return { ...step, throws: nextThrows };

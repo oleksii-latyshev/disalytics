@@ -1,4 +1,4 @@
-import type { Lineup, TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
+import type { Lineup, TacticDrawingStroke, TacticThrow, WorldPoint } from '@disa/demo-core';
 import { type MapOverview, RADAR_IMAGE_SIZE, type RadarPoint } from '@disa/map-data';
 import {
   type PointerEvent as ReactPointerEvent,
@@ -16,7 +16,11 @@ import {
   performDragMove,
   resolveHitDragState,
 } from '../helpers/tactic-plate-drag';
-import { findNearestTacticLineup, tacticRadarToWorld } from '../helpers/tactic-plot';
+import {
+  findNearestTacticLineup,
+  findNearestTacticSpawn,
+  tacticRadarToWorld,
+} from '../helpers/tactic-plot';
 import { createTacticToolGestures } from './tactic-tool-gestures';
 
 interface HoverState {
@@ -38,6 +42,8 @@ interface UseTacticPlatePointerOptions {
   readonly liveThrowRef: RefObject<TacticThrow | null>;
   readonly hover: HoverState;
   readonly lineups: readonly Lineup[] | undefined;
+  /** The spots on show, which a click can pick; undefined when they are not. */
+  readonly spawns: readonly WorldPoint[] | undefined;
   readonly props: Omit<TacticPlateProps, 'map'>;
   /** Told the zoom after a wheel notch, so a readout beside the plate can follow it. */
   readonly onZoomChange?: ((zoom: number) => void) | undefined;
@@ -53,6 +59,7 @@ export function useTacticPlatePointer({
   liveThrowRef,
   hover,
   lineups,
+  spawns,
   props,
   onZoomChange,
 }: UseTacticPlatePointerOptions) {
@@ -60,6 +67,9 @@ export function useTacticPlatePointer({
     onSelectSlot,
     onSelectThrow,
     onPlayerDrag,
+    onPlayerDragEnd,
+    onPickSpawn,
+    selectedSlot = null,
     onThrowDrag,
     onPlateClick,
     isEditable = false,
@@ -75,6 +85,7 @@ export function useTacticPlatePointer({
     setHoveredLineupId,
   } = hover;
   const dragStateRef = useRef<DragState>(null);
+  const hasDraggedPlayerRef = useRef(false);
   const pendingThrowStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const getRadarPointAndScale = useCallback(
@@ -117,6 +128,33 @@ export function useTacticPlatePointer({
     props,
   });
 
+  /** A click on a spawn spot places the selected player there; true when it did. */
+  const pickSpawnAt = (info: { readonly pt: RadarPoint; readonly scale: number }): boolean => {
+    if (spawns === undefined || selectedSlot === null || !isEditable) return false;
+    const spot = findNearestTacticSpawn(info.pt, spawns, overview, info.scale);
+    if (spot === null) return false;
+    onPickSpawn?.(spot);
+    return true;
+  };
+
+  /** A press on empty plate pans it (middle button or zoomed in); otherwise it is a plain click. */
+  const handleBackgroundDown = (
+    event: ReactPointerEvent<HTMLCanvasElement>,
+    worldPos: { readonly x: number; readonly y: number },
+  ) => {
+    if (event.button === 1 || viewRef.current.zoom > 1) {
+      dragStateRef.current = {
+        type: 'pan',
+        startX: event.clientX,
+        startY: event.clientY,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
+    }
+
+    onPlateClick?.(worldPos);
+  };
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const info = getRadarPointAndScale(event.clientX, event.clientY);
     if (info === null) return;
@@ -138,6 +176,8 @@ export function useTacticPlatePointer({
     }
 
     const hit = checkPointerHit(info.pt, info.scale, interpolated, overview);
+    if (hit === null && pickSpawnAt(info)) return;
+
     const drag = resolveHitDragState(
       hit,
       isEditable,
@@ -155,17 +195,7 @@ export function useTacticPlatePointer({
 
     if (hit !== null) return;
 
-    if (event.button === 1 || viewRef.current.zoom > 1) {
-      dragStateRef.current = {
-        type: 'pan',
-        startX: event.clientX,
-        startY: event.clientY,
-      };
-      event.currentTarget.setPointerCapture(event.pointerId);
-      return;
-    }
-
-    onPlateClick?.(worldPos);
+    handleBackgroundDown(event, worldPos);
   };
 
   const updateHoverTargets = (info: { readonly pt: RadarPoint; readonly scale: number } | null) => {
@@ -191,6 +221,7 @@ export function useTacticPlatePointer({
     const dragState = dragStateRef.current;
 
     if (dragState !== null && info !== null) {
+      if (dragState.type === 'player') hasDraggedPlayerRef.current = true;
       performDragMove({
         dragState,
         pt: info.pt,
@@ -230,6 +261,10 @@ export function useTacticPlatePointer({
     }
 
     dragStateRef.current = null;
+    if (dragState.type === 'player' && hasDraggedPlayerRef.current) {
+      onPlayerDragEnd?.(dragState.slot);
+    }
+    hasDraggedPlayerRef.current = false;
   };
 
   const handlePointerLeave = () => {

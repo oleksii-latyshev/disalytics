@@ -21,6 +21,7 @@ import {
   updateStepName,
   updateStepNotes,
   updateStepOffset,
+  updateThrowDroppedBy,
   updateThrowPositionInStep,
 } from '../helpers/editor-actions';
 
@@ -356,6 +357,24 @@ describe('editor-actions', () => {
       // Redo with empty future returns null
       const redoEmpty = redoHistoryState([], [], t1);
       expect(redoEmpty).toBeNull();
+    });
+  });
+
+  describe('throw droppers', () => {
+    it('names a dropper for one throw and clears it again', () => {
+      const tactic = createMockTactic();
+      const step = tactic.steps[0] as TacticStep;
+      const { step: withThrow, newThrow } = addThrowToStep(step, {
+        kind: 'smoke',
+        from: { x: 0, y: 0 },
+        to: { x: 1, y: 1 },
+      });
+      const dropped = updateThrowDroppedBy(withThrow, newThrow.id, 3);
+      expect(dropped.throws.find((t) => t.id === newThrow.id)?.droppedBy).toBe(3);
+      const cleared = updateThrowDroppedBy(dropped, newThrow.id, undefined);
+      const throwAfter = cleared.throws.find((t) => t.id === newThrow.id);
+      expect(throwAfter).toBeDefined();
+      expect(throwAfter !== undefined && 'droppedBy' in throwAfter).toBe(false);
     });
   });
 });

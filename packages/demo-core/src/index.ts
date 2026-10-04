@@ -240,10 +240,13 @@ export {
   slotSampleIndex,
   tickAtFrame,
 } from './helpers/selectors';
+export type { SideSpawns } from './helpers/spawns';
+export { mergeSpawns, roundStartPositions, SPAWN_MERGE_DISTANCE } from './helpers/spawns';
 export type {
   CarryWarning,
   GrenadeCounts,
   GrenadeKind,
+  PlayerDrop,
   PlayerLoadout,
   TacticLoadout,
 } from './helpers/tactic-loadout';

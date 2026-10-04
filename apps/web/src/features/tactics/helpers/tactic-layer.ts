@@ -29,6 +29,7 @@ import {
   renderSingleDrawingStroke,
 } from './tactic-layer-drawing';
 import { drawLineupMarkers } from './tactic-lineup-markers';
+import { drawSpawnMarkers, type SpawnSpots } from './tactic-spawn-markers';
 
 export interface TacticLayerOptions {
   readonly overview: MapOverview;
@@ -46,6 +47,7 @@ export interface TacticLayerOptions {
   readonly hoveredThrowId?: string | null | undefined;
   readonly lineups?: readonly Lineup[] | undefined;
   readonly hoveredLineupId?: string | null | undefined;
+  readonly spawnSpots?: SpawnSpots | undefined;
   readonly liveStroke?: { readonly current: TacticDrawingStroke | null } | undefined;
   readonly liveThrow?: { readonly current: TacticThrow | null } | undefined;
 }
@@ -283,6 +285,9 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
     } = options;
 
     renderTacticDrawings(context, drawings, overview, geometry);
+    if (options.spawnSpots !== undefined) {
+      drawSpawnMarkers(context, options.spawnSpots, side, overview, geometry, colors);
+    }
     drawLineupMarkers(context, lineups, hoveredLineupId, overview, geometry, colors);
     if (options.liveStroke?.current !== null && options.liveStroke?.current !== undefined) {
       renderSingleDrawingStroke(context, options.liveStroke.current, overview, geometry);

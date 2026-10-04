@@ -28,7 +28,8 @@
     "reel:generate": "bun tools/scripts/reel-generate.ts",
     "reel:check": "bun tools/scripts/reel-check.ts",
     "samples:generate": "bun tools/scripts/samples-generate.ts",
-    "samples:check": "bun tools/scripts/samples-check.ts"
+    "samples:check": "bun tools/scripts/samples-check.ts",
+    "spawns:generate": "bun tools/scripts/spawns-generate.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

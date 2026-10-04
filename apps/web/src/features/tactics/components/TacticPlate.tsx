@@ -1,6 +1,6 @@
 import type { TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
+import { getMapOverview, type MapOverview, mapSpawns, radarAssetPath } from '@disa/map-data';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
@@ -18,6 +18,7 @@ import {
   zoomByStep,
 } from '@/features/radar';
 import { tacticLayer } from '../helpers/tactic-layer';
+import { occupiedSpots } from '../helpers/tactic-spawns';
 import { tacticStateAt } from '../helpers/tactic-step-state';
 import { useTacticPlatePointer } from '../hooks/use-tactic-plate-pointer';
 import { TacticZoomControls } from './TacticZoomControls';
@@ -62,6 +63,25 @@ function TacticCanvas({
     [steps, activeStepIndex, currentTime],
   );
 
+  const spawns = useMemo(() => mapSpawns(overview.id, side ?? 'CT'), [overview.id, side]);
+  const showsSpawns =
+    props.isEditable === true &&
+    activeStepIndex === 0 &&
+    currentTime === undefined &&
+    activeTool === 'select' &&
+    spawns.length > 0;
+  const spawnSpots = useMemo(
+    () =>
+      showsSpawns
+        ? {
+            points: spawns,
+            occupied: occupiedSpots(spawns, interpolated.players),
+            labels: spawns.map((_, index) => String(index + 1)),
+          }
+        : undefined,
+    [showsSpawns, spawns, interpolated.players],
+  );
+
   const layers = useMemo(() => {
     const layer = tacticLayer({
       overview,
@@ -79,6 +99,7 @@ function TacticCanvas({
       hoveredThrowId,
       lineups: shownLineups,
       hoveredLineupId,
+      spawnSpots,
       liveStroke: liveStrokeRef,
       liveThrow: liveThrowRef,
     });
@@ -95,6 +116,7 @@ function TacticCanvas({
     hoveredThrowId,
     shownLineups,
     hoveredLineupId,
+    spawnSpots,
     image,
   ]);
 
@@ -131,6 +153,7 @@ function TacticCanvas({
         setHoveredLineupId,
       },
       lineups: shownLineups,
+      spawns: showsSpawns ? spawns : undefined,
       props,
       onZoomChange: syncZoom,
     });
