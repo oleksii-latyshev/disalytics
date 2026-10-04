@@ -14,6 +14,14 @@ import { SAMPLE_MATCHES } from '../../apps/web/src/core/samples/helpers/catalogu
  * the owner's machine and never in CI, so what CI can do is refuse to ship the stale ones.
  */
 const ASSET_DIR = 'apps/web/assets/samples';
+/** Read as text: it imports the containers through Vite's `?url`, which Bun cannot resolve. */
+const ASSETS_SOURCE = readFileSync('apps/web/src/core/samples/generated/assets.ts', 'utf8');
+
+/** The wire size `assets.ts` tells a reader a press will cost, or `null` when it names none. */
+function statedByteLength(id: string): number | null {
+  const match = new RegExp(`'${id}': \\{ url: url\\d+, byteLength: (\\d+) \\}`).exec(ASSETS_SOURCE);
+  return match?.[1] === undefined ? null : Number(match[1]);
+}
 
 let failed = false;
 
@@ -21,7 +29,17 @@ for (const sample of SAMPLE_MATCHES) {
   const path = `${ASSET_DIR}/${sample.id}.disa.gz`;
 
   try {
-    const bytes = new Uint8Array(gunzipSync(readFileSync(path)));
+    const compressed = readFileSync(path);
+    const stated = statedByteLength(sample.id);
+    if (stated !== compressed.byteLength) {
+      failed = true;
+      console.error(
+        `${sample.id}: assets.ts states ${stated ?? 'no'} bytes, the file is ${compressed.byteLength}`,
+      );
+      continue;
+    }
+
+    const bytes = new Uint8Array(gunzipSync(compressed));
     const demo = decodeDemo(bytes);
     const mib = (bytes.byteLength / 1024 / 1024).toFixed(2);
 

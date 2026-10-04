@@ -24,5 +24,5 @@ export interface SampleAsset {
  */
 export const SAMPLE_ASSETS: Record<SampleId, SampleAsset> = {
   'navi-vitality-inferno': { url: url0, byteLength: 3035347 },
-  'navi-vitality-dust2': { url: url1, byteLength: 4094108 },
+  'navi-vitality-dust2': { url: url1, byteLength: 4094115 },
 };
