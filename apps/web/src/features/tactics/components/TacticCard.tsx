@@ -1,10 +1,11 @@
 import { type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { Bomb, Clock, Copy, Download, Layers, Link2, Play, Trash2 } from 'lucide-react';
+import { Copy, Download, Link2, Trash2 } from 'lucide-react';
 import { computeTotalDuration } from '../helpers/editor-actions';
 import { nameOrFallback } from '../helpers/tactic-names';
 import { GrenadeTally } from './GrenadeTally';
+import { TacticThumbnail } from './TacticThumbnail';
 
 export interface TacticCardProps {
   readonly tactic: Tactic;
@@ -14,6 +15,8 @@ export interface TacticCardProps {
   readonly onExport: (tactic: Tactic) => void;
   readonly onDelete: (id: string) => void;
 }
+
+const CHIP = 'rounded-chip bg-surface-2 px-2 py-0.5 font-mono text-11 text-ink-dim tabular-nums';
 
 export function TacticCard({
   tactic,
@@ -26,9 +29,9 @@ export function TacticCard({
   const t = useT();
 
   const totalDuration = computeTotalDuration(tactic.steps);
-  const totalThrows = tactic.steps.reduce((acc, step) => acc + step.throws.length, 0);
   const loadout = tacticLoadout(tactic);
   const rounds = tactic.rounds ?? [];
+  const title = nameOrFallback(tactic.title, t('library.tactics.untitled'));
 
   const handleDelete = () => {
     if (window.confirm(t('library.tactics.library.deleteConfirm'))) {
@@ -37,102 +40,57 @@ export function TacticCard({
   };
 
   return (
-    <article className="group flex flex-col justify-between rounded-card border border-line bg-surface-1 p-4 transition-colors hover:border-white/20">
-      <div className="flex flex-col gap-2.5">
-        {/* Top Badges */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
+    <article className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface-1 p-3.5 transition-colors hover:border-line-strong sm:p-4">
+      <button
+        type="button"
+        onClick={() => onOpen(tactic)}
+        aria-label={t('library.tactics.library.openTactic', { title })}
+        className="flex min-w-0 flex-1 cursor-pointer gap-3 text-start sm:gap-4"
+      >
+        <TacticThumbnail tactic={tactic} />
+        <span className="flex min-w-0 flex-1 flex-col gap-2 py-0.5">
+          <span className="flex items-center gap-2">
             <span
-              className="rounded-full border border-line bg-surface-0 px-2.5 py-0.5 font-mono text-11 text-ink-dim"
-              title={tactic.map}
-            >
-              {tactic.map}
-            </span>
-            <span
-              className={`rounded-full border px-2.5 py-0.5 font-mono text-11 font-semibold ${
-                tactic.side === 'CT'
-                  ? 'border-ct/40 bg-ct/10 text-ct'
-                  : 'border-t/40 bg-t/10 text-t'
+              className={`rounded-chip px-1.5 font-mono text-11 font-semibold ${
+                tactic.side === 'CT' ? 'bg-ct/12 text-ct' : 'bg-t/12 text-t'
               }`}
-              title={tactic.side}
             >
               {tactic.side}
             </span>
-            {rounds.length === 0 ? (
-              <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-11 text-ink-faint">
-                {t('library.tactics.library.anyRound')}
-              </span>
-            ) : (
-              rounds.map((round) => (
-                <span
-                  key={round}
-                  className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-11 text-ink"
-                >
-                  {round}
-                </span>
-              ))
-            )}
-          </div>
-
-          {tactic.author !== undefined && tactic.author.length > 0 && (
-            <span
-              className="truncate font-mono text-11 text-ink-faint max-w-[120px]"
-              title={tactic.author}
-            >
-              {tactic.author}
-            </span>
-          )}
-        </div>
-
-        {/* Title and description */}
-        <div className="flex flex-col gap-1">
-          <h3 className="truncate font-ui text-16 font-semibold text-ink leading-dense">
-            {nameOrFallback(tactic.title, t('library.tactics.untitled'))}
-          </h3>
+            <span className="truncate font-mono text-12 text-ink-faint">{tactic.map}</span>
+          </span>
+          <span className="line-clamp-2 font-ui text-16 font-semibold text-ink leading-dense sm:text-20">
+            {title}
+          </span>
           {tactic.description !== undefined && tactic.description.length > 0 && (
-            <p className="line-clamp-2 text-13 text-ink-dim leading-prose">{tactic.description}</p>
-          )}
-        </div>
-
-        {loadout.teamTotal > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <GrenadeTally counts={loadout.teamCounts} />
-            <span className="font-mono text-12 text-ink-dim tabular-nums">
-              {t('library.tactics.library.utilityCost', { amount: loadout.teamCost })}
-            </span>
-          </div>
-        )}
-
-        {/* Tactical statistics pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-11 text-ink-dim">
-          <span className="flex items-center gap-1 rounded-chip bg-surface-2 px-2 py-0.5">
-            <Layers className="h-3 w-3 text-ink-faint" />
-            {t('library.tactics.library.stepsCount', {
-              count: tactic.steps.length,
-            })}
-          </span>
-
-          {totalThrows > 0 && (
-            <span className="flex items-center gap-1 rounded-chip bg-surface-2 px-2 py-0.5">
-              <Bomb className="h-3 w-3 text-ink-faint" />
-              {t('library.tactics.library.throwsCount', { count: totalThrows })}
+            <span className="line-clamp-2 text-13 text-ink-dim leading-prose">
+              {tactic.description}
             </span>
           )}
-
-          <span className="flex items-center gap-1 rounded-chip bg-surface-2 px-2 py-0.5">
-            <Clock className="h-3 w-3 text-ink-faint" />
-            {t('library.tactics.library.duration', { seconds: totalDuration })}
+          <span className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
+            <span className={CHIP}>
+              {t('library.tactics.library.stepsDuration', {
+                count: tactic.steps.length,
+                seconds: totalDuration,
+              })}
+            </span>
+            {loadout.teamTotal > 0 && (
+              <span className={CHIP}>
+                {t('library.tactics.library.throwsCost', {
+                  count: loadout.teamTotal,
+                  amount: loadout.teamCost,
+                })}
+              </span>
+            )}
+            <span className={CHIP}>
+              {rounds.length === 0 ? t('library.tactics.library.anyRound') : rounds.join(' · ')}
+            </span>
           </span>
-        </div>
-      </div>
+        </span>
+      </button>
 
-      {/* Card Actions Footer */}
-      <div className="flex items-center justify-between gap-2 [border-block-start:1px_solid_var(--color-line)] pt-3 mt-4">
-        <Button variant="secondary" onClick={() => onOpen(tactic)}>
-          <Play />
-          <span>{t('library.tactics.library.openWithoutSaving')}</span>
-        </Button>
-
+      <div className="flex items-center justify-between gap-2 [border-block-start:1px_solid_var(--color-line)] pt-2.5">
+        {loadout.teamTotal > 0 ? <GrenadeTally counts={loadout.teamCounts} /> : <span />}
         <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
@@ -144,7 +102,6 @@ export function TacticCard({
           >
             <Link2 />
           </Button>
-
           <Button
             variant="ghost"
             size="icon"
@@ -155,7 +112,6 @@ export function TacticCard({
           >
             <Copy />
           </Button>
-
           <Button
             variant="ghost"
             size="icon"
@@ -166,7 +122,6 @@ export function TacticCard({
           >
             <Download />
           </Button>
-
           <Button
             variant="ghost"
             size="icon"

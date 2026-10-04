@@ -59,3 +59,10 @@ export function filterTactics(
     })
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
+
+/** Tactics per map, so the map tabs can show how many each holds. */
+export function countByMap(tactics: readonly Tactic[]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const tactic of tactics) counts.set(tactic.map, (counts.get(tactic.map) ?? 0) + 1);
+  return counts;
+}
