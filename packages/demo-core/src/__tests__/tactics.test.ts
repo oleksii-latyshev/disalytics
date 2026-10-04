@@ -293,4 +293,17 @@ describe('round types and lineup references', () => {
     expect(isTactic(withId)).toBe(true);
     expect(isTactic(withBadId)).toBe(false);
   });
+
+  it('validates a throw droppedBy and still accepts a file without one', () => {
+    const [step] = validTactic.steps;
+    const [thrown] = step?.throws ?? [];
+    if (step === undefined || thrown === undefined) throw new Error('fixture has no throw');
+    const withThrows = (extra: Record<string, unknown>) => ({
+      ...validTactic,
+      steps: [{ ...step, throws: [{ ...thrown, ...extra }] }],
+    });
+    expect(isTactic(validTactic)).toBe(true);
+    expect(isTactic(withThrows({ droppedBy: 2 }))).toBe(true);
+    expect(isTactic(withThrows({ droppedBy: '2' }))).toBe(false);
+  });
 });

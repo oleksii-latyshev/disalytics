@@ -1,5 +1,5 @@
 import { GRENADE_REFERENCES } from './reference-data';
-import type { Tactic, TacticSide } from './tactics';
+import type { Tactic, TacticSide, TacticThrow } from './tactics';
 import { THROWN_UTILITY_KINDS, type UtilityKind } from './utility';
 
 export type GrenadeKind = Exclude<UtilityKind, 'kit'>;
@@ -24,11 +24,21 @@ export type CarryWarning =
     }
   | { readonly code: 'totalLimit'; readonly slot: number; readonly count: number };
 
+/** A grenade this player buys for a teammate, who throws it. */
+export interface PlayerDrop {
+  readonly toSlot: number;
+  readonly kind: GrenadeKind;
+  readonly count: number;
+}
+
 export interface PlayerLoadout {
   readonly slot: number;
+  /** What the player buys and holds when the round starts, dropped grenades included. */
   readonly counts: GrenadeCounts;
   readonly total: number;
   readonly cost: number;
+  /** The part of `counts` that is bought to be dropped to a teammate. */
+  readonly drops: readonly PlayerDrop[];
 }
 
 export interface TacticLoadout {
@@ -72,23 +82,51 @@ function carryWarnings(slot: number, counts: GrenadeCounts, total: number): Carr
   return warnings;
 }
 
-/**
- * The utility a tactic needs: every throw across all steps consumes one grenade of its kind from
- * its thrower, so the totals are the minimum to buy for the tactic to be playable as drawn.
- */
-export function tacticLoadout(tactic: Tactic): TacticLoadout {
-  const bySlot = new Map<number, Record<GrenadeKind, number>>();
+interface Holdings {
+  readonly bySlot: Map<number, Record<GrenadeKind, number>>;
+  readonly dropsBySlot: Map<number, Map<string, PlayerDrop>>;
+}
+
+function recordDrop(holdings: Holdings, holder: number, thrown: TacticThrow, kind: GrenadeKind) {
+  const drops = holdings.dropsBySlot.get(holder) ?? new Map<string, PlayerDrop>();
+  const key = `${thrown.throwerSlot}:${kind}`;
+  drops.set(key, {
+    toSlot: thrown.throwerSlot,
+    kind,
+    count: (drops.get(key)?.count ?? 0) + 1,
+  });
+  holdings.dropsBySlot.set(holder, drops);
+}
+
+function holdThrow(holdings: Holdings, thrown: TacticThrow): void {
+  if (!isGrenadeKind(thrown.kind)) return;
+  const holder = thrown.droppedBy ?? thrown.throwerSlot;
+  const counts = holdings.bySlot.get(holder) ?? emptyCounts();
+  counts[thrown.kind] += 1;
+  holdings.bySlot.set(holder, counts);
+  if (holder !== thrown.throwerSlot) recordDrop(holdings, holder, thrown, thrown.kind);
+}
+
+/** Who carries each thrown grenade at buy time, and which of those are dropped to a teammate. */
+function collectHoldings(tactic: Tactic): Holdings {
+  const holdings: Holdings = { bySlot: new Map(), dropsBySlot: new Map() };
   for (const step of tactic.steps) {
     for (const player of step.players) {
-      if (!bySlot.has(player.slot)) bySlot.set(player.slot, emptyCounts());
+      if (!holdings.bySlot.has(player.slot)) holdings.bySlot.set(player.slot, emptyCounts());
     }
-    for (const thrown of step.throws) {
-      if (!isGrenadeKind(thrown.kind)) continue;
-      const counts = bySlot.get(thrown.throwerSlot) ?? emptyCounts();
-      counts[thrown.kind] += 1;
-      bySlot.set(thrown.throwerSlot, counts);
-    }
+    for (const thrown of step.throws) holdThrow(holdings, thrown);
   }
+  return holdings;
+}
+
+/**
+ * The utility a tactic needs: every throw across all steps consumes one grenade of its kind, so the
+ * totals are the minimum to buy for the tactic to be playable as drawn. A grenade is bought and
+ * carried at buy time by whoever holds it then: its thrower, or the teammate named in `droppedBy`,
+ * who drops it. Carry limits are checked on that, not on what a player throws over the round.
+ */
+export function tacticLoadout(tactic: Tactic): TacticLoadout {
+  const { bySlot, dropsBySlot } = collectHoldings(tactic);
 
   const teamCounts = emptyCounts();
   const warnings: CarryWarning[] = [];
@@ -108,7 +146,11 @@ export function tacticLoadout(tactic: Tactic): TacticLoadout {
       teamTotal += total;
       teamCost += cost;
       warnings.push(...carryWarnings(slot, counts, total));
-      return { slot, counts, total, cost };
+      const drops = [...(dropsBySlot.get(slot)?.values() ?? [])].sort(
+        (a, b) =>
+          a.toSlot - b.toSlot || GRENADE_KINDS.indexOf(a.kind) - GRENADE_KINDS.indexOf(b.kind),
+      );
+      return { slot, counts, total, cost, drops };
     });
 
   return { players, teamCounts, teamTotal, teamCost, warnings };

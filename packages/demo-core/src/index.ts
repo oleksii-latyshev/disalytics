@@ -246,6 +246,7 @@ export type {
   CarryWarning,
   GrenadeCounts,
   GrenadeKind,
+  PlayerDrop,
   PlayerLoadout,
   TacticLoadout,
 } from './helpers/tactic-loadout';
