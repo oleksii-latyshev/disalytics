@@ -1,17 +1,23 @@
 import { type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
+import { cn } from '@disa/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLineupCatalog } from '@/core/lineup-catalog';
 import { selectableLineups } from '../helpers/lineup-throw';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
+import { stepThrowRows } from '../helpers/tactic-step-throws';
 import { useTacticEditor } from '../hooks/use-tactic-editor';
+import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticEditorHeader } from './TacticEditorHeader';
 import { TacticLoadoutPanel } from './TacticLoadoutPanel';
 import { TacticPlate } from './TacticPlate';
-import { TacticStepPanel } from './TacticStepPanel';
-import { TacticToolbar } from './TacticToolbar';
-import { TacticTransport } from './TacticTransport';
+import { TacticShareModal } from './TacticShareModal';
+import { TacticStepRail } from './TacticStepRail';
+import { TacticTimeline } from './TacticTimeline';
+import { TacticToolStrip } from './TacticToolStrip';
+
+const PHONE_TABS = ['step', 'loadout'] as const;
 
 export interface TacticEditorProps {
   readonly initialTactic: Tactic;
@@ -22,7 +28,6 @@ export interface TacticEditorProps {
 
 export function TacticEditor({ initialTactic, onSave, onBack, className }: TacticEditorProps) {
   const t = useT();
-  const [isSaved, setIsSaved] = useState(false);
 
   const editor = useTacticEditor({
     initialTactic,
@@ -103,25 +108,25 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         ? t('library.tactics.throw.noLineups')
         : t('library.tactics.throw.pickLineup', { slot: selectedSlot + 1 });
 
+  const [savedTactic, setSavedTactic] = useState(initialTactic);
+  const [isSharing, setIsSharing] = useState(false);
+  const [phoneTab, setPhoneTab] = useState<'step' | 'loadout'>('step');
+  const isStored = useTacticStored(initialTactic.id);
+  const [hasSaved, setHasSaved] = useState(false);
+  const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
+
   const handleSave = useCallback(() => {
     save();
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
-  }, [save]);
+    setSavedTactic(tactic);
+    setHasSaved(true);
+  }, [save, tactic]);
 
   const selectedPlayer = useMemo(() => {
-    if (selectedSlot === null) return undefined;
+    if (selectedSlot === null || activeTool !== 'select') return undefined;
     return activeStep?.players.find((p) => p.slot === selectedSlot);
-  }, [activeStep, selectedSlot]);
+  }, [activeStep, selectedSlot, activeTool]);
 
-  const selectedThrow = useMemo(() => {
-    if (selectedThrowId === null) return undefined;
-    return activeStep?.throws.find((t) => t.id === selectedThrowId);
-  }, [activeStep, selectedThrowId]);
-
-  const stepOffsets = useMemo(() => {
-    return tactic.steps.map((s) => s.timeOffsetSeconds);
-  }, [tactic.steps]);
+  const throwRows = useMemo(() => stepThrowRows(activeStep, lineups), [activeStep, lineups]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) =>
@@ -140,115 +145,135 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
 
   return (
     <section
-      className={
-        className ??
-        'flex h-full w-full flex-col bg-surface-0 font-sans text-ink selection:bg-white/20'
-      }
+      className={cn(
+        'flex h-full w-full flex-col overflow-hidden bg-surface-0 font-sans text-ink selection:bg-white/20 lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)_18.75rem] lg:grid-rows-[auto_minmax(0,1fr)_auto]',
+        className,
+      )}
       aria-label={t('library.tactics.editor.title')}
     >
       <TacticEditorHeader
         tactic={tactic}
-        isSaved={isSaved}
+        isDirty={isDirty}
         onBack={onBack}
         onUpdateTitle={updateTitle}
         onUpdateDescription={updateDescription}
         onChangeMap={handleChangeMap}
         onChangeSide={changeSide}
         onToggleRound={toggleRound}
+        onShare={() => setIsSharing(true)}
         onSave={handleSave}
       />
 
-      <main className="flex min-h-0 flex-1 gap-3 overflow-hidden p-3">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-          <TacticToolbar
-            activeTool={activeTool}
-            pencilColor={pencilColor}
-            newThrowKind={newThrowKind}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            selectedPlayer={selectedPlayer}
-            selectedThrow={selectedThrow}
-            onSelectTool={setActiveTool}
-            onSelectColor={setPencilColor}
-            onSelectThrowKind={setNewThrowKind}
-            onUndo={undo}
-            onRedo={redo}
-            onClearDrawings={clearDrawings}
-            onUpdatePlayerYaw={updatePlayerYaw}
-            onUpdatePlayerLabel={updatePlayerLabel}
-            onDeleteThrow={deleteThrow}
-          />
-
-          {activeTool === 'throw' && (
-            <p role="status" className="text-12 text-ink-dim leading-prose">
-              {throwHint}
-            </p>
-          )}
-
-          <div className="relative flex min-h-0 w-full min-w-0 flex-1 items-center justify-center [container-type:size]">
-            <TacticPlate
-              map={tactic.map}
-              side={tactic.side}
-              steps={tactic.steps}
-              activeStepIndex={activeStepIndex}
-              currentTime={isPlaying ? playbackTime : undefined}
-              selectedSlot={selectedSlot}
-              selectedThrowId={selectedThrowId}
-              onSelectSlot={setSelectedSlot}
-              onSelectThrow={setSelectedThrowId}
-              onPlayerDrag={updatePlayerPosition}
-              onThrowDrag={updateThrowPosition}
-              isEditable={!isPlaying}
-              activeTool={isPlaying ? 'select' : activeTool}
-              pencilColor={pencilColor}
-              newThrowKind={newThrowKind}
-              lineups={pickableLineups}
-              onPickLineup={addLineupThrow}
-              onAddDrawingStroke={addDrawingStroke}
-              onAddThrow={addThrow}
-              onDeleteThrow={deleteThrow}
-              onDeleteDrawingStroke={deleteDrawingStroke}
-              className="aspect-square h-[min(100cqi,100cqb)] max-h-[720px] max-w-[720px] select-none rounded-card border border-line bg-surface-0 shadow-lg"
-            />
-          </div>
-
-          <TacticTransport
-            isPlaying={isPlaying}
-            playbackTime={playbackTime}
-            totalDuration={totalDuration}
-            playbackSpeed={playbackSpeed}
-            stepOffsets={stepOffsets}
-            onTogglePlay={togglePlay}
-            onSeek={seek}
-            onJumpStep={jumpStep}
-            onSpeedChange={setPlaybackSpeed}
-          />
-        </div>
-
-        <aside className="w-72 shrink-0 overflow-y-auto">
-          <TacticLoadoutPanel
-            loadout={loadout}
-            players={activeStep?.players ?? []}
-            selectedSlot={selectedSlot}
-            onSelectSlot={setSelectedSlot}
-          />
-        </aside>
-      </main>
-
-      <footer className="shrink-0 [border-block-start:1px_solid_var(--color-line)] bg-surface-0 p-3">
-        <TacticStepPanel
+      <div className="relative order-2 aspect-square w-full shrink-0 lg:order-none lg:col-start-2 lg:row-start-2 lg:aspect-auto lg:h-full lg:min-h-0 lg:min-w-0">
+        <TacticPlate
+          map={tactic.map}
+          side={tactic.side}
           steps={tactic.steps}
           activeStepIndex={activeStepIndex}
-          onSelectStep={selectStep}
-          onAddStep={addStep}
-          onDuplicateStep={duplicateStep}
-          onDeleteStep={deleteStep}
-          onMoveStep={moveStep}
-          onUpdateName={updateStepName}
-          onUpdateOffset={updateStepOffset}
-          onUpdateNotes={updateStepNotes}
+          currentTime={isPlaying ? playbackTime : undefined}
+          selectedSlot={selectedSlot}
+          selectedThrowId={selectedThrowId}
+          onSelectSlot={setSelectedSlot}
+          onSelectThrow={setSelectedThrowId}
+          onPlayerDrag={updatePlayerPosition}
+          onThrowDrag={updateThrowPosition}
+          isEditable={!isPlaying}
+          activeTool={isPlaying ? 'select' : activeTool}
+          pencilColor={pencilColor}
+          newThrowKind={newThrowKind}
+          lineups={pickableLineups}
+          onPickLineup={addLineupThrow}
+          onAddDrawingStroke={addDrawingStroke}
+          onAddThrow={addThrow}
+          onDeleteThrow={deleteThrow}
+          onDeleteDrawingStroke={deleteDrawingStroke}
+          hasZoomControls
         />
-      </footer>
+      </div>
+
+      <TacticTimeline
+        side={tactic.side}
+        steps={tactic.steps}
+        activeStepIndex={activeStepIndex}
+        isPlaying={isPlaying}
+        playbackTime={playbackTime}
+        totalDuration={totalDuration}
+        playbackSpeed={playbackSpeed}
+        onSelectStep={selectStep}
+        onAddStep={addStep}
+        onTogglePlay={togglePlay}
+        onSeek={seek}
+        onJumpStep={jumpStep}
+        onSpeedChange={setPlaybackSpeed}
+      />
+
+      <div
+        role="tablist"
+        aria-label={t('library.tactics.tabs.label')}
+        className="order-4 flex shrink-0 gap-1 px-3 pt-2 lg:hidden"
+      >
+        {PHONE_TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={phoneTab === tab}
+            onClick={() => setPhoneTab(tab)}
+            className={cn(
+              'h-8 flex-1 rounded-chip font-mono text-12 font-medium transition-colors',
+              phoneTab === tab ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-hover',
+            )}
+          >
+            {t(`library.tactics.tabs.${tab}`)}
+          </button>
+        ))}
+      </div>
+
+      <TacticLoadoutPanel
+        side={tactic.side}
+        loadout={loadout}
+        players={activeStep?.players ?? []}
+        selectedSlot={selectedSlot}
+        onSelectSlot={setSelectedSlot}
+        isOpenOnPhone={phoneTab === 'loadout'}
+      />
+
+      <TacticStepRail
+        step={activeStep}
+        stepIndex={activeStepIndex}
+        stepCount={tactic.steps.length}
+        throwRows={throwRows}
+        selectedThrowId={selectedThrowId}
+        selectedPlayer={selectedPlayer}
+        throwHint={activeTool === 'throw' ? throwHint : undefined}
+        isOpenOnPhone={phoneTab === 'step'}
+        onSelectThrow={setSelectedThrowId}
+        onDeleteThrow={deleteThrow}
+        onDuplicateStep={duplicateStep}
+        onDeleteStep={deleteStep}
+        onMoveStep={moveStep}
+        onUpdateName={updateStepName}
+        onUpdateOffset={updateStepOffset}
+        onUpdateNotes={updateStepNotes}
+        onUpdatePlayerYaw={updatePlayerYaw}
+        onUpdatePlayerLabel={updatePlayerLabel}
+      />
+
+      <TacticToolStrip
+        activeTool={activeTool}
+        pencilColor={pencilColor}
+        newThrowKind={newThrowKind}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onSelectTool={setActiveTool}
+        onSelectColor={setPencilColor}
+        onSelectThrowKind={setNewThrowKind}
+        onUndo={undo}
+        onRedo={redo}
+        onClearDrawings={clearDrawings}
+      />
+
+      <TacticShareModal isOpen={isSharing} onClose={() => setIsSharing(false)} tactic={tactic} />
     </section>
   );
 }

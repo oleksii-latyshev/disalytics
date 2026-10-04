@@ -39,6 +39,8 @@ interface UseTacticPlatePointerOptions {
   readonly hover: HoverState;
   readonly lineups: readonly Lineup[] | undefined;
   readonly props: Omit<TacticPlateProps, 'map'>;
+  /** Told the zoom after a wheel notch, so a readout beside the plate can follow it. */
+  readonly onZoomChange?: ((zoom: number) => void) | undefined;
 }
 
 export function useTacticPlatePointer({
@@ -52,6 +54,7 @@ export function useTacticPlatePointer({
   hover,
   lineups,
   props,
+  onZoomChange,
 }: UseTacticPlatePointerOptions) {
   const {
     onSelectSlot,
@@ -251,6 +254,7 @@ export function useTacticPlatePointer({
       box,
       SQUARE_PLATE,
     );
+    onZoomChange?.(viewRef.current.zoom);
     repaint();
   };
 

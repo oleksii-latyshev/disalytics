@@ -411,10 +411,14 @@
       "descriptionPlaceholder": "Brief strategy overview...",
       "mapChangeConfirm": "Changing the map resets player positions, throws and drawings. Continue?",
       "rounds": "Called on",
-      "roundsHint": "Round types this tactic is called on. None selected means any round."
+      "roundsHint": "Round types this tactic is called on. None selected means any round.",
+      "details": "Tactic details",
+      "detailsHide": "Hide tactic details",
+      "subtitle": "{map} · {side} · called on {rounds}",
+      "subtitleAny": "{map} · {side} · any round",
+      "unsaved": "Unsaved changes"
     },
     "steps": {
-      "title": "Steps",
       "step": "Step {index}",
       "add": "Add step",
       "duplicate": "Duplicate step",
@@ -427,7 +431,12 @@
       "secondsUnit": "s",
       "notes": "Step notes",
       "notesPlaceholder": "Execution instructions, callouts...",
-      "cannotDeleteLast": "A tactic must have at least one step."
+      "cannotDeleteLast": "A tactic must have at least one step.",
+      "eyebrow": "Step {index} of {total} · from +{seconds, number, ::.#}s",
+      "noThrows": "No throws in this step",
+      "notesHeading": "Notes",
+      "throwMeta": "{player} · +{seconds, number, ::.#}s",
+      "throwFromLineup": "{kind} · {lineup}"
     },
     "transport": {
       "play": "Play",
@@ -436,12 +445,12 @@
       "speed": "Speed",
       "prevStep": "Previous step",
       "nextStep": "Next step",
-      "time": "{current, number, ::.#}s / {total, number, ::.#}s"
+      "time": "{current, number, ::.#}s / {total, number, ::.#}s",
+      "speeds": "Playback speed"
     },
     "tools": {
       "select": "Select & Move",
       "pencil": "Draw",
-      "throw": "Add throw",
       "eraser": "Eraser",
       "undo": "Undo",
       "redo": "Redo",
@@ -459,7 +468,9 @@
         "fire": "Molotov",
         "he": "HE grenade",
         "decoy": "Decoy"
-      }
+      },
+      "palette": "Tools",
+      "utility": "Throw {kind}"
     },
     "player": {
       "selected": "Player {slot}",
@@ -468,10 +479,6 @@
       "yaw": "Facing angle (°)"
     },
     "throw": {
-      "selected": "Grenade throw",
-      "kind": "Utility kind",
-      "thrower": "Thrower",
-      "releaseTime": "Release delay (+{seconds}s)",
       "delete": "Delete throw",
       "pickPlayer": "Select a player on the board or in the utility list, then click a lineup.",
       "pickLineup": "Click a lineup on the map to give it to player {slot}, or drag on the map to draw a throw.",
@@ -524,16 +531,27 @@
     },
     "untitled": "Untitled tactic",
     "loadout": {
-      "title": "Utility to buy",
       "player": "Player {slot}",
-      "total": "Team total",
       "cost": "${amount, number}",
       "empty": "No throws yet. Add throws to see what this tactic needs.",
       "warn": {
         "flashLimit": "Player {slot} would carry {count} flashbangs; the limit is 2.",
         "kindLimit": "Player {slot} would carry {count} × {kind}; the limit is 1.",
         "totalLimit": "Player {slot} would carry {count} grenades; the limit is 4."
-      }
+      },
+      "rail": "{side} · {count, plural, one {# player} other {# players}}",
+      "utility": "Utility",
+      "noUtility": "No utility"
+    },
+    "tabs": {
+      "label": "Editor panels",
+      "step": "Step",
+      "loadout": "Loadout"
+    },
+    "zoom": {
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "level": "{zoom, number, ::.0}×"
     }
   },
   "grid": {
