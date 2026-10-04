@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buyBandFractions,
   changeObservedWeaponCount,
+  classifyBuyRange,
   countObservedWeapons,
   type EnemyRoundObservation,
   emptyWeaponObservations,
@@ -93,5 +95,22 @@ describe('enemy economy history', () => {
     ]);
     expect(estimates[0]?.assumptions).toContain('unknownSurvivors');
     expect(estimates[1]?.assumptions).toContain('unknownSurvivors');
+  });
+});
+
+describe('buy range on the scale', () => {
+  it('names the buy a range falls in, and says so when it straddles', () => {
+    expect(classifyBuyRange(800, 1_500)).toBe('eco');
+    expect(classifyBuyRange(1_900, 3_500)).toBe('ecoOrForce');
+    expect(classifyBuyRange(2_400, 3_800)).toBe('force');
+    expect(classifyBuyRange(2_700, 4_300)).toBe('forceOrFull');
+    expect(classifyBuyRange(4_600, 7_400)).toBe('full');
+    expect(classifyBuyRange(1_000, 6_000)).toBe('unclear');
+  });
+
+  it('places the band as fractions of the scale and keeps it visible', () => {
+    expect(buyBandFractions(2_000, 4_000)).toEqual({ start: 0.25, end: 0.5 });
+    expect(buyBandFractions(3_000, 3_000).end).toBeGreaterThan(0.375);
+    expect(buyBandFractions(7_000, 16_000)).toEqual({ start: 0.875, end: 1 });
   });
 });

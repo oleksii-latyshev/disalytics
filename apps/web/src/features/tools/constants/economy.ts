@@ -27,3 +27,12 @@ export const ASSUMPTION_PATHS = {
   otherUnpriced: 'library.tools.economy.assumptions.otherUnpriced',
   unknownSurvivors: 'library.tools.economy.assumptions.unknownSurvivors',
 } as const;
+
+export const VERDICT_PATHS = {
+  eco: 'library.tools.economy.verdict.eco',
+  ecoOrForce: 'library.tools.economy.verdict.ecoOrForce',
+  force: 'library.tools.economy.verdict.force',
+  forceOrFull: 'library.tools.economy.verdict.forceOrFull',
+  full: 'library.tools.economy.verdict.full',
+  unclear: 'library.tools.economy.verdict.unclear',
+} as const;
