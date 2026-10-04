@@ -1,4 +1,5 @@
 import {
+  type BombSite,
   type Frame,
   type Kill,
   killWeaponClass,
@@ -79,7 +80,7 @@ export function killRow(
  */
 export type RowEvent =
   | ({ readonly kind: 'kill' } & KillRow)
-  | { readonly kind: 'plant'; readonly planter: PlayerSlot }
+  | { readonly kind: 'plant'; readonly planter: PlayerSlot; readonly site: BombSite | null }
   | { readonly kind: 'defuse'; readonly defuser: PlayerSlot }
   | {
       readonly kind: 'grenade';

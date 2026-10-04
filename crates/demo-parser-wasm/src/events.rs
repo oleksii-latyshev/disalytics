@@ -1,8 +1,8 @@
 use crate::js::{array, optional, set};
 use crate::track::trajectory;
 use demo_parser::{
-    Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Grenade, Kill, MatchEvents, PlayerEconomy,
-    Round, Shot, Team, WorldPoint,
+    Blind, BombDefuse, BombPlant, BombSite, Damage, DefuseOutcome, Grenade, Kill, MatchEvents,
+    PlayerEconomy, Round, Shot, Team, WorldPoint,
 };
 use js_sys::Object;
 use wasm_bindgen::JsValue;
@@ -138,7 +138,7 @@ fn plant(plant: &BombPlant) -> JsValue {
 
     set(&out, "tick", plant.tick);
     set(&out, "planter", plant.planter);
-    set(&out, "siteEntityId", plant.site_entity_id);
+    set(&out, "site", optional(plant.site.map(BombSite::as_str)));
     set(&out, "detonationTick", optional(plant.detonation_tick));
 
     out.into()

@@ -133,7 +133,7 @@ export function newPlant(tick: number, planter = 0): BombPlant {
   return {
     tick: asTick(tick),
     planter: asPlayerSlot(planter),
-    siteEntityId: 0,
+    site: 'B',
     detonationTick: null,
   };
 }

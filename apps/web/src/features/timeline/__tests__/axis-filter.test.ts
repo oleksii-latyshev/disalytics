@@ -26,7 +26,7 @@ const KILL: AxisEvent = {
   isWallbang: false,
   isThroughSmoke: false,
 };
-const PLANT: AxisEvent = { kind: 'plant', planter: THEM };
+const PLANT: AxisEvent = { kind: 'plant', planter: THEM, site: null };
 const DEFUSE: AxisEvent = { kind: 'defuse', defuser: ME, status: 'completed' };
 const GRENADE: AxisEvent = { kind: 'grenade', thrower: THEM, throwerSide: 'T', utility: 'smoke' };
 

@@ -53,6 +53,11 @@ pub(crate) const TICK_PROPS: [&str; 20] = [
     prop::INVENTORY_IDS,
 ];
 
+/// Player props that only game events read, never the tick columns. They ride on the same upstream
+/// request as [`TICK_PROPS`] because that request is all upstream offers, and are kept out of the
+/// list [`crate::ticks::Ticks::of`] requires: a demo that lacks one still parses.
+pub(crate) const EVENT_PROPS: [&str; 1] = [prop::LAST_PLACE_NAME];
+
 /// Props that belong to the world rather than to a player, requested through upstream's separate
 /// `wanted_other_props` channel.
 ///
@@ -80,6 +85,11 @@ pub(crate) mod prop {
     pub(crate) const MONEY: &str =
         "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iAccount";
     pub(crate) const ARMOUR: &str = "CCSPlayerPawn.m_ArmorValue";
+    /// The map's own name for where a player stands, `BombsiteA` at a plant. The friendly alias
+    /// `last_place_name` attaches nothing.
+    pub(crate) const LAST_PLACE_NAME: &str = "CCSPlayerPawn.m_szLastPlaceName";
+    /// What a game event calls a prop of the player it names: `user_` plus the requested path.
+    pub(crate) const USER_LAST_PLACE_NAME: &str = "user_CCSPlayerPawn.m_szLastPlaceName";
     pub(crate) const HAS_HELMET: &str = "CCSPlayerPawn.CCSPlayer_ItemServices.m_bHasHelmet";
 
     /// Upstream's custom props. See the note on `TICK_PROPS` before renaming either — the obvious
@@ -194,7 +204,7 @@ pub(crate) fn match_pass(
         demo_bytes,
         inputs(
             &huffman_lookup_table,
-            owned(&TICK_PROPS),
+            [owned(&TICK_PROPS), owned(&EVENT_PROPS)].concat(),
             owned(&RULES_PROPS),
             owned(&["all"]),
             false,

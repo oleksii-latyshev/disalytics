@@ -121,7 +121,9 @@ export const EventGlyphs = memo(function EventGlyphs({
       case 'kill':
         return killName(event, nameOf, t);
       case 'plant':
-        return t('events.plant', { planter: nameOf(event.planter) });
+        return event.site === null
+          ? t('events.plant', { planter: nameOf(event.planter) })
+          : t('events.plantAt', { planter: nameOf(event.planter), site: event.site });
       case 'defuse':
         return t(defuseOutcomeKey(event.status), { defuser: nameOf(event.defuser) });
       case 'grenade':

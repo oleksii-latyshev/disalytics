@@ -101,7 +101,7 @@ function newEvents(): MatchEvents {
       {
         tick: asTick(300),
         planter: asPlayerSlot(0),
-        siteEntityId: 41,
+        site: 'A',
         detonationTick: asTick(2924),
       },
     ],

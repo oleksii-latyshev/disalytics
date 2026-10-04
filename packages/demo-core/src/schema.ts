@@ -4,7 +4,7 @@
  * parser is a miss rather than something to migrate, and a demo already on the device is corrected
  * rather than left holding what it was stored with.
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 declare const unit: unique symbol;
 
@@ -59,6 +59,10 @@ export const ROUND_WIN_REASONS = [
   'draw',
 ] as const;
 export type RoundWinReason = (typeof ROUND_WIN_REASONS)[number];
+
+/** The two bombsites, canonical game vocabulary that is never translated. */
+export const BOMB_SITES = ['A', 'B'] as const;
+export type BombSite = (typeof BOMB_SITES)[number];
 
 export const BUY_TYPES = ['pistol', 'eco', 'semi-buy', 'force-buy', 'full-buy'] as const;
 export type BuyType = (typeof BUY_TYPES)[number];
@@ -237,10 +241,11 @@ export interface BombPlant {
   tick: Tick;
   planter: PlayerSlot;
   /**
-   * The bombsite trigger's entity index, as the demo reports it. Naming it A or B needs the site
-   * polygons in `map-data` — the demo carries no name, and `m_iBombSite` reads 0 on every plant.
+   * The bombsite, read from the planter's place name at the plant (`BombsiteA`, `BombsiteB`);
+   * `null` for any other name or none. The trigger's entity index the demo also carries is
+   * per-map and not stable across map revisions, so it is not kept.
    */
-  siteEntityId: number;
+  site: BombSite | null;
   /**
    * When this bomb went off — `null` when it never did, whether it was defused or the round simply
    * ended first.

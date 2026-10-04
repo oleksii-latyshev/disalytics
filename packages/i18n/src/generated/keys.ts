@@ -33,6 +33,7 @@ export const TRANSLATION_KEYS = [
   'events.kill.throughSmoke',
   'events.kill.wallbang',
   'events.plant',
+  'events.plantAt',
   'filters.axis.kills',
   'filters.axis.label',
   'filters.axis.noSubject',

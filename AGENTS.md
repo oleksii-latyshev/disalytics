@@ -179,8 +179,8 @@ poisoned, so one worker per parse. `ErrorCode` mirrors `crates/demo-parser/src/e
 ## 10. Event Schema
 
 `packages/demo-core/src/schema.ts` is the source of truth; any shape change bumps `SCHEMA_VERSION`
-(now **8**) — ask first. Kills · Damage (raw, unclamped) · Shots (weapon index, exact yaw) · Grenades
-(throw/detonation/expiry, trajectory, landing) · Blinds · Objectives (site entity, detonation tick) ·
+(now **9**) — ask first. Kills · Damage (raw, unclamped) · Shots (weapon index, exact yaw) · Grenades
+(throw/detonation/expiry, trajectory, landing) · Blinds · Objectives (site A/B, detonation tick) ·
 Rounds (reason, freeze end, length) · Economy (including **the side held that round**). Display
 (`AK-47`) and internal (`ak47`) weapon names differ — bridge with `ENTRY_BY_INTERNAL_NAME` (#53).
 Audibility is free-field ("ignoring walls").

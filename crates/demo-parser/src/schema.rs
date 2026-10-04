@@ -277,12 +277,29 @@ pub struct Blind {
     pub is_teammate: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BombSite {
+    A,
+    B,
+}
+
+impl BombSite {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::A => "A",
+            Self::B => "B",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct BombPlant {
     pub tick: Tick,
     pub planter: PlayerSlot,
-    /// The bombsite trigger's entity index. The demo carries no name for it.
-    pub site_entity_id: i32,
+    /// `None` when the planter's place name is anything but a bombsite. The trigger's entity index
+    /// the demo also carries is per-map and not stable across revisions, so it is not kept.
+    pub site: Option<BombSite>,
     /// When this bomb went off. `None` when it never did — defused, or the round ended first.
     ///
     /// `mp_c4timer` is not among the convars a recording carries, so the interval between a plant

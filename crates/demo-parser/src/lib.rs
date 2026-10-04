@@ -19,12 +19,12 @@ pub use error::{ErrorCode, ParseError};
 pub use progress::ParsePhase;
 use progress::Progress;
 pub use schema::{
-    ANGLE_SCALE, Blind, BombDefuse, BombPlant, BuyType, DEFAULT_SAMPLE_HZ, Damage, DefuseOutcome,
-    FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HELMET, FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING,
-    GRENADE_DECOY, GRENADE_DEFUSE_KIT, GRENADE_FIRE, GRENADE_FLASH, GRENADE_FLASH_SECOND,
-    GRENADE_HE, GRENADE_SMOKE, Grenade, GrenadeTrajectory, GrenadeType, HitGroup, Kill,
-    MatchEvents, MatchHeader, ParsedDemo, PlayerEconomy, PlayerInfo, PlayerSlot, Round,
-    RoundWinReason, Shot, Team, Tick, TickTrack, WEAPON_NONE, WorldPoint,
+    ANGLE_SCALE, Blind, BombDefuse, BombPlant, BombSite, BuyType, DEFAULT_SAMPLE_HZ, Damage,
+    DefuseOutcome, FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HELMET, FLAG_PLANTING,
+    FLAG_SCOPED, FLAG_WALKING, GRENADE_DECOY, GRENADE_DEFUSE_KIT, GRENADE_FIRE, GRENADE_FLASH,
+    GRENADE_FLASH_SECOND, GRENADE_HE, GRENADE_SMOKE, Grenade, GrenadeTrajectory, GrenadeType,
+    HitGroup, Kill, MatchEvents, MatchHeader, ParsedDemo, PlayerEconomy, PlayerInfo, PlayerSlot,
+    Round, RoundWinReason, Shot, Team, Tick, TickTrack, WEAPON_NONE, WorldPoint,
 };
 pub use upstream::{PASS_COUNT, event_names};
 

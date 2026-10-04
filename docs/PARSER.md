@@ -102,7 +102,7 @@ All five criteria passed: parses a large demo in-browser, peak memory under 1.5 
 
 A cheap header read · `bomb_abortdefuse`/`bomb_abortplant` on a real demo · parse time on genuinely
 slow hardware (CDP CPU throttling does not reach a worker; efficiency cores are a 5× lower bound) ·
-bombsite names, which need map polygons (#58) · shotgun shot counts (#230).
+shotgun shot counts (#230).
 
 ## 12. Found while adopting it (#46)
 
@@ -121,7 +121,13 @@ bombsite names, which need map polygons (#58) · shotgun shot counts (#230).
 - **Molotov and incendiary share `CMolotovProjectile`**; the type comes from the thrower's latest
   `weapon_fire`. Fires are a separate `inferno_*` entity, joined by thrower and time.
 - **`player_death.distance` is metres** (×39.37008 for units).
-- **The bombsite has no name** — `site` is a trigger entity id; `m_iBombSite` reads 0.
+- **The bombsite's name is the planter's place name** (#58, supersedes "has no name"): `bomb_planted.site`
+  is a trigger entity id and `m_iBombSite` reads 0, but `CCSPlayerPawn.m_szLastPlaceName` on the planter
+  reads `BombsiteA`/`BombsiteB`. Over 96 plants on seven maps every entity id mapped to one name.
+  Requested as a player prop it surfaces on events as `user_CCSPlayerPawn.m_szLastPlaceName` (the alias
+  `last_place_name` attaches nothing); upstream also builds it as a tick column, +0.2 s, +50 MB native
+  on the 294 MB demo. `BombPlant.site` is `A | B | null` and `siteEntityId` is dropped: entity ids are
+  per-map, shift between map revisions, and nothing read it.
 - **The demo reports no tick rate** — `sv_tickrate` is not broadcast. The rate is the constant 64,
   confirmed by `mp_freezetime = 20` against a 1,280-tick buy phase (§21). The demo *does* carry other
   convars (§21).
