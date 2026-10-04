@@ -90,7 +90,7 @@ export function EconomyInputPanel({
         <legend className="mb-2 text-13 text-ink-dim">
           <Text path="library.tools.economy.reason" />
         </legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
           {availableReasons.map((reason) => (
             <button
               key={reason}
@@ -111,12 +111,12 @@ export function EconomyInputPanel({
         </div>
       </fieldset>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr))]">
         <fieldset className="flex flex-col gap-2 border-0 p-0">
           <legend className="mb-2 text-13 text-ink-dim">
             <Text path="library.tools.economy.survivors" />
           </legend>
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1.5">
             {([null, ...COUNTS] as const).map((count) => (
               <button
                 key={String(count)}
@@ -221,7 +221,7 @@ export function EconomyInputPanel({
         <legend className="mb-2 text-13 text-ink-dim">
           <Text path="library.tools.economy.enemyKills" />
         </legend>
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1.5">
           {([null, ...COUNTS] as const).map((count) => (
             <button
               key={String(count)}

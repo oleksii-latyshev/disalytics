@@ -37,10 +37,10 @@ export function EconomyHistory({
   return (
     <aside
       aria-label={t('library.tools.economy.history')}
-      className="flex min-w-0 flex-col gap-2 lg:rounded-card lg:border lg:border-line lg:bg-surface-1 lg:p-4"
+      className="flex min-w-0 flex-col gap-2 xl:rounded-card xl:border xl:border-line xl:bg-surface-1 xl:p-4"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="hidden text-11 tracking-[0.16em] text-ink-dim uppercase lg:inline">
+        <span className="hidden text-11 tracking-[0.16em] text-ink-dim uppercase xl:inline">
           <Text path="library.tools.economy.history" />
         </span>
         <span className="flex items-center gap-1 text-12 text-ink-dim">
@@ -64,23 +64,23 @@ export function EconomyHistory({
         </span>
       </div>
 
-      <ol className="-mx-4 flex list-none gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-0 lg:overflow-visible lg:p-0">
+      <ol className="-mx-4 flex list-none gap-1.5 overflow-x-auto px-4 pb-1 xl:mx-0 xl:flex-col xl:gap-0 xl:overflow-visible xl:p-0">
         {rounds.map((round, index) => {
           const isEditing = editingIndex === index;
           return (
-            <li key={round.id} className="flex-none lg:flex-auto">
+            <li key={round.id} className="flex-none xl:flex-auto">
               <button
                 type="button"
                 onClick={() => onEdit(index)}
                 aria-current={isEditing ? 'true' : undefined}
                 aria-label={t('library.tools.economy.editRound', { round: index + 1 })}
                 className={
-                  'flex min-h-9 w-full items-center gap-2.5 rounded-chip px-2.5 text-12 transition-colors lg:min-h-11 lg:[border-block-start:1px_solid_var(--color-line-soft)] ' +
+                  'flex min-h-9 w-full items-center gap-2.5 rounded-chip px-2.5 text-12 transition-colors xl:min-h-11 xl:[border-block-start:1px_solid_var(--color-line-soft)] ' +
                   (isEditing
                     ? 'bg-selected text-ink'
                     : round.weWon
                       ? 'bg-surface-3 text-ink hover:bg-press'
-                      : 'border border-line bg-surface-1 text-ink-dim hover:bg-hover lg:border-0 lg:bg-transparent')
+                      : 'border border-line bg-surface-1 text-ink-dim hover:bg-hover xl:border-0 xl:bg-transparent')
                 }
               >
                 <span className="numeric w-7 text-left text-ink-dim">
@@ -100,7 +100,7 @@ export function EconomyHistory({
                     }
                   />
                 </span>
-                <span className="hidden min-w-0 flex-1 truncate text-left text-13 text-ink-dim lg:inline">
+                <span className="hidden min-w-0 flex-1 truncate text-left text-13 text-ink-dim xl:inline">
                   <Text path={REASON_PATHS[round.reason]} />
                 </span>
               </button>
@@ -110,22 +110,22 @@ export function EconomyHistory({
         {isEntering && (
           <li
             aria-current="step"
-            className="flex min-h-9 flex-none items-center gap-2.5 rounded-chip bg-ink px-2.5 text-12 font-semibold text-surface-0 lg:min-h-11 lg:flex-auto lg:bg-selected lg:font-normal lg:text-ink"
+            className="flex min-h-9 flex-none items-center gap-2.5 rounded-chip bg-ink px-2.5 text-12 font-semibold text-surface-0 xl:min-h-11 xl:flex-auto xl:bg-selected xl:font-normal xl:text-ink"
           >
-            <span className="numeric lg:w-7">
+            <span className="numeric xl:w-7">
               <Text path="library.tools.economy.roundShort" values={{ round: roundNumber }} />
             </span>
-            <span className="lg:hidden">
+            <span className="xl:hidden">
               <Text path="library.tools.economy.now" />
             </span>
-            <span className="hidden text-13 lg:inline">
+            <span className="hidden text-13 xl:inline">
               <Text path="library.tools.economy.enteringNow" />
             </span>
           </li>
         )}
       </ol>
 
-      <div className="flex flex-col gap-2 lg:mt-2">
+      <div className="flex flex-col gap-2 xl:mt-2">
         {isConfirmingReset ? (
           <div className="rounded-chip border border-line bg-surface-2 p-3">
             <p className="text-12 text-ink">
