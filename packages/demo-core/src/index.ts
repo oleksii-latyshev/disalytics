@@ -345,6 +345,8 @@ export type {
   BombSite,
   BuyType,
   Damage,
+  DamageSource,
+  DamageWeapon,
   DefuseOutcome,
   Frame,
   Grenade,
@@ -365,6 +367,7 @@ export type {
   Tick,
   TickTrack,
   WeaponId,
+  WeaponName,
   WorldPoint,
 } from './schema';
 export {
@@ -374,6 +377,7 @@ export {
   asTick,
   BOMB_SITES,
   BUY_TYPES,
+  DAMAGE_SOURCES,
   DEFAULT_SAMPLE_HZ,
   FLAG_ALIVE,
   FLAG_DEFUSING,
@@ -394,5 +398,6 @@ export {
   ROUND_WIN_REASONS,
   SCHEMA_VERSION,
   TEAMS,
+  WEAPON_IDS,
   WEAPON_NONE,
 } from './schema';

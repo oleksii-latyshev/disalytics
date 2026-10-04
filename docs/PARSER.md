@@ -189,7 +189,12 @@ timed **from the drop** to the review screen, three runs per arm, arms interleav
 - **`item_equip.item` collapses weapons** — M4A4 and M4A1-S are both `m4a1`.
 - **Vocabularies differ**: `weapon_name` gives display names (`AK-47`), kills and damage give internal
   names (`ak47`), `weapon_fire` gives `weapon_ak47`. `ENTRY_BY_INTERNAL_NAME` in `demo-core` bridges
-  internal → display; #53 is the canonical enumeration.
+  internal → display. `MatchHeader.weapons` stays display names (`WeaponName`, open).
+- **`Kill.weapon` / `Damage.weapon` are a closed vocabulary** (#53): `weapon_id_of` in `vocabulary.rs`
+  collapses every `knife*` skin and `bayonet` to `knife`, strips `_off` (`m4a1_silencer_off`), maps `""`
+  to `world`, and turns anything unlisted into `unknown` — never an error. `WEAPON_IDS` /
+  `DAMAGE_SOURCES` (`inferno`, `planted_c4`, `world`, `unknown`) mirror `schema.ts`; `weapons:check`
+  holds them in parity. Six ids never fired in 7 FACEIT demos: `bizon mp5sd p90 g3sg1 sawedoff m249`.
 - Armour is `m_ArmorValue`, helmet `CCSPlayer_ItemServices.m_bHasHelmet`.
 
 ## 18. Gunfire (#163)

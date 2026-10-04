@@ -383,10 +383,10 @@ pub struct MatchHeader {
     pub players: Vec<PlayerInfo>,
     /// The weapons this match used, in the order [`TickTrack::weapon`] indexes them. Built per
     /// match rather than from a global enumeration, which is what keeps a weapon nobody has
-    /// enumerated yet from failing a parse — #53 has the measurements.
+    /// enumerated yet from failing a parse.
     ///
     /// Canonical game vocabulary, never translated. These are upstream's `WEAPINDICIES` values and
-    /// so a different vocabulary from `Kill::weapon`, which carries what the game event said.
+    /// so a different vocabulary from `Kill::weapon`, which is the closed one in `vocabulary.rs`.
     pub weapons: Vec<String>,
 }
 

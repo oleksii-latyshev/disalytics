@@ -4,7 +4,7 @@
  * parser is a miss rather than something to migrate, and a demo already on the device is corrected
  * rather than left holding what it was stored with.
  */
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 declare const unit: unique symbol;
 
@@ -68,10 +68,84 @@ export const BUY_TYPES = ['pistol', 'eco', 'semi-buy', 'force-buy', 'full-buy'] 
 export type BuyType = (typeof BUY_TYPES)[number];
 
 /**
- * The weapon identifier the parser emits, canonical game vocabulary that is never translated. It
- * stays a string because the vocabulary is upstream's to enumerate, not ours to recall.
+ * What a kill or a damage event can be dealt with, in the game's internal vocabulary and normalised
+ * by the parser: every knife skin and `bayonet` is `knife`, a `*_off` variant is its base id. The
+ * closed list is `ENTRY_BY_INTERNAL_NAME`'s keys plus `knife`, read off 7 FACEIT demos and the
+ * Phase 0 fixture (#53); all but the six below appeared in a recording.
+ *
+ * Never observed in any recording, kept because the game has them: `bizon`, `mp5sd`, `p90`,
+ * `g3sg1`, `sawedoff`, `m249`.
+ *
+ * Mirrors `WEAPON_IDS` in `crates/demo-parser/src/vocabulary.rs`; `weapons:check` holds the two
+ * together. This is **not** `MatchHeader.weapons`, which carries display names (`WeaponName`).
  */
-export type WeaponId = string;
+export const WEAPON_IDS = [
+  'cz75a',
+  'deagle',
+  'elite',
+  'fiveseven',
+  'glock',
+  'hkp2000',
+  'p250',
+  'revolver',
+  'tec9',
+  'usp_silencer',
+  'bizon',
+  'mac10',
+  'mp5sd',
+  'mp7',
+  'mp9',
+  'p90',
+  'ump45',
+  'ak47',
+  'aug',
+  'famas',
+  'galilar',
+  'm4a1',
+  'm4a1_silencer',
+  'sg556',
+  'awp',
+  'g3sg1',
+  'scar20',
+  'ssg08',
+  'mag7',
+  'nova',
+  'sawedoff',
+  'xm1014',
+  'm249',
+  'negev',
+  'knife',
+  'taser',
+  'c4',
+  'decoy',
+  'flashbang',
+  'hegrenade',
+  'incgrenade',
+  'molotov',
+  'smokegrenade',
+] as const;
+export type WeaponId = (typeof WEAPON_IDS)[number];
+
+/**
+ * What dealt damage without being a weapon anyone holds. `inferno` is the burning area a molotov or
+ * incendiary leaves, which is how that utility kills, so it is a source rather than a throwable;
+ * `world` is fall damage, the `kill` command and the empty string; `unknown` is whatever a future
+ * demo says that this list has never heard of, which degrades rather than failing the parse.
+ *
+ * Mirrors `DAMAGE_SOURCES` in `crates/demo-parser/src/vocabulary.rs`.
+ */
+export const DAMAGE_SOURCES = ['inferno', 'planted_c4', 'world', 'unknown'] as const;
+export type DamageSource = (typeof DAMAGE_SOURCES)[number];
+
+/** The closed vocabulary of `Kill.weapon` and `Damage.weapon`. */
+export type DamageWeapon = WeaponId | DamageSource;
+
+/**
+ * An entry of `MatchHeader.weapons`: upstream's display name (`AK-47`), a different vocabulary from
+ * `WeaponId` and deliberately not closed, because the table is built per match from what the demo
+ * said (`docs/PARSER.md` §17).
+ */
+export type WeaponName = string;
 
 // flags bitfield — must stay in sync with the writer in crates/demo-parser.
 export const FLAG_ALIVE = 1 << 0;
@@ -150,7 +224,7 @@ export interface Kill {
   attacker: PlayerSlot | null;
   victim: PlayerSlot;
   assister: PlayerSlot | null;
-  weapon: WeaponId;
+  weapon: DamageWeapon;
   isHeadshot: boolean;
   isWallbang: boolean;
   isThroughSmoke: boolean;
@@ -164,7 +238,7 @@ export interface Damage {
   tick: Tick;
   attacker: PlayerSlot | null;
   victim: PlayerSlot;
-  weapon: WeaponId;
+  weapon: DamageWeapon;
   healthDamage: number;
   armorDamage: number;
   hitGroup: HitGroup;
@@ -180,7 +254,7 @@ export interface Shot {
   shooter: PlayerSlot;
   /**
    * Index into `MatchHeader.weapons`, or `WEAPON_NONE` for a gun no sample ever saw held. The same
-   * index and the same vocabulary as `TickTrack.weapon`, which is why a shot needs no `WeaponId`.
+   * index and the same vocabulary as `TickTrack.weapon`, which is why a shot needs no `DamageWeapon`.
    */
   weapon: number;
   /**
@@ -332,12 +406,12 @@ export interface MatchHeader {
   /**
    * The weapons this match used, in the order `TickTrack.weapon` indexes them. Built per match
    * rather than from a global enumeration, which is what keeps a weapon nobody has enumerated yet
-   * from failing a parse — #53 has the measurements.
+   * from failing a parse.
    *
    * Canonical game vocabulary, never translated. A different vocabulary from `Kill.weapon`, which
-   * carries what the game event said.
+   * is the closed `DamageWeapon`.
    */
-  weapons: readonly WeaponId[];
+  weapons: readonly WeaponName[];
 }
 
 export interface ParsedDemo {

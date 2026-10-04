@@ -7,7 +7,7 @@ use crate::schema::{
 };
 use crate::ticks::{Planting, Sample, scaled_angle};
 use crate::upstream::prop;
-use crate::vocabulary::hit_group_of;
+use crate::vocabulary::{hit_group_of, weapon_id_of};
 use parser::second_pass::game_events::GameEvent;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -65,7 +65,7 @@ fn kills(passes: &Passes<'_>, samples: &BTreeMap<(Tick, PlayerSlot), Sample>) ->
                 attacker: passes.slot(event, "attacker_steamid"),
                 victim,
                 assister: passes.slot(event, "assister_steamid"),
-                weapon: text(event, "weapon").unwrap_or_default().to_owned(),
+                weapon: weapon_id_of(text(event, "weapon").unwrap_or_default()).to_owned(),
                 is_headshot: boolean(event, "headshot"),
                 is_wallbang: integer(event, "penetrated").unwrap_or_default() > 0,
                 is_through_smoke: boolean(event, "thrusmoke"),
@@ -88,7 +88,7 @@ fn damage(passes: &Passes<'_>) -> Vec<Damage> {
                 tick: event.tick,
                 attacker: passes.slot(event, "attacker_steamid"),
                 victim: passes.slot(event, "user_steamid")?,
-                weapon: text(event, "weapon").unwrap_or_default().to_owned(),
+                weapon: weapon_id_of(text(event, "weapon").unwrap_or_default()).to_owned(),
                 health_damage: narrow(integer(event, "dmg_health")),
                 armor_damage: narrow(integer(event, "dmg_armor")),
                 hit_group: hit_group_of(text(event, "hitgroup").unwrap_or_default()),
