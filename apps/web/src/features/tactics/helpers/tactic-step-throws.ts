@@ -9,6 +9,8 @@ export interface StepThrowRow {
   /** The thrower's role or name, empty when none was given. */
   readonly label: string;
   readonly releaseTime: number;
+  /** The teammate who buys and drops it, when it is not the thrower's own. */
+  readonly droppedBy: number | undefined;
 }
 
 /** What the step rail lists for a step: its throws with the thrower and lineup resolved. */
@@ -27,5 +29,6 @@ export function stepThrowRows(
     slot: thrown.throwerSlot,
     label: step.players.find((player) => player.slot === thrown.throwerSlot)?.label?.trim() ?? '',
     releaseTime: thrown.releaseTime,
+    droppedBy: thrown.droppedBy,
   }));
 }

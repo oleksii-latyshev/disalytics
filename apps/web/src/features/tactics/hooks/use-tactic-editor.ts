@@ -25,6 +25,7 @@ import {
   updateStepName as updateStepNameAction,
   updateStepNotes as updateStepNotesAction,
   updateStepOffset as updateStepOffsetAction,
+  updateThrowDroppedBy as updateThrowDroppedByAction,
   updateThrowPositionInStep,
 } from '../helpers/editor-actions';
 import { addLineupThrowToStep } from '../helpers/lineup-throw';
@@ -191,6 +192,17 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     [activeStepIndex, updateTactic],
   );
 
+  const updateThrowDroppedBy = useCallback(
+    (throwId: string, droppedBy: number | undefined) => {
+      updateTactic((curr) =>
+        updateStepAt(curr, activeStepIndex, (step) =>
+          updateThrowDroppedByAction(step, throwId, droppedBy),
+        ),
+      );
+    },
+    [activeStepIndex, updateTactic],
+  );
+
   const deleteThrow = useCallback(
     (throwId: string) => {
       updateTactic((curr) =>
@@ -323,6 +335,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     addThrow,
     addLineupThrow,
     updateThrowPosition,
+    updateThrowDroppedBy,
     deleteThrow,
     addDrawingStroke,
     deleteDrawingStroke,

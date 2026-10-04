@@ -1,7 +1,7 @@
 import { type TacticPlayerPosition, type TacticStep, UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
-import { ArrowLeft, ArrowRight, Clock, Compass, Copy, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Compass, Copy, Plus, Trash2 } from 'lucide-react';
 import { UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
 import type { StepThrowRow } from '../helpers/tactic-step-throws';
 
@@ -17,6 +17,8 @@ export interface TacticStepRailProps {
   readonly isOpenOnPhone: boolean;
   readonly onSelectThrow: (throwId: string | null) => void;
   readonly onDeleteThrow: (throwId: string) => void;
+  readonly onUpdateThrowDroppedBy: (throwId: string, droppedBy: number | undefined) => void;
+  readonly onAddStep: () => void;
   readonly onDuplicateStep: (index: number) => void;
   readonly onDeleteStep: (index: number) => void;
   readonly onMoveStep: (index: number, direction: 'earlier' | 'later') => void;
@@ -30,16 +32,55 @@ export interface TacticStepRailProps {
 const FIELD =
   'rounded-chip border border-line bg-surface-2 text-ink placeholder:text-ink-faint hover:border-line-strong';
 
+function DroppedByField({
+  row,
+  players,
+  onChange,
+}: {
+  readonly row: StepThrowRow;
+  readonly players: readonly TacticPlayerPosition[];
+  readonly onChange: (droppedBy: number | undefined) => void;
+}) {
+  const t = useT();
+  const label = t('library.tactics.throw.droppedBy');
+  return (
+    <label className="flex items-center gap-2 px-2.5 pb-2.5 text-12 text-ink-dim">
+      <span className="shrink-0">{label}</span>
+      <select
+        value={row.droppedBy ?? ''}
+        onChange={(event) =>
+          onChange(event.target.value === '' ? undefined : Number(event.target.value))
+        }
+        aria-label={label}
+        className={cn(FIELD, 'h-8 min-w-0 flex-1 px-2 text-12')}
+      >
+        <option value="">{t('library.tactics.throw.droppedByNone')}</option>
+        {players
+          .filter((player) => player.slot !== row.slot)
+          .map((player) => (
+            <option key={player.slot} value={player.slot}>
+              {`${player.slot + 1} ${player.label?.trim() ?? ''}`.trim()}
+            </option>
+          ))}
+      </select>
+    </label>
+  );
+}
+
 function ThrowRow({
   row,
+  players,
   isSelected,
   onSelect,
   onDelete,
+  onUpdateDroppedBy,
 }: {
   readonly row: StepThrowRow;
+  readonly players: readonly TacticPlayerPosition[];
   readonly isSelected: boolean;
   readonly onSelect: () => void;
   readonly onDelete: () => void;
+  readonly onUpdateDroppedBy: (droppedBy: number | undefined) => void;
 }) {
   const t = useT();
   const kindName =
@@ -49,48 +90,51 @@ function ThrowRow({
   return (
     <li
       className={cn(
-        'flex items-center gap-1 rounded-card border pr-1 transition-colors',
+        'flex flex-col rounded-card border transition-colors',
         isSelected ? 'border-line-strong bg-surface-2' : 'border-line bg-surface-1',
       )}
     >
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-pressed={isSelected}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-card p-2.5 text-left hover:bg-hover"
-      >
-        <span
-          className={cn(
-            'grid size-8 shrink-0 place-items-center rounded-chip bg-surface-2',
-            UTILITY_INK[row.kind],
-          )}
+      <div className="flex items-center gap-1 pr-1">
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-pressed={isSelected}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-card p-2.5 text-left hover:bg-hover"
         >
-          <UtilityGlyph kind={row.kind} size="control" />
-        </span>
-        <span className="flex min-w-0 flex-col gap-px">
-          <span className="truncate text-13 font-medium">
-            {row.lineupTitle === undefined
-              ? kindName
-              : t('library.tactics.steps.throwFromLineup', {
-                  kind: kindName,
-                  lineup: row.lineupTitle,
-                })}
+          <span
+            className={cn(
+              'grid size-8 shrink-0 place-items-center rounded-chip bg-surface-2',
+              UTILITY_INK[row.kind],
+            )}
+          >
+            <UtilityGlyph kind={row.kind} size="control" />
           </span>
-          <span className="truncate font-mono text-11 text-ink-dim">
-            {t('library.tactics.steps.throwMeta', { player, seconds: row.releaseTime })}
+          <span className="flex min-w-0 flex-col gap-px">
+            <span className="truncate text-13 font-medium">
+              {row.lineupTitle === undefined
+                ? kindName
+                : t('library.tactics.steps.throwFromLineup', {
+                    kind: kindName,
+                    lineup: row.lineupTitle,
+                  })}
+            </span>
+            <span className="truncate font-mono text-11 text-ink-dim">
+              {t('library.tactics.steps.throwMeta', { player, seconds: row.releaseTime })}
+            </span>
           </span>
-        </span>
-      </button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onDelete}
-        aria-label={t('library.tactics.throw.delete')}
-        title={t('library.tactics.throw.delete')}
-        className="text-ink-dim hover:bg-damage/20 hover:text-damage"
-      >
-        <Trash2 />
-      </Button>
+        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onDelete}
+          aria-label={t('library.tactics.throw.delete')}
+          title={t('library.tactics.throw.delete')}
+          className="text-ink-dim hover:bg-damage/20 hover:text-damage"
+        >
+          <Trash2 />
+        </Button>
+      </div>
+      <DroppedByField row={row} players={players} onChange={onUpdateDroppedBy} />
     </li>
   );
 }
@@ -240,6 +284,8 @@ export function TacticStepRail({
   isOpenOnPhone,
   onSelectThrow,
   onDeleteThrow,
+  onUpdateThrowDroppedBy,
+  onAddStep,
   onDuplicateStep,
   onDeleteStep,
   onMoveStep,
@@ -273,7 +319,11 @@ export function TacticStepRail({
           value={step.name}
           onChange={(event) => onUpdateName(stepIndex, event.target.value)}
           aria-label={t('library.tactics.steps.name')}
-          placeholder={t('library.tactics.steps.namePlaceholder')}
+          placeholder={
+            stepIndex === 0
+              ? t('library.tactics.steps.spawn')
+              : t('library.tactics.steps.namePlaceholder')
+          }
           className="w-full min-w-0 rounded-chip bg-transparent text-20 font-semibold text-ink placeholder:text-ink-faint hover:bg-hover"
         />
       </div>
@@ -298,9 +348,11 @@ export function TacticStepRail({
             <ThrowRow
               key={row.id}
               row={row}
+              players={step.players}
               isSelected={row.id === selectedThrowId}
               onSelect={() => onSelectThrow(row.id === selectedThrowId ? null : row.id)}
               onDelete={() => onDeleteThrow(row.id)}
+              onUpdateDroppedBy={(droppedBy) => onUpdateThrowDroppedBy(row.id, droppedBy)}
             />
           ))}
         </ul>
@@ -318,6 +370,20 @@ export function TacticStepRail({
           onUpdateYaw={onUpdatePlayerYaw}
           onUpdateLabel={onUpdatePlayerLabel}
         />
+      )}
+
+      {stepIndex === stepCount - 1 && (
+        <div className="flex flex-col gap-2">
+          {stepCount === 1 && (
+            <p className="px-1 text-12 text-ink-dim leading-prose">
+              {t('library.tactics.steps.addHint')}
+            </p>
+          )}
+          <Button variant={stepCount === 1 ? 'primary' : 'outline'} onClick={onAddStep}>
+            <Plus />
+            {t('library.tactics.steps.addNext')}
+          </Button>
+        </div>
       )}
 
       <label className="flex flex-col gap-1.5">

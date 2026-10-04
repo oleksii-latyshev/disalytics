@@ -109,6 +109,18 @@ export function TacticLoadoutPanel({
                       {t('library.tactics.loadout.noUtility')}
                     </span>
                   )}
+                  {player.drops.map((drop) => (
+                    <span
+                      key={`${drop.toSlot}-${drop.kind}`}
+                      className="truncate text-11 text-ink-dim"
+                    >
+                      {t('library.tactics.loadout.drops', {
+                        count: drop.count,
+                        kind: t(`library.tactics.tools.utilityKinds.${drop.kind}`),
+                        slot: drop.toSlot + 1,
+                      })}
+                    </span>
+                  ))}
                 </span>
                 <span
                   className={cn(

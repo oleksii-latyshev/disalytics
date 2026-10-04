@@ -70,6 +70,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     addThrow,
     addLineupThrow,
     updateThrowPosition,
+    updateThrowDroppedBy,
     deleteThrow,
     addDrawingStroke,
     deleteDrawingStroke,
@@ -249,6 +250,8 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         isOpenOnPhone={phoneTab === 'step'}
         onSelectThrow={setSelectedThrowId}
         onDeleteThrow={deleteThrow}
+        onUpdateThrowDroppedBy={updateThrowDroppedBy}
+        onAddStep={addStep}
         onDuplicateStep={duplicateStep}
         onDeleteStep={deleteStep}
         onMoveStep={moveStep}
