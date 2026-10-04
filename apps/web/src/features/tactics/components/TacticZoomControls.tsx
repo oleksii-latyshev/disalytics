@@ -21,7 +21,7 @@ export function TacticZoomControls({
   const t = useT();
 
   return (
-    <div className="absolute right-2.5 bottom-2.5 flex items-center gap-0.5 rounded-card border border-line bg-surface-0/85 p-0.5">
+    <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5 rounded-card border border-line bg-surface-0/85 p-0.5">
       <Button
         variant="ghost"
         size="icon"

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@disa/ui';
-import { ArrowLeft, Check, ChevronDown, Save } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Link2, Save } from 'lucide-react';
 import { useId, useState } from 'react';
 import { calledOnRounds } from '../helpers/tactic-timeline';
 
@@ -185,17 +185,27 @@ export function TacticEditorHeader({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <Button variant="outline" size="lg" onClick={onShare}>
-            {t('library.tactics.library.share')}
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={onShare}
+            aria-label={t('library.tactics.library.share')}
+            title={t('library.tactics.library.share')}
+            className="max-sm:size-(--height-control-lg) max-sm:p-0"
+          >
+            <Link2 className="sm:hidden" />
+            <span className="max-sm:hidden">{t('library.tactics.library.share')}</span>
           </Button>
           <Button
             variant={isDirty ? 'primary' : 'secondary'}
             size="lg"
             onClick={onSave}
-            title={isDirty ? t('library.tactics.editor.unsaved') : undefined}
+            aria-label={saveLabel}
+            title={isDirty ? t('library.tactics.editor.unsaved') : saveLabel}
+            className="max-sm:size-(--height-control-lg) max-sm:p-0"
           >
             {isDirty ? <Save /> : <Check />}
-            <span>{saveLabel}</span>
+            <span className="max-sm:hidden">{saveLabel}</span>
           </Button>
         </div>
       </div>

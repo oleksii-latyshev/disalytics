@@ -55,7 +55,7 @@ export function TacticLoadoutPanel({
     <section
       aria-label={t('library.tactics.loadout.utility')}
       className={cn(
-        'order-5 min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 text-ink lg:order-none lg:col-start-1 lg:row-start-2 lg:flex lg:flex-none lg:pr-0',
+        'order-5 min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 pb-20 text-ink lg:order-none lg:col-start-1 lg:row-start-2 lg:flex lg:flex-none lg:pr-0 lg:pb-3',
         isOpenOnPhone ? 'flex' : 'hidden',
       )}
     >

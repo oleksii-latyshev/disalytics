@@ -8,6 +8,7 @@ import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { stepThrowRows } from '../helpers/tactic-step-throws';
 import { useTacticEditor } from '../hooks/use-tactic-editor';
+import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticEditorHeader } from './TacticEditorHeader';
 import { TacticLoadoutPanel } from './TacticLoadoutPanel';
 import { TacticPlate } from './TacticPlate';
@@ -110,11 +111,14 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
   const [savedTactic, setSavedTactic] = useState(initialTactic);
   const [isSharing, setIsSharing] = useState(false);
   const [phoneTab, setPhoneTab] = useState<'step' | 'loadout'>('step');
-  const isDirty = tactic !== savedTactic;
+  const isStored = useTacticStored(initialTactic.id);
+  const [hasSaved, setHasSaved] = useState(false);
+  const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
 
   const handleSave = useCallback(() => {
     save();
     setSavedTactic(tactic);
+    setHasSaved(true);
   }, [save, tactic]);
 
   const selectedPlayer = useMemo(() => {
