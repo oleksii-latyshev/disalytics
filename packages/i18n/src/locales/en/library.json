@@ -167,9 +167,10 @@
       "remove": "Remove"
     },
     "weapons": {
-      "title": "Weapon reference",
-      "note": "Base damage, hitgroup values, armor penetration, fire rates, and prices.",
-      "searchPlaceholder": "Search weapons...",
+      "title": "Weapons",
+      "note": "What each gun costs, pays and does to every part of the body.",
+      "searchPlaceholder": "Search weapons",
+      "empty": "No weapon matches these filters.",
       "categories": {
         "all": "All",
         "rifle": "Rifles",
@@ -180,27 +181,49 @@
         "machinegun": "Heavy",
         "equipment": "Equipment"
       },
+      "groups": {
+        "category": "Class",
+        "side": "Side",
+        "armour": "Armour"
+      },
       "sides": {
-        "all": "All sides",
+        "all": "Both sides",
         "ct": "CT",
-        "t": "T"
+        "t": "T",
+        "any": "ALL",
+        "only": "{side} only"
       },
       "mode": {
-        "armored": "Armored",
-        "unarmored": "Unarmored"
+        "armored": "Armoured",
+        "unarmored": "No armour"
       },
       "columns": {
         "weapon": "Weapon",
-        "category": "Class",
-        "side": "Side",
         "price": "Price",
-        "killReward": "Kill reward",
+        "killReward": "Reward",
         "rpm": "RPM",
-        "armorPen": "Armor pen",
         "head": "Head",
         "chest": "Chest",
         "stomach": "Stomach",
         "legs": "Legs"
+      },
+      "detail": {
+        "price": "price",
+        "killReward": "kill reward",
+        "rpm": "rounds / min",
+        "penetration": "Armour penetration",
+        "zones": {
+          "head": "Head",
+          "chest": "Chest and arms",
+          "stomach": "Stomach",
+          "legs": "Legs"
+        },
+        "shots": "{count, plural, =1 {one shot} other {# shots}}",
+        "pellets": "{count, plural, =1 {one pellet} other {# pellets}}",
+        "noteArmored": "Against a helmet and vest.",
+        "noteUnarmored": "Without armour.",
+        "noteBasis": "Base damage at close range; shots to kill assume 100 HP and no misses.",
+        "notePellets": "Shotgun numbers are per pellet."
       }
     },
     "grenades": {
