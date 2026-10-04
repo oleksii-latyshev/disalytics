@@ -22,7 +22,7 @@ export interface TacticTimelineProps {
   readonly onSpeedChange: (speed: number) => void;
 }
 
-const PLAYBACK_SPEEDS = [0.5, 1, 2, 4] as const;
+const PLAYBACK_SPEEDS: readonly number[] = [0.5, 1, 2, 4];
 
 function nextSpeed(current: number): number {
   const index = PLAYBACK_SPEEDS.indexOf(current);
