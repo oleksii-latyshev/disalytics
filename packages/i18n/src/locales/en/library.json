@@ -204,23 +204,30 @@
       }
     },
     "grenades": {
-      "title": "Grenade reference",
-      "note": "Measured entity timings, explosion radii, damage profiles, and costs.",
-      "columns": {
-        "grenade": "Grenade",
-        "side": "Side",
-        "price": "Price",
-        "duration": "Duration",
-        "radius": "Radius",
-        "damage": "Damage",
-        "citation": "Source & notes"
-      },
+      "title": "Grenades",
+      "note": "Price, how long it lasts, how far it reaches and what it does.",
+      "sideBoth": "Both sides",
+      "sideCt": "CT only",
+      "sideT": "T only",
+      "lasts": "Lasts",
+      "reach": "Reach",
+      "damage": "Damage",
       "instant": "Instant",
-      "seconds": "{seconds, number}s",
-      "units": "{units, number} u",
+      "seconds": "{seconds, number} s",
+      "units": "{units, number} units",
+      "unitsShort": "{units, number} u",
       "los": "Line of sight",
-      "dps": "~40 DPS",
-      "none": "None"
+      "sightShort": "sight",
+      "damageNone": "None — blocks sight",
+      "damageBlind": "Blinds in line of sight",
+      "damageFire": "~40 per second",
+      "damageExplosive": "Up to {damage, number}",
+      "damageDecoy": "{damage, number} when it pops",
+      "chartTitle": "How long each one lasts",
+      "chartHint": "from the moment it goes off",
+      "chartInstant": "instant",
+      "axisSeconds": "{seconds, number} s",
+      "axisLabel": "Time since it goes off, 0 to 25 seconds"
     }
   },
   "lineups": {

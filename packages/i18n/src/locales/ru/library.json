@@ -204,23 +204,30 @@
       }
     },
     "grenades": {
-      "title": "Справочник гранат",
-      "note": "Замеренное время горения/раскрытия, радиусы поражения, урон и стоимость.",
-      "columns": {
-        "grenade": "Граната",
-        "side": "Сторона",
-        "price": "Цена",
-        "duration": "Время",
-        "radius": "Радиус",
-        "damage": "Урон",
-        "citation": "Источник и детали"
-      },
+      "title": "Гранаты",
+      "note": "Цена, сколько держится, как далеко достаёт и что делает.",
+      "sideBoth": "Обе стороны",
+      "sideCt": "Только CT",
+      "sideT": "Только T",
+      "lasts": "Держится",
+      "reach": "Радиус",
+      "damage": "Урон",
       "instant": "Мгновенно",
       "seconds": "{seconds, number} с",
-      "units": "{units, number} ю",
+      "units": "{units, number} ед.",
+      "unitsShort": "{units, number} ед.",
       "los": "Прямая видимость",
-      "dps": "~40 DPS",
-      "none": "Нет"
+      "sightShort": "обзор",
+      "damageNone": "Нет — закрывает обзор",
+      "damageBlind": "Слепит в прямой видимости",
+      "damageFire": "~40 в секунду",
+      "damageExplosive": "До {damage, number}",
+      "damageDecoy": "{damage, number} при хлопке",
+      "chartTitle": "Сколько держится каждая",
+      "chartHint": "с момента срабатывания",
+      "chartInstant": "мгновенно",
+      "axisSeconds": "{seconds, number} с",
+      "axisLabel": "Время с момента срабатывания, от 0 до 25 секунд"
     }
   },
   "lineups": {

@@ -1,7 +1,7 @@
 import { Text, useT } from '@disa/i18n';
 import { useState } from 'react';
 import { EconomyCalculator } from './EconomyCalculator';
-import { GrenadeReferenceTable } from './GrenadeReferenceTable';
+import { GrenadeReference } from './GrenadeReference';
 import { WeaponReferenceTable } from './WeaponReferenceTable';
 
 type ToolTab = 'economy' | 'weapons' | 'grenades';
@@ -71,19 +71,7 @@ export function ToolsView() {
             <WeaponReferenceTable />
           </section>
         )}
-        {activeTab === 'grenades' && (
-          <section className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-20 font-medium leading-dense">
-                <Text path="library.tools.grenades.title" />
-              </h3>
-              <p className="mt-1 text-13 text-ink-dim leading-prose">
-                <Text path="library.tools.grenades.note" />
-              </p>
-            </div>
-            <GrenadeReferenceTable />
-          </section>
-        )}
+        {activeTab === 'grenades' && <GrenadeReference />}
       </div>
     </div>
   );
