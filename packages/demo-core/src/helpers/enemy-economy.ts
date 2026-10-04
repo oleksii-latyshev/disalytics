@@ -1,5 +1,6 @@
 import type { Team } from '../schema';
 import {
+  BUY_THRESHOLD_FORCE,
   calculateRoundReward,
   MAX_LOSS_STREAK,
   MAX_MONEY,
@@ -211,4 +212,25 @@ export function estimateEnemyRounds(
     estimates.push(estimateOneRound(observation, round, estimates.at(-1), observations[round - 2]));
   }
   return estimates;
+}
+
+export const BUY_SCALE = { force: BUY_THRESHOLD_FORCE, full: 3_900, max: 8_000 } as const;
+
+export type BuyVerdict = 'eco' | 'ecoOrForce' | 'force' | 'forceOrFull' | 'full' | 'unclear';
+
+export function classifyBuyRange(floor: number, ceiling: number): BuyVerdict {
+  if (ceiling < BUY_SCALE.force) return 'eco';
+  if (ceiling < BUY_SCALE.full) return floor < BUY_SCALE.force ? 'ecoOrForce' : 'force';
+  if (floor >= BUY_SCALE.full) return 'full';
+  return floor >= BUY_SCALE.force ? 'forceOrFull' : 'unclear';
+}
+
+export function buyBandFractions(
+  floor: number,
+  ceiling: number,
+): { readonly start: number; readonly end: number } {
+  const clamp = (value: number): number => Math.min(1, Math.max(0, value / BUY_SCALE.max));
+  const start = clamp(Math.min(floor, ceiling));
+  const end = clamp(Math.max(floor, ceiling));
+  return { start, end: Math.max(end, Math.min(1, start + 0.02)) };
 }

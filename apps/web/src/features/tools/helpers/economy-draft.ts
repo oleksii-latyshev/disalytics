@@ -25,7 +25,7 @@ export function reasonsForWinner(winner: Team): readonly RoundEndReason[] {
 
 export function choiceClass(selected: boolean): string {
   return (
-    'min-h-11 rounded-chip border px-3 py-2 text-12 transition-colors ' +
+    'min-h-12 rounded-chip border px-3 py-2 text-13 transition-colors sm:min-h-11 sm:text-12 ' +
     (selected
       ? 'border-ink bg-ink text-surface-0'
       : 'border-line bg-surface-2 text-ink-dim hover:border-line-strong hover:text-ink')

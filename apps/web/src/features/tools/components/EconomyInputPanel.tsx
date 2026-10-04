@@ -11,6 +11,15 @@ import type { Dispatch, SetStateAction } from 'react';
 import { COUNTS, REASON_PATHS, WEAPON_LABELS } from '../constants/economy';
 import { choiceClass, reasonsForWinner } from '../helpers/economy-draft';
 
+const UNKNOWN = (
+  <>
+    <span aria-hidden="true">?</span>
+    <span className="sr-only">
+      <Text path="library.tools.economy.unknown" />
+    </span>
+  </>
+);
+
 type Props = {
   draft: EnemyRoundObservation;
   setDraft: Dispatch<SetStateAction<EnemyRoundObservation>>;
@@ -20,6 +29,7 @@ type Props = {
   isEditing: boolean;
   onSave: () => void;
   onCancelEdit: () => void;
+  onRemove: () => void;
 };
 
 export function EconomyInputPanel({
@@ -31,6 +41,7 @@ export function EconomyInputPanel({
   isEditing,
   onSave,
   onCancelEdit,
+  onRemove,
 }: Props) {
   const t = useT();
   const winner = draft.weWon ? ourSide : opponent;
@@ -39,26 +50,21 @@ export function EconomyInputPanel({
   const knownWeapons = countObservedWeapons(draft.weapons);
 
   return (
-    <div className="min-w-0 rounded-card border border-line bg-surface-1 p-4 sm:p-6">
-      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <p className="text-11 tracking-[0.12em] text-ink-dim uppercase">
-            <Text path="library.tools.economy.inputEyebrow" />
-          </p>
-          <h4 className="mt-2 text-20 font-medium">
-            <Text path="library.tools.economy.round" values={{ round: roundNumber }} />
-          </h4>
-        </div>
-        <span className="text-12 text-ink-dim">
+    <div className="flex min-w-0 flex-col gap-5 sm:rounded-card sm:border sm:border-line sm:bg-surface-1 sm:p-5">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-20 font-semibold">
+          <Text path="library.tools.economy.round" values={{ round: roundNumber }} />
+        </h3>
+        <span className="numeric text-12 text-ink-dim">
           <Text path="library.tools.economy.opponent" values={{ side: opponent }} />
         </span>
       </div>
 
-      <fieldset className="mb-5 border-0 p-0">
-        <legend className="mb-2 text-12 font-medium">
+      <fieldset className="flex flex-col gap-2 border-0 p-0">
+        <legend className="mb-2 text-13 text-ink-dim">
           <Text path="library.tools.economy.result" />
         </legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {([true, false] as const).map((weWon) => (
             <button
               key={String(weWon)}
@@ -80,11 +86,11 @@ export function EconomyInputPanel({
         </div>
       </fieldset>
 
-      <fieldset className="mb-5 border-0 p-0">
-        <legend className="mb-2 text-12 font-medium">
+      <fieldset className="flex flex-col gap-2 border-0 p-0">
+        <legend className="mb-2 text-13 text-ink-dim">
           <Text path="library.tools.economy.reason" />
         </legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
           {availableReasons.map((reason) => (
             <button
               key={reason}
@@ -105,78 +111,71 @@ export function EconomyInputPanel({
         </div>
       </fieldset>
 
-      <fieldset className="mb-5 border-0 p-0">
-        <legend className="mb-2 text-12 font-medium">
-          <Text path="library.tools.economy.survivors" />
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {([null, ...COUNTS] as const).map((count) => (
-            <button
-              key={String(count)}
-              type="button"
-              onClick={() => setDraft((previous) => ({ ...previous, enemySurvivors: count }))}
-              aria-pressed={draft.enemySurvivors === count}
-              className={choiceClass(draft.enemySurvivors === count)}
-            >
-              {count === null ? <Text path="library.tools.economy.unknown" /> : count}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      {askingPlant && (
-        <fieldset className="mb-5 border-0 p-0">
-          <legend className="mb-2 text-12 font-medium">
-            <Text path="library.tools.economy.bombPlanted" />
+      <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr))]">
+        <fieldset className="flex flex-col gap-2 border-0 p-0">
+          <legend className="mb-2 text-13 text-ink-dim">
+            <Text path="library.tools.economy.survivors" />
           </legend>
-          <div className="flex flex-wrap gap-2">
-            {([null, true, false] as const).map((value) => (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1.5">
+            {([null, ...COUNTS] as const).map((count) => (
               <button
-                key={String(value)}
+                key={String(count)}
                 type="button"
-                onClick={() => setDraft((previous) => ({ ...previous, bombPlanted: value }))}
-                aria-pressed={draft.bombPlanted === value}
-                className={choiceClass(draft.bombPlanted === value)}
+                onClick={() => setDraft((previous) => ({ ...previous, enemySurvivors: count }))}
+                aria-pressed={draft.enemySurvivors === count}
+                className={choiceClass(draft.enemySurvivors === count)}
               >
-                <Text
-                  path={
-                    value === null
-                      ? 'library.tools.economy.unknown'
-                      : value
-                        ? 'library.tools.economy.yes'
-                        : 'library.tools.economy.no'
-                  }
-                />
+                {count === null ? UNKNOWN : count}
               </button>
             ))}
           </div>
         </fieldset>
-      )}
 
-      <div className="[border-block-start:1px_solid_var(--color-line)] pt-5">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h5 className="text-14 font-medium">
-              <Text path="library.tools.economy.weaponsTitle" />
-            </h5>
-            <p className="mt-1 text-12 text-ink-dim">
-              <Text path="library.tools.economy.weaponsHint" />
-            </p>
-          </div>
+        {askingPlant && (
+          <fieldset className="flex flex-col gap-2 border-0 p-0">
+            <legend className="mb-2 text-13 text-ink-dim">
+              <Text path="library.tools.economy.bombPlanted" />
+            </legend>
+            <div className="grid grid-cols-3 gap-2">
+              {([null, true, false] as const).map((value) => (
+                <button
+                  key={String(value)}
+                  type="button"
+                  onClick={() => setDraft((previous) => ({ ...previous, bombPlanted: value }))}
+                  aria-pressed={draft.bombPlanted === value}
+                  className={choiceClass(draft.bombPlanted === value)}
+                >
+                  {value === null ? (
+                    UNKNOWN
+                  ) : (
+                    <Text path={value ? 'library.tools.economy.yes' : 'library.tools.economy.no'} />
+                  )}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-13 text-ink-dim">
+            <Text path="library.tools.economy.weaponsTitle" />
+          </span>
           <span className="numeric text-12 text-ink-dim">
             <Text path="library.tools.economy.known" values={{ count: knownWeapons }} />
           </span>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]">
           {OBSERVED_WEAPONS.map((weapon) => {
             const display = WEAPON_LABELS[weapon];
             const label = 'name' in display ? display.name : t(display.path);
             return (
               <div
                 key={weapon}
-                className="flex min-w-0 items-center justify-between gap-2 rounded-chip border border-line bg-surface-2 px-3 py-2"
+                className="flex min-w-0 items-center gap-2 rounded-chip border border-line bg-surface-1 py-1.5 pr-1.5 pl-3 sm:flex-col sm:gap-1.5 sm:border-0 sm:bg-surface-2 sm:px-2 sm:py-2.5"
               >
-                <span className="min-w-0 text-12">{label}</span>
+                <span className="min-w-0 flex-1 text-14 sm:flex-none sm:text-13">{label}</span>
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
@@ -190,11 +189,11 @@ export function EconomyInputPanel({
                     aria-label={t('library.tools.economy.decreaseWeapon', {
                       weapon: label,
                     })}
-                    className="flex size-11 items-center justify-center rounded-chip bg-surface-3 text-ink disabled:opacity-30"
+                    className="flex size-12 items-center justify-center rounded-chip border border-line-strong text-ink disabled:opacity-30 sm:size-9"
                   >
                     −
                   </button>
-                  <span className="numeric w-5 text-center text-13">{draft.weapons[weapon]}</span>
+                  <span className="numeric w-6 text-center text-16">{draft.weapons[weapon]}</span>
                   <button
                     type="button"
                     disabled={knownWeapons >= 5}
@@ -207,7 +206,7 @@ export function EconomyInputPanel({
                     aria-label={t('library.tools.economy.increaseWeapon', {
                       weapon: label,
                     })}
-                    className="flex size-11 items-center justify-center rounded-chip bg-surface-3 text-ink disabled:opacity-30"
+                    className="flex size-12 items-center justify-center rounded-chip border border-line-strong text-ink disabled:opacity-30 sm:size-9"
                   >
                     +
                   </button>
@@ -218,11 +217,11 @@ export function EconomyInputPanel({
         </div>
       </div>
 
-      <fieldset className="mt-5 border-0 p-0">
-        <legend className="mb-2 text-12 font-medium">
+      <fieldset className="flex flex-col gap-2 border-0 p-0">
+        <legend className="mb-2 text-13 text-ink-dim">
           <Text path="library.tools.economy.enemyKills" />
         </legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1.5">
           {([null, ...COUNTS] as const).map((count) => (
             <button
               key={String(count)}
@@ -231,30 +230,37 @@ export function EconomyInputPanel({
               aria-pressed={draft.enemyKills === count}
               className={choiceClass(draft.enemyKills === count)}
             >
-              {count === null ? <Text path="library.tools.economy.unknown" /> : count}
+              {count === null ? UNKNOWN : count}
             </button>
           ))}
         </div>
       </fieldset>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={onSave}
-          className="min-h-10 rounded-card bg-ink px-5 py-2 text-13 font-medium text-surface-0 hover:opacity-90"
+          className="min-h-12 flex-1 rounded-card bg-ink px-5 text-14 font-semibold text-surface-0 hover:opacity-90 sm:min-h-11 sm:flex-none"
         >
-          <Text
-            path={isEditing ? 'library.tools.economy.saveRound' : 'library.tools.economy.addRound'}
-          />
+          <Text path="library.tools.economy.save" values={{ round: roundNumber }} />
         </button>
         {isEditing && (
-          <button
-            type="button"
-            onClick={onCancelEdit}
-            className="text-12 text-ink-dim hover:text-ink"
-          >
-            <Text path="library.tools.economy.cancelEdit" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="min-h-12 px-2 text-13 text-ink-dim hover:text-ink sm:min-h-11"
+            >
+              <Text path="library.tools.economy.cancelEdit" />
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="min-h-12 px-2 text-13 text-ink-dim hover:text-ink sm:min-h-11"
+            >
+              <Text path="library.tools.economy.removeRound" values={{ round: roundNumber }} />
+            </button>
+          </>
         )}
       </div>
     </div>

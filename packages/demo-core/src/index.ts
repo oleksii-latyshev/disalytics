@@ -79,13 +79,17 @@ export {
   matchPlayerEnemyBlindTime,
 } from './helpers/enemy-blind-time';
 export type {
+  BuyVerdict,
   EnemyRoundEstimate,
   EnemyRoundObservation,
   ObservedWeapon,
   WeaponObservations,
 } from './helpers/enemy-economy';
 export {
+  BUY_SCALE,
+  buyBandFractions,
   changeObservedWeaponCount,
+  classifyBuyRange,
   countObservedWeapons,
   emptyWeaponObservations,
   estimateEnemyRounds,
