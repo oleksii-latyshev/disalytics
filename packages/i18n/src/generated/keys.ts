@@ -302,6 +302,7 @@ export const TRANSLATION_KEYS = [
   'library.shell.soonNote.stats',
   'library.shell.stats',
   'library.shell.tactics',
+  'library.shell.tagline',
   'library.shell.tools',
   'library.shell.update.ready',
   'library.shell.update.reload',

@@ -43,7 +43,22 @@ export function WayIn({ state, children, isDraggedOver, onClose, onUpdate, view 
       />
 
       <header className="relative z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 pt-6 wide:px-10 wide:pt-8">
-        <h1 className="font-ui font-medium text-20 leading-dense">disalytics</h1>
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo.svg"
+            alt=""
+            aria-hidden="true"
+            width={48}
+            height={48}
+            className="size-12 shrink-0"
+          />
+          <div>
+            <h1 className="font-ui font-medium text-20 leading-dense">disalytics</h1>
+            <p className="mt-1 text-10 tracking-label text-ink-dim">
+              <Text path="library.shell.tagline" />
+            </p>
+          </div>
+        </div>
         <div role="status" className="flex items-center gap-3">
           {onUpdate && (
             <>

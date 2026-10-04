@@ -1,5 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <title>disalytics</title>
-  <rect width="128" height="128" rx="24" fill="#050505"/>
   <path fill="#fafafa" fill-rule="evenodd" d="M20 16H57C90 16 110 36 110 64S90 112 57 112H20ZM48 40V88L84 64Z"/>
 </svg>
