@@ -1,64 +1,110 @@
 import type { WeaponReference } from '@disa/demo-core';
+import { zoneDamage } from '../helpers/weapon-damage';
+import { SideBadge } from './SideBadge';
+
+const ROW_BASE = 'cursor-pointer transition-colors hover:bg-hover';
 
 export function WeaponRow({
   weapon,
   isArmored,
+  isSelected,
   moneyFormat,
+  onSelect,
 }: {
   weapon: WeaponReference;
   isArmored: boolean;
+  isSelected: boolean;
   moneyFormat: Intl.NumberFormat;
+  onSelect: (name: string) => void;
 }) {
-  const headDmg = isArmored
-    ? weapon.hitgroupDamage.head.armored
-    : weapon.hitgroupDamage.head.unarmored;
-  const chestDmg = isArmored
-    ? weapon.hitgroupDamage.chestArms.armored
-    : weapon.hitgroupDamage.chestArms.unarmored;
-  const stomachDmg = isArmored
-    ? weapon.hitgroupDamage.stomach.armored
-    : weapon.hitgroupDamage.stomach.unarmored;
-  const legsDmg = weapon.hitgroupDamage.legs.unarmored;
-
+  const head = zoneDamage(weapon, 'head', isArmored);
   return (
-    <tr className="transition-colors hover:bg-hover">
-      <td className="p-3 font-medium text-ink">{weapon.name}</td>
-      <td className="p-3 text-12 text-ink-dim capitalize">{weapon.category}</td>
-      <td className="p-3">
-        <span
-          className={`label-dense rounded-chip px-1.5 py-0.5 text-10 font-medium ${
-            weapon.team === 'ct'
-              ? 'bg-surface-2 text-ct'
-              : weapon.team === 't'
-                ? 'bg-surface-2 text-t'
-                : 'bg-surface-2 text-ink-dim'
-          }`}
+    <tr
+      onClick={() => onSelect(weapon.name)}
+      className={`${ROW_BASE} ${isSelected ? 'bg-selected hover:bg-selected' : ''}`}
+    >
+      <th scope="row" className="px-4 py-2.5 text-left font-normal">
+        <button
+          type="button"
+          aria-pressed={isSelected}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(weapon.name);
+          }}
+          className="flex items-center gap-2.5 text-14 font-medium text-ink"
         >
-          {weapon.team.toUpperCase()}
+          <SideBadge team={weapon.team} />
+          {weapon.name}
+        </button>
+      </th>
+      <td className="numeric px-2 py-2.5 text-right text-14 text-ink">
+        {moneyFormat.format(weapon.price)}
+      </td>
+      <td className="numeric px-2 py-2.5 text-right text-14 text-ink-dim">
+        {moneyFormat.format(weapon.killReward)}
+      </td>
+      <td className="numeric px-2 py-2.5 text-right text-14 text-ink-dim">{weapon.fireRateRpm}</td>
+      <td className="numeric px-2 py-2.5 text-right text-14">
+        <span
+          className={
+            head >= 100 ? 'rounded-chip bg-ink px-1.5 py-0.5 font-semibold text-surface-0' : ''
+          }
+        >
+          {head}
         </span>
       </td>
-      <td className="numeric p-3 text-ink">{moneyFormat.format(weapon.price)}</td>
-      <td className="numeric p-3 text-ink-dim">
-        {weapon.killReward > 0 ? moneyFormat.format(weapon.killReward) : '—'}
+      <td className="numeric px-2 py-2.5 text-right text-14">
+        {zoneDamage(weapon, 'chest', isArmored)}
       </td>
-      <td className="numeric p-3 text-ink-dim">{weapon.fireRateRpm}</td>
-      <td className="numeric p-3 text-ink-dim">{weapon.armorPenetration}%</td>
-      <td className={`numeric p-3 font-medium ${headDmg >= 100 ? 'text-damage' : 'text-ink'}`}>
-        {headDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
+      <td className="numeric px-2 py-2.5 text-right text-14">
+        {zoneDamage(weapon, 'stomach', isArmored)}
       </td>
-      <td className="numeric p-3 text-ink-dim">
-        {chestDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
-      </td>
-      <td className="numeric p-3 text-ink-dim">
-        {stomachDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
-      </td>
-      <td className="numeric p-3 text-ink-dim">
-        {legsDmg}
-        {weapon.pellets ? ` (×${weapon.pellets})` : ''}
+      <td className="numeric px-4 py-2.5 text-right text-14">
+        {zoneDamage(weapon, 'legs', isArmored)}
       </td>
     </tr>
+  );
+}
+
+export function WeaponCardRow({
+  weapon,
+  isArmored,
+  isSelected,
+  moneyFormat,
+  onSelect,
+}: {
+  weapon: WeaponReference;
+  isArmored: boolean;
+  isSelected: boolean;
+  moneyFormat: Intl.NumberFormat;
+  onSelect: (name: string) => void;
+}) {
+  const head = zoneDamage(weapon, 'head', isArmored);
+  return (
+    <li className="[border-block-start:1px_solid_var(--color-line-soft)] first:border-0">
+      <button
+        type="button"
+        aria-pressed={isSelected}
+        onClick={() => onSelect(weapon.name)}
+        className={`grid h-12 w-full grid-cols-[minmax(0,1fr)_4rem_3rem] items-center gap-2 px-3.5 text-right transition-colors hover:bg-hover ${
+          isSelected ? 'bg-selected hover:bg-selected' : ''
+        }`}
+      >
+        <span className="flex min-w-0 items-center gap-2 text-left text-14 font-medium">
+          <SideBadge team={weapon.team} />
+          <span className="truncate">{weapon.name}</span>
+        </span>
+        <span className="numeric text-13">{moneyFormat.format(weapon.price)}</span>
+        <span className="numeric text-13">
+          <span
+            className={
+              head >= 100 ? 'rounded-chip bg-ink px-1.5 py-0.5 font-semibold text-surface-0' : ''
+            }
+          >
+            {head}
+          </span>
+        </span>
+      </button>
+    </li>
   );
 }

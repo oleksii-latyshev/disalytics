@@ -1,42 +1,28 @@
-import {
-  WEAPON_REFERENCES,
-  type WeaponReference,
-  type WeaponReferenceCategory,
-} from '@disa/demo-core';
-import { Text, useLocale, useT } from '@disa/i18n';
+import { WEAPON_REFERENCES } from '@disa/demo-core';
+import { Text, useLocale } from '@disa/i18n';
 import { useMemo, useState } from 'react';
+import {
+  type CategoryFilter,
+  filterWeapons,
+  pickSelected,
+  type SideFilter,
+} from '../helpers/weapon-filter';
 import { compareWeapons, type SortKey } from '../helpers/weapon-sort';
-import { WeaponRow } from './WeaponRow';
-
-const CATEGORIES: readonly (WeaponReferenceCategory | 'all')[] = [
-  'all',
-  'rifle',
-  'pistol',
-  'smg',
-  'sniper',
-  'shotgun',
-  'machinegun',
-  'equipment',
-];
+import { WeaponDetail } from './WeaponDetail';
+import { WeaponFilters } from './WeaponFilters';
+import { WeaponCardRow, WeaponRow } from './WeaponRow';
 
 const COLUMNS = [
-  { key: 'name', label: 'library.tools.weapons.columns.weapon' },
-  { key: 'category', label: 'library.tools.weapons.columns.category' },
-  { key: 'team', label: 'library.tools.weapons.columns.side' },
-  { key: 'price', label: 'library.tools.weapons.columns.price' },
-  { key: 'killReward', label: 'library.tools.weapons.columns.killReward' },
-  { key: 'rpm', label: 'library.tools.weapons.columns.rpm' },
-  { key: 'armorPen', label: 'library.tools.weapons.columns.armorPen' },
-  { key: 'head', label: 'library.tools.weapons.columns.head' },
-  { key: 'chest', label: 'library.tools.weapons.columns.chest' },
-  { key: 'stomach', label: 'library.tools.weapons.columns.stomach' },
-  { key: 'legs', label: 'library.tools.weapons.columns.legs' },
-] as const satisfies readonly { key: SortKey; label: string }[];
-
-const SIDES = ['all', 'ct', 't'] as const;
+  ['price', 'library.tools.weapons.columns.price'],
+  ['killReward', 'library.tools.weapons.columns.killReward'],
+  ['rpm', 'library.tools.weapons.columns.rpm'],
+  ['head', 'library.tools.weapons.columns.head'],
+  ['chest', 'library.tools.weapons.columns.chest'],
+  ['stomach', 'library.tools.weapons.columns.stomach'],
+  ['legs', 'library.tools.weapons.columns.legs'],
+] as const satisfies readonly (readonly [SortKey, string])[];
 
 export function WeaponReferenceTable() {
-  const t = useT();
   const locale = useLocale();
   const moneyFormat = useMemo(
     () =>
@@ -49,153 +35,103 @@ export function WeaponReferenceTable() {
   );
 
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<WeaponReferenceCategory | 'all'>('all');
-  const [selectedSide, setSelectedSide] = useState<'all' | 'ct' | 't'>('all');
+  const [category, setCategory] = useState<CategoryFilter>('rifle');
+  const [side, setSide] = useState<SideFilter>('all');
   const [isArmored, setIsArmored] = useState(true);
+  const [selectedName, setSelectedName] = useState<string | null>('AK-47');
+  const [sort, setSort] = useState<{ key: SortKey; asc: boolean } | null>(null);
 
-  const [sortKey, setSortKey] = useState<SortKey>('category');
-  const [sortAsc, setSortAsc] = useState(true);
+  const visible = useMemo(() => {
+    const filtered = filterWeapons(WEAPON_REFERENCES, { query, category, side });
+    if (sort === null) return filtered;
+    return [...filtered].sort((a, b) => compareWeapons(a, b, sort.key, sort.asc, isArmored));
+  }, [query, category, side, sort, isArmored]);
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortKey(key);
-      setSortAsc(true);
-    }
-  };
+  const selected = pickSelected(visible, selectedName);
 
-  const filteredWeapons = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return WEAPON_REFERENCES.filter((w) => {
-      if (q && !w.name.toLowerCase().includes(q)) return false;
-      if (selectedCategory !== 'all' && w.category !== selectedCategory) return false;
-      if (selectedSide !== 'all' && w.team !== 'both' && w.team !== selectedSide) return false;
-      return true;
-    });
-  }, [query, selectedCategory, selectedSide]);
-
-  const sortedWeapons = useMemo(() => {
-    return [...filteredWeapons].sort((a, b) => compareWeapons(a, b, sortKey, sortAsc, isArmored));
-  }, [filteredWeapons, sortKey, sortAsc, isArmored]);
-
-  const renderSortArrow = (key: SortKey) => {
-    if (sortKey !== key) return null;
-    return <span className="text-10 text-ink">{sortAsc ? ' ↑' : ' ↓'}</span>;
-  };
+  const toggleSort = (key: SortKey) =>
+    setSort((current) => ({ key, asc: current?.key === key ? !current.asc : true }));
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Controls Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search input */}
-        <div className="relative w-full sm:max-w-xs">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('library.tools.weapons.searchPlaceholder')}
-            className="h-8 w-full rounded-card border border-line bg-surface-2 px-3 text-13 text-ink placeholder:text-ink-dim focus:border-line-strong focus:outline-none"
-          />
-        </div>
+      <WeaponFilters
+        category={category}
+        side={side}
+        isArmored={isArmored}
+        query={query}
+        onCategory={setCategory}
+        onSide={setSide}
+        onArmored={setIsArmored}
+        onQuery={setQuery}
+      />
 
-        {/* Armor Mode Toggle */}
-        <div className="flex items-center gap-1 rounded-card bg-surface-2 p-0.5">
-          <button
-            type="button"
-            onClick={() => setIsArmored(true)}
-            className={`h-7 rounded-chip px-2.5 font-ui text-12 font-medium transition-colors ${
-              isArmored ? 'bg-surface-0 text-ink shadow-xs' : 'text-ink-dim hover:text-ink'
-            }`}
-          >
-            <Text path="library.tools.weapons.mode.armored" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsArmored(false)}
-            className={`h-7 rounded-chip px-2.5 font-ui text-12 font-medium transition-colors ${
-              !isArmored ? 'bg-surface-0 text-ink shadow-xs' : 'text-ink-dim hover:text-ink'
-            }`}
-          >
-            <Text path="library.tools.weapons.mode.unarmored" />
-          </button>
-        </div>
-      </div>
+      {selected === null ? (
+        <p className="py-10 text-center text-13 text-ink-dim">
+          <Text path="library.tools.weapons.empty" />
+        </p>
+      ) : (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="lg:order-last">
+            <WeaponDetail weapon={selected} isArmored={isArmored} moneyFormat={moneyFormat} />
+          </div>
 
-      {/* Filter rows */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap items-center gap-1">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`h-7 rounded-chip px-2.5 font-ui text-12 font-medium transition-colors ${
-                selectedCategory === cat
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'bg-surface-2 text-ink-dim hover:bg-surface-3 hover:text-ink'
-              }`}
-            >
-              {cat === 'all' && <Text path="library.tools.weapons.categories.all" />}
-              {cat === 'rifle' && <Text path="library.tools.weapons.categories.rifle" />}
-              {cat === 'pistol' && <Text path="library.tools.weapons.categories.pistol" />}
-              {cat === 'smg' && <Text path="library.tools.weapons.categories.smg" />}
-              {cat === 'sniper' && <Text path="library.tools.weapons.categories.sniper" />}
-              {cat === 'shotgun' && <Text path="library.tools.weapons.categories.shotgun" />}
-              {cat === 'machinegun' && <Text path="library.tools.weapons.categories.machinegun" />}
-              {cat === 'equipment' && <Text path="library.tools.weapons.categories.equipment" />}
-            </button>
-          ))}
-        </div>
-
-        <div className="mx-1 h-4 w-px bg-line" />
-
-        <div className="flex items-center gap-1">
-          {SIDES.map((side) => (
-            <button
-              key={side}
-              type="button"
-              onClick={() => setSelectedSide(side)}
-              className={`h-7 rounded-chip px-2 font-ui text-12 font-medium transition-colors ${
-                selectedSide === side
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'bg-surface-2 text-ink-dim hover:bg-surface-3 hover:text-ink'
-              }`}
-            >
-              {side === 'all' && <Text path="library.tools.weapons.sides.all" />}
-              {side === 'ct' && <Text path="library.tools.weapons.sides.ct" />}
-              {side === 't' && <Text path="library.tools.weapons.sides.t" />}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="surface-card overflow-x-auto rounded-card">
-        <table className="w-full min-w-[50rem] border-collapse text-left">
-          <thead>
-            <tr className="[border-block-end:1px_solid_var(--color-line)] bg-surface-2 text-11 text-ink-dim">
-              {COLUMNS.map(({ key, label }) => (
-                <th key={key} scope="col" className="p-3 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => handleSort(key)}
-                    className="flex items-center gap-1 hover:text-ink"
-                  >
-                    <Text path={label} />
-                    {renderSortArrow(key)}
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line text-13">
-            {sortedWeapons.map((w: WeaponReference) => (
-              <WeaponRow key={w.name} weapon={w} isArmored={isArmored} moneyFormat={moneyFormat} />
+          <ul className="surface-card overflow-hidden rounded-card md:hidden">
+            {visible.map((weapon) => (
+              <WeaponCardRow
+                key={weapon.name}
+                weapon={weapon}
+                isArmored={isArmored}
+                isSelected={weapon.name === selected.name}
+                moneyFormat={moneyFormat}
+                onSelect={setSelectedName}
+              />
             ))}
-          </tbody>
-        </table>
-      </div>
+          </ul>
+
+          <div className="surface-card hidden overflow-x-auto rounded-card md:block">
+            <table className="w-full min-w-[44rem] border-collapse text-left">
+              <thead>
+                <tr className="h-10 text-right text-11 text-ink-dim">
+                  <th scope="col" className="label-dense px-4 text-left font-medium">
+                    <Text path="library.tools.weapons.columns.weapon" />
+                  </th>
+                  {COLUMNS.map(([key, path]) => (
+                    <th
+                      key={key}
+                      scope="col"
+                      aria-sort={
+                        sort?.key === key ? (sort.asc ? 'ascending' : 'descending') : undefined
+                      }
+                      className="label-dense px-2 font-medium last:px-4"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(key)}
+                        className="uppercase hover:text-ink"
+                      >
+                        <Text path={path} />
+                        {sort?.key === key && (sort.asc ? ' ↑' : ' ↓')}
+                      </button>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-soft">
+                {visible.map((weapon) => (
+                  <WeaponRow
+                    key={weapon.name}
+                    weapon={weapon}
+                    isArmored={isArmored}
+                    isSelected={weapon.name === selected.name}
+                    moneyFormat={moneyFormat}
+                    onSelect={setSelectedName}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
