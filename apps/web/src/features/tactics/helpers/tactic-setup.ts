@@ -6,7 +6,7 @@ import {
   type TacticSide,
   type TacticStep,
 } from '@disa/demo-core';
-import { getMapOverview, RADAR_IMAGE_SIZE } from '@disa/map-data';
+import { getMapOverview, mapSpawns, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { generateId } from './editor-actions';
 import { tacticRadarToWorld } from './tactic-plot';
 
@@ -16,11 +16,33 @@ const FORMATION_SPACING_RADAR = 96;
 const FORMATION_MARGIN_RADAR = 64;
 const FALLBACK_SPACING_UNITS = 150;
 
+/** Which of `count` spawn spots each of the five slots takes: evenly spaced, so the team spreads. */
+export function spawnIndices(count: number): readonly number[] {
+  if (count < TACTIC_SLOT_COUNT) return [];
+  return Array.from({ length: TACTIC_SLOT_COUNT }, (_, slot) =>
+    Math.floor((slot * count) / TACTIC_SLOT_COUNT),
+  );
+}
+
+/** Five players on distinct spawn spots of their side, where a round starts; null without data. */
+function spawnPlayers(map: string, side: TacticSide): readonly TacticPlayerPosition[] | null {
+  const spawns = mapSpawns(map, side);
+  const indices = spawnIndices(spawns.length);
+  if (indices.length === 0) return null;
+  return indices.map((spawnIndex, slot) => {
+    const spawn = spawns[spawnIndex];
+    return { slot, x: spawn?.x ?? 0, y: spawn?.y ?? 0, yaw: 0 };
+  });
+}
+
 /**
- * Five players in a row along the plate edge of their side, spaced so tokens and their labels do
- * not touch; the tactic builder drags them from there.
+ * Five players on their side's spawn spots when the map has them, so a tactic starts where a round
+ * does; otherwise in a row along the plate edge of their side, spaced so tokens and their labels
+ * do not touch. The tactic builder drags them from there.
  */
 export function startingPlayers(map: string, side: TacticSide): readonly TacticPlayerPosition[] {
+  const spawned = spawnPlayers(map, side);
+  if (spawned !== null) return spawned;
   const overview = getMapOverview(map);
   return Array.from({ length: TACTIC_SLOT_COUNT }, (_, slot) => {
     if (overview === undefined) {

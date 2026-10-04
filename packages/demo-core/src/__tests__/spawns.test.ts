@@ -12,7 +12,7 @@ import {
 import { atFrame, newEvents, newTrack } from './helpers';
 
 function economy(slot: number, team: 'CT' | 'T'): PlayerEconomy {
-  return { slot: asPlayerSlot(slot), money: 0, equipmentValue: 0, buyType: 'full', team };
+  return { slot: asPlayerSlot(slot), money: 0, equipmentValue: 0, buyType: 'full-buy', team };
 }
 
 function round(startTick: number, teams: readonly ('CT' | 'T')[]): Round {

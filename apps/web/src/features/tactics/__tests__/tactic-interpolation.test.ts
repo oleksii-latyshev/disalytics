@@ -114,6 +114,13 @@ describe('interpolateTacticStep', () => {
     expect(state.drawings).toHaveLength(1);
   });
 
+  it('starts on the first step and leaves it without a jump', () => {
+    const at = (time: number) => interpolateTacticStep(sampleSteps, time).players[0];
+    expect(at(0)).toMatchObject({ x: 100, y: 200 });
+    const justAfter = at(0.1);
+    expect(Math.hypot((justAfter?.x ?? 0) - 100, (justAfter?.y ?? 0) - 200)).toBeLessThan(5);
+  });
+
   it('interpolates player positions and view angles at midpoint', () => {
     const state = interpolateTacticStep(sampleSteps, 5);
     expect(state.activeStepIndex).toBe(0);

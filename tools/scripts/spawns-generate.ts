@@ -38,7 +38,7 @@ function containerPaths(): string[] {
   return paths;
 }
 
-function readContainer(path: string): Uint8Array {
+function readContainer(path: string): Uint8Array<ArrayBuffer> {
   const bytes = readFileSync(path);
   return new Uint8Array(path.endsWith('.gz') ? gunzipSync(bytes) : bytes);
 }
