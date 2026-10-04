@@ -50,7 +50,7 @@ export function EconomyInputPanel({
   const knownWeapons = countObservedWeapons(draft.weapons);
 
   return (
-    <div className="flex min-w-0 flex-col gap-5 sm:rounded-card sm:border sm:border-line sm:bg-surface-1 sm:p-5">
+    <div className="flex min-w-0 flex-1 flex-col gap-5 sm:rounded-card sm:border sm:border-line sm:bg-surface-1 sm:p-5">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-20 font-semibold">
           <Text path="library.tools.economy.round" values={{ round: roundNumber }} />
