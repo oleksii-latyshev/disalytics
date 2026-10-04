@@ -58,6 +58,14 @@ function widgetBody(id: WidgetId, props: WidgetProps): ReactNode {
   }
 }
 
+/**
+ * A saved demo read out of this device's own store is over before a card could be read, and the
+ * card shoving the widgets down for that one frame is the flash in front of the match.
+ */
+function isInstantRestore(state: Props['state']): boolean {
+  return state.status === 'restoring' && state.download === null;
+}
+
 export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSample }: Props) {
   const t = useT();
   const data = useHomeData();
@@ -86,7 +94,7 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
 
   return (
     <div className="mx-auto flex w-full max-w-[85rem] flex-col gap-5 pt-1 md:pt-0">
-      {state.status !== 'idle' && (
+      {state.status !== 'idle' && !isInstantRestore(state) && (
         <div className="atlas-upload flex max-w-[425px] flex-col gap-3 rounded-[13px] border border-line-strong bg-surface-1 p-[22px]">
           <DemoLibrary
             state={state}

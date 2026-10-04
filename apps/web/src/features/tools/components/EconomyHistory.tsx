@@ -37,7 +37,7 @@ export function EconomyHistory({
   return (
     <aside
       aria-label={t('library.tools.economy.history')}
-      className="flex min-w-0 flex-col gap-2 xl:rounded-card xl:border xl:border-line xl:bg-surface-1 xl:p-4"
+      className="flex min-w-0 flex-1 flex-col gap-2 xl:rounded-card xl:border xl:border-line xl:bg-surface-1 xl:p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="hidden text-11 tracking-[0.16em] text-ink-dim uppercase xl:inline">
@@ -125,7 +125,7 @@ export function EconomyHistory({
         )}
       </ol>
 
-      <div className="flex flex-col gap-2 xl:mt-2">
+      <div className="flex flex-col gap-2 xl:mt-auto xl:pt-2">
         {isConfirmingReset ? (
           <div className="rounded-chip border border-line bg-surface-2 p-3">
             <p className="text-12 text-ink">

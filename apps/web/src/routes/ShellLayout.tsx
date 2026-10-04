@@ -31,7 +31,9 @@ export function ShellLayout() {
 
   useEffect(() => {
     if (state.status === 'failed') {
+      const isElsewhere = parseOrigin.current !== null && location.pathname !== '/';
       parseOrigin.current = null;
+      if (isElsewhere) void navigate({ to: '/', replace: true });
       return;
     }
     if (state.status !== 'ready' || parseOrigin.current === null) return;

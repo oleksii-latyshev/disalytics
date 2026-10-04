@@ -104,9 +104,9 @@ export function EconomyCalculator() {
   return (
     <section
       aria-label={t('library.tools.economy.title')}
-      className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start xl:grid-cols-[17rem_minmax(0,1fr)_minmax(20rem,26rem)]"
+      className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-stretch xl:grid-cols-[17rem_minmax(0,1fr)_minmax(20rem,26rem)]"
     >
-      <div className="order-2 min-w-0 lg:order-1 lg:col-span-2 xl:col-span-1">
+      <div className="order-2 flex min-w-0 flex-col lg:order-1 lg:col-span-2 xl:col-span-1">
         <EconomyHistory
           rounds={rounds}
           openingSide={openingSide}
@@ -121,7 +121,7 @@ export function EconomyCalculator() {
         />
       </div>
 
-      <div className="order-3 min-w-0 lg:order-2">
+      <div className="order-3 flex min-w-0 flex-col lg:order-2">
         <EconomyInputPanel
           draft={draft}
           setDraft={setDraft}
@@ -137,8 +137,10 @@ export function EconomyCalculator() {
         />
       </div>
 
-      <div className="order-1 min-w-0 lg:sticky lg:top-4 lg:order-3">
-        <EconomyOutputPanel latest={latest} money={money} approximateMoney={approximateMoney} />
+      <div className="order-1 min-w-0 lg:order-3">
+        <div className="lg:sticky lg:top-4">
+          <EconomyOutputPanel latest={latest} money={money} approximateMoney={approximateMoney} />
+        </div>
       </div>
     </section>
   );

@@ -50,7 +50,7 @@ export function EconomyInputPanel({
   const knownWeapons = countObservedWeapons(draft.weapons);
 
   return (
-    <div className="flex min-w-0 flex-col gap-5 sm:rounded-card sm:border sm:border-line sm:bg-surface-1 sm:p-5">
+    <div className="flex min-w-0 flex-1 flex-col gap-5 sm:rounded-card sm:border sm:border-line sm:bg-surface-1 sm:p-5">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-20 font-semibold">
           <Text path="library.tools.economy.round" values={{ round: roundNumber }} />
@@ -90,7 +90,7 @@ export function EconomyInputPanel({
         <legend className="mb-2 text-13 text-ink-dim">
           <Text path="library.tools.economy.reason" />
         </legend>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
           {availableReasons.map((reason) => (
             <button
               key={reason}
@@ -166,7 +166,7 @@ export function EconomyInputPanel({
             <Text path="library.tools.economy.known" values={{ count: knownWeapons }} />
           </span>
         </div>
-        <div className="grid gap-2 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]">
+        <div className="grid gap-2 sm:grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))]">
           {OBSERVED_WEAPONS.map((weapon) => {
             const display = WEAPON_LABELS[weapon];
             const label = 'name' in display ? display.name : t(display.path);
