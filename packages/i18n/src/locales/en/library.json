@@ -481,7 +481,10 @@
       "stepsDuration": "{count, plural, one {# step} other {# steps}} · {seconds, number, ::.#} s",
       "throwsCost": "{count, plural, one {# throw} other {# throws}} · ${amount, number}",
       "newOnMap": "New tactic on {map}",
-      "newOnMapHint": "Starts with five players at spawn"
+      "newOnMapHint": "Starts with five players at spawn",
+      "noMatch": "No tactic matches these filters",
+      "noMatchHint": "Try another map, side or round type, or clear the search.",
+      "clearFilters": "Clear filters"
     },
     "share": {
       "title": "Share tactic",

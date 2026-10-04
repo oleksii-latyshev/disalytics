@@ -16,7 +16,7 @@ interface TacticsFilterBarProps {
 }
 
 const GROUP =
-  'flex max-w-full items-center gap-1 overflow-x-auto rounded-card border border-line bg-surface-1 p-1';
+  'flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-card border border-line bg-surface-1 p-1';
 const OPTION =
   'h-8 flex-none cursor-pointer rounded-chip px-3 font-mono text-12 whitespace-nowrap transition-colors';
 const ON = 'bg-surface-3 text-ink';

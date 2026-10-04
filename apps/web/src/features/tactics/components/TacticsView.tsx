@@ -65,6 +65,13 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
   );
   const newTacticMap = selectedMap !== 'all' ? selectedMap : DEFAULT_NEW_TACTIC_MAP;
 
+  const clearFilters = () => {
+    setSelectedMap('all');
+    setSelectedSide('ALL');
+    setSelectedRound('ALL');
+    setSearchQuery('');
+  };
+
   const handleCreateNew = () => {
     const map = newTacticMap;
     const side = selectedSide !== 'ALL' ? selectedSide : 'T';
@@ -205,19 +212,28 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         onSearch={setSearchQuery}
       />
 
-      {filteredTactics.length === 0 && tactics.length > 0 && (
+      {filteredTactics.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-line bg-surface-1/40 px-4 py-12 text-center">
           <div className="rounded-full bg-surface-2 p-3 text-ink-dim">
             <Search className="size-6" />
           </div>
           <div className="flex max-w-sm flex-col gap-1">
             <h3 className="font-ui text-16 font-semibold text-ink">
-              {t('library.tactics.library.empty')}
+              {tactics.length === 0
+                ? t('library.tactics.library.empty')
+                : t('library.tactics.library.noMatch')}
             </h3>
             <p className="text-13 text-ink-dim leading-prose">
-              {t('library.tactics.library.emptyHint')}
+              {tactics.length === 0
+                ? t('library.tactics.library.emptyHint')
+                : t('library.tactics.library.noMatchHint')}
             </p>
           </div>
+          {tactics.length > 0 && (
+            <Button variant="secondary" onClick={clearFilters}>
+              <Text path="library.tactics.library.clearFilters" />
+            </Button>
+          )}
         </div>
       )}
 

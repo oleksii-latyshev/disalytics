@@ -481,7 +481,10 @@
       "stepsDuration": "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}} · {seconds, number, ::.#} с",
       "throwsCost": "{count, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}} · ${amount, number}",
       "newOnMap": "Новая тактика на {map}",
-      "newOnMapHint": "Начинается с пятью игроками на спавне"
+      "newOnMapHint": "Начинается с пятью игроками на спавне",
+      "noMatch": "Нет тактик под эти фильтры",
+      "noMatchHint": "Попробуйте другую карту, сторону или тип раунда либо очистите поиск.",
+      "clearFilters": "Сбросить фильтры"
     },
     "share": {
       "title": "Поделиться тактикой",
