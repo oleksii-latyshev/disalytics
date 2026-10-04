@@ -25,7 +25,7 @@ export interface TacticTimelineProps {
 const PLAYBACK_SPEEDS = [0.5, 1, 2, 4] as const;
 
 function nextSpeed(current: number): number {
-  const index = PLAYBACK_SPEEDS.findIndex((speed) => speed === current);
+  const index = PLAYBACK_SPEEDS.indexOf(current);
   return PLAYBACK_SPEEDS[(index + 1) % PLAYBACK_SPEEDS.length] ?? 1;
 }
 
