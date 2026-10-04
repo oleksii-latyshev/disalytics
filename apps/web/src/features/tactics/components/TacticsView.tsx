@@ -1,17 +1,20 @@
 import type { Tactic, TacticRound, TacticSide } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
+import { MAP_IDS } from '@disa/map-data';
 import { Button } from '@disa/ui';
-import { Download, Plus, Search, Upload } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
 import { type ChangeEvent, useMemo, useRef, useState } from 'react';
 import { nameOrFallback } from '../helpers/tactic-names';
 import { createNewTactic } from '../helpers/tactic-setup';
-import { filterTactics } from '../helpers/tactics-filter';
+import { countByMap, filterTactics } from '../helpers/tactics-filter';
 import { useTactics } from '../hooks/use-tactics';
 import { SharedTacticBanner } from './SharedTacticBanner';
 import { TacticCard } from './TacticCard';
 import { TacticEditor } from './TacticEditor';
 import { TacticShareModal } from './TacticShareModal';
 import { TacticsFilterBar } from './TacticsFilterBar';
+
+const DEFAULT_NEW_TACTIC_MAP = 'de_mirage';
 
 export interface TacticsViewProps {
   readonly initialTactic?: Tactic | null | undefined;
@@ -51,8 +54,19 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
     });
   }, [tactics, selectedMap, selectedSide, selectedRound, searchQuery]);
 
+  const mapCounts = useMemo(() => countByMap(tactics), [tactics]);
+  const mapTabs = useMemo(
+    () =>
+      MAP_IDS.filter((id) => (mapCounts.get(id) ?? 0) > 0 || id === selectedMap).map((id) => ({
+        id,
+        count: mapCounts.get(id) ?? 0,
+      })),
+    [mapCounts, selectedMap],
+  );
+  const newTacticMap = selectedMap !== 'all' ? selectedMap : DEFAULT_NEW_TACTIC_MAP;
+
   const handleCreateNew = () => {
-    const map = selectedMap !== 'all' ? selectedMap : 'de_mirage';
+    const map = newTacticMap;
     const side = selectedSide !== 'ALL' ? selectedSide : 'T';
     const newTactic = createNewTactic(map, side);
     setEditingTactic(newTactic);
@@ -128,15 +142,6 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         className="hidden"
       />
 
-      {initialTactic !== null && initialTactic !== undefined && (
-        <SharedTacticBanner
-          tactic={initialTactic}
-          onSave={handleSaveInitialShared}
-          onOpen={() => setEditingTactic(initialTactic)}
-          onDismiss={onClearInitialTactic}
-        />
-      )}
-
       {/* Status Notice Toast */}
       {notice !== null && (
         <div
@@ -148,28 +153,20 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         </div>
       )}
 
-      {/* Header with Title and Action Buttons */}
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-ui text-28 font-medium text-ink leading-dense">
-            <Text path="library.tactics.title" />
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
+          <h2 className="font-ui text-28 font-semibold text-ink leading-dense sm:text-44">
+            <Text path="library.tactics.library.playbookTitle" />
           </h2>
           <p className="text-14 text-ink-dim leading-prose">
-            <Text path="library.tactics.note" />
+            <Text path="library.tactics.library.playbookNote" />
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="primary" onClick={handleCreateNew}>
-            <Plus />
-            <span>{t('library.tactics.library.newTactic')}</span>
-          </Button>
-
           <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
-            <Upload />
-            <span>{t('library.tactics.library.import')}</span>
+            <Text path="library.tactics.library.importShort" />
           </Button>
-
           <Button
             variant="secondary"
             onClick={() => exportTactics(filteredTactics)}
@@ -178,27 +175,42 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
             <Download />
             <span>{t('library.tactics.library.export')}</span>
           </Button>
+          <Button variant="primary" onClick={handleCreateNew}>
+            <Plus />
+            <span>{t('library.tactics.library.newTactic')}</span>
+          </Button>
         </div>
       </header>
+
+      {/* Shared banner sits under the header */}
+      {initialTactic !== null && initialTactic !== undefined && (
+        <SharedTacticBanner
+          tactic={initialTactic}
+          onSave={handleSaveInitialShared}
+          onOpen={() => setEditingTactic(initialTactic)}
+          onDismiss={onClearInitialTactic}
+        />
+      )}
 
       <TacticsFilterBar
         selectedMap={selectedMap}
         selectedSide={selectedSide}
         selectedRound={selectedRound}
         searchQuery={searchQuery}
+        maps={mapTabs}
+        total={tactics.length}
         onSelectMap={setSelectedMap}
         onSelectSide={setSelectedSide}
         onSelectRound={setSelectedRound}
         onSearch={setSearchQuery}
       />
 
-      {/* Tactics Cards Grid or Empty State */}
-      {filteredTactics.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-line bg-surface-1/40 py-16 px-4 text-center">
+      {filteredTactics.length === 0 && tactics.length > 0 && (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-line bg-surface-1/40 px-4 py-12 text-center">
           <div className="rounded-full bg-surface-2 p-3 text-ink-dim">
-            <Search className="h-6 w-6" />
+            <Search className="size-6" />
           </div>
-          <div className="flex flex-col gap-1 max-w-sm">
+          <div className="flex max-w-sm flex-col gap-1">
             <h3 className="font-ui text-16 font-semibold text-ink">
               {t('library.tactics.library.empty')}
             </h3>
@@ -206,26 +218,33 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
               {t('library.tactics.library.emptyHint')}
             </p>
           </div>
-          <Button variant="secondary" onClick={handleCreateNew} className="mt-2">
-            <Plus />
-            <span>{t('library.tactics.library.newTactic')}</span>
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTactics.map((tactic) => (
-            <TacticCard
-              key={tactic.id}
-              tactic={tactic}
-              onOpen={setEditingTactic}
-              onShare={setSharingTactic}
-              onDuplicate={handleDuplicate}
-              onExport={exportSingleTactic}
-              onDelete={deleteTactic}
-            />
-          ))}
         </div>
       )}
+
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,25rem),1fr))] gap-4">
+        {filteredTactics.map((tactic) => (
+          <TacticCard
+            key={tactic.id}
+            tactic={tactic}
+            onOpen={setEditingTactic}
+            onShare={setSharingTactic}
+            onDuplicate={handleDuplicate}
+            onExport={exportSingleTactic}
+            onDelete={deleteTactic}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={handleCreateNew}
+          className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-line-strong p-6 text-center text-ink-dim transition-colors hover:text-ink"
+        >
+          <Plus className="size-6" aria-hidden />
+          <span className="font-ui text-14 font-medium text-ink">
+            {t('library.tactics.library.newOnMap', { map: newTacticMap })}
+          </span>
+          <span className="text-12">{t('library.tactics.library.newOnMapHint')}</span>
+        </button>
+      </div>
 
       {/* Share Modal */}
       {sharingTactic !== null && (

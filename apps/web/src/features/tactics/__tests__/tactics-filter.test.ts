@@ -1,7 +1,7 @@
 import { decodeTacticFromHash, encodeTacticToHash, type Tactic } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import { createNewTactic } from '../helpers/tactic-setup';
-import { filterTactics, isCalledOn } from '../helpers/tactics-filter';
+import { countByMap, filterTactics, isCalledOn } from '../helpers/tactics-filter';
 
 function makeMockTactic(
   id: string,
@@ -150,5 +150,22 @@ describe('link sharing codec round-trip', () => {
     expect(decoded?.title).toBe('Anubis Mid Rush');
     expect(decoded?.map).toBe('de_anubis');
     expect(decoded?.steps).toHaveLength(1);
+  });
+});
+
+describe('countByMap', () => {
+  it('counts tactics per map', () => {
+    const make = (id: string, map: string) => ({
+      ...createNewTactic(map, 'T'),
+      id,
+    });
+    const counts = countByMap([
+      make('a', 'de_mirage'),
+      make('b', 'de_mirage'),
+      make('c', 'de_dust2'),
+    ]);
+    expect(counts.get('de_mirage')).toBe(2);
+    expect(counts.get('de_dust2')).toBe(1);
+    expect(counts.get('de_nuke')).toBeUndefined();
   });
 });
