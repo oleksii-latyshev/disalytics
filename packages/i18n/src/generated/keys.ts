@@ -392,6 +392,7 @@ export const TRANSLATION_KEYS = [
   'library.saved.rounds',
   'library.saved.score',
   'library.saved.size',
+  'library.saved.storedAt',
   'library.shell.empty',
   'library.shell.home',
   'library.shell.library',

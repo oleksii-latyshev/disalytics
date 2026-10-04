@@ -47,7 +47,8 @@
     "gone": {
       "title": "That demo is no longer on this device.",
       "hint": "The browser cleared it, or the cache made room for a newer one. Open the file again to read it."
-    }
+    },
+    "storedAt": "{when, date, medium}"
   },
   "dialog": {
     "label": "Saved match on {map}",
