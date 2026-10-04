@@ -13,7 +13,16 @@ import { getMapOverview, type RadarTheme, radarAssetPath } from '@disa/map-data'
  * ships, every reading on the card holds §14's floor — the mean is what said #332's hero was fine
  * when one cell behind a glyph read 2.73.
  */
-export function MapPoster({ map, theme }: { map: string; theme: RadarTheme }) {
+export function MapPoster({
+  map,
+  theme,
+  clear = false,
+}: {
+  map: string;
+  theme: RadarTheme;
+  /** A picture to recognise rather than a ground to write on: brighter, with only a low shade. */
+  clear?: boolean;
+}) {
   const level = getMapOverview(map)?.levels[0];
 
   return (
@@ -23,13 +32,17 @@ export function MapPoster({ map, theme }: { map: string; theme: RadarTheme }) {
           src={`${import.meta.env.BASE_URL}${radarAssetPath(level, theme)}`}
           alt=""
           loading="lazy"
-          className="absolute inset-0 size-full scale-105 object-cover opacity-55 transition-[opacity,scale] duration-(--duration-base) ease-out group-hover:scale-110 group-hover:opacity-80"
+          className={`absolute inset-0 size-full scale-105 object-cover ${clear ? 'opacity-95' : 'opacity-55 group-hover:opacity-80'} transition-[opacity,scale] duration-(--duration-base) ease-out group-hover:scale-110`}
         />
       )}
 
       <span
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(to_top,var(--color-surface-0)_10%,color-mix(in_srgb,var(--color-surface-0)_78%,transparent)_46%,color-mix(in_srgb,var(--color-surface-0)_12%,transparent)_100%)]"
+        className={
+          clear
+            ? 'absolute inset-0 bg-[linear-gradient(to_top,color-mix(in_srgb,var(--color-surface-0)_55%,transparent)_0%,transparent_40%)]'
+            : 'absolute inset-0 bg-[linear-gradient(to_top,var(--color-surface-0)_10%,color-mix(in_srgb,var(--color-surface-0)_78%,transparent)_46%,color-mix(in_srgb,var(--color-surface-0)_12%,transparent)_100%)]'
+        }
       />
     </>
   );

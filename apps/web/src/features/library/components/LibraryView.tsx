@@ -1,6 +1,6 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
-import { inputVariants } from '@disa/ui';
+import { cn, inputVariants } from '@disa/ui';
 import { useMemo, useState } from 'react';
 import { SAMPLE_MATCHES, type SampleMatch, sampleKey } from '@/core/samples';
 import { useSetting } from '@/core/settings';
@@ -123,7 +123,7 @@ export function LibraryView({ onEnter, onSample, onFile }: Props) {
             id="library-sort"
             value={order}
             onChange={(event) => setOrder(event.target.value === 'oldest' ? 'oldest' : 'newest')}
-            className={`${inputVariants({ size: 'lg' })} w-auto`}
+            className={cn(inputVariants({ size: 'lg' }), 'w-auto')}
           >
             <option value="newest">{t('library.grid.newestFirst')}</option>
             <option value="oldest">{t('library.grid.oldestFirst')}</option>
@@ -137,7 +137,7 @@ export function LibraryView({ onEnter, onSample, onFile }: Props) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('library.grid.searchPlaceholder')}
-            className={`${inputVariants({ size: 'lg' })} w-full sm:ms-auto sm:w-72`}
+            className={cn(inputVariants({ size: 'lg' }), 'w-full sm:ms-auto sm:max-w-72 sm:flex-1')}
           />
         </div>
       )}

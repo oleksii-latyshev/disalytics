@@ -42,7 +42,7 @@ export function DemoCard({ demo, sample, theme, onOpen, onRemove }: Props) {
         className="grid w-full grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-card border border-line bg-surface-1 p-3 text-left transition-colors duration-(--duration-micro) ease-out hover:border-line-strong hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-focus sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-stretch sm:gap-x-4 sm:p-3.5"
       >
         <span className="relative size-16 overflow-hidden rounded-chip bg-surface-0 sm:row-span-3 sm:size-auto sm:min-h-[9.5rem]">
-          <MapPoster map={demo.map} theme={theme} />
+          <MapPoster map={demo.map} theme={theme} clear />
           <span className="numeric absolute bottom-2 left-2 hidden rounded-chip bg-surface-0/85 px-1.5 py-0.5 text-11 text-ink sm:block">
             {demo.map}
           </span>
