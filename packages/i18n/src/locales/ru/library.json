@@ -754,7 +754,8 @@
     "found": {
       "you": "Это вы",
       "team": "Начинал за {side}",
-      "line": "{id} · найден в {found, number} из {total, number} сохранённых матчей · {rounds, number} {rounds, plural, one {раунд} few {раунда} many {раундов} other {раунда}}"
+      "line": "{id} · найден в {found, number} из {total, number} сохранённых матчей · {rounds, number} {rounds, plural, one {раунд} few {раунда} many {раундов} other {раунда}}",
+      "me": "Это я"
     },
     "maps": {
       "label": "Карта",

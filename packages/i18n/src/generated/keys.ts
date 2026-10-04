@@ -413,6 +413,7 @@ export const TRANSLATION_KEYS = [
   'library.stats.find',
   'library.stats.footnote',
   'library.stats.found.line',
+  'library.stats.found.me',
   'library.stats.found.team',
   'library.stats.found.you',
   'library.stats.hint',

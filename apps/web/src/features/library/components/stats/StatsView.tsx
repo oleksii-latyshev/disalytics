@@ -3,7 +3,7 @@ import { Text, type TranslationKey, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Link } from '@tanstack/react-router';
 import { ChartColumn } from 'lucide-react';
-import { type ReactNode, useEffect, useId, useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { useSetting } from '@/core/settings';
 import { parseSteamId } from '../../helpers/steam-id';
 import { usePlayerMatches } from '../../hooks/use-player-matches';
@@ -52,12 +52,6 @@ export function StatsView({ onEnter }: Props) {
   });
   const result = usePlayerMatches(demos, query);
   const isEmpty = demos !== null && demos.length === 0;
-
-  const foundCount = result.status === 'done' ? result.matches.length : 0;
-  useEffect(() => {
-    // Finding a player is what makes them the reader's identity, so Home's Your stats agrees.
-    if (query !== null && foundCount > 0 && query !== saved) setSaved(query);
-  }, [query, foundCount, saved, setSaved]);
 
   return (
     <section className="mx-auto flex w-full max-w-[90rem] flex-col gap-4 pb-10 md:gap-5">
@@ -183,6 +177,7 @@ export function StatsView({ onEnter }: Props) {
             matches={result.matches}
             demos={demos}
             isYou={query === saved}
+            onThisIsMe={() => setSaved(query)}
             onEnter={onEnter}
           />
         )}

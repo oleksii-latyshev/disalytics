@@ -754,7 +754,8 @@
     "found": {
       "you": "This is you",
       "team": "Started {side}",
-      "line": "{id} · found in {found, number} of {total, number} saved {total, plural, one {match} other {matches}} · {rounds, number} {rounds, plural, one {round} other {rounds}}"
+      "line": "{id} · found in {found, number} of {total, number} saved {total, plural, one {match} other {matches}} · {rounds, number} {rounds, plural, one {round} other {rounds}}",
+      "me": "This is me"
     },
     "maps": {
       "label": "Map",

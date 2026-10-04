@@ -13,6 +13,8 @@ interface Props {
   matches: readonly ProfileMatch[];
   demos: readonly SavedDemo[];
   isYou: boolean;
+  /** Identity changes only by this explicit press; finding a player never writes it. */
+  onThisIsMe: () => void;
   onEnter: (demo: SavedDemo, roundIndex: number) => void;
 }
 
@@ -51,7 +53,7 @@ function MapFilter({
   );
 }
 
-export function StatsProfile({ steamId, matches, demos, isYou, onEnter }: Props) {
+export function StatsProfile({ steamId, matches, demos, isYou, onThisIsMe, onEnter }: Props) {
   const t = useT();
   const [map, setMap] = useState<string | null>(null);
   const maps = useMemo(() => mapsOf(matches), [matches]);
@@ -86,10 +88,18 @@ export function StatsProfile({ steamId, matches, demos, isYou, onEnter }: Props)
                 values={{ side: latest.openedAs === 'ct' ? 'CT' : 'T' }}
               />
             </span>
-            {isYou && (
+            {isYou ? (
               <span className="rounded-chip bg-surface-3 px-2 py-0.5 text-12">
                 <Text path="library.stats.found.you" />
               </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onThisIsMe}
+                className="rounded-chip border border-line-strong px-2 py-0.5 text-12 text-ink-dim hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                <Text path="library.stats.found.me" />
+              </button>
             )}
           </div>
           <p className="numeric font-mono text-11 text-ink-faint [overflow-wrap:anywhere] md:text-13">
