@@ -1,8 +1,9 @@
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { lazy, type ReactNode, Suspense, useState } from 'react';
+import { lazy, type ReactNode, Suspense, useMemo, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
-import type { ShellView } from '../helpers/views';
+import { DOCK_SECTIONS, type ShellView } from '../helpers/views';
+import { ShellActionsContext } from '../hooks/use-shell-actions';
 import { ShellDock } from './ShellDock';
 
 const HelpSheet = lazy(async () => {
@@ -28,70 +29,94 @@ type Sheet = 'settings' | 'help';
 
 export function WayIn({ state, children, isDraggedOver, onClose, onUpdate, view }: Props) {
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
+  const section = DOCK_SECTIONS.find((entry) => entry.view === view);
+  const actions = useMemo(
+    () => ({
+      openHelp: () => setOpenSheet('help'),
+      openSettings: () => setOpenSheet('settings'),
+    }),
+    [],
+  );
 
   return (
-    <div className="relative grid h-dvh grid-rows-[auto_minmax(0,1fr)] bg-surface-0">
-      {view !== 'upload' && (
-        <div aria-hidden="true" className="surface-vignette pointer-events-none fixed inset-0" />
-      )}
+    <ShellActionsContext.Provider value={actions}>
+      <div className="relative grid h-dvh grid-rows-[auto_minmax(0,1fr)] bg-surface-0">
+        {view !== 'home' && (
+          <div aria-hidden="true" className="surface-vignette pointer-events-none fixed inset-0" />
+        )}
 
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none fixed inset-3 z-20 rounded-float border-2 transition-opacity duration-(--duration-micro) ease-out ${
-          isDraggedOver ? 'border-ink opacity-100' : 'border-transparent opacity-0'
-        }`}
-      />
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none fixed inset-3 z-20 rounded-float border-2 transition-opacity duration-(--duration-micro) ease-out ${
+            isDraggedOver ? 'border-ink opacity-100' : 'border-transparent opacity-0'
+          }`}
+        />
 
-      <header className="relative z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 pt-6 wide:px-10 wide:pt-8">
-        <div className="flex items-center gap-3">
-          <img
-            src="/logo.svg"
-            alt=""
-            aria-hidden="true"
-            width={48}
-            height={48}
-            className="size-12 shrink-0"
-          />
-          <div>
-            <h1 className="font-ui font-medium text-20 leading-dense">disalytics</h1>
-            <p className="mt-1 text-10 tracking-label text-ink-dim">
-              <Text path="library.shell.tagline" />
-            </p>
-          </div>
-        </div>
-        <div role="status" className="flex items-center gap-3">
-          {onUpdate && (
-            <>
-              <p className="text-13 text-ink-dim">
-                <Text path="library.shell.update.ready" />
+        <header className="relative z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 pt-6 wide:px-10 wide:pt-8">
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo.svg"
+              alt=""
+              aria-hidden="true"
+              width={48}
+              height={48}
+              className="size-12 shrink-0"
+            />
+            <div>
+              <h1 className="flex items-baseline gap-3 font-ui text-20 leading-dense">
+                <span className="font-medium">disalytics</span>
+                {section !== undefined && (
+                  <>
+                    <span aria-hidden="true" className="text-ink-faint">
+                      /
+                    </span>
+                    <span className="text-14 font-normal text-ink-dim">
+                      <Text path={section.labelPath} />
+                    </span>
+                  </>
+                )}
+              </h1>
+              <p className="mt-1 text-10 tracking-label text-ink-dim">
+                <Text path="library.shell.tagline" />
               </p>
-              <Button variant="outline" onClick={onUpdate}>
-                <Text path="library.shell.update.reload" />
-              </Button>
-            </>
+            </div>
+          </div>
+          <div role="status" className="flex items-center gap-3">
+            {onUpdate && (
+              <>
+                <p className="text-13 text-ink-dim">
+                  <Text path="library.shell.update.ready" />
+                </p>
+                <Button variant="outline" onClick={onUpdate}>
+                  <Text path="library.shell.update.reload" />
+                </Button>
+              </>
+            )}
+          </div>
+        </header>
+
+        <main
+          className={`relative min-w-0 overflow-y-auto px-4 pb-28 md:px-6 md:pb-24 wide:px-10 ${view === 'lineups' ? 'pt-2 wide:pt-3' : 'pt-4 wide:pt-6'}`}
+        >
+          {children}
+        </main>
+
+        <ShellDock
+          view={view}
+          onNavigate={() => {
+            if (state.status === 'failed') onClose();
+          }}
+          onSettingsOpen={() => setOpenSheet('settings')}
+          onHelpOpen={() => setOpenSheet('help')}
+        />
+
+        <Suspense fallback={null}>
+          {openSheet === 'settings' && (
+            <SettingsSheet isOpen onDismiss={() => setOpenSheet(null)} />
           )}
-        </div>
-      </header>
-
-      <main
-        className={`relative min-w-0 overflow-y-auto px-6 pb-24 wide:px-10 ${view === 'lineups' ? 'pt-2 wide:pt-3' : 'pt-4 wide:pt-6'}`}
-      >
-        {children}
-      </main>
-
-      <ShellDock
-        view={view}
-        onNavigate={() => {
-          if (state.status === 'failed') onClose();
-        }}
-        onSettingsOpen={() => setOpenSheet('settings')}
-        onHelpOpen={() => setOpenSheet('help')}
-      />
-
-      <Suspense fallback={null}>
-        {openSheet === 'settings' && <SettingsSheet isOpen onDismiss={() => setOpenSheet(null)} />}
-        {openSheet === 'help' && <HelpSheet isOpen onDismiss={() => setOpenSheet(null)} />}
-      </Suspense>
-    </div>
+          {openSheet === 'help' && <HelpSheet isOpen onDismiss={() => setOpenSheet(null)} />}
+        </Suspense>
+      </div>
+    </ShellActionsContext.Provider>
   );
 }

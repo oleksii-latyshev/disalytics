@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { afterRouteNavigation, clampMatchRound, type StatsTab } from '@/core/navigation';
 import { nonReadyParseState } from '@/core/parsing';
 import { sampleKey } from '@/core/samples';
-import { UploadView, WayIn } from '@/features/library';
+import { HomeView, useReadingPosition, WayIn } from '@/features/library';
 import { MatchReview } from '@/features/review';
 import { useAppRouteContext } from '../context';
 
@@ -45,6 +45,11 @@ export function MatchPage() {
   };
   const state = parse.state;
   const { restoreKey } = parse;
+  const isOpen = state.status === 'ready' && state.demoKey === demoKey;
+  useReadingPosition(
+    isOpen ? demoKey : null,
+    clampMatchRound(search.round, isOpen ? state.demo.events.rounds.length : 1),
+  );
   const restoreRequest = useRef({
     demoKey,
     round: search.round,
@@ -71,9 +76,9 @@ export function MatchPage() {
         isDraggedOver={false}
         onClose={closeRestore}
         onUpdate={onUpdate}
-        view="upload"
+        view="home"
       >
-        <UploadView
+        <HomeView
           state={displayState}
           onFile={(file) => {
             void afterRouteNavigation(
@@ -102,7 +107,6 @@ export function MatchPage() {
               search: { round: 1, view: 'stage' },
             });
           }}
-          onLibrary={() => void navigate({ to: '/library' })}
         />
       </WayIn>
     );

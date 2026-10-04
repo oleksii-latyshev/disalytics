@@ -55,6 +55,32 @@
   opacity: 0.6;
 }
 
+/* Home's tiles arrive one after another, and shake a little while they are being rearranged. Both
+   are plain animations, so the reduced-motion reset in `motion.css` takes them to nothing. */
+.home-tile {
+  --tile-index: 0;
+
+  animation: home-tile-in var(--duration-panel) var(--ease-out) both;
+  animation-delay: calc(var(--tile-index) * 45ms);
+}
+.home-tile-editing {
+  animation: home-tile-shake 0.32s ease-in-out calc(var(--tile-index) * -0.11s) infinite alternate;
+}
+@keyframes home-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes home-tile-shake {
+  from {
+    transform: rotate(-0.35deg);
+  }
+  to {
+    transform: rotate(0.35deg);
+  }
+}
+
 @media (max-width: 720px) {
   .atlas-dock {
     gap: 4px;

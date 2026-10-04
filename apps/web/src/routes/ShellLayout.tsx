@@ -18,7 +18,7 @@ function viewAt(pathname: string): ShellView {
     case '/stats':
       return 'stats';
     default:
-      return 'upload';
+      return 'home';
   }
 }
 
