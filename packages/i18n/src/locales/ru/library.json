@@ -74,6 +74,7 @@
     "players": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}"
   },
   "shell": {
+    "tagline": "READ THE ROUND.",
     "update": {
       "ready": "Готова новая версия disalytics.",
       "reload": "Перезагрузить"

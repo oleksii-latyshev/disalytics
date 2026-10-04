@@ -22,6 +22,7 @@ export default defineConfig({
     }),
     VitePWA({
       strategies: 'injectManifest',
+      includeAssets: ['logo.svg', 'favicon.svg'],
       srcDir: 'src',
       filename: 'sw.ts',
       // The app registers the worker itself, in `core/pwa`, because registering is only half of it:
