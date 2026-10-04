@@ -11,6 +11,7 @@ export {
   SQUARE_PLATE_LAYOUT,
 } from './layout';
 export { loadMapLineups } from './lineups';
+export { mapSpawns } from './spawns';
 export type { RadarTheme } from './themes';
 export { DEFAULT_RADAR_THEME, isRadarTheme, RADAR_THEMES, radarAssetPath } from './themes';
 export {

@@ -89,6 +89,7 @@ bun run size [--wasm]               # budgets (§16) — on a --force clean buil
 bun run wasm:build | wasm:smoke     # wasm-pack → pkg/ · call into the binary (+DISALYTICS_FIXTURE_DEMO)
 bun run mapdata:generate | icons:generate   # map data + radar themes · weapon/equipment outlines
 bun run samples:generate | reel:generate    # samples from DISALYTICS_SAMPLE_DIR · way-in reel
+bun run spawns:generate             # per-map side spawns from the sample containers (+ DISALYTICS_SPAWN_DIR)
 bun run smoke <url>                 # deploy contract (§13)
 bun run repo:labels | repo:milestones   # sync GitHub labels and milestones
 cargo test -p demo-parser           # parser core; DISALYTICS_FIXTURE_DEMO runs the fixture test
