@@ -19,7 +19,7 @@ export function ToolsView() {
   const t = useT();
 
   return (
-    <div className="mx-auto flex w-full max-w-[72rem] flex-col pb-10">
+    <div className="mx-auto flex w-full max-w-[85rem] flex-col pb-10">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pb-6">
         <div className="min-w-0">
           <h2 className="font-ui text-[clamp(28px,4vw,40px)] font-bold leading-[1.05] tracking-[-0.03em]">
