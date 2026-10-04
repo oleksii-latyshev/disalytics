@@ -19,7 +19,7 @@
     "lead": "Раунд {round, number}, у {side} снаряжения на ${value, number} больше",
     "even": "Раунд {round, number}, у сторон снаряжения поровну"
   },
-  "roundLabel": "{outcome}. Выжившие: CT {ct, number}, T {t, number}. Счёт {startedCt, number} : {startedT, number}.",
+  "roundLabel": "{outcome}. Выжившие: CT {ct, number}, T {t, number}. Счёт {startedCt, number} – {startedT, number}.",
   "survivors": {
     "show": "Показывать выживших в каждом раунде",
     "hide": "Скрыть выживших в каждом раунде"

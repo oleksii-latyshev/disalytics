@@ -38,7 +38,7 @@
   "saved": {
     "emptyTitle": "Your next review starts here.",
     "note": "Removing a match clears the saved copy only — the .dem file on your disk is untouched.",
-    "score": "{startedCt} : {startedT}",
+    "score": "{startedCt} – {startedT}",
     "rounds": "{count, plural, one {# round} other {# rounds}}",
     "duration": "{minutes} min",
     "size": "{megabytes, number, ::.#} MB",
@@ -685,7 +685,7 @@
         "samples": "Start with a professional match",
         "library": "Library →",
         "tacticMeta": "Tactic · {map} · {count, plural, one {# step} other {# steps}}",
-        "matchTitle": "{map} {startedCt, number} : {startedT, number}",
+        "matchTitle": "{map} · {startedCt, number} – {startedT, number}",
         "matchMeta": "Match · {count, plural, one {# round} other {# rounds}}"
       },
       "coach": {

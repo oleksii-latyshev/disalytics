@@ -38,7 +38,7 @@
   "saved": {
     "emptyTitle": "Здесь начнётся ваш следующий разбор.",
     "note": "Удаление матча стирает только сохранённую копию — файл .dem на вашем диске не затрагивается.",
-    "score": "{startedCt} : {startedT}",
+    "score": "{startedCt} – {startedT}",
     "rounds": "{count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}",
     "duration": "{minutes} мин",
     "size": "{megabytes, number, ::.#} МБ",
@@ -685,7 +685,7 @@
         "samples": "Начните с профессионального матча",
         "library": "Библиотека →",
         "tacticMeta": "Тактика · {map} · {count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}",
-        "matchTitle": "{map} {startedCt, number} : {startedT, number}",
+        "matchTitle": "{map} · {startedCt, number} – {startedT, number}",
         "matchMeta": "Матч · {count, plural, one {# раунд} few {# раунда} many {# раундов} other {# раунда}}"
       },
       "coach": {
