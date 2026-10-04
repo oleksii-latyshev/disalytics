@@ -66,6 +66,11 @@ function isInstantRestore(state: Props['state']): boolean {
   return state.status === 'restoring' && state.download === null;
 }
 
+/** A parse or a download in flight: what the open tile shows in place of its drop zone. */
+function isLoading(state: Props['state']): boolean {
+  return state.status === 'parsing' || (state.status === 'restoring' && !isInstantRestore(state));
+}
+
 export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSample }: Props) {
   const t = useT();
   const data = useHomeData();
@@ -77,6 +82,11 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
   const hasMatches = data.demos !== null && data.demos.length > 0;
   const drawn = useMemo(() => visiblePlacements(layout, hasMatches), [layout, hasMatches]);
   const actions = useMemo(() => ({ onEnter, onSample, onFile }), [onEnter, onSample, onFile]);
+  // An S tile is too short for the readings, and a hidden one is not there: both keep the card.
+  const loadsInTile =
+    isLoading(state) &&
+    !isEditing &&
+    drawn.some((placement) => placement.id === 'open' && placement.size !== 'S');
 
   const move = (id: WidgetId, delta: -1 | 1) => {
     const next = moveAmong(layout, id, delta, drawn);
@@ -94,7 +104,7 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
 
   return (
     <div className="mx-auto flex w-full max-w-[105rem] flex-col gap-5 pt-1 md:pt-0">
-      {state.status !== 'idle' && !isInstantRestore(state) && (
+      {state.status !== 'idle' && !isInstantRestore(state) && !loadsInTile && (
         <div className="atlas-upload flex max-w-[425px] flex-col gap-3 rounded-[13px] border border-line-strong bg-surface-1 p-[22px]">
           <DemoLibrary
             state={state}
@@ -169,7 +179,19 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
                 onResize={(id: WidgetId, size: WidgetSize) => setLayout(resize(layout, id, size))}
                 onMove={move}
               >
-                {widgetBody(placement.id, { size: placement.size, data, actions })}
+                {placement.id === 'open' && loadsInTile ? (
+                  <div className="absolute inset-0 overflow-hidden p-[18px] md:px-5">
+                    <DemoLibrary
+                      state={state}
+                      onFile={onFile}
+                      onClose={onClose}
+                      isDraggedOver={isDraggedOver}
+                      compact
+                    />
+                  </div>
+                ) : (
+                  widgetBody(placement.id, { size: placement.size, data, actions })
+                )}
               </HomeTile>
             );
           })}

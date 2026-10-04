@@ -110,7 +110,10 @@ export function HomeTile({
         event.preventDefault();
         onDragOver(spec.id);
       }}
-      onDrop={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        // Only a rearrangement is ours; a dropped demo must reach the shell's window listener.
+        if (isEditing) event.preventDefault();
+      }}
       onDragEnd={onDragEnd}
       onPointerMove={isEditing || spec.isSoon ? undefined : followPointer}
       style={{ '--tile-index': index } as CSSProperties}
