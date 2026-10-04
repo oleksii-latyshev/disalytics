@@ -10,13 +10,8 @@ export function LibraryPage() {
   return (
     <LibraryView
       onEnter={(saved, roundIndex) => {
-        void afterRouteNavigation(
-          () => navigate({ to: '/' }),
-          () => {
-            parseOrigin.current = '/';
-            parse.openSaved(saved, roundIndex);
-          },
-        );
+        parseOrigin.current = '/library';
+        parse.openSaved(saved, roundIndex);
       }}
       onFile={(file) => {
         void afterRouteNavigation(
