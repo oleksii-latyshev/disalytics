@@ -32,11 +32,11 @@ describe('bombTimerTicks', () => {
 
   it('measures the match its own timer from the first bomb that went off', () => {
     const demo = newDemo([
-      { tick: asTick(1000), planter: asPlayerSlot(0), siteEntityId: 301, detonationTick: null },
+      { tick: asTick(1000), planter: asPlayerSlot(0), site: 'A', detonationTick: null },
       {
         tick: asTick(5000),
         planter: asPlayerSlot(1),
-        siteEntityId: 309,
+        site: 'B',
         detonationTick: asTick(5000 + 41 * 64),
       },
     ]);
@@ -46,7 +46,7 @@ describe('bombTimerTicks', () => {
 
   it('falls back to the engine default where no bomb in the match ever exploded', () => {
     const demo = newDemo([
-      { tick: asTick(1000), planter: asPlayerSlot(0), siteEntityId: 301, detonationTick: null },
+      { tick: asTick(1000), planter: asPlayerSlot(0), site: 'A', detonationTick: null },
     ]);
 
     expect(bombTimerTicks(demo)).toBe(DEFAULT_BOMB_TIMER_SECONDS * 64);
@@ -110,7 +110,7 @@ describe('roundClockAtFrame', () => {
         {
           tick: asTick(plantTick),
           planter: asPlayerSlot(0),
-          siteEntityId: 301,
+          site: 'A',
           detonationTick: asTick(plantTick + 41 * 64),
         },
       ],
@@ -140,7 +140,7 @@ describe('roundClockAtFrame', () => {
           {
             tick: asTick(plantTick),
             planter: asPlayerSlot(0),
-            siteEntityId: 301,
+            site: 'A',
             detonationTick: null,
           },
         ],
@@ -159,7 +159,7 @@ describe('roundClockAtFrame', () => {
           {
             tick: asTick(plantTick),
             planter: asPlayerSlot(0),
-            siteEntityId: 301,
+            site: 'A',
             detonationTick: asTick(plantTick + 64),
           },
         ],
@@ -182,7 +182,7 @@ describe('roundClockAtFrame', () => {
           {
             tick: asTick(plantTick),
             planter: asPlayerSlot(0),
-            siteEntityId: 301,
+            site: 'A',
             detonationTick: asTick(plantTick + 41 * 64),
           },
         ],

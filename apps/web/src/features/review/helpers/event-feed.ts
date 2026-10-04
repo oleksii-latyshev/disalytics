@@ -100,7 +100,7 @@ export function roundFeed(demo: ParsedDemo, roundIndex: number | undefined): rea
       frame: frameForTick(demo.track, plant.tick),
       untilFrame: null,
       focus: null,
-      event: { kind: 'plant', planter: plant.planter },
+      event: { kind: 'plant', planter: plant.planter, site: plant.site },
     });
   });
 

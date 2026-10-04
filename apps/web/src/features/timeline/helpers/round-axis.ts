@@ -1,5 +1,6 @@
 import {
   asFrame,
+  type BombSite,
   type DefuseOutcome,
   type Frame,
   frameForTick,
@@ -60,7 +61,7 @@ export interface TimelineSegment {
  */
 export type AxisEvent =
   | ({ readonly kind: 'kill' } & KillRow)
-  | { readonly kind: 'plant'; readonly planter: PlayerSlot }
+  | { readonly kind: 'plant'; readonly planter: PlayerSlot; readonly site: BombSite | null }
   | {
       readonly kind: 'defuse';
       readonly defuser: PlayerSlot;
@@ -203,6 +204,7 @@ function plantGlyphs(demo: ParsedDemo, window: RoundWindow): AxisGlyph[] {
       glyphAt(demo, window, plant.tick, `plant-${index}`, {
         kind: 'plant',
         planter: plant.planter,
+        site: plant.site,
       }),
     );
   });

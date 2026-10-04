@@ -11,7 +11,7 @@ function glyphAt(fraction: number): AxisGlyph {
     id: `plant-${fraction}`,
     frame: asFrame(0),
     fraction,
-    event: { kind: 'plant', planter: asPlayerSlot(0) },
+    event: { kind: 'plant', planter: asPlayerSlot(0), site: null },
   };
 }
 

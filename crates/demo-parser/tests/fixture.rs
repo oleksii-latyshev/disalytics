@@ -394,7 +394,7 @@ fn snapshot_of(demo: &ParsedDemo, passes: &[&str]) -> Value {
         "plants": events.plants.iter().map(|plant| json!({
             "tick": plant.tick,
             "planter": plant.planter,
-            "siteEntityId": plant.site_entity_id,
+            "site": plant.site.map(demo_parser::BombSite::as_str),
             "detonationTick": plant.detonation_tick,
         })).collect::<Vec<_>>(),
         "defuses": events.defuses.iter().map(|defuse| json!({

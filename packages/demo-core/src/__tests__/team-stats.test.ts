@@ -57,7 +57,7 @@ function newDemo(specs: readonly Spec[]): ParsedDemo {
       plants.push({
         tick: asTick(startTick + 500),
         planter: asPlayerSlot(5),
-        siteEntityId: 1,
+        site: 'A',
         detonationTick: null,
       });
     }

@@ -77,7 +77,7 @@ function newKill(tick: number, overrides: Partial<Kill> = {}): Kill {
 }
 
 function newPlant(tick: number): BombPlant {
-  return { tick: asTick(tick), planter: asPlayerSlot(1), siteEntityId: 0, detonationTick: null };
+  return { tick: asTick(tick), planter: asPlayerSlot(1), site: 'B', detonationTick: null };
 }
 
 function newDefuse(startTick: number, outcome: DefuseOutcome): BombDefuse {

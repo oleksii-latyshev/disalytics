@@ -74,7 +74,9 @@ export function EventFeed({ demo, transport, frame, roundIndex, players, onRowFo
       case 'kill':
         return killName(event, nameOf, t);
       case 'plant':
-        return t('events.plant', { planter: nameOf(event.planter) });
+        return event.site === null
+          ? t('events.plant', { planter: nameOf(event.planter) })
+          : t('events.plantAt', { planter: nameOf(event.planter), site: event.site });
       case 'defuse':
         return t('events.defuse.completed', { defuser: nameOf(event.defuser) });
       case 'grenade':

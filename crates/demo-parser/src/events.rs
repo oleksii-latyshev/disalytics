@@ -2,10 +2,11 @@ use crate::fields::{boolean, float, integer, narrow, text};
 use crate::passes::Passes;
 use crate::rounds::RoundFrame;
 use crate::schema::{
-    Blind, BombDefuse, BombPlant, Damage, DefuseOutcome, Kill, MatchEvents, PlayerSlot, Shot, Tick,
-    WEAPON_NONE,
+    Blind, BombDefuse, BombPlant, BombSite, Damage, DefuseOutcome, Kill, MatchEvents, PlayerSlot,
+    Shot, Tick, WEAPON_NONE,
 };
 use crate::ticks::{Planting, Sample, scaled_angle};
+use crate::upstream::prop;
 use crate::vocabulary::hit_group_of;
 use parser::second_pass::game_events::GameEvent;
 use std::collections::{BTreeMap, BTreeSet};
@@ -168,7 +169,7 @@ fn plants(passes: &Passes<'_>) -> Vec<BombPlant> {
             Some(BombPlant {
                 tick: event.tick,
                 planter: passes.slot(event, "user_steamid")?,
-                site_entity_id: narrow(integer(event, "site")),
+                site: bomb_site_of(text(event, prop::USER_LAST_PLACE_NAME)),
                 detonation_tick: None,
             })
         })
@@ -182,6 +183,14 @@ fn plants(passes: &Passes<'_>) -> Vec<BombPlant> {
             first_at_or_after(&detonations, plant.tick).filter(|tick| *tick < next_plant);
     }
     plants
+}
+
+fn bomb_site_of(place_name: Option<&str>) -> Option<BombSite> {
+    match place_name? {
+        "BombsiteA" => Some(BombSite::A),
+        "BombsiteB" => Some(BombSite::B),
+        _ => None,
+    }
 }
 
 fn defuses(passes: &Passes<'_>) -> Vec<BombDefuse> {
@@ -273,7 +282,7 @@ fn first_at_or_after(ticks: &[Tick], tick: Tick) -> Option<Tick> {
 
 #[cfg(test)]
 mod tests {
-    use super::{UNITS_PER_METRE, first_at_or_after};
+    use super::{BombSite, UNITS_PER_METRE, bomb_site_of, first_at_or_after};
 
     #[test]
     fn a_metre_is_the_inches_a_source_unit_measures() {
@@ -288,5 +297,13 @@ mod tests {
         assert_eq!(first_at_or_after(&ticks, 51_678), Some(51_998));
         assert_eq!(first_at_or_after(&ticks, 51_998), Some(51_998));
         assert_eq!(first_at_or_after(&ticks, 106_422), None);
+    }
+
+    #[test]
+    fn a_bombsite_place_name_is_a_site_and_nothing_else_is() {
+        assert_eq!(bomb_site_of(Some("BombsiteA")), Some(BombSite::A));
+        assert_eq!(bomb_site_of(Some("BombsiteB")), Some(BombSite::B));
+        assert_eq!(bomb_site_of(Some("TopofMid")), None);
+        assert_eq!(bomb_site_of(None), None);
     }
 }
