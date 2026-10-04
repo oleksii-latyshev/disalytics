@@ -1,20 +1,26 @@
 import type { TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import {
   levelAt,
+  MAX_ZOOM,
+  MIN_ZOOM,
   plateView,
   radarColors,
+  SQUARE_PLATE,
   squareBackdrop,
   UnknownMap,
   useRadarImage,
+  ZOOM_STEP,
+  zoomByStep,
 } from '@/features/radar';
 import { tacticLayer } from '../helpers/tactic-layer';
 import { tacticStateAt } from '../helpers/tactic-step-state';
 import { useTacticPlatePointer } from '../hooks/use-tactic-plate-pointer';
+import { TacticZoomControls } from './TacticZoomControls';
 import type { TacticPlateProps } from './tactic-plate-props';
 
 function TacticCanvas({
@@ -33,6 +39,7 @@ function TacticCanvas({
     className,
     activeTool = 'select',
     lineups,
+    hasZoomControls = false,
   } = props;
 
   const [theme] = useSetting('radarTheme');
@@ -93,6 +100,19 @@ function TacticCanvas({
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
 
+  const [zoom, setZoom] = useState(MIN_ZOOM);
+  const syncZoom = useCallback((next: number) => setZoom(Math.round(next * 10) / 10), []);
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const box = canvasRef.current?.getBoundingClientRect();
+      if (box === undefined || box.width === 0) return;
+      zoomByStep(viewRef.current, factor, box, SQUARE_PLATE);
+      syncZoom(viewRef.current.zoom);
+      repaint();
+    },
+    [canvasRef, repaint, syncZoom],
+  );
+
   const { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerLeave, handleWheel } =
     useTacticPlatePointer({
       canvasRef,
@@ -112,6 +132,7 @@ function TacticCanvas({
       },
       lineups: shownLineups,
       props,
+      onZoomChange: syncZoom,
     });
 
   const cursorClass =
@@ -123,21 +144,29 @@ function TacticCanvas({
 
   return (
     <div className="grid size-full min-h-0 min-w-0 place-items-center [container-type:size]">
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label={t('radar.label', { map: overview.id })}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        onWheel={handleWheel}
-        className={
-          className ??
-          `aspect-square w-[min(100cqi,100cqb)] ${cursorClass} select-none rounded-card bg-surface-0`
-        }
-      />
+      <div className={className ?? 'relative aspect-square w-[min(100cqi,100cqb)]'}>
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label={t('radar.label', { map: overview.id })}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+          onWheel={handleWheel}
+          className={`size-full ${cursorClass} touch-none select-none rounded-card bg-surface-0`}
+        />
+        {hasZoomControls && (
+          <TacticZoomControls
+            zoom={zoom}
+            canZoomIn={zoom < MAX_ZOOM}
+            canZoomOut={zoom > MIN_ZOOM}
+            onZoomIn={() => zoomBy(ZOOM_STEP)}
+            onZoomOut={() => zoomBy(1 / ZOOM_STEP)}
+          />
+        )}
+      </div>
     </div>
   );
 }

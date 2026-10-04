@@ -27,6 +27,8 @@ export interface TacticPlateProps {
   readonly isEditable?: boolean | undefined;
   readonly levelIndex?: number | undefined;
   readonly className?: string | undefined;
+  /** Draw the `−`/`+` pair and the zoom it reads on the plate. */
+  readonly hasZoomControls?: boolean | undefined;
 
   readonly activeTool?: 'select' | 'pencil' | 'throw' | 'eraser' | undefined;
   readonly pencilColor?: string | undefined;

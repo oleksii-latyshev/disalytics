@@ -49,6 +49,8 @@ export {
   resolveCountdownFont,
 } from './helpers/utility-body';
 export {
+  MAX_ZOOM,
+  MIN_ZOOM,
   type PlateGeometry,
   type PlateView,
   panBy,
