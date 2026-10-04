@@ -6,6 +6,7 @@ import { useLineupCatalog } from '@/core/lineup-catalog';
 import { selectableLineups } from '../helpers/lineup-throw';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
+import { spawnSpotOf } from '../helpers/tactic-spawns';
 import { stepThrowRows } from '../helpers/tactic-step-throws';
 import { useTacticEditor } from '../hooks/use-tactic-editor';
 import { useTacticStored } from '../hooks/use-tactic-stored';
@@ -38,6 +39,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     tactic,
     activeStepIndex,
     activeStep,
+    spawns,
     selectedSlot,
     selectedThrowId,
     activeTool,
@@ -65,6 +67,8 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     updateStepOffset,
     updateStepNotes,
     updatePlayerPosition,
+    placePlayerOnSpawn,
+    snapPlayerToSpawnSpot,
     updatePlayerYaw,
     updatePlayerLabel,
     addThrow,
@@ -127,6 +131,15 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     return activeStep?.players.find((p) => p.slot === selectedSlot);
   }, [activeStep, selectedSlot, activeTool]);
 
+  const selectedSpawnSpot = useMemo(
+    () => (selectedPlayer === undefined ? null : spawnSpotOf(spawns, selectedPlayer)),
+    [selectedPlayer, spawns],
+  );
+
+  const handlePickSpawn = (spot: number) => {
+    if (selectedSlot !== null) placePlayerOnSpawn(selectedSlot, spot);
+  };
+
   const throwRows = useMemo(() => stepThrowRows(activeStep, lineups), [activeStep, lineups]);
 
   useEffect(() => {
@@ -177,6 +190,8 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
           onSelectSlot={setSelectedSlot}
           onSelectThrow={setSelectedThrowId}
           onPlayerDrag={updatePlayerPosition}
+          onPlayerDragEnd={snapPlayerToSpawnSpot}
+          onPickSpawn={handlePickSpawn}
           onThrowDrag={updateThrowPosition}
           isEditable={!isPlaying}
           activeTool={isPlaying ? 'select' : activeTool}
@@ -246,6 +261,8 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         throwRows={throwRows}
         selectedThrowId={selectedThrowId}
         selectedPlayer={selectedPlayer}
+        spawnCount={spawns.length}
+        selectedSpawnSpot={selectedSpawnSpot}
         throwHint={activeTool === 'throw' ? throwHint : undefined}
         isOpenOnPhone={phoneTab === 'step'}
         onSelectThrow={setSelectedThrowId}
@@ -258,6 +275,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         onUpdateName={updateStepName}
         onUpdateOffset={updateStepOffset}
         onUpdateNotes={updateStepNotes}
+        onSelectSpawn={placePlayerOnSpawn}
         onUpdatePlayerYaw={updatePlayerYaw}
         onUpdatePlayerLabel={updatePlayerLabel}
       />

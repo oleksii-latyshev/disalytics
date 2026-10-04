@@ -7,7 +7,8 @@ import type {
   TacticThrow,
   UtilityKind,
 } from '@disa/demo-core';
-import { useCallback, useState } from 'react';
+import { mapSpawns } from '@disa/map-data';
+import { useCallback, useMemo, useState } from 'react';
 import {
   addDrawingStrokeToStep,
   addStep as addStepAction,
@@ -31,6 +32,7 @@ import {
 import { addLineupThrowToStep } from '../helpers/lineup-throw';
 import { updateStepAt } from '../helpers/step-update';
 import { changeTacticMap, changeTacticSide, toggleTacticRound } from '../helpers/tactic-setup';
+import { assignPlayerToSpawn, snapPlayerToSpawn } from '../helpers/tactic-spawns';
 import { useTacticHistory } from './use-tactic-history';
 import { useTacticPlayback } from './use-tactic-playback';
 
@@ -51,6 +53,9 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   const [activeTool, setActiveTool] = useState<TacticTool>('select');
   const [pencilColor, setPencilColor] = useState('var(--color-ct)');
   const [newThrowKind, setNewThrowKind] = useState<UtilityKind>('smoke');
+
+  const spawns = useMemo(() => mapSpawns(tactic.map, tactic.side), [tactic.map, tactic.side]);
+  const isOpeningStep = activeStepIndex === 0;
 
   const { canUndo, canRedo, pushHistory, undo, redo } = useTacticHistory(tactic, setTactic);
 
@@ -138,6 +143,26 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
       );
     },
     [activeStepIndex, updateTactic],
+  );
+
+  const placePlayerOnSpawn = useCallback(
+    (slot: number, spot: number) => {
+      if (!isOpeningStep) return;
+      updateTactic((curr) =>
+        updateStepAt(curr, 0, (step) => assignPlayerToSpawn(step, slot, spawns, spot)),
+      );
+    },
+    [isOpeningStep, spawns, updateTactic],
+  );
+
+  const snapPlayerToSpawnSpot = useCallback(
+    (slot: number) => {
+      if (!isOpeningStep || spawns.length === 0) return;
+      updateTactic((curr) =>
+        updateStepAt(curr, 0, (step) => snapPlayerToSpawn(step, slot, spawns)),
+      );
+    },
+    [isOpeningStep, spawns, updateTactic],
   );
 
   const updatePlayerYaw = useCallback(
@@ -248,11 +273,11 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
       if (selectedSlot === null) return;
       updateTactic((curr) =>
         updateStepAt(curr, activeStepIndex, (step) =>
-          addLineupThrowToStep(step, lineup, selectedSlot),
+          addLineupThrowToStep(step, lineup, selectedSlot, isOpeningStep ? spawns : []),
         ),
       );
     },
-    [activeStepIndex, selectedSlot, updateTactic],
+    [activeStepIndex, isOpeningStep, selectedSlot, spawns, updateTactic],
   );
 
   const changeMap = useCallback(
@@ -304,6 +329,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   return {
     tactic,
     activeStepIndex,
+    spawns,
     activeStep: tactic.steps[activeStepIndex] ?? tactic.steps[0],
     selectedSlot,
     selectedThrowId,
@@ -330,6 +356,8 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     updateStepOffset,
     updateStepNotes,
     updatePlayerPosition,
+    placePlayerOnSpawn,
+    snapPlayerToSpawnSpot,
     updatePlayerYaw,
     updatePlayerLabel,
     addThrow,

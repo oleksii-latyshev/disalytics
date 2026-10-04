@@ -12,6 +12,10 @@ export interface TacticStepRailProps {
   readonly throwRows: readonly StepThrowRow[];
   readonly selectedThrowId: string | null;
   readonly selectedPlayer: TacticPlayerPosition | undefined;
+  /** How many spawn spots the side has on this map; 0 hides the spawn controls. */
+  readonly spawnCount: number;
+  /** The spot the selected player stands on, or null for a position of their own. */
+  readonly selectedSpawnSpot: number | null;
   /** Shown while the throw tool is open, since that is when the reader needs to be told what to click. */
   readonly throwHint: string | undefined;
   readonly isOpenOnPhone: boolean;
@@ -25,6 +29,7 @@ export interface TacticStepRailProps {
   readonly onUpdateName: (index: number, name: string) => void;
   readonly onUpdateOffset: (index: number, offset: number) => void;
   readonly onUpdateNotes: (index: number, notes: string) => void;
+  readonly onSelectSpawn: (slot: number, spot: number) => void;
   readonly onUpdatePlayerYaw: (slot: number, yaw: number) => void;
   readonly onUpdatePlayerLabel: (slot: number, label: string) => void;
 }
@@ -227,12 +232,53 @@ function StepActions({
   );
 }
 
+function SpawnField({
+  player,
+  count,
+  spot,
+  onSelect,
+}: {
+  readonly player: TacticPlayerPosition;
+  readonly count: number;
+  readonly spot: number | null;
+  readonly onSelect: (slot: number, spot: number) => void;
+}) {
+  const t = useT();
+  const label = t('library.tactics.player.spawn');
+  return (
+    <label className="flex items-center gap-2 text-12 text-ink-dim">
+      <span className="shrink-0">{label}</span>
+      <select
+        value={spot ?? ''}
+        onChange={(event) => {
+          if (event.target.value !== '') onSelect(player.slot, Number(event.target.value));
+        }}
+        aria-label={label}
+        className={cn(FIELD, 'h-8 min-w-0 flex-1 px-2 text-12')}
+      >
+        {spot === null && <option value="">{t('library.tactics.player.spawnCustom')}</option>}
+        {Array.from({ length: count }, (_, index) => index).map((index) => (
+          <option key={`spot-${index}`} value={index}>
+            {t('library.tactics.player.spawnSpot', { number: index + 1 })}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function PlayerEditor({
   player,
+  spawnCount,
+  spawnSpot,
+  onSelectSpawn,
   onUpdateYaw,
   onUpdateLabel,
 }: {
   readonly player: TacticPlayerPosition;
+  readonly spawnCount: number;
+  readonly spawnSpot: number | null;
+  readonly onSelectSpawn: (slot: number, spot: number) => void;
   readonly onUpdateYaw: (slot: number, yaw: number) => void;
   readonly onUpdateLabel: (slot: number, label: string) => void;
 }) {
@@ -252,6 +298,9 @@ function PlayerEditor({
         placeholder={t('library.tactics.player.labelPlaceholder')}
         className={cn(FIELD, 'h-8 w-full px-2.5 text-12')}
       />
+      {spawnCount > 0 && (
+        <SpawnField player={player} count={spawnCount} spot={spawnSpot} onSelect={onSelectSpawn} />
+      )}
       <label title={yawLabel} className="flex items-center gap-2 text-ink-dim">
         <Compass className="size-3.5 shrink-0" />
         <input
@@ -280,6 +329,8 @@ export function TacticStepRail({
   throwRows,
   selectedThrowId,
   selectedPlayer,
+  spawnCount,
+  selectedSpawnSpot,
   throwHint,
   isOpenOnPhone,
   onSelectThrow,
@@ -292,6 +343,7 @@ export function TacticStepRail({
   onUpdateName,
   onUpdateOffset,
   onUpdateNotes,
+  onSelectSpawn,
   onUpdatePlayerYaw,
   onUpdatePlayerLabel,
 }: TacticStepRailProps) {
@@ -364,9 +416,18 @@ export function TacticStepRail({
         </p>
       )}
 
+      {stepIndex === 0 && spawnCount > 0 && throwHint === undefined && (
+        <p className="px-1 text-12 text-ink-dim leading-prose">
+          {t('library.tactics.steps.pickSpawn')}
+        </p>
+      )}
+
       {selectedPlayer !== undefined && (
         <PlayerEditor
           player={selectedPlayer}
+          spawnCount={stepIndex === 0 ? spawnCount : 0}
+          spawnSpot={selectedSpawnSpot}
+          onSelectSpawn={onSelectSpawn}
           onUpdateYaw={onUpdatePlayerYaw}
           onUpdateLabel={onUpdatePlayerLabel}
         />

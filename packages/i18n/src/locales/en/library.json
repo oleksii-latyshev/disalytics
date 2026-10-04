@@ -435,6 +435,7 @@
       "throwMeta": "{player} · +{seconds, number, ::.#}s",
       "throwFromLineup": "{kind} · {lineup}",
       "addNext": "Add next step",
+      "pickSpawn": "Select a player, then click a spawn spot to place them there. Dragging near a spot snaps to it.",
       "addHint": "This tactic has one step so far. Add the next one to move the team on from the spawn.",
       "spawn": "Spawn"
     },
@@ -476,7 +477,10 @@
       "selected": "Player {slot}",
       "label": "Role / Name",
       "labelPlaceholder": "e.g. IGL, Entry",
-      "yaw": "Facing angle (°)"
+      "yaw": "Facing angle (°)",
+      "spawn": "Spawn spot",
+      "spawnSpot": "Spot {number}",
+      "spawnCustom": "Custom"
     },
     "throw": {
       "delete": "Delete throw",
