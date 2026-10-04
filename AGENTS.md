@@ -118,7 +118,7 @@ Plain arrays sorted by tick, found with `lastIndexAtOrBefore` plus a walk bounde
   `${fingerprint}:${SCHEMA_VERSION}`; localStorage holds `disa.*` preferences only.
 - Storage is a cache, never a hot path. The key fingerprints first + last MiB, length and mtime.
 - A missing tier, an undecodable container or a vanished file is a **miss**, never an error.
-- Eviction: 512 MB LRU (`catalog.ts`); reads never write recency; metadata is written at store time.
+- Eviction: 2 GB LRU (`catalog.ts`); reads never write recency; metadata is written at store time.
 - A `SCHEMA_VERSION` bump drops every cache entry and needs `samples:generate` + `reel:generate` in
   the same PR. `storage.persist()` returning `false` is normal.
 

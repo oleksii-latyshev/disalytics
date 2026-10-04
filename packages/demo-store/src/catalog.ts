@@ -64,7 +64,7 @@ export const CATALOG_NAME = 'catalog.json';
  * recency is kept in memory for the session and flushed the next time a demo is stored, which is
  * the only moment it can change what gets evicted.
  */
-export const CACHE_BYTE_LIMIT = 512 * 1024 * 1024;
+export const CACHE_BYTE_LIMIT = 2 * 1024 * 1024 * 1024;
 
 function isScore(value: unknown): value is MatchScore {
   return (

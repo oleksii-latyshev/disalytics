@@ -10,13 +10,14 @@ interface Props {
   onFile: (file: File) => void;
   onClose: () => void;
   isDraggedOver: boolean;
+  compact?: boolean;
 }
 
 /**
  * The card's body. The card itself, and the screen around it, are `WayIn`'s. Saved demos are the
  * Library screen's alone (#379): the card holds the one thing to do, which is take a demo.
  */
-export function DemoLibrary({ state, onFile, onClose, isDraggedOver }: Props) {
+export function DemoLibrary({ state, onFile, onClose, isDraggedOver, compact = false }: Props) {
   switch (state.status) {
     case 'idle':
       return <OpenDemo onFile={onFile} isDraggedOver={isDraggedOver} />;
@@ -33,6 +34,7 @@ export function DemoLibrary({ state, onFile, onClose, isDraggedOver }: Props) {
           header={state.header}
           wasHidden={state.wasHidden}
           onCancel={onClose}
+          compact={compact}
         />
       );
     // The failure is the same card in the same place, so it replaces the way in rather than

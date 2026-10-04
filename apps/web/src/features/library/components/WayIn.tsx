@@ -1,5 +1,6 @@
-import { Text } from '@disa/i18n';
+import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
+import { Link } from '@tanstack/react-router';
 import { lazy, type ReactNode, Suspense, useMemo, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
 import { DOCK_SECTIONS, type ShellView } from '../helpers/views';
@@ -28,6 +29,7 @@ interface Props {
 type Sheet = 'settings' | 'help';
 
 export function WayIn({ state, children, isDraggedOver, onClose, onUpdate, view }: Props) {
+  const t = useT();
   const [openSheet, setOpenSheet] = useState<Sheet | null>(null);
   const section = DOCK_SECTIONS.find((entry) => entry.view === view);
   const actions = useMemo(
@@ -53,7 +55,14 @@ export function WayIn({ state, children, isDraggedOver, onClose, onUpdate, view 
         />
 
         <header className="relative z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 pt-6 wide:px-10 wide:pt-8">
-          <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            aria-label={t('library.shell.home')}
+            onClick={() => {
+              if (state.status === 'failed') onClose();
+            }}
+            className="flex items-center gap-3 rounded-card focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+          >
             <img
               src="/logo.svg"
               alt=""
@@ -80,7 +89,7 @@ export function WayIn({ state, children, isDraggedOver, onClose, onUpdate, view 
                 <Text path="library.shell.tagline" />
               </p>
             </div>
-          </div>
+          </Link>
           <div role="status" className="flex items-center gap-3">
             {onUpdate && (
               <>

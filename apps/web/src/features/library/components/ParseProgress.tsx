@@ -16,6 +16,8 @@ interface Props {
   header: MatchHeader | null;
   wasHidden: boolean;
   onCancel: () => void;
+  /** Inside Home's open tile rather than its own card: the same readings, a smaller number. */
+  compact?: boolean;
 }
 
 /**
@@ -44,22 +46,30 @@ interface Props {
  * `Intl` produces for each — lives in the message catalogue where every other difference between
  * the two locales lives.
  */
-export function ParseProgress({ fileName, phase, percent, header, wasHidden, onCancel }: Props) {
+export function ParseProgress({
+  fileName,
+  phase,
+  percent,
+  header,
+  wasHidden,
+  onCancel,
+  compact = false,
+}: Props) {
   const locale = useLocale();
 
   return (
-    <section className="flex flex-col items-start gap-4">
+    <section className={`flex flex-col items-start ${compact ? 'gap-2.5' : 'gap-4'}`}>
       <Progress
         value={percent}
         locale={locale}
         format={PERCENT_FORMAT}
-        className="flex w-full flex-col gap-3"
+        className={`flex w-full flex-col ${compact ? 'gap-2' : 'gap-3'}`}
       >
         <ProgressLabel className="sr-only">
           <Text path="library.progress.label" />
         </ProgressLabel>
 
-        <p className="numeric text-44 leading-dense">
+        <p className={`numeric leading-dense ${compact ? 'text-28' : 'text-44'}`}>
           <Text
             path="library.progress.percent"
             values={{ percent: <ProgressValue initiallyStable /> }}

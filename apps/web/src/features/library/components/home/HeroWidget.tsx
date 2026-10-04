@@ -39,12 +39,15 @@ const COPY =
 const PLATE =
   'relative flex aspect-square w-full flex-none items-center justify-center overflow-hidden bg-surface-0 md:h-full md:w-auto md:max-w-[50%]';
 
-/** The plate fades into the copy instead of ending at an edge: one ground, not two boxes. */
+/**
+ * The plate fades into the copy instead of ending at an edge: one ground, not two boxes. It sits
+ * under the tile's spotlight (`z-index: 2` in `styles.css`), or the glow stops at its edge.
+ */
 function PlateFade() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-14 bg-gradient-to-r from-surface-0 to-transparent md:block"
+      className="pointer-events-none absolute inset-y-0 left-0 z-1 hidden w-24 bg-gradient-to-r from-surface-0 to-transparent md:block"
     />
   );
 }
