@@ -17,7 +17,7 @@ describe('mapSpawns', () => {
   });
 
   it('answers nothing for a map nobody measured, and for one that is not a map at all', () => {
-    expect(mapSpawns('de_nuke', 'T')).toEqual([]);
+    expect(mapSpawns('de_overpass', 'T')).toEqual([]);
     expect(mapSpawns('toString', 'T')).toEqual([]);
   });
 });

@@ -33,10 +33,10 @@ describe('startingPlayers', () => {
   });
 
   it('puts T and CT on opposite edges', () => {
-    const overview = getMapOverview('de_mirage');
+    const overview = getMapOverview('de_overpass');
     if (overview === undefined) throw new Error('no overview');
-    const t = worldToRadar(overview, startingPlayers('de_mirage', 'T')[0] ?? { x: 0, y: 0 });
-    const ct = worldToRadar(overview, startingPlayers('de_mirage', 'CT')[0] ?? { x: 0, y: 0 });
+    const t = worldToRadar(overview, startingPlayers('de_overpass', 'T')[0] ?? { x: 0, y: 0 });
+    const ct = worldToRadar(overview, startingPlayers('de_overpass', 'CT')[0] ?? { x: 0, y: 0 });
     expect(t.y).toBeGreaterThan(ct.y);
   });
 });
@@ -73,8 +73,8 @@ describe('spawn placement', () => {
   });
 
   it('falls back to the row formation for a map without spawn data', () => {
-    expect(mapSpawns('de_mirage', 'T')).toEqual([]);
-    const players = startingPlayers('de_mirage', 'T');
+    expect(mapSpawns('de_overpass', 'T')).toEqual([]);
+    const players = startingPlayers('de_overpass', 'T');
     expect(players).toHaveLength(5);
     expect(new Set(players.map((player) => player.y)).size).toBeLessThanOrEqual(5);
   });
