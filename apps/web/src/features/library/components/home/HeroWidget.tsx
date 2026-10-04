@@ -11,7 +11,7 @@ import {
   tickAtFrame,
 } from '@disa/demo-core';
 import type { SavedDemo } from '@disa/demo-store';
-import { Text } from '@disa/i18n';
+import { Text, useT } from '@disa/i18n';
 import { Play } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { SAMPLE_MATCHES } from '@/core/samples';
@@ -33,11 +33,21 @@ const PRIMARY =
 const SECONDARY =
   'inline-flex h-10 items-center gap-2 rounded-card border border-line-strong px-4 text-13 font-medium text-ink transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
-const SHELL = 'absolute inset-0 flex flex-col-reverse md:flex-row';
+const SHELL = 'absolute inset-0 flex flex-col-reverse bg-surface-0 md:flex-row';
 const COPY =
   'flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-3 overflow-hidden p-[18px] md:p-7';
 const PLATE =
   'relative flex aspect-square w-full flex-none items-center justify-center overflow-hidden bg-surface-0 md:h-full md:w-auto md:max-w-[50%]';
+
+/** The plate fades into the copy instead of ending at an edge: one ground, not two boxes. */
+function PlateFade() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-14 bg-gradient-to-r from-surface-0 to-transparent md:block"
+    />
+  );
+}
 
 function clock(seconds: number): string {
   const whole = Math.max(0, Math.floor(seconds));
@@ -175,6 +185,7 @@ function Replay({
 }
 
 function ContinueHero({ size, data, actions, last }: WidgetProps & { last: SavedDemo }) {
+  const t = useT();
   const { lastDemo, reading } = data;
 
   const isReading = reading !== null && reading.key === last.key;
@@ -214,10 +225,15 @@ function ContinueHero({ size, data, actions, last }: WidgetProps & { last: Saved
               )}
             </p>
             {isTall && (
-              <p className="numeric truncate text-12 text-ink-dim">
-                <Text path="library.saved.score" values={{ ...last.score }} />
-                {' · '}
-                <Text path="library.saved.rounds" values={{ count: last.roundCount }} />
+              <p className="numeric flex items-center gap-1.5 truncate font-mono text-14 text-ink">
+                <span className="text-ct">CT</span>
+                <span title={t('library.home.hero.scoreNote')}>
+                  <Text path="library.home.hero.score" values={{ ...last.score }} />
+                </span>
+                <span className="text-t">T</span>
+                <span className="font-sans text-12 text-ink-dim">
+                  <Text path="library.saved.rounds" values={{ count: last.roundCount }} />
+                </span>
               </p>
             )}
           </div>
@@ -237,15 +253,15 @@ function ContinueHero({ size, data, actions, last }: WidgetProps & { last: Saved
               <p className="label-dense text-ink-dim">
                 <Text path="library.home.hero.moments" />
               </p>
-              <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+              <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
                 {moments.slice(0, 3).map((moment) => (
                   <li key={`${moment.roundIndex}:${moment.slot}`}>
                     <button
                       type="button"
                       onClick={() => actions.onEnter(last, moment.roundIndex)}
-                      className="flex w-full items-center gap-2 rounded-chip px-1.5 py-1 text-left text-12 hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus"
+                      className="flex h-8 items-center gap-2 rounded-card border border-line bg-surface-2 px-2.5 text-left font-mono text-12 transition-colors hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-focus"
                     >
-                      <span className="numeric w-8 shrink-0 font-mono text-ink-dim">
+                      <span className="numeric shrink-0 text-ink-faint">
                         <Text
                           path="library.home.hero.momentRound"
                           values={{ round: moment.roundIndex + 1 }}
@@ -300,6 +316,7 @@ function ContinueHero({ size, data, actions, last }: WidgetProps & { last: Saved
         </div>
       </div>
       <div className={PLATE}>
+        <PlateFade />
         {lastDemo === null ? null : (
           <Replay
             showsFeed={isTall}
@@ -354,6 +371,7 @@ function FirstRunHero({ actions }: Pick<WidgetProps, 'actions'>) {
         </div>
       </div>
       <div className={PLATE}>
+        <PlateFade />
         <RoundPreview suspended={false} compact />
       </div>
     </div>

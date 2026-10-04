@@ -93,7 +93,7 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[85rem] flex-col gap-5 pt-1 md:pt-0">
+    <div className="mx-auto flex w-full max-w-[105rem] flex-col gap-5 pt-1 md:pt-0">
       {state.status !== 'idle' && !isInstantRestore(state) && (
         <div className="atlas-upload flex max-w-[425px] flex-col gap-3 rounded-[13px] border border-line-strong bg-surface-1 p-[22px]">
           <DemoLibrary
@@ -159,8 +159,6 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
                 position={index + 1}
                 isEditing={isEditing}
                 isDragging={dragging === placement.id}
-                isFirst={index === 0}
-                isLast={index === drawn.length - 1}
                 onDragStart={setDragging}
                 onDragOver={(over) => {
                   if (dragging !== null && dragging !== over)

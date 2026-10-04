@@ -66,6 +66,49 @@
 .home-tile-editing {
   animation: home-tile-shake 0.32s ease-in-out calc(var(--tile-index) * -0.11s) infinite alternate;
 }
+/* The spotlight: a glow and a bright hairline that follow the pointer, both read from `--mx`/`--my`,
+   which `HomeTile` writes straight onto the element. Nothing here is state, and it is off while the
+   tiles are being rearranged and for the dashed "soon" tile. */
+.home-tile-lit::before,
+.home-tile-lit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+.home-tile-lit::before {
+  background: radial-gradient(
+    360px circle at var(--mx, 50%) var(--my, 50%),
+    #ffffff12,
+    transparent 65%
+  );
+}
+.home-tile-lit::after {
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 50%),
+    #ffffff8c,
+    transparent 70%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+.home-tile-lit:hover::before,
+.home-tile-lit:hover::after {
+  opacity: 1;
+}
+@media (hover: none) {
+  .home-tile-lit::before,
+  .home-tile-lit::after {
+    display: none;
+  }
+}
+
 @keyframes home-tile-in {
   from {
     opacity: 0;
