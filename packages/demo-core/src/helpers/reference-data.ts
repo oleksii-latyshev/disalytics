@@ -11,7 +11,7 @@
  * Game version: Counter-Strike 2 (Current Release / MR12 / May 2024 incendiary adjustments).
  */
 
-import type { WeaponId } from '../schema';
+import type { WeaponName } from '../schema';
 import type { UtilityKind } from './utility';
 
 export interface GrenadeReference {
@@ -124,7 +124,7 @@ export type WeaponReferenceCategory =
   | 'equipment';
 
 export interface WeaponReference {
-  readonly name: WeaponId;
+  readonly name: WeaponName;
   readonly category: WeaponReferenceCategory;
   readonly team: 'both' | 'ct' | 't';
   readonly price: number;
@@ -173,7 +173,7 @@ export function calculateHitgroupDamage(
 }
 
 function makeWeapon(
-  name: WeaponId,
+  name: WeaponName,
   category: WeaponReferenceCategory,
   team: 'both' | 'ct' | 't',
   price: number,

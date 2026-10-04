@@ -23,6 +23,6 @@ export interface SampleAsset {
  * is a compile error rather than a card that answers a press with a failure.
  */
 export const SAMPLE_ASSETS: Record<SampleId, SampleAsset> = {
-  'navi-vitality-inferno': { url: url0, byteLength: 3035347 },
-  'navi-vitality-dust2': { url: url1, byteLength: 4094115 },
+  'navi-vitality-inferno': { url: url0, byteLength: 3035338 },
+  'navi-vitality-dust2': { url: url1, byteLength: 4094110 },
 };

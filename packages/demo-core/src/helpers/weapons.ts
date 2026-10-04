@@ -1,4 +1,4 @@
-import type { WeaponId } from '../schema';
+import type { DamageWeapon, WeaponId, WeaponName } from '../schema';
 import { UTILITY_NAMES, type UtilityKind } from './utility';
 import { isWeaponIconId, type WeaponIconId } from './weapon-icons';
 
@@ -155,7 +155,7 @@ const WEAPON_MAX_SPEED: Readonly<Record<string, number>> = {
  * Maximum running speed for a weapon in CS2 (units per second).
  * Snipers and scoped rifles have a reduced speed cap while scoped.
  */
-export function weaponMaxSpeed(weapon: WeaponId | undefined, isScoped = false): number {
+export function weaponMaxSpeed(weapon: WeaponName | undefined, isScoped = false): number {
   if (weapon === undefined) return DEFAULT_RUN_SPEED;
 
   if (isScoped) {
@@ -172,7 +172,7 @@ export function weaponMaxSpeed(weapon: WeaponId | undefined, isScoped = false): 
  * `grenades` bitfield gives them one bit: they are the same thing to a reader deciding whether a
  * corner is deniable.
  */
-export function weaponClass(weapon: WeaponId): WeaponClass {
+export function weaponClass(weapon: WeaponName): WeaponClass {
   return WEAPONS_BY_NAME[weapon]?.kind ?? 'unknown';
 }
 
@@ -181,7 +181,7 @@ export function weaponClass(weapon: WeaponId): WeaponClass {
  * `undefined` for utility, for the bomb and for a weapon this table has never seen; each of those
  * still draws, by falling back to the class `weaponClass` gives it.
  */
-export function weaponIcon(weapon: WeaponId): WeaponIconId | undefined {
+export function weaponIcon(weapon: WeaponName): WeaponIconId | undefined {
   return WEAPONS_BY_NAME[weapon]?.icon;
 }
 
@@ -194,7 +194,7 @@ export function weaponIcon(weapon: WeaponId): WeaponIconId | undefined {
  * weapon this repository has never drawn all give: each of them falls back to the class beside it
  * in `weaponClasses`, rather than leaving a reader with an empty box.
  */
-export function weaponIcons(weapons: readonly WeaponId[]): readonly (WeaponIconId | undefined)[] {
+export function weaponIcons(weapons: readonly WeaponName[]): readonly (WeaponIconId | undefined)[] {
   return weapons.map(weaponIcon);
 }
 
@@ -207,21 +207,21 @@ export function weaponIcons(weapons: readonly WeaponId[]): readonly (WeaponIconI
  * A `weapon` sample of `WEAPON_NONE` falls outside this table on purpose — no sample ever saw that
  * slot holding anything, which is a different answer from `unknown` and is drawn as one.
  */
-export function weaponClasses(weapons: readonly WeaponId[]): readonly WeaponClass[] {
+export function weaponClasses(weapons: readonly WeaponName[]): readonly WeaponClass[] {
   return weapons.map(weaponClass);
 }
 
 /**
- * Upstream's *internal* vocabulary — what `Kill.weapon` and `Damage.weapon` carry — against the
- * entry the same object has in `MatchHeader.weapons`. Two vocabularies for one weapon is
- * `docs/PARSER.md` §17's finding, and this is the bridge rather than the unification: the tables
- * stay separate, nothing here is canonical, and a weapon reached through this one still answers
- * with a name upstream chose. #53 is what makes a single enumerated vocabulary out of them.
+ * The canonical id (`Kill.weapon`, `Damage.weapon`) against the entry the same object has in
+ * `MatchHeader.weapons`. Two vocabularies for one weapon is `docs/PARSER.md` §17's finding: the
+ * parser closes the first (`WEAPON_IDS`), the second stays upstream's display names, and this is
+ * the bridge between them.
  *
- * A class or a name is therefore stated **once**, on the display table above. This one maps and
+ * A `Record` over `WeaponId`, so a weapon added to the vocabulary without a mapping here does not
+ * compile. A class or a name is stated **once**, on the display table above; this one maps and
  * nothing else, so the day an entry there is corrected the kill feed is corrected with it.
  */
-const ENTRY_BY_INTERNAL_NAME: Readonly<Record<string, WeaponId>> = {
+const ENTRY_BY_INTERNAL_NAME: Readonly<Record<WeaponId, WeaponName>> = {
   cz75a: 'CZ75-Auto',
   deagle: 'Desert Eagle',
   elite: 'Dual Berettas',
@@ -262,45 +262,40 @@ const ENTRY_BY_INTERNAL_NAME: Readonly<Record<string, WeaponId>> = {
   m249: 'M249',
   negev: 'Negev',
 
+  knife: 'Knife',
   taser: 'Zeus x27',
   c4: 'C4 Explosive',
 
   decoy: 'Decoy Grenade',
   flashbang: 'Flashbang',
   hegrenade: 'High Explosive Grenade',
-  // The burning area rather than the thrown grenade: a molotov kills as `inferno`, so it is the
-  // molotov's own entry. Both it and the incendiary end up reading `Molotov` anyway — `weaponName`
-  // takes utility to `UTILITY_NAMES`, where the two share one kind.
-  inferno: 'Molotov',
   incgrenade: 'Incendiary Grenade',
   molotov: 'Molotov',
   smokegrenade: 'Smoke Grenade',
 };
 
 /**
- * The `MatchHeader.weapons` entry a kill's weapon names, or `undefined` for a weapon this
- * repository has never seen — which is also what a kill by the world (`world`, or the empty string)
- * answers, because the world holds nothing.
- *
- * Knives are matched by prefix rather than enumerated. The field carries the skin — the fixture
- * alone holds `knife_butterfly`, `knife_cord` and `knife_m9_bayonet` — and Valve adds them faster
- * than a table can be maintained, so a knife nobody here has heard of still reads as a knife.
+ * The `MatchHeader.weapons` entry a kill's weapon names, or `undefined` for a damage source that is
+ * not a weapon: the world, `unknown` and the bomb hold nothing to draw. `inferno` is the burning
+ * area a molotov kills with, so it is the molotov's own entry; both it and the incendiary end up
+ * reading `Molotov` anyway — `weaponName` takes utility to `UTILITY_NAMES`, where they share a kind.
  */
-function killWeaponEntry(weapon: WeaponId): WeaponId | undefined {
-  if (weapon.startsWith('knife') || weapon === 'bayonet') return 'Knife';
+function killWeaponEntry(weapon: DamageWeapon): WeaponName | undefined {
+  if (weapon === 'inferno') return 'Molotov';
+  if (weapon === 'planted_c4' || weapon === 'world' || weapon === 'unknown') return undefined;
 
   return ENTRY_BY_INTERNAL_NAME[weapon];
 }
 
 /**
  * What a kill or a damage event was dealt with. A **separate vocabulary** from `weaponClass`, which
- * reads the display names on `MatchHeader.weapons`; calling that one with `ak47` answers `unknown`
- * for every kill in the match, which is the trap this function exists to close.
+ * reads the display names on `MatchHeader.weapons`; the types keep the two apart, so handing it
+ * `AK-47` does not compile.
  *
- * A weapon the bridge has never heard of, and a kill by the world, both answer `unknown` and are
- * drawn as an absence rather than as a placeholder.
+ * A damage source that is not a weapon answers `unknown` and is drawn as an absence rather than as
+ * a placeholder.
  */
-export function killWeaponClass(weapon: WeaponId): WeaponClass {
+export function killWeaponClass(weapon: DamageWeapon): WeaponClass {
   const entry = killWeaponEntry(weapon);
 
   return entry === undefined ? 'unknown' : weaponClass(entry);
@@ -308,15 +303,13 @@ export function killWeaponClass(weapon: WeaponId): WeaponClass {
 
 /**
  * The icon that names what a kill was dealt with. It needs no table of its own: Valve's icon files
- * are named in this same internal vocabulary, so the id a kill wants **is** the weapon's own name,
- * and every knife skin collapses onto the one knife for `killWeaponClass`'s reason.
+ * are named in this same internal vocabulary, so the id a kill wants **is** the weapon's own name.
+ * The parser has already collapsed every knife skin onto `knife`.
  *
  * A kill by the world, a kill by utility and a weapon nobody has drawn all answer `undefined` and
  * fall back to their class.
  */
-export function killWeaponIcon(weapon: WeaponId): WeaponIconId | undefined {
-  if (weapon.startsWith('knife') || weapon === 'bayonet') return 'knife';
-
+export function killWeaponIcon(weapon: DamageWeapon): WeaponIconId | undefined {
   return isWeaponIconId(weapon) ? weapon : undefined;
 }
 
@@ -340,10 +333,9 @@ export function isUtilityKind(weapon: WeaponClass): weapon is UtilityKind {
  * the table the two disagree for one of them — and the reading a reader hears twice in one row is
  * the one that has to give.
  *
- * A gun keeps its entry, which is upstream's display name and the only name it has. Unifying that
- * vocabulary with the one `Kill.weapon` carries is #53.
+ * A gun keeps its entry, which is upstream's display name and the only name it has.
  */
-export function weaponName(weapon: WeaponId): string {
+export function weaponName(weapon: WeaponName): string {
   const kind = weaponClass(weapon);
 
   return isUtilityKind(kind) ? UTILITY_NAMES[kind] : weapon;
@@ -355,11 +347,11 @@ export function weaponName(weapon: WeaponId): string {
  * `MatchHeader.weapons` entry and `weaponName` answers for it, so utility defers to `UTILITY_NAMES`
  * here for the reason it does there (#152) and a knife reads `Knife` whatever skin it carried.
  *
- * A weapon the bridge has never seen **names itself**. That is upstream's identifier reaching a
- * sentence, which is the defect this closes — but a name nobody can say beats a row that says
- * nothing, and it is the same fallback `killWeaponClass` makes when it answers `unknown`.
+ * A source that is not a weapon **names itself** (`world`, `unknown`): a name nobody can say beats a
+ * row that says nothing, and it is the same fallback `killWeaponClass` makes when it answers
+ * `unknown`.
  */
-export function killWeaponName(weapon: WeaponId): string {
+export function killWeaponName(weapon: DamageWeapon): string {
   const entry = killWeaponEntry(weapon);
 
   return entry === undefined ? weapon : weaponName(entry);

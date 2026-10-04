@@ -3,8 +3,8 @@
 //!
 //! `docs/DESIGN.md` §5.3 asks the rails for a weapon glyph and up to five utility glyphs per
 //! player. Both come from upstream item definition indices, whose display names are the only
-//! vocabulary this crate can name without recalling a list it has never read — #53 records why the
-//! global enumeration is blocked and this one is not.
+//! vocabulary this crate can name without recalling a list it has never read. `Kill::weapon` is the
+//! other vocabulary, closed in `vocabulary.rs` (#53).
 
 use crate::schema::{
     GRENADE_DECOY, GRENADE_DEFUSE_KIT, GRENADE_FIRE, GRENADE_FLASH, GRENADE_FLASH_SECOND,

@@ -12,7 +12,7 @@ import {
   weaponIcons,
   weaponName,
 } from '../helpers/weapons';
-import { WEAPON_NONE } from '../schema';
+import { WEAPON_IDS, WEAPON_NONE } from '../schema';
 
 describe('weaponClass', () => {
   it('classifies the vocabulary a real match carried', () => {
@@ -83,21 +83,12 @@ describe('killWeaponClass', () => {
     expect(killWeaponClass('inferno')).toBe('fire');
   });
 
-  it('is a different vocabulary from `weaponClass`, and neither answers the other', () => {
+  it('is a different vocabulary from `weaponClass`, which does not answer a canonical id', () => {
     expect(weaponClass('ak47')).toBe('unknown');
-    expect(killWeaponClass('AK-47')).toBe('unknown');
   });
 
-  it('reads a knife through its skin, which is what the field carries', () => {
+  it('reads the one knife the parser collapses every skin onto', () => {
     expect(killWeaponClass('knife')).toBe('knife');
-    expect(killWeaponClass('knife_butterfly')).toBe('knife');
-    expect(killWeaponClass('knife_cord')).toBe('knife');
-    expect(killWeaponClass('knife_m9_bayonet')).toBe('knife');
-    expect(killWeaponClass('bayonet')).toBe('knife');
-  });
-
-  it('reads a knife skin nobody enumerated, because Valve keeps adding them', () => {
-    expect(killWeaponClass('knife_kukri')).toBe('knife');
   });
 
   it('answers `fire` for a molotov, an incendiary and the area they leave', () => {
@@ -117,13 +108,10 @@ describe('killWeaponClass', () => {
     expect(killWeaponClass('c4')).toBe('bomb');
   });
 
-  it('answers `unknown` for a kill the world dealt', () => {
+  it('answers `unknown` for a source that holds no weapon', () => {
     expect(killWeaponClass('world')).toBe('unknown');
-    expect(killWeaponClass('')).toBe('unknown');
-  });
-
-  it('falls back rather than failing on a weapon nobody enumerated', () => {
-    expect(killWeaponClass('portalgun')).toBe('unknown');
+    expect(killWeaponClass('planted_c4')).toBe('unknown');
+    expect(killWeaponClass('unknown')).toBe('unknown');
   });
 });
 
@@ -202,18 +190,21 @@ describe('killWeaponName', () => {
     expect(killWeaponName('incgrenade')).toBe(UTILITY_NAMES.fire);
   });
 
-  it('collapses every knife skin onto the one entry the weapon table holds', () => {
+  it('names the knife with the one entry the weapon table holds', () => {
     expect(killWeaponName('knife')).toBe('Knife');
-    expect(killWeaponName('knife_butterfly')).toBe('Knife');
-    expect(killWeaponName('bayonet')).toBe('Knife');
   });
 
   it('names the bomb, which the plate draws as nothing but a sentence still states', () => {
     expect(killWeaponName('c4')).toBe('C4 Explosive');
   });
 
-  it('lets a weapon nobody enumerated name itself rather than vanish', () => {
-    expect(killWeaponName('portalgun')).toBe('portalgun');
+  it('lets a source that is not a weapon name itself rather than vanish', () => {
+    expect(killWeaponName('unknown')).toBe('unknown');
+    expect(killWeaponName('world')).toBe('world');
+  });
+
+  it('has an entry for every canonical weapon', () => {
+    for (const id of WEAPON_IDS) expect(killWeaponName(id)).not.toBe(id);
   });
 
   it('resolves every weapon the product draws, and to the class it drew it as', () => {
@@ -282,10 +273,8 @@ describe('killWeaponIcon', () => {
     expect(killWeaponIcon('usp_silencer')).toBe('usp_silencer');
   });
 
-  it('collapses every knife skin onto the one knife', () => {
+  it('draws the knife', () => {
     expect(killWeaponIcon('knife')).toBe('knife');
-    expect(killWeaponIcon('knife_butterfly')).toBe('knife');
-    expect(killWeaponIcon('bayonet')).toBe('knife');
   });
 
   it('has nothing to draw for the world, for utility or for the bomb', () => {
@@ -293,10 +282,6 @@ describe('killWeaponIcon', () => {
     expect(killWeaponIcon('inferno')).toBeUndefined();
     expect(killWeaponIcon('hegrenade')).toBeUndefined();
     expect(killWeaponIcon('c4')).toBeUndefined();
-  });
-
-  it('refuses the display vocabulary, the way killWeaponClass does', () => {
-    expect(killWeaponIcon('AK-47')).toBeUndefined();
   });
 });
 

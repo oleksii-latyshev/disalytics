@@ -81,7 +81,7 @@ Packages are `@disa/<folder>`. Vite aliases `demo-parser-wasm` to `crates/demo-p
 bun run dev | build | preview       # vite :5173 · tsc + vite build (needs pkg/) · wrangler dev :8787
 bun run typecheck | check | test    # tsc via turbo + tools · biome (check:fix) · vitest
 bun run i18n:check                  # en/ru parity, no unread keys; regenerates the key union
-bun run errors:check | bitfields:check   # ErrorCode / FLAG_*·GRENADE_* parity with the crate
+bun run errors:check | bitfields:check | weapons:check   # ErrorCode · FLAG_*·GRENADE_* · weapon ids
 bun run contrast:check              # contrast figures stated in tokens.css still measure true
 bun run tokens:check                # every class and var(--…) exists in built CSS (build first)
 bun run samples:check | reel:check  # committed samples match SCHEMA_VERSION · reel regenerates
@@ -179,11 +179,11 @@ poisoned, so one worker per parse. `ErrorCode` mirrors `crates/demo-parser/src/e
 ## 10. Event Schema
 
 `packages/demo-core/src/schema.ts` is the source of truth; any shape change bumps `SCHEMA_VERSION`
-(now **9**) — ask first. Kills · Damage (raw, unclamped) · Shots (weapon index, exact yaw) · Grenades
+(now **10**) — ask first. Kills · Damage (raw, unclamped) · Shots (weapon index, exact yaw) · Grenades
 (throw/detonation/expiry, trajectory, landing) · Blinds · Objectives (site A/B, detonation tick) ·
 Rounds (reason, freeze end, length) · Economy (including **the side held that round**). Display
-(`AK-47`) and internal (`ak47`) weapon names differ — bridge with `ENTRY_BY_INTERNAL_NAME` (#53).
-Audibility is free-field ("ignoring walls").
+(`AK-47`, `MatchHeader.weapons`) and internal (`ak47`, closed `WeaponId`, parser-normalised) names differ
+— bridge: `ENTRY_BY_INTERNAL_NAME`. Audibility is free-field ("ignoring walls").
 
 ## 11. Internationalisation
 
@@ -284,13 +284,13 @@ samples are parses of a public professional match — the only review screen fit
 
 ## 19. Roadmap
 
-Phases 0–4 and the redesign are done, Phase 5 is in progress; #53, #58, #86, #230 wait on demo data.
+Phases 0–4 and the redesign are done, Phase 5 is in progress; #58, #86, #230 wait on demo data.
 **What is next lives in GitHub, not in a file:** milestones *Polish* → *Match views* → *Toolbox* →
 *Coaching* → *Lineups* → *Player profiles*. Queue: `gh issue list --milestone Polish --label priority:p1`.
 
 ## 20. Decisions and Open Questions
 
-Decided choices are §3, §16 and §17. **Open:** a cheap header read · `.nav` occlusion · Tauri · #53.
+Decided choices are §3, §16 and §17. **Open:** a cheap header read · `.nav` occlusion · Tauri.
 
 ## 21. When You Are Unsure
 

@@ -100,6 +100,9 @@ jobs:
       - name: bitfields:check
         run: bun run bitfields:check
 
+      - name: weapons:check
+        run: bun run weapons:check
+
       # It reads the token file's own source rather than the emitted stylesheet, so unlike
       # `tokens:check` it has nothing to wait for.
       - name: contrast:check
