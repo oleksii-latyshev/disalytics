@@ -13,7 +13,7 @@ const SIDE_PATH = {
 
 const SIDE_INK = { both: 'text-ink-faint', ct: 'text-ct', t: 'text-t' } as const;
 
-const RING_BOX_PX = 80;
+const RING_BOX_PX = 64;
 
 function Duration({ grenade }: { grenade: GrenadeReference }) {
   return grenade.durationSeconds === null ? (
@@ -61,7 +61,7 @@ function Ring({ grenade }: { grenade: GrenadeReference }) {
   return (
     <div
       aria-hidden="true"
-      className="relative grid size-24 flex-none place-items-center rounded-card bg-surface-2"
+      className="relative grid size-24 flex-none place-items-center pb-3 rounded-card bg-surface-2"
     >
       {units === null ? (
         <span className={`h-0.5 w-[60px] bg-linear-to-r ${ink.from} to-transparent`} />
