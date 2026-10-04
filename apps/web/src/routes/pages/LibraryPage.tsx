@@ -18,6 +18,15 @@ export function LibraryPage() {
           },
         );
       }}
+      onFile={(file) => {
+        void afterRouteNavigation(
+          () => navigate({ to: '/' }),
+          () => {
+            parseOrigin.current = '/';
+            parse.open(file);
+          },
+        );
+      }}
       onSample={(sample) => {
         void afterRouteNavigation(
           () => navigate({ to: '/' }),

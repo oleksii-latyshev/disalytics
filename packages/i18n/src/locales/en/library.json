@@ -41,18 +41,11 @@
     "downloadPercent": "{percent}%"
   },
   "saved": {
-    "title": "On this device",
-    "collection": "Your match collection",
-    "featured": "Latest saved match",
-    "otherMatches": "Other matches",
-    "newestFirst": "Newest first",
-    "view": "Open match",
     "emptyTitle": "Your next review starts here.",
-    "note": "Opened before, kept in this browser. Removing one clears the saved copy — the .dem file on your disk is untouched.",
+    "note": "Removing a match clears the saved copy only — the .dem file on your disk is untouched.",
     "score": "{startedCt} : {startedT}",
     "rounds": "{count, plural, one {# round} other {# rounds}}",
     "duration": "{minutes} min",
-    "storedAt": "{when, date, medium}",
     "size": "{megabytes, number, ::.#} MB",
     "open": "Show {map}, saved on this device",
     "remove": "Remove {fileName} from this device",
@@ -503,10 +496,19 @@
     }
   },
   "grid": {
-    "count": "{count, plural, one {# demo} other {# demos}}",
-    "cacheTotal": "These demos take {used, number} MB of the {limit, number} MB this app keeps.",
-    "estimate": "Your browser estimates {used, number} MB in use for this site, out of about {quota, number} MB.",
-    "persistence": "The browser may clear this cache to make room. A demo it clears is read from the file again."
+    "persistence": "The browser may clear this cache to make room. A demo it clears is read from the file again.",
+    "title": "Your matches",
+    "lede": "Every demo you opened, kept in this browser. Reopening one takes a moment.",
+    "mapFilter": "Filter by map",
+    "allMaps": "All maps",
+    "sort": "Sort matches",
+    "newestFirst": "Newest first",
+    "oldestFirst": "Oldest first",
+    "searchLabel": "Search matches",
+    "searchPlaceholder": "Search map, team, file name",
+    "noMatch": "No saved match fits that filter.",
+    "openTitle": "Open a demo",
+    "openFormats": ".dem · .dem.zst · .dem.bz2 — or drop it anywhere"
   },
   "samples": {
     "title": "Matches to try",
@@ -526,5 +528,19 @@
     "explore": "Two matches to explore ↗",
     "saved": "{map} · Saved on this device",
     "try": "No demo? Review NAVI — Vitality"
+  },
+  "storage": {
+    "title": "On this device",
+    "used": "{used, number, ::.#} MB",
+    "of": "of {limit, number} MB",
+    "free": "{free, number} MB free.",
+    "eviction": "When it is full, the match you opened longest ago makes room first.",
+    "meter": "{used, number} MB of {limit, number} MB used"
+  },
+  "card": {
+    "when": "{when, date, medium}, {when, time, short}",
+    "sample": "Sample",
+    "overtime": "OT{index, number}",
+    "overtimeMeta": "overtime"
   }
 }
