@@ -66,3 +66,58 @@ export function matchPlayerEnemyBlindTime(demo: ParsedDemo): ReadonlyMap<PlayerS
   }
   return totals;
 }
+
+/** What one player's flashes did to people, counted per affected player rather than per flashbang. */
+export interface PlayerBlinds {
+  /** Opponents blinded: one per affected opponent per flash. */
+  readonly enemies: number;
+  /** Their blind time, the figure `matchPlayerEnemyBlindTime` states. */
+  readonly enemySeconds: number;
+  /** Teammates blinded, by `Blind.isTeammate`. The thrower's own blindness is not a team flash. */
+  readonly teammates: number;
+}
+
+function* teammateBlinds(demo: ParsedDemo): Generator<PlayerSlot> {
+  const { blinds, rounds } = demo.events;
+  let first = 0;
+
+  for (const round of rounds) {
+    while (first < blinds.length && (blinds[first]?.tick ?? 0) < round.startTick) first += 1;
+
+    for (let index = first; index < blinds.length; index++) {
+      const blind = blinds[index];
+      if (blind === undefined || blind.tick > round.endTick) break;
+      if (blind.attacker !== null && blind.isTeammate && blind.attacker !== blind.victim) {
+        yield blind.attacker;
+      }
+    }
+  }
+}
+
+interface BlindTally {
+  enemies: number;
+  enemySeconds: number;
+  teammates: number;
+}
+
+/** Opponents and teammates blinded, attributed to the player whose flash caused it. */
+export function matchPlayerBlinds(demo: ParsedDemo): ReadonlyMap<PlayerSlot, PlayerBlinds> {
+  const totals = new Map<PlayerSlot, BlindTally>();
+  const tally = (slot: PlayerSlot): BlindTally => {
+    const existing = totals.get(slot);
+    if (existing !== undefined) return existing;
+
+    const fresh = { enemies: 0, enemySeconds: 0, teammates: 0 };
+    totals.set(slot, fresh);
+    return fresh;
+  };
+
+  for (const blind of opponentBlinds(demo)) {
+    const entry = tally(blind.attacker);
+    entry.enemies += 1;
+    entry.enemySeconds += blind.durationSeconds;
+  }
+  for (const attacker of teammateBlinds(demo)) tally(attacker).teammates += 1;
+
+  return totals;
+}

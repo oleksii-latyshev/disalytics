@@ -149,7 +149,8 @@
     "nav": "Stats sections",
     "tabs": {
       "players": "Players",
-      "rounds": "Rounds & economy"
+      "rounds": "Rounds & economy",
+      "utility": "Utility"
     },
     "players": {
       "sortHint": "Select a column heading to sort the players of each team by it.",
@@ -186,6 +187,31 @@
         "rating": "Rating 1.0 is HLTV's published formula; later versions are not public and are not approximated.",
         "opening": "An opening duel is the first kill of a round. Opening success is the share of the opening duels a player took part in that they won."
       }
+    },
+    "utility": {
+      "table": {
+        "thrown": "Grenades thrown per round",
+        "flashes": "Flashes",
+        "damage": "Damage & utility left unused"
+      },
+      "col": {
+        "total": "All grenades",
+        "flashesThrown": "Flashes thrown",
+        "enemiesPerFlash": "Enemies per flash",
+        "averageBlind": "Average enemy blind, s",
+        "teamFlashes": "Team flashes",
+        "damagePerRound": "Damage per round",
+        "unusedDollars": "Unused at death",
+        "unusedGrenades": "Grenades unused"
+      },
+      "team": "Team",
+      "notes": {
+        "thrown": "Grenades thrown are counted inside the rounds, whether or not they went off, and shown per round played. Team rows are per team round.",
+        "flashes": "Enemies per flash is the opponents blinded divided by the flashbangs thrown, flashes that blinded nobody included. Average enemy blind is the mean blind time per opponent blinded. A team flash blinds a teammate; blinding yourself does not count.",
+        "damage": "Utility damage is the health damage dealt to opponents with HE grenades, molotovs and incendiaries.",
+        "unused": "Unused at death is the shop price of the grenades a player was holding when they died: HE 300, flash 200, smoke 300, decoy 50, molotov 400 for a T and incendiary 500 for a CT. It is read from the last 16 Hz sample before the death, and a defuse kit is not counted."
+      },
+      "noFlashEvents": "This recording carries no flash events, so enemies per flash, average enemy blind, team flashes and flash assists cannot be shown."
     },
     "unknown": "Not recorded in this demo",
     "noFlashEvents": "This recording carries no flash events, so flash assists and enemy blind time cannot be shown.",
