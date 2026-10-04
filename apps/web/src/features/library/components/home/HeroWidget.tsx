@@ -86,7 +86,15 @@ function KillFeed({ demo, roundIndex, shown, kills }: FeedProps) {
   );
 }
 
-function Replay({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: number }) {
+function Replay({
+  demo,
+  roundIndex,
+  showsFeed,
+}: {
+  demo: ParsedDemo;
+  roundIndex: number;
+  showsFeed: boolean;
+}) {
   const isLess = useLessMotion();
   const clockRef = useRef<HTMLSpanElement>(null);
   const [shown, setShown] = useState(0);
@@ -149,7 +157,9 @@ function Replay({ demo, roundIndex }: { demo: ParsedDemo; roundIndex: number }) 
         <PlateStill demo={demo} frame={span.rest} replay={replay} />
       </div>
       <div className="pointer-events-none absolute inset-x-2 bottom-2 flex flex-col gap-1.5">
-        <KillFeed demo={demo} roundIndex={roundIndex} shown={feedShown} kills={kills} />
+        {showsFeed && (
+          <KillFeed demo={demo} roundIndex={roundIndex} shown={feedShown} kills={kills} />
+        )}
         {!isLess && (
           <p className="w-fit rounded-chip bg-surface-0/80 px-1.5 py-0.5 font-mono text-11 text-ink-dim">
             <Text path="library.preview.round" values={{ round: roundIndex + 1 }} />
@@ -291,7 +301,12 @@ function ContinueHero({ size, data, actions, last }: WidgetProps & { last: Saved
       </div>
       <div className={PLATE}>
         {lastDemo === null ? null : (
-          <Replay key={`${last.key}:${roundIndex}`} demo={lastDemo} roundIndex={roundIndex} />
+          <Replay
+            showsFeed={isTall}
+            key={`${last.key}:${roundIndex}`}
+            demo={lastDemo}
+            roundIndex={roundIndex}
+          />
         )}
       </div>
     </div>
