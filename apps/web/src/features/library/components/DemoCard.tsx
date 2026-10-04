@@ -2,9 +2,8 @@ import type { SavedDemo } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
 import type { RadarTheme } from '@disa/map-data';
 import { Button } from '@disa/ui';
-import { ArrowUpRight, X } from 'lucide-react';
-import type { MotionPreference } from '@/core/settings';
-import { prefersLessMotion } from '../helpers/less-motion';
+import { X } from 'lucide-react';
+import type { SampleMatch } from '@/core/samples';
 import { megabytesOf, minutesOf } from '../helpers/saved-list';
 import { DemoFileName } from './DemoFileName';
 import { MapPoster } from './MapPoster';
@@ -13,164 +12,108 @@ import { MetaDot } from './MetaDot';
 
 interface Props {
   demo: SavedDemo;
+  /** Set when the demo is one of the shipped matches, which is what names its teams. */
+  sample: SampleMatch | undefined;
   theme: RadarTheme;
-  motionPreference: MotionPreference;
-  featured?: boolean;
   onOpen: (demo: SavedDemo) => void;
   onRemove: (key: string) => void;
 }
 
-function mapTitle(map: string): string {
-  const name = map.replace(/^de_/, '').replaceAll('_', ' ');
-  return name === 'dust2' ? 'Dust II' : name.charAt(0).toUpperCase() + name.slice(1);
-}
+/** Regulation is 24 rounds in MR12, so a longer match went to overtime. */
+const REGULATION_ROUNDS = 24;
 
-export function DemoCard({
-  demo,
-  theme,
-  motionPreference,
-  featured = false,
-  onOpen,
-  onRemove,
-}: Props) {
+/**
+ * One saved match: where it was played, when it was saved, how it ended and how it went.
+ *
+ * The score is `startedCt : startedT` — teams named by the side they opened on, the same way the
+ * strip is tinted — so the two colours in the number are the two colours in the strip. The catalog
+ * keeps no team names, so only a shipped sample can name its teams; a demo of the reader's own is
+ * named by its file, which is also what search matches it by.
+ */
+export function DemoCard({ demo, sample, theme, onOpen, onRemove }: Props) {
   const t = useT();
 
-  if (featured) {
-    return (
-      <li className="library-feature group relative list-none overflow-hidden rounded-float border border-line-strong bg-surface-1">
-        <button
-          type="button"
-          onClick={() => onOpen(demo)}
-          onPointerMove={(event) => {
-            if (event.pointerType !== 'mouse' || prefersLessMotion(motionPreference)) return;
-            const bounds = event.currentTarget.getBoundingClientRect();
-            event.currentTarget.style.setProperty(
-              '--spotlight-x',
-              `${event.clientX - bounds.left}px`,
-            );
-            event.currentTarget.style.setProperty(
-              '--spotlight-y',
-              `${event.clientY - bounds.top}px`,
-            );
-          }}
-          aria-label={t('library.saved.open', { map: demo.map })}
-          className="relative flex min-h-[19rem] w-full flex-col justify-end overflow-hidden p-6 text-left transition-colors duration-(--duration-base) ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus sm:min-h-[22rem] sm:p-9"
-        >
-          <MapPoster map={demo.map} theme={theme} />
-          <span className="pointer-events-none relative z-10 flex max-w-[34rem] flex-col items-start">
-            <span className="font-ui text-[clamp(36px,5vw,56px)] font-medium leading-[1.05] tracking-[-0.055em]">
-              {mapTitle(demo.map)}
-            </span>
-            <span className="numeric mt-2 text-28 leading-dense sm:text-44">
-              <Text path="library.saved.score" values={{ ...demo.score }} />
-            </span>
-            <span className="mt-3 flex flex-wrap items-baseline gap-x-2 text-12 text-ink-dim">
-              <span className="numeric">
-                <Text path="library.saved.rounds" values={{ count: demo.roundCount }} />
-              </span>
-              {demo.durationSeconds !== undefined && (
-                <>
-                  <MetaDot />
-                  <span className="numeric">
-                    <Text
-                      path="library.saved.duration"
-                      values={{ minutes: minutesOf(demo.durationSeconds) }}
-                    />
-                  </span>
-                </>
-              )}
-              <MetaDot />
-              <span className="numeric">
-                <Text path="library.saved.storedAt" values={{ when: new Date(demo.storedAt) }} />
-              </span>
-              <MetaDot />
-              <span className="numeric">
-                <Text
-                  path="library.saved.size"
-                  values={{ megabytes: megabytesOf(demo.byteLength) }}
-                />
-              </span>
-            </span>
-            <span className="mt-2 max-w-full">
-              <DemoFileName fileName={demo.fileName} />
-            </span>
-            <span className="mt-6 inline-flex items-center gap-2 rounded-chip bg-ink px-4 py-2.5 text-12 font-medium text-surface-0 transition-[gap] duration-(--duration-micro) ease-out group-hover:gap-3">
-              <Text path="library.saved.view" />
-              <ArrowUpRight aria-hidden="true" className="size-4" />
-            </span>
-          </span>
-          {demo.winners !== undefined && (
-            <span className="pointer-events-none relative z-10 mt-7 block w-full max-w-[23rem] opacity-85">
-              <MatchShape winners={demo.winners} />
-            </span>
-          )}
-        </button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4 z-20 bg-surface-0/75 text-ink-dim hover:bg-surface-2 hover:text-ink"
-          aria-label={t('library.saved.remove', { fileName: demo.fileName })}
-          onClick={() => onRemove(demo.key)}
-        >
-          <X aria-hidden="true" className="size-4" />
-        </Button>
-      </li>
-    );
-  }
-
   return (
-    <li className="group relative list-none [border-block-end:1px_solid_var(--color-line)]">
+    <li className="group relative list-none">
       <button
         type="button"
         onClick={() => onOpen(demo)}
         aria-label={t('library.saved.open', { map: demo.map })}
-        className="flex min-h-24 w-full items-center gap-4 py-3 pr-11 text-left transition-[padding,background-color] duration-(--duration-micro) ease-out hover:pl-2 hover:bg-hover focus-visible:rounded-chip focus-visible:outline-2 focus-visible:outline-focus"
+        className="grid w-full grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-card border border-line bg-surface-1 p-3 text-left transition-colors duration-(--duration-micro) ease-out hover:border-line-strong hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-focus sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-stretch sm:gap-x-4 sm:p-3.5"
       >
-        <span className="relative size-16 shrink-0 overflow-hidden rounded-chip border border-line bg-surface-1">
-          <MapPoster map={demo.map} theme={theme} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-16 font-medium leading-dense">{mapTitle(demo.map)}</span>
-            <span className="numeric text-14 text-ink-dim">
-              <Text path="library.saved.score" values={{ ...demo.score }} />
-            </span>
+        <span className="relative size-16 overflow-hidden rounded-chip bg-surface-0 sm:row-span-3 sm:size-auto sm:min-h-[9.5rem]">
+          <MapPoster map={demo.map} theme={theme} clear />
+          <span className="numeric absolute bottom-2 left-2 hidden rounded-chip bg-surface-0/85 px-1.5 py-0.5 text-11 text-ink sm:block">
+            {demo.map}
           </span>
-          <span className="flex flex-wrap items-baseline gap-x-2 text-11 text-ink-dim">
-            <span className="numeric">
-              <Text path="library.saved.rounds" values={{ count: demo.roundCount }} />
+        </span>
+
+        <span className="flex min-w-0 flex-col gap-1.5 pe-8">
+          <span className="numeric flex flex-wrap items-center gap-x-2 gap-y-1 text-12 text-ink-dim">
+            <span className="sm:hidden">{demo.map}</span>
+            <span className="sm:hidden">
+              <MetaDot />
             </span>
-            {demo.durationSeconds !== undefined && (
-              <>
-                <MetaDot />
-                <span className="numeric">
-                  <Text
-                    path="library.saved.duration"
-                    values={{ minutes: minutesOf(demo.durationSeconds) }}
-                  />
-                </span>
-              </>
+            <span>
+              <Text path="library.card.when" values={{ when: new Date(demo.storedAt) }} />
+            </span>
+            {sample !== undefined && (
+              <span className="rounded-chip bg-surface-3 px-1.5 py-px text-11 text-ink-dim">
+                <Text path="library.card.sample" />
+              </span>
             )}
-            <MetaDot />
-            <span className="numeric">
-              <Text path="library.saved.storedAt" values={{ when: new Date(demo.storedAt) }} />
+          </span>
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <span className="numeric text-20 leading-dense sm:text-28">
+              <span className="text-ct">{demo.score.startedCt}</span>
+              <span className="text-ink-faint"> : </span>
+              <span className="text-t">{demo.score.startedT}</span>
+            </span>
+            <span className="min-w-0 truncate text-13 text-ink sm:text-14">
+              {sample !== undefined ? (
+                <Text
+                  path="library.samples.teams"
+                  values={{ home: sample.teams[0], away: sample.teams[1] }}
+                />
+              ) : (
+                <DemoFileName fileName={demo.fileName} />
+              )}
             </span>
           </span>
-          <span className="block max-w-full">
-            <DemoFileName fileName={demo.fileName} />
-          </span>
         </span>
-        <ArrowUpRight
-          aria-hidden="true"
-          className="size-4 shrink-0 text-ink-dim transition-[transform,color] duration-(--duration-micro) ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink"
-        />
+
+        {demo.winners !== undefined && (
+          <span className="col-span-2 block sm:col-span-1 sm:col-start-2">
+            <MatchShape winners={demo.winners} />
+          </span>
+        )}
+
+        <span className="numeric col-span-2 flex flex-wrap items-baseline gap-x-2 text-11 text-ink-dim sm:col-span-1 sm:col-start-2 sm:self-end sm:text-12">
+          <Text path="library.saved.rounds" values={{ count: demo.roundCount }} />
+          {demo.roundCount > REGULATION_ROUNDS && (
+            <>
+              <MetaDot />
+              <Text path="library.card.overtimeMeta" />
+            </>
+          )}
+          {demo.durationSeconds !== undefined && (
+            <>
+              <MetaDot />
+              <Text
+                path="library.saved.duration"
+                values={{ minutes: minutesOf(demo.durationSeconds) }}
+              />
+            </>
+          )}
+          <MetaDot />
+          <Text path="library.saved.size" values={{ megabytes: megabytesOf(demo.byteLength) }} />
+        </span>
       </button>
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute top-1/2 right-0 -translate-y-1/2 text-ink-dim hover:text-ink"
+        className="absolute top-2 right-2 text-ink-dim hover:text-ink"
         aria-label={t('library.saved.remove', { fileName: demo.fileName })}
         onClick={() => onRemove(demo.key)}
       >

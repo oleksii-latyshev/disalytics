@@ -1,4 +1,6 @@
 import type { OpeningSide } from '@disa/demo-core';
+import { useT } from '@disa/i18n';
+import { stripRows } from '../helpers/library-grid';
 
 /**
  * How the match went, one cell per round, tinted by the team that won it.
@@ -8,29 +10,36 @@ import type { OpeningSide } from '@disa/demo-core';
  * directly would draw a shape that changes hands at halftime, which is #141 seen from the library.
  *
  * The colours are `--color-ct` and `--color-t`, and that is the rule rather than an exception to it:
- * a hue here means something the demo said. The way in's own background has tokens of its own for
- * exactly the reason this does not need them.
+ * a hue here means something the demo said.
  *
- * **It fills the card's width whatever the match's length**, one row always: a cell is a share of
- * the strip rather than a fixed width, so a 30-round match is a denser bar than a 16-round one and
- * both cards are the same height. The number of rounds is stated in words directly under it, which
- * is the reading a bar's length was never going to carry anyway.
- *
- * It is hidden from a screen reader because the score is already stated beside it, in words a strip
- * of cells cannot improve on — §14's rule about what a mark may be.
+ * **Every row is the same 24-column grid**, so a cell is the same width in regulation and in
+ * overtime, and a gap marks halftime. Overtime comes in rows of six under the regulation row, each
+ * named in its own margin. It is hidden from a screen reader because the score is already stated
+ * beside it, in words a strip of cells cannot improve on.
  */
 export function MatchShape({ winners }: { winners: readonly OpeningSide[] }) {
-  // A cell is a round, and a round has a number — that is its identity, and the position it is
-  // drawn at is the same fact seen from the other side.
-  const rounds = winners.map((winner, index) => ({ number: index + 1, winner }));
+  const t = useT();
+  const rows = stripRows(winners);
 
   return (
-    <span aria-hidden="true" className="flex gap-[2px]">
-      {rounds.map((round) => (
+    <span aria-hidden="true" className="flex flex-col gap-1">
+      {rows.map((row) => (
         <span
-          key={round.number}
-          className={`block h-2.5 min-w-0 flex-1 ${round.winner === 'ct' ? 'bg-ct' : 'bg-t'}`}
-        />
+          key={row.overtime ?? 0}
+          className="grid grid-cols-[repeat(24,minmax(0,1fr))] items-center gap-x-[2px]"
+        >
+          {row.cells.map((cell, index) => (
+            <span
+              key={cell.number}
+              className={`block h-2 min-w-0 rounded-[2px] ${cell.winner === 'ct' ? 'bg-ct' : 'bg-t'} ${index === row.halftimeAt ? 'ms-1' : ''}`}
+            />
+          ))}
+          {row.overtime !== null && (
+            <span className="numeric col-span-6 ms-1.5 text-10 text-ink-dim">
+              {t('library.card.overtime', { index: row.overtime })}
+            </span>
+          )}
+        </span>
       ))}
     </span>
   );
