@@ -1,5 +1,17 @@
-import { SoonView } from '@/features/library';
+import { useRouterState } from '@tanstack/react-router';
+import { StatsView } from '@/features/library';
+import { useAppRouteContext } from '../context';
 
 export function StatsPage() {
-  return <SoonView view="stats" />;
+  const { parse, parseOrigin } = useAppRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  return (
+    <StatsView
+      onEnter={(saved, roundIndex) => {
+        parseOrigin.current = pathname;
+        parse.openSaved(saved, roundIndex);
+      }}
+    />
+  );
 }

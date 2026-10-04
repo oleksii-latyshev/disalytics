@@ -145,7 +145,7 @@ export const WIDGETS: readonly WidgetSpec[] = [
     sizes: ['S'],
     needsMatch: false,
     isStrip: true,
-    isSoon: true,
+    isSoon: false,
   },
   {
     id: 'keys',

@@ -3,6 +3,7 @@ import {
   frameForTick,
   type Kill,
   killWeaponName,
+  momentsOf,
   type ParsedDemo,
   roundOpeningFrame,
   roundWinners,
@@ -15,7 +16,6 @@ import { Play } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { SAMPLE_MATCHES } from '@/core/samples';
 import { PlateStill } from '@/features/radar';
-import { momentsOf } from '../../helpers/home-moments';
 import { mapTitle } from '../../helpers/map-title';
 import { useLessMotion } from '../../hooks/use-less-motion';
 import { RoundPreview } from '../RoundPreview';

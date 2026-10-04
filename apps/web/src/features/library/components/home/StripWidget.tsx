@@ -38,6 +38,15 @@ export function StripWidget({ id, data }: { id: WidgetId; data: HomeData }) {
   const { openHelp } = useShellActions();
 
   switch (id) {
+    case 'soon':
+      return (
+        <Link
+          to="/stats"
+          className={`${STRIP} focus-visible:outline-2 focus-visible:outline-focus`}
+        >
+          <StripBody id={id} />
+        </Link>
+      );
     case 'economy':
     case 'refs':
       return (
