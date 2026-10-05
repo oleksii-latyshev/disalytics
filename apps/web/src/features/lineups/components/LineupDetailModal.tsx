@@ -5,6 +5,7 @@ import { Pencil, Trash2, X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { LineupImageViewer } from './LineupImageViewer';
 import { LineupInfoSidebar } from './LineupInfoSidebar';
+import { LineupTagChips } from './LineupTagChips';
 
 interface Props {
   readonly lineup: Lineup | null;
@@ -86,6 +87,7 @@ function LineupDetailHeader({
         <span className="hidden lg:inline-block shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-10 text-ink-dim">
           <Text path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'} />
         </span>
+        <LineupTagChips tags={lineup.tags} />
         {lineup.targetCallout && (
           <span className="shrink-0 rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 font-medium text-10 text-ink">
             {lineup.targetCallout}

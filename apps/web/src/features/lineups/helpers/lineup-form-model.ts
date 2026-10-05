@@ -1,8 +1,11 @@
 import {
+  isHttpsUrl,
   isLocalImageRef,
+  type LineupAuthor,
   type LineupGroupTarget,
   type LineupMouseButton,
   type LineupSide,
+  type LineupTag,
   type MovementKey,
   type ThrowType,
   type UtilityKind,
@@ -57,6 +60,8 @@ export interface LineupFormData {
   readonly notes?: string;
   readonly mediaUrl?: string;
   readonly targetCallout?: string;
+  readonly tags?: readonly LineupTag[] | undefined;
+  readonly author?: LineupAuthor | undefined;
   readonly createdAt?: number;
 }
 
@@ -90,6 +95,9 @@ export interface LineupFormValues {
   readonly fromDemo: boolean;
   readonly notes: string;
   readonly mediaUrl: string;
+  readonly tags: readonly LineupTag[];
+  readonly authorName: string;
+  readonly authorUrl: string;
 }
 
 function formatCoord(val?: number): string {
@@ -117,9 +125,18 @@ export function basicValidationKey(
 ):
   | 'library.lineups.form.validation.titleRequired'
   | 'library.lineups.form.validation.mediaUrlInvalid'
+  | 'library.lineups.form.validation.authorNameRequired'
+  | 'library.lineups.form.validation.authorUrlInvalid'
   | null {
   if (!values.title.trim()) return 'library.lineups.form.validation.titleRequired';
   if (hasInvalidMediaUrl(values)) return 'library.lineups.form.validation.mediaUrlInvalid';
+  const authorUrl = values.authorUrl.trim();
+  if (authorUrl.length > 0 && !values.authorName.trim()) {
+    return 'library.lineups.form.validation.authorNameRequired';
+  }
+  if (authorUrl.length > 0 && !isHttpsUrl(authorUrl)) {
+    return 'library.lineups.form.validation.authorUrlInvalid';
+  }
   return null;
 }
 
@@ -150,6 +167,9 @@ function defaultFormValues(defaultMap: string): LineupFormValues {
     fromDemo: false,
     notes: '',
     mediaUrl: '',
+    tags: [],
+    authorName: '',
+    authorUrl: '',
   };
 }
 
@@ -197,6 +217,14 @@ function resolveInitialCallout(
   return autoDetectCallout(map, landing.x, landing.y) ?? '';
 }
 
+function tagsAndAuthorOf(data: LineupFormData) {
+  return {
+    tags: data.tags ?? [],
+    authorName: data.author?.name ?? '',
+    authorUrl: data.author?.url ?? '',
+  };
+}
+
 export function initFormValues(
   data?: LineupFormData | null,
   defaultMap = 'de_mirage',
@@ -238,5 +266,6 @@ export function initFormValues(
     fromDemo: isFromDemo,
     notes: data.notes ?? '',
     mediaUrl: data.mediaUrl ?? '',
+    ...tagsAndAuthorOf(data),
   };
 }

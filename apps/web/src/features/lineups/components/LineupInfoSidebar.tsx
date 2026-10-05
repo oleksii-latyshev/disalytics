@@ -2,7 +2,9 @@ import { type Lineup, UTILITY_NAMES } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { ExternalLink } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
+import { LineupAuthorLine } from './LineupAuthorLine';
 import { LineupCoordinatesCollapsible } from './LineupCoordinatesCollapsible';
+import { LineupTagChips } from './LineupTagChips';
 
 const SIDE_STYLES: Readonly<Record<Lineup['side'], string>> = {
   CT: 'text-ct border-ct/30 bg-ct/10',
@@ -108,7 +110,11 @@ export function LineupInfoSidebar({
           <span className="rounded-chip border border-line bg-surface-2 px-2 py-0.5 text-11 text-ink-dim">
             <Text path={lineup.isBuiltIn ? 'library.lineups.builtIn' : 'library.lineups.custom'} />
           </span>
+
+          <LineupTagChips tags={lineup.tags} className="px-2 py-0.5 text-11" />
         </div>
+
+        <LineupAuthorLine author={lineup.author} />
       </div>
 
       <LineupExplanation instructions={lineup.movementInstructions} notes={lineup.notes} />

@@ -391,9 +391,23 @@
         "mediaUrlInvalid": "Use a valid http or https link",
         "imageProcessingFailed": "This image could not be converted to WebP",
         "imageLinkPending": "Add the typed photo link before saving",
-        "saveFailed": "This lineup could not be saved on this device"
-      }
-    }
+        "saveFailed": "This lineup could not be saved on this device",
+        "authorNameRequired": "Add an author name or clear the profile link",
+        "authorUrlInvalid": "Use an https link"
+      },
+      "tags": "Tags",
+      "authorName": "Author name",
+      "authorNamePlaceholder": "e.g. Ann",
+      "authorUrl": "Profile link (Steam)"
+    },
+    "tagFilter": "Tag",
+    "allTags": "All",
+    "untagged": "Untagged",
+    "tags": {
+      "meta": "Meta",
+      "old": "Old"
+    },
+    "author": "Author"
   },
   "tactics": {
     "editor": {

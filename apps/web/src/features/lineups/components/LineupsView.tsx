@@ -2,6 +2,7 @@ import type { Lineup, UtilityKind } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import type { MapId } from '@disa/map-data';
 import { useRef, useState } from 'react';
+import type { LineupTagFilter } from '../helpers/lineup-filter';
 import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import { focusedLineupIndex, mergeAvailability } from '../helpers/lineup-view-rules';
 import { useLineupGroupActions } from '../hooks/use-lineup-group-actions';
@@ -32,6 +33,7 @@ export function LineupsView() {
   const [map, setMap] = useState<MapId>('de_mirage');
   const [side, setSide] = useState<SideScope>('ALL');
   const [kind, setKind] = useState<KindScope>('all');
+  const [tag, setTag] = useState<LineupTagFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -65,6 +67,7 @@ export function LineupsView() {
     lineups,
     side,
     kind,
+    tag,
     search,
     selectedId,
     hoveredId,
@@ -178,6 +181,8 @@ export function LineupsView() {
           setSide={setSide}
           kind={kind}
           setKind={setKind}
+          tag={tag}
+          setTag={setTag}
           mode={mode}
           editGrenadeKind={editGrenadeKind}
           setEditGrenadeKind={setEditGrenadeKind}

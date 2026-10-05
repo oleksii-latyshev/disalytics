@@ -1,10 +1,11 @@
 import type { UtilityKind } from '@disa/demo-core';
-import { THROWN_UTILITY_KINDS, UTILITY_NAMES } from '@disa/demo-core';
+import { LINEUP_TAGS, THROWN_UTILITY_KINDS, UTILITY_NAMES } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { isMapId, MAP_IDS, type MapId } from '@disa/map-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@disa/ui';
 import { X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
+import type { LineupTagFilter } from '../helpers/lineup-filter';
 import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import type { InteractionMode } from '../hooks/use-lineup-selection';
 
@@ -18,6 +19,8 @@ export function LineupsFilterSidebar({
   setSide,
   kind,
   setKind,
+  tag,
+  setTag,
   mode,
   editGrenadeKind,
   setEditGrenadeKind,
@@ -42,6 +45,8 @@ export function LineupsFilterSidebar({
   readonly setSide: React.Dispatch<React.SetStateAction<SideScope>>;
   readonly kind: 'all' | UtilityKind;
   readonly setKind: React.Dispatch<React.SetStateAction<'all' | UtilityKind>>;
+  readonly tag: LineupTagFilter;
+  readonly setTag: React.Dispatch<React.SetStateAction<LineupTagFilter>>;
   readonly mode: InteractionMode;
   readonly editGrenadeKind: UtilityKind;
   readonly setEditGrenadeKind: React.Dispatch<React.SetStateAction<UtilityKind>>;
@@ -151,6 +156,39 @@ export function LineupsFilterSidebar({
           ))}
         </div>
       </div>
+
+      <fieldset
+        aria-label={t('library.lineups.tagFilter')}
+        className="m-0 flex flex-col gap-2 border-none p-0"
+      >
+        <legend className="label-dense text-ink-dim">
+          <Text path="library.lineups.tagFilter" />
+        </legend>
+        <div className="grid grid-cols-2 gap-1">
+          {(['all', ...LINEUP_TAGS, 'untagged'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={tag === option}
+              onClick={() => {
+                setTag(option);
+                setSelectedId(null);
+              }}
+              className={`rounded-chip px-2.5 py-1.5 text-11 ${tag === option ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-surface-2'}`}
+            >
+              <Text
+                path={
+                  option === 'all'
+                    ? 'library.lineups.allTags'
+                    : option === 'untagged'
+                      ? 'library.lineups.untagged'
+                      : `library.lineups.tags.${option}`
+                }
+              />
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       {mode === 'edit' && isPlacing && (
         <div className="flex flex-col gap-2">

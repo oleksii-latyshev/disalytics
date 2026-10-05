@@ -129,17 +129,22 @@ export type { HeatMode, HeatScope, HeatTally, HeatVisit } from './helpers/heat';
 export { HEAT_MODES, walkHeat } from './helpers/heat';
 export type {
   Lineup,
+  LineupAuthor,
   LineupFile,
   LineupGroupTarget,
   LineupMouseButton,
   LineupSide,
+  LineupTag,
   ParsedLineupFile,
 } from './helpers/lineups';
 export {
   isBuiltInCopy,
+  isHttpsUrl,
   isLineup,
+  isLineupTag,
   isLocalImageRef,
   LINEUP_SIDES,
+  LINEUP_TAGS,
   LineupFileError,
   localImageHash,
   localImageRef,
@@ -147,6 +152,7 @@ export {
   referencedLocalImageHashes,
   serializeLineupFile,
   THROW_TYPES,
+  toggledLineupTag,
 } from './helpers/lineups';
 export type { Moment } from './helpers/moments';
 export { momentsOf } from './helpers/moments';
