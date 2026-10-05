@@ -2,6 +2,7 @@ import type { ParsedDemo } from '@disa/demo-core';
 import { decodeDemo } from '@disa/demo-store/codec';
 import { SAMPLE_ASSETS } from '../generated/assets';
 import type { SampleMatch } from './catalogue';
+import { inflateSample } from './inflate';
 
 export interface SampleLoad {
   signal: AbortSignal;
@@ -54,10 +55,9 @@ async function collect(
 /**
  * Fetches one sample and decodes it into the demo the rest of the app already knows how to open.
  *
- * **The container is decompressed here rather than by the server.** Naming the encoding in a header
- * would leave the browser to do it, and a proxy that re-compresses the response — which Cloudflare
- * may — would then hand the page bytes that have been through gzip twice and out of it once.
- * Inflating what this repository wrote is true either way.
+ * **The container is decompressed here rather than by the server**, and only when it still is
+ * compressed: a host that names the encoding in a header (`vite preview` does) has the browser
+ * inflate it first, so `inflateSample` reads the gzip magic before inflating rather than assuming.
  *
  * Nothing here is the reader's data and nothing leaves the device: this is a parse **we** shipped,
  * pulled from the same origin as the app, which is what keeps hard rule 1 a rule about `.dem` files
@@ -71,8 +71,7 @@ export async function loadSample(sample: SampleMatch, load: SampleLoad): Promise
   const total = Number.isFinite(declared) && declared > 0 ? declared : 0;
   load.onProgress(total === 0 ? null : 0);
 
-  const compressed = await collect(response, total, load);
-  const inflated = compressed.stream().pipeThrough(new DecompressionStream('gzip'));
+  const body = await collect(response, total, load);
 
-  return decodeDemo(new Uint8Array(await new Response(inflated).arrayBuffer()));
+  return decodeDemo(await inflateSample(new Uint8Array(await body.arrayBuffer())));
 }
