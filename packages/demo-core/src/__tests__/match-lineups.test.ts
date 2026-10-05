@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { lineupOfVariant, savedLineupId } from '../helpers/lineup-of-variant';
 import {
+  areOneTarget,
   matchLineups,
   TARGET_LANDING_UNITS,
   VARIANT_LANDING_UNITS,
@@ -178,6 +179,19 @@ describe('matchLineups', () => {
     );
 
     expect(targets).toHaveLength(2);
+  });
+});
+
+describe('areOneTarget', () => {
+  const at = (x: number, z: number): WorldPoint => ({ x, y: 0, z });
+
+  it('joins landings within the target distance on one floor', () => {
+    expect(areOneTarget(at(0, 0), at(TARGET_LANDING_UNITS, 0))).toBe(true);
+    expect(areOneTarget(at(0, 0), at(TARGET_LANDING_UNITS + 1, 0))).toBe(false);
+  });
+
+  it('never joins two floors, however close they are on the ground', () => {
+    expect(areOneTarget(at(0, 0), at(0, 1000))).toBe(false);
   });
 });
 

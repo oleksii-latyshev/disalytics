@@ -11,11 +11,13 @@ export function LineupImageViewer({
   imageUrls,
   imageCaptions,
   kind,
+  initialIndex = 0,
 }: {
   readonly title: string;
   readonly imageUrls: readonly string[];
   readonly imageCaptions: readonly string[];
   readonly kind: Lineup['kind'];
+  readonly initialIndex?: number;
 }) {
   const t = useT();
   const {
@@ -35,7 +37,7 @@ export function LineupImageViewer({
     handlePointerUp,
     handlePointerCancel,
     onImageLoad,
-  } = useLineupImageViewer(imageUrls, imageCaptions);
+  } = useLineupImageViewer(imageUrls, imageCaptions, initialIndex);
 
   if (!activeUrl) {
     return (

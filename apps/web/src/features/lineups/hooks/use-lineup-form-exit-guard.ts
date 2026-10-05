@@ -1,5 +1,4 @@
-import { useT } from '@disa/i18n';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export function useLineupFormExitGuard({
   isOpen,
@@ -10,7 +9,7 @@ export function useLineupFormExitGuard({
   readonly isDirty: boolean;
   readonly onDismiss: () => void;
 }) {
-  const t = useT();
+  const [isAsking, setIsAsking] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !isDirty) return;
@@ -22,7 +21,17 @@ export function useLineupFormExitGuard({
     return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
   }, [isOpen, isDirty]);
 
-  return () => {
-    if (!isDirty || window.confirm(t('library.lineups.form.discardConfirm'))) onDismiss();
+  return {
+    /** Leaving with unsaved changes asks first; leaving clean just leaves. */
+    handleExit: () => {
+      if (isDirty) setIsAsking(true);
+      else onDismiss();
+    },
+    isAsking,
+    keepEditing: () => setIsAsking(false),
+    discard: () => {
+      setIsAsking(false);
+      onDismiss();
+    },
   };
 }

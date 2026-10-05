@@ -53,30 +53,31 @@ export function useMapLineups(map: string) {
     [reload],
   );
 
+  /** Saves the user's own lineups of this map, with their photos, as a file. */
   const exportLineups = useCallback(async () => {
     const store = await openLineupStore();
     if (store === null) return;
-    let all: readonly Lineup[];
+    let own: readonly Lineup[];
     const images: Record<string, string> = {};
     try {
-      const stored = await store.list();
-      all = withoutBuiltInCopies(stored, await loadBuiltInsFor(stored));
-      for (const hash of referencedLocalImageHashes(all)) {
+      const stored = await store.list({ map });
+      own = withoutBuiltInCopies(stored, await loadBuiltInsFor(stored));
+      for (const hash of referencedLocalImageHashes(own)) {
         const blob = await store.getPhoto(hash);
         if (blob !== null) images[hash] = await blobToDataUrl(blob);
       }
     } finally {
       store.close();
     }
-    const json = serializeLineupFile(all, images);
+    const json = serializeLineupFile(own, images);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'disalytics-lineups.json';
+    anchor.download = `disalytics-lineups-${map}.json`;
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 0);
-  }, []);
+  }, [map]);
 
   return {
     lineups,

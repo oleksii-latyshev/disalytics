@@ -1,8 +1,7 @@
 import type { Lineup } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
-import { Button } from '@disa/ui';
-import { Check, ChevronDown, Copy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { LineupCopyButton } from './LineupCopyButton';
 
 export function LineupCoordinatesCollapsible({
   lineup,
@@ -11,23 +10,6 @@ export function LineupCoordinatesCollapsible({
   readonly lineup: Lineup;
   readonly landingCommand: string | null;
 }) {
-  const [copiedKey, setCopiedKey] = useState<'origin' | 'landing' | null>(null);
-
-  useEffect(() => {
-    if (copiedKey === null) return;
-    const timer = setTimeout(() => setCopiedKey(null), 2000);
-    return () => clearTimeout(timer);
-  }, [copiedKey]);
-
-  const copyToClipboard = async (text: string, key: 'origin' | 'landing') => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedKey(key);
-    } catch {
-      // Ignore clipboard write failure in non-secure context
-    }
-  };
-
   return (
     <details className="group rounded-card border border-line bg-surface-2/60 overflow-hidden">
       <summary className="flex cursor-pointer items-center justify-between p-3 select-none text-12 font-medium text-ink transition-colors hover:bg-surface-3/50">
@@ -93,23 +75,9 @@ export function LineupCoordinatesCollapsible({
               <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink">
                 {lineup.command}
               </code>
-              <Button
-                variant="secondary"
-                onClick={() => copyToClipboard(lineup.command ?? '', 'origin')}
-                className="shrink-0"
-              >
-                {copiedKey === 'origin' ? (
-                  <>
-                    <Check className="size-3 text-ct" />
-                    <Text path="library.lineups.copied" />
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-3" />
-                    <Text path="library.lineups.copyCommand" />
-                  </>
-                )}
-              </Button>
+              <LineupCopyButton text={lineup.command}>
+                <Text path="library.lineups.copyCommand" />
+              </LineupCopyButton>
             </div>
           </div>
         )}
@@ -123,23 +91,9 @@ export function LineupCoordinatesCollapsible({
               <code className="min-w-0 flex-1 truncate font-mono text-11 text-ink">
                 {landingCommand}
               </code>
-              <Button
-                variant="secondary"
-                onClick={() => copyToClipboard(landingCommand, 'landing')}
-                className="shrink-0"
-              >
-                {copiedKey === 'landing' ? (
-                  <>
-                    <Check className="size-3 text-ct" />
-                    <Text path="library.lineups.copied" />
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-3" />
-                    <Text path="library.lineups.copyLandingCommand" />
-                  </>
-                )}
-              </Button>
+              <LineupCopyButton text={landingCommand}>
+                <Text path="library.lineups.copyLandingCommand" />
+              </LineupCopyButton>
             </div>
           </div>
         )}

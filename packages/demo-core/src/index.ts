@@ -177,6 +177,7 @@ export type {
   MatchLineups,
 } from './helpers/match-lineups';
 export {
+  areOneTarget,
   matchLineups,
   TARGET_LANDING_UNITS,
   VARIANT_LANDING_UNITS,

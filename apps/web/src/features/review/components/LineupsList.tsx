@@ -4,8 +4,9 @@ import { Button, Input, Switch } from '@disa/ui';
 import { Bookmark } from 'lucide-react';
 import { useId } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
+import { LINEUP_KIND_NAMES } from '@/core/lineup-catalog';
 import { type KindScope, type LineupFilter, NO_FILTER } from '../helpers/lineup-filter';
-import { LINEUP_KIND_NAMES, type TargetNames, targetTitle } from '../helpers/lineup-names';
+import { type TargetNames, targetTitle } from '../helpers/lineup-names';
 import type { SideScope } from '../helpers/map-scope';
 
 const SIDES: readonly SideScope[] = ['all', 'T', 'CT'];

@@ -1,288 +1,249 @@
-import type { Lineup, UtilityKind } from '@disa/demo-core';
+import type { Lineup } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import type { MapId } from '@disa/map-data';
-import { useRef, useState } from 'react';
-import type { LineupTagFilter } from '../helpers/lineup-filter';
-import type { SelectedLineupNode } from '../helpers/lineup-nodes';
-import { focusedLineupIndex, mergeAvailability } from '../helpers/lineup-view-rules';
-import { useLineupGroupActions } from '../hooks/use-lineup-group-actions';
-import { useLineupImport } from '../hooks/use-lineup-import';
-import { useLineupPlacement } from '../hooks/use-lineup-placement';
-import { type LineupPoint, useLineupPointActions } from '../hooks/use-lineup-point-actions';
-import {
-  createLineupSelectionActions,
-  type InteractionMode,
-  type SelectedVariants,
-} from '../hooks/use-lineup-selection';
-import { useLineupViewData } from '../hooks/use-lineup-view-data';
+import { useMemo, useState } from 'react';
+import { countsByKind, filterLineups } from '../helpers/lineup-filter';
+import { type PointMove, withMove } from '../helpers/lineup-move';
+import { clearPick, type LineupPick, NO_PICK, pickTarget } from '../helpers/lineup-pick';
+import { NO_SCOPE } from '../helpers/lineup-scope';
+import { lineupTargets } from '../helpers/lineup-targets';
+import { useAddFlow } from '../hooks/use-add-flow';
+import { useBulkSelection } from '../hooks/use-bulk-selection';
+import { useEscape } from '../hooks/use-escape';
+import { useLineupEdits } from '../hooks/use-lineup-edits';
+import { useLineupMapCounts } from '../hooks/use-lineup-map-counts';
 import { useMapLineups } from '../hooks/use-map-lineups';
-import { LineupPlate } from './LineupPlate';
-import { LineupsFilterSidebar } from './LineupsFilterSidebar';
+import { LineupConfirmDialog } from './LineupConfirmDialog';
+import { LineupFormModal } from './LineupFormModal';
+import { LineupPhotoViewer } from './LineupPhotoViewer';
 import { LineupsHeader } from './LineupsHeader';
-import { LineupsListSidebar } from './LineupsListSidebar';
-import { LineupsRecordDialogs } from './LineupsRecordDialogs';
-import { LineupVariantsDialog } from './LineupVariantsDialog';
+import { LineupsMap } from './LineupsMap';
+import { LineupsPanel, panelModeOf } from './LineupsPanel';
+import { LineupsSidebar } from './LineupsSidebar';
 
-type SideScope = 'ALL' | 'CT' | 'T';
-type KindScope = 'all' | UtilityKind;
-type Point = LineupPoint;
-
+/**
+ * The lineups screen: a map's lineups by where they land, one panel that is whatever the reader is
+ * doing, and no mode to find first. A reader picks a target to read how to throw it, edits the
+ * position they are looking at, or adds a new one — each begins from a button that says so.
+ */
 export function LineupsView() {
   const t = useT();
-  const [mode, setMode] = useState<InteractionMode>('view');
   const [map, setMap] = useState<MapId>('de_mirage');
-  const [side, setSide] = useState<SideScope>('ALL');
-  const [kind, setKind] = useState<KindScope>('all');
-  const [tag, setTag] = useState<LineupTagFilter>('all');
-  const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectedNodes, setSelectedNodes] = useState<readonly SelectedLineupNode[]>([]);
-  const [editGrenadeKind, setEditGrenadeKind] = useState<UtilityKind>('smoke');
-  const [origin, setOrigin] = useState<Point | null>(null);
-  const [draftWaypoints, setDraftWaypoints] = useState<Point[]>([]);
-  const [isAddingBounce, setIsAddingBounce] = useState(false);
-  const [isPlacing, setIsPlacing] = useState(false);
-  const [editingLineup, setEditingLineup] = useState<Lineup | null>(null);
-  const [detailLineup, setDetailLineup] = useState<Lineup | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [draftLanding, setDraftLanding] = useState<Point | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [selectedVariants, setSelectedVariants] = useState<SelectedVariants | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { lineups, reload, deleteLineup, importLineups, exportLineups } = useMapLineups(map);
+  const [scope, setScope] = useState(NO_SCOPE);
+  const [pick, setPick] = useState<LineupPick>(NO_PICK);
+  const [isEditing, setIsEditing] = useState(false);
+  const [move, setMove] = useState<PointMove | null>(null);
+  const [formLineup, setFormLineup] = useState<Lineup | null>(null);
+  const [removal, setRemoval] = useState<{ ids: readonly string[]; message: string } | null>(null);
+  const [viewer, setViewer] = useState<{ lineup: Lineup; index: number } | null>(null);
 
-  const {
-    filteredLineups,
-    selectedIndex,
-    hoveredIndex,
-    originGroups,
-    landingGroups,
-    selectedGroup,
-    selectedNodes: visibleSelectedNodes,
-    selectedLineupIds,
-    mergeTarget,
-  } = useLineupViewData({
-    lineups,
-    side,
-    kind,
-    tag,
-    search,
-    selectedId,
-    hoveredId,
-    selectedIds,
-    selectedNodes,
-    selectedVariants,
-  });
-  const { handleToggleSelectId, handleClearSelection, handleSelectMarker, handleSelectNode } =
-    createLineupSelectionActions({
-      mode,
-      filteredLineups,
-      originGroups,
-      landingGroups,
-      selectedIds,
-      selectedNodes,
-      setSelectedId,
-      setSelectedIds,
-      setSelectedNodes,
-      setSelectedVariants,
-      setDetailLineup,
-    });
-  const {
-    handleMergeLandings,
-    handleMergeOrigins,
-    handleMergeSelected,
-    handleDeleteSelected,
-    handleUnmergeLineup,
-    handleUnmergeSelected,
-  } = useLineupGroupActions({
-    lineups,
-    filteredLineups,
-    selectedIds: selectedLineupIds,
-    mergeTarget,
-    setSelectedIds,
-    setSelectedNodes,
-    setSelectedId,
-    setNotice,
+  const { lineups, loading, reload, importLineups, exportLineups } = useMapLineups(map);
+  const counts = useLineupMapCounts(map, loading ? null : lineups.length);
+
+  const shown = useMemo(() => withMove(lineups, move), [lineups, move]);
+  const criteria = useMemo(
+    () => ({ side: scope.side, tag: scope.tag, search: scope.search }),
+    [scope.side, scope.tag, scope.search],
+  );
+  const filtered = useMemo(
+    () => filterLineups(shown, { ...criteria, kind: scope.kind }),
+    [shown, criteria, scope.kind],
+  );
+  const kindCounts = useMemo(() => countsByKind(shown, criteria), [shown, criteria]);
+  const targets = useMemo(() => lineupTargets(map, filtered), [map, filtered]);
+
+  const selected =
+    targets.find((target) => target.id === pick.targetId) ??
+    targets.find((target) => target.variants.some(({ id }) => id === pick.variantId)) ??
+    null;
+  const variant =
+    selected?.variants.find(({ id }) => id === pick.variantId) ?? selected?.variants[0] ?? null;
+  const isEditingNow = isEditing && variant !== null;
+
+  const edits = useLineupEdits({ map, lineups, reload });
+  const add = useAddFlow({
+    map,
     reload,
-    deleteLineup,
-  });
-  const { handleUpdateLineupPoint, handleAddBounceToLineup, handleDeleteBounceFromLineup } =
-    useLineupPointActions({
-      lineups,
-      map,
-      reload,
-      setNotice,
-      setSelectedId,
-      setSelectedNodes,
-    });
-
-  const { handlePlacePoint, handleCancelPlacement, dismissForm } = useLineupPlacement({
-    origin,
-    setOrigin,
-    setDraftWaypoints,
-    setIsAddingBounce,
-    setIsPlacing,
-    setDraftLanding,
-    setIsModalOpen,
-    setEditingLineup,
+    onSaved: (id) => {
+      setScope(NO_SCOPE);
+      setPick({ targetId: null, variantId: id, openStack: null });
+    },
   });
 
-  const handleFileChange = useLineupImport(importLineups, setNotice);
+  const selection = useBulkSelection(targets);
+  const { bulk } = selection;
 
-  const isEditing = mode === 'edit';
-  const merge = mergeAvailability(mode, visibleSelectedNodes.length, mergeTarget);
-  const editOnly = <T,>(handler: T): T | undefined => (isEditing ? handler : undefined);
-
-  const handleEnterCoordinates = () => {
-    setIsPlacing(false);
-    setOrigin(null);
-    setDraftWaypoints([]);
-    setIsAddingBounce(false);
-    setDraftLanding(null);
-    setIsModalOpen(true);
+  const letGo = () => {
+    setPick(clearPick);
+    setIsEditing(false);
+    setMove(null);
+  };
+  const resetScreen = () => {
+    letGo();
+    add.cancel();
+    selection.stopSelecting();
   };
 
-  const handleEditLineup = (lineup: Lineup) => {
-    setDetailLineup(null);
-    setEditingLineup(lineup);
-    setIsModalOpen(true);
+  useEscape(formLineup === null && viewer === null && removal === null, () => {
+    if (add.draft !== null) add.cancel();
+    else if (isEditing) setIsEditing(false);
+    else letGo();
+  });
+
+  const pickId = (id: string) => {
+    setIsEditing(false);
+    setPick(pickTarget(id));
+  };
+  const startAdd = () => {
+    letGo();
+    selection.stopSelecting();
+    add.start(scope.kind, scope.side);
+  };
+  const commit = async (finished: PointMove) => {
+    await edits.commitMove(finished);
+    setMove(null);
+  };
+  const askRemoval = (ids: readonly string[], message: string) => {
+    if (ids.length > 0) setRemoval({ ids, message });
+  };
+  const removeConfirmed = async (ids: readonly string[]) => {
+    setRemoval(null);
+    await edits.remove(ids);
+    selection.clear();
+    letGo();
+  };
+  const afterBulk = async (done: Promise<boolean>) => {
+    await done;
+    selection.clear();
   };
 
-  const handleDeleteLineup = (id: string) => {
-    void deleteLineup(id).then(() => setSelectedId(null));
-  };
+  const mode = panelModeOf(add.draft, selected, variant, isEditing);
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col gap-3 lg:h-full lg:min-h-0">
       <LineupsHeader
-        mode={mode}
-        count={filteredLineups.length}
-        setMode={setMode}
-        setIsPlacing={setIsPlacing}
-        setOrigin={setOrigin}
-        setDraftWaypoints={setDraftWaypoints}
-        setIsAddingBounce={setIsAddingBounce}
-        setIsModalOpen={setIsModalOpen}
-        setSelectedId={setSelectedId}
-        setSelectedNodes={setSelectedNodes}
-        setNotice={setNotice}
-        fileInputRef={fileInputRef}
-        handleFileChange={handleFileChange}
-        exportLineups={exportLineups}
+        map={map}
+        counts={counts}
+        ownCount={lineups.filter((lineup) => lineup.isBuiltIn !== true).length}
+        onMap={(next) => {
+          resetScreen();
+          setMap(next);
+        }}
+        onAdd={startAdd}
+        onExport={exportLineups}
+        onImport={importLineups}
       />
 
-      <div className="relative grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(11rem,13rem)_minmax(0,1fr)_minmax(16rem,20rem)] xl:block">
-        <LineupsFilterSidebar
-          map={map}
-          setMap={setMap}
-          side={side}
-          setSide={setSide}
-          kind={kind}
-          setKind={setKind}
-          tag={tag}
-          setTag={setTag}
-          mode={mode}
-          editGrenadeKind={editGrenadeKind}
-          setEditGrenadeKind={setEditGrenadeKind}
-          setSelectedId={setSelectedId}
-          setSelectedIds={setSelectedIds}
-          setSelectedNodes={setSelectedNodes}
-          setHoveredId={setHoveredId}
-          setOrigin={setOrigin}
-          setDraftWaypoints={setDraftWaypoints}
-          setIsAddingBounce={setIsAddingBounce}
-          setIsPlacing={setIsPlacing}
-          isPlacing={isPlacing}
-          origin={origin}
-          isAddingBounce={isAddingBounce}
-          notice={notice}
-          handleCancelPlacement={handleCancelPlacement}
-          onEnterCoordinates={handleEnterCoordinates}
+      <div className="grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,14.5rem)_minmax(0,1fr)_minmax(0,16rem)] wide:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_minmax(0,22rem)]">
+        <LineupsSidebar
+          scope={scope}
+          onScope={(next) => {
+            letGo();
+            setScope(next);
+          }}
+          kindCounts={kindCounts}
+          totalCount={lineups.length}
+          targets={targets}
+          selectedId={selected?.id ?? null}
+          isSelecting={selection.isSelecting}
+          checkedIds={selection.checkedIds}
+          bulk={bulk}
+          onPick={pickId}
+          onCheck={selection.toggle}
+          onToggleSelecting={selection.toggleSelecting}
+          onClearChecked={selection.clear}
+          onMergeLandings={() => void afterBulk(edits.merge(bulk.lineups, 'landing'))}
+          onMergeOrigins={() => void afterBulk(edits.merge(bulk.lineups, 'origin'))}
+          onUngroup={() => void afterBulk(edits.ungroup(new Set(bulk.lineups.map(({ id }) => id))))}
+          onDelete={() =>
+            askRemoval(
+              bulk.deletable.map(({ id }) => id),
+              t('library.lineups.deleteSelectedConfirm', { count: bulk.deletable.length }),
+            )
+          }
         />
 
-        <section
-          aria-label={t('library.lineups.map')}
-          className="grid min-h-[28rem] min-w-0 place-items-center overflow-hidden rounded-float border border-line bg-surface-1 lg:min-h-0 lg:[container-type:size] xl:absolute xl:inset-0"
-        >
-          <LineupPlate
-            map={map}
-            lineups={filteredLineups}
-            focused={focusedLineupIndex(selectedIndex, hoveredIndex)}
-            selectedIds={selectedLineupIds}
-            mode={mode}
-            selectedNodes={visibleSelectedNodes}
-            onSelect={handleSelectMarker}
-            onSelectNode={handleSelectNode}
-            onPlacePoint={handlePlacePoint}
-            isPlacing={isPlacing}
-            isAddingBounce={isAddingBounce}
-            onToggleAddBounce={() => setIsAddingBounce((prev) => !prev)}
-            onCancelPlacement={handleCancelPlacement}
-            draftOrigin={origin}
-            draftWaypoints={draftWaypoints}
-            onUpdatePoint={editOnly(handleUpdateLineupPoint)}
-            onMergeSelected={merge.selected ? handleMergeSelected : undefined}
-            onMergeLandings={merge.landings ? handleMergeLandings : undefined}
-            onMergeOrigins={merge.origins ? handleMergeOrigins : undefined}
-            onUnmergeLineup={editOnly(handleUnmergeLineup)}
-            onAddBounceToLineup={editOnly(handleAddBounceToLineup)}
-            onDeleteBounceFromLineup={editOnly(handleDeleteBounceFromLineup)}
-            onEditLineup={editOnly(handleEditLineup)}
-            onDeleteLineup={editOnly(handleDeleteLineup)}
-            onDeleteSelected={editOnly(handleDeleteSelected)}
-          />
-        </section>
+        <LineupsMap
+          key={map}
+          map={map}
+          targets={targets}
+          selected={selected}
+          activeVariantId={variant?.id ?? null}
+          openStack={pick.openStack}
+          draft={add.draft}
+          editing={isEditingNow ? variant.lineup : null}
+          onSelectTarget={pickId}
+          onSelectVariant={(id) => setPick((current) => ({ ...current, variantId: id }))}
+          onOpenStack={(id) => setPick((current) => ({ ...current, openStack: id }))}
+          onClear={letGo}
+          onPlace={add.place}
+          onCancelAdd={add.cancel}
+          onMove={setMove}
+          onCommit={(finished) => void commit(finished)}
+        />
 
-        <LineupsListSidebar
-          filteredLineups={filteredLineups}
-          hoveredIndex={hoveredIndex}
-          selectedIndex={selectedIndex >= 0 ? selectedIndex : null}
-          selectedIds={selectedLineupIds}
-          mergeTarget={mergeTarget}
+        <LineupsPanel
+          map={map}
           mode={mode}
-          search={search}
-          setSearch={setSearch}
-          setHoveredId={setHoveredId}
-          setSelectedId={setSelectedId}
-          setDetailLineup={setDetailLineup}
-          handleToggleSelectId={handleToggleSelectId}
-          handleMergeSelected={merge.list ? handleMergeSelected : undefined}
-          handleUnmergeSelected={handleUnmergeSelected}
-          handleDeleteSelected={handleDeleteSelected}
-          handleClearSelection={handleClearSelection}
+          targets={targets}
+          isSaving={add.isSaving}
+          hasFailed={add.hasFailed}
+          actions={{
+            onPick: pickId,
+            onVariant: (id) => setPick((current) => ({ ...current, variantId: id })),
+            onClose: letGo,
+            onAdd: startAdd,
+            onEdit: () => setIsEditing(true),
+            onAnother: () => {
+              if (selected === null || variant === null) return;
+              setIsEditing(false);
+              add.startAnother(selected, variant.lineup.side);
+            },
+            onOpenPhoto: (index) => {
+              if (variant !== null) setViewer({ lineup: variant.lineup, index });
+            },
+            onDone: () => setIsEditing(false),
+            onDetails: setFormLineup,
+            onAddBounce: (lineup) => void edits.addBounce(lineup),
+            onRemoveBounce: (lineup, index) => void edits.removeBounce(lineup, index),
+            onUngroup: (lineup) => void edits.ungroup(new Set([lineup.id])),
+            onDelete: (lineup) => askRemoval([lineup.id], t('library.lineups.deleteConfirm')),
+            onDraft: add.update,
+            onRedo: add.redo,
+            onSave: (photos) => void add.save(photos),
+            onCancelAdd: add.cancel,
+          }}
         />
       </div>
 
-      <LineupVariantsDialog
-        selectedVariants={selectedVariants}
-        selectedGroup={selectedGroup}
-        onDismiss={() => setSelectedVariants(null)}
-        onSelectLineup={(lineup) => {
-          setSelectedId(lineup.id);
-          setDetailLineup(lineup);
-        }}
-      />
+      {formLineup !== null && (
+        <LineupFormModal
+          isOpen
+          onDismiss={() => setFormLineup(null)}
+          initialData={formLineup}
+          defaultMap={map}
+          onSaved={() => void reload()}
+        />
+      )}
 
-      <LineupsRecordDialogs
-        mode={mode}
-        detailLineup={detailLineup}
-        setDetailLineup={setDetailLineup}
-        isModalOpen={isModalOpen}
-        editingLineup={editingLineup}
-        setEditingLineup={setEditingLineup}
-        setIsModalOpen={setIsModalOpen}
-        origin={origin}
-        draftLanding={draftLanding}
-        draftWaypoints={draftWaypoints}
-        map={map}
-        editGrenadeKind={editGrenadeKind}
-        dismissForm={dismissForm}
-        deleteLineup={deleteLineup}
-        setSelectedId={setSelectedId}
-        reload={reload}
-      />
+      {removal !== null && (
+        <LineupConfirmDialog
+          message={removal.message}
+          confirmLabel={t('library.lineups.confirm.delete')}
+          cancelLabel={t('library.lineups.form.cancel')}
+          isDestructive
+          onConfirm={() => void removeConfirmed(removal.ids)}
+          onCancel={() => setRemoval(null)}
+        />
+      )}
+
+      {viewer !== null && (
+        <LineupPhotoViewer
+          lineup={viewer.lineup}
+          index={viewer.index}
+          onDismiss={() => setViewer(null)}
+        />
+      )}
     </div>
   );
 }

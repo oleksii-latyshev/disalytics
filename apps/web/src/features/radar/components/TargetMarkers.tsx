@@ -1,9 +1,10 @@
-import type { LineupTarget, LineupVariant, UtilityKind } from '@disa/demo-core';
+import type { LineupTarget, UtilityKind } from '@disa/demo-core';
 import type { MapOverview, PlateLayout } from '@disa/map-data';
 import { plateX, plateY } from '@disa/map-data';
 import { Bookmark } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
+import type { PlateTarget } from '../helpers/plate-target';
 import type { TargetStack } from '../helpers/target-stacks';
 
 /** The kind is data and so is its colour (§17 rule 4); everything else on a marker is ink. */
@@ -16,9 +17,9 @@ const KIND_RING: Readonly<Record<UtilityKind, string>> = {
   kit: 'border-ink-dim',
 };
 
-export interface PlateLabels {
-  readonly target: (target: LineupTarget) => string;
-  readonly origin: (number: number, variant: LineupVariant) => string;
+export interface PlateLabels<T extends PlateTarget = LineupTarget> {
+  readonly target: (target: T) => string;
+  readonly origin: (number: number, variant: T['variants'][number]) => string;
   readonly stack: (targets: number, throws: number) => string;
 }
 
@@ -45,30 +46,44 @@ function opacityClass(isDimmed: boolean, isQuiet: boolean): string {
   return isQuiet ? 'opacity-70' : '';
 }
 
-interface TargetMarkerProps {
-  members: readonly LineupTarget[];
+/** Longest a marker waits to arrive, so the last of a crowded map is not seconds behind the first. */
+const MAX_POP_DELAY_MS = 600;
+const POP_STEP_MS = 40;
+const ORIGIN_POP_START_MS = 120;
+const ORIGIN_POP_STEP_MS = 60;
+
+function popDelay(delayMs: number): CSSProperties {
+  return { '--pop-delay': `${Math.min(delayMs, MAX_POP_DELAY_MS)}ms` } as CSSProperties;
+}
+
+interface TargetMarkerProps<T extends PlateTarget> {
+  members: readonly T[];
   isPicked: boolean;
   isDimmed: boolean;
   isSaved: boolean;
   isOpen: boolean;
+  isAnimated: boolean;
+  delayMs: number;
   style: CSSProperties;
-  labels: PlateLabels;
+  labels: PlateLabels<T>;
   onSelect: (id: string) => void;
   onToggleStack: (id: string | null) => void;
 }
 
 /** One target, or the stack that stands for several whose markers would overlap. */
-function TargetMarker({
+function TargetMarker<T extends PlateTarget>({
   members,
   isPicked,
   isDimmed,
   isSaved,
   isOpen,
+  isAnimated,
+  delayMs,
   style,
   labels,
   onSelect,
   onToggleStack,
-}: TargetMarkerProps) {
+}: TargetMarkerProps<T>) {
   const lead = members[0];
   if (lead === undefined) return null;
 
@@ -86,8 +101,8 @@ function TargetMarker({
       aria-pressed={isPicked}
       aria-expanded={isStack ? isOpen : undefined}
       onClick={() => (isStack ? onToggleStack(isOpen ? null : lead.id) : onSelect(lead.id))}
-      style={style}
-      className={`${MARKER} ${look} ${ring} ${opacityClass(isDimmed, !isStack && lead.throwCount === 1)}`}
+      style={isAnimated ? { ...style, ...popDelay(delayMs) } : style}
+      className={`${MARKER} ${look} ${ring} ${opacityClass(isDimmed, !isStack && lead.throwCount === 1)} ${isAnimated ? 'plate-marker' : ''}`}
     >
       {isStack ? (
         <span className="numeric font-semibold text-12">{members.length}</span>
@@ -106,16 +121,18 @@ function TargetMarker({
   );
 }
 
-interface Props {
+interface Props<T extends PlateTarget> {
   overview: MapOverview;
   layout: PlateLayout;
   stacks: readonly TargetStack[];
-  targets: ReadonlyMap<string, LineupTarget>;
-  selected: LineupTarget | null;
+  targets: ReadonlyMap<string, T>;
+  selected: T | null;
   activeVariantId: string | null;
   savedVariantIds: ReadonlySet<string>;
   openStack: string | null;
-  labels: PlateLabels;
+  labels: PlateLabels<T>;
+  /** Whether markers arrive one after another and lift under the pointer. */
+  isAnimated?: boolean;
   onSelectTarget: (id: string) => void;
   onSelectVariant: (id: string) => void;
   onOpenStack: (id: string | null) => void;
@@ -130,8 +147,9 @@ interface Props {
  * **A picked target dissolves the stack it was in**: its marker stands alone, and its neighbours in
  * that stack are not drawn, since a menu that lists them has nowhere to open while a lineup is.
  */
-export function TargetMarkers(props: Props) {
+export function TargetMarkers<T extends PlateTarget>(props: Props<T>) {
   const { overview, layout, stacks, targets, selected, savedVariantIds, openStack, labels } = props;
+  const isAnimated = props.isAnimated === true;
 
   const place = (x: number, y: number): CSSProperties => ({
     left: percent(x, layout.width),
@@ -140,7 +158,7 @@ export function TargetMarkers(props: Props) {
 
   return (
     <>
-      {stacks.map((stack) => {
+      {stacks.map((stack, stackIndex) => {
         const holdsSelected = selected !== null && stack.ids.includes(selected.id);
         const members = holdsSelected
           ? [selected]
@@ -156,6 +174,8 @@ export function TargetMarkers(props: Props) {
             isDimmed={selected !== null && !holdsSelected}
             isSaved={lead.variants.some((variant) => savedVariantIds.has(variant.id))}
             isOpen={openStack === lead.id}
+            isAnimated={isAnimated}
+            delayMs={selected === null ? stackIndex * POP_STEP_MS : 0}
             style={place(stack.x, stack.y)}
             labels={labels}
             onSelect={props.onSelectTarget}
@@ -174,11 +194,14 @@ export function TargetMarkers(props: Props) {
             aria-label={labels.origin(index + 1, variant)}
             aria-pressed={isActive}
             onClick={() => props.onSelectVariant(variant.id)}
-            style={place(
-              plateX(overview, variant.origin.x, variant.origin.z),
-              plateY(overview, variant.origin.y, variant.origin.z),
-            )}
-            className={`${MARKER} numeric font-semibold ${isActive ? 'z-7 size-8 border-surface-0 bg-ink text-13 text-surface-0 ring-2 ring-ink' : 'z-6 size-6 border-line-strong bg-surface-3 text-12 text-ink'}`}
+            style={{
+              ...place(
+                plateX(overview, variant.origin.x, variant.origin.z),
+                plateY(overview, variant.origin.y, variant.origin.z),
+              ),
+              ...(isAnimated ? popDelay(ORIGIN_POP_START_MS + index * ORIGIN_POP_STEP_MS) : {}),
+            }}
+            className={`${MARKER} ${isAnimated ? 'plate-marker' : ''} numeric font-semibold ${isActive ? 'z-7 size-8 border-surface-0 bg-ink text-13 text-surface-0 ring-2 ring-ink' : 'z-6 size-6 border-line-strong bg-surface-3 text-12 text-ink'}`}
           >
             {index + 1}
             {savedVariantIds.has(variant.id) && (

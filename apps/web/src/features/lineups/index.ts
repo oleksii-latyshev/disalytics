@@ -1,4 +1,3 @@
-export { LineupDetailModal } from './components/LineupDetailModal';
 export {
   buildLineupFromForm,
   initFormValues,

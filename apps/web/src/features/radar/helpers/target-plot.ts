@@ -7,13 +7,14 @@ import {
 import { type MapOverview, plateX, plateY } from '@disa/map-data';
 import type { RadarColors } from './colors';
 import { grenadeColor } from './grenades';
+import type { PlateTarget } from './plate-target';
 import type { DotPlot, SelectionPlot } from './target-layer';
 import type { StackPoint } from './target-stacks';
 
 /** Where each target lands on the plate, most used first as given. */
 export function targetPoints(
   overview: MapOverview,
-  targets: readonly LineupTarget[],
+  targets: readonly Pick<PlateTarget, 'id' | 'landing'>[],
 ): readonly StackPoint[] {
   return targets.map(({ id, landing }) => ({
     id,

@@ -365,11 +365,6 @@
     "onTheMove": "Броски на ходу",
     "onTheMoveNote": "Их не повторить по лайнапу — только точки на карте",
     "myLineups": "Мои лайнапы",
-    "legend": {
-      "landed": "куда упала",
-      "origin": "откуда бросали",
-      "path": "траектория, условно"
-    },
     "stack": {
       "title": "Здесь падают · {count, number}",
       "aria": "{targets, plural, one {# точка} few {# точки} many {# точек} other {# точки}} здесь, {throws, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}"

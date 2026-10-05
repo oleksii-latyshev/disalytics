@@ -106,4 +106,15 @@ describe('updateLineupsAtPoint', () => {
       ['a', [{ x: 9, y: 10, z: 3 }]],
     ]);
   });
+
+  it('takes the altitude it is given, which is how a point reaches another floor', () => {
+    const updated = updateLineupsAtPoint({
+      lineups: [lineup('a')],
+      lineupId: 'a',
+      target: 'origin',
+      point: { x: 7, y: 8, z: -600 },
+    });
+
+    expect(updated?.[0]?.origin).toEqual({ x: 7, y: 8, z: -600 });
+  });
 });
