@@ -195,7 +195,7 @@ per whole sentence. Locale: stored → `navigator.language` → `en`. Use the `i
 ## 12. PWA
 
 `file_handlers` on `/open` → `useLaunchedFiles` → the same `open` as a drop. `sw.ts` precaches
-`**/*.{html,css,js}`, routes navigations to `index.html`; `useWorkerUpdate` waits for the reader's press.
+`**/*.{html,css,js}`, routes navigations to `index.html`; `useWorkerUpdate` waits for the reader's press. Incompatible JS/CSS MIME types are cache misses or, from the network, installation failures.
 
 ## 13. Hosting — Cloudflare Workers (static assets)
 

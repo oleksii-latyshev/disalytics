@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import {
+  addPlugins,
   cleanupOutdatedCaches,
   createHandlerBoundToURL,
   type PrecacheEntry,
@@ -8,6 +9,7 @@ import {
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 // Past the barrel on purpose: the barrel is the page's hook, and this bundle must not carry React.
 import { SKIP_WAITING_MESSAGE } from './core/pwa/constants/messages';
+import { precacheResponseMimePlugin } from './core/pwa/helpers/precache-response';
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: (PrecacheEntry | string)[];
@@ -20,6 +22,7 @@ self.addEventListener('message', (event) => {
 });
 
 cleanupOutdatedCaches();
+addPlugins([precacheResponseMimePlugin]);
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Cloudflare supplies the online SPA fallback; the worker supplies it offline.
