@@ -1,7 +1,14 @@
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { type Binary, binaryMismatch, staleFamilies } from './size/chunks';
+import {
+  type Binary,
+  binaryMismatch,
+  precachedUrls,
+  staleFamilies,
+  strayScripts,
+} from './size/chunks';
+import { type Manifest, SCREENS, screenFiles } from './size/screens';
 
 // Decimal kB/MB, the unit Vite's own build report and the §16 measurements are written in.
 const JS_BUDGET_BYTES = 500_000;
@@ -9,6 +16,7 @@ const WASM_BUDGET_BYTES = 4_000_000;
 const WASM_HARD_FAIL_BYTES = 24_000_000;
 
 const DIST_DIR = 'apps/web/dist';
+const MANIFEST_PATH = join(DIST_DIR, '.vite', 'manifest.json');
 const LOCALES_DIR = 'packages/i18n/src/locales';
 const CRATES_DIR = 'crates';
 
@@ -60,25 +68,54 @@ function row(label: string, right: string, note: string): string {
   return `  ${label.padEnd(38)}${right.padStart(14)}   ${note}`;
 }
 
+/**
+ * A Turborepo cache hit restores dist/ without emptying it and never runs Vite, so `emptyOutDir`
+ * never fires and the chunks of whatever was built here before are still on disk. Summing them
+ * reports up to double the real bundle, which is worse than reporting nothing. The manifest names
+ * exactly the chunks of the build that wrote it, so a script it does not name is left over.
+ */
+function reportLeftovers(scripts: readonly string[], listed: ReadonlySet<string>): boolean {
+  const relative = (path: string) => path.slice(DIST_DIR.length + 1);
+  const stray = strayScripts(scripts.map(relative), listed);
+  const doubled = staleFamilies(
+    scripts.filter((path) => !listed.has(relative(path))).map((path) => basename(path)),
+  );
+  if (stray.length === 0 && doubled.length === 0) return false;
+
+  console.error(`${DIST_DIR} holds more than one build's output, so no total is honest:\n`);
+  for (const name of stray) console.error(`  not in the manifest:  ${name}`);
+  for (const { family, names } of doubled) console.error(`  ${family}:  ${names.join('  ')}`);
+  console.error(`\nRun \`rm -rf ${DIST_DIR} && bun run build\`, then measure again.`);
+  return true;
+}
+
+/**
+ * Every chunk a screen can ask for has to be in the service worker's precache, or the screen that
+ * lazy-loads it fails offline (AGENTS.md §12).
+ */
+async function unprecachedChunks(listed: ReadonlySet<string>): Promise<readonly string[]> {
+  const serviceWorker = Bun.file(join(DIST_DIR, 'sw.js'));
+  const precached = (await serviceWorker.exists())
+    ? precachedUrls(await serviceWorker.text())
+    : new Set<string>();
+
+  return [...listed].filter((file) => file.endsWith('.js') && !precached.has(file));
+}
+
 async function checkJsBundle(): Promise<boolean> {
-  const files = await walk(DIST_DIR);
-  const scripts = files.filter((path) => path.endsWith('.js'));
+  const scripts = (await walk(DIST_DIR)).filter((path) => path.endsWith('.js'));
 
   if (scripts.length === 0) {
     console.error(`No .js emitted under ${DIST_DIR}. Run \`bun run build\` first.`);
     return false;
   }
-
-  // A Turborepo cache hit restores dist/ without emptying it and never runs Vite, so `emptyOutDir`
-  // never fires and the chunks of whatever was built here before are still on disk. Summing them
-  // reports up to double the real bundle, which is worse than reporting nothing.
-  const stale = staleFamilies(scripts.map((path) => basename(path)));
-  if (stale.length > 0) {
-    console.error(`${DIST_DIR} holds more than one build's output, so no total is honest:\n`);
-    for (const { family, names } of stale) console.error(`  ${family}:  ${names.join('  ')}`);
-    console.error(`\nRun \`rm -rf ${DIST_DIR} && bun run build\`, then measure again.`);
+  if (!existsSync(MANIFEST_PATH)) {
+    console.error(`${MANIFEST_PATH} is missing: set build.manifest in apps/web/vite.config.ts.`);
     return false;
   }
+  const manifest = (await Bun.file(MANIFEST_PATH).json()) as Manifest;
+  const listed = new Set(Object.values(manifest).map((chunk) => chunk.file));
+  if (reportLeftovers(scripts, listed)) return false;
 
   const locales = await readLocales();
   const isLocaleChunk = (name: string) =>
@@ -90,32 +127,53 @@ async function checkJsBundle(): Promise<boolean> {
     .filter((entry) => isLocaleChunk(entry.name))
     .sort((a, b) => b.gzip - a.gzip);
 
-  // The budget is one locale: the app loads exactly one chunk, so the heaviest is the honest
-  // worst case and the rest are not shipped to any single visitor.
+  // The app loads exactly one locale chunk, so the heaviest is the honest worst case.
   const heaviestLocale = localeChunks.at(0);
-  const counted = heaviestLocale === undefined ? shared : [...shared, heaviestLocale];
-  const total = counted.reduce((sum, entry) => sum + entry.gzip, 0);
-  const withinBudget = total <= JS_BUDGET_BYTES;
+  const localeGzip = heaviestLocale?.gzip ?? 0;
+  const allChunks = shared.reduce((sum, entry) => sum + entry.gzip, localeGzip);
 
-  console.log('JS bundle — excluding WASM, single locale (AGENTS.md §16)\n');
-  for (const entry of shared.sort((a, b) => b.gzip - a.gzip)) {
-    console.log(row(entry.name, `${kb(entry.gzip)} gz`, `${kb(entry.raw)} raw`));
+  // The service worker and the parse worker are not manifest chunks, and every screen can ask for
+  // both: the first registers on any visit, the second starts on the first drop.
+  const byFile = new Map(shared.map((entry) => [`assets/${entry.name}`, entry.gzip]));
+  const unlistedGzip = shared
+    .filter((entry) => !listed.has(`assets/${entry.name}`))
+    .reduce((sum, entry) => sum + entry.gzip, 0);
+
+  const screens = SCREENS.map((screen) => {
+    const files = screenFiles(manifest, screen);
+    const js = [...files].reduce((sum, file) => sum + (byFile.get(file) ?? 0), 0);
+    return { name: screen.name, files: files.size, gzip: js + localeGzip + unlistedGzip };
+  });
+
+  console.log('JS a screen loads — excluding WASM, single locale (AGENTS.md §16)\n');
+  for (const screen of screens) {
+    const share = ((screen.gzip / JS_BUDGET_BYTES) * 100).toFixed(1);
+    console.log(
+      row(screen.name, `${kb(screen.gzip)} gz`, `${screen.files} chunks, ${share}% of the budget`),
+    );
   }
-  if (heaviestLocale !== undefined) {
-    const note =
-      localeChunks.length === 1
-        ? 'the only locale chunk'
-        : `heaviest of ${localeChunks.length} locale chunks`;
-    console.log(row(heaviestLocale.name, `${kb(heaviestLocale.gzip)} gz`, note));
-  }
+  const noteLocale =
+    heaviestLocale === undefined
+      ? ''
+      : `${heaviestLocale.name} (heaviest of ${localeChunks.length}) `;
   console.log(
-    `\n${row('total', `${kb(total)} gz`, `${((total / JS_BUDGET_BYTES) * 100).toFixed(1)}% of the ${kb(JS_BUDGET_BYTES)} budget`)}`,
+    `\n  each screen counts ${noteLocale}${kb(localeGzip)} and the service and parse workers ${kb(unlistedGzip)}`,
   );
+  console.log(row('all chunks, for information', `${kb(allChunks)} gz`, `${shared.length} chunks`));
 
-  if (!withinBudget) {
-    console.error(`\nJS bundle is over budget: ${kb(total)} gzip against ${kb(JS_BUDGET_BYTES)}.`);
+  const unprecached = await unprecachedChunks(listed);
+  if (unprecached.length > 0) {
+    console.error(`\nChunks missing from the service worker's precache, so offline breaks:`);
+    for (const file of unprecached) console.error(`  ${file}`);
   }
-  return withinBudget;
+
+  const over = screens.filter((screen) => screen.gzip > JS_BUDGET_BYTES);
+  for (const screen of over) {
+    console.error(
+      `\n"${screen.name}" is over budget: ${kb(screen.gzip)} gzip against ${kb(JS_BUDGET_BYTES)}.`,
+    );
+  }
+  return over.length === 0 && unprecached.length === 0;
 }
 
 async function binaries(dir: string): Promise<Binary[]> {

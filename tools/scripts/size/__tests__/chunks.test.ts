@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { binaryMismatch, chunkFamily, staleFamilies } from '../chunks';
+import { binaryMismatch, chunkFamily, precachedUrls, staleFamilies, strayScripts } from '../chunks';
 
 const CLEAN_BUILD = [
   'index-DWy4kbDR.js',
@@ -57,6 +57,38 @@ describe('staleFamilies', () => {
     ]);
 
     expect(stale.map((entry) => entry.family)).toEqual(['en', 'index', 'ru']);
+  });
+});
+
+describe('strayScripts', () => {
+  const listed = new Set(['assets/index-A.js', 'assets/src-A.js', 'assets/src-B.js']);
+
+  it('accepts several chunks of one family when the manifest names them all', () => {
+    expect(
+      strayScripts(['assets/index-A.js', 'assets/src-A.js', 'assets/src-B.js'], listed),
+    ).toEqual([]);
+  });
+
+  it('accepts the two workers the manifest does not list', () => {
+    expect(strayScripts(['assets/worker-EJ08cHP3.js', 'sw.js'], listed)).toEqual([]);
+  });
+
+  it('catches a chunk an earlier build left on disk', () => {
+    expect(strayScripts(['assets/index-A.js', 'assets/index-STALE000.js'], listed)).toEqual([
+      'assets/index-STALE000.js',
+    ]);
+  });
+});
+
+describe('precachedUrls', () => {
+  it('reads the entries Workbox injects, quoted or not', () => {
+    const worker = 'x([{"revision":null,"url":"assets/a-A.js"},{revision:"r",url:"index.html"}])';
+
+    expect([...precachedUrls(worker)]).toEqual(['assets/a-A.js', 'index.html']);
+  });
+
+  it('finds none in a worker that was never injected', () => {
+    expect(precachedUrls('precacheAndRoute(self.__WB_MANIFEST)').size).toBe(0);
   });
 });
 

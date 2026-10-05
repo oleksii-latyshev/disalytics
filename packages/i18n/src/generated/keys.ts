@@ -1092,6 +1092,7 @@ export const TRANSLATION_KEYS = [
   'review.views.analysis',
   'review.views.duels',
   'review.views.heatmap',
+  'review.views.loading',
   'review.views.more',
   'review.views.nav',
   'review.views.stage',

@@ -81,5 +81,8 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // `bun run size` reads the import graph from here to weigh what each screen loads. The app's own
+    // `sideEffects` (package.json) lets a barrel re-export stay in the chunk of the screen that uses it.
+    manifest: true,
   },
 });

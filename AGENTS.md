@@ -233,12 +233,12 @@ A regression is a blocker. Method and history live in the PR that measured each 
 | Peak memory during parse | < 1.5 GB | 897 MiB linear memory (tab memory needs COOP/COEP) |
 | Scrub / review screen playing, everything on | 60 fps | 0 frames > 16.7 ms in 3 × 399 |
 | Cached demo reopen | < 3 s | 0.02 s |
-| JS bundle excl. WASM, one locale | < 500 kB gzip | 293.14 kB (#374) |
+| JS a screen loads, one locale | < 500 kB gzip each | 429.42 kB, match lineups view (#577) |
 | WASM binary | < 4 MB (CI fails > 24 MB) | 2.66 MB, `-O3` |
 
 **Frames:** headed Chrome over CDP, built bundle, 1440×900, `visibilityState` asserted in the run,
 3 × 399 frames per arm plus a same-hour `main` baseline; count frames over 16.7 ms. **Bundle:**
-`rm -rf apps/web/dist && bun run build --force` first.
+`rm -rf apps/web/dist && bun run build --force` first; `size` weighs entry, route and view chunks.
 
 **Hard constraints:** 25 MiB per static file · no COOP/COEP, so no WASM threads · two upstream passes ·
 a background tab parses ~5× slower · `storage.persist()` may be refused · `launchQueue` is Chromium

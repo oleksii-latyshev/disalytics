@@ -77,7 +77,8 @@
     "stats": "Stats",
     "duels": "Duels",
     "heatmap": "Heat map",
-    "utility": "Lineups"
+    "utility": "Lineups",
+    "loading": "Opening the view"
   },
   "metrics": {
     "empty": "No round economy was recorded for this match.",

@@ -1,16 +1,21 @@
 import type { Frame, ParsedDemo } from '@disa/demo-core';
+import { Text } from '@disa/i18n';
+import { lazy, Suspense } from 'react';
 import type { StatsTab } from '@/core/navigation';
 import type { CacheState } from '@/core/parsing';
 import type { DuelNarrowing } from '../helpers/map-scope';
 import type { MatchView } from '../helpers/match-views';
 import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
-import { MatchDuels } from './MatchDuels';
-import { MatchHeatmap } from './MatchHeatmap';
-import { MatchStats } from './MatchStats';
-import { MatchUtility } from './MatchUtility';
 import { MatchViewBar } from './MatchViewBar';
 import { ReviewSheets } from './ReviewSheets';
+
+// One chunk per view: the stage never opens a view, and the lineup form behind the utility view
+// alone weighs more than the rest of the review screen's own code. `bun run size` reads these keys.
+const MatchStats = lazy(async () => ({ default: (await import('./MatchStats')).MatchStats }));
+const MatchDuels = lazy(async () => ({ default: (await import('./MatchDuels')).MatchDuels }));
+const MatchHeatmap = lazy(async () => ({ default: (await import('./MatchHeatmap')).MatchHeatmap }));
+const MatchUtility = lazy(async () => ({ default: (await import('./MatchUtility')).MatchUtility }));
 
 interface Props {
   demo: ParsedDemo;
@@ -60,31 +65,33 @@ export function MatchViewScreen({
           own to state, so nothing hangs under it here. */}
       <MatchViewBar view={view} onView={onView} analysisView={view} />
 
-      {view === 'stats' && (
-        <MatchStats
-          demo={demo}
-          tab={statsTab}
-          onTab={onStatsTab}
-          initialRound={roundIndex ?? 0}
-          onOpenOnStage={onOpenOnStage}
-          onPlayerView={(target, slot) => {
-            if (target === 'duels') {
-              onDuelNarrowing({ ...duelNarrowing, player: slot, pair: null, duel: null });
-            }
-            onView(target);
-          }}
-        />
-      )}
-      {view === 'duels' && (
-        <MatchDuels
-          demo={demo}
-          narrowing={duelNarrowing}
-          onNarrowing={onDuelNarrowing}
-          onOpenOnStage={onOpenOnStage}
-        />
-      )}
-      {view === 'heatmap' && <MatchHeatmap demo={demo} />}
-      {view === 'utility' && <MatchUtility demo={demo} onOpenOnStage={onOpenOnStage} />}
+      <Suspense fallback={<ViewPending />}>
+        {view === 'stats' && (
+          <MatchStats
+            demo={demo}
+            tab={statsTab}
+            onTab={onStatsTab}
+            initialRound={roundIndex ?? 0}
+            onOpenOnStage={onOpenOnStage}
+            onPlayerView={(target, slot) => {
+              if (target === 'duels') {
+                onDuelNarrowing({ ...duelNarrowing, player: slot, pair: null, duel: null });
+              }
+              onView(target);
+            }}
+          />
+        )}
+        {view === 'duels' && (
+          <MatchDuels
+            demo={demo}
+            narrowing={duelNarrowing}
+            onNarrowing={onDuelNarrowing}
+            onOpenOnStage={onOpenOnStage}
+          />
+        )}
+        {view === 'heatmap' && <MatchHeatmap demo={demo} />}
+        {view === 'utility' && <MatchUtility demo={demo} onOpenOnStage={onOpenOnStage} />}
+      </Suspense>
 
       <ReviewSheets
         demo={demo}
@@ -92,6 +99,18 @@ export function MatchViewScreen({
         roundIndex={roundIndex}
         onDismiss={onDismissSheet}
       />
+    </div>
+  );
+}
+
+/** The view's own ground while its chunk arrives, so the bar stays put and nothing jumps. */
+function ViewPending() {
+  return (
+    <div
+      role="status"
+      className="surface-card grid min-h-0 place-items-center rounded-float text-13 text-ink-dim"
+    >
+      <Text path="review.views.loading" />
     </div>
   );
 }
