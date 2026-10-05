@@ -31,12 +31,14 @@ interface Props {
   onSelectTarget: (id: string) => void;
   onSelectVariant: (id: string) => void;
   onOpenStack: (id: string | null) => void;
+  /** An empty click on the plate: whatever is picked or open is let go. */
+  onClear: () => void;
   stackMenu: (ids: readonly string[]) => ReactNode;
 }
 
 function UtilityCanvas({ overview, ...props }: Props & { overview: MapOverview }) {
   const t = useT();
-  const { targets, selected, activeVariantId, onTheMove, onOpenStack } = props;
+  const { targets, selected, activeVariantId, onTheMove, onOpenStack, onClear } = props;
 
   const [theme] = useSetting('radarTheme');
   const [palette] = useSetting('palette');
@@ -88,7 +90,7 @@ function UtilityCanvas({ overview, ...props }: Props & { overview: MapOverview }
           ref={canvasRef}
           role="img"
           aria-label={t('radar.label', { map: overview.id })}
-          onClick={() => onOpenStack(null)}
+          onClick={onClear}
           className="size-full rounded-card bg-surface-0"
         />
 

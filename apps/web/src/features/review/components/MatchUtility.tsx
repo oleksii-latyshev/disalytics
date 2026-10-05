@@ -13,7 +13,7 @@ import {
 import { useT } from '@disa/i18n';
 import { Link } from '@tanstack/react-router';
 import { Bookmark } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LineupFormModal, persistLineup, useMapLineups } from '@/features/lineups';
 import { type PlateLabels, UtilityPlate } from '@/features/radar';
 import {
@@ -30,6 +30,7 @@ import {
   type TargetNames,
   targetTitle,
 } from '../helpers/lineup-names';
+import { clearPick, type LineupPick, NO_PICK, pickTarget } from '../helpers/lineup-pick';
 import { LineupPanel } from './LineupPanel';
 import { LineupStackMenu } from './LineupStackMenu';
 import { LineupsList } from './LineupsList';
@@ -69,9 +70,7 @@ export function MatchUtility({ demo, onOpenOnStage }: Props) {
 
   const [filter, setFilter] = useState<LineupFilter>(NO_FILTER);
   const [isOnTheMoveShown, setIsOnTheMoveShown] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [variantId, setVariantId] = useState<string | null>(null);
-  const [openStack, setOpenStack] = useState<string | null>(null);
+  const [{ selectedId, variantId, openStack }, setPick] = useState<LineupPick>(NO_PICK);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
@@ -130,11 +129,32 @@ export function MatchUtility({ demo, onOpenOnStage }: Props) {
     variant === null ? undefined : catalogById.get(savedLineupId(map, variant));
 
   const pick = (id: string) => {
-    setSelectedId(id);
-    setVariantId(null);
-    setOpenStack(null);
+    setPick(pickTarget(id));
     setHasFailed(false);
   };
+  const setVariantId = (id: string) => setPick((current) => ({ ...current, variantId: id }));
+  const setOpenStack = (id: string | null) => setPick((current) => ({ ...current, openStack: id }));
+  const clear = () => setPick(clearPick);
+
+  // On `window` in the capture phase so it runs before the review's own document-level `Escape`
+  // (`clearSelection`), and `preventDefault` only when there is a pick to clear — which makes that
+  // binding stand down for this press, while an `Escape` with nothing picked still reaches it.
+  const hasPick = selectedId !== null || openStack !== null;
+  useEffect(() => {
+    if (!hasPick || isFormOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.querySelector('[data-shortcuts-suspended]') !== null) return;
+
+      event.preventDefault();
+      setPick(clearPick);
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [hasPick, isFormOpen]);
 
   const unnamed = t('review.lineups.unnamed');
   const selectedNames: TargetNames | undefined =
@@ -215,6 +235,7 @@ export function MatchUtility({ demo, onOpenOnStage }: Props) {
           onSelectTarget={pick}
           onSelectVariant={setVariantId}
           onOpenStack={setOpenStack}
+          onClear={clear}
           stackMenu={(ids) => (
             <LineupStackMenu
               targets={ids.flatMap((id) => visible.find((target) => target.id === id) ?? [])}
@@ -276,7 +297,7 @@ export function MatchUtility({ demo, onOpenOnStage }: Props) {
         }}
         onPick={pick}
         onVariant={setVariantId}
-        onClose={() => setSelectedId(null)}
+        onClose={clear}
         onOpenOnStage={(frame) => onOpenOnStage?.(frame)}
       />
 
