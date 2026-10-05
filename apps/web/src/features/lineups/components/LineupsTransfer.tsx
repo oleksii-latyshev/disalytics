@@ -41,7 +41,7 @@ export function LineupsTransfer({ mapName, ownCount, onExport, onImport }: Props
     <Popover onOpenChange={() => setOutcome(null)}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="lg" className="gap-2">
+          <Button variant="outline" className="gap-2">
             <Upload aria-hidden="true" className="size-4" />
             <Text path="library.lineups.transfer.open" />
           </Button>

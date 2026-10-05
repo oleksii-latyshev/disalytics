@@ -374,7 +374,7 @@
       "meta": "Meta",
       "old": "Old"
     },
-    "searchHint": "Search — window, connector",
+    "searchHint": "Search lineups",
     "search": "Search lineups",
     "sidebar": "Lineups of this map",
     "panel": "Lineup",
@@ -483,6 +483,11 @@
       "later": "You can add a setpos/setang command later, in Edit.",
       "save": "Save",
       "redo": "Place again"
+    },
+    "confirm": {
+      "delete": "Delete",
+      "discard": "Discard changes",
+      "keepEditing": "Keep editing"
     }
   },
   "tactics": {

@@ -229,7 +229,7 @@ export function useLineupFormController({
     JSON.stringify(values) !== JSON.stringify(initialValues) ||
     preparedImages.length > 0 ||
     newImageUrl.trim().length > 0;
-  const handleExit = useLineupFormExitGuard({ isOpen, isDirty, onDismiss });
+  const exitGuard = useLineupFormExitGuard({ isOpen, isDirty, onDismiss });
 
   return {
     values,
@@ -263,6 +263,7 @@ export function useLineupFormController({
     toggleMovementKey,
     handleImages,
     handleSave,
-    handleExit,
+    handleExit: exitGuard.handleExit,
+    exitGuard,
   };
 }

@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import type { LineupFormData } from '../helpers/lineup-form-model';
 import { useLineupFormController } from '../hooks/use-lineup-form-controller';
 import { LineupBasicFields } from './LineupBasicFields';
+import { LineupConfirmDialog } from './LineupConfirmDialog';
 import { CatboxNoticeDialog, EnlargedPhotoDialog } from './LineupPhotoDialogs';
 import { LineupPhotosField } from './LineupPhotosField';
 import { LineupTechnicalDetails } from './LineupTechnicalDetails';
@@ -67,6 +68,7 @@ export function LineupFormModal({
     handleImages,
     handleSave,
     handleExit,
+    exitGuard,
   } = useLineupFormController({ isOpen, initialData, defaultMap, onSaved, onDismiss });
   if (!isOpen) return null;
 
@@ -186,6 +188,17 @@ export function LineupFormModal({
       </form>
 
       <EnlargedPhotoDialog url={previewEnlargedUrl} onDismiss={() => setPreviewEnlargedUrl(null)} />
+
+      {exitGuard.isAsking && (
+        <LineupConfirmDialog
+          message={t('library.lineups.form.discardConfirm')}
+          confirmLabel={t('library.lineups.confirm.discard')}
+          cancelLabel={t('library.lineups.confirm.keepEditing')}
+          isDestructive
+          onConfirm={exitGuard.discard}
+          onCancel={exitGuard.keepEditing}
+        />
+      )}
 
       <CatboxNoticeDialog
         isOpen={showCatboxModal}

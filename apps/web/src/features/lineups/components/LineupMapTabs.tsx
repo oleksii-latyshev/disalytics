@@ -27,7 +27,7 @@ export function LineupMapTabs({ map, counts, onMap }: Props) {
             type="button"
             aria-current={isOn ? 'page' : undefined}
             onClick={() => onMap(id)}
-            className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-chip px-3 text-13 transition-colors duration-(--duration-micro) ease-out ${isOn ? 'bg-selected font-semibold text-ink' : 'text-ink-dim hover:bg-hover hover:text-ink'}`}
+            className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-chip px-1.5 text-12 wide:px-3 wide:text-13 transition-colors duration-(--duration-micro) ease-out ${isOn ? 'bg-selected font-semibold text-ink' : 'text-ink-dim hover:bg-hover hover:text-ink'}`}
           >
             {mapName(id)}
             <span className={`numeric text-11 ${count === 0 ? 'text-ink-faint' : 'text-ink-dim'}`}>

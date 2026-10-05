@@ -68,7 +68,7 @@ export function LineupFilters({ scope, onScope, kindCounts, totalCount }: Props)
         })}
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-1 gap-1.5">
         <fieldset className="grid min-w-0 grid-cols-3 gap-0.5 rounded-chip bg-surface-2 p-0.5">
           <legend className="sr-only">
             <Text path="library.lineups.side" />

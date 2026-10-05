@@ -13,6 +13,7 @@ import { useEscape } from '../hooks/use-escape';
 import { useLineupEdits } from '../hooks/use-lineup-edits';
 import { useLineupMapCounts } from '../hooks/use-lineup-map-counts';
 import { useMapLineups } from '../hooks/use-map-lineups';
+import { LineupConfirmDialog } from './LineupConfirmDialog';
 import { LineupFormModal } from './LineupFormModal';
 import { LineupPhotoViewer } from './LineupPhotoViewer';
 import { LineupsHeader } from './LineupsHeader';
@@ -33,6 +34,7 @@ export function LineupsView() {
   const [isEditing, setIsEditing] = useState(false);
   const [move, setMove] = useState<PointMove | null>(null);
   const [formLineup, setFormLineup] = useState<Lineup | null>(null);
+  const [removal, setRemoval] = useState<{ ids: readonly string[]; message: string } | null>(null);
   const [viewer, setViewer] = useState<{ lineup: Lineup; index: number } | null>(null);
 
   const { lineups, loading, reload, importLineups, exportLineups } = useMapLineups(map);
@@ -82,7 +84,7 @@ export function LineupsView() {
     selection.stopSelecting();
   };
 
-  useEscape(formLineup === null && viewer === null, () => {
+  useEscape(formLineup === null && viewer === null && removal === null, () => {
     if (add.draft !== null) add.cancel();
     else if (isEditing) setIsEditing(false);
     else letGo();
@@ -101,8 +103,11 @@ export function LineupsView() {
     await edits.commitMove(finished);
     setMove(null);
   };
-  const confirmRemoval = async (ids: readonly string[], confirm: string) => {
-    if (ids.length === 0 || !window.confirm(confirm)) return;
+  const askRemoval = (ids: readonly string[], message: string) => {
+    if (ids.length > 0) setRemoval({ ids, message });
+  };
+  const removeConfirmed = async (ids: readonly string[]) => {
+    setRemoval(null);
     await edits.remove(ids);
     selection.clear();
     letGo();
@@ -129,7 +134,7 @@ export function LineupsView() {
         onImport={importLineups}
       />
 
-      <div className="grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_minmax(0,20rem)] wide:grid-cols-[minmax(0,20rem)_minmax(0,1fr)_minmax(0,22.5rem)]">
+      <div className="grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,14.5rem)_minmax(0,1fr)_minmax(0,16rem)] wide:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_minmax(0,22rem)]">
         <LineupsSidebar
           scope={scope}
           onScope={(next) => {
@@ -151,7 +156,7 @@ export function LineupsView() {
           onMergeOrigins={() => void afterBulk(edits.merge(bulk.lineups, 'origin'))}
           onUngroup={() => void afterBulk(edits.ungroup(new Set(bulk.lineups.map(({ id }) => id))))}
           onDelete={() =>
-            void confirmRemoval(
+            askRemoval(
               bulk.deletable.map(({ id }) => id),
               t('library.lineups.deleteSelectedConfirm', { count: bulk.deletable.length }),
             )
@@ -202,8 +207,7 @@ export function LineupsView() {
             onAddBounce: (lineup) => void edits.addBounce(lineup),
             onRemoveBounce: (lineup, index) => void edits.removeBounce(lineup, index),
             onUngroup: (lineup) => void edits.ungroup(new Set([lineup.id])),
-            onDelete: (lineup) =>
-              void confirmRemoval([lineup.id], t('library.lineups.deleteConfirm')),
+            onDelete: (lineup) => askRemoval([lineup.id], t('library.lineups.deleteConfirm')),
             onDraft: add.update,
             onRedo: add.redo,
             onSave: (photos) => void add.save(photos),
@@ -219,6 +223,17 @@ export function LineupsView() {
           initialData={formLineup}
           defaultMap={map}
           onSaved={() => void reload()}
+        />
+      )}
+
+      {removal !== null && (
+        <LineupConfirmDialog
+          message={removal.message}
+          confirmLabel={t('library.lineups.confirm.delete')}
+          cancelLabel={t('library.lineups.form.cancel')}
+          isDestructive
+          onConfirm={() => void removeConfirmed(removal.ids)}
+          onCancel={() => setRemoval(null)}
         />
       )}
 

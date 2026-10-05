@@ -19,8 +19,8 @@ interface Props {
 /** The title, a tab per map, and the two things a reader does to their own lineups. */
 export function LineupsHeader({ map, counts, ownCount, onMap, onAdd, onExport, onImport }: Props) {
   return (
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <h1 className="font-ui font-semibold text-28 text-ink leading-tight">
+    <header className="flex flex-wrap items-center gap-x-3 gap-y-3 wide:gap-x-4">
+      <h1 className="font-ui font-semibold text-20 text-ink leading-tight wide:text-28">
         <Text path="library.lineups.title" />
       </h1>
       <LineupMapTabs map={map} counts={counts} onMap={onMap} />
@@ -31,7 +31,7 @@ export function LineupsHeader({ map, counts, ownCount, onMap, onAdd, onExport, o
         onExport={onExport}
         onImport={onImport}
       />
-      <Button size="lg" onClick={onAdd} className="gap-2">
+      <Button onClick={onAdd} className="gap-2">
         <Plus aria-hidden="true" className="size-4" />
         <Text path="library.lineups.add" />
       </Button>
