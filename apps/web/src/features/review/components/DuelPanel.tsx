@@ -109,7 +109,7 @@ function Layout({
     >
       <div className="flex flex-col gap-1">
         <p className="text-12 text-ink-dim">{kind}</p>
-        <h2 className="numeric font-semibold text-18 leading-snug">{title}</h2>
+        <h2 className="numeric font-semibold text-16 leading-snug">{title}</h2>
         <div className="text-13 text-ink-dim leading-prose">{text}</div>
       </div>
 
@@ -120,7 +120,7 @@ function Layout({
               key={fact.key}
               className="flex min-w-0 flex-col gap-0.5 rounded-card bg-surface-2 px-3 py-2.5"
             >
-              <span className="numeric font-semibold text-18 text-ink">{fact.value}</span>
+              <span className="numeric font-semibold text-16 text-ink">{fact.value}</span>
               <span className="text-12 text-ink-dim">{fact.label}</span>
             </div>
           ))}
