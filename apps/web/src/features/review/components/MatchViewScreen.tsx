@@ -68,7 +68,9 @@ export function MatchViewScreen({
           initialRound={roundIndex ?? 0}
           onOpenOnStage={onOpenOnStage}
           onPlayerView={(target, slot) => {
-            if (target === 'duels') onDuelNarrowing({ side: 'all', players: [slot] });
+            if (target === 'duels') {
+              onDuelNarrowing({ ...duelNarrowing, player: slot, pair: null, duel: null });
+            }
             onView(target);
           }}
         />
