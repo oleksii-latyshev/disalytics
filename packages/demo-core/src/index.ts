@@ -138,8 +138,20 @@ export {
   SMOKE_END_EXTENT,
   SMOKE_FILL_SECONDS,
 } from './helpers/grenade-visual';
-export type { HeatMode, HeatScope, HeatTally, HeatVisit } from './helpers/heat';
+export type { HeatMark, HeatMode, HeatScope, HeatTally, HeatVisit } from './helpers/heat';
 export { HEAT_MODES, walkHeat } from './helpers/heat';
+export type { HeatBuy, HeatPhaseId, HeatWindow } from './helpers/heat-filter';
+export {
+  HEAT_BIN_SECONDS,
+  HEAT_BINS,
+  HEAT_BUYS,
+  HEAT_PHASES,
+  heatBinOf,
+  heatWindowOfBins,
+  isWholeRound,
+} from './helpers/heat-filter';
+export type { HeatMarks, HeatPoints, HeatPointsScope } from './helpers/heat-points';
+export { collectHeatPoints, presenceByRoundTime, replayHeatPoints } from './helpers/heat-points';
 export type { LineupOfVariantOptions } from './helpers/lineup-of-variant';
 export { lineupOfVariant, savedLineupId } from './helpers/lineup-of-variant';
 export type {

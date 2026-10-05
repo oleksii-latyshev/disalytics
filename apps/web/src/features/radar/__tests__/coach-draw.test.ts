@@ -65,7 +65,7 @@ const COLORS = {
   nadeDecoy: '#a855f7',
   trajectory: '#fff',
   killLine: '#fff',
-  heat: { low: '#00f', high: '#f00' },
+  heat: { low: '#00f', high: '#f00', second: '#0f0' },
 };
 
 function createMockContext() {

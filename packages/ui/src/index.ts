@@ -153,4 +153,4 @@ export {
 } from './motion/easing';
 export { MotionProvider } from './motion/provider';
 export type { TargetAndTransition, Transition } from './motion/re-export';
-export { AnimatePresence, motion } from './motion/re-export';
+export { AnimatePresence, motion, useReducedMotionConfig } from './motion/re-export';

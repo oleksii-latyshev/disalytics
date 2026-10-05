@@ -31,15 +31,11 @@
     "controls": "What the map draws",
     "sides": "Side",
     "bothSides": "Both",
-    "roster": "Narrow to one player",
     "everyone": "Everyone",
-    "timeOnMap": "{count} min on the map",
     "minutes": "{count} min",
-    "sampledNote": "Positions are sampled {hz} times a second and only while a player is alive, so the field is that time added up rather than a path.",
     "worldKillNote": "A kill the world did is not drawn: it comes from nowhere a line can start.",
     "kinds": "Kind",
     "everyKind": "All",
-    "throws": "{count, plural, one {# throw} other {# throws}}",
     "players": "Players",
     "duelList": "Duels, in match order",
     "roundShort": "R{round, number}",
@@ -52,21 +48,6 @@
         "crouch": "Crouch",
         "unknown": "Unknown"
       }
-    },
-    "heat": {
-      "mode": "Reading",
-      "presence": "Where they stood",
-      "damageDealt": "Damage dealt",
-      "damageTaken": "Damage taken",
-      "kills": "Kills",
-      "deaths": "Deaths",
-      "utility": "Where utility landed",
-      "damage": "{count, number} damage",
-      "killCount": "{count, plural, one {# kill} other {# kills}}",
-      "deathCount": "{count, plural, one {# death} other {# deaths}}",
-      "figure": "{count, number}",
-      "eventNote": "Each mark stands where its player was at the event; damage counts only the health left.",
-      "utilityNote": "Each grenade stands where it went off; one that never did is not drawn."
     }
   },
   "views": {
@@ -415,6 +396,97 @@
       "undo": "Undo",
       "failed": "Could not save the lineup on this device.",
       "title": "{kind} {target} from {origin}"
+    }
+  },
+  "heat": {
+    "panel": "What to show",
+    "read": {
+      "stood": "Where they stood",
+      "died": "Where they died"
+    },
+    "player": "Player",
+    "playerA": "Player A",
+    "playerB": "Player B",
+    "team": "Started {side}",
+    "deaths": "{count, plural, one {# death} other {# deaths}}",
+    "buy": {
+      "label": "Buy",
+      "all": "All",
+      "pistol": "Pistol",
+      "eco": "Eco",
+      "force": "Force",
+      "full": "Full"
+    },
+    "compare": {
+      "start": "Compare with another player",
+      "startHint": "from this or another match on {map}",
+      "change": "Change",
+      "remove": "Remove comparison",
+      "thisMatch": "this match · {map}",
+      "libraryMatch": "match from the library · {map}",
+      "title": "Compare with",
+      "matchStep": "1 · Match",
+      "playerStep": "2 · Player",
+      "thisMatchRow": "this match",
+      "otherMap": "another map",
+      "teams": "{home} vs {away}",
+      "meta": "{map} · {score}",
+      "reading": "Reading {match} from this device…",
+      "cancel": "Cancel",
+      "missing": "This match is not on this device any more. Open it once from the library, then come back to compare.",
+      "note": "The filters on the left apply to both players. Shares are of each player’s own time, so the length of the matches does not matter.",
+      "confirm": "Compare",
+      "noPlayers": "Pick a match to see its players.",
+      "close": "Close"
+    },
+    "title": {
+      "stood": "{name} — where they stood",
+      "died": "{name} — where they died",
+      "pair": "{first} and {second}",
+      "difference": "{first} and {second} — difference"
+    },
+    "filters": {
+      "whole": "whole match",
+      "side": "as {side}",
+      "buy": "{buy} rounds",
+      "time": "{range} of the round"
+    },
+    "views": {
+      "label": "How to compare",
+      "side": "Side by side",
+      "difference": "Difference"
+    },
+    "overlap": "routes overlap {share, number, percent}",
+    "legend": {
+      "field": "less often → more often; counts time while the player is alive",
+      "rings": "a ring is where they died",
+      "pair": "each player has their own colour; brightness is the share of their own time",
+      "difference": "{second} in pink — where they spend more of their time; {first} in yellow — where they do; where it is the same, nothing"
+    },
+    "when": {
+      "title": "When in the round",
+      "hint": "seconds from the end of the buy phase — the map shows only what happened then",
+      "whole": "Whole round",
+      "wholeRange": "whole round",
+      "range": "{from} – {to}",
+      "rangeToEnd": "{from} – end",
+      "phase": {
+        "start": "Start · setup",
+        "middle": "Middle · first contacts",
+        "end": "End · execute, retake, clean-up"
+      },
+      "phaseRange": "{from}–{to} s",
+      "phaseRangeOpen": "{from} s+",
+      "play": "Play round",
+      "stop": "Stop",
+      "playLabel": "Play the round in 10-second windows",
+      "detail": "Detail",
+      "detailShow": "Show the round-time detail",
+      "detailHide": "Hide the round-time detail",
+      "alive": "players alive at this second",
+      "bar": "{from} – {to}",
+      "pick": "to pick your own range, press the scale at its start and at its end",
+      "pending": "now press where the range ends"
     }
   }
 }

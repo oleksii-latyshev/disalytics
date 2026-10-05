@@ -6,8 +6,8 @@ import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
-import type { HeatField } from '../helpers/heat-field';
-import { fieldImage, heatLayer } from '../helpers/heat-layer';
+import type { HeatPicture } from '../helpers/heat-picture';
+import { mutedImage } from '../helpers/muted-image';
 import { plateBox } from '../helpers/plate-box';
 import { plateView } from '../helpers/view';
 import { useRadarPlate } from '../hooks/use-radar-plate';
@@ -16,10 +16,10 @@ import { UnknownMap } from './UnknownMap';
 interface Props {
   demo: ParsedDemo;
   /** Already narrowed by whatever the screen above is narrowing by, or `null` on an unknown map. */
-  field: HeatField | null;
+  picture: HeatPicture | null;
 }
 
-function HeatCanvas({ field, overview }: { field: HeatField | null; overview: MapOverview }) {
+function HeatCanvas({ picture, overview }: { picture: HeatPicture | null; overview: MapOverview }) {
   const t = useT();
 
   const [theme] = useSetting('radarTheme');
@@ -31,27 +31,24 @@ function HeatCanvas({ field, overview }: { field: HeatField | null; overview: Ma
   // Fixed, for `DuelPlate`'s reason: §6.3's zoom is a gesture on a match the reader is inside.
   const viewRef = useRef(plateView());
 
-  // The field is painted into an image when it changes rather than on every repaint, which is what
+  // The picture is painted into an image when it changes rather than on every repaint, which is what
   // leaves the draw itself one `drawImage` — a resize re-reads nothing.
   const layers = useMemo(() => {
-    const heat =
-      field === null
-        ? []
-        : [heatLayer({ image: fieldImage(field, colors), plate: layout, view: viewRef })];
+    const over = picture === null ? [] : [picture(colors, { plate: layout, view: viewRef })];
 
     return images.status === 'ready'
       ? [
           radarBackdrop({
-            images: images.images,
+            images: images.images.map(mutedImage),
             layout,
             floorLabels,
             labelColor: colors.dead,
             view: viewRef,
           }),
-          ...heat,
+          ...over,
         ]
-      : heat;
-  }, [field, colors, images, layout, floorLabels]);
+      : over;
+  }, [picture, colors, images, layout, floorLabels]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
@@ -74,14 +71,15 @@ function HeatCanvas({ field, overview }: { field: HeatField | null; overview: Ma
  *
  * **There is no clock and no transport**, the way there is none on the duel map: `useCanvasLayers`
  * paints when its layers change and when the element is resized, so nothing here subscribes to a
- * frame channel.
+ * frame channel. **The map under the picture is greyed and dimmed**, so the only colour on the
+ * plate is the reading.
  */
-export function HeatPlate({ demo, field }: Props) {
+export function HeatPlate({ demo, picture }: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return overview === undefined ? (
     <UnknownMap map={demo.header.map} />
   ) : (
-    <HeatCanvas field={field} overview={overview} />
+    <HeatCanvas picture={picture} overview={overview} />
   );
 }

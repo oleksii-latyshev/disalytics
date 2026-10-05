@@ -3,4 +3,4 @@
 // empty, and an `m.div` with no provider above it renders and quietly never moves.
 
 export type { TargetAndTransition, Transition } from 'motion/react';
-export { AnimatePresence, motion } from 'motion/react';
+export { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react';

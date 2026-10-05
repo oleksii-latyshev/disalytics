@@ -10,7 +10,7 @@ import {
   type Round,
   type Team,
 } from '../schema';
-import { atFrame, newEvents, newTrack, withDamage, withGrenade, withKill } from './helpers';
+import { atFrame, newEvents, newTrack, withKill } from './helpers';
 
 // 64 ticks to 16 samples: frame = tick / 4.
 const ct = asPlayerSlot(0);
@@ -52,7 +52,7 @@ function newDemo(events: MatchEvents, sides?: readonly [Team, Team]): ParsedDemo
   };
 }
 
-const WHOLE: HeatScope = { side: null, subject: null };
+const WHOLE: HeatScope = { side: null, subject: null, buy: null, window: null };
 
 function visits(demo: ParsedDemo, mode: HeatMode, scope: HeatScope = WHOLE) {
   const points: [number, number, number][] = [];
@@ -71,56 +71,23 @@ describe('walkHeat', () => {
     expect(tally.total).toBeCloseTo(12 / 16, 5);
   });
 
-  it('puts dealt damage on the attacker and taken damage on the victim, clamped to the health left', () => {
-    const events = withDamage(newEvents(), {
-      tick: asTick(20),
-      attacker: ct,
-      victim: t,
-      healthDamage: 452,
-    });
-
-    expect(visits(newDemo(events), 'damageDealt').points).toEqual([[100, 200, 60]]);
-    expect(visits(newDemo(events), 'damageTaken').points).toEqual([[-300, 400, 60]]);
-  });
-
-  it('leaves out damage to a teammate, read against the round rather than the roster', () => {
-    const events = withDamage(newEvents(), { tick: asTick(20), attacker: ct, victim: t });
-
-    expect(visits(newDemo(events, ['T', 'T']), 'damageDealt').points).toEqual([]);
-  });
-
-  it('puts a kill on the killer and a death on the victim, a world death included', () => {
+  it('puts a death on the victim, a world death included, wherever they were that frame', () => {
     const events = withKill(withKill(newEvents(), { tick: asTick(12), attacker: ct, victim: t }), {
       tick: asTick(16),
       attacker: null,
       victim: ct,
     });
 
-    expect(visits(newDemo(events), 'kills').points).toEqual([[100, 200, 1]]);
     expect(visits(newDemo(events), 'deaths').points).toEqual([
       [-300, 400, 1],
       [100, 200, 1],
     ]);
   });
 
-  it('puts utility where it went off, and nowhere for a grenade that never did', () => {
-    const events = withGrenade(
-      withGrenade(newEvents(), {
-        thrower: t,
-        throwTick: asTick(12),
-        detonationTick: asTick(20),
-        detonationPosition: { x: 7, y: 8, z: 0 },
-      }),
-      { thrower: ct, throwTick: asTick(14), detonationTick: null, detonationPosition: null },
-    );
-
-    expect(visits(newDemo(events), 'utility').points).toEqual([[7, 8, 1]]);
-  });
-
-  it('leaves an event after the round ended out of every mode', () => {
+  it('leaves a death after the round ended out of the reading', () => {
     const events = withKill(newEvents(), { tick: asTick(40), attacker: ct, victim: t });
 
-    expect(visits(newDemo(events), 'kills').points).toEqual([]);
+    expect(visits(newDemo(events), 'deaths').points).toEqual([]);
   });
 
   it('narrows by the side that round and by the subject, keeping the side figures', () => {
@@ -130,11 +97,11 @@ describe('walkHeat', () => {
       victim: ct,
     });
 
-    expect(visits(newDemo(events), 'kills', { side: 'T', subject: null }).points).toEqual([
-      [-300, 400, 1],
+    expect(visits(newDemo(events), 'deaths', { ...WHOLE, side: 'T' }).points).toEqual([
+      [100, 200, 1],
     ]);
 
-    const { points, tally } = visits(newDemo(events), 'kills', { side: null, subject: t });
+    const { points, tally } = visits(newDemo(events), 'deaths', { ...WHOLE, subject: t });
     expect(points).toEqual([[-300, 400, 1]]);
     expect([...tally.bySlot]).toEqual([1, 1]);
     expect(tally.total).toBe(1);

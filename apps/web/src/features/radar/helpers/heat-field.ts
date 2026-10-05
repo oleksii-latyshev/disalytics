@@ -1,4 +1,11 @@
-import { type HeatMode, type HeatScope, type ParsedDemo, walkHeat } from '@disa/demo-core';
+import {
+  type HeatMode,
+  type HeatScope,
+  type HeatTally,
+  type HeatVisit,
+  type ParsedDemo,
+  walkHeat,
+} from '@disa/demo-core';
 import { type MapOverview, plateLayout, plateX, plateY, RADAR_IMAGE_SIZE } from '@disa/map-data';
 
 /**
@@ -38,6 +45,11 @@ export interface HeatField {
   readonly height: number;
   /** `width × height` weights in 0..1, row-major, `HOT_QUANTILE` of the lit ground and above at 1. */
   readonly bins: Float32Array;
+  /**
+   * The same bins as the kernel left them, before the ramp's ceiling: what a comparison divides by
+   * its own sum, so that a longer match does not read as a hotter one.
+   */
+  readonly density: Float32Array;
   /** Each slot's figure inside the side scope (`HeatTally.bySlot`). */
   readonly bySlot: Float32Array;
   /** The figure the field itself is made of. */
@@ -119,9 +131,24 @@ function hotCeiling(bins: Float32Array): number {
   return peak;
 }
 
+/** Whatever hands out a field's points: a walk over a demo, or a replay of what was kept of one. */
+export type HeatSource = (visit: HeatVisit) => HeatTally;
+
+const BIN_SCALE = HEAT_GRID / RADAR_IMAGE_SIZE;
+
+/** The grid a map's plate is binned on. */
+function gridOf(overview: MapOverview): { readonly width: number; readonly height: number } {
+  const layout = plateLayout(overview);
+
+  return {
+    width: Math.ceil(layout.width * BIN_SCALE),
+    height: Math.ceil(layout.height * BIN_SCALE),
+  };
+}
+
 /**
- * One heat map mode as a picture's worth of weights — `walkHeat`'s points binned onto the radar
- * image, smoothed, and scaled to a ramp.
+ * One source of points as a picture's worth of weights — the points binned onto the radar image,
+ * smoothed, and scaled to a ramp.
  *
  * **The field has no level.** A whole match stands on every floor the map has, so every point is
  * binned on the floor its altitude puts it on and a two-storey map reads as both floors at once.
@@ -130,21 +157,13 @@ function hotCeiling(bins: Float32Array): number {
  * is spent very unevenly, and against the peak alone half the ground is a tenth of the ramp. The
  * quantile is read after the kernel, over bins it left more than `LIT_SHARE` of the peak.
  */
-export function heatField(
-  demo: ParsedDemo,
-  overview: MapOverview,
-  mode: HeatMode,
-  scope: HeatScope,
-): HeatField {
-  const binScale = HEAT_GRID / RADAR_IMAGE_SIZE;
-  const layout = plateLayout(overview);
-  const width = Math.ceil(layout.width * binScale);
-  const height = Math.ceil(layout.height * binScale);
+export function heatFieldOf(overview: MapOverview, source: HeatSource): HeatField {
+  const { width, height } = gridOf(overview);
   const bins = new Float32Array(width * height);
 
-  const tally = walkHeat(demo, mode, scope, (worldX, worldY, worldZ, weight) => {
-    const x = Math.floor(plateX(overview, worldX, worldZ) * binScale);
-    const y = Math.floor(plateY(overview, worldY, worldZ) * binScale);
+  const tally = source((worldX, worldY, worldZ, weight) => {
+    const x = Math.floor(plateX(overview, worldX, worldZ) * BIN_SCALE);
+    const y = Math.floor(plateY(overview, worldY, worldZ) * BIN_SCALE);
     if (x < 0 || y < 0 || x >= width || y >= height) return;
 
     const bin = y * width + x;
@@ -153,10 +172,46 @@ export function heatField(
 
   blur(bins, new Float32Array(bins.length), width, height);
 
+  const density = Float32Array.from(bins);
   const ceiling = hotCeiling(bins);
   for (let bin = 0; ceiling > 0 && bin < bins.length; bin++) {
     bins[bin] = Math.min((bins[bin] ?? 0) / ceiling, 1);
   }
 
-  return { width, height, bins, bySlot: tally.bySlot, total: tally.total };
+  return { width, height, bins, density, bySlot: tally.bySlot, total: tally.total };
+}
+
+/** One heat map mode of a demo, narrowed by a scope. */
+export function heatField(
+  demo: ParsedDemo,
+  overview: MapOverview,
+  mode: HeatMode,
+  scope: HeatScope,
+): HeatField {
+  return heatFieldOf(overview, (visit) => walkHeat(demo, mode, scope, visit));
+}
+
+/** Where a source's points stand on the plate, as `x, y` pairs in radar pixels. */
+export interface HeatRings {
+  readonly points: Float32Array;
+  readonly count: number;
+  /** The source's own tally, which is what the roster beside the plate reads its figures from. */
+  readonly bySlot: Float32Array;
+  readonly total: number;
+}
+
+/** A source's points on the plate, one by one — for a reading too sparse to be a field. */
+export function heatRingsOf(overview: MapOverview, source: HeatSource): HeatRings {
+  const points: number[] = [];
+
+  const tally = source((worldX, worldY, worldZ) => {
+    points.push(plateX(overview, worldX, worldZ), plateY(overview, worldY, worldZ));
+  });
+
+  return {
+    points: Float32Array.from(points),
+    count: points.length / 2,
+    bySlot: tally.bySlot,
+    total: tally.total,
+  };
 }

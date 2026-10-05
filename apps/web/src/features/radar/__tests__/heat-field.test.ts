@@ -2,8 +2,8 @@ import {
   asPlayerSlot,
   asTick,
   FLAG_ALIVE,
+  type HeatScope,
   type ParsedDemo,
-  type PlayerSlot,
   type Round,
   sampleAt,
   type Team,
@@ -126,10 +126,7 @@ function newDemo(freezeFrames = 0): ParsedDemo {
   };
 }
 
-const wholeMatch = { side: null, subject: null } satisfies {
-  side: Team | null;
-  subject: PlayerSlot | null;
-};
+const wholeMatch: HeatScope = { side: null, subject: null, buy: null, window: null };
 
 /** The binning, the kernel and the ramp — which samples count is `walkHeat`'s and tested there. */
 describe('heatField', () => {
@@ -154,7 +151,10 @@ describe('heatField', () => {
   });
 
   it('keeps the mode, side and subject figures from the walk', () => {
-    const field = heatField(newDemo(), dust2, 'presence', { side: null, subject: asPlayerSlot(1) });
+    const field = heatField(newDemo(), dust2, 'presence', {
+      ...wholeMatch,
+      subject: asPlayerSlot(1),
+    });
 
     expect([...field.bySlot]).toEqual([FRAME_COUNT / SAMPLE_HZ, DEATH_FRAME / SAMPLE_HZ]);
     expect(field.total).toBeCloseTo(DEATH_FRAME / SAMPLE_HZ, 5);
@@ -162,7 +162,7 @@ describe('heatField', () => {
   });
 
   it('draws nothing at all for a mode with nothing in it', () => {
-    const { bins, total } = heatField(newDemo(), dust2, 'kills', wholeMatch);
+    const { bins, total } = heatField(newDemo(), dust2, 'deaths', wholeMatch);
 
     expect(total).toBe(0);
     expect(bins.every((weight) => weight === 0)).toBe(true);
