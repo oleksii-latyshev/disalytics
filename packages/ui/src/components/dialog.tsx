@@ -20,6 +20,13 @@ interface DialogProps extends OverlayElementProps {
   isOpen: boolean;
   /** Called whenever the dialog has closed, however it was closed — a button, `Esc`, or the ground. */
   onDismiss: () => void;
+  /**
+   * `false` makes the dialog a wait rather than a question: `Esc` and a press on the scrim do
+   * nothing, and only a control inside it can end it. Defaults to `true`.
+   */
+  isDismissible?: boolean;
+  /** Where focus lands on open; Base UI's default is the first tabbable element. */
+  initialFocus?: React.ComponentProps<typeof DialogPopup>['initialFocus'];
 }
 
 const TRANSITION = { duration: DURATION_BASE_SECONDS, ease: EASE_OUT };
@@ -65,12 +72,21 @@ const CARD_MOTION = {
  * prefix the native version needed on its display utility is gone with the element it was working
  * around.
  */
-export function Dialog({ isOpen, onDismiss, className, children, ...props }: DialogProps) {
+export function Dialog({
+  isOpen,
+  onDismiss,
+  isDismissible = true,
+  initialFocus,
+  className,
+  children,
+  ...props
+}: DialogProps) {
   return (
     <DialogRoot
       open={isOpen}
+      disablePointerDismissal={!isDismissible}
       onOpenChange={(open) => {
-        if (!open) onDismiss();
+        if (!open && isDismissible) onDismiss();
       }}
     >
       <DialogPortal>
@@ -87,6 +103,7 @@ export function Dialog({ isOpen, onDismiss, className, children, ...props }: Dia
               'surface-card pointer-events-auto flex flex-col rounded-sheet text-ink shadow-float',
               className,
             )}
+            initialFocus={initialFocus}
             {...CARD_MOTION}
             {...props}
           >

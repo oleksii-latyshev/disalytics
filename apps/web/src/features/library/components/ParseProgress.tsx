@@ -16,14 +16,11 @@ interface Props {
   header: MatchHeader | null;
   wasHidden: boolean;
   onCancel: () => void;
-  /** Inside Home's open tile rather than its own card: the same readings, a smaller number. */
-  compact?: boolean;
 }
 
 /**
- * The parse. The same card as the upload view, transformed in place: it does not navigate, and the
- * shell around it does not change either, because a parse is something the reader started rather
- * than somewhere they went.
+ * The parse, shown in a modal over Home (`HomeView`): it does not navigate, and the shell behind it
+ * does not change, because a parse is something the reader started rather than somewhere they went.
  *
  * **The number is the reading**, at the type scale's `44` in Plex Mono, and this screen is the one
  * the scale allows to spend it. The bar beneath it is the second reading and not a repetition of the
@@ -46,30 +43,22 @@ interface Props {
  * `Intl` produces for each — lives in the message catalogue where every other difference between
  * the two locales lives.
  */
-export function ParseProgress({
-  fileName,
-  phase,
-  percent,
-  header,
-  wasHidden,
-  onCancel,
-  compact = false,
-}: Props) {
+export function ParseProgress({ fileName, phase, percent, header, wasHidden, onCancel }: Props) {
   const locale = useLocale();
 
   return (
-    <section className={`flex flex-col items-start ${compact ? 'gap-2.5' : 'gap-4'}`}>
+    <section className="flex flex-col items-start gap-4">
       <Progress
         value={percent}
         locale={locale}
         format={PERCENT_FORMAT}
-        className={`flex w-full flex-col ${compact ? 'gap-2' : 'gap-3'}`}
+        className="flex w-full flex-col gap-3"
       >
         <ProgressLabel className="sr-only">
           <Text path="library.progress.label" />
         </ProgressLabel>
 
-        <p className={`numeric leading-dense ${compact ? 'text-28' : 'text-44'}`}>
+        <p className="numeric text-44 leading-dense">
           <Text
             path="library.progress.percent"
             values={{ percent: <ProgressValue initiallyStable /> }}

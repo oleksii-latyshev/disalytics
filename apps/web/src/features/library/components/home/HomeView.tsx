@@ -1,7 +1,8 @@
 import type { SavedDemo } from '@disa/demo-store';
 import { Text, useT } from '@disa/i18n';
+import { Dialog } from '@disa/ui';
 import { LockKeyhole, SlidersHorizontal } from 'lucide-react';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 import type { ParseState } from '@/core/parsing';
 import type { SampleMatch } from '@/core/samples';
 import {
@@ -66,7 +67,7 @@ function isInstantRestore(state: Props['state']): boolean {
   return state.status === 'restoring' && state.download === null;
 }
 
-/** A parse or a download in flight: what the open tile shows in place of its drop zone. */
+/** A parse or a download in flight: what the modal over Home holds. */
 function isLoading(state: Props['state']): boolean {
   return state.status === 'parsing' || (state.status === 'restoring' && !isInstantRestore(state));
 }
@@ -82,11 +83,13 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
   const hasMatches = data.demos !== null && data.demos.length > 0;
   const drawn = useMemo(() => visiblePlacements(layout, hasMatches), [layout, hasMatches]);
   const actions = useMemo(() => ({ onEnter, onSample, onFile }), [onEnter, onSample, onFile]);
-  // An S tile is too short for the readings, and a hidden one is not there: both keep the card.
-  const loadsInTile =
-    isLoading(state) &&
-    !isEditing &&
-    drawn.some((placement) => placement.id === 'open' && placement.size !== 'S');
+  const isBusy = isLoading(state);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // The card keeps its last reading through the exit fade, instead of turning into the failure
+  // card or an empty box while it leaves.
+  const shownRef = useRef(state);
+  if (isBusy) shownRef.current = state;
+  const shown = shownRef.current;
 
   const move = (id: WidgetId, delta: -1 | 1) => {
     const next = moveAmong(layout, id, delta, drawn);
@@ -104,7 +107,7 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
 
   return (
     <div className="mx-auto flex w-full max-w-[105rem] flex-col gap-5 pt-1 md:pt-0">
-      {state.status !== 'idle' && !isInstantRestore(state) && !loadsInTile && (
+      {state.status === 'failed' && (
         <div className="atlas-upload flex max-w-[425px] flex-col gap-3 rounded-[13px] border border-line-strong bg-surface-1 p-[22px]">
           <DemoLibrary
             state={state}
@@ -179,24 +182,35 @@ export function HomeView({ state, onFile, onClose, isDraggedOver, onEnter, onSam
                 onResize={(id: WidgetId, size: WidgetSize) => setLayout(resize(layout, id, size))}
                 onMove={move}
               >
-                {placement.id === 'open' && loadsInTile ? (
-                  <div className="absolute inset-0 overflow-hidden p-[18px] md:px-5">
-                    <DemoLibrary
-                      state={state}
-                      onFile={onFile}
-                      onClose={onClose}
-                      isDraggedOver={isDraggedOver}
-                      compact
-                    />
-                  </div>
-                ) : (
-                  widgetBody(placement.id, { size: placement.size, data, actions })
-                )}
+                {widgetBody(placement.id, { size: placement.size, data, actions })}
               </HomeTile>
             );
           })}
         </ul>
       )}
+
+      {/* A wait, not a question: only Cancel ends it, so a stray Esc or click on the ground cannot
+          drop a parse that is minutes in. Focus lands on the card, not on Cancel. A cached reopen
+          never opens it (`isInstantRestore`). */}
+      <Dialog
+        isOpen={isBusy}
+        onDismiss={onClose}
+        isDismissible={false}
+        initialFocus={dialogRef}
+        aria-label={t('library.progress.label')}
+        className="w-full max-w-[425px] p-[22px]"
+      >
+        <div ref={dialogRef} tabIndex={-1} className="outline-none">
+          {isLoading(shown) && (
+            <DemoLibrary
+              state={shown}
+              onFile={onFile}
+              onClose={onClose}
+              isDraggedOver={isDraggedOver}
+            />
+          )}
+        </div>
+      </Dialog>
 
       <p role="status" className="sr-only">
         {announcement}
