@@ -393,9 +393,23 @@
         "mediaUrlInvalid": "Введите корректную ссылку http или https",
         "imageProcessingFailed": "Не удалось преобразовать изображение в WebP",
         "imageLinkPending": "Добавьте введённую ссылку на фото перед сохранением",
-        "saveFailed": "Не удалось сохранить раскидку на этом устройстве"
-      }
-    }
+        "saveFailed": "Не удалось сохранить раскидку на этом устройстве",
+        "authorNameRequired": "Укажите имя автора или очистите ссылку на профиль",
+        "authorUrlInvalid": "Нужна ссылка https"
+      },
+      "tags": "Метки",
+      "authorName": "Имя автора",
+      "authorNamePlaceholder": "например, Аня",
+      "authorUrl": "Ссылка на профиль (Steam)"
+    },
+    "tagFilter": "Метка",
+    "allTags": "Все",
+    "untagged": "Без метки",
+    "tags": {
+      "meta": "Мета",
+      "old": "Старый"
+    },
+    "author": "Автор"
   },
   "tactics": {
     "editor": {

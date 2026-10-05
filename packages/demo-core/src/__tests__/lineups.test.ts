@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isBuiltInCopy,
   isLineup,
   type Lineup,
   LineupFileError,
   localImageHash,
   parseLineupFile,
   serializeLineupFile,
+  toggledLineupTag,
 } from '../helpers/lineups';
 
 const sampleLineup: Lineup = {
@@ -392,5 +394,62 @@ describe('local photos in lineup files', () => {
     );
     expect(localImageHash(`local:${hash}`)).toBe(hash);
     expect(localImageHash('https://example.com/a.png')).toBeNull();
+  });
+});
+
+describe('lineup tags and author', () => {
+  const tagged = (extra: Record<string, unknown>) => ({ ...sampleLineup, ...extra });
+
+  it('accepts known tags and an author', () => {
+    expect(isLineup(tagged({ tags: ['meta'] }))).toBe(true);
+    expect(isLineup(tagged({ tags: ['old'] }))).toBe(true);
+    expect(isLineup(tagged({ tags: [] }))).toBe(true);
+    expect(isLineup(tagged({ author: { name: 'Ann' } }))).toBe(true);
+    expect(
+      isLineup(tagged({ author: { name: 'Ann', url: 'https://steamcommunity.com/id/ann' } })),
+    ).toBe(true);
+  });
+
+  it('rejects unknown, duplicate and exclusive tags', () => {
+    expect(isLineup(tagged({ tags: ['fun'] }))).toBe(false);
+    expect(isLineup(tagged({ tags: ['meta', 'meta'] }))).toBe(false);
+    expect(isLineup(tagged({ tags: ['meta', 'old'] }))).toBe(false);
+    expect(isLineup(tagged({ tags: 'meta' }))).toBe(false);
+  });
+
+  it('rejects a bad author', () => {
+    expect(isLineup(tagged({ author: { name: '  ' } }))).toBe(false);
+    expect(isLineup(tagged({ author: 'Ann' }))).toBe(false);
+    expect(isLineup(tagged({ author: { name: 'Ann', url: 'http://example.com' } }))).toBe(false);
+    expect(isLineup(tagged({ author: { name: 'Ann', url: 'javascript:alert(1)' } }))).toBe(false);
+    expect(isLineup(tagged({ author: { name: 'Ann', url: 'https://' } }))).toBe(false);
+    expect(isLineup(tagged({ author: { name: 'Ann', url: 42 } }))).toBe(false);
+  });
+
+  it('round-trips through a file and still reads files without them', () => {
+    const lineup: Lineup = {
+      ...sampleLineup,
+      tags: ['meta'],
+      author: { name: 'Ann', url: 'https://steamcommunity.com/id/ann' },
+    };
+    const parsed = parseLineupFile(serializeLineupFile([lineup, sampleLineup]));
+    expect(parsed.lineups).toEqual([lineup, sampleLineup]);
+  });
+
+  it('refuses a file whose lineup carries both exclusive tags', () => {
+    const json = serializeLineupFile([{ ...sampleLineup, tags: ['meta', 'old'] }]);
+    expect(() => parseLineupFile(json)).toThrow(LineupFileError);
+  });
+
+  it('keeps a built-in copy comparison working with the new fields', () => {
+    const builtIn: Lineup = { ...sampleLineup, tags: ['meta'], isBuiltIn: true };
+    expect(isBuiltInCopy({ ...builtIn, isBuiltIn: false }, [builtIn])).toBe(true);
+    expect(isBuiltInCopy({ ...builtIn, tags: ['old'] }, [builtIn])).toBe(false);
+  });
+
+  it('toggles a tag and drops the one it excludes', () => {
+    expect(toggledLineupTag([], 'meta')).toEqual(['meta']);
+    expect(toggledLineupTag(['meta'], 'meta')).toEqual([]);
+    expect(toggledLineupTag(['meta'], 'old')).toEqual(['old']);
   });
 });

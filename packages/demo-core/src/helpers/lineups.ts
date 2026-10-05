@@ -16,6 +16,37 @@ export const THROW_TYPES: readonly ThrowType[] = [
   'unknown',
 ] as const;
 
+export const LINEUP_TAGS = ['meta', 'old'] as const;
+export type LineupTag = (typeof LINEUP_TAGS)[number];
+
+/** Tags that cannot sit on one lineup together. */
+const EXCLUSIVE_TAGS: readonly (readonly [LineupTag, LineupTag])[] = [['meta', 'old']];
+
+export interface LineupAuthor {
+  readonly name: string;
+  /** An `https://` link, shown as the author's name when present. */
+  readonly url?: string | undefined;
+}
+
+export function isLineupTag(value: unknown): value is LineupTag {
+  return typeof value === 'string' && LINEUP_TAGS.some((tag) => tag === value);
+}
+
+/** The tag set after switching `tag` on or off, dropping any tag it excludes. */
+export function toggledLineupTag(tags: readonly LineupTag[], tag: LineupTag): readonly LineupTag[] {
+  if (tags.includes(tag)) return tags.filter((item) => item !== tag);
+  const rivals = EXCLUSIVE_TAGS.flatMap(([a, b]) => (a === tag ? [b] : b === tag ? [a] : []));
+  return [...tags.filter((item) => !rivals.includes(item)), tag];
+}
+
+export function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export interface Lineup {
   readonly id: string;
   readonly title: string;
@@ -38,6 +69,8 @@ export interface Lineup {
   readonly landingCommand?: string;
   readonly fromDemo?: boolean;
   readonly notes?: string;
+  readonly tags?: readonly LineupTag[] | undefined;
+  readonly author?: LineupAuthor | undefined;
   readonly movementInstructions?: string;
   readonly mediaUrl?: string;
   readonly imageUrls?: readonly string[];
@@ -203,6 +236,23 @@ function isGroupTarget(value: unknown): boolean {
   return value === 'landing' || value === 'origin';
 }
 
+function isLineupTagList(value: unknown): boolean {
+  if (!Array.isArray(value) || !value.every(isLineupTag)) return false;
+  if (new Set(value).size !== value.length) return false;
+  return EXCLUSIVE_TAGS.every(([a, b]) => !(value.includes(a) && value.includes(b)));
+}
+
+function isLineupAuthor(value: unknown): boolean {
+  if (!isObject(value) || Array.isArray(value)) return false;
+  return (
+    isNonBlankString(value.name) &&
+    isOptional(
+      value.url,
+      (url) => typeof url === 'string' && /^https:\/\/\S+$/.test(url) && isHttpsUrl(url),
+    )
+  );
+}
+
 function hasValidOptionals(value: Record<string, unknown>): boolean {
   return (
     isOptional(value.notes, isString) &&
@@ -214,7 +264,9 @@ function hasValidOptionals(value: Record<string, unknown>): boolean {
     isOptional(value.targetCallout, isString) &&
     isOptional(value.waypoints, isWorldPointList) &&
     isOptional(value.groupId, isNonBlankString) &&
-    isOptional(value.groupTarget, isGroupTarget)
+    isOptional(value.groupTarget, isGroupTarget) &&
+    isOptional(value.tags, isLineupTagList) &&
+    isOptional(value.author, isLineupAuthor)
   );
 }
 

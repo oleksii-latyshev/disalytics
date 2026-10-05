@@ -1,6 +1,6 @@
 import type { Lineup } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { filterLineups } from '../helpers/lineup-filter';
+import { filterLineups, type LineupTagFilter } from '../helpers/lineup-filter';
 
 const TEST_LINEUPS: readonly Lineup[] = [
   {
@@ -103,5 +103,33 @@ describe('filterLineups', () => {
 
     const empty = filterLineups(TEST_LINEUPS, { side: 'CT', kind: 'smoke', search: '' });
     expect(empty).toHaveLength(0);
+  });
+});
+
+describe('filterLineups by tag', () => {
+  const base = TEST_LINEUPS[0] as Lineup;
+  const lineups: readonly Lineup[] = [
+    { ...base, id: 'm', tags: ['meta'] },
+    { ...base, id: 'o', tags: ['old'] },
+    { ...base, id: 'u' },
+    { ...base, id: 'e', tags: [] },
+  ];
+  const ids = (tag: LineupTagFilter) =>
+    filterLineups(lineups, { side: 'ALL', kind: 'all', search: '', tag }).map((l) => l.id);
+
+  it('keeps everything for all, and by default', () => {
+    expect(ids('all')).toEqual(['m', 'o', 'u', 'e']);
+    expect(
+      filterLineups(lineups, { side: 'ALL', kind: 'all', search: '' }).map((l) => l.id),
+    ).toEqual(['m', 'o', 'u', 'e']);
+  });
+
+  it('keeps only the lineups carrying the tag', () => {
+    expect(ids('meta')).toEqual(['m']);
+    expect(ids('old')).toEqual(['o']);
+  });
+
+  it('keeps the lineups without any tag', () => {
+    expect(ids('untagged')).toEqual(['u', 'e']);
   });
 });

@@ -1,4 +1,4 @@
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupAuthor } from '@disa/demo-core';
 import type { LineupFormValues } from './lineup-form-model';
 
 interface ParsedCoordinates {
@@ -58,6 +58,13 @@ function resolveBuildCommands(
   return { command, landingCommand };
 }
 
+function authorOf(values: LineupFormValues): { readonly author?: LineupAuthor } {
+  const name = values.authorName.trim();
+  if (!name) return {};
+  const url = values.authorUrl.trim();
+  return { author: url ? { name, url } : { name } };
+}
+
 function optionalLineupFields(
   values: LineupFormValues,
   parsedWaypoints: readonly { readonly x: number; readonly y: number; readonly z: number }[],
@@ -79,6 +86,8 @@ function optionalLineupFields(
     ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
     ...(values.mediaUrl.trim() ? { mediaUrl: values.mediaUrl.trim() } : {}),
     ...(values.targetCallout.trim() ? { targetCallout: values.targetCallout.trim() } : {}),
+    ...(values.tags.length > 0 ? { tags: values.tags } : {}),
+    ...authorOf(values),
   };
 }
 

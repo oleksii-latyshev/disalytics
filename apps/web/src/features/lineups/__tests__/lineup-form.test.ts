@@ -6,6 +6,7 @@ import {
   type LineupFormValues,
   reorderLineupPhotos,
 } from '../components/LineupFormModal';
+import { basicValidationKey } from '../helpers/lineup-form-model';
 
 describe('lineup form helpers', () => {
   it('creates empty default form values when no initialData is provided', () => {
@@ -82,6 +83,9 @@ describe('lineup form helpers', () => {
       fromDemo: true,
       notes: 'Throw over fence',
       mediaUrl: 'https://example.com/lineup.png',
+      tags: [],
+      authorName: '',
+      authorUrl: '',
     };
 
     const lineup = buildLineupFromForm(values, 'custom-123', 1000);
@@ -150,6 +154,9 @@ describe('lineup form helpers', () => {
       fromDemo: true,
       notes: '',
       mediaUrl: '',
+      tags: [],
+      authorName: '',
+      authorUrl: '',
     };
 
     const lineup = buildLineupFromForm(values);
@@ -200,6 +207,9 @@ describe('lineup form helpers', () => {
       fromDemo: false,
       notes: '',
       mediaUrl: '',
+      tags: [],
+      authorName: '',
+      authorUrl: '',
     };
 
     const lineup = buildLineupFromForm(values);
@@ -255,5 +265,45 @@ describe('lineup form helpers', () => {
     ]);
     expect(lineup.groupId).toBe('grp-42');
     expect(lineup.groupTarget).toBe('landing');
+  });
+
+  it('carries tags and author through the form and back out', () => {
+    const values = initFormValues({
+      map: 'de_mirage',
+      title: 'Window',
+      origin: { x: 1, y: 2, z: 0 },
+      landing: { x: 3, y: 4, z: 0 },
+      tags: ['meta'],
+      author: { name: 'Ann', url: 'https://steamcommunity.com/id/ann' },
+    });
+    expect(values.tags).toEqual(['meta']);
+    expect(values.authorName).toBe('Ann');
+    const lineup = buildLineupFromForm(values, 'x');
+    expect(lineup?.tags).toEqual(['meta']);
+    expect(lineup?.author).toEqual({ name: 'Ann', url: 'https://steamcommunity.com/id/ann' });
+  });
+
+  it('leaves tags and author off when empty, and trims a name-only author', () => {
+    const values = { ...initFormValues(null), title: 'T', authorName: ' Ann ' };
+    const lineup = buildLineupFromForm(values, 'x');
+    expect(lineup?.tags).toBeUndefined();
+    expect(lineup?.author).toEqual({ name: 'Ann' });
+    const bare = buildLineupFromForm({ ...initFormValues(null), title: 'T' }, 'y');
+    expect(bare).not.toHaveProperty('tags');
+    expect(bare).not.toHaveProperty('author');
+  });
+
+  it('validates the author before saving', () => {
+    const ok = { ...initFormValues(null), title: 'T' };
+    expect(basicValidationKey(ok)).toBeNull();
+    expect(
+      basicValidationKey({ ...ok, authorName: 'Ann', authorUrl: 'https://a.example/x' }),
+    ).toBeNull();
+    expect(basicValidationKey({ ...ok, authorUrl: 'https://a.example/x' })).toBe(
+      'library.lineups.form.validation.authorNameRequired',
+    );
+    expect(basicValidationKey({ ...ok, authorName: 'Ann', authorUrl: 'http://a.example' })).toBe(
+      'library.lineups.form.validation.authorUrlInvalid',
+    );
   });
 });

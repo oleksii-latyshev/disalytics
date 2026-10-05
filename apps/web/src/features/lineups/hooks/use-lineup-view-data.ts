@@ -1,6 +1,6 @@
 import type { Lineup, UtilityKind } from '@disa/demo-core';
 import { useMemo } from 'react';
-import { filterLineups } from '../helpers/lineup-filter';
+import { filterLineups, type LineupTagFilter } from '../helpers/lineup-filter';
 import type { SelectedLineupNode } from '../helpers/lineup-nodes';
 import { groupLineupsByLanding, groupLineupsByOrigin } from '../helpers/lineup-plot';
 import { visibleLineupSelection } from '../helpers/lineup-visible-selection';
@@ -11,6 +11,7 @@ export function useLineupViewData({
   lineups,
   side,
   kind,
+  tag,
   search,
   selectedId,
   hoveredId,
@@ -21,6 +22,7 @@ export function useLineupViewData({
   readonly lineups: readonly Lineup[];
   readonly side: 'ALL' | 'CT' | 'T';
   readonly kind: 'all' | UtilityKind;
+  readonly tag: LineupTagFilter;
   readonly search: string;
   readonly selectedId: string | null;
   readonly hoveredId: string | null;
@@ -29,8 +31,8 @@ export function useLineupViewData({
   readonly selectedVariants: SelectedVariants | null;
 }) {
   const filteredLineups = useMemo(
-    () => filterLineups(lineups, { side, kind, search }),
-    [lineups, side, kind, search],
+    () => filterLineups(lineups, { side, kind, tag, search }),
+    [lineups, side, kind, tag, search],
   );
   const selectedIndex = filteredLineups.findIndex((lineup) => lineup.id === selectedId);
   const hoveredIndex = filteredLineups.findIndex((lineup) => lineup.id === hoveredId);

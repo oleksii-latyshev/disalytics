@@ -6,7 +6,9 @@ import { Check, Copy, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { useLineupPhotoSrc } from '../hooks/use-lineup-photo-src';
+import { LineupAuthorLine } from './LineupAuthorLine';
 import { LineupPhoto } from './LineupPhoto';
+import { LineupTagChips } from './LineupTagChips';
 
 interface Props {
   readonly lineup: Lineup | null;
@@ -120,6 +122,8 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
               />
             </span>
 
+            <LineupTagChips tags={lineup.tags} className="px-1.5 py-0.5 text-11" />
+
             {lineup.targetCallout && (
               <span className="rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 font-medium text-11 text-ink">
                 {lineup.targetCallout}
@@ -156,6 +160,7 @@ export function LineupDetailCard({ lineup, onDelete, onEdit }: Props) {
         </div>
 
         <h3 className="font-ui font-medium text-16 text-ink leading-dense">{lineup.title}</h3>
+        <LineupAuthorLine author={lineup.author} />
       </div>
 
       {/* Movement & Target details */}

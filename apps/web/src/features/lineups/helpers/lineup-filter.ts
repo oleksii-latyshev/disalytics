@@ -1,20 +1,38 @@
-import type { Lineup, LineupSide, UtilityKind } from '@disa/demo-core';
+import type { Lineup, LineupSide, LineupTag, UtilityKind } from '@disa/demo-core';
 
 export type LineupSideFilter = 'ALL' | LineupSide;
 export type LineupKindFilter = 'all' | UtilityKind;
+
+export type LineupTagFilter = 'all' | 'untagged' | LineupTag;
 
 export interface LineupFilterCriteria {
   readonly side: LineupSideFilter;
   readonly kind: LineupKindFilter;
   readonly search: string;
+  readonly tag?: LineupTagFilter;
 }
 
-/** Pure filter function for lineups by side, kind, and search text. */
+function matchesTag(lineup: Lineup, tag: LineupTagFilter): boolean {
+  if (tag === 'all') return true;
+  if (tag === 'untagged') return (lineup.tags?.length ?? 0) === 0;
+  return lineup.tags?.includes(tag) ?? false;
+}
+
+function matchesSearch(lineup: Lineup, q: string): boolean {
+  if (!q) return true;
+  return (
+    lineup.title.toLowerCase().includes(q) ||
+    (lineup.notes?.toLowerCase().includes(q) ?? false) ||
+    (lineup.targetCallout?.toLowerCase().includes(q) ?? false)
+  );
+}
+
+/** Pure filter function for lineups by side, kind, tag, and search text. */
 export function filterLineups(
   lineups: readonly Lineup[],
   criteria: LineupFilterCriteria,
 ): readonly Lineup[] {
-  const { side, kind, search } = criteria;
+  const { side, kind, search, tag = 'all' } = criteria;
   const q = search.trim().toLowerCase();
 
   return lineups.filter((lineup) => {
@@ -24,11 +42,11 @@ export function filterLineups(
     if (kind !== 'all' && lineup.kind !== kind) {
       return false;
     }
-    if (q) {
-      const inTitle = lineup.title.toLowerCase().includes(q);
-      const inNotes = lineup.notes?.toLowerCase().includes(q) ?? false;
-      const inCallout = lineup.targetCallout?.toLowerCase().includes(q) ?? false;
-      if (!inTitle && !inNotes && !inCallout) return false;
+    if (!matchesTag(lineup, tag)) {
+      return false;
+    }
+    if (!matchesSearch(lineup, q)) {
+      return false;
     }
     return true;
   });

@@ -4,6 +4,7 @@ import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { CheckSquare, CornerDownRight, Layers, Square, Trash2, Unlink, X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
+import { LineupTagChips } from './LineupTagChips';
 
 interface Props {
   readonly mode: 'view' | 'edit';
@@ -199,6 +200,7 @@ export function LineupList({
                       <span className="rounded-chip border border-line bg-surface-2 px-1.5 py-0.5 text-11 text-ink-dim">
                         <Text path={`review.maps.throw.types.${lineup.throwType}`} />
                       </span>
+                      <LineupTagChips tags={lineup.tags} className="px-1.5 py-0.5 text-10" />
                       {lineup.targetCallout && (
                         <span className="shrink-0 rounded-chip border border-line bg-surface-3 px-1.5 py-0.5 text-10 font-mono text-ink-dim">
                           {lineup.targetCallout}
