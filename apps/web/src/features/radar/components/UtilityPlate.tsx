@@ -1,85 +1,42 @@
-import type { ParsedDemo, UtilityThrow } from '@disa/demo-core';
+import type { LineupTarget, LineupVariant, UtilityThrow } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview } from '@disa/map-data';
-import { useMemo, useRef } from 'react';
+import { type ReactNode, useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { plateBox } from '../helpers/plate-box';
-import {
-  findNearestCluster,
-  groupThrowsByLanding,
-  type ThrowCluster,
-} from '../helpers/throw-cluster';
-import { END_STRIDE, ENDS_LENGTH, throwLayer, throwPlot } from '../helpers/throw-layer';
-import { plateGeometry, plateView, radarPointAt, readPlateGeometry } from '../helpers/view';
+import { targetLayer } from '../helpers/target-layer';
+import { dotPlot, selectionPlot, targetPoints } from '../helpers/target-plot';
+import { stackPoints } from '../helpers/target-stacks';
+import { plateView } from '../helpers/view';
 import { useRadarPlate } from '../hooks/use-radar-plate';
+import { type PlateLabels, TargetMarkers } from './TargetMarkers';
 import { UnknownMap } from './UnknownMap';
 
-/** Maximum distance in screen pixels to register a click on a throw's origin or landing. */
-const HIT_RADIUS_PX = 16;
-
-/** Finds the nearest throw origin or landing within `maxDistPx` of the click point, or `null`. */
-function findNearestThrow(
-  pt: { x: number; y: number },
-  plot: Float32Array,
-  throwsCount: number,
-  scale: number,
-  maxDistPx: number,
-): number | null {
-  const maxRadarDist = maxDistPx / scale;
-  const maxRadarDistSq = maxRadarDist * maxRadarDist;
-  let bestIndex: number | null = null;
-  let bestDistSq = maxRadarDistSq;
-
-  for (let i = 0; i < throwsCount; i++) {
-    const at = i * ENDS_LENGTH;
-    const ox = plot[at];
-    const oy = plot[at + 1];
-    const lx = plot[at + END_STRIDE];
-    const ly = plot[at + END_STRIDE + 1];
-    if (ox === undefined || oy === undefined || lx === undefined || ly === undefined) continue;
-
-    const dOx = ox - pt.x;
-    const dOy = oy - pt.y;
-    const dLx = lx - pt.x;
-    const dLy = ly - pt.y;
-
-    const minDistSq = Math.min(dOx * dOx + dOy * dOy, dLx * dLx + dLy * dLy);
-    if (minDistSq < bestDistSq) {
-      bestDistSq = minDistSq;
-      bestIndex = i;
-    }
-  }
-
-  return bestIndex;
-}
-
 interface Props {
-  demo: ParsedDemo;
-  /** Already narrowed by whatever the screen above is narrowing by. */
-  throws: readonly UtilityThrow[];
-  /** Pre-grouped clusters over `throws`. Computed automatically if omitted. */
-  clusters?: readonly ThrowCluster[] | undefined;
-  /** The index into `throws` of the one mark isolated from the list beside the map, or `null`. */
-  focused: number | null;
-  /** Invoked when a throw mark or empty plate is clicked. */
-  onSelect?: ((index: number | null) => void) | undefined;
-  /** Invoked when a landing cluster with 2 or more throws is clicked. */
-  onSelectCluster?: ((cluster: ThrowCluster) => void) | undefined;
+  map: string;
+  /** What the reader's filters leave, most used first. */
+  targets: readonly LineupTarget[];
+  selected: LineupTarget | null;
+  activeVariantId: string | null;
+  /** Variants that are in the reader's lineups. */
+  savedVariantIds: ReadonlySet<string>;
+  /** Drawn as quiet dots; empty when the reader has not asked for them. */
+  onTheMove: readonly UtilityThrow[];
+  /** The target that anchors the open stack, if one is open. */
+  openStack: string | null;
+  labels: PlateLabels;
+  onSelectTarget: (id: string) => void;
+  onSelectVariant: (id: string) => void;
+  onOpenStack: (id: string | null) => void;
+  stackMenu: (ids: readonly string[]) => ReactNode;
 }
 
-function UtilityCanvas({
-  demo,
-  throws,
-  clusters,
-  focused,
-  overview,
-  onSelect,
-  onSelectCluster,
-}: Props & { overview: MapOverview }) {
+function UtilityCanvas({ overview, ...props }: Props & { overview: MapOverview }) {
   const t = useT();
+  const { targets, selected, activeVariantId, onTheMove, onOpenStack } = props;
 
   const [theme] = useSetting('radarTheme');
   const [palette] = useSetting('palette');
@@ -87,31 +44,24 @@ function UtilityCanvas({
   const { layout, images, floorLabels } = useRadarPlate(overview, theme);
   const colors = radarColors(palette);
 
-  // Fixed, the way the duel map's is: §6.3's zoom is a gesture on a match the reader is inside.
+  // Fixed, the way the duel map's is: a view of the match's lineups is read whole.
   const viewRef = useRef(plateView());
-  const geometryRef = useRef(plateGeometry());
 
-  const computedClusters = useMemo(
-    () => clusters ?? groupThrowsByLanding(throws),
-    [clusters, throws],
+  const stacks = useMemo(() => stackPoints(targetPoints(overview, targets)), [overview, targets]);
+  const byId = useMemo(() => new Map(targets.map((target) => [target.id, target])), [targets]);
+  const dots = useMemo(() => dotPlot(overview, onTheMove, colors), [overview, onTheMove, colors]);
+
+  const activeVariant = useMemo(
+    (): LineupVariant | undefined => selected?.variants.find(({ id }) => id === activeVariantId),
+    [selected, activeVariantId],
   );
-
-  const plot = useMemo(
-    () => throwPlot(demo.track, overview, throws),
-    [demo.track, overview, throws],
+  const selection = useMemo(
+    () => (selected === null ? null : selectionPlot(overview, selected, activeVariant, colors)),
+    [overview, selected, activeVariant, colors],
   );
 
   const layers = useMemo(() => {
-    const utility = throwLayer({
-      throws,
-      plot,
-      clusters: computedClusters,
-      overview,
-      tickRate: demo.header.tickRate,
-      colors,
-      view: viewRef,
-      focused,
-    });
+    const marks = targetLayer({ overview, colors, view: viewRef, dots, selection });
 
     return images.status === 'ready'
       ? [
@@ -122,115 +72,60 @@ function UtilityCanvas({
             labelColor: colors.dead,
             view: viewRef,
           }),
-          utility,
+          marks,
         ]
-      : [utility];
-  }, [
-    throws,
-    plot,
-    computedClusters,
-    overview,
-    demo.header.tickRate,
-    colors,
-    images,
-    layout,
-    floorLabels,
-    focused,
-  ]);
+      : [marks];
+  }, [overview, colors, dots, selection, images, layout, floorLabels]);
 
   const { canvasRef } = useCanvasLayers(layers);
-
-  /** Resolves the click into either a cluster, a single throw index, or null. */
-  const resolveHit = (
-    event: React.MouseEvent<HTMLCanvasElement>,
-  ):
-    | { kind: 'cluster'; cluster: ThrowCluster }
-    | { kind: 'throw'; index: number | null }
-    | null => {
-    const canvas = canvasRef.current;
-    if (canvas === null) return null;
-    const box = canvas.getBoundingClientRect();
-    if (box.width === 0 || box.height === 0) return null;
-
-    const pt = radarPointAt(
-      viewRef.current,
-      event.clientX - box.left,
-      event.clientY - box.top,
-      box,
-      layout,
-    );
-    readPlateGeometry(viewRef.current, box, layout, geometryRef.current);
-    const { scale } = geometryRef.current;
-    if (scale <= 0) return null;
-
-    const clusterHit = findNearestCluster(pt, computedClusters, plot, scale, HIT_RADIUS_PX);
-    if (clusterHit !== null && clusterHit.indices.length >= 2) {
-      return { kind: 'cluster', cluster: clusterHit };
-    }
-    if (clusterHit !== null && clusterHit.indices.length === 1) {
-      return { kind: 'throw', index: clusterHit.indices[0] ?? null };
-    }
-    const hit = findNearestThrow(pt, plot, throws.length, scale, HIT_RADIUS_PX);
-    return { kind: 'throw', index: hit };
-  };
-
-  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (onSelect === undefined && onSelectCluster === undefined) return;
-    const result = resolveHit(event);
-    if (result === null) return;
-    if (result.kind === 'cluster' && onSelectCluster !== undefined) {
-      onSelectCluster(result.cluster);
-    } else if (result.kind === 'throw' && onSelect !== undefined) {
-      onSelect(result.index);
-    }
-  };
 
   // Sized from the cell rather than capped against it — a canvas carries an intrinsic ratio from its
   // backing store, so `max-h-full` with an aspect ratio measures the backing store's own width (#315).
   return (
     <div className="grid min-h-0 min-w-0 place-items-center [container-type:size]">
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label={t('radar.label', { map: overview.id })}
-        onClick={handleClick}
-        className={`rounded-card bg-surface-0 ${
-          onSelect !== undefined || onSelectCluster !== undefined ? 'cursor-pointer' : ''
-        }`}
-        style={plateBox(layout).style}
-      />
+      <div className="relative" style={plateBox(layout).style}>
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label={t('radar.label', { map: overview.id })}
+          onClick={() => onOpenStack(null)}
+          className="size-full rounded-card bg-surface-0"
+        />
+
+        <TargetMarkers
+          overview={overview}
+          layout={layout}
+          stacks={stacks}
+          targets={byId}
+          selected={selected}
+          activeVariantId={activeVariantId}
+          savedVariantIds={props.savedVariantIds}
+          openStack={props.openStack}
+          labels={props.labels}
+          onSelectTarget={props.onSelectTarget}
+          onSelectVariant={props.onSelectVariant}
+          onOpenStack={onOpenStack}
+          stackMenu={props.stackMenu}
+        />
+      </div>
     </div>
   );
 }
 
 /**
- * A match's utility on the map it was thrown across — `ROADMAP.md` M5's utility map.
+ * A match's lineups on the map they were thrown across: one marker where each kind of grenade
+ * landed, and for the picked one every spot it was thrown from.
  *
  * **There is no clock and no transport**, the way the duel map and the heat map have none:
  * `useCanvasLayers` paints when its layers change and when the element is resized, so nothing here
  * subscribes to a frame channel.
  */
-export function UtilityPlate({
-  demo,
-  throws,
-  clusters,
-  focused,
-  onSelect,
-  onSelectCluster,
-}: Props) {
-  const overview = getMapOverview(demo.header.map);
+export function UtilityPlate(props: Props) {
+  const overview = getMapOverview(props.map);
 
   return overview === undefined ? (
-    <UnknownMap map={demo.header.map} />
+    <UnknownMap map={props.map} />
   ) : (
-    <UtilityCanvas
-      demo={demo}
-      throws={throws}
-      clusters={clusters}
-      focused={focused}
-      overview={overview}
-      onSelect={onSelect}
-      onSelectCluster={onSelectCluster}
-    />
+    <UtilityCanvas overview={overview} {...props} />
   );
 }

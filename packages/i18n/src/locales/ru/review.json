@@ -374,5 +374,71 @@
       },
       "times": "{count, number}×"
     }
+  },
+  "lineups": {
+    "panel": "Лайнап",
+    "close": "Закрыть",
+    "unnamed": "точка без названия",
+    "search": "Найти точку",
+    "searchHint": "Найти точку — xbox, long, b",
+    "listTitle": "Куда летит",
+    "rowMeta": "{throws, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}} · {origins, plural, one {# позиция} few {# позиции} many {# позиций} other {# позиции}}",
+    "throws": "{count, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}",
+    "noMatches": "С этими фильтрами ничего не нашлось.",
+    "resetFilters": "Сбросить фильтры",
+    "onTheMove": "Броски на ходу",
+    "onTheMoveNote": "Их не повторить по лайнапу — только точки на карте",
+    "myLineups": "Мои лайнапы",
+    "legend": {
+      "landed": "куда упала",
+      "origin": "откуда бросали",
+      "path": "траектория, условно"
+    },
+    "stack": {
+      "title": "Здесь падают · {count, number}",
+      "aria": "{targets, plural, one {# точка} few {# точки} many {# точек} other {# точки}} здесь, {throws, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}"
+    },
+    "targetAria": "{title}, {throws, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}",
+    "originAria": "Позиция {number, number}: {name}",
+    "targetMeta": "{throws, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}} · {side} · куда упала",
+    "origins": "Откуда бросали · {count, number}",
+    "variantMeta": "{type} · {count, number}× · {players}",
+    "playersMore": "{names} +{more, number}",
+    "empty": {
+      "title": "Куда должна упасть граната?",
+      "lead": "Выберите точку на карте или в списке. Покажем, откуда её бросали в этом матче, и как повторить бросок.",
+      "step1": "Точка, куда упала",
+      "step2": "Позиция, откуда бросали",
+      "step3": "Сохранить себе",
+      "spots": "{count, plural, one {точка с лайнапами} few {точки с лайнапами} many {точек с лайнапами} other {точки с лайнапами}}",
+      "repeated": "повторялись 2+ раз",
+      "top": "Чаще всего в этом матче"
+    },
+    "howTo": {
+      "title": "Как повторить",
+      "stand": "Встать",
+      "throw": "Бросок",
+      "console": "Консоль",
+      "copy": "Копировать",
+      "copied": "Скопировано",
+      "approximate": "Позиция и прицел сняты с частотой {hz, number} раз в секунду — на сервере с sv_cheats 1 команда поставит вас почти точно на место."
+    },
+    "keys": {
+      "jump": "Прыжок"
+    },
+    "replay": {
+      "title": "Посмотреть в повторе",
+      "chip": "R{round, number} · {time}",
+      "watch": "Смотреть раунд {round, number}, {time}, в повторе"
+    },
+    "save": {
+      "action": "Сохранить лайнап",
+      "hint": "Название, сторона и команда заполнятся сами",
+      "saved": "Сохранено",
+      "edit": "Изменить",
+      "undo": "Отменить",
+      "failed": "Не удалось сохранить лайнап на этом устройстве.",
+      "title": "{kind} {target} из {origin}"
+    }
   }
 }

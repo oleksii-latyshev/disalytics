@@ -5,6 +5,7 @@ export { MatchRadar } from './components/MatchRadar';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export type { PlateReplay } from './components/PlateStill';
 export { PlateStill } from './components/PlateStill';
+export type { PlateLabels } from './components/TargetMarkers';
 export { UnknownMap } from './components/UnknownMap';
 export { UtilityPlate } from './components/UtilityPlate';
 export { squareBackdrop } from './helpers/backdrop';
@@ -26,12 +27,6 @@ export { labelPass, readLabelStyle } from './helpers/labels';
 export { levelAt } from './helpers/levels';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';
-export {
-  CLUSTER_THRESHOLD_SQ,
-  findNearestCluster,
-  groupThrowsByLanding,
-  type ThrowCluster,
-} from './helpers/throw-cluster';
 export {
   drawNeedle,
   drawSelectionRing,

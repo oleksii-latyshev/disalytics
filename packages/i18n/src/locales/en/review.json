@@ -374,5 +374,71 @@
       },
       "times": "{count, number}×"
     }
+  },
+  "lineups": {
+    "panel": "Lineup",
+    "close": "Close",
+    "unnamed": "unnamed spot",
+    "search": "Find a spot",
+    "searchHint": "Find a spot — xbox, long, b",
+    "listTitle": "Where it lands",
+    "rowMeta": "{throws, plural, one {# throw} other {# throws}} · {origins, plural, one {# spot} other {# spots}}",
+    "throws": "{count, plural, one {# throw} other {# throws}}",
+    "noMatches": "Nothing matches these filters.",
+    "resetFilters": "Reset filters",
+    "onTheMove": "Throws on the move",
+    "onTheMoveNote": "They cannot be repeated from a lineup — only dots on the map",
+    "myLineups": "My lineups",
+    "legend": {
+      "landed": "where it landed",
+      "origin": "where it was thrown from",
+      "path": "path, approximate"
+    },
+    "stack": {
+      "title": "Landing here · {count, number}",
+      "aria": "{targets, plural, one {# target} other {# targets}} here, {throws, plural, one {# throw} other {# throws}}"
+    },
+    "targetAria": "{title}, {throws, plural, one {# throw} other {# throws}}",
+    "originAria": "Spot {number, number}: {name}",
+    "targetMeta": "{throws, plural, one {# throw} other {# throws}} · {side} · where it landed",
+    "origins": "Thrown from · {count, number}",
+    "variantMeta": "{type} · {count, number}× · {players}",
+    "playersMore": "{names} +{more, number}",
+    "empty": {
+      "title": "Where should the grenade land?",
+      "lead": "Pick a spot on the map or in the list. We show where it was thrown from in this match, and how to repeat the throw.",
+      "step1": "Where it landed",
+      "step2": "Where it was thrown from",
+      "step3": "Save it",
+      "spots": "{count, plural, one {spot with lineups} other {spots with lineups}}",
+      "repeated": "thrown 2+ times",
+      "top": "Most thrown in this match"
+    },
+    "howTo": {
+      "title": "How to repeat",
+      "stand": "Stand at",
+      "throw": "Throw",
+      "console": "Console",
+      "copy": "Copy",
+      "copied": "Copied",
+      "approximate": "Position and aim are sampled {hz, number} times a second, so on a server with sv_cheats 1 the command puts you almost exactly on the spot."
+    },
+    "keys": {
+      "jump": "Jump"
+    },
+    "replay": {
+      "title": "Watch in replay",
+      "chip": "R{round, number} · {time}",
+      "watch": "Watch round {round, number} at {time} in the replay"
+    },
+    "save": {
+      "action": "Save lineup",
+      "hint": "Title, side and command are filled in for you",
+      "saved": "Saved",
+      "edit": "Edit",
+      "undo": "Undo",
+      "failed": "Could not save the lineup on this device.",
+      "title": "{kind} {target} from {origin}"
+    }
   }
 }

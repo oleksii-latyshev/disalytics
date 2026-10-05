@@ -140,6 +140,8 @@ export {
 } from './helpers/grenade-visual';
 export type { HeatMode, HeatScope, HeatTally, HeatVisit } from './helpers/heat';
 export { HEAT_MODES, walkHeat } from './helpers/heat';
+export type { LineupOfVariantOptions } from './helpers/lineup-of-variant';
+export { lineupOfVariant, savedLineupId } from './helpers/lineup-of-variant';
 export type {
   Lineup,
   LineupAuthor,
@@ -167,6 +169,19 @@ export {
   THROW_TYPES,
   toggledLineupTag,
 } from './helpers/lineups';
+export type {
+  LineupTarget,
+  LineupVariant,
+  LineupVariantSide,
+  LineupVariantThrow,
+  MatchLineups,
+} from './helpers/match-lineups';
+export {
+  matchLineups,
+  TARGET_LANDING_UNITS,
+  VARIANT_LANDING_UNITS,
+  VARIANT_ORIGIN_UNITS,
+} from './helpers/match-lineups';
 export type { HalfScores, MatchSummary, RoundSummary } from './helpers/match-summary';
 export { matchSummary } from './helpers/match-summary';
 export type { Moment } from './helpers/moments';
