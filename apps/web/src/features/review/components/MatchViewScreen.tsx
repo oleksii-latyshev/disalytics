@@ -1,7 +1,7 @@
 import type { Frame, ParsedDemo } from '@disa/demo-core';
 import type { StatsTab } from '@/core/navigation';
 import type { CacheState } from '@/core/parsing';
-import type { MapNarrowing } from '../helpers/map-scope';
+import type { DuelNarrowing } from '../helpers/map-scope';
 import type { MatchView } from '../helpers/match-views';
 import type { Sheet } from '../hooks/use-review-sheets';
 import { MatchCorner } from './MatchCorner';
@@ -23,8 +23,8 @@ interface Props {
   onStatsTab: (tab: StatsTab) => void;
   onClose: () => void;
   onDismissSheet: () => void;
-  duelNarrowing: MapNarrowing;
-  onDuelNarrowing: (narrowing: MapNarrowing) => void;
+  duelNarrowing: DuelNarrowing;
+  onDuelNarrowing: (narrowing: DuelNarrowing) => void;
   /** Leave for the stage at a frame — a duel opened from the duel map (#387). */
   onOpenOnStage: (frame: Frame) => void;
 }
