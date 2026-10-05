@@ -202,13 +202,16 @@ export {
   rating1,
 } from './helpers/player-stats';
 export type {
+  ArmourState,
   GrenadeReference,
   HitgroupDamage,
-  HitgroupValues,
+  HitZone,
   WeaponReference,
   WeaponReferenceCategory,
+  ZoneDamage,
 } from './helpers/reference-data';
 export {
+  ARMOUR_STATES,
   calculateHitgroupDamage,
   GRENADE_REFERENCES,
   WEAPON_REFERENCES,

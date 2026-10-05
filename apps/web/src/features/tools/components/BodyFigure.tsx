@@ -5,12 +5,16 @@ export function BodyFigure({
   chest,
   stomach,
   legs,
+  hasVest,
+  hasHelmet,
   className,
 }: {
   head: number;
   chest: number;
   stomach: number;
   legs: number;
+  hasVest: boolean;
+  hasHelmet: boolean;
   className?: string;
 }) {
   const opacity = (damage: number) => 0.14 + 0.8 * zoneHeat(damage);
@@ -35,6 +39,28 @@ export function BodyFigure({
         <rect x="38" y="122" width="19" height="72" rx="7" />
         <rect x="63" y="122" width="19" height="72" rx="7" />
       </g>
+      {hasVest && (
+        <path
+          d="M40 44 H50 L60 55 L70 44 H80 L85 52 V110 Q85 118 77 118 H43 Q35 118 35 110 V52 Z"
+          className="text-ct"
+          fill="currentColor"
+          fillOpacity={0.16}
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+      )}
+      {hasHelmet && (
+        <path
+          d="M41 25 A19 19 0 0 1 79 25 Z"
+          className="text-ct"
+          fill="currentColor"
+          fillOpacity={0.16}
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+      )}
     </svg>
   );
 }

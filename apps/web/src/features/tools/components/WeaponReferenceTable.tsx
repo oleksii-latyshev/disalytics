@@ -1,4 +1,4 @@
-import { WEAPON_REFERENCES } from '@disa/demo-core';
+import { type ArmourState, WEAPON_REFERENCES } from '@disa/demo-core';
 import { Text, useLocale } from '@disa/i18n';
 import { useMemo, useState } from 'react';
 import {
@@ -37,15 +37,15 @@ export function WeaponReferenceTable() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryFilter>('rifle');
   const [side, setSide] = useState<SideFilter>('all');
-  const [isArmored, setIsArmored] = useState(true);
+  const [armour, setArmour] = useState<ArmourState>('vestHelmet');
   const [selectedName, setSelectedName] = useState<string | null>('AK-47');
   const [sort, setSort] = useState<{ key: SortKey; asc: boolean } | null>(null);
 
   const visible = useMemo(() => {
     const filtered = filterWeapons(WEAPON_REFERENCES, { query, category, side });
     if (sort === null) return filtered;
-    return [...filtered].sort((a, b) => compareWeapons(a, b, sort.key, sort.asc, isArmored));
-  }, [query, category, side, sort, isArmored]);
+    return [...filtered].sort((a, b) => compareWeapons(a, b, sort.key, sort.asc, armour));
+  }, [query, category, side, sort, armour]);
 
   const selected = pickSelected(visible, selectedName);
 
@@ -57,11 +57,11 @@ export function WeaponReferenceTable() {
       <WeaponFilters
         category={category}
         side={side}
-        isArmored={isArmored}
+        armour={armour}
         query={query}
         onCategory={setCategory}
         onSide={setSide}
-        onArmored={setIsArmored}
+        onArmour={setArmour}
         onQuery={setQuery}
       />
 
@@ -72,7 +72,7 @@ export function WeaponReferenceTable() {
       ) : (
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="lg:order-last">
-            <WeaponDetail weapon={selected} isArmored={isArmored} moneyFormat={moneyFormat} />
+            <WeaponDetail weapon={selected} armour={armour} moneyFormat={moneyFormat} />
           </div>
 
           <ul className="surface-card overflow-hidden rounded-card md:hidden">
@@ -80,7 +80,7 @@ export function WeaponReferenceTable() {
               <WeaponCardRow
                 key={weapon.name}
                 weapon={weapon}
-                isArmored={isArmored}
+                armour={armour}
                 isSelected={weapon.name === selected.name}
                 moneyFormat={moneyFormat}
                 onSelect={setSelectedName}
@@ -121,7 +121,7 @@ export function WeaponReferenceTable() {
                   <WeaponRow
                     key={weapon.name}
                     weapon={weapon}
-                    isArmored={isArmored}
+                    armour={armour}
                     isSelected={weapon.name === selected.name}
                     moneyFormat={moneyFormat}
                     onSelect={setSelectedName}

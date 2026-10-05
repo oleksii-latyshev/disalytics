@@ -1,23 +1,13 @@
-import type { WeaponReference } from '@disa/demo-core';
+import type { ArmourState, HitZone, WeaponReference } from '@disa/demo-core';
 
-export type Zone = 'head' | 'chest' | 'stomach' | 'legs';
+export type Zone = HitZone;
 
 export const ZONES: readonly Zone[] = ['head', 'chest', 'stomach', 'legs'];
 
 const TARGET_HEALTH = 100;
 
-export function zoneDamage(weapon: WeaponReference, zone: Zone, isArmored: boolean): number {
-  const { head, chestArms, stomach, legs } = weapon.hitgroupDamage;
-  switch (zone) {
-    case 'head':
-      return isArmored ? head.armored : head.unarmored;
-    case 'chest':
-      return isArmored ? chestArms.armored : chestArms.unarmored;
-    case 'stomach':
-      return isArmored ? stomach.armored : stomach.unarmored;
-    case 'legs':
-      return legs.unarmored;
-  }
+export function zoneDamage(weapon: WeaponReference, zone: Zone, armour: ArmourState): number {
+  return weapon.hitgroupDamage[armour][zone];
 }
 
 export function shotsToKill(damage: number): number {

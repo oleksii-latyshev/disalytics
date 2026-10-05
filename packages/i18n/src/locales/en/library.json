@@ -189,8 +189,9 @@
         "only": "{side} only"
       },
       "mode": {
-        "armored": "Armoured",
-        "unarmored": "No armour"
+        "none": "No armour",
+        "vest": "Vest",
+        "vestHelmet": "Vest + helmet"
       },
       "columns": {
         "weapon": "Weapon",
@@ -215,8 +216,9 @@
         },
         "shots": "{count, plural, =1 {one shot} other {# shots}}",
         "pellets": "{count, plural, =1 {one pellet} other {# pellets}}",
-        "noteArmored": "Against a helmet and vest.",
-        "noteUnarmored": "Without armour.",
+        "noteNone": "Without armour.",
+        "noteVest": "Against a vest, no helmet: head shots are not reduced.",
+        "noteVestHelmet": "Against a vest and helmet.",
         "noteBasis": "Base damage at close range; shots to kill assume 100 HP and no misses.",
         "notePellets": "Shotgun numbers are per pellet."
       }
