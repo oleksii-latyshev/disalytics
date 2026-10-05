@@ -11,7 +11,7 @@ import { useSetting } from '@/core/settings';
 import { MatchRadar, useCoachKeys, useCoachSession } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
 import { type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
-import { type MatchView, nextMatchView } from '../helpers/match-views';
+import { type AnalysisView, type MatchView, nextMatchView } from '../helpers/match-views';
 import { useCoachNotes } from '../hooks/use-coach-notes';
 import { useHotCorners } from '../hooks/use-hot-corners';
 import { useMatchReadout } from '../hooks/use-match-readout';
@@ -61,6 +61,8 @@ export function MatchReview({
   const fullscreen = useFullscreen();
   const [selectedSlot, setSelectedSlot] = useState<PlayerSlot | null>(null);
   const [isPlateExpanded, setPlateExpanded] = useState(false);
+  const [lastAnalysis, setLastAnalysis] = useState<AnalysisView>('stats');
+  if (view !== 'stage' && view !== lastAnalysis) setLastAnalysis(view);
   const [duelNarrowing, setDuelNarrowing] = useState<MapNarrowing>(WHOLE_MATCH);
   const openOnStage = useCallback(
     (frame: Frame) => {
@@ -204,7 +206,7 @@ export function MatchReview({
         <MatchCorner demo={demo} cache={cache} onClose={onClose} />
       </motion.div>
 
-      <MatchViewBar view={view} onView={onView}>
+      <MatchViewBar view={view} onView={onView} analysisView={lastAnalysis}>
         {scoreboard === 'plate' && (
           <Scoreboard demo={demo} frame={frame} locale={locale} position="plate" />
         )}

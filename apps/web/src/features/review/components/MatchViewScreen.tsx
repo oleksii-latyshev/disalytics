@@ -58,7 +58,7 @@ export function MatchViewScreen({
 
       {/* The same bar in the same place as on the stage — #364. A view screen has no clock of its
           own to state, so nothing hangs under it here. */}
-      <MatchViewBar view={view} onView={onView} />
+      <MatchViewBar view={view} onView={onView} analysisView={view} />
 
       {view === 'stats' && <MatchStats demo={demo} tab={statsTab} onTab={onStatsTab} />}
       {view === 'duels' && (

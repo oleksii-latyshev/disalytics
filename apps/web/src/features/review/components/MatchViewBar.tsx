@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import type { MatchView } from '../helpers/match-views';
+import type { AnalysisView, MatchView } from '../helpers/match-views';
 import { MatchViewSwitch } from './MatchViewSwitch';
 
 interface Props {
   view: MatchView;
   onView: (view: MatchView) => void;
+  analysisView: AnalysisView;
   /** What hangs under the switch — the scoreboard, on a screen that has a clock to state. */
   children?: ReactNode;
 }
@@ -16,8 +17,9 @@ interface Props {
  * out's line because a line of their own comes straight off the map: the plate is
  * `min(100cqi, 100cqb)` of the cell the stage's grid leaves it, and three of the four widths this
  * repository quotes a plate figure at are height-bound. An absolutely positioned bar takes no row,
- * so the plate measures exactly what it measured before — and the switch stands in one place on
- * every view instead of riding a corner whose width changes with the locale.
+ * so the plate measures exactly what it measured before — and the switch, with its views named,
+ * stands in one place on every view instead of riding a corner whose width changes with the
+ * locale.
  *
  * **It stands on `.surface-hud`** — a card's ground with a stronger edge, for standing over a live
  * plate. That class carries no `backdrop-filter`, so a second tenant costs nothing but its own box.
@@ -30,11 +32,11 @@ interface Props {
  * children can be centred, and an expanded plate (#315) runs underneath it — without this, every
  * drag aimed at the map along the top of the screen would land on an empty strip instead.
  */
-export function MatchViewBar({ view, onView, children }: Props) {
+export function MatchViewBar({ view, onView, analysisView, children }: Props) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex flex-col items-center gap-2 wide:top-6">
       <div className="surface-hud pointer-events-auto rounded-card px-1.5 py-1">
-        <MatchViewSwitch view={view} onView={onView} />
+        <MatchViewSwitch view={view} onView={onView} analysisView={analysisView} />
       </div>
 
       {children !== undefined && children !== false && (

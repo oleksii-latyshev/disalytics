@@ -105,11 +105,13 @@
   },
   "views": {
     "nav": "Views",
-    "stage": "Stage",
+    "stage": "Replay",
+    "analysis": "Match analysis",
+    "more": "More",
     "stats": "Stats",
     "duels": "Duels",
     "heatmap": "Heat map",
-    "utility": "Utility"
+    "utility": "Lineups"
   },
   "metrics": {
     "empty": "No round economy was recorded for this match.",
