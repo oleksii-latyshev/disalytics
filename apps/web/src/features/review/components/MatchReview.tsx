@@ -10,7 +10,7 @@ import { useBuyPhaseSkip, useIsPlaying, useTransport } from '@/core/playback';
 import { useSetting } from '@/core/settings';
 import { MatchRadar, useCoachKeys, useCoachSession } from '@/features/radar';
 import { useFullscreen } from '@/shared/hooks';
-import { type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
+import { DUELS_OPENING, type DuelNarrowing } from '../helpers/map-scope';
 import { type AnalysisView, type MatchView, nextMatchView } from '../helpers/match-views';
 import { useCoachNotes } from '../hooks/use-coach-notes';
 import { useHotCorners } from '../hooks/use-hot-corners';
@@ -63,7 +63,7 @@ export function MatchReview({
   const [isPlateExpanded, setPlateExpanded] = useState(false);
   const [lastAnalysis, setLastAnalysis] = useState<AnalysisView>('stats');
   if (view !== 'stage' && view !== lastAnalysis) setLastAnalysis(view);
-  const [duelNarrowing, setDuelNarrowing] = useState<MapNarrowing>(WHOLE_MATCH);
+  const [duelNarrowing, setDuelNarrowing] = useState<DuelNarrowing>(DUELS_OPENING);
   const openOnStage = useCallback(
     (frame: Frame) => {
       transport.pause();

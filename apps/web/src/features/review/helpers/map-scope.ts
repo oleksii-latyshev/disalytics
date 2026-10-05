@@ -3,18 +3,9 @@ import {
   type Duel,
   type Frame,
   frameForTick,
-  killWeaponClass,
-  killWeaponIcon,
-  killWeaponName,
   type ParsedDemo,
   type PlayerSlot,
   type Team,
-  WEAPON_NONE,
-  type WeaponClass,
-  type WeaponIconId,
-  weaponClass,
-  weaponIcon,
-  weaponName,
 } from '@disa/demo-core';
 
 /** `all` is not a side, and it is first because the match is what a map screen opens on. */
@@ -70,75 +61,82 @@ export function stageFrameForDuel(demo: ParsedDemo, duel: Duel): Frame {
   return asFrame(Math.max(roundStart, duel.frame - DUEL_LEAD_IN_SECONDS * demo.track.sampleHz));
 }
 
-export interface DuelEnd {
-  readonly slot: PlayerSlot;
-  readonly side: Team | undefined;
-  /** `null` when the recording saw nothing in hand. */
-  readonly weapon: {
-    readonly name: string;
-    readonly weaponClass: WeaponClass;
-    readonly icon: WeaponIconId | undefined;
-  } | null;
-  readonly health: number;
-  readonly armour: number;
-}
-
-export interface DuelDetail {
-  readonly attacker: DuelEnd;
-  readonly victim: DuelEnd;
-  readonly isHeadshot: boolean;
-  readonly isWallbang: boolean;
-  readonly isThroughSmoke: boolean;
-}
+/** The two sets of duels the view reads: the round-openers alone, or every kill between opponents. */
+export type DuelMode = 'openings' | 'all';
 
 /**
- * What both players were holding and how much they had left — #387's hover.
+ * What the duel view is narrowed to, held by the match so that opening a duel on the stage and
+ * coming back finds all of it where it was left (#387, #568).
  *
- * The killer's weapon is the kill's own (`Kill.weapon`), which is what did it. The victim's is what
- * `TickTrack` saw in their hand, and **both players' health and armour are read one sample before the
- * kill**: on the kill's own sample the victim is already dead and holds nothing.
+ * At most one of `player` and `pair` is set, and `duel` is the one chosen in the list — its index
+ * in `MatchEvents.kills`, which survives a change of mode that keeps it and is dropped by one that
+ * does not (`duelIsShown`). `pair` is `[row, column]` of the head-to-head grid and matches duels in
+ * both directions.
  */
-export function duelDetail(demo: ParsedDemo, duel: Duel): DuelDetail | undefined {
-  const kill = demo.events.kills[duel.killIndex];
-  if (kill === undefined) return undefined;
+export interface DuelNarrowing {
+  readonly mode: DuelMode;
+  readonly player: PlayerSlot | null;
+  readonly pair: readonly [PlayerSlot, PlayerSlot] | null;
+  readonly duel: number | null;
+}
 
-  const { track, header } = demo;
-  const before = Math.max(duel.frame - 1, 0) * track.slotCount;
+/** It opens on the openings: the duels that decided rounds, not all of them at once. */
+export const DUELS_OPENING: DuelNarrowing = {
+  mode: 'openings',
+  player: null,
+  pair: null,
+  duel: null,
+};
 
-  const vitals = (slot: PlayerSlot) => ({
-    health: track.health[before + slot] ?? 0,
-    armour: track.armour[before + slot] ?? 0,
-  });
+export function hasDuelFilter(narrowing: DuelNarrowing): boolean {
+  return narrowing.player !== null || narrowing.pair !== null;
+}
 
-  const held = track.weapon[before + duel.victim] ?? WEAPON_NONE;
-  const victimWeapon = held === WEAPON_NONE ? undefined : header.weapons[held];
+/** Whether a duel is the pair's, whichever of the two killed the other. */
+function isBetween(duel: Duel, pair: readonly [PlayerSlot, PlayerSlot]): boolean {
+  const [first, second] = pair;
 
-  return {
-    attacker: {
-      slot: duel.attacker,
-      side: duel.attackerSide,
-      weapon: {
-        name: killWeaponName(kill.weapon),
-        weaponClass: killWeaponClass(kill.weapon),
-        icon: killWeaponIcon(kill.weapon),
-      },
-      ...vitals(duel.attacker),
-    },
-    victim: {
-      slot: duel.victim,
-      side: duel.victimSide,
-      weapon:
-        victimWeapon === undefined
-          ? null
-          : {
-              name: weaponName(victimWeapon),
-              weaponClass: weaponClass(victimWeapon),
-              icon: weaponIcon(victimWeapon),
-            },
-      ...vitals(duel.victim),
-    },
-    isHeadshot: kill.isHeadshot,
-    isWallbang: kill.isWallbang,
-    isThroughSmoke: kill.isThroughSmoke,
-  };
+  return (
+    (duel.attacker === first && duel.victim === second) ||
+    (duel.attacker === second && duel.victim === first)
+  );
+}
+
+/** Whether a duel survives the filter: a pair's, else a player's — as killer or as victim. */
+export function isInDuelFilter(
+  filter: Pick<DuelNarrowing, 'player' | 'pair'>,
+  duel: Duel,
+): boolean {
+  if (filter.pair !== null) return isBetween(duel, filter.pair);
+  if (filter.player !== null)
+    return duel.attacker === filter.player || duel.victim === filter.player;
+
+  return true;
+}
+
+/** A name pressed: that player alone, or everyone again when it was already the one. */
+export function withPlayer(narrowing: DuelNarrowing, slot: PlayerSlot): DuelNarrowing {
+  return { ...narrowing, player: narrowing.player === slot ? null : slot, pair: null, duel: null };
+}
+
+/** A cell pressed: that pair alone, or everyone again when it was already the one. */
+export function withPair(
+  narrowing: DuelNarrowing,
+  row: PlayerSlot,
+  column: PlayerSlot,
+): DuelNarrowing {
+  const [first, second] = narrowing.pair ?? [];
+  const isChosen = first === row && second === column;
+
+  return { ...narrowing, player: null, pair: isChosen ? null : [row, column], duel: null };
+}
+
+/** A mode pressed. The filter stays, since a name is as true of the other mode; the duel does not. */
+export function withMode(narrowing: DuelNarrowing, mode: DuelMode): DuelNarrowing {
+  return { ...narrowing, mode, duel: null };
+}
+
+/** *Reset*: every duel of the mode, with none chosen. */
+export function withoutFilter(narrowing: DuelNarrowing): DuelNarrowing {
+  return { ...narrowing, player: null, pair: null, duel: null };
 }

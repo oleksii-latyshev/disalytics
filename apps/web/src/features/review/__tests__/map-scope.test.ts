@@ -12,11 +12,17 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   DUEL_LEAD_IN_SECONDS,
-  duelDetail,
+  DUELS_OPENING,
+  hasDuelFilter,
+  isInDuelFilter,
   isInNarrowing,
   stageFrameForDuel,
   togglePlayer,
   WHOLE_MATCH,
+  withMode,
+  withoutFilter,
+  withPair,
+  withPlayer,
 } from '../helpers/map-scope';
 
 const SAMPLE_HZ = 16;
@@ -75,16 +81,9 @@ const kill: Kill = {
 
 function newDemo(): ParsedDemo {
   const track = newTrack(500);
-  // One sample before the kill (frame 400): the attacker hurt, the victim holding the second weapon.
-  const before = 399 * SLOTS;
-  track.health[before + ct] = 62;
-  track.armour[before + ct] = 40;
-  track.health[before + t] = 100;
-  track.armour[before + t] = 100;
-  track.weapon[before + t] = 1;
 
   return {
-    header: { map: 'de_dust2', tickRate: 64, players: [], weapons: ['AK-47', 'AWP'] },
+    header: { map: 'de_dust2', tickRate: 64, players: [], weapons: [] },
     track,
     events: {
       kills: [kill],
@@ -139,21 +138,49 @@ describe('stageFrameForDuel', () => {
   });
 });
 
-describe('duelDetail', () => {
-  it('reads both players one sample before the kill, and the marks off the kill', () => {
-    const detail = duelDetail(newDemo(), duel);
+describe('the duel narrowing', () => {
+  const other = asPlayerSlot(2);
+  const reverse: Duel = { ...duel, attacker: t, victim: ct };
+  const elsewhere: Duel = { ...duel, attacker: other, victim: other };
 
-    expect(detail?.attacker).toMatchObject({ health: 62, armour: 40 });
-    expect(detail?.attacker.weapon?.name).toBe('AK-47');
-    expect(detail?.victim).toMatchObject({ health: 100, armour: 100 });
-    expect(detail?.victim.weapon?.name).toBe('AWP');
-    expect(detail).toMatchObject({ isHeadshot: true, isWallbang: false, isThroughSmoke: true });
+  it('opens on the openings with nothing filtered', () => {
+    expect(DUELS_OPENING).toMatchObject({ mode: 'openings', player: null, pair: null });
+    expect(hasDuelFilter(DUELS_OPENING)).toBe(false);
+    expect(isInDuelFilter(DUELS_OPENING, duel)).toBe(true);
   });
 
-  it('says nothing was in hand when the recording saw nothing', () => {
-    const demo = newDemo();
-    demo.track.weapon[399 * SLOTS + t] = WEAPON_NONE;
+  it('keeps a player as killer or as victim', () => {
+    const narrowing = withPlayer(DUELS_OPENING, ct);
 
-    expect(duelDetail(demo, duel)?.victim.weapon).toBeNull();
+    expect(isInDuelFilter(narrowing, duel)).toBe(true);
+    expect(isInDuelFilter(narrowing, reverse)).toBe(true);
+    expect(isInDuelFilter(narrowing, elsewhere)).toBe(false);
+  });
+
+  it('keeps a pair in both directions', () => {
+    const narrowing = withPair(DUELS_OPENING, ct, t);
+
+    expect(isInDuelFilter(narrowing, duel)).toBe(true);
+    expect(isInDuelFilter(narrowing, reverse)).toBe(true);
+    expect(isInDuelFilter(narrowing, { ...duel, victim: other })).toBe(false);
+  });
+
+  it('lets go of what is pressed twice, and one filter replaces the other', () => {
+    expect(withPlayer(withPlayer(DUELS_OPENING, ct), ct).player).toBeNull();
+    expect(withPair(withPair(DUELS_OPENING, ct, t), ct, t).pair).toBeNull();
+    expect(withPair(withPlayer(DUELS_OPENING, ct), ct, t).player).toBeNull();
+    expect(withPlayer(withPair(DUELS_OPENING, ct, t), ct).pair).toBeNull();
+  });
+
+  it('keeps the filter across a mode and drops the chosen duel', () => {
+    const narrowing = withMode({ ...withPlayer(DUELS_OPENING, ct), duel: 3 }, 'all');
+
+    expect(narrowing).toMatchObject({ mode: 'all', player: ct, duel: null });
+  });
+
+  it('resets to every duel of the mode', () => {
+    const narrowing = withoutFilter({ ...withPair(DUELS_OPENING, ct, t), mode: 'all', duel: 1 });
+
+    expect(narrowing).toEqual({ mode: 'all', player: null, pair: null, duel: null });
   });
 });

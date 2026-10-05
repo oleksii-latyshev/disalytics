@@ -25,6 +25,19 @@ export {
   withNote,
   withoutNote,
 } from './helpers/coach-notes';
+export type {
+  Counted,
+  HeadToHead,
+  OpeningReading,
+  PlayerDuels,
+} from './helpers/duel-reading';
+export {
+  duelWeapons,
+  headToHead,
+  openingReading,
+  opponentDuels,
+  playerDuels,
+} from './helpers/duel-reading';
 export type { Duel, MultiKill, TradeKill } from './helpers/duels';
 export {
   matchDuels,
