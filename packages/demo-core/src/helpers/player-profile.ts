@@ -134,6 +134,35 @@ function resultOf(own: number, opponent: number): MatchResult {
 }
 
 /**
+ * The rounds worth opening a replay on for one player: every clutch won, whatever the odds, and
+ * every round of three or more kills, oldest first (a clutch before a multi-kill in one round).
+ */
+export function playerKeyRounds(demo: ParsedDemo, slot: number): readonly PlayerMoment[] {
+  const clutches = matchClutches(demo)
+    .filter((clutch) => clutch.player === slot)
+    .map(
+      (clutch): PlayerMoment => ({
+        roundIndex: clutch.roundIndex,
+        kind: 'clutch',
+        count: clutch.opponents,
+      }),
+    );
+  const multiKills = roundKillCounts(demo)
+    .filter((multi) => multi.player === slot && multi.kills >= 3)
+    .map(
+      (multi): PlayerMoment => ({
+        roundIndex: multi.roundIndex,
+        kind: 'multi',
+        count: multi.kills,
+      }),
+    );
+
+  return [...clutches, ...multiKills].sort(
+    (a, b) => a.roundIndex - b.roundIndex || (a.kind === b.kind ? 0 : a.kind === 'clutch' ? -1 : 1),
+  );
+}
+
+/**
  * The match as one player lived it, or `null` when no player in it has this SteamID64.
  *
  * K, A, D, damage, headshots and rounds are `matchPlayerStats`' own — the review's Players table —
@@ -155,17 +184,9 @@ export function playerMatchLine(demo: ParsedDemo, steamId: string): PlayerMatchL
   const ownScore = openedAs === 'ct' ? score.startedCt : score.startedT;
   const opponentScore = openedAs === 'ct' ? score.startedT : score.startedCt;
 
-  const clutches: PlayerMoment[] = matchClutches(demo)
-    .filter((clutch) => clutch.player === info.slot)
-    .map((clutch) => ({
-      roundIndex: clutch.roundIndex,
-      kind: 'clutch' as const,
-      count: clutch.opponents,
-    }));
-  const multiKills: PlayerMoment[] = roundKillCounts(demo)
-    .filter((multi) => multi.player === info.slot && multi.kills >= 3)
-    .map((multi) => ({ roundIndex: multi.roundIndex, kind: 'multi' as const, count: multi.kills }))
-    .sort((a, b) => a.roundIndex - b.roundIndex);
+  const keyRounds = playerKeyRounds(demo, info.slot);
+  const clutches = keyRounds.filter((moment) => moment.kind === 'clutch');
+  const multiKills = keyRounds.filter((moment) => moment.kind === 'multi');
 
   return {
     steamId,

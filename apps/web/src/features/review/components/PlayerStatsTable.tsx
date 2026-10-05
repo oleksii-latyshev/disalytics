@@ -1,251 +1,195 @@
 import type { ParsedDemo, PlayerSlot, PlayerStats, TeamPlayerStats } from '@disa/demo-core';
-import { Text, useLocale, useT } from '@disa/i18n';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { Text, useT } from '@disa/i18n';
+import { ChevronDown } from 'lucide-react';
 import { useMemo } from 'react';
 import {
+  barScale,
   bestValue,
   type PlayerColumn,
-  type PlayerSort,
-  type PlayerTable,
-  sortPlayers,
+  type PlayerColumnSet,
+  sortByRating,
 } from '../helpers/player-table';
-import { ScoreboardRounds } from './ScoreboardRounds';
+import type { StatWriter } from '../helpers/stat-writer';
+import { PlayerDetail, type PlayerViewLink } from './PlayerDetail';
+import { TeamTag } from './TeamTag';
 
 interface Props {
   demo: ParsedDemo;
-  table: PlayerTable;
+  set: PlayerColumnSet;
   teams: readonly [TeamPlayerStats, TeamPlayerStats];
   /** False when the recording has no flash events, which makes those figures unknown, not zero. */
   hasFlashData: boolean;
-  sort: PlayerSort | null;
-  onSort: (column: PlayerColumn['id']) => void;
-  /** Set where a row opens onto its round-by-round strip; the other tables hold plain names. */
-  expandable?: {
-    opened: PlayerSlot | null;
-    onOpen: (slot: PlayerSlot | null) => void;
-  };
-}
-
-const SIDE_TICK = { ct: 'bg-ct', t: 'bg-t' } as const;
-
-type Writer = (value: number | null, column: PlayerColumn) => string;
-
-/** `+3` reads as a gain where `3` reads as a count, and the minus is the character's own. */
-function signed(value: number): string {
-  return value > 0 ? `+${value}` : String(value);
-}
-
-function useWriter(): Writer {
-  const locale = useLocale();
-
-  return useMemo(() => {
-    const integer = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
-    const decimal1 = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
-    const decimal2 = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-    return (value, column) => {
-      if (value === null) return '—';
-
-      switch (column.format) {
-        case 'signed':
-          return signed(value);
-        case 'percent':
-          return `${integer.format(value)} %`;
-        case 'decimal1':
-          return decimal1.format(value);
-        case 'decimal2':
-          return decimal2.format(value);
-        case 'integer':
-          return integer.format(value);
-      }
-    };
-  }, [locale]);
-}
-
-function ariaSortOf(
-  sort: PlayerSort | null,
-  column: PlayerColumn,
-): 'ascending' | 'descending' | 'none' {
-  if (sort?.column !== column.id) return 'none';
-  return sort.direction === 'desc' ? 'descending' : 'ascending';
+  write: StatWriter;
+  opened: PlayerSlot | null;
+  onOpen: (slot: PlayerSlot | null) => void;
+  onWatchRound: (roundIndex: number) => void;
+  onPlayerView: PlayerViewLink;
 }
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus';
 
 /**
- * One question of the Players tab, answered for both teams at once.
- *
- * **A heading is a button** because the order is the reader's to change, and a press on a native
- * button is the one interaction that is keyboard first for free. The sort holds inside a team; the
- * third press returns the order the scoreboard lists a team in.
+ * Both teams in one table, each by rating, in whichever set of columns the reader picked.
  *
  * **The best figure in a column is the brighter one**, across all ten players: ink against
- * `ink-dim` and a step of weight, never a hue, because colour here belongs to the side.
+ * `ink-dim` and a step of weight, never a hue, because colour here belongs to the side. A bar
+ * repeats the figure of the two columns that read as a share of the best (rating, utility damage).
+ * Pressing a player opens the row under them; at most one stands open.
  */
 export function PlayerStatsTable({
   demo,
-  table,
+  set,
   teams,
   hasFlashData,
-  sort,
-  onSort,
-  expandable,
+  write,
+  opened,
+  onOpen,
+  onWatchRound,
+  onPlayerView,
 }: Props) {
   const t = useT();
-  const write = useWriter();
-
-  const best = useMemo(() => {
-    const everyone = teams.flatMap((team) => team.players);
-    return table.columns.map((column) =>
-      !hasFlashData && column.needsFlashData ? null : bestValue(everyone, column),
-    );
-  }, [teams, table.columns, hasFlashData]);
-
-  const sorted = useMemo(() => teams.map((team) => sortPlayers(team.players, sort)), [teams, sort]);
+  const everyone = useMemo(() => teams.flatMap((team) => team.players), [teams]);
+  const sorted = useMemo(() => teams.map((team) => sortByRating(team.players)), [teams]);
+  const columns = useMemo(
+    () =>
+      set.columns.map((column) => {
+        const isUnknown = !hasFlashData && column.needsFlashData === true;
+        return {
+          column,
+          isUnknown,
+          best: isUnknown ? null : bestValue(everyone, column),
+          scale: column.bar === true ? barScale(everyone, column) : 0,
+        };
+      }),
+    [set.columns, hasFlashData, everyone],
+  );
 
   return (
-    <section aria-labelledby={`players-${table.id}`} className="flex min-w-0 flex-col gap-3">
-      <h3 id={`players-${table.id}`} className="font-ui font-medium text-20 leading-dense">
-        <Text path={table.titlePath} />
-      </h3>
+    <div className="overflow-x-auto px-4 pb-2">
+      <table className="w-full border-collapse text-14">
+        <thead>
+          <tr className="text-12 text-ink-dim">
+            <th scope="col" className="w-full min-w-[9rem] pt-2 pb-2 text-left font-normal">
+              <Text path="review.board.player" />
+            </th>
 
-      <div className="surface-card overflow-x-auto rounded-card px-4 pb-2">
-        <table className="w-full border-collapse text-14">
-          <thead>
-            <tr className="text-12 text-ink-dim">
-              <th scope="col" className="w-full min-w-[9rem] pt-4 pb-2 text-left font-normal">
-                <span className="sr-only">
-                  <Text path="review.board.player" />
+            {set.columns.map((column) => (
+              <th
+                key={column.id}
+                scope="col"
+                title={headerTitle(column, t)}
+                className="px-2 pt-2 pb-2 text-right align-bottom font-normal leading-dense"
+              >
+                {t(column.labelPath, column.labelValues)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        {teams.map((team, teamIndex) => (
+          <tbody key={team.team}>
+            <tr>
+              <th
+                scope="colgroup"
+                colSpan={set.columns.length + 1}
+                className="[border-block-start:1px_solid_var(--color-line)] py-2 text-left font-normal"
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span className="text-13 text-ink-dim">
+                    <TeamTag team={team.team} />
+                  </span>
+                  <span className="numeric text-16 text-ink">{team.score}</span>
                 </span>
               </th>
-
-              {table.columns.map((column) => {
-                const isUnknown = !hasFlashData && column.needsFlashData === true;
-                const isSorted = sort?.column === column.id;
-
-                return (
-                  <th
-                    key={column.id}
-                    scope="col"
-                    aria-sort={ariaSortOf(sort, column)}
-                    className="min-w-[5rem] px-2 pt-4 pb-2 text-right align-bottom font-normal"
-                  >
-                    <button
-                      type="button"
-                      title={
-                        column.id.startsWith('multi') && column.labelValues !== undefined
-                          ? t('review.stats.players.col.multiName', column.labelValues)
-                          : undefined
-                      }
-                      disabled={isUnknown}
-                      onClick={() => onSort(column.id)}
-                      className={`inline-flex cursor-pointer items-end justify-end gap-1 rounded-chip px-1 py-0.5 text-right leading-dense transition-colors duration-(--duration-micro) ease-out hover:text-ink disabled:cursor-default disabled:hover:text-ink-dim ${FOCUS_RING} ${
-                        isSorted ? 'text-ink' : ''
-                      }`}
-                    >
-                      <span>{t(column.labelPath, column.labelValues)}</span>
-                      {isSorted &&
-                        (sort.direction === 'desc' ? (
-                          <ArrowDown aria-hidden="true" className="mb-px size-3 shrink-0" />
-                        ) : (
-                          <ArrowUp aria-hidden="true" className="mb-px size-3 shrink-0" />
-                        ))}
-                    </button>
-                  </th>
-                );
-              })}
             </tr>
-          </thead>
 
-          {teams.map((team, teamIndex) => (
-            <tbody key={team.team}>
-              <tr>
-                <th
-                  scope="colgroup"
-                  colSpan={table.columns.length + 1}
-                  className="[border-block-start:1px_solid_var(--color-line)] py-2 text-left font-normal"
-                >
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-2 text-13 text-ink-dim">
-                      <span
-                        aria-hidden="true"
-                        className={`h-3.5 w-[3px] shrink-0 rounded-full ${SIDE_TICK[team.team]}`}
-                      />
-                      <Text
-                        path="review.board.started"
-                        values={{ side: team.team === 'ct' ? 'CT' : 'T' }}
-                      />
-                    </span>
-                    <span className="numeric text-16 text-ink">{team.score}</span>
-                  </span>
-                </th>
-              </tr>
-
-              {(sorted[teamIndex] ?? []).map((player) => (
-                <Row
-                  key={player.slot}
-                  demo={demo}
-                  table={table}
-                  player={player}
-                  best={best}
-                  hasFlashData={hasFlashData}
-                  write={write}
-                  expandable={expandable}
-                />
-              ))}
-            </tbody>
-          ))}
-        </table>
-      </div>
-    </section>
+            {(sorted[teamIndex] ?? []).map((player) => (
+              <Row
+                key={player.slot}
+                demo={demo}
+                columns={columns}
+                player={player}
+                write={write}
+                isOpen={opened === player.slot}
+                onOpen={onOpen}
+                onWatchRound={onWatchRound}
+                onPlayerView={onPlayerView}
+                columnCount={set.columns.length + 1}
+              />
+            ))}
+          </tbody>
+        ))}
+      </table>
+    </div>
   );
+}
+
+function headerTitle(column: PlayerColumn, t: ReturnType<typeof useT>): string | undefined {
+  if (column.nameTitlePath !== undefined) return t(column.nameTitlePath);
+  if (column.id.startsWith('multi') && column.labelValues !== undefined) {
+    return t('review.stats.players.col.multiName', column.labelValues);
+  }
+  return undefined;
+}
+
+interface ColumnState {
+  readonly column: PlayerColumn;
+  readonly isUnknown: boolean;
+  readonly best: number | null;
+  readonly scale: number;
 }
 
 interface RowProps {
   demo: ParsedDemo;
-  table: PlayerTable;
+  columns: readonly ColumnState[];
+  columnCount: number;
   player: PlayerStats;
-  best: readonly (number | null)[];
-  hasFlashData: boolean;
-  write: Writer;
-  expandable: Props['expandable'];
+  write: StatWriter;
+  isOpen: boolean;
+  onOpen: (slot: PlayerSlot | null) => void;
+  onWatchRound: (roundIndex: number) => void;
+  onPlayerView: PlayerViewLink;
 }
 
-function Row({ demo, table, player, best, hasFlashData, write, expandable }: RowProps) {
+function Row({
+  demo,
+  columns,
+  columnCount,
+  player,
+  write,
+  isOpen,
+  onOpen,
+  onWatchRound,
+  onPlayerView,
+}: RowProps) {
   const t = useT();
   const name = demo.header.players.find((entry) => entry.slot === player.slot)?.name ?? '';
-  const isOpen = expandable?.opened === player.slot;
 
   return (
     <>
       <tr
         className={`[border-block-start:1px_solid_var(--color-line)] ${isOpen ? 'bg-selected' : ''}`}
       >
-        <td className="h-10 min-w-0 max-w-0 py-0">
-          {expandable === undefined ? (
-            <span className="block truncate px-1 text-14 text-ink">{name}</span>
-          ) : (
-            <button
-              type="button"
-              aria-expanded={isOpen}
-              onClick={() => expandable.onOpen(isOpen ? null : player.slot)}
-              className={`flex w-full min-w-0 cursor-pointer rounded-chip px-1 py-1.5 text-left text-14 text-ink transition-colors duration-(--duration-micro) ease-out hover:bg-hover ${FOCUS_RING}`}
-            >
-              <span className="min-w-0 truncate">{name}</span>
-            </button>
-          )}
+        <td className="h-11 min-w-0 py-0">
+          <button
+            type="button"
+            aria-expanded={isOpen}
+            onClick={() => onOpen(isOpen ? null : player.slot)}
+            className={`flex w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-chip px-1 py-1.5 text-left text-14 text-ink transition-colors duration-(--duration-micro) ease-out hover:bg-hover ${FOCUS_RING}`}
+          >
+            <span className="min-w-0 break-words">{name}</span>
+            <ChevronDown
+              aria-hidden="true"
+              className={`size-3.5 shrink-0 text-ink-faint transition-transform duration-(--duration-micro) ease-out ${
+                isOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
         </td>
 
-        {table.columns.map((column, index) => {
+        {columns.map(({ column, isUnknown, best, scale }) => {
           const value = column.read(player);
-          const isUnknown = !hasFlashData && column.needsFlashData === true;
-          const isBest = !isUnknown && value !== null && value === best[index];
+          const isBest = !isUnknown && value !== null && value === best;
 
           return (
             <td
@@ -260,7 +204,20 @@ function Row({ demo, table, player, best, hasFlashData, write, expandable }: Row
                   <span className="sr-only">{t('review.stats.unknown')}</span>
                 </span>
               ) : (
-                write(value, column)
+                <span className="inline-flex items-center justify-end gap-2">
+                  {column.bar === true && scale > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="h-1 w-14 overflow-hidden rounded-full bg-surface-3"
+                    >
+                      <span
+                        className={`block h-full rounded-full ${isBest ? 'bg-ink' : 'bg-ink-faint'}`}
+                        style={{ width: `${((value ?? 0) / scale) * 100}%` }}
+                      />
+                    </span>
+                  )}
+                  {write(value, column.format)}
+                </span>
               )}
             </td>
           );
@@ -269,8 +226,14 @@ function Row({ demo, table, player, best, hasFlashData, write, expandable }: Row
 
       {isOpen && (
         <tr>
-          <td colSpan={table.columns.length + 1} className="pt-1 pb-3">
-            <ScoreboardRounds demo={demo} slot={player.slot} />
+          <td colSpan={columnCount} className="pt-1 pb-3">
+            <PlayerDetail
+              demo={demo}
+              player={player}
+              write={write}
+              onWatchRound={onWatchRound}
+              onPlayerView={onPlayerView}
+            />
           </td>
         </tr>
       )}

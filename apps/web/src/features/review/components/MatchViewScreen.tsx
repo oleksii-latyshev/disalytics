@@ -60,7 +60,21 @@ export function MatchViewScreen({
           own to state, so nothing hangs under it here. */}
       <MatchViewBar view={view} onView={onView} analysisView={view} />
 
-      {view === 'stats' && <MatchStats demo={demo} tab={statsTab} onTab={onStatsTab} />}
+      {view === 'stats' && (
+        <MatchStats
+          demo={demo}
+          tab={statsTab}
+          onTab={onStatsTab}
+          initialRound={roundIndex ?? 0}
+          onOpenOnStage={onOpenOnStage}
+          onPlayerView={(target, slot) => {
+            if (target === 'duels') {
+              onDuelNarrowing({ ...duelNarrowing, player: slot, pair: null, duel: null });
+            }
+            onView(target);
+          }}
+        />
+      )}
       {view === 'duels' && (
         <MatchDuels
           demo={demo}
