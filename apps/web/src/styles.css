@@ -111,6 +111,102 @@
     transform: translateY(8px);
   }
 }
+/* The lineups screen. Markers on a plate arrive one after another (`--pop-delay`), rows of the list
+   cascade (`--row-index`), and what is picked draws itself: an arc that is revealed along its
+   length, dashes that march towards the landing, a ring that breathes. All of it is a plain CSS
+   animation, so the reduced-motion reset in `motion.css` takes it to its resting state.
+
+   `backwards` rather than `both`: a held end state would beat `:hover`'s `scale` and the dimmed
+   marker's own opacity for good. */
+@keyframes plate-marker-pop {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+  70% {
+    opacity: 1;
+    scale: 1.12;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+.plate-marker {
+  --pop-delay: 0ms;
+
+  animation: plate-marker-pop 380ms var(--ease-out) var(--pop-delay) backwards;
+  transition:
+    scale 150ms ease-out,
+    opacity var(--duration-base) ease-out;
+}
+.plate-marker:hover {
+  scale: 1.15;
+}
+@keyframes lineup-rise {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+.lineup-rise {
+  animation: lineup-rise var(--duration-base) var(--ease-out) backwards;
+}
+@keyframes lineup-slide {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+.lineup-row {
+  --row-index: 0;
+
+  animation: lineup-slide var(--duration-panel) var(--ease-out) calc(var(--row-index) * 30ms)
+    backwards;
+}
+@keyframes lineup-pulse {
+  from {
+    opacity: 0.9;
+    scale: 0.6;
+  }
+  to {
+    opacity: 0;
+    scale: 1.8;
+  }
+}
+.lineup-pulse {
+  animation: lineup-pulse 1400ms ease-out infinite;
+}
+@keyframes lineup-march {
+  to {
+    stroke-dashoffset: -34;
+  }
+}
+.lineup-march {
+  animation: lineup-march 1100ms linear infinite;
+}
+@keyframes lineup-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.lineup-draw {
+  stroke-dasharray: 1;
+  animation: lineup-draw 550ms cubic-bezier(0.3, 0.7, 0.2, 1) backwards;
+}
+@keyframes lineup-breathe {
+  50% {
+    transform: scale(1.08);
+  }
+}
+.lineup-breathe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lineup-breathe 2400ms ease-in-out infinite;
+}
 @keyframes home-tile-shake {
   from {
     transform: rotate(-0.35deg);

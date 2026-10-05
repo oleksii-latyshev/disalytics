@@ -14,8 +14,9 @@ import { useT } from '@disa/i18n';
 import { Link } from '@tanstack/react-router';
 import { Bookmark } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { LINEUP_KIND_NAMES, LINEUP_KIND_ORDER } from '@/core/lineup-catalog';
 import { LineupFormModal, persistLineup, useMapLineups } from '@/features/lineups';
-import { type PlateLabels, UtilityPlate } from '@/features/radar';
+import { type PlateLabels, TargetLegend, UtilityPlate } from '@/features/radar';
 import {
   countByKind,
   filterTargets,
@@ -23,13 +24,7 @@ import {
   NO_FILTER,
   targetsInScope,
 } from '../helpers/lineup-filter';
-import {
-  LINEUP_KIND_NAMES,
-  nameLineups,
-  originTitle,
-  type TargetNames,
-  targetTitle,
-} from '../helpers/lineup-names';
+import { nameLineups, originTitle, type TargetNames, targetTitle } from '../helpers/lineup-names';
 import { clearPick, type LineupPick, NO_PICK, pickTarget } from '../helpers/lineup-pick';
 import { LineupPanel } from './LineupPanel';
 import { LineupStackMenu } from './LineupStackMenu';
@@ -42,11 +37,8 @@ interface Props {
   onOpenOnStage?: ((frame: Frame) => void) | undefined;
 }
 
-/** The order players say them in, which is the order the chips are in. */
-const KIND_ORDER: readonly UtilityKind[] = ['smoke', 'flash', 'fire', 'he', 'decoy'];
-
 function kindsOf(targets: readonly LineupTarget[]): readonly UtilityKind[] {
-  return KIND_ORDER.filter((kind) => targets.some((target) => target.kind === kind));
+  return LINEUP_KIND_ORDER.filter((kind) => targets.some((target) => target.kind === kind));
 }
 
 /**
@@ -245,28 +237,7 @@ export function MatchUtility({ demo, onOpenOnStage }: Props) {
           )}
         />
 
-        <ul className="surface-card absolute bottom-2 left-2 flex list-none gap-3 rounded-card px-2.5 py-1.5 text-11 text-ink-dim">
-          <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-2.5 rounded-full border-[1.5px] border-ink" />
-            {t('review.lineups.legend.landed')}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="numeric grid size-3.5 place-items-center rounded-full bg-ink font-semibold text-10 text-surface-0"
-            >
-              1
-            </span>
-            {t('review.lineups.legend.origin')}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="w-4.5 [border-block-start:1.5px_dashed_var(--color-ink)]"
-            />
-            {t('review.lineups.legend.path')}
-          </li>
-        </ul>
+        <TargetLegend />
 
         <Link
           to="/lineups"

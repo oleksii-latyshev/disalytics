@@ -19,6 +19,11 @@
     "upper": "Upper level",
     "lower": "Lower level"
   },
+  "targetLegend": {
+    "landed": "where it landed",
+    "origin": "where it was thrown from",
+    "path": "path, approximate"
+  },
   "utility": {
     "secondsUnit": "s"
   },

@@ -10,6 +10,8 @@ export interface LineupCatalog {
   readonly reload: () => Promise<void>;
 }
 
+const NO_LINEUPS: readonly Lineup[] = [];
+
 /** A map's lineups as the user sees them: their own stored ones over the bundled built-ins. */
 export function useLineupCatalog(map: string): LineupCatalog {
   const [builtInLineups, setBuiltInLineups] = useState<readonly Lineup[]>([]);
@@ -48,7 +50,7 @@ export function useLineupCatalog(map: string): LineupCatalog {
   }, [reload]);
 
   return {
-    lineups: loadedMap === map ? combinedLineups : [],
+    lineups: loadedMap === map ? combinedLineups : NO_LINEUPS,
     loading: loading || loadedMap !== map,
     reload,
   };

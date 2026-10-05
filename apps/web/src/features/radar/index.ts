@@ -2,10 +2,13 @@ export { CoachBrow } from './components/CoachBrow';
 export { DuelPlate } from './components/DuelPlate';
 export { HeatPlate } from './components/HeatPlate';
 export { MatchRadar } from './components/MatchRadar';
+export { PlateFrame } from './components/PlateFrame';
 export { PlateMarkSwatch } from './components/PlateMarkSwatch';
 export type { PlateReplay } from './components/PlateStill';
 export { PlateStill } from './components/PlateStill';
+export { TargetLegend } from './components/TargetLegend';
 export type { PlateLabels } from './components/TargetMarkers';
+export { TargetMarkers } from './components/TargetMarkers';
 export { UnknownMap } from './components/UnknownMap';
 export { UtilityPlate } from './components/UtilityPlate';
 export { squareBackdrop } from './helpers/backdrop';
@@ -27,6 +30,10 @@ export { labelPass, readLabelStyle } from './helpers/labels';
 export { levelAt } from './helpers/levels';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';
+export type { PlateOrigin, PlatePoint, PlateTarget } from './helpers/plate-target';
+export { targetPoints } from './helpers/target-plot';
+export type { TargetStack } from './helpers/target-stacks';
+export { stackPoints } from './helpers/target-stacks';
 export {
   drawNeedle,
   drawSelectionRing,

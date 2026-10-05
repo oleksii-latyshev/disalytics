@@ -51,3 +51,17 @@ export function filterLineups(
     return true;
   });
 }
+
+/** How many of the lineups each kind has under the other criteria, so a chip says what it would show. */
+export function countsByKind(
+  lineups: readonly Lineup[],
+  criteria: Omit<LineupFilterCriteria, 'kind'>,
+): ReadonlyMap<UtilityKind, number> {
+  const counts = new Map<UtilityKind, number>();
+
+  for (const lineup of filterLineups(lineups, { ...criteria, kind: 'all' })) {
+    counts.set(lineup.kind, (counts.get(lineup.kind) ?? 0) + 1);
+  }
+
+  return counts;
+}

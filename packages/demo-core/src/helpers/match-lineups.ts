@@ -72,6 +72,11 @@ function distance(a: WorldPoint, b: WorldPoint): number {
     : Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+/** Whether two landings are one target: on the same floor and within `TARGET_LANDING_UNITS`. */
+export function areOneTarget(a: WorldPoint, b: WorldPoint): boolean {
+  return distance(a, b) <= TARGET_LANDING_UNITS;
+}
+
 function sideOf(throwers: readonly (Team | undefined)[]): LineupVariantSide {
   const first = throwers[0];
   return first !== undefined && throwers.every((side) => side === first) ? first : 'BOTH';
@@ -151,9 +156,7 @@ function groupTargets(variants: readonly LineupVariant[]): readonly LineupTarget
 
   for (const variant of [...variants].sort(byThrowCount)) {
     const group = groups.find(
-      ({ anchor }) =>
-        anchor.kind === variant.kind &&
-        distance(anchor.landing, variant.landing) <= TARGET_LANDING_UNITS,
+      ({ anchor }) => anchor.kind === variant.kind && areOneTarget(anchor.landing, variant.landing),
     );
     if (group === undefined) groups.push({ anchor: variant, members: [variant] });
     else group.members.push(variant);

@@ -1,19 +1,6 @@
-import type { LineupTarget, LineupVariant, UtilityKind } from '@disa/demo-core';
+import type { LineupTarget, LineupVariant } from '@disa/demo-core';
 import { type CalloutMatch, calloutAt } from '@disa/map-data';
-
-/**
- * What a lineup's kind is called in play: the short names a player says ("smoke Xbox"), which are
- * game vocabulary and so never translated (`AGENTS.md` §11). `UTILITY_NAMES` carries the full item
- * names, which are too long for a list row.
- */
-export const LINEUP_KIND_NAMES: Readonly<Record<UtilityKind, string>> = {
-  smoke: 'Smoke',
-  flash: 'Flash',
-  fire: 'Molotov',
-  he: 'HE',
-  decoy: 'Decoy',
-  kit: 'Defuse Kit',
-};
+import { LINEUP_KIND_NAMES } from '@/core/lineup-catalog';
 
 /** What naming needs of a target, so a test need not build a whole one. */
 export interface NameableTarget extends Pick<LineupTarget, 'id' | 'kind' | 'landing'> {

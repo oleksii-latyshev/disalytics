@@ -1,6 +1,6 @@
 import type { Lineup } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { filterLineups, type LineupTagFilter } from '../helpers/lineup-filter';
+import { countsByKind, filterLineups, type LineupTagFilter } from '../helpers/lineup-filter';
 
 const TEST_LINEUPS: readonly Lineup[] = [
   {
@@ -131,5 +131,18 @@ describe('filterLineups by tag', () => {
 
   it('keeps the lineups without any tag', () => {
     expect(ids('untagged')).toEqual(['u', 'e']);
+  });
+});
+
+describe('countsByKind', () => {
+  it('counts each kind under the side, tag and search, whatever kind is chosen', () => {
+    const counts = countsByKind(TEST_LINEUPS, { side: 'ALL', search: '' });
+
+    expect([...counts]).toEqual([
+      ['smoke', 1],
+      ['flash', 1],
+      ['he', 1],
+    ]);
+    expect(countsByKind(TEST_LINEUPS, { side: 'CT', search: '' }).get('smoke')).toBeUndefined();
   });
 });

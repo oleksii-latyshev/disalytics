@@ -365,11 +365,6 @@
     "onTheMove": "Throws on the move",
     "onTheMoveNote": "They cannot be repeated from a lineup — only dots on the map",
     "myLineups": "My lineups",
-    "legend": {
-      "landed": "where it landed",
-      "origin": "where it was thrown from",
-      "path": "path, approximate"
-    },
     "stack": {
       "title": "Landing here · {count, number}",
       "aria": "{targets, plural, one {# target} other {# targets}} here, {throws, plural, one {# throw} other {# throws}}"

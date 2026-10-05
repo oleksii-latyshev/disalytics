@@ -3,8 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export function useLineupImageViewer(
   imageUrls: readonly string[],
   imageCaptions: readonly string[],
+  initialIndex = 0,
 ) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
 
