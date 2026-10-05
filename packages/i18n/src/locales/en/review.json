@@ -40,36 +40,11 @@
     "kinds": "Kind",
     "everyKind": "All",
     "throws": "{count, plural, one {# throw} other {# throws}}",
-    "lineupNote": "Where the thrower was looking is not drawn: view angles are sampled {hz} times a second.",
     "players": "Players",
     "duelList": "Duels, in match order",
-    "throwList": "Throws, in match order",
-    "round": "Round",
-    "allRounds": "All",
-    "roundNumber": "Round {round, number}",
-    "timing": {
-      "label": "Timing",
-      "all": "All",
-      "early": "0–20s",
-      "mid": "20–60s",
-      "late": "60s+"
-    },
-    "cluster": {
-      "title": "{count, plural, one {# throw in cluster} other {# throws in cluster}}",
-      "close": "Close",
-      "watchOnStage": "Watch on stage"
-    },
     "roundShort": "R{round, number}",
     "rowLabel": "Round {round, number}: {event}",
     "throw": {
-      "empty": "Hover or select a grenade throw to inspect its lineup command and movement.",
-      "copyCommand": "Copy console command",
-      "copied": "Copied to clipboard",
-      "select": "Select lineup",
-      "movement": "Movement",
-      "landing": "Landing: {x, number}, {y, number}",
-      "saveLineup": "Save as lineup",
-      "saved": "Saved!",
       "types": {
         "stand": "Stand",
         "run": "Run",

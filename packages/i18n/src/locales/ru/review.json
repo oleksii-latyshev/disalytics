@@ -40,36 +40,11 @@
     "kinds": "Тип",
     "everyKind": "Все",
     "throws": "{count, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}",
-    "lineupNote": "Куда смотрел метатель — не рисуется: углы обзора снимаются {hz} раз в секунду.",
     "players": "Игроки",
     "duelList": "Дуэли в порядке матча",
-    "throwList": "Броски в порядке матча",
-    "round": "Раунд",
-    "allRounds": "Все",
-    "roundNumber": "Раунд {round, number}",
-    "timing": {
-      "label": "Тайминг",
-      "all": "Все",
-      "early": "0–20с",
-      "mid": "20–60с",
-      "late": "60с+"
-    },
-    "cluster": {
-      "title": "{count, plural, one {# бросок в кластере} few {# броска в кластере} many {# бросков в кластере} other {# броска в кластере}}",
-      "close": "Закрыть",
-      "watchOnStage": "Смотреть на сцене"
-    },
     "roundShort": "Р{round, number}",
     "rowLabel": "Раунд {round, number}: {event}",
     "throw": {
-      "empty": "Наведите курсор на бросок или выберите его, чтобы увидеть команду лайнапа и движение.",
-      "copyCommand": "Скопировать консольную команду",
-      "copied": "Скопировано в буфер обмена",
-      "select": "Выбрать лайнап",
-      "movement": "Движение",
-      "landing": "Приземление: {x, number}, {y, number}",
-      "saveLineup": "Сохранить как раскидку",
-      "saved": "Сохранено!",
       "types": {
         "stand": "Стоя",
         "run": "На бегу",
