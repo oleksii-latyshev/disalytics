@@ -181,6 +181,7 @@ export function MatchReview({
     return (
       <MatchViewScreen
         demo={demo}
+        demoKey={demoKey}
         cache={cache}
         view={view}
         roundIndex={roundIndex}

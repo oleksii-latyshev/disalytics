@@ -7,7 +7,7 @@ const FLOOR_LABEL_INSET_PX = 8;
 
 export interface RadarBackdropOptions {
   /** One decoded image per level, in the order of the layout's slots. */
-  readonly images: readonly HTMLImageElement[];
+  readonly images: readonly CanvasImageSource[];
   readonly layout: PlateLayout;
   /** The name of each floor, in slot order — read only where the layout names its floors. */
   readonly floorLabels: readonly string[];

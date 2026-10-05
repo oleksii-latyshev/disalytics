@@ -19,6 +19,7 @@ const MatchUtility = lazy(async () => ({ default: (await import('./MatchUtility'
 
 interface Props {
   demo: ParsedDemo;
+  demoKey: string;
   cache: CacheState;
   view: Exclude<MatchView, 'stage'>;
   roundIndex: number | undefined;
@@ -44,6 +45,7 @@ interface Props {
  */
 export function MatchViewScreen({
   demo,
+  demoKey,
   cache,
   view,
   roundIndex,
@@ -89,7 +91,7 @@ export function MatchViewScreen({
             onOpenOnStage={onOpenOnStage}
           />
         )}
-        {view === 'heatmap' && <MatchHeatmap demo={demo} />}
+        {view === 'heatmap' && <MatchHeatmap demo={demo} demoKey={demoKey} />}
         {view === 'utility' && <MatchUtility demo={demo} onOpenOnStage={onOpenOnStage} />}
       </Suspense>
 

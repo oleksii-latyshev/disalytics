@@ -135,6 +135,15 @@
   --color-heat-low: #2fbf71;
   --color-heat-high: #f2f06b;
 
+  /* The identity of the second player when two are compared, with `--color-heat-high` as the first's.
+     A compared player keeps one hue on their own plate and in the difference between the two, and
+     the pair has to be told apart by a reader who cannot tell a green from a red: a yellow the
+     ramp already ends in against a pink nothing else in the product uses, apart in lightness as well
+     as hue, so the two stay two colours with the hue taken away. Like the ramp it is a field under
+     the marks, and like the ramp the alternate palettes leave it alone — the pair is the one
+     separation that matters on this screen, and it holds in all three. */
+  --color-heat-second: #ff6ad5;
+
   /* One face for every word. Onest is variable across 300–700, which is what let two static
      families go — the narrow face `.label-dense` used to need is Onest 500 uppercase now, and it
      reads better small than a condensed grotesque ever did.

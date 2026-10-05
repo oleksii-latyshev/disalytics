@@ -52,7 +52,7 @@ function newDemo(events: MatchEvents, sides?: readonly [Team, Team]): ParsedDemo
   };
 }
 
-const WHOLE: HeatScope = { side: null, subject: null };
+const WHOLE: HeatScope = { side: null, subject: null, buy: null, window: null };
 
 function visits(demo: ParsedDemo, mode: HeatMode, scope: HeatScope = WHOLE) {
   const points: [number, number, number][] = [];
@@ -130,11 +130,11 @@ describe('walkHeat', () => {
       victim: ct,
     });
 
-    expect(visits(newDemo(events), 'kills', { side: 'T', subject: null }).points).toEqual([
+    expect(visits(newDemo(events), 'kills', { ...WHOLE, side: 'T' }).points).toEqual([
       [-300, 400, 1],
     ]);
 
-    const { points, tally } = visits(newDemo(events), 'kills', { side: null, subject: t });
+    const { points, tally } = visits(newDemo(events), 'kills', { ...WHOLE, subject: t });
     expect(points).toEqual([[-300, 400, 1]]);
     expect([...tally.bySlot]).toEqual([1, 1]);
     expect(tally.total).toBe(1);

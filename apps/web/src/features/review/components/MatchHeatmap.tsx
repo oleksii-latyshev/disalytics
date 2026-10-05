@@ -1,131 +1,181 @@
-import { HEAT_MODES, type HeatMode, type ParsedDemo, type PlayerSlot } from '@disa/demo-core';
-import { Text, type TranslationKey, useT } from '@disa/i18n';
+import {
+  type HeatBuy,
+  type HeatPhaseId,
+  type ParsedDemo,
+  type PlayerSlot,
+  presenceByRoundTime,
+} from '@disa/demo-core';
+import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
-import { type ReactNode, useMemo, useState } from 'react';
-import { HeatPlate, heatField } from '@/features/radar';
+import { useMemo, useState } from 'react';
+import { filterSummary, heatLegendKind, heatTitle } from '../helpers/heat-copy';
+import {
+  pickBin,
+  playRange,
+  type RoundRange,
+  rangeOfPhase,
+  WHOLE_RANGE,
+} from '../helpers/heat-range';
+import type { HeatCompareView, HeatReading, HeatSecond } from '../helpers/heat-view';
 import type { SideScope } from '../helpers/map-scope';
-import { MapScope } from './MapScope';
+import { useHeatView } from '../hooks/use-heat-view';
+import { useRoundPlay } from '../hooks/use-round-play';
+import { HeatCompareDialog } from './HeatCompareDialog';
+import { HeatReadout } from './HeatFigure';
+import { HeatHeader } from './HeatHeader';
+import { HeatPanel } from './HeatPanel';
+import { HeatPlates } from './HeatPlates';
+import { HeatRoundTime } from './HeatRoundTime';
 
-const SECONDS_PER_MINUTE = 60;
-
-function minutes(seconds: number): number {
-  return Math.round(seconds / SECONDS_PER_MINUTE);
-}
-
-const MODE_NAMES: Readonly<Record<HeatMode, TranslationKey>> = {
-  presence: 'review.maps.heat.presence',
-  damageDealt: 'review.maps.heat.damageDealt',
-  damageTaken: 'review.maps.heat.damageTaken',
-  kills: 'review.maps.heat.kills',
-  deaths: 'review.maps.heat.deaths',
-  utility: 'review.maps.heat.utility',
-};
-
-/** The reading above the roster: what the whole field is made of, in the mode's own unit. */
-function reading(mode: HeatMode, total: number): ReactNode {
-  switch (mode) {
-    case 'presence':
-      return <Text path="review.maps.timeOnMap" values={{ count: minutes(total) }} />;
-    case 'damageDealt':
-    case 'damageTaken':
-      return <Text path="review.maps.heat.damage" values={{ count: Math.round(total) }} />;
-    case 'kills':
-      return <Text path="review.maps.heat.killCount" values={{ count: total }} />;
-    case 'deaths':
-      return <Text path="review.maps.heat.deathCount" values={{ count: total }} />;
-    case 'utility':
-      return <Text path="review.maps.throws" values={{ count: total }} />;
-  }
-}
-
-/** What a seat states beside a name, in the same unit. */
-function figure(mode: HeatMode, value: number): ReactNode {
-  return mode === 'presence' ? (
-    <Text path="review.maps.minutes" values={{ count: minutes(value) }} />
-  ) : (
-    <Text path="review.maps.heat.figure" values={{ count: Math.round(value) }} />
-  );
-}
-
-function note(mode: HeatMode, hz: number): ReactNode {
-  if (mode === 'presence') return <Text path="review.maps.sampledNote" values={{ hz }} />;
-  if (mode === 'utility') return <Text path="review.maps.heat.utilityNote" />;
-
-  return <Text path="review.maps.heat.eventNote" />;
-}
+const NO_FIGURES = new Float32Array(0);
 
 /**
- * Where the match was spent, and since #385 where it was fought: presence, the damage a side dealt
- * and took, its kills, its deaths, and where its utility went off — `ROADMAP.md` M5's heat map.
+ * Where the match was spent, and where it ended — and, since #569, how one player's ground compares
+ * with another's, from this match or from another one of the library.
  *
- * **Which points count is `demo-core`'s** (`walkHeat`), and this screen only chooses the mode. It is
- * a native `<select>` rather than a row of seats: six names in the longest locale are a column of
- * their own, and below `split` this aside is a strip over the map whose every extra line is taken
- * from the plate.
+ * **Which marks count is `demo-core`'s** (`walkHeat` and the points kept of a player): this screen
+ * chooses the reading, the player, the side, the buy and the part of the round, and builds what the
+ * plates draw when one of them changes. Nothing is built in a draw, and nothing here has a clock:
+ * *Play round* is a timer that moves the part of the round, which stops when the view does.
  *
- * **A seat's figure ignores the player narrowing.** It is the side scope's own, so choosing a player
- * changes what is drawn without moving the numbers that were the reason for choosing them.
+ * **A seat's figure ignores the player narrowing**, so choosing a player changes what is drawn
+ * without moving the numbers that were the reason for choosing them.
+ *
+ * Nothing is remembered: a map screen is its reading, and leaving it ends the comparison with the
+ * match that was dropped for it.
  */
-export function MatchHeatmap({ demo }: { demo: ParsedDemo }) {
+export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: string }) {
   const t = useT();
+  const { players } = demo.header;
 
-  const [mode, setMode] = useState<HeatMode>('presence');
+  const [reading, setReading] = useState<HeatReading>('stood');
   const [side, setSide] = useState<SideScope>('all');
+  const [buy, setBuy] = useState<HeatBuy | null>(null);
+  const [range, setRange] = useState<RoundRange>(WHOLE_RANGE);
   const [subject, setSubject] = useState<PlayerSlot | null>(null);
+  const [second, setSecond] = useState<HeatSecond | null>(null);
+  const [compareView, setCompareView] = useState<HeatCompareView>('side');
+  const [isPicking, setIsPicking] = useState(false);
+  const play = useRoundPlay();
 
+  const shownRange = play.step === null ? range : playRange(play.step);
   const overview = getMapOverview(demo.header.map);
+  const sideScope = side === 'all' ? null : side;
+  const secondPoints = second?.points ?? null;
 
-  const field = useMemo(
-    () =>
-      overview === undefined
-        ? null
-        : heatField(demo, overview, mode, { side: side === 'all' ? null : side, subject }),
-    [demo, overview, mode, side, subject],
+  const heat = useHeatView({
+    demo,
+    overview,
+    reading,
+    scope: { side: sideScope, subject, buy },
+    range,
+    step: play.step,
+    secondPoints,
+    view: compareView,
+  });
+
+  const bars = useMemo(
+    () => presenceByRoundTime(demo, { side: sideScope, subject, buy }),
+    [demo, sideScope, subject, buy],
   );
 
-  const scopeTotal = useMemo(
-    () => (field === null ? 0 : field.bySlot.reduce((total, value) => total + value, 0)),
-    [field],
+  const nameOf = (slot: PlayerSlot | null) =>
+    players.find((player) => player.slot === slot)?.name ?? t('review.maps.everyone');
+  const names = { first: nameOf(subject), second: second?.name ?? '' };
+
+  const isComparing = second !== null;
+  const secondCard = useMemo(
+    () => (second === null ? null : { name: second.name, origin: second.origin }),
+    [second],
   );
+  const isDifference = isComparing && compareView === 'difference';
+
+  const handleRange = (next: RoundRange) => {
+    play.stop();
+    setRange(next);
+  };
+
+  const handleCompare = () => {
+    if (subject === null) setSubject(players[0]?.slot ?? null);
+    setIsPicking(true);
+  };
+
+  const compare = isComparing ? compareView : null;
 
   return (
-    <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 split:grid-cols-[minmax(min-content,17.5rem)_minmax(0,1fr)] split:grid-rows-[minmax(0,1fr)]">
-      <MapScope
-        side={side}
-        onSide={setSide}
+    <div className="grid min-h-0 grid-cols-[minmax(0,19rem)_minmax(0,1fr)] gap-3 wide:grid-cols-[minmax(0,21rem)_minmax(0,1fr)]">
+      <HeatPanel
+        demo={demo}
+        reading={reading}
+        onReading={setReading}
         subject={subject}
         onSubject={setSubject}
-        players={demo.header.players}
-        scope={
-          <label className="flex items-center justify-between gap-2 split:self-stretch">
-            <span className="label-dense text-ink-dim">
-              <Text path="review.maps.heat.mode" />
-            </span>
-
-            <select
-              value={mode}
-              onChange={(event) => {
-                const chosen = HEAT_MODES.find((each) => each === event.target.value);
-                if (chosen !== undefined) setMode(chosen);
-              }}
-              className="h-control min-w-0 rounded-chip border border-line bg-surface-2 px-2 text-13 text-ink transition-colors duration-(--duration-micro) ease-out hover:border-line-strong"
-            >
-              {HEAT_MODES.map((each) => (
-                <option key={each} value={each}>
-                  {t(MODE_NAMES[each])}
-                </option>
-              ))}
-            </select>
-          </label>
-        }
-        reading={reading(mode, field?.total ?? 0)}
-        figure={(slot) => figure(mode, slot === null ? scopeTotal : (field?.bySlot[slot] ?? 0))}
-        note={note(mode, demo.track.sampleHz)}
+        side={side}
+        onSide={setSide}
+        buy={buy}
+        onBuy={setBuy}
+        figures={heat?.roster.bySlot ?? NO_FIGURES}
+        second={secondCard}
+        onCompare={handleCompare}
+        onRemoveSecond={() => {
+          setSecond(null);
+          setCompareView('side');
+        }}
       />
 
-      <section className="grid min-h-0 min-w-0">
-        <HeatPlate demo={demo} field={field} />
-      </section>
+      <div className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-2.5">
+        <HeatHeader
+          title={heatTitle(t, reading, compare, names)}
+          subtitle={filterSummary(t, { side, buy, range: shownRange })}
+          figure={
+            <HeatReadout
+              reading={reading}
+              isComparing={isComparing}
+              total={heat?.plates[0]?.total ?? 0}
+              overlap={heat?.overlap ?? null}
+            />
+          }
+          view={isComparing ? compareView : null}
+          onView={setCompareView}
+        />
+
+        <HeatPlates
+          demo={demo}
+          plates={heat?.plates ?? [{ picture: null, identity: 'field', total: 0 }]}
+          reading={reading}
+          labels={isComparing && !isDifference ? [names.first, names.second] : [null]}
+          legend={heatLegendKind(reading, compare)}
+          names={names}
+        />
+
+        <HeatRoundTime
+          range={shownRange}
+          bars={bars}
+          isPlaying={play.step !== null}
+          onWhole={() => handleRange(WHOLE_RANGE)}
+          onPhase={(phase: HeatPhaseId) => handleRange(rangeOfPhase(phase))}
+          onBin={(bin) => handleRange(pickBin(range, bin))}
+          onPlay={() => {
+            setRange(WHOLE_RANGE);
+            play.start();
+          }}
+          onStop={play.stop}
+        />
+      </div>
+
+      {isPicking && (
+        <HeatCompareDialog
+          demo={demo}
+          demoKey={demoKey}
+          first={subject}
+          onDismiss={() => setIsPicking(false)}
+          onConfirm={(chosen) => {
+            setSecond(chosen);
+            setCompareView('side');
+            setIsPicking(false);
+          }}
+        />
+      )}
     </div>
   );
 }

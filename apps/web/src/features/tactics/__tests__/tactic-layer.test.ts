@@ -42,7 +42,7 @@ const COLORS: RadarColors = {
   nadeDecoy: '#06b6d4',
   trajectory: '#ffffff',
   killLine: '#ffffff',
-  heat: { low: '#3b82f6', high: '#ef4444' },
+  heat: { low: '#3b82f6', high: '#ef4444', second: '#22c55e' },
 };
 
 function createMockContext(): CanvasRenderingContext2D {

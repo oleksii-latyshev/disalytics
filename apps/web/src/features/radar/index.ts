@@ -24,8 +24,14 @@ export {
   drawHeRing,
   grenadeColor,
 } from './helpers/grenades';
-export type { HeatField } from './helpers/heat-field';
-export { heatField } from './helpers/heat-field';
+export { heatBinsOf, heatFieldOfBins, warmBin } from './helpers/heat-bins';
+export type { HeatDifference } from './helpers/heat-difference';
+export { heatDifference, routesOverlap } from './helpers/heat-difference';
+export type { HeatField, HeatRings, HeatSource } from './helpers/heat-field';
+export { heatField, heatFieldOf, heatRingsOf } from './helpers/heat-field';
+export type { HeatPicture } from './helpers/heat-picture';
+export { differencePicture, fieldPicture, ringPicture } from './helpers/heat-picture';
+export type { HeatIdentity } from './helpers/heat-ramp';
 export { labelPass, readLabelStyle } from './helpers/labels';
 export { levelAt } from './helpers/levels';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
