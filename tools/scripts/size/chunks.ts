@@ -36,6 +36,35 @@ export function staleFamilies(names: readonly string[]): readonly ChunkFamily[] 
     .sort((a, b) => a.family.localeCompare(b.family));
 }
 
+/** Scripts the manifest does not list but the build emits: the parse worker and the service worker. */
+export const UNLISTED_FAMILIES: readonly string[] = ['worker', 'sw'];
+
+/**
+ * Scripts on disk that neither the build manifest nor the two workers account for. The manifest is
+ * written by the build that emptied the directory, so a script it does not name came from another
+ * one — which is how a chunk left by an earlier build is told from a family that legitimately has
+ * several members (Rollup names every package barrel `src`).
+ */
+export function strayScripts(
+  names: readonly string[],
+  listed: ReadonlySet<string>,
+): readonly string[] {
+  return names
+    .filter(
+      (name) =>
+        !listed.has(name) &&
+        !UNLISTED_FAMILIES.includes(chunkFamily(name.slice(name.lastIndexOf('/') + 1))),
+    )
+    .sort();
+}
+
+/** The URLs Workbox injected into the built service worker's precache list. */
+export function precachedUrls(serviceWorker: string): ReadonlySet<string> {
+  return new Set(
+    [...serviceWorker.matchAll(/\burl"?\s*:\s*"([^"]+)"/g)].flatMap((match) => match[1] ?? []),
+  );
+}
+
 export interface Binary {
   readonly path: string;
   readonly size: number;
