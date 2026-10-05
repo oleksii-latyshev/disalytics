@@ -98,7 +98,7 @@ describe('walkHeat', () => {
     });
 
     expect(visits(newDemo(events), 'deaths', { ...WHOLE, side: 'T' }).points).toEqual([
-      [100, 200, 1],
+      [-300, 400, 1],
     ]);
 
     const { points, tally } = visits(newDemo(events), 'deaths', { ...WHOLE, subject: t });
