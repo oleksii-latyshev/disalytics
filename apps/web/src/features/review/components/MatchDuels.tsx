@@ -54,6 +54,9 @@ function playersOf(
  * and the panel beside the map says what the selection means. **A duel belongs to whoever made it**:
  * its line and its dot are the killer's side that round.
  *
+ * **The side columns narrow below `wide`**: at 1024×800 the page is 1000px across, and the two
+ * columns at their wide size left the plate 250px; narrowed they leave it 432px.
+ *
  * **A duel chosen is that duel on the stage** (#387) through the panel's button, a few seconds
  * before the kill; hovering or focusing a row isolates it on the map and dims the rest.
  */
@@ -142,7 +145,7 @@ export function MatchDuels({ demo, narrowing, onNarrowing, onOpenOnStage }: Prop
   })();
 
   return (
-    <div className="grid min-h-0 grid-cols-[minmax(0,21rem)_minmax(0,1fr)_minmax(0,18.75rem)] gap-3">
+    <div className="grid min-h-0 grid-cols-[minmax(0,19rem)_minmax(0,1fr)_minmax(0,15rem)] gap-3 wide:grid-cols-[minmax(0,21rem)_minmax(0,1fr)_minmax(0,18.75rem)]">
       <aside
         aria-label={t('review.maps.controls')}
         className="surface-card flex min-h-0 min-w-0 flex-col gap-3.5 rounded-float p-3"
