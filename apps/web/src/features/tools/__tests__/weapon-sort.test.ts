@@ -11,21 +11,21 @@ function weapon(name: string): WeaponReference {
 describe('getWeaponSortValue', () => {
   const ak = weapon('AK-47');
 
-  it('reads the armored or unarmored damage for body hitgroups', () => {
-    expect(getWeaponSortValue(ak, 'head', true)).toBe(ak.hitgroupDamage.head.armored);
-    expect(getWeaponSortValue(ak, 'head', false)).toBe(ak.hitgroupDamage.head.unarmored);
-    expect(getWeaponSortValue(ak, 'chest', true)).toBe(ak.hitgroupDamage.chestArms.armored);
-    expect(getWeaponSortValue(ak, 'stomach', false)).toBe(ak.hitgroupDamage.stomach.unarmored);
+  it('reads the damage for the armour state', () => {
+    expect(getWeaponSortValue(ak, 'head', 'vestHelmet')).toBe(ak.hitgroupDamage.vestHelmet.head);
+    expect(getWeaponSortValue(ak, 'head', 'vest')).toBe(ak.hitgroupDamage.none.head);
+    expect(getWeaponSortValue(ak, 'chest', 'vest')).toBe(ak.hitgroupDamage.vest.chest);
+    expect(getWeaponSortValue(ak, 'stomach', 'none')).toBe(ak.hitgroupDamage.none.stomach);
   });
 
-  it('always reads unarmored leg damage', () => {
-    expect(getWeaponSortValue(ak, 'legs', true)).toBe(ak.hitgroupDamage.legs.unarmored);
+  it('never lets armour change leg damage', () => {
+    expect(getWeaponSortValue(ak, 'legs', 'vestHelmet')).toBe(ak.hitgroupDamage.none.legs);
   });
 
   it('reads plain fields', () => {
-    expect(getWeaponSortValue(ak, 'price', true)).toBe(ak.price);
-    expect(getWeaponSortValue(ak, 'rpm', true)).toBe(ak.fireRateRpm);
-    expect(getWeaponSortValue(ak, 'name', true)).toBe('AK-47');
+    expect(getWeaponSortValue(ak, 'price', 'vestHelmet')).toBe(ak.price);
+    expect(getWeaponSortValue(ak, 'rpm', 'vestHelmet')).toBe(ak.fireRateRpm);
+    expect(getWeaponSortValue(ak, 'name', 'vestHelmet')).toBe('AK-47');
   });
 });
 
@@ -34,12 +34,12 @@ describe('compareWeapons', () => {
   const awp = weapon('AWP');
 
   it('orders strings alphabetically and flips when descending', () => {
-    expect(compareWeapons(ak, awp, 'name', true, true)).toBeLessThan(0);
-    expect(compareWeapons(ak, awp, 'name', false, true)).toBeGreaterThan(0);
+    expect(compareWeapons(ak, awp, 'name', true, 'vestHelmet')).toBeLessThan(0);
+    expect(compareWeapons(ak, awp, 'name', false, 'vestHelmet')).toBeGreaterThan(0);
   });
 
   it('orders numbers and flips when descending', () => {
-    expect(compareWeapons(ak, awp, 'price', true, true)).toBeLessThan(0);
-    expect(compareWeapons(ak, awp, 'price', false, true)).toBeGreaterThan(0);
+    expect(compareWeapons(ak, awp, 'price', true, 'vestHelmet')).toBeLessThan(0);
+    expect(compareWeapons(ak, awp, 'price', false, 'vestHelmet')).toBeGreaterThan(0);
   });
 });

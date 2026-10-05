@@ -44,38 +44,65 @@ describe('reference-data: grenades', () => {
 });
 
 describe('reference-data: weapons', () => {
-  it('correctly calculates hitgroup damage with and without armor', () => {
-    // AK-47: 36 base damage, 77.5% armor penetration
-    const ak47Damage = calculateHitgroupDamage(36, 77.5);
-    expect(ak47Damage.head.unarmored).toBe(144);
-    expect(ak47Damage.head.armored).toBe(111);
-    expect(ak47Damage.chestArms.unarmored).toBe(36);
-    expect(ak47Damage.chestArms.armored).toBe(27);
-    expect(ak47Damage.stomach.unarmored).toBe(45);
-    expect(ak47Damage.stomach.armored).toBe(34);
-    // Legs are not reduced by armor in CS2
-    expect(ak47Damage.legs.unarmored).toBe(27);
-    expect(ak47Damage.legs.armored).toBe(27);
+  const weapon = (name: string) => {
+    const found = WEAPON_REFERENCES.find((w) => w.name === name);
+    if (found === undefined) throw new Error(`missing weapon ${name}`);
+    return found;
+  };
+
+  it('computes each zone for every armour state', () => {
+    const ak = calculateHitgroupDamage(36, 4, 77.5);
+    expect(ak.none).toEqual({ head: 144, chest: 36, stomach: 45, legs: 27 });
+    expect(ak.vest).toEqual({ head: 144, chest: 27, stomach: 34, legs: 27 });
+    expect(ak.vestHelmet).toEqual({ head: 111, chest: 27, stomach: 34, legs: 27 });
   });
 
-  it('guarantees armored damage never exceeds unarmored damage', () => {
+  it('lets the AK-47 kill with one head shot through a helmet, and the M4s not', () => {
+    expect(weapon('AK-47').hitgroupDamage.vestHelmet.head).toBe(111);
+    expect(weapon('M4A1-S').hitgroupDamage.vestHelmet.head).toBe(92);
+    expect(weapon('M4A4').hitgroupDamage.vestHelmet.head).toBe(92);
+  });
+
+  it('uses the weapon headshot multiplier rather than a flat 4', () => {
+    expect(weapon('M4A1-S').headshotMultiplier).toBe(3.475);
+    expect(weapon('M4A1-S').hitgroupDamage.none.head).toBe(132);
+    expect(weapon('Desert Eagle').headshotMultiplier).toBe(3.9);
+    expect(weapon('Desert Eagle').hitgroupDamage.none.head).toBe(206);
+    expect(weapon('Desert Eagle').hitgroupDamage.vestHelmet.head).toBe(192);
+    expect(weapon('AWP').hitgroupDamage.none.head).toBe(460);
+    expect(weapon('AWP').hitgroupDamage.vestHelmet.head).toBe(448);
+    expect(weapon('SSG 08').hitgroupDamage.vestHelmet.head).toBe(299);
+  });
+
+  it('reduces the head only with a helmet and the body only with a vest', () => {
     for (const w of WEAPON_REFERENCES) {
-      expect(w.hitgroupDamage.head.armored).toBeLessThanOrEqual(w.hitgroupDamage.head.unarmored);
-      expect(w.hitgroupDamage.chestArms.armored).toBeLessThanOrEqual(
-        w.hitgroupDamage.chestArms.unarmored,
-      );
-      expect(w.hitgroupDamage.stomach.armored).toBeLessThanOrEqual(
-        w.hitgroupDamage.stomach.unarmored,
-      );
-      expect(w.hitgroupDamage.legs.armored).toBe(w.hitgroupDamage.legs.unarmored);
+      const { none, vest, vestHelmet } = w.hitgroupDamage;
+      expect(vest.head).toBe(none.head);
+      expect(vestHelmet.head).toBeLessThanOrEqual(none.head);
+      expect(vest.chest).toBeLessThanOrEqual(none.chest);
+      expect(vestHelmet.chest).toBe(vest.chest);
+      expect(vestHelmet.stomach).toBe(vest.stomach);
+      expect(vest.legs).toBe(none.legs);
+      expect(vestHelmet.legs).toBe(none.legs);
     }
+  });
+
+  it('reads armour penetration as ArmorRatio x 50', () => {
+    expect(weapon('AK-47').armorPenetration).toBe(77.5);
+    expect(weapon('Desert Eagle').armorPenetration).toBe(93.2);
+    expect(weapon('MP7').price).toBe(1400);
+    expect(weapon('MP7').baseDamage).toBe(30);
+    expect(weapon('M4A4').price).toBe(2900);
   });
 
   it('assigns correct standard kill rewards', () => {
-    const shotguns = WEAPON_REFERENCES.filter((w) => w.category === 'shotgun');
+    const shotguns = WEAPON_REFERENCES.filter(
+      (w) => w.category === 'shotgun' && w.name !== 'XM1014',
+    );
     for (const s of shotguns) {
       expect(s.killReward).toBe(900);
     }
+    expect(weapon('XM1014').killReward).toBe(600);
 
     const smgsExceptP90 = WEAPON_REFERENCES.filter((w) => w.category === 'smg' && w.name !== 'P90');
     for (const smg of smgsExceptP90) {
@@ -85,10 +112,7 @@ describe('reference-data: weapons', () => {
     const awp = WEAPON_REFERENCES.find((w) => w.name === 'AWP');
     expect(awp?.killReward).toBe(100);
 
-    const cz75 = WEAPON_REFERENCES.find((w) => w.name === 'CZ75-Auto');
-    expect(cz75?.killReward).toBe(100);
-
-    const zeus = WEAPON_REFERENCES.find((w) => w.name === 'Zeus x27');
-    expect(zeus?.killReward).toBe(0);
+    expect(weapon('CZ75-Auto').killReward).toBe(300);
+    expect(weapon('Zeus x27').killReward).toBe(100);
   });
 });

@@ -1,4 +1,4 @@
-import type { WeaponReference } from '@disa/demo-core';
+import type { ArmourState, WeaponReference } from '@disa/demo-core';
 import { zoneDamage } from '../helpers/weapon-damage';
 import { SideBadge } from './SideBadge';
 
@@ -6,18 +6,18 @@ const ROW_BASE = 'cursor-pointer transition-colors hover:bg-hover';
 
 export function WeaponRow({
   weapon,
-  isArmored,
+  armour,
   isSelected,
   moneyFormat,
   onSelect,
 }: {
   weapon: WeaponReference;
-  isArmored: boolean;
+  armour: ArmourState;
   isSelected: boolean;
   moneyFormat: Intl.NumberFormat;
   onSelect: (name: string) => void;
 }) {
-  const head = zoneDamage(weapon, 'head', isArmored);
+  const head = zoneDamage(weapon, 'head', armour);
   return (
     <tr
       onClick={() => onSelect(weapon.name)}
@@ -54,13 +54,13 @@ export function WeaponRow({
         </span>
       </td>
       <td className="numeric px-2 py-2.5 text-right text-14">
-        {zoneDamage(weapon, 'chest', isArmored)}
+        {zoneDamage(weapon, 'chest', armour)}
       </td>
       <td className="numeric px-2 py-2.5 text-right text-14">
-        {zoneDamage(weapon, 'stomach', isArmored)}
+        {zoneDamage(weapon, 'stomach', armour)}
       </td>
       <td className="numeric px-4 py-2.5 text-right text-14">
-        {zoneDamage(weapon, 'legs', isArmored)}
+        {zoneDamage(weapon, 'legs', armour)}
       </td>
     </tr>
   );
@@ -68,18 +68,18 @@ export function WeaponRow({
 
 export function WeaponCardRow({
   weapon,
-  isArmored,
+  armour,
   isSelected,
   moneyFormat,
   onSelect,
 }: {
   weapon: WeaponReference;
-  isArmored: boolean;
+  armour: ArmourState;
   isSelected: boolean;
   moneyFormat: Intl.NumberFormat;
   onSelect: (name: string) => void;
 }) {
-  const head = zoneDamage(weapon, 'head', isArmored);
+  const head = zoneDamage(weapon, 'head', armour);
   return (
     <li className="[border-block-start:1px_solid_var(--color-line-soft)] first:border-0">
       <button

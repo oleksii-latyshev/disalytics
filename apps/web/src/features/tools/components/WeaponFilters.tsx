@@ -1,4 +1,4 @@
-import type { WeaponReferenceCategory } from '@disa/demo-core';
+import type { ArmourState, WeaponReferenceCategory } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import type { CategoryFilter, SideFilter } from '../helpers/weapon-filter';
 
@@ -20,9 +20,10 @@ const SIDES = [
 ] as const satisfies readonly (readonly [SideFilter, string])[];
 
 const ARMOUR = [
-  [true, 'library.tools.weapons.mode.armored'],
-  [false, 'library.tools.weapons.mode.unarmored'],
-] as const;
+  ['none', 'library.tools.weapons.mode.none'],
+  ['vest', 'library.tools.weapons.mode.vest'],
+  ['vestHelmet', 'library.tools.weapons.mode.vestHelmet'],
+] as const satisfies readonly (readonly [ArmourState, string])[];
 
 const GROUP =
   'm-0 min-w-0 flex gap-1 rounded-card bg-surface-1 p-1 shadow-[0_0_0_1px_var(--color-line)]';
@@ -36,20 +37,20 @@ function chip(isOn: boolean): string {
 export function WeaponFilters({
   category,
   side,
-  isArmored,
+  armour,
   query,
   onCategory,
   onSide,
-  onArmored,
+  onArmour,
   onQuery,
 }: {
   category: CategoryFilter;
   side: SideFilter;
-  isArmored: boolean;
+  armour: ArmourState;
   query: string;
   onCategory: (value: CategoryFilter) => void;
   onSide: (value: SideFilter) => void;
-  onArmored: (value: boolean) => void;
+  onArmour: (value: ArmourState) => void;
   onQuery: (value: string) => void;
 }) {
   const t = useT();
@@ -89,11 +90,11 @@ export function WeaponFilters({
       <fieldset aria-label={t('library.tools.weapons.groups.armour')} className={GROUP}>
         {ARMOUR.map(([value, path]) => (
           <button
-            key={String(value)}
+            key={value}
             type="button"
-            aria-pressed={isArmored === value}
-            onClick={() => onArmored(value)}
-            className={chip(isArmored === value)}
+            aria-pressed={armour === value}
+            onClick={() => onArmour(value)}
+            className={chip(armour === value)}
           >
             <Text path={path} />
           </button>

@@ -5,8 +5,10 @@
  * - Grenade entity durations and lifespans measured from demo data in `docs/PARSER.md` §19–§23.
  * - Grenade prices, radii, and burn properties reflect Counter-Strike 2 release and the
  *   May 23, 2024 update (which reworked the CT Incendiary Grenade to $500 with reduced spread and duration).
- * - Weapon prices, kill rewards, armor penetration percentages, RPM, range modifiers, and base damage
- *   derive from Valve's Counter-Strike 2 release definition tables (`items_game.txt` / engine convars).
+ * - Weapon prices, kill rewards, base damage, headshot multipliers, armor penetration (ArmorRatio x 50),
+ *   RPM (60 / CycleTime) and range modifiers come from Counter-Strike 2's `scripts/weapons.vdata`
+ *   (SteamDatabase/GameTracking-CS2, commit c01c73dbaf67). Semi-auto pistols whose CycleTime is a
+ *   `[0.15, 0.3]` pair keep 400 rpm; the Zeus keeps 30.
  *
  * Game version: Counter-Strike 2 (Current Release / MR12 / May 2024 incendiary adjustments).
  */
@@ -102,17 +104,15 @@ export const GRENADE_REFERENCES: readonly GrenadeReference[] = [
   },
 ] as const;
 
-export interface HitgroupValues {
-  readonly unarmored: number;
-  readonly armored: number;
-}
+export type ArmourState = 'none' | 'vest' | 'vestHelmet';
 
-export interface HitgroupDamage {
-  readonly head: HitgroupValues;
-  readonly chestArms: HitgroupValues;
-  readonly stomach: HitgroupValues;
-  readonly legs: HitgroupValues;
-}
+export const ARMOUR_STATES: readonly ArmourState[] = ['none', 'vest', 'vestHelmet'];
+
+export type HitZone = 'head' | 'chest' | 'stomach' | 'legs';
+
+export type ZoneDamage = Readonly<Record<HitZone, number>>;
+
+export type HitgroupDamage = Readonly<Record<ArmourState, ZoneDamage>>;
 
 export type WeaponReferenceCategory =
   | 'pistol'
@@ -130,6 +130,7 @@ export interface WeaponReference {
   readonly price: number;
   readonly killReward: number;
   readonly baseDamage: number;
+  readonly headshotMultiplier: number;
   readonly pellets?: number | undefined;
   readonly armorPenetration: number;
   readonly fireRateRpm: number;
@@ -137,38 +138,55 @@ export interface WeaponReference {
   readonly hitgroupDamage: HitgroupDamage;
 }
 
+const BODY_MULTIPLIER: Record<HitZone, number> = {
+  head: 1,
+  chest: 1,
+  stomach: 1.25,
+  legs: 0.75,
+};
+
+function isProtected(zone: HitZone, armour: ArmourState): boolean {
+  switch (zone) {
+    case 'head':
+      return armour === 'vestHelmet';
+    case 'chest':
+    case 'stomach':
+      return armour !== 'none';
+    case 'legs':
+      return false;
+  }
+}
+
 /**
- * Standard CS2 hitgroup calculation:
- * Head: 4.0x, Stomach: 1.25x, Chest/Arms: 1.0x, Legs: 0.75x.
- * Armor penetration reduces unarmored damage proportionally; legs are exempt from armor reduction.
+ * CS2 hit damage against a target with 100 armour. Head uses the weapon's own headshot multiplier
+ * (3.475 for the M4A1-S, 3.9 for the Desert Eagle), stomach 1.25x, legs 0.75x. Armour takes
+ * health damage down to raw x ArmorRatio x 0.5 (the armour penetration percentage); the head is
+ * covered only by a helmet, chest and stomach by the vest, and legs never. The armour points a
+ * single bullet can eat never exceed 100, so the depletion rule does not change any figure.
  */
 export function calculateHitgroupDamage(
   baseDamage: number,
+  headshotMultiplier: number,
   armorPenetrationPercent: number,
 ): HitgroupDamage {
   const ap = armorPenetrationPercent / 100;
-  const headUnarmored = Math.floor(baseDamage * 4);
-  const chestUnarmored = Math.floor(baseDamage * 1);
-  const stomachUnarmored = Math.floor(baseDamage * 1.25);
-  const legsUnarmored = Math.floor(baseDamage * 0.75);
-
+  const zoneDamage = (armour: ArmourState): ZoneDamage => {
+    const damageOf = (zone: HitZone): number => {
+      const multiplier = zone === 'head' ? headshotMultiplier : BODY_MULTIPLIER[zone];
+      const raw = baseDamage * multiplier;
+      return Math.floor(isProtected(zone, armour) ? raw * ap : raw);
+    };
+    return {
+      head: damageOf('head'),
+      chest: damageOf('chest'),
+      stomach: damageOf('stomach'),
+      legs: damageOf('legs'),
+    };
+  };
   return {
-    head: {
-      unarmored: headUnarmored,
-      armored: Math.floor(headUnarmored * ap),
-    },
-    chestArms: {
-      unarmored: chestUnarmored,
-      armored: Math.floor(chestUnarmored * ap),
-    },
-    stomach: {
-      unarmored: stomachUnarmored,
-      armored: Math.floor(stomachUnarmored * ap),
-    },
-    legs: {
-      unarmored: legsUnarmored,
-      armored: legsUnarmored,
-    },
+    none: zoneDamage('none'),
+    vest: zoneDamage('vest'),
+    vestHelmet: zoneDamage('vestHelmet'),
   };
 }
 
@@ -176,76 +194,331 @@ function makeWeapon(
   name: WeaponName,
   category: WeaponReferenceCategory,
   team: 'both' | 'ct' | 't',
-  price: number,
-  killReward: number,
-  baseDamage: number,
-  armorPenetration: number,
-  fireRateRpm: number,
-  rangeModifier: number,
-  pellets?: number,
+  stats: {
+    readonly price: number;
+    readonly killReward: number;
+    readonly damage: number;
+    readonly headshot?: number;
+    readonly armorPenetration: number;
+    readonly rpm: number;
+    readonly range: number;
+    readonly pellets?: number;
+  },
 ): WeaponReference {
+  const headshotMultiplier = stats.headshot ?? 4;
   return {
     name,
     category,
     team,
-    price,
-    killReward,
-    baseDamage,
-    ...(pellets !== undefined ? { pellets } : {}),
-    armorPenetration,
-    fireRateRpm,
-    rangeModifier,
-    hitgroupDamage: calculateHitgroupDamage(baseDamage, armorPenetration),
+    price: stats.price,
+    killReward: stats.killReward,
+    baseDamage: stats.damage,
+    headshotMultiplier,
+    ...(stats.pellets !== undefined ? { pellets: stats.pellets } : {}),
+    armorPenetration: stats.armorPenetration,
+    fireRateRpm: stats.rpm,
+    rangeModifier: stats.range,
+    hitgroupDamage: calculateHitgroupDamage(
+      stats.damage,
+      headshotMultiplier,
+      stats.armorPenetration,
+    ),
   };
 }
 
+const W = makeWeapon;
+
 export const WEAPON_REFERENCES: readonly WeaponReference[] = [
-  // Pistols
-  makeWeapon('Glock-18', 'pistol', 't', 200, 300, 30, 47, 400, 0.9),
-  makeWeapon('USP-S', 'pistol', 'ct', 200, 300, 35, 50.5, 353, 0.91),
-  makeWeapon('P2000', 'pistol', 'ct', 200, 300, 35, 50.5, 353, 0.91),
-  makeWeapon('Dual Berettas', 'pistol', 'both', 300, 300, 38, 57.5, 500, 0.79),
-  makeWeapon('P250', 'pistol', 'both', 300, 300, 38, 64, 400, 0.85),
-  makeWeapon('Five-SeveN', 'pistol', 'ct', 500, 300, 32, 91.15, 400, 0.88),
-  makeWeapon('Tec-9', 'pistol', 't', 500, 300, 33, 90.6, 500, 0.85),
-  makeWeapon('CZ75-Auto', 'pistol', 'both', 500, 100, 31, 77.65, 600, 0.85),
-  makeWeapon('Desert Eagle', 'pistol', 'both', 700, 300, 53, 93.2, 267, 0.85),
-  makeWeapon('R8 Revolver', 'pistol', 'both', 600, 300, 86, 93.2, 150, 0.88),
+  W('Glock-18', 'pistol', 't', {
+    price: 200,
+    killReward: 300,
+    damage: 30,
+    armorPenetration: 47,
+    rpm: 400,
+    range: 0.85,
+  }),
+  W('USP-S', 'pistol', 'ct', {
+    price: 200,
+    killReward: 300,
+    damage: 35,
+    armorPenetration: 50.5,
+    rpm: 353,
+    range: 0.91,
+  }),
+  W('P2000', 'pistol', 'ct', {
+    price: 200,
+    killReward: 300,
+    damage: 35,
+    armorPenetration: 50.5,
+    rpm: 353,
+    range: 0.91,
+  }),
+  W('Dual Berettas', 'pistol', 'both', {
+    price: 300,
+    killReward: 300,
+    damage: 38,
+    armorPenetration: 57.5,
+    rpm: 500,
+    range: 0.79,
+  }),
+  W('P250', 'pistol', 'both', {
+    price: 300,
+    killReward: 300,
+    damage: 38,
+    armorPenetration: 64,
+    rpm: 400,
+    range: 0.9,
+  }),
+  W('Five-SeveN', 'pistol', 'ct', {
+    price: 500,
+    killReward: 300,
+    damage: 32,
+    armorPenetration: 91.15,
+    rpm: 400,
+    range: 0.81,
+  }),
+  W('Tec-9', 'pistol', 't', {
+    price: 500,
+    killReward: 300,
+    damage: 33,
+    armorPenetration: 90.6,
+    rpm: 500,
+    range: 0.79,
+  }),
+  W('CZ75-Auto', 'pistol', 'both', {
+    price: 500,
+    killReward: 300,
+    damage: 31,
+    armorPenetration: 77.65,
+    rpm: 600,
+    range: 0.85,
+  }),
+  W('Desert Eagle', 'pistol', 'both', {
+    price: 700,
+    killReward: 300,
+    damage: 53,
+    headshot: 3.9,
+    armorPenetration: 93.2,
+    rpm: 267,
+    range: 0.85,
+  }),
+  W('R8 Revolver', 'pistol', 'both', {
+    price: 600,
+    killReward: 300,
+    damage: 86,
+    armorPenetration: 93.2,
+    rpm: 120,
+    range: 0.94,
+  }),
 
-  // SMGs
-  makeWeapon('MAC-10', 'smg', 't', 1050, 600, 29, 57.5, 800, 0.82),
-  makeWeapon('MP9', 'smg', 'ct', 1250, 600, 26, 60, 857, 0.87),
-  makeWeapon('MP7', 'smg', 'both', 1500, 600, 29, 62.5, 750, 0.84),
-  makeWeapon('MP5-SD', 'smg', 'both', 1500, 600, 27, 62.5, 750, 0.84),
-  makeWeapon('UMP-45', 'smg', 'both', 1200, 600, 35, 65, 667, 0.75),
-  makeWeapon('P90', 'smg', 'both', 2350, 300, 26, 69, 857, 0.86),
-  makeWeapon('PP-Bizon', 'smg', 'both', 1400, 600, 27, 63, 750, 0.8),
+  W('MAC-10', 'smg', 't', {
+    price: 1050,
+    killReward: 600,
+    damage: 29,
+    armorPenetration: 57.5,
+    rpm: 800,
+    range: 0.8,
+  }),
+  W('MP9', 'smg', 'ct', {
+    price: 1250,
+    killReward: 600,
+    damage: 26,
+    armorPenetration: 60,
+    rpm: 857,
+    range: 0.87,
+  }),
+  W('MP7', 'smg', 'both', {
+    price: 1400,
+    killReward: 600,
+    damage: 30,
+    armorPenetration: 62.5,
+    rpm: 750,
+    range: 0.87,
+  }),
+  W('MP5-SD', 'smg', 'both', {
+    price: 1400,
+    killReward: 600,
+    damage: 28,
+    armorPenetration: 62.5,
+    rpm: 750,
+    range: 0.87,
+  }),
+  W('UMP-45', 'smg', 'both', {
+    price: 1200,
+    killReward: 600,
+    damage: 35,
+    armorPenetration: 65,
+    rpm: 667,
+    range: 0.75,
+  }),
+  W('P90', 'smg', 'both', {
+    price: 2350,
+    killReward: 300,
+    damage: 26,
+    armorPenetration: 69,
+    rpm: 857,
+    range: 0.86,
+  }),
+  W('PP-Bizon', 'smg', 'both', {
+    price: 1300,
+    killReward: 600,
+    damage: 27,
+    armorPenetration: 63,
+    rpm: 750,
+    range: 0.8,
+  }),
 
-  // Rifles
-  makeWeapon('Galil AR', 'rifle', 't', 1800, 300, 30, 77.5, 667, 0.98),
-  makeWeapon('FAMAS', 'rifle', 'ct', 2050, 300, 30, 70, 667, 0.96),
-  makeWeapon('AK-47', 'rifle', 't', 2700, 300, 36, 77.5, 600, 0.98),
-  makeWeapon('M4A4', 'rifle', 'ct', 3000, 300, 33, 70, 667, 0.97),
-  makeWeapon('M4A1-S', 'rifle', 'ct', 2900, 300, 38, 70, 600, 0.99),
-  makeWeapon('SG 553', 'rifle', 't', 3000, 300, 30, 100, 545, 0.98),
-  makeWeapon('AUG', 'rifle', 'ct', 3300, 300, 28, 90, 667, 0.98),
+  W('Galil AR', 'rifle', 't', {
+    price: 1800,
+    killReward: 300,
+    damage: 30,
+    armorPenetration: 77.5,
+    rpm: 667,
+    range: 0.98,
+  }),
+  W('FAMAS', 'rifle', 'ct', {
+    price: 1950,
+    killReward: 300,
+    damage: 30,
+    armorPenetration: 70,
+    rpm: 667,
+    range: 0.96,
+  }),
+  W('AK-47', 'rifle', 't', {
+    price: 2700,
+    killReward: 300,
+    damage: 36,
+    armorPenetration: 77.5,
+    rpm: 600,
+    range: 0.98,
+  }),
+  W('M4A4', 'rifle', 'ct', {
+    price: 2900,
+    killReward: 300,
+    damage: 33,
+    armorPenetration: 70,
+    rpm: 667,
+    range: 0.97,
+  }),
+  W('M4A1-S', 'rifle', 'ct', {
+    price: 2900,
+    killReward: 300,
+    damage: 38,
+    headshot: 3.475,
+    armorPenetration: 70,
+    rpm: 600,
+    range: 0.94,
+  }),
+  W('SG 553', 'rifle', 't', {
+    price: 3000,
+    killReward: 300,
+    damage: 30,
+    armorPenetration: 100,
+    rpm: 545,
+    range: 0.98,
+  }),
+  W('AUG', 'rifle', 'ct', {
+    price: 3300,
+    killReward: 300,
+    damage: 28,
+    armorPenetration: 90,
+    rpm: 600,
+    range: 0.98,
+  }),
 
-  // Snipers
-  makeWeapon('SSG 08', 'sniper', 'both', 1700, 300, 88, 85, 48, 0.98),
-  makeWeapon('AWP', 'sniper', 'both', 4750, 100, 115, 97.5, 41, 0.99),
-  makeWeapon('G3SG1', 'sniper', 't', 5000, 300, 80, 82.5, 240, 0.98),
-  makeWeapon('SCAR-20', 'sniper', 'ct', 5000, 300, 80, 82.5, 240, 0.98),
+  W('SSG 08', 'sniper', 'both', {
+    price: 1700,
+    killReward: 300,
+    damage: 88,
+    armorPenetration: 85,
+    rpm: 48,
+    range: 0.98,
+  }),
+  W('AWP', 'sniper', 'both', {
+    price: 4750,
+    killReward: 100,
+    damage: 115,
+    armorPenetration: 97.5,
+    rpm: 41,
+    range: 0.99,
+  }),
+  W('G3SG1', 'sniper', 't', {
+    price: 5000,
+    killReward: 300,
+    damage: 80,
+    armorPenetration: 82.5,
+    rpm: 240,
+    range: 0.98,
+  }),
+  W('SCAR-20', 'sniper', 'ct', {
+    price: 5000,
+    killReward: 300,
+    damage: 80,
+    armorPenetration: 82.5,
+    rpm: 240,
+    range: 0.98,
+  }),
 
-  // Shotguns
-  makeWeapon('Nova', 'shotgun', 'both', 1050, 900, 26, 50, 68, 0.7, 9),
-  makeWeapon('XM1014', 'shotgun', 'both', 2000, 900, 20, 80, 171, 0.7, 6),
-  makeWeapon('Sawed-Off', 'shotgun', 't', 1100, 900, 32, 75, 71, 0.67, 8),
-  makeWeapon('MAG-7', 'shotgun', 'ct', 1300, 900, 30, 75, 71, 0.75, 8),
+  W('Nova', 'shotgun', 'both', {
+    price: 1050,
+    killReward: 900,
+    damage: 26,
+    armorPenetration: 50,
+    rpm: 68,
+    range: 0.7,
+    pellets: 9,
+  }),
+  W('XM1014', 'shotgun', 'both', {
+    price: 2000,
+    killReward: 600,
+    damage: 20,
+    armorPenetration: 80,
+    rpm: 171,
+    range: 0.7,
+    pellets: 6,
+  }),
+  W('Sawed-Off', 'shotgun', 't', {
+    price: 1100,
+    killReward: 900,
+    damage: 32,
+    armorPenetration: 75,
+    rpm: 71,
+    range: 0.45,
+    pellets: 8,
+  }),
+  W('MAG-7', 'shotgun', 'ct', {
+    price: 1300,
+    killReward: 900,
+    damage: 30,
+    armorPenetration: 75,
+    rpm: 71,
+    range: 0.45,
+    pellets: 8,
+  }),
 
-  // Machine guns
-  makeWeapon('M249', 'machinegun', 'both', 5200, 300, 32, 80, 750, 0.97),
-  makeWeapon('Negev', 'machinegun', 'both', 1700, 300, 35, 71, 800, 0.97),
+  W('M249', 'machinegun', 'both', {
+    price: 5200,
+    killReward: 300,
+    damage: 32,
+    armorPenetration: 80,
+    rpm: 750,
+    range: 0.97,
+  }),
+  W('Negev', 'machinegun', 'both', {
+    price: 1700,
+    killReward: 300,
+    damage: 35,
+    armorPenetration: 71,
+    rpm: 800,
+    range: 0.97,
+  }),
 
-  // Equipment
-  makeWeapon('Zeus x27', 'equipment', 'both', 200, 0, 500, 100, 30, 0.05),
+  W('Zeus x27', 'equipment', 'both', {
+    price: 200,
+    killReward: 100,
+    damage: 500,
+    armorPenetration: 100,
+    rpm: 30,
+    range: 0.99,
+  }),
 ];

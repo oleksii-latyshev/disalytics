@@ -1,4 +1,4 @@
-import type { WeaponReference } from '@disa/demo-core';
+import type { ArmourState, WeaponReference } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { shotsToKill, ZONES, type Zone, zoneDamage } from '../helpers/weapon-damage';
 import { BodyFigure } from './BodyFigure';
@@ -11,6 +11,12 @@ const ZONE_PATHS = {
   legs: 'library.tools.weapons.detail.zones.legs',
 } as const satisfies Record<Zone, string>;
 
+const ARMOUR_NOTES = {
+  none: 'library.tools.weapons.detail.noteNone',
+  vest: 'library.tools.weapons.detail.noteVest',
+  vestHelmet: 'library.tools.weapons.detail.noteVestHelmet',
+} as const satisfies Record<ArmourState, string>;
+
 function SideLabel({ team }: { team: WeaponReference['team'] }) {
   if (team === 'both') return <Text path="library.tools.weapons.sides.all" />;
   return (
@@ -20,18 +26,18 @@ function SideLabel({ team }: { team: WeaponReference['team'] }) {
 
 export function WeaponDetail({
   weapon,
-  isArmored,
+  armour,
   moneyFormat,
 }: {
   weapon: WeaponReference;
-  isArmored: boolean;
+  armour: ArmourState;
   moneyFormat: Intl.NumberFormat;
 }) {
   const damage = {
-    head: zoneDamage(weapon, 'head', isArmored),
-    chest: zoneDamage(weapon, 'chest', isArmored),
-    stomach: zoneDamage(weapon, 'stomach', isArmored),
-    legs: zoneDamage(weapon, 'legs', isArmored),
+    head: zoneDamage(weapon, 'head', armour),
+    chest: zoneDamage(weapon, 'chest', armour),
+    stomach: zoneDamage(weapon, 'stomach', armour),
+    legs: zoneDamage(weapon, 'legs', armour),
   };
   const pellets = weapon.pellets;
 
@@ -59,6 +65,8 @@ export function WeaponDetail({
       <div className="flex items-center gap-4">
         <BodyFigure
           {...damage}
+          hasVest={armour !== 'none'}
+          hasHelmet={armour === 'vestHelmet'}
           className="h-[8.75rem] w-[5.25rem] shrink-0 lg:h-[12.5rem] lg:w-[7.5rem]"
         />
         <ul className="flex flex-1 flex-col gap-2 lg:gap-3">
@@ -105,12 +113,7 @@ export function WeaponDetail({
       </div>
 
       <p className="text-12 text-ink-dim leading-prose">
-        {isArmored ? (
-          <Text path="library.tools.weapons.detail.noteArmored" />
-        ) : (
-          <Text path="library.tools.weapons.detail.noteUnarmored" />
-        )}{' '}
-        <Text path="library.tools.weapons.detail.noteBasis" />
+        <Text path={ARMOUR_NOTES[armour]} /> <Text path="library.tools.weapons.detail.noteBasis" />
         {pellets !== undefined && (
           <>
             {' '}

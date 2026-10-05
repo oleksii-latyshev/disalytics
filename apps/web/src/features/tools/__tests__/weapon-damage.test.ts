@@ -5,11 +5,12 @@ import { shotsToKill, zoneDamage, zoneHeat } from '../helpers/weapon-damage';
 const ak = WEAPON_REFERENCES.find((w) => w.name === 'AK-47');
 
 describe('zoneDamage', () => {
-  it('reads armoured and unarmoured values, legs ignoring armour', () => {
+  it('reads the value for the armour state, legs ignoring armour', () => {
     if (ak === undefined) throw new Error('missing AK-47');
-    expect(zoneDamage(ak, 'head', true)).toBe(ak.hitgroupDamage.head.armored);
-    expect(zoneDamage(ak, 'chest', false)).toBe(ak.hitgroupDamage.chestArms.unarmored);
-    expect(zoneDamage(ak, 'legs', true)).toBe(zoneDamage(ak, 'legs', false));
+    expect(zoneDamage(ak, 'head', 'vestHelmet')).toBe(ak.hitgroupDamage.vestHelmet.head);
+    expect(zoneDamage(ak, 'head', 'vest')).toBe(ak.hitgroupDamage.none.head);
+    expect(zoneDamage(ak, 'chest', 'none')).toBe(ak.hitgroupDamage.none.chest);
+    expect(zoneDamage(ak, 'legs', 'vestHelmet')).toBe(zoneDamage(ak, 'legs', 'none'));
   });
 });
 
