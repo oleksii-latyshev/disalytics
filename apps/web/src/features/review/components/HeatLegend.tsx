@@ -1,12 +1,16 @@
 import { Text } from '@disa/i18n';
 
-export type HeatLegendKind = 'field' | 'rings' | 'pair' | 'difference';
+export type HeatLegendKind = 'field' | 'rings' | 'pair' | 'difference' | 'events' | 'utility';
 
 /** A hue's own colour pulled towards black and towards white, the way the plate's ramps are. */
 const dark = (token: string) => `color-mix(in srgb, var(${token}) 38%, #000)`;
 
+const FIELD = `linear-gradient(90deg, ${dark('--color-heat-low')}, var(--color-heat-low), var(--color-heat-high), var(--color-ink))`;
+
 const SWATCH: Readonly<Record<Exclude<HeatLegendKind, 'rings'>, string>> = {
-  field: `linear-gradient(90deg, ${dark('--color-heat-low')}, var(--color-heat-low), var(--color-heat-high), var(--color-ink))`,
+  events: FIELD,
+  utility: FIELD,
+  field: FIELD,
   pair: `linear-gradient(90deg, ${dark('--color-heat-high')}, var(--color-heat-high) 50%, ${dark('--color-heat-second')} 50%, var(--color-heat-second))`,
   difference: `linear-gradient(90deg, var(--color-heat-second), ${dark('--color-heat-second')} 45%, ${dark('--color-heat-high')} 55%, var(--color-heat-high))`,
 };

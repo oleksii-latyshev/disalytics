@@ -1,33 +1,27 @@
 import {
   type HeatBuy,
   type HeatPhaseId,
-  type HeatScope,
   type ParsedDemo,
   type PlayerSlot,
   presenceByRoundTime,
 } from '@disa/demo-core';
-import { Text, useT } from '@disa/i18n';
+import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
 import { useMemo, useState } from 'react';
-import { filterSummary, heatLegendKind, heatTitleKey } from '../helpers/heat-copy';
+import { filterSummary, heatLegendKind, heatTitle } from '../helpers/heat-copy';
 import {
   pickBin,
   playRange,
   type RoundRange,
   rangeOfPhase,
   WHOLE_RANGE,
-  windowOfRange,
 } from '../helpers/heat-range';
-import {
-  buildHeatView,
-  type HeatCompareView,
-  type HeatReading,
-  type HeatSecond,
-} from '../helpers/heat-view';
+import type { HeatCompareView, HeatReading, HeatSecond } from '../helpers/heat-view';
 import type { SideScope } from '../helpers/map-scope';
+import { useHeatView } from '../hooks/use-heat-view';
 import { useRoundPlay } from '../hooks/use-round-play';
 import { HeatCompareDialog } from './HeatCompareDialog';
-import { HeatFigure } from './HeatFigure';
+import { HeatReadout } from './HeatFigure';
 import { HeatHeader } from './HeatHeader';
 import { HeatPanel } from './HeatPanel';
 import { HeatPlates } from './HeatPlates';
@@ -67,32 +61,18 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
   const shownRange = play.step === null ? range : playRange(play.step);
   const overview = getMapOverview(demo.header.map);
   const sideScope = side === 'all' ? null : side;
-  const { first: firstBin, last: lastBin } = shownRange;
+  const secondPoints = second?.points ?? null;
 
-  const scope: HeatScope = useMemo(
-    () => ({
-      side: sideScope,
-      subject,
-      buy,
-      window: windowOfRange({ first: firstBin, last: lastBin, pending: null }),
-    }),
-    [sideScope, subject, buy, firstBin, lastBin],
-  );
-
-  const heat = useMemo(
-    () =>
-      overview === undefined
-        ? null
-        : buildHeatView({
-            demo,
-            overview,
-            reading,
-            scope,
-            second: second?.points ?? null,
-            view: compareView,
-          }),
-    [demo, overview, reading, scope, second, compareView],
-  );
+  const heat = useHeatView({
+    demo,
+    overview,
+    reading,
+    scope: { side: sideScope, subject, buy },
+    range,
+    step: play.step,
+    secondPoints,
+    view: compareView,
+  });
 
   const bars = useMemo(
     () => presenceByRoundTime(demo, { side: sideScope, subject, buy }),
@@ -122,12 +102,6 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
 
   const compare = isComparing ? compareView : null;
 
-  const figure = !isComparing ? (
-    <HeatFigure reading={reading} value={heat?.plates[0]?.total ?? 0} />
-  ) : heat?.overlap == null ? null : (
-    <Text path="review.heat.overlap" values={{ share: heat.overlap }} />
-  );
-
   return (
     <div className="grid min-h-0 grid-cols-[minmax(0,19rem)_minmax(0,1fr)] gap-3 wide:grid-cols-[minmax(0,21rem)_minmax(0,1fr)]">
       <HeatPanel
@@ -151,13 +125,16 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
 
       <div className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-2.5">
         <HeatHeader
-          title={t(heatTitleKey(reading, compare), {
-            name: names.first,
-            first: names.first,
-            second: names.second,
-          })}
+          title={heatTitle(t, reading, compare, names)}
           subtitle={filterSummary(t, { side, buy, range: shownRange })}
-          figure={figure}
+          figure={
+            <HeatReadout
+              reading={reading}
+              isComparing={isComparing}
+              total={heat?.plates[0]?.total ?? 0}
+              overlap={heat?.overlap ?? null}
+            />
+          }
           view={isComparing ? compareView : null}
           onView={setCompareView}
         />

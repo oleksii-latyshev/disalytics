@@ -22,6 +22,20 @@ const ALPHA_SPAN = 1 - ALPHA_FLOOR;
 const BYTE = 255;
 const CHANNELS = 4;
 
+const CURVE_STEPS = 1024;
+
+/** `weight ** curve` for a weight in 0..1, tabulated: a power per bin was most of a repaint. */
+function curveTable(curve: number): Float32Array {
+  return Float32Array.from({ length: CURVE_STEPS + 1 }, (_, at) => (at / CURVE_STEPS) ** curve);
+}
+
+const RAMP_TABLE = curveTable(RAMP_CURVE);
+const DIFFERENCE_TABLE = curveTable(DIFFERENCE_CURVE);
+
+function curved(table: Float32Array, weight: number): number {
+  return table[Math.round(Math.min(Math.max(weight, 0), 1) * CURVE_STEPS)] ?? 0;
+}
+
 function paintingCanvas(width: number, height: number): CanvasRenderingContext2D {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -63,7 +77,7 @@ export function fieldImage(
     const weight = field.bins[bin] ?? 0;
     if (weight < FAINT_WEIGHT) continue;
 
-    writePixel(image.data, bin, ramp, weight ** RAMP_CURVE);
+    writePixel(image.data, bin, ramp, curved(RAMP_TABLE, weight));
   }
 
   context.putImageData(image, 0, 0);
@@ -88,7 +102,7 @@ export function differenceImage(
       image.data,
       bin,
       delta > 0 ? ramps.first : ramps.second,
-      Math.abs(delta) ** DIFFERENCE_CURVE,
+      curved(DIFFERENCE_TABLE, Math.abs(delta)),
     );
   }
 

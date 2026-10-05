@@ -38,12 +38,14 @@ export function heatTitleKey(
 ):
   | 'review.heat.title.stood'
   | 'review.heat.title.died'
+  | 'review.heat.title.other'
   | 'review.heat.title.pair'
   | 'review.heat.title.difference' {
   if (compare === 'difference') return 'review.heat.title.difference';
   if (compare === 'side') return 'review.heat.title.pair';
+  if (reading === 'stood') return 'review.heat.title.stood';
 
-  return reading === 'stood' ? 'review.heat.title.stood' : 'review.heat.title.died';
+  return reading === 'died' ? 'review.heat.title.died' : 'review.heat.title.other';
 }
 
 /** What the corner of the plate explains: a ramp, rings, two colours or their difference. */
@@ -53,6 +55,25 @@ export function heatLegendKind(
 ): HeatLegendKind {
   if (compare === 'difference') return 'difference';
   if (reading === 'died') return 'rings';
+  if (compare === 'side') return 'pair';
+  if (reading === 'stood') return 'field';
 
-  return compare === 'side' ? 'pair' : 'field';
+  return reading === 'utility' ? 'utility' : 'events';
+}
+
+/** The heading over the plates, with the names of the players it is about. */
+export function heatTitle(
+  t: Translate,
+  reading: HeatReading,
+  compare: HeatCompareView | null,
+  names: { first: string; second: string },
+): string {
+  const other = reading === 'stood' || reading === 'died' ? '' : t(`review.heat.other.${reading}`);
+
+  return t(heatTitleKey(reading, compare), {
+    name: names.first,
+    reading: other,
+    first: names.first,
+    second: names.second,
+  });
 }

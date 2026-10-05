@@ -1,3 +1,4 @@
+import { asPlayerSlot } from '@disa/demo-core';
 import { MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import { DIFFERENCE_CUT, heatDifference, routesOverlap } from '../helpers/heat-difference';
@@ -27,7 +28,7 @@ function standing(...spots: readonly (readonly [number, number, number])[]): Hea
     let total = 0;
     for (const [binX, binY, weight] of spots) {
       const at = worldAtBin(binX, binY);
-      visit(at.x, at.y, 0, weight, { seconds: 0, side: null, buy: null });
+      visit(at.x, at.y, 0, weight, { slot: asPlayerSlot(0), seconds: 0, side: null, buy: null });
       total += weight;
     }
 

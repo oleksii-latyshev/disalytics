@@ -3,6 +3,7 @@ import {
   type HeatPoints,
   type HeatScope,
   type HeatTally,
+  heatWindowOfBins,
   type ParsedDemo,
   replayHeatPoints,
   walkHeat,
@@ -14,16 +15,22 @@ import {
   type HeatField,
   type HeatIdentity,
   type HeatPicture,
+  type HeatRings,
   type HeatSource,
+  heatBinsOf,
   heatDifference,
   heatFieldOf,
+  heatFieldOfBins,
   heatRingsOf,
   ringPicture,
   routesOverlap,
+  warmBin,
 } from '@/features/radar';
 
-/** What the reader chose to see: where a player stood, or where they died. */
-export type HeatReading = 'stood' | 'died';
+/** The two readings the screen leads with, and the four it keeps under *More*. */
+export const OTHER_READINGS = ['damageDealt', 'damageTaken', 'kills', 'utility'] as const;
+
+export type HeatReading = 'stood' | 'died' | (typeof OTHER_READINGS)[number];
 
 /** Two compared players on two plates, or on one, as the difference between them. */
 export type HeatCompareView = 'side' | 'difference';
@@ -66,14 +73,24 @@ export interface HeatViewInput {
   readonly view: HeatCompareView;
 }
 
-const NO_SLOTS = new Float32Array(0);
+type Who = 'first' | 'second';
 
-function readOf(reading: HeatReading): HeatMode {
-  return reading === 'stood' ? 'presence' : 'deaths';
+/** Where the fields and rings of a view come from: built on the spot, or summed from kept steps. */
+interface Provider {
+  field(who: Who, read: HeatMode): HeatField;
+  rings(who: Who, read: HeatMode): HeatRings;
 }
 
-function sourceOfDemo(input: HeatViewInput, read: HeatMode): HeatSource {
-  return (visit) => walkHeat(input.demo, read, input.scope, visit);
+const NO_SLOTS = new Float32Array(0);
+
+export function readOf(reading: HeatReading): HeatMode {
+  if (reading === 'stood') return 'presence';
+
+  return reading === 'died' ? 'deaths' : reading;
+}
+
+function sourceOfDemo(demo: ParsedDemo, read: HeatMode, scope: HeatScope): HeatSource {
+  return (visit) => walkHeat(demo, read, scope, visit);
 }
 
 function sourceOfPoints(points: HeatPoints, read: HeatMode, scope: HeatScope): HeatSource {
@@ -85,73 +102,83 @@ function sourceOfPoints(points: HeatPoints, read: HeatMode, scope: HeatScope): H
   });
 }
 
+function sourceOf(input: HeatViewInput, who: Who, read: HeatMode, scope: HeatScope): HeatSource {
+  return who === 'first' || input.second === null
+    ? sourceOfDemo(input.demo, read, scope)
+    : sourceOfPoints(input.second, read, scope);
+}
+
+function directProvider(input: HeatViewInput): Provider {
+  const fields = new Map<string, HeatField>();
+
+  return {
+    field(who, read) {
+      const key = `${who}:${read}`;
+      const known = fields.get(key);
+      if (known !== undefined) return known;
+
+      const made = heatFieldOf(input.overview, sourceOf(input, who, read, input.scope));
+      fields.set(key, made);
+
+      return made;
+    },
+    rings: (who, read) => heatRingsOf(input.overview, sourceOf(input, who, read, input.scope)),
+  };
+}
+
 function fieldPlate(field: HeatField, identity: HeatIdentity): HeatPlateSpec {
   return { picture: fieldPicture(field, identity), identity, total: field.total };
 }
 
-function onePlayer(input: HeatViewInput): HeatView {
-  const { overview, reading } = input;
-  const source = sourceOfDemo(input, readOf(reading));
+function ringPlate(rings: HeatRings, identity: HeatIdentity): HeatPlateSpec {
+  return { picture: ringPicture(rings, identity), identity, total: rings.total };
+}
 
-  if (reading === 'stood') {
-    const field = heatFieldOf(overview, source);
+function onePlayer(reading: HeatReading, provider: Provider): HeatView {
+  const read = readOf(reading);
 
-    return { plates: [fieldPlate(field, 'field')], roster: field, overlap: null };
+  if (reading === 'died') {
+    const rings = provider.rings('first', read);
+
+    return { plates: [ringPlate(rings, 'field')], roster: rings, overlap: null };
   }
 
-  const marks = heatRingsOf(overview, source);
+  const field = provider.field('first', read);
 
-  return {
-    plates: [
-      {
-        picture: ringPicture(marks, 'field'),
-        identity: 'field',
-        total: marks.total,
-      },
-    ],
-    roster: marks,
-    overlap: null,
-  };
+  return { plates: [fieldPlate(field, 'field')], roster: field, overlap: null };
 }
 
 /** Two players, each narrowed by the same side, buy and part of the round. */
-function twoPlayers(input: HeatViewInput, second: HeatPoints): HeatView {
-  const { overview, reading, scope, view } = input;
+function twoPlayers(reading: HeatReading, view: HeatCompareView, provider: Provider): HeatView {
   const read = readOf(reading);
+  const overlap = routesOverlap(
+    provider.field('first', 'presence'),
+    provider.field('second', 'presence'),
+  );
 
-  const presenceFirst = heatFieldOf(overview, sourceOfDemo(input, 'presence'));
-  const presenceSecond = heatFieldOf(overview, sourceOfPoints(second, 'presence', scope));
-  const overlap = routesOverlap(presenceFirst, presenceSecond);
+  if (view === 'side' && reading === 'died') {
+    const first = provider.rings('first', read);
 
-  if (reading === 'stood' && view === 'side') {
     return {
-      plates: [fieldPlate(presenceFirst, 'first'), fieldPlate(presenceSecond, 'second')],
-      roster: presenceFirst,
+      plates: [ringPlate(first, 'first'), ringPlate(provider.rings('second', read), 'second')],
+      roster: first,
       overlap,
     };
   }
 
-  if (reading === 'died' && view === 'side') {
-    const first = heatRingsOf(overview, sourceOfDemo(input, read));
-    const other = heatRingsOf(overview, sourceOfPoints(second, read, scope));
-    const ring = (marks: typeof first, identity: HeatIdentity): HeatPlateSpec => ({
-      picture: ringPicture(marks, identity),
-      identity,
-      total: marks.total,
-    });
+  const first = provider.field('first', read);
+  const second = provider.field('second', read);
 
-    return { plates: [ring(first, 'first'), ring(other, 'second')], roster: first, overlap };
+  if (view === 'side') {
+    return {
+      plates: [fieldPlate(first, 'first'), fieldPlate(second, 'second')],
+      roster: first,
+      overlap,
+    };
   }
 
-  // The difference of where they stood is the difference of the routes; of where they died, of the
-  // blurred deaths. Either way each side is divided by its own total first.
-  const first =
-    reading === 'stood' ? presenceFirst : heatFieldOf(overview, sourceOfDemo(input, read));
-  const other =
-    reading === 'stood'
-      ? presenceSecond
-      : heatFieldOf(overview, sourceOfPoints(second, read, scope));
-  const difference = heatDifference(first, other);
+  // Divided by its own total first, each: what is compared is the share of a player's time or marks.
+  const difference = heatDifference(first, second);
 
   return {
     plates: [
@@ -166,11 +193,81 @@ function twoPlayers(input: HeatViewInput, second: HeatPoints): HeatView {
   };
 }
 
+function compose(input: HeatViewInput, provider: Provider): HeatView {
+  return input.second === null
+    ? onePlayer(input.reading, provider)
+    : twoPlayers(input.reading, input.view, provider);
+}
+
 /**
  * Everything the heat screen draws and states, from the match, the narrowing and what is kept of
  * the second player. Pure and synchronous, and run when a choice changes — never in a draw — so a
  * press costs one field per player and a repaint costs none.
  */
 export function buildHeatView(input: HeatViewInput): HeatView {
-  return input.second === null ? onePlayer(input) : twoPlayers(input, input.second);
+  return compose(input, directProvider(input));
+}
+
+/**
+ * *Play round*'s source of views. The match and the second player are walked once, into the steps
+ * of the round-time axis; a window is then the sum of the steps it covers, so a step of the play
+ * costs a sum and a repaint and not a walk.
+ *
+ * `warm` smooths a step ahead of the playhead, in a task of its own, so that no step has to.
+ * Created when the play starts and dropped when it ends: it holds a grid per step per player.
+ */
+export interface HeatPlayer {
+  view(first: number, last: number): HeatView;
+  warm(step: number): void;
+}
+
+export function createHeatPlayer(input: HeatViewInput): HeatPlayer {
+  const { demo, overview, scope } = input;
+  const everyone = { ...scope, subject: null, window: null };
+  const bins = new Map<string, ReturnType<typeof heatBinsOf>>();
+
+  const binsOf = (who: Who, read: HeatMode) => {
+    const key = `${who}:${read}`;
+    const known = bins.get(key);
+    if (known !== undefined) return known;
+
+    const made =
+      who === 'first' || input.second === null
+        ? heatBinsOf(
+            overview,
+            sourceOfDemo(demo, read, everyone),
+            scope.subject,
+            demo.track.slotCount,
+          )
+        : heatBinsOf(overview, sourceOfPoints(input.second, read, everyone), null, 1);
+    bins.set(key, made);
+
+    return made;
+  };
+
+  return {
+    view(first, last) {
+      const window = heatWindowOfBins(first, last);
+      const stepInput = { ...input, scope: { ...scope, window } };
+      const rings = directProvider(stepInput);
+      const fields = new Map<string, HeatField>();
+
+      return compose(input, {
+        rings: rings.rings,
+        field(who, read) {
+          const key = `${who}:${read}`;
+          const known = fields.get(key);
+          if (known !== undefined) return known;
+
+          const made = heatFieldOfBins(binsOf(who, read), first, last);
+          fields.set(key, made);
+
+          return made;
+        },
+      });
+    },
+    warm(step) {
+      for (const made of bins.values()) warmBin(made, step);
+    },
+  };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type HeatMode, type HeatScope, walkHeat } from '../helpers/heat';
+import { HEAT_MODES, type HeatMode, type HeatScope, walkHeat } from '../helpers/heat';
 import {
   HEAT_BINS,
   HEAT_PHASES,
@@ -18,7 +18,7 @@ import {
   type ParsedDemo,
   type Round,
 } from '../schema';
-import { atFrame, newEvents, newTrack, withKill } from './helpers';
+import { atFrame, newEvents, newTrack, withGrenade, withKill } from './helpers';
 
 // 64 ticks to 16 samples: frame = tick / 4. Two rounds of 100 s, each with 10 s of freeze time.
 const ct = asPlayerSlot(0);
@@ -170,6 +170,23 @@ describe('walkHeat narrowed by buy and by the part of the round', () => {
     expect(totalOf(withEvent, 'deaths', { ...WHOLE, window: heatWindowOfBins(12, 29) })).toBe(0);
   });
 
+  it('reads utility by the moment it was thrown', () => {
+    const events = withGrenade(newEvents(), {
+      thrower: ct,
+      throwTick: asTick(FREEZE_TICKS + 64 * 3),
+      detonationTick: asTick(FREEZE_TICKS + 64 * 6),
+      detonationPosition: { x: 7, y: 8, z: 0 },
+    });
+
+    expect(totalOf(newDemo(events), 'utility', { ...WHOLE, window: heatWindowOfBins(0, 3) })).toBe(
+      1,
+    );
+    expect(totalOf(newDemo(events), 'utility', { ...WHOLE, window: heatWindowOfBins(4, 11) })).toBe(
+      0,
+    );
+    expect(totalOf(newDemo(events), 'utility', { ...WHOLE, buy: 'eco' })).toBe(0);
+  });
+
   it('keeps every figure beside a name inside the buy and the window but outside the subject', () => {
     const tally = walkHeat(
       demo,
@@ -259,5 +276,26 @@ describe('kept heat points', () => {
         () => undefined,
       ),
     ).toBe(0);
+  });
+});
+
+describe('kept heat points for every reading', () => {
+  const events = withGrenade(
+    withKill(newEvents(), { tick: asTick(FREEZE_TICKS + 64 * 30), attacker: ct, victim: t }),
+    {
+      thrower: ct,
+      throwTick: asTick(FREEZE_TICKS + 64 * 3),
+      detonationTick: asTick(FREEZE_TICKS + 64 * 6),
+      detonationPosition: { x: 7, y: 8, z: 0 },
+    },
+  );
+  const demo = newDemo(events);
+  const points = collectHeatPoints(demo, ct);
+
+  it.each(HEAT_MODES)('replays what the walk visits: %s', (mode) => {
+    const scope = { side: 'CT', buy: null, window: heatWindowOfBins(0, 11) } as const;
+    const walked = walkHeat(demo, mode, { ...scope, subject: ct }, () => undefined).total;
+
+    expect(replayHeatPoints(points, mode, scope, () => undefined)).toBeCloseTo(walked, 4);
   });
 });

@@ -1,5 +1,5 @@
-import type { ParsedDemo, PlayerSlot, Team } from '../schema';
-import { type HeatMode, type HeatScope, type HeatVisit, walkHeat } from './heat';
+import { asPlayerSlot, type ParsedDemo, type PlayerSlot, type Team } from '../schema';
+import { HEAT_MODES, type HeatMode, type HeatScope, type HeatVisit, walkHeat } from './heat';
 import { HEAT_BINS, heatBinOf, isHeatBuy, isInHeatWindow } from './heat-filter';
 import type { TeamBuyClass } from './team-stats';
 
@@ -22,14 +22,12 @@ export interface HeatMarks {
   readonly seconds: Float32Array;
   readonly side: Uint8Array;
   readonly buy: Uint8Array;
-  /** What every mark weighs: a sample's duration in seconds for presence, one for a death. */
-  readonly weight: number;
+  /** What each mark weighs: a sample's seconds for presence, health for damage, one for the rest. */
+  readonly weight: Float32Array;
 }
 
-export interface HeatPoints {
-  readonly presence: HeatMarks;
-  readonly deaths: HeatMarks;
-}
+/** One player's marks for every reading a heat map has. */
+export type HeatPoints = Readonly<Record<HeatMode, HeatMarks>>;
 
 const SIDE_CODES: readonly (Team | null)[] = ['CT', 'T', null];
 const BUY_CODES: readonly (TeamBuyClass | null)[] = [
@@ -54,22 +52,22 @@ interface Collector {
   readonly seconds: number[];
   readonly side: number[];
   readonly buy: number[];
+  readonly weight: number[];
 }
 
 function newCollector(): Collector {
-  return { x: [], y: [], z: [], seconds: [], side: [], buy: [] };
+  return { x: [], y: [], z: [], seconds: [], side: [], buy: [], weight: [] };
 }
 
 function collect(demo: ParsedDemo, mode: HeatMode, subject: PlayerSlot): HeatMarks {
   const collector = newCollector();
-  let weight = 0;
 
   walkHeat(
     demo,
     mode,
     { side: null, subject, buy: null, window: null },
     (worldX, worldY, worldZ, pointWeight, mark) => {
-      weight = pointWeight;
+      collector.weight.push(pointWeight);
       collector.x.push(worldX);
       collector.y.push(worldY);
       collector.z.push(worldZ);
@@ -87,13 +85,27 @@ function collect(demo: ParsedDemo, mode: HeatMode, subject: PlayerSlot): HeatMar
     seconds: Float32Array.from(collector.seconds),
     side: Uint8Array.from(collector.side),
     buy: Uint8Array.from(collector.buy),
-    weight,
+    weight: Float32Array.from(collector.weight),
   };
 }
 
-/** Where `subject` stood and died, with what each mark needs to be filtered later. */
+/** Every mark of `subject`, with what each needs to be filtered later. */
 export function collectHeatPoints(demo: ParsedDemo, subject: PlayerSlot): HeatPoints {
-  return { presence: collect(demo, 'presence', subject), deaths: collect(demo, 'deaths', subject) };
+  const [presence, deaths, damageDealt, damageTaken, kills, utility] = HEAT_MODES.map((mode) =>
+    collect(demo, mode, subject),
+  );
+  if (
+    presence === undefined ||
+    deaths === undefined ||
+    damageDealt === undefined ||
+    damageTaken === undefined ||
+    kills === undefined ||
+    utility === undefined
+  ) {
+    throw new Error('HEAT_MODES and the points kept for them have drifted apart');
+  }
+
+  return { presence, deaths, damageDealt, damageTaken, kills, utility };
 }
 
 function isKept(marks: HeatMarks, at: number, scope: HeatPointsScope): boolean {
@@ -116,7 +128,13 @@ export function replayHeatPoints(
   visit: HeatVisit,
 ): number {
   const marks = points[read];
-  const mark: { seconds: number; side: Team | null; buy: TeamBuyClass | null } = {
+  const mark: {
+    slot: PlayerSlot;
+    seconds: number;
+    side: Team | null;
+    buy: TeamBuyClass | null;
+  } = {
+    slot: asPlayerSlot(0),
     seconds: 0,
     side: null,
     buy: null,
@@ -129,8 +147,9 @@ export function replayHeatPoints(
     mark.seconds = marks.seconds[at] ?? 0;
     mark.side = SIDE_CODES[marks.side[at] ?? 0] ?? null;
     mark.buy = BUY_CODES[marks.buy[at] ?? 0] ?? null;
-    total += marks.weight;
-    visit(marks.x[at] ?? 0, marks.y[at] ?? 0, marks.z[at] ?? 0, marks.weight, mark);
+    const weight = marks.weight[at] ?? 0;
+    total += weight;
+    visit(marks.x[at] ?? 0, marks.y[at] ?? 0, marks.z[at] ?? 0, weight, mark);
   }
 
   return total;

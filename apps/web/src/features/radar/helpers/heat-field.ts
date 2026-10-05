@@ -39,6 +39,14 @@ const LIT_SHARE = 0.002;
 /** Resolution of the histogram the ceiling is read from, instead of sorting a quarter-million bins. */
 const HISTOGRAM_BUCKETS = 4096;
 
+/** Divides blurred bins by the ramp's ceiling, in place, so that the hot end of the ramp is 1. */
+export function scaleToRamp(bins: Float32Array): void {
+  const ceiling = hotCeiling(bins);
+  for (let bin = 0; ceiling > 0 && bin < bins.length; bin++) {
+    bins[bin] = Math.min((bins[bin] ?? 0) / ceiling, 1);
+  }
+}
+
 export interface HeatField {
   /** Bins across and down — `HEAT_GRID` each for a square plate. */
   readonly width: number;
@@ -92,7 +100,12 @@ function boxPass(
 }
 
 /** Blurs `bins` in place, using `scratch` for the half-way pass. */
-function blur(bins: Float32Array, scratch: Float32Array, width: number, height: number): void {
+export function blur(
+  bins: Float32Array,
+  scratch: Float32Array,
+  width: number,
+  height: number,
+): void {
   for (let pass = 0; pass < BLUR_PASSES; pass++) {
     // Along rows: each row starts at `row * width` and walks by 1.
     boxPass(bins, scratch, width, 1, height, width);
@@ -102,7 +115,7 @@ function blur(bins: Float32Array, scratch: Float32Array, width: number, height: 
 }
 
 /** The weight the ramp's hot end stands at, over the lit bins. */
-function hotCeiling(bins: Float32Array): number {
+export function hotCeiling(bins: Float32Array): number {
   let peak = 0;
   for (let bin = 0; bin < bins.length; bin++) peak = Math.max(peak, bins[bin] ?? 0);
   if (peak === 0) return 0;
@@ -134,10 +147,10 @@ function hotCeiling(bins: Float32Array): number {
 /** Whatever hands out a field's points: a walk over a demo, or a replay of what was kept of one. */
 export type HeatSource = (visit: HeatVisit) => HeatTally;
 
-const BIN_SCALE = HEAT_GRID / RADAR_IMAGE_SIZE;
+export const BIN_SCALE = HEAT_GRID / RADAR_IMAGE_SIZE;
 
 /** The grid a map's plate is binned on. */
-function gridOf(overview: MapOverview): { readonly width: number; readonly height: number } {
+export function gridOf(overview: MapOverview): { readonly width: number; readonly height: number } {
   const layout = plateLayout(overview);
 
   return {
@@ -173,10 +186,7 @@ export function heatFieldOf(overview: MapOverview, source: HeatSource): HeatFiel
   blur(bins, new Float32Array(bins.length), width, height);
 
   const density = Float32Array.from(bins);
-  const ceiling = hotCeiling(bins);
-  for (let bin = 0; ceiling > 0 && bin < bins.length; bin++) {
-    bins[bin] = Math.min((bins[bin] ?? 0) / ceiling, 1);
-  }
+  scaleToRamp(bins);
 
   return { width, height, bins, density, bySlot: tally.bySlot, total: tally.total };
 }

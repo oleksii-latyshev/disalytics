@@ -10,7 +10,7 @@ import { Text, useT } from '@disa/i18n';
 import { cn } from '@disa/ui';
 import { ArrowLeftRight } from 'lucide-react';
 import { type ReactNode, useMemo } from 'react';
-import type { HeatReading, HeatSecond } from '../helpers/heat-view';
+import { type HeatReading, type HeatSecond, OTHER_READINGS } from '../helpers/heat-view';
 import type { SideScope } from '../helpers/map-scope';
 import { HeatFigure } from './HeatFigure';
 import { type ChoiceOption, SettingChoice } from './SettingChoice';
@@ -232,6 +232,7 @@ export function HeatPanel(props: Props) {
   const { demo, reading, onReading, side, onSide, second } = props;
   const isComparing = second !== null;
 
+  const isOther = reading !== 'stood' && reading !== 'died';
   const readings: readonly ChoiceOption<HeatReading>[] = [
     { value: 'stood', label: <Text path="review.heat.read.stood" /> },
     { value: 'died', label: <Text path="review.heat.read.died" /> },
@@ -247,12 +248,35 @@ export function HeatPanel(props: Props) {
       aria-label={t('review.heat.panel')}
       className="surface-card flex min-h-0 min-w-0 flex-col gap-3.5 overflow-y-auto rounded-float p-3"
     >
-      <SettingChoice
-        labelPath="review.heat.panel"
-        value={reading}
-        options={readings}
-        onChange={onReading}
-      />
+      <div className="flex flex-col gap-1.5">
+        <SettingChoice
+          labelPath="review.heat.panel"
+          value={isOther ? null : reading}
+          options={readings}
+          onChange={onReading}
+        />
+        <select
+          aria-label={t('review.heat.more')}
+          value={isOther ? reading : ''}
+          onChange={(event) => {
+            const chosen = OTHER_READINGS.find((each) => each === event.target.value);
+            if (chosen !== undefined) onReading(chosen);
+          }}
+          className="h-control min-w-0 cursor-pointer rounded-chip border border-line bg-surface-2 px-2 text-13 text-ink-dim transition-colors duration-(--duration-micro) ease-out hover:border-line-strong"
+        >
+          <option value="">{t('review.heat.more')}</option>
+          {OTHER_READINGS.map((each) => (
+            <option key={each} value={each}>
+              {t(`review.heat.other.${each}`)}
+            </option>
+          ))}
+        </select>
+        {isOther && (
+          <p className="px-0.5 text-11 text-ink-dim leading-prose">
+            <Text path="review.heat.moreNote" />
+          </p>
+        )}
+      </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1">
         <h2 className={LABEL}>

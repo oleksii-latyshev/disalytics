@@ -12,11 +12,18 @@ import { frameForTick, roundOpeningFrame, sampleAt, sidesBySlotAtRound } from '.
 import { type TeamBuyClass, teamBuyClass } from './team-stats';
 
 /**
- * What a heat map can weigh — #385. Presence is time, and a death is an event, put at the point the
- * victim was on the frame it happened. Where a side's damage, kills and utility went was a reading
- * here until #569, and the screen that read them is gone.
+ * What a heat map can weigh — #385. Presence is time; every other mode is events, each put at the
+ * point the reading is about: the attacker for what a side dealt and killed, the victim for what it
+ * took and where it died, and the landing for utility.
  */
-export const HEAT_MODES = ['presence', 'deaths'] as const;
+export const HEAT_MODES = [
+  'presence',
+  'deaths',
+  'damageDealt',
+  'damageTaken',
+  'kills',
+  'utility',
+] as const;
 
 export type HeatMode = (typeof HEAT_MODES)[number];
 
@@ -36,6 +43,8 @@ export interface HeatScope {
 
 /** What a visited point is about, beyond where it is. Rewritten for every point: copy, never keep. */
 export interface HeatMark {
+  /** The player the point is about. */
+  readonly slot: PlayerSlot;
   /** Seconds from the end of the round's freeze time; negative for a mark before it. */
   readonly seconds: number;
   /** The side the point's player held that round, `null` when no source named one. */
@@ -65,6 +74,7 @@ export interface HeatTally {
 }
 
 interface MutableMark {
+  slot: PlayerSlot;
   seconds: number;
   side: Team | null;
   buy: TeamBuyClass | null;
@@ -127,6 +137,7 @@ function weigh(
   if (scope.subject !== null && actor !== scope.subject) return;
 
   walk.total += weight;
+  mark.slot = actor;
   mark.seconds = seconds;
   mark.side = side ?? null;
   mark.buy = buy;
@@ -134,10 +145,11 @@ function weigh(
 }
 
 /** The sample `slot` stands at on the frame an event happened. */
-function sampleIndex(demo: ParsedDemo, tick: Tick, slot: PlayerSlot): number {
+function sampleIndex(demo: ParsedDemo, tick: Tick, slot: PlayerSlot, framesBack = 0): number {
   const { track } = demo;
+  const frame = Math.min(Math.max(frameForTick(track, tick) - framesBack, 0), track.frameCount - 1);
 
-  return frameForTick(track, tick) * track.slotCount + slot;
+  return frame * track.slotCount + slot;
 }
 
 /**
@@ -239,6 +251,33 @@ function weighAtEvent(
   );
 }
 
+function walkDamage(walk: Walk, end: 'attacker' | 'victim'): void {
+  const { demo } = walk;
+  const { track } = demo;
+
+  eachInRounds(
+    demo,
+    demo.events.damage,
+    (hit) => hit.tick,
+    (hit, reading) => {
+      const { attacker, victim } = hit;
+      const { sides } = reading;
+      // Damage to an opponent only, read against that round's sides: the halftime swap would call
+      // half a match's damage friendly fire otherwise (`matchScoreboard`'s rule).
+      if (attacker === null || sides[attacker] === sides[victim]) return;
+
+      // `dmg_health` is the shot, not the health lost (`docs/PARSER.md` §24): one AWP headshot reads
+      // 452. It is clamped to what the victim had one sample before the hit.
+      // ponytail: two hits inside one 1/16 s sample each clamp to the same health; a running total
+      // per victim would fix it if the damage modes ever read as too hot on a spray.
+      const had = sampleAt(track.health, sampleIndex(demo, hit.tick, victim, 1));
+      const lost = Math.min(hit.healthDamage, had);
+
+      weighAtEvent(walk, reading, end === 'attacker' ? attacker : victim, hit.tick, lost);
+    },
+  );
+}
+
 function walkDeaths(walk: Walk): void {
   const { demo } = walk;
 
@@ -251,12 +290,55 @@ function walkDeaths(walk: Walk): void {
   );
 }
 
+function walkKills(walk: Walk): void {
+  const { demo } = walk;
+
+  eachInRounds(
+    demo,
+    demo.events.kills,
+    (kill) => kill.tick,
+    (kill, reading) => {
+      const { attacker, victim } = kill;
+      // A kill is an opponent killed: the world has no position, and a teamkill is not a kill.
+      if (attacker === null || reading.sides[attacker] === reading.sides[victim]) return;
+
+      weighAtEvent(walk, reading, attacker, kill.tick, 1);
+    },
+  );
+}
+
+function walkUtility(walk: Walk): void {
+  const { demo } = walk;
+
+  eachInRounds(
+    demo,
+    demo.events.grenades,
+    (grenade) => grenade.throwTick,
+    (grenade, reading) => {
+      // A grenade the round cleaned up never went off and has nowhere to land (`matchUtility`).
+      const landing = grenade.detonationPosition;
+      if (landing === null) return;
+
+      weigh(
+        walk,
+        reading,
+        grenade.thrower,
+        landing.x,
+        landing.y,
+        landing.z,
+        secondsIntoRound(demo, reading, grenade.throwTick),
+        1,
+      );
+    },
+  );
+}
+
 /**
  * Every point one heat map mode weighs, handed to `visit` in world units — the rule of #385. Where
  * the points go on a picture is the caller's: this knows nothing of maps or pixels.
  *
  * **Sides are the round's own** (`sidesBySlotAtRound`), never `PlayerInfo.team`, and **a mark
- * belongs to whoever it is about** — the player who stood there, the victim — so the side and the
+ * belongs to whoever it is about** — the attacker, the victim, the thrower — so the side and the
  * subject narrow that player.
  */
 export function walkHeat(
@@ -270,7 +352,7 @@ export function walkHeat(
     scope,
     visit,
     bySlot: new Float32Array(demo.track.slotCount),
-    mark: { seconds: 0, side: null, buy: null },
+    mark: { slot: asPlayerSlot(0), seconds: 0, side: null, buy: null },
     total: 0,
   };
 
@@ -280,6 +362,18 @@ export function walkHeat(
       break;
     case 'deaths':
       walkDeaths(walk);
+      break;
+    case 'damageDealt':
+      walkDamage(walk, 'attacker');
+      break;
+    case 'damageTaken':
+      walkDamage(walk, 'victim');
+      break;
+    case 'kills':
+      walkKills(walk);
+      break;
+    case 'utility':
+      walkUtility(walk);
       break;
   }
 

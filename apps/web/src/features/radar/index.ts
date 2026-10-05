@@ -21,6 +21,7 @@ export {
   drawHeRing,
   grenadeColor,
 } from './helpers/grenades';
+export { heatBinsOf, heatFieldOfBins, warmBin } from './helpers/heat-bins';
 export type { HeatDifference } from './helpers/heat-difference';
 export { heatDifference, routesOverlap } from './helpers/heat-difference';
 export type { HeatField, HeatRings, HeatSource } from './helpers/heat-field';
