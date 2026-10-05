@@ -148,7 +148,7 @@ export function MatchUtility({ demo, onOpenOnStage }: Props) {
     const title = t('review.lineups.save.title', {
       kind: LINEUP_KIND_NAMES[selected.kind],
       target: selectedNames.target?.name ?? unnamed,
-      origin: originTitle(variant, selectedNames, unnamed),
+      origin: selectedNames.origins.get(variant.id)?.name ?? unnamed,
     });
     const lineup = lineupOfVariant(variant, {
       map,
