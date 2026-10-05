@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findNearestCallout, getMapCallouts } from '../callouts';
+import { calloutAt, findNearestCallout, getMapCallouts } from '../callouts';
 
 describe('getMapCallouts', () => {
   it('returns callouts for valid maps', () => {
@@ -38,5 +38,37 @@ describe('findNearestCallout', () => {
 
   it('returns null for unknown map', () => {
     expect(findNearestCallout('unknown_map', { x: 0, y: 0 })).toBeNull();
+  });
+});
+
+describe('calloutAt', () => {
+  it('names a point inside a callout exactly', () => {
+    expect(calloutAt('de_dust2', { x: -457, y: 1602 })).toEqual({
+      name: 'Xbox',
+      isApproximate: false,
+    });
+  });
+
+  it('names Dust 2 landings the sample match lands in, instead of leaving them blank', () => {
+    expect(calloutAt('de_dust2', { x: -1981, y: 1631 })).toEqual({
+      name: 'Upper Tunnels',
+      isApproximate: false,
+    });
+    expect(calloutAt('de_inferno', { x: 351, y: 2800 })).toEqual({
+      name: 'B Site',
+      isApproximate: false,
+    });
+  });
+
+  it('falls back to the nearest callout, marked approximate, when none holds the point', () => {
+    const found = calloutAt('de_dust2', { x: 1554, y: 300 });
+
+    expect(found?.isApproximate).toBe(true);
+    expect(found?.name).toBe('Pit');
+  });
+
+  it('gives up when nothing is near, and for a map it has no callouts for', () => {
+    expect(calloutAt('de_dust2', { x: 9000, y: 9000 })).toBeNull();
+    expect(calloutAt('unknown_map', { x: 0, y: 0 })).toBeNull();
   });
 });

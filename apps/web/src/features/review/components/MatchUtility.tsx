@@ -1,313 +1,294 @@
 import {
   type Frame,
-  matchUtility,
+  type Lineup,
+  type LineupTarget,
+  lineupOfVariant,
+  matchLineups,
   type ParsedDemo,
-  type PlayerSlot,
-  THROWN_UTILITY_KINDS,
-  throwDetail,
-  UTILITY_NAMES,
+  savedLineupId,
   type UtilityKind,
   type UtilityThrow,
   utilityKindOfGrenade,
 } from '@disa/demo-core';
-import { Text, useT } from '@disa/i18n';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@disa/ui';
-import { useEffect, useMemo, useState } from 'react';
-import { UtilityGlyph } from '@/core/glyphs';
-import { UtilityPlate } from '@/features/radar';
-import { isInNarrowing, type MapNarrowing, WHOLE_MATCH } from '../helpers/map-scope';
-import { groupThrowsByLanding, type ThrowCluster } from '../helpers/throw-cluster';
-import { matchesTiming, type TimingScope, throwElapsedSeconds } from '../helpers/throw-timing';
-import { ClusterThrowsModal } from './ClusterThrowsModal';
-import { type MapFeedItem, MapFeedList } from './MapFeedList';
-import { SideRow } from './MapScope';
-import { PlayerTags } from './PlayerTags';
-import { type ChoiceOption, SettingChoice } from './SettingChoice';
-import { ThrowCard } from './ThrowCard';
+import { useT } from '@disa/i18n';
+import { Link } from '@tanstack/react-router';
+import { Bookmark } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { LineupFormModal, persistLineup, useMapLineups } from '@/features/lineups';
+import { type PlateLabels, UtilityPlate } from '@/features/radar';
+import {
+  countByKind,
+  filterTargets,
+  type LineupFilter,
+  NO_FILTER,
+  targetsInScope,
+} from '../helpers/lineup-filter';
+import {
+  LINEUP_KIND_NAMES,
+  nameLineups,
+  originTitle,
+  type TargetNames,
+  targetTitle,
+} from '../helpers/lineup-names';
+import { LineupPanel } from './LineupPanel';
+import { LineupStackMenu } from './LineupStackMenu';
+import { LineupsList } from './LineupsList';
 
-/** `all` is not a kind, and it is first because the match is what a map screen opens on. */
-type KindScope = 'all' | UtilityKind;
+const NOTHING: readonly UtilityThrow[] = [];
 
 interface Props {
   demo: ParsedDemo;
   onOpenOnStage?: ((frame: Frame) => void) | undefined;
 }
 
-/** How many throws each slot has, indexed by slot, over whatever the scope above has left. */
-function throwsBySlot(throws: readonly UtilityThrow[]): readonly number[] {
-  const counts: number[] = [];
+/** The order players say them in, which is the order the chips are in. */
+const KIND_ORDER: readonly UtilityKind[] = ['smoke', 'flash', 'fire', 'he', 'decoy'];
 
-  for (const thrown of throws) {
-    counts[thrown.grenade.thrower] = (counts[thrown.grenade.thrower] ?? 0) + 1;
-  }
-
-  return counts;
+function kindsOf(targets: readonly LineupTarget[]): readonly UtilityKind[] {
+  return KIND_ORDER.filter((kind) => targets.some((target) => target.kind === kind));
 }
 
 /**
- * The match's utility, on the map it was thrown across, with every throw as a row beside it — #386.
+ * Where a match's grenades landed that can be thrown again, and how — #566.
  *
- * **A throw belongs to whoever threw it**, which is why the side and the tags read the thrower, the
- * way the duel map's read the attacker.
+ * **The unit is a target, where a grenade of one kind lands, and not a throw**: a reader looks for
+ * "a smoke on Xbox", and a match has seventy of those where it has five hundred throws. Everything
+ * the screen needs from the match is derived once per demo — grouping, names — and nothing here is
+ * a function of time, so a press only changes what is picked.
  *
- * **The kind is a narrowing this screen needs where the duel map needs none.** A match's utility is
- * three to four times its duels — 526 grenades over 24 rounds on the dust2 sample against 144 kills
- * — so "where do our smokes land" is a question the reader cannot ask by looking.
- *
- * **Its narrowing is this screen's own.** The duel map's is held by the match because a duel can be
- * opened on the stage; a throw cannot yet, so nothing here leaves the screen for it to be kept.
+ * **What was saved is read from the lineups themselves**, by an id the variant owns, so saving the
+ * same variant again replaces it and the saved state is true whenever the screen is opened.
  */
 export function MatchUtility({ demo, onOpenOnStage }: Props) {
   const t = useT();
-  const { players } = demo.header;
+  const { map } = demo.header;
 
-  const [narrowing, setNarrowing] = useState<MapNarrowing>(WHOLE_MATCH);
-  const [kind, setKind] = useState<KindScope>('all');
-  const [roundScope, setRoundScope] = useState<string>('all');
-  const [timing, setTiming] = useState<TimingScope>('all');
-  const [clusterModal, setClusterModal] = useState<ThrowCluster | null>(null);
+  const lineups = useMemo(() => matchLineups(demo), [demo]);
+  const names = useMemo(() => nameLineups(map, lineups.targets), [map, lineups.targets]);
+  const kinds = useMemo(() => kindsOf(lineups.targets), [lineups.targets]);
 
-  // Derived once per match: this walks every round and every grenade, and nothing on this screen is
-  // on a readout, so it must not be re-derived by a press on a control.
-  const throws = useMemo(() => matchUtility(demo), [demo]);
+  const [filter, setFilter] = useState<LineupFilter>(NO_FILTER);
+  const [isOnTheMoveShown, setIsOnTheMoveShown] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [openStack, setOpenStack] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasFailed, setHasFailed] = useState(false);
 
-  const onKind = useMemo(
-    () =>
-      kind === 'all'
-        ? throws
-        : throws.filter((thrown) => utilityKindOfGrenade(thrown.grenade.type) === kind),
-    [throws, kind],
+  const { lineups: catalog, reload, deleteLineup } = useMapLineups(map);
+
+  const inScope = useMemo(
+    () => targetsInScope(lineups.targets, names, filter),
+    [lineups.targets, names, filter],
   );
-
-  const onRound = useMemo(
-    () =>
-      roundScope === 'all'
-        ? onKind
-        : onKind.filter((thrown) => thrown.roundIndex === Number(roundScope)),
-    [onKind, roundScope],
+  const visible = useMemo(
+    () => filterTargets(lineups.targets, names, filter),
+    [lineups.targets, names, filter],
   );
+  const chipCounts = useMemo(() => {
+    const counts = countByKind(inScope);
 
-  const onTiming = useMemo(
-    () =>
-      timing === 'all'
-        ? onRound
-        : onRound.filter((thrown) => {
-            const round = demo.events.rounds[thrown.roundIndex];
-            if (round === undefined) return false;
-            return matchesTiming(timing, throwElapsedSeconds(thrown, round, demo.track.tickRate));
-          }),
-    [onRound, timing, demo.events.rounds, demo.track.tickRate],
-  );
+    return new Map(kinds.map((kind) => [kind, counts.get(kind) ?? 0] as const));
+  }, [inScope, kinds]);
 
-  const onSide = useMemo(
+  const onTheMove = useMemo(
     () =>
-      narrowing.side === 'all'
-        ? onTiming
-        : onTiming.filter((thrown) => thrown.throwerSide === narrowing.side),
-    [onTiming, narrowing.side],
-  );
-
-  const shown = useMemo(
-    () =>
-      onTiming.filter((thrown) =>
-        isInNarrowing(narrowing, thrown.throwerSide, thrown.grenade.thrower),
+      lineups.onTheMove.filter(
+        (thrown) =>
+          (filter.side === 'all' || thrown.throwerSide === filter.side) &&
+          (filter.kind === 'all' || utilityKindOfGrenade(thrown.grenade.type) === filter.kind),
       ),
-    [onTiming, narrowing],
+    [lineups.onTheMove, filter],
   );
 
-  const clusters = useMemo(() => groupThrowsByLanding(shown), [shown]);
+  const catalogById = useMemo(
+    () => new Map(catalog.map((lineup) => [lineup.id, lineup])),
+    [catalog],
+  );
+  const savedVariantIds = useMemo(
+    () =>
+      new Set(
+        lineups.targets.flatMap((target) =>
+          target.variants
+            .filter((variant) => catalogById.has(savedLineupId(map, variant)))
+            .map((variant) => variant.id),
+        ),
+      ),
+    [lineups.targets, catalogById, map],
+  );
+  const savedCount = catalog.filter((lineup) => lineup.isBuiltIn !== true).length;
 
-  // Counted over the side's throws rather than the tags', so a tag says what that player threw
-  // whether or not it is on.
-  const counts = useMemo(() => throwsBySlot(onSide), [onSide]);
+  const selected = visible.find((target) => target.id === selectedId) ?? null;
+  const variant =
+    selected === null
+      ? null
+      : (selected.variants.find((candidate) => candidate.id === variantId) ??
+        selected.variants[0] ??
+        null);
+  const savedLineup: Lineup | undefined =
+    variant === null ? undefined : catalogById.get(savedLineupId(map, variant));
 
-  const items = useMemo((): readonly MapFeedItem[] => {
-    const nameOf = (slot: PlayerSlot) =>
-      players.find((player) => player.slot === slot)?.name ?? t('review.feed.unknownPlayer');
+  const pick = (id: string) => {
+    setSelectedId(id);
+    setVariantId(null);
+    setOpenStack(null);
+    setHasFailed(false);
+  };
 
-    return shown.map((thrown) => {
-      const utility = utilityKindOfGrenade(thrown.grenade.type);
+  const unnamed = t('review.lineups.unnamed');
+  const selectedNames: TargetNames | undefined =
+    selected === null ? undefined : names.get(selected.id);
 
-      return {
-        key: `nade-${thrown.grenade.throwTick}-${thrown.grenade.thrower}`,
-        roundNumber: thrown.roundIndex + 1,
-        event: {
-          kind: 'grenade',
-          thrower: thrown.grenade.thrower,
-          throwerSide: thrown.throwerSide,
-          utility,
-        },
-        // Game vocabulary reaches a label untranslated, the way a kill's weapon does.
-        label: t('events.grenade', {
-          thrower: nameOf(thrown.grenade.thrower),
-          utility: UTILITY_NAMES[utility],
-        }),
-      };
+  const handleSave = async () => {
+    if (selected === null || variant === null || selectedNames === undefined) return;
+
+    setIsSaving(true);
+    setHasFailed(false);
+    const title = t('review.lineups.save.title', {
+      kind: LINEUP_KIND_NAMES[selected.kind],
+      target: selectedNames.target?.name ?? unnamed,
+      origin: selectedNames.origins.get(variant.id)?.name ?? unnamed,
     });
-  }, [shown, players, t]);
+    const lineup = lineupOfVariant(variant, {
+      map,
+      title,
+      targetCallout: selectedNames.target?.name,
+      createdAt: Date.now(),
+    });
 
-  const [selected, setSelected] = useState<UtilityThrow | null>(null);
-  const [hovered, setHovered] = useState<UtilityThrow | null>(null);
+    const isStored = await persistLineup(lineup);
+    setIsSaving(false);
+    if (isStored) await reload();
+    else setHasFailed(true);
+  };
 
-  useEffect(() => {
-    if (selected !== null && !shown.includes(selected)) {
-      setSelected(null);
-    }
-  }, [shown, selected]);
+  const handleUndo = async () => {
+    if (savedLineup === undefined) return;
+    await deleteLineup(savedLineup.id);
+  };
 
-  const active = hovered ?? selected;
-  const focused = active === null ? -1 : shown.indexOf(active);
+  const labels: PlateLabels = {
+    target: (target) => {
+      const targetNames = names.get(target.id);
 
-  // A grenade's name is game vocabulary and stays as `UTILITY_NAMES` gives it; only the word for
-  // *all* of them is a string. The glyph is the same mark a team row and the round axis draw.
-  const kindOptions: readonly ChoiceOption<KindScope>[] = [
-    { value: 'all', label: <Text path="review.maps.everyKind" /> },
-    ...THROWN_UTILITY_KINDS.map((thrown) => ({
-      value: thrown,
-      label: <UtilityGlyph kind={thrown} label={UTILITY_NAMES[thrown]} size="control" />,
-    })),
-  ];
-
-  const timingOptions: readonly ChoiceOption<TimingScope>[] = [
-    { value: 'all', label: <Text path="review.maps.timing.all" /> },
-    { value: 'early', label: <Text path="review.maps.timing.early" /> },
-    { value: 'mid', label: <Text path="review.maps.timing.mid" /> },
-    { value: 'late', label: <Text path="review.maps.timing.late" /> },
-  ];
+      return t('review.lineups.targetAria', {
+        title: targetNames === undefined ? unnamed : targetTitle(target, targetNames, unnamed),
+        throws: target.throwCount,
+      });
+    },
+    origin: (number, of) =>
+      t('review.lineups.originAria', {
+        number,
+        name: selectedNames === undefined ? unnamed : originTitle(of, selectedNames, unnamed),
+      }),
+    stack: (targets, throws) => t('review.lineups.stack.aria', { targets, throws }),
+  };
 
   return (
-    <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
-      <PlayerTags
-        players={players}
-        chosen={narrowing.players}
-        onChosen={(chosen) => setNarrowing({ ...narrowing, players: chosen })}
-        figure={(slot) => counts[slot] ?? 0}
+    <div className="grid min-h-0 grid-cols-[minmax(0,20rem)_minmax(0,1fr)_minmax(0,21.25rem)] gap-3">
+      <LineupsList
+        filter={filter}
+        onFilter={setFilter}
+        kinds={chipCounts}
+        inScopeCount={inScope.length}
+        targets={visible}
+        names={names}
+        selectedId={selected?.id ?? null}
+        savedVariantIds={savedVariantIds}
+        onPick={pick}
+        isOnTheMoveShown={isOnTheMoveShown}
+        onTheMoveCount={onTheMove.length}
+        onToggleOnTheMove={setIsOnTheMoveShown}
       />
 
-      <div className="grid min-h-0 grid-cols-[minmax(0,17.5rem)_minmax(0,1fr)] gap-3">
-        <aside
-          aria-label={t('review.maps.controls')}
-          className="surface-card flex min-h-0 min-w-0 flex-col gap-3 rounded-float p-3 overflow-y-auto"
-        >
-          <SideRow side={narrowing.side} onSide={(side) => setNarrowing({ ...narrowing, side })} />
-
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="label-dense text-ink-dim">
-              <Text path="review.maps.kinds" />
-            </h2>
-
-            <SettingChoice
-              labelPath="review.maps.kinds"
-              value={kind}
-              options={kindOptions}
-              onChange={setKind}
+      <section className="relative grid min-h-0 min-w-0">
+        <UtilityPlate
+          map={map}
+          targets={visible}
+          selected={selected}
+          activeVariantId={variant?.id ?? null}
+          savedVariantIds={savedVariantIds}
+          onTheMove={isOnTheMoveShown ? onTheMove : NOTHING}
+          openStack={openStack}
+          labels={labels}
+          onSelectTarget={pick}
+          onSelectVariant={setVariantId}
+          onOpenStack={setOpenStack}
+          stackMenu={(ids) => (
+            <LineupStackMenu
+              targets={ids.flatMap((id) => visible.find((target) => target.id === id) ?? [])}
+              names={names}
+              onPick={pick}
             />
-          </div>
+          )}
+        />
 
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="label-dense text-ink-dim">
-              <Text path="review.maps.round" />
-            </h2>
-
-            <Select
-              value={roundScope}
-              onValueChange={(val) => {
-                if (val !== null) setRoundScope(val);
-              }}
+        <ul className="surface-card absolute bottom-2 left-2 flex list-none gap-3 rounded-card px-2.5 py-1.5 text-11 text-ink-dim">
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="size-2.5 rounded-full border-[1.5px] border-ink" />
+            {t('review.lineups.legend.landed')}
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="numeric grid size-3.5 place-items-center rounded-full bg-ink font-semibold text-10 text-surface-0"
             >
-              <SelectTrigger className="w-32">
-                <SelectValue>
-                  {roundScope === 'all' ? (
-                    <Text path="review.maps.allRounds" />
-                  ) : (
-                    <Text
-                      path="review.maps.roundNumber"
-                      values={{
-                        round:
-                          demo.events.rounds[Number(roundScope)]?.number ?? Number(roundScope) + 1,
-                      }}
-                    />
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <Text path="review.maps.allRounds" />
-                </SelectItem>
-                {demo.events.rounds.map((round, idx) => (
-                  <SelectItem key={round.number} value={String(idx)}>
-                    <Text path="review.maps.roundNumber" values={{ round: round.number }} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="label-dense text-ink-dim">
-              <Text path="review.maps.timing.label" />
-            </h2>
-
-            <SettingChoice
-              labelPath="review.maps.timing.label"
-              value={timing}
-              options={timingOptions}
-              onChange={setTiming}
+              1
+            </span>
+            {t('review.lineups.legend.origin')}
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="w-4.5 [border-block-start:1.5px_dashed_var(--color-ink)]"
             />
-          </div>
+            {t('review.lineups.legend.path')}
+          </li>
+        </ul>
 
-          <p className="numeric text-13 text-ink">
-            <Text path="review.maps.throws" values={{ count: shown.length }} />
-          </p>
+        <Link
+          to="/lineups"
+          className="surface-card absolute top-0 right-0 flex h-9 items-center gap-2 rounded-card px-3 text-13 font-medium text-ink"
+        >
+          <Bookmark aria-hidden="true" className="size-4" />
+          {t('review.lineups.myLineups')}
+          <span className="numeric grid h-5 min-w-5 place-items-center rounded-full bg-selected px-1.5 text-11 font-semibold">
+            {savedCount}
+          </span>
+        </Link>
+      </section>
 
-          <MapFeedList
-            label={t('review.maps.throwList')}
-            items={items}
-            players={players}
-            focused={focused === -1 ? null : focused}
-            onFocused={(index) => setHovered(index === null ? null : (shown[index] ?? null))}
-            press={{
-              describe: t('review.maps.throw.select'),
-              onPress: (index) => {
-                const item = shown[index] ?? null;
-                setSelected((prev) => (prev === item ? null : item));
-              },
-            }}
-          />
-
-          <div aria-live="polite">
-            <ThrowCard
-              detail={active === null ? undefined : throwDetail(demo, active)}
-              players={players}
-              map={demo.header.map}
-            />
-          </div>
-
-          <p className="text-12 text-ink-dim leading-prose">
-            <Text path="review.maps.lineupNote" values={{ hz: demo.track.sampleHz }} />
-          </p>
-        </aside>
-
-        <section className="grid min-h-0 min-w-0">
-          <UtilityPlate
-            demo={demo}
-            throws={shown}
-            clusters={clusters}
-            focused={focused === -1 ? null : focused}
-            onSelect={(index) => setSelected(index === null ? null : (shown[index] ?? null))}
-            onSelectCluster={(cluster) => setClusterModal(cluster)}
-          />
-        </section>
-      </div>
-
-      <ClusterThrowsModal
-        isOpen={clusterModal !== null}
-        cluster={clusterModal}
-        throws={shown}
+      <LineupPanel
         demo={demo}
-        onDismiss={() => setClusterModal(null)}
-        onOpenOnStage={onOpenOnStage ?? (() => {})}
+        lineups={lineups}
+        names={names}
+        selected={selected}
+        variant={variant}
+        savedVariantIds={savedVariantIds}
+        save={{
+          saved: savedLineup,
+          isSaving,
+          hasFailed,
+          onSave: () => void handleSave(),
+          onEdit: () => setIsFormOpen(true),
+          onUndo: () => void handleUndo(),
+        }}
+        onPick={pick}
+        onVariant={setVariantId}
+        onClose={() => setSelectedId(null)}
+        onOpenOnStage={(frame) => onOpenOnStage?.(frame)}
       />
+
+      {isFormOpen && savedLineup !== undefined && (
+        <LineupFormModal
+          isOpen
+          onDismiss={() => setIsFormOpen(false)}
+          initialData={savedLineup}
+          defaultMap={map}
+          onSaved={() => void reload()}
+        />
+      )}
     </div>
   );
 }

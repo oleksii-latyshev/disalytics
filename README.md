@@ -17,7 +17,7 @@ uploading the demo anywhere.
   tracers, audible radius; zoom and pan
 - **Round timeline** — every kill, grenade and objective as a glyph you can filter and jump to;
   play at 0.5×–4×, hold an arrow to scrub
-- **Whole-match views** — scoreboard with per-round detail, duel map, heat map, utility map
+- **Whole-match views** — scoreboard with per-round detail, duel map, heat map, and the match's lineups found by where they landed
 - **Library** — parsed demos reopen instantly from the browser's storage; two professional sample
   matches to try without a demo of your own
 - **Keyboard first**, colour-blind palette, reduced-motion support
