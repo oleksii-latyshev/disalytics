@@ -134,27 +134,19 @@
   "board": {
     "started": "Started {side}",
     "player": "Player",
-    "assists": "Assists",
-    "detail": "Round by round",
-    "roundLine": "Round {round, number}: {kills, plural, one {# kill} other {# kills}}, {damage} damage"
+    "assists": "Assists"
   },
   "stats": {
     "nav": "Stats sections",
     "tabs": {
-      "players": "Players",
+      "players": "Overview",
       "rounds": "Rounds & economy",
       "utility": "Utility"
     },
     "players": {
-      "sortHint": "Select a column heading to sort the players of each team by it.",
-      "table": {
-        "overview": "Overview",
-        "opening": "Opening duels & trades",
-        "multi": "Multi-kills & clutches",
-        "utility": "Flashes & utility"
-      },
       "col": {
-        "diff": "K–D",
+        "diff": "±",
+        "diffName": "Kills minus deaths",
         "adr": "ADR",
         "headshots": "HS %",
         "kast": "KAST",
@@ -179,6 +171,34 @@
         "flash": "A flash assist is a teammate's kill on an opponent whose blindness from your flash was still running; your own kills do not count.",
         "rating": "Rating 1.0 is HLTV's published formula; later versions are not public and are not approximated.",
         "opening": "An opening duel is the first kill of a round. Opening success is the share of the opening duels a player took part in that they won."
+      },
+      "title": "Players",
+      "short": {
+        "kills": "K",
+        "deaths": "D",
+        "assists": "A"
+      },
+      "setsLabel": "Column set",
+      "sets": {
+        "main": "Main",
+        "duels": "Duels",
+        "multi": "Multi-kills",
+        "utility": "Utility"
+      },
+      "setNotes": {
+        "main": "Select a player to open their details.",
+        "duels": "An opening duel is the round's first kill.",
+        "multi": "Rounds with exactly 2, 3, 4 or 5 opponent kills.",
+        "utility": "Health damage to opponents with HE grenades, molotovs and incendiaries."
+      },
+      "detail": {
+        "opening": "Opening duels, won : lost",
+        "multi": "Rounds with 2+ kills",
+        "keyRounds": "Key rounds — open in the replay",
+        "noKeyRounds": "No three-kill rounds or clutches",
+        "chipMulti": "R{round, number} · {count}K",
+        "chipClutch": "R{round, number} · clutch 1v{count}",
+        "duels": "Duels of this player"
       }
     },
     "utility": {
@@ -234,6 +254,59 @@
         "bomb": "Plants are counted over T rounds, post-plant wins over T rounds with a plant, retakes over CT rounds facing one. Totals only: there is no split by site yet.",
         "split": "Each figure is split by the side played in that round; a dash means there were no rounds to measure, not zero."
       }
+    },
+    "summary": {
+      "title": "Match result",
+      "winner": "Winner",
+      "halves": "1st half {first} · 2nd half {second}",
+      "halvesOvertime": "1st half {first} · 2nd half {second} · overtime {overtime}"
+    },
+    "history": {
+      "title": "Round history",
+      "buy": "Buy",
+      "roundWon": "Round {round, number}, {side} win, {reason}",
+      "roundDraw": "Round {round, number}, draw",
+      "legend": "Icon: how the round was won. Colour: the side the winner held that round."
+    },
+    "reason": {
+      "bombExploded": "bomb exploded",
+      "bombDefused": "bomb defused",
+      "allCtEliminated": "all CT eliminated",
+      "allTEliminated": "all T eliminated",
+      "timeExpired": "time ran out",
+      "draw": "draw"
+    },
+    "buy": {
+      "short": {
+        "pistol": "P",
+        "full": "F",
+        "force": "f",
+        "eco": "e",
+        "mixed": "~"
+      },
+      "name": {
+        "pistol": "pistol",
+        "full": "full",
+        "force": "force",
+        "eco": "eco",
+        "mixed": "mixed"
+      }
+    },
+    "line": {
+      "round": "Round {round, number}",
+      "won": "Won by the team that started {start}, playing {side}",
+      "buys": "Buys: {first} vs {second}",
+      "topKiller": "Top killer {name} ({kills, number})",
+      "watch": "Watch round {round, number}"
+    },
+    "best": {
+      "title": "Best in the match",
+      "rating": "Rating",
+      "kills": "Most kills",
+      "adr": "Average damage per round",
+      "openingKills": "Most opening kills",
+      "utilityDamage": "Most utility damage",
+      "kast": "KAST"
     }
   },
   "duels": {

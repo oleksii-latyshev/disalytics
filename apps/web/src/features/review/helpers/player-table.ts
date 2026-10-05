@@ -1,4 +1,4 @@
-import type { PlayerStats } from '@disa/demo-core';
+import type { PlayerSlot, PlayerStats } from '@disa/demo-core';
 import type { TranslationKey } from '@disa/i18n';
 
 export type PlayerColumnId =
@@ -24,7 +24,7 @@ export type PlayerColumnId =
   | 'flashAssists'
   | 'blind';
 
-export type PlayerTableId = 'overview' | 'opening' | 'multi' | 'utility';
+export type PlayerColumnSetId = 'main' | 'duels' | 'multi' | 'utility';
 
 /** How a figure is written; the formatting itself is the locale's, so it lives in the component. */
 export type PlayerColumnFormat = 'integer' | 'signed' | 'percent' | 'decimal1' | 'decimal2';
@@ -37,6 +37,10 @@ export interface PlayerColumn {
   readonly format: PlayerColumnFormat;
   /** Which end of the column is the good one: more kills is, more deaths is not. */
   readonly better: 'higher' | 'lower';
+  /** The figure's own heading is a short mark, so the full name goes to the tooltip. */
+  readonly nameTitlePath?: TranslationKey;
+  /** Drawn as a bar beside the figure, scaled to the largest in the match. */
+  readonly bar?: true;
   /** Set for the two figures a recording without flash events cannot state. */
   readonly needsFlashData?: true;
   /** The figure shown and sorted by; `null` is a figure that does not exist, such as 0 of 0. */
@@ -58,24 +62,27 @@ const multiColumn = (size: 2 | 3 | 4 | 5): PlayerColumn => ({
   read: (player) => player.multiKillRounds[size - 2] ?? 0,
 });
 
-const OVERVIEW: readonly PlayerColumn[] = [
+const MAIN: readonly PlayerColumn[] = [
   {
     id: 'kills',
-    labelPath: 'review.player.kills',
+    labelPath: 'review.stats.players.short.kills',
+    nameTitlePath: 'review.player.kills',
     format: 'integer',
     better: 'higher',
     read: (player) => player.kills,
   },
   {
     id: 'deaths',
-    labelPath: 'review.player.deaths',
+    labelPath: 'review.stats.players.short.deaths',
+    nameTitlePath: 'review.player.deaths',
     format: 'integer',
     better: 'lower',
     read: (player) => player.deaths,
   },
   {
     id: 'assists',
-    labelPath: 'review.board.assists',
+    labelPath: 'review.stats.players.short.assists',
+    nameTitlePath: 'review.board.assists',
     format: 'integer',
     better: 'higher',
     read: (player) => player.assists,
@@ -83,6 +90,7 @@ const OVERVIEW: readonly PlayerColumn[] = [
   {
     id: 'diff',
     labelPath: 'review.stats.players.col.diff',
+    nameTitlePath: 'review.stats.players.col.diffName',
     format: 'signed',
     better: 'higher',
     read: (player) => player.kills - player.deaths,
@@ -111,13 +119,14 @@ const OVERVIEW: readonly PlayerColumn[] = [
   {
     id: 'rating',
     labelPath: 'review.stats.players.col.rating',
+    bar: true,
     format: 'decimal2',
     better: 'higher',
     read: (player) => player.rating,
   },
 ];
 
-const OPENING: readonly PlayerColumn[] = [
+const DUELS: readonly PlayerColumn[] = [
   {
     id: 'openingKills',
     labelPath: 'review.stats.players.col.openingKills',
@@ -173,6 +182,7 @@ const UTILITY: readonly PlayerColumn[] = [
   {
     id: 'utilityDamage',
     labelPath: 'review.stats.players.col.utilityDamage',
+    bar: true,
     format: 'integer',
     better: 'higher',
     read: (player) => player.utilityDamage,
@@ -195,23 +205,40 @@ const UTILITY: readonly PlayerColumn[] = [
   },
 ];
 
-export interface PlayerTable {
-  readonly id: PlayerTableId;
-  readonly titlePath: TranslationKey;
+export interface PlayerColumnSet {
+  readonly id: PlayerColumnSetId;
+  readonly labelPath: TranslationKey;
+  readonly notePath: TranslationKey;
   readonly columns: readonly PlayerColumn[];
 }
 
-/** One table per question, in the order a reader asks them. */
-export const PLAYER_TABLES: readonly PlayerTable[] = [
-  { id: 'overview', titlePath: 'review.stats.players.table.overview', columns: OVERVIEW },
-  { id: 'opening', titlePath: 'review.stats.players.table.opening', columns: OPENING },
-  { id: 'multi', titlePath: 'review.stats.players.table.multi', columns: MULTI },
-  { id: 'utility', titlePath: 'review.stats.players.table.utility', columns: UTILITY },
+/** One set of columns per question, in the order a reader asks them. */
+export const PLAYER_COLUMN_SETS: readonly PlayerColumnSet[] = [
+  {
+    id: 'main',
+    labelPath: 'review.stats.players.sets.main',
+    notePath: 'review.stats.players.setNotes.main',
+    columns: MAIN,
+  },
+  {
+    id: 'duels',
+    labelPath: 'review.stats.players.sets.duels',
+    notePath: 'review.stats.players.setNotes.duels',
+    columns: DUELS,
+  },
+  {
+    id: 'multi',
+    labelPath: 'review.stats.players.sets.multi',
+    notePath: 'review.stats.players.setNotes.multi',
+    columns: MULTI,
+  },
+  {
+    id: 'utility',
+    labelPath: 'review.stats.players.sets.utility',
+    notePath: 'review.stats.players.setNotes.utility',
+    columns: UTILITY,
+  },
 ];
-
-export const PLAYER_COLUMNS: readonly PlayerColumn[] = PLAYER_TABLES.flatMap(
-  (table) => table.columns,
-);
 
 /**
  * The figure that stands out in a column across every player shown, or `null` when nothing does.
@@ -228,39 +255,59 @@ export function bestValue(players: readonly PlayerStats[], column: PlayerColumn)
   return column.better === 'higher' ? Math.max(...values) : Math.min(...values);
 }
 
-export interface PlayerSort {
-  readonly column: PlayerColumnId;
-  readonly direction: 'asc' | 'desc';
-}
-
-/**
- * A column sorts largest-first on its first press, smallest-first on its second, and the third
- * gives the table back its own order — the one `matchScoreboard` lists a team in.
- */
-export function nextPlayerSort(
-  current: PlayerSort | null,
-  column: PlayerColumnId,
-): PlayerSort | null {
-  if (current?.column !== column) return { column, direction: 'desc' };
-  return current.direction === 'desc' ? { column, direction: 'asc' } : null;
-}
-
-/** A stable sort: players level on the figure keep the order they arrived in, and a missing one goes last. */
-export function sortPlayers(
-  players: readonly PlayerStats[],
-  sort: PlayerSort | null,
-): readonly PlayerStats[] {
-  const column = PLAYER_COLUMNS.find((entry) => entry.id === sort?.column);
-  if (sort === null || column === undefined) return players;
-
-  const sign = sort.direction === 'desc' ? -1 : 1;
+/** A stable sort by rating, best first: players level on it keep the order they arrived in. */
+export function sortByRating(players: readonly PlayerStats[]): readonly PlayerStats[] {
   return players
-    .map((player, index) => ({ player, index, value: column.read(player) }))
-    .sort((a, b) => {
-      if (a.value === null || b.value === null) {
-        return (a.value === null ? 1 : 0) - (b.value === null ? 1 : 0) || a.index - b.index;
-      }
-      return sign * (a.value - b.value) || a.index - b.index;
-    })
+    .map((player, index) => ({ player, index }))
+    .sort((a, b) => b.player.rating - a.player.rating || a.index - b.index)
     .map(({ player }) => player);
 }
+
+/** The largest figure of a column across `players`, which a bar is scaled to; 0 when none exists. */
+export function barScale(players: readonly PlayerStats[], column: PlayerColumn): number {
+  return Math.max(0, ...players.map((player) => column.read(player) ?? 0));
+}
+
+export interface BestHolders {
+  readonly value: number;
+  /** Everyone who has it, in the order the players were given. */
+  readonly slots: readonly PlayerSlot[];
+}
+
+/** Who holds a column's best figure, or `null` when nothing stands out (`bestValue`'s own rule). */
+export function bestHolders(
+  players: readonly PlayerStats[],
+  column: PlayerColumn,
+): BestHolders | null {
+  const value = bestValue(players, column);
+  if (value === null) return null;
+
+  return {
+    value,
+    slots: players.filter((player) => column.read(player) === value).map((player) => player.slot),
+  };
+}
+
+export const PLAYER_COLUMNS: readonly PlayerColumn[] = PLAYER_COLUMN_SETS.flatMap(
+  (set) => set.columns,
+);
+
+export interface BestCard {
+  readonly column: PlayerColumn;
+  readonly titlePath: TranslationKey;
+}
+
+const BEST_CARD_ORDER: readonly (readonly [PlayerColumnId, TranslationKey])[] = [
+  ['rating', 'review.stats.best.rating'],
+  ['kills', 'review.stats.best.kills'],
+  ['adr', 'review.stats.best.adr'],
+  ['openingKills', 'review.stats.best.openingKills'],
+  ['utilityDamage', 'review.stats.best.utilityDamage'],
+  ['kast', 'review.stats.best.kast'],
+];
+
+/** One card per figure a post-match page leads with, in the order they are read. */
+export const BEST_CARDS: readonly BestCard[] = BEST_CARD_ORDER.flatMap(([id, titlePath]) => {
+  const column = PLAYER_COLUMNS.find((candidate) => candidate.id === id);
+  return column === undefined ? [] : [{ column, titlePath }];
+});

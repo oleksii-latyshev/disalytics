@@ -1,11 +1,14 @@
 import {
+  type Frame,
   hasBlindEvents,
   matchPlayerStats,
+  type OpeningSide,
   type ParsedDemo,
   type PlayerSlot,
+  roundOpeningFrame,
   TRADE_WINDOW_SECONDS,
 } from '@disa/demo-core';
-import { Text } from '@disa/i18n';
+import { Text, useLocale, useT } from '@disa/i18n';
 import {
   Accordion,
   AccordionHeader,
@@ -17,12 +20,10 @@ import {
 } from '@disa/ui';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import {
-  nextPlayerSort,
-  PLAYER_TABLES,
-  type PlayerSort,
-  type PlayerTableId,
-} from '../helpers/player-table';
+import { PLAYER_COLUMN_SETS, type PlayerColumnSetId } from '../helpers/player-table';
+import { createStatWriter } from '../helpers/stat-writer';
+import { BestInMatch } from './BestInMatch';
+import type { PlayerViewLink } from './PlayerDetail';
 import { PlayerStatsTable } from './PlayerStatsTable';
 
 /* The panel fades in and closes at once, for the reason `SettingGroup` states: the primitive's height
@@ -34,64 +35,111 @@ const PANEL_MOTION = {
   transition: { duration: DURATION_MICRO_SECONDS, ease: EASE_OUT },
 } as const;
 
-const [OVERVIEW, ...SMALLER] = PLAYER_TABLES;
+interface Props {
+  demo: ParsedDemo;
+  onOpenOnStage: (frame: Frame) => void;
+  onPlayerView: PlayerViewLink;
+}
 
 /**
- * The Players tab: one table per question, each with both teams named by the side they opened on.
+ * The players of the match in one table: both teams, one set of columns at a time, and beside it
+ * who led each figure.
  *
- * **At most one row stands open**, and only in the overview. Two round-by-round strips is two
- * readings of the same shape in one view, and the question the strip answers — "which rounds was
- * this player in" — is asked of one player at a time.
- *
- * **Each table keeps its own sort**: ordering the opening duels by success says nothing about how
- * the reader wants the kills ordered.
+ * **At most one row stands open**, from the table or from a best-in-match card. The set the reader
+ * picked stays while they open rows, and a card opens the row in the main set, where the row's own
+ * figures are.
  */
-export function StatsPlayers({ demo }: { demo: ParsedDemo }) {
+export function StatsPlayers({ demo, onOpenOnStage, onPlayerView }: Props) {
+  const t = useT();
+  const locale = useLocale();
+  const [setId, setSetId] = useState<PlayerColumnSetId>('main');
   const [opened, setOpened] = useState<PlayerSlot | null>(null);
-  const [sorts, setSorts] = useState<Partial<Record<PlayerTableId, PlayerSort | null>>>({});
 
   // Derived once per match: this walks every round, kill, hit and blind, and nothing here is on a
-  // readout, so a press on a header or a row must not repeat it.
+  // readout, so a press on a set or a row must not repeat it.
   const teams = useMemo(() => matchPlayerStats(demo), [demo]);
   const hasFlashData = useMemo(() => hasBlindEvents(demo), [demo]);
+  const write = useMemo(() => createStatWriter(locale), [locale]);
+  const players = useMemo(() => teams.flatMap((team) => team.players), [teams]);
+  const teamOf = useMemo(
+    () =>
+      new Map<PlayerSlot, OpeningSide>(
+        teams.flatMap((team) => team.players.map((player) => [player.slot, team.team] as const)),
+      ),
+    [teams],
+  );
+  const set =
+    PLAYER_COLUMN_SETS.find((candidate) => candidate.id === setId) ?? PLAYER_COLUMN_SETS[0];
+  const [first, second] = teams;
 
-  if (OVERVIEW === undefined) return null;
+  if (set === undefined || first === undefined || second === undefined) return null;
 
   return (
-    <div className="flex flex-col gap-8">
-      <PlayerStatsTable
-        demo={demo}
-        table={OVERVIEW}
-        teams={teams}
-        hasFlashData={hasFlashData}
-        sort={sorts[OVERVIEW.id] ?? null}
-        onSort={(column) =>
-          setSorts((current) => ({
-            ...current,
-            [OVERVIEW.id]: nextPlayerSort(current[OVERVIEW.id] ?? null, column),
-          }))
-        }
-        expandable={{ opened, onOpen: setOpened }}
-      />
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-3 wide:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)] wide:items-start">
+        <section
+          aria-label={t('review.stats.players.title')}
+          className="surface-card min-w-0 overflow-hidden rounded-float"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 p-3">
+            <fieldset className="m-0 flex min-w-0 flex-wrap gap-0.5 rounded-card border-0 bg-surface-2 p-0.5">
+              <legend className="sr-only">
+                <Text path="review.stats.players.setsLabel" />
+              </legend>
+              {PLAYER_COLUMN_SETS.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  aria-pressed={candidate.id === setId}
+                  onClick={() => setSetId(candidate.id)}
+                  className={`h-8 cursor-pointer rounded-chip px-3 text-13 transition-colors duration-(--duration-micro) ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+                    candidate.id === setId
+                      ? 'bg-surface-3 font-medium text-ink'
+                      : 'text-ink-dim hover:text-ink'
+                  }`}
+                >
+                  <Text path={candidate.labelPath} />
+                </button>
+              ))}
+            </fieldset>
 
-      <div className="grid gap-8 min-[1280px]:grid-cols-2 min-[1280px]:items-start">
-        {SMALLER.map((table) => (
+            <span className="text-12 text-ink-faint">
+              <Text path={set.notePath} />
+            </span>
+          </div>
+
           <PlayerStatsTable
-            key={table.id}
             demo={demo}
-            table={table}
-            teams={teams}
+            set={set}
+            teams={[first, second]}
             hasFlashData={hasFlashData}
-            sort={sorts[table.id] ?? null}
-            onSort={(column) =>
-              setSorts((current) => ({
-                ...current,
-                [table.id]: nextPlayerSort(current[table.id] ?? null, column),
-              }))
-            }
+            write={write}
+            opened={opened}
+            onOpen={setOpened}
+            onWatchRound={(roundIndex) => onOpenOnStage(roundOpeningFrame(demo, roundIndex))}
+            onPlayerView={onPlayerView}
           />
-        ))}
+        </section>
+
+        <BestInMatch
+          demo={demo}
+          players={players}
+          teamOf={teamOf}
+          write={write}
+          opened={opened}
+          hasFlashData={hasFlashData}
+          onOpen={(slot) => {
+            setSetId('main');
+            setOpened(slot);
+          }}
+        />
       </div>
+
+      {!hasFlashData && (
+        <p className="text-13 text-ink-dim">
+          <Text path="review.stats.noFlashEvents" />
+        </p>
+      )}
 
       <Accordion className="flex flex-col">
         <AccordionItem value="notes" className="[border-block-start:1px_solid_var(--color-line)]">
@@ -110,9 +158,6 @@ export function StatsPlayers({ demo }: { demo: ParsedDemo }) {
 
           <AccordionPanel {...PANEL_MOTION}>
             <div className="flex max-w-prose flex-col gap-2 pt-1 pb-4 text-13 text-ink-dim leading-prose">
-              <p>
-                <Text path="review.stats.players.sortHint" />
-              </p>
               <p>
                 <Text path="review.stats.players.notes.kast" />
               </p>
@@ -138,12 +183,6 @@ export function StatsPlayers({ demo }: { demo: ParsedDemo }) {
           </AccordionPanel>
         </AccordionItem>
       </Accordion>
-
-      {!hasFlashData && (
-        <p className="text-13 text-ink-dim">
-          <Text path="review.stats.noFlashEvents" />
-        </p>
-      )}
     </div>
   );
 }

@@ -1,14 +1,21 @@
-import type { ParsedDemo } from '@disa/demo-core';
+import type { Frame, ParsedDemo } from '@disa/demo-core';
 import { Text, type TranslationKey, useT } from '@disa/i18n';
 import { STATS_TABS, type StatsTab } from '@/core/navigation';
+import type { PlayerViewLink } from './PlayerDetail';
 import { StatsPlayers } from './StatsPlayers';
 import { StatsRounds } from './StatsRounds';
+import { StatsSummary } from './StatsSummary';
 import { StatsUtility } from './StatsUtility';
 
 interface Props {
   demo: ParsedDemo;
   tab: StatsTab;
   onTab: (tab: StatsTab) => void;
+  /** The round the summary's line opens on. */
+  initialRound: number;
+  /** Leave for the stage at a frame — a round watched from the summary or a key-round chip. */
+  onOpenOnStage: (frame: Frame) => void;
+  onPlayerView: PlayerViewLink;
 }
 
 const TAB_LABELS: Record<StatsTab, TranslationKey> = {
@@ -18,7 +25,8 @@ const TAB_LABELS: Record<StatsTab, TranslationKey> = {
 };
 
 /**
- * The match's numbers, one view with a tab per question — who did what, and how the rounds went.
+ * The match's numbers, one view with a tab per question — how the match went and who played well
+ * (the overview), how the rounds were bought and won, and how the grenades were used.
  *
  * **It is one page.** The heading, the tabs and what they show scroll together, in the screen's
  * content row, and nothing inside has a scroll of its own: a tab swaps the component and does not
@@ -28,7 +36,7 @@ const TAB_LABELS: Record<StatsTab, TranslationKey> = {
  * on the tab the reader was reading. Only the open tab is mounted, so a tab nobody opened walks
  * nothing. The tabs speak the match switch's vocabulary — `aria-current` on plain buttons.
  */
-export function MatchStats({ demo, tab, onTab }: Props) {
+export function MatchStats({ demo, tab, onTab, initialRound, onOpenOnStage, onPlayerView }: Props) {
   const t = useT();
 
   return (
@@ -61,7 +69,12 @@ export function MatchStats({ demo, tab, onTab }: Props) {
           </nav>
         </header>
 
-        {tab === 'players' && <StatsPlayers demo={demo} />}
+        {tab === 'players' && (
+          <>
+            <StatsSummary demo={demo} initialRound={initialRound} onOpenOnStage={onOpenOnStage} />
+            <StatsPlayers demo={demo} onOpenOnStage={onOpenOnStage} onPlayerView={onPlayerView} />
+          </>
+        )}
         {tab === 'rounds' && <StatsRounds demo={demo} />}
         {tab === 'utility' && <StatsUtility demo={demo} />}
       </div>

@@ -167,6 +167,8 @@ export {
   THROW_TYPES,
   toggledLineupTag,
 } from './helpers/lineups';
+export type { HalfScores, MatchSummary, RoundSummary } from './helpers/match-summary';
+export { matchSummary } from './helpers/match-summary';
 export type { Moment } from './helpers/moments';
 export { momentsOf } from './helpers/moments';
 export type {
@@ -177,7 +179,7 @@ export type {
   SideRecord,
   WeaponKills,
 } from './helpers/player-profile';
-export { foldPlayerLines, playerMatchLine } from './helpers/player-profile';
+export { foldPlayerLines, playerKeyRounds, playerMatchLine } from './helpers/player-profile';
 export type { PlayerButtons, PlayerMovementAccuracy } from './helpers/player-state';
 export {
   BUTTON_ATTACK,
