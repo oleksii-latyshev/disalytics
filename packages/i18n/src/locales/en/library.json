@@ -521,81 +521,6 @@
       "subtitleAny": "{map} · {side} · any round",
       "unsaved": "Unsaved changes"
     },
-    "steps": {
-      "step": "Step {index}",
-      "add": "Add step",
-      "duplicate": "Duplicate step",
-      "delete": "Delete step",
-      "moveEarlier": "Move earlier",
-      "moveLater": "Move later",
-      "name": "Step name",
-      "namePlaceholder": "e.g. A Execute",
-      "offset": "Delay (+{seconds}s)",
-      "secondsUnit": "s",
-      "notes": "Step notes",
-      "notesPlaceholder": "Execution instructions, callouts...",
-      "cannotDeleteLast": "A tactic must have at least one step.",
-      "eyebrow": "Step {index} of {total} · from +{seconds, number, ::.#}s",
-      "noThrows": "No throws in this step",
-      "notesHeading": "Notes",
-      "throwMeta": "{player} · +{seconds, number, ::.#}s",
-      "throwFromLineup": "{kind} · {lineup}",
-      "addNext": "Add next step",
-      "pickSpawn": "Select a player, then click a spawn spot to place them there. Dragging near a spot snaps to it.",
-      "addHint": "This tactic has one step so far. Add the next one to move the team on from the spawn.",
-      "spawn": "Spawn"
-    },
-    "transport": {
-      "play": "Play",
-      "pause": "Pause",
-      "scrub": "Playback timeline",
-      "speed": "Speed",
-      "prevStep": "Previous step",
-      "nextStep": "Next step",
-      "time": "{current, number, ::.#}s / {total, number, ::.#}s",
-      "speeds": "Playback speed"
-    },
-    "tools": {
-      "select": "Select & Move",
-      "pencil": "Draw",
-      "eraser": "Eraser",
-      "undo": "Undo",
-      "redo": "Redo",
-      "clearDrawings": "Clear drawings",
-      "colors": {
-        "ct": "CT",
-        "t": "T",
-        "objective": "Objective",
-        "damage": "Damage",
-        "ink": "White"
-      },
-      "utilityKinds": {
-        "smoke": "Smoke",
-        "flash": "Flashbang",
-        "fire": "Molotov",
-        "he": "HE grenade",
-        "decoy": "Decoy"
-      },
-      "palette": "Tools",
-      "utility": "Throw {kind}"
-    },
-    "player": {
-      "selected": "Player {slot}",
-      "label": "Role / Name",
-      "labelPlaceholder": "e.g. IGL, Entry",
-      "yaw": "Facing angle (°)",
-      "spawn": "Spawn spot",
-      "spawnSpot": "Spot {number}",
-      "spawnCustom": "Custom"
-    },
-    "throw": {
-      "delete": "Delete throw",
-      "pickPlayer": "Select a player on the board or in the utility list, then click a lineup.",
-      "pickLineup": "Click a lineup on the map to give it to player {slot}, or drag on the map to draw a throw.",
-      "noLineups": "This map has no matching lineups for this kind. Drag on the map to draw a throw.",
-      "droppedBy": "Dropped by",
-      "droppedByNone": "No one, thrower carries it"
-    },
     "library": {
       "newTactic": "New tactic",
       "exportOne": "Export JSON",
@@ -664,28 +589,122 @@
     },
     "untitled": "Untitled tactic",
     "loadout": {
-      "player": "Player {slot}",
       "cost": "${amount, number}",
-      "empty": "No throws yet. Add throws to see what this tactic needs.",
       "warn": {
         "flashLimit": "Player {slot} would carry {count} flashbangs; the limit is 2.",
         "kindLimit": "Player {slot} would carry {count} × {kind}; the limit is 1.",
         "totalLimit": "Player {slot} would carry {count} grenades; the limit is 4."
-      },
-      "rail": "{side} · {count, plural, one {# player} other {# players}}",
-      "utility": "Utility",
-      "noUtility": "No utility",
-      "drops": "drops {count, number} {kind} to P{slot}"
-    },
-    "tabs": {
-      "label": "Editor panels",
-      "step": "Step",
-      "loadout": "Loadout"
+      }
     },
     "zoom": {
       "in": "Zoom in",
       "out": "Zoom out",
       "level": "{zoom, number, ::.0}×"
+    },
+    "board": {
+      "tools": {
+        "label": "Tools",
+        "select": "Select",
+        "selectTip": "Pick a player or a spawn spot",
+        "route": "Route",
+        "routeTip": "Route by points: the path goes around walls (walls come from the radar picture, an approximation)",
+        "pen": "Pen",
+        "penTip": "Draw a route by hand",
+        "grenade": "Grenade",
+        "kinds": {
+          "smoke": "Smoke",
+          "flash": "Flash",
+          "fire": "Molotov",
+          "he": "HE"
+        }
+      },
+      "hint": {
+        "pickPlayer": "Pick a player on the left or click a token.",
+        "dead": "This player is out from this step; there is nothing to route.",
+        "select": "Click a token to pick a player. On step 1, a spawn spot moves the picked player there.",
+        "route": "Click to add a point for player {slot}; drag a point to move it. Walls come from the radar picture, so paths are approximate.",
+        "routeBroken": "No walkable way to that spot on the radar picture. The route is drawn straight and dashed.",
+        "pen": "Drag to draw player {slot}'s route by hand.",
+        "grenade": "Click a lineup mark and player {slot} stands at its spot and throws; click anywhere else for a hand throw.",
+        "grenadeNone": "No lineups of this kind here. Click anywhere to throw by hand.",
+        "playing": "Playing the plan. Click the map to stop and edit."
+      },
+      "roster": {
+        "title": "Players · step {index}",
+        "stands": "stands",
+        "player": "Player {slot}",
+        "dead": "out",
+        "utility": "Utility"
+      },
+      "step": {
+        "eyebrow": "Step {index} of {total}",
+        "name": "Step name",
+        "namePlaceholder": "e.g. A execute",
+        "idea": "Idea of the step",
+        "ideaPlaceholder": "The main thing the team does in this step",
+        "startMode": "When the step starts",
+        "afterPrevious": "After the previous",
+        "pinned": "Pinned to the clock",
+        "later": "Later on the clock",
+        "earlier": "Earlier on the clock",
+        "timingAfter": "Starts when everyone has finished the previous step. Running at a rifle's speed along the route.",
+        "timingPinned": "Pinned at {clock}. Players wait for the clock even if they arrive early.",
+        "timingLate": "Not in time: the previous step only ends at {clock}, so this one starts then.",
+        "delete": "Delete step",
+        "deleteOnly": "A plan needs at least one step",
+        "deleteFork": "A branch leaves after this step",
+        "add": "Step"
+      },
+      "player": {
+        "move": "How they move",
+        "points": "Points",
+        "pen": "Pen",
+        "task": "Task in this step",
+        "taskPlaceholder": "e.g. hold mid and call a push",
+        "arrives": "Arrives",
+        "arrivesNow": "at the start",
+        "leaves": "Leaves after",
+        "earlier": "Sooner",
+        "later": "Later",
+        "delay": "{seconds, number, ::.#} s",
+        "standStill": "Stand still",
+        "removePoint": "Remove point",
+        "spawn": "Spawn",
+        "spawnSpot": "Spot {number}",
+        "spawnCustom": "Custom",
+        "isOut": "Out from this step",
+        "title": "Player {slot}"
+      },
+      "throws": {
+        "title": "Grenades of the step · {count}",
+        "empty": "Pick a grenade on the map toolbar and click: a lineup mark makes the player stand at its spot, anywhere else is thrown by hand.",
+        "byHand": "by hand",
+        "fromLineup": "lineup",
+        "remove": "Remove grenade",
+        "meta": "Player {slot} · {how} · lands {clock}"
+      },
+      "transport": {
+        "label": "Playback",
+        "prev": "Previous step",
+        "next": "Next step",
+        "play": "Play the plan",
+        "pause": "Pause",
+        "clock": "Round clock",
+        "speed": "Speed",
+        "speedValue": "{speed}×",
+        "hint": "counts down from 1:55"
+      },
+      "strip": {
+        "label": "Steps of the plan",
+        "card": "Step {index}: {name}",
+        "unnamed": "Untitled",
+        "noIdea": "No idea yet",
+        "addStep": "Add a step after this one"
+      },
+      "header": {
+        "undo": "Undo",
+        "redo": "Redo"
+      }
     }
   },
   "grid": {
