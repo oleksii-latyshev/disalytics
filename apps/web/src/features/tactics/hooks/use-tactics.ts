@@ -1,6 +1,7 @@
 import type { Tactic } from '@disa/demo-core';
-import { openTacticStore, type TacticStore } from '@disa/demo-store';
+import type { TacticStore } from '@disa/demo-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { openTactics } from '@/core/tactic-defaults';
 import { renewedPlans } from '../helpers/tactic-copy';
 import { generateId } from '../helpers/tactic-ids';
 import { TACTIC_READ_OPTIONS } from '../helpers/tactic-transfer';
@@ -13,7 +14,7 @@ export function useTactics() {
   const reload = useCallback(async () => {
     try {
       if (!storeRef.current) {
-        storeRef.current = await openTacticStore(TACTIC_READ_OPTIONS);
+        storeRef.current = await openTactics(TACTIC_READ_OPTIONS);
       }
       if (storeRef.current) {
         const list = await storeRef.current.list();
@@ -28,7 +29,7 @@ export function useTactics() {
 
   useEffect(() => {
     let mounted = true;
-    openTacticStore(TACTIC_READ_OPTIONS).then((store) => {
+    openTactics(TACTIC_READ_OPTIONS).then((store) => {
       if (!mounted) {
         store?.close();
         return;
@@ -55,7 +56,7 @@ export function useTactics() {
 
   const saveTactic = useCallback(async (tactic: Tactic) => {
     if (!storeRef.current) {
-      storeRef.current = await openTacticStore(TACTIC_READ_OPTIONS);
+      storeRef.current = await openTactics(TACTIC_READ_OPTIONS);
     }
     if (storeRef.current) {
       await storeRef.current.put(tactic);
@@ -73,7 +74,7 @@ export function useTactics() {
 
   const deleteTactic = useCallback(async (id: string) => {
     if (!storeRef.current) {
-      storeRef.current = await openTacticStore(TACTIC_READ_OPTIONS);
+      storeRef.current = await openTactics(TACTIC_READ_OPTIONS);
     }
     if (storeRef.current) {
       await storeRef.current.delete(id);

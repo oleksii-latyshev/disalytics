@@ -1,10 +1,10 @@
 import type { Tactic } from '@disa/demo-core';
-import { openTacticStore } from '@disa/demo-store';
 import { useCallback, useEffect, useState } from 'react';
+import { openTactics } from '@/core/tactic-defaults';
 import { TACTIC_READ_OPTIONS } from '../helpers/tactic-transfer';
 
 async function readLibrary(): Promise<readonly Tactic[]> {
-  const store = await openTacticStore(TACTIC_READ_OPTIONS);
+  const store = await openTactics(TACTIC_READ_OPTIONS);
   if (store === null) return [];
   try {
     return await store.list();
@@ -31,7 +31,7 @@ export function useTacticTransfer(isOpen: boolean) {
   }, [isOpen]);
 
   const write = useCallback(async (tactics: readonly Tactic[]) => {
-    const store = await openTacticStore(TACTIC_READ_OPTIONS);
+    const store = await openTactics(TACTIC_READ_OPTIONS);
     if (store === null) throw new Error('the tactic store is not available');
     try {
       await store.putMany(tactics);
