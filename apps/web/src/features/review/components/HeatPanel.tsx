@@ -324,7 +324,7 @@ export function HeatPanel(props: Props) {
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-1">
+      <div className="flex shrink-0 flex-col gap-1">
         <h2 className={LABEL}>
           {isComparing && <Dot identity="first" />}
           <Text path={isComparing ? 'review.heat.playerA' : 'review.heat.player'} />
@@ -337,7 +337,7 @@ export function HeatPanel(props: Props) {
             />
           )}
         </h2>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div>
           <Seats
             demo={demo}
             reading={reading}
