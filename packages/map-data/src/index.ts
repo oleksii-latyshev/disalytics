@@ -16,6 +16,10 @@ export {
   SQUARE_PLATE_LAYOUT,
 } from './layout';
 export { loadMapLineups } from './lineups';
+export { loadMapNavGrid, unpackNavGrid, unpackNavLevel } from './navgrid';
+export type { NavRect } from './navgrid-overrides';
+export type { NavWorldPath } from './pathfinding';
+export { findNavPath, findPlatePath, findWorldPath, snapToWalkable } from './pathfinding';
 export { mapSpawns } from './spawns';
 export type { RadarTheme } from './themes';
 export { DEFAULT_RADAR_THEME, isRadarTheme, RADAR_THEMES, radarAssetPath } from './themes';
@@ -30,6 +34,10 @@ export {
 } from './transform';
 export type {
   MapOverview,
+  NavGrid,
+  NavGridData,
+  NavLevel,
+  NavPath,
   PlateLayout,
   PlateSlot,
   RadarLevel,

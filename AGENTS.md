@@ -87,7 +87,7 @@ bun run tokens:check                # every class and var(--…) exists in built
 bun run samples:check | reel:check  # committed samples match SCHEMA_VERSION · reel regenerates
 bun run size [--wasm]               # budgets (§16) — on a --force clean build
 bun run wasm:build | wasm:smoke     # wasm-pack → pkg/ · call into the binary (+DISALYTICS_FIXTURE_DEMO)
-bun run mapdata:generate | icons:generate   # map data + radar themes · weapon/equipment outlines
+bun run mapdata:generate | navgrid:generate | icons:generate   # map data + radar themes · walkable grids · outlines
 bun run samples:generate | reel:generate | spawns:generate   # samples from DISALYTICS_SAMPLE_DIR · way-in reel · map spawns
 bun run smoke <url>                 # deploy contract (§13)
 bun run repo:labels | repo:milestones   # sync GitHub labels and milestones
@@ -174,7 +174,7 @@ poisoned, so one worker per parse. `ErrorCode` mirrors `crates/demo-parser/src/e
   state set from a team-card row, never a canvas hit test.
 - **The plate is the layout's shape fitted to a grid cell no card is in** — a new grid row shrinks
   the map, which is why the view switch is out of flow. Zoom 1–4× lives in `helpers/view.ts`.
-- Utility bodies, audibility and tracer length are **named approximations**, labelled as such.
+- Utility bodies, audibility, tracer length and route grids (`docs/NAVGRID.md`) are **named approximations**.
 
 ## 10. Event Schema
 
