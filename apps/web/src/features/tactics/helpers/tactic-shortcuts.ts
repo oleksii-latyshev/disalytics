@@ -70,8 +70,13 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && target.isContentEditable;
 }
 
+/** A sheet or dialog that keeps the board's keys to itself. */
+function isSuspended(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('[data-shortcuts-suspended]') !== null;
+}
+
 export function handleTacticShortcut(event: KeyboardEvent, actions: TacticShortcutActions): void {
-  if (event.defaultPrevented || isTypingTarget(event.target)) return;
+  if (event.defaultPrevented || isTypingTarget(event.target) || isSuspended(event.target)) return;
   const isButton = event.target instanceof HTMLButtonElement;
   if (event.code === 'Space' && isButton) return;
 

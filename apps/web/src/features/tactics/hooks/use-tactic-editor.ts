@@ -8,6 +8,7 @@ import {
   type TacticThrow,
 } from '@disa/demo-core';
 import { useCallback, useMemo, useReducer } from 'react';
+import { type BranchRequest, setCondition } from '../helpers/tactic-branches';
 import {
   editorReducer,
   initialEditorState,
@@ -45,8 +46,18 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
       redo: () => dispatch({ type: 'redo' }),
       replaceTactic: (next: Tactic) => dispatch({ type: 'replace', tactic: next }),
       goToStep: (index: number) => dispatch({ type: 'goToStep', index }),
+      goToPlan: (target: string, index: number) =>
+        dispatch({ type: 'goToPlan', planId: target, index }),
       addStep: () => dispatch({ type: 'addStep' }),
+      appendStep: (target: string) => dispatch({ type: 'appendStep', planId: target }),
       deleteStep: () => dispatch({ type: 'deleteStep' }),
+      deleteStepAt: (target: string, index: number) =>
+        dispatch({ type: 'deleteStepAt', planId: target, index }),
+      deletePlan: (target: string) => dispatch({ type: 'deletePlan', planId: target }),
+      branch: (request: BranchRequest) => dispatch({ type: 'branch', request }),
+      conditionSeen: () => dispatch({ type: 'conditionSeen' }),
+      setCondition: (text: string) =>
+        edit((t) => setCondition(t, planId, text), `condition:${planId}`),
       select: (slot: number | null) => dispatch({ type: 'select', slot }),
       setTool: (tool: TacticTool) => dispatch({ type: 'tool', tool }),
       setThrowKind: (kind: ThrowKind) => dispatch({ type: 'throwKind', kind }),
@@ -85,7 +96,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
       updateDescription: (description: string) =>
         edit((t) => ({ ...t, description }), 'description'),
     }),
-    [edit, endGesture, stepIndex],
+    [edit, endGesture, planId, stepIndex],
   );
 
   const save = useCallback(() => {
@@ -96,6 +107,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     tactic,
     planId,
     stepIndex,
+    conditionFocus: state.conditionFocus,
     steps,
     step,
     selectedSlot: state.selectedSlot,
