@@ -498,7 +498,12 @@
       "shotNumber": "Screenshot {number}",
       "previous": "Previous position",
       "next": "Next position",
-      "keys": "[ ] position · ← → screenshot · Esc close"
+      "keys": "[ ] position · ← → screenshot · + − 0 zoom · Esc close",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Fit the screenshot",
+      "zoomLevel": "{percent}%",
+      "zoomHint": "Scroll or double-click to zoom, drag to look around"
     }
   },
   "tactics": {
