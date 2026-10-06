@@ -17,6 +17,7 @@ import {
   ZOOM_STEP,
   zoomByStep,
 } from '@/features/radar';
+import { slotColors } from '../helpers/tactic-colors';
 import { type TacticPreview, tacticLayer } from '../helpers/tactic-layer';
 import { createMotion, isAnimating, startGlide } from '../helpers/tactic-motion';
 import { createScene } from '../helpers/tactic-scene';
@@ -39,6 +40,7 @@ function TacticCanvas({
 
   const image = useRadarImage(radarAssetPath(levelAt(overview, 0), theme));
   const colors = radarColors(palette);
+  const slotInks = slotColors(palette);
 
   const viewRef = useRef(plateView());
   const previewRef = useRef<TacticPreview | null>(null);
@@ -81,6 +83,7 @@ function TacticCanvas({
     const layer = tacticLayer({
       overview,
       colors,
+      slotColors: slotInks,
       view: viewRef,
       side,
       schedule,
@@ -101,6 +104,7 @@ function TacticCanvas({
   }, [
     overview,
     colors,
+    slotInks,
     side,
     schedule,
     step,

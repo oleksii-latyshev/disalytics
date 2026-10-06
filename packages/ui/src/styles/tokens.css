@@ -115,6 +115,42 @@
   --color-nade-decoy: #7a8599;
   --color-objective: #d14fa0;
 
+  /* The five players of a tactic, one colour per slot — the owner's exception of 6 October 2026 to
+     "a hue means something the demo said": a tactic is a plan rather than demo data, and on a board
+     with five routes crossing, side colour plus a number was not enough to follow one. It stops at
+     the tactic board; a match never reads these.
+
+     Identity does not rest on hue alone (§17 rule 4): the five differ in lightness too (CIELAB L*
+     in steps of at least 7), and every token carries its slot number, drawn in `--color-surface-0`
+     on the fill — so the contrast of a row on `surface-0` below is also the number's on its token.
+     Hue order follows the design: entry yellow, tan, pink, lavender, mint.
+
+     Measured on the two grounds a mark is set on, in all three palettes:
+
+                        default              colour-blind         cyber
+                    surface-0  surface-1  surface-0  surface-1  surface-0  surface-1
+       tactic-1      13.12      12.75      10.31      10.01      12.66      12.30
+       tactic-2       8.01       7.78       7.97       7.74       7.76       7.54
+       tactic-3       6.16       5.99      13.57      13.18       6.06       5.89
+       tactic-4      10.26       9.97      16.56      16.08      10.24       9.94
+       tactic-5      16.68      16.20       6.11       5.93      15.98      15.52
+     The floor across all thirty is **5.89**, so a slot colour clears 4.5:1 on the plate and on
+     a card, and under its own number. Smallest CIEDE2000 distance between any two slots, by vision:
+
+                        normal    protanopia  deuteranopia
+       default            22.6      17.7       15.5
+       colour-blind       15.0      20.4       10.4
+       cyber              25.4      16.5       13.8
+
+     The colour-blind set trades the default's hues for ones a dichromat separates; its floor is
+     what the search could hold while keeping five lightness steps, and the numbers on the tokens
+     carry the rest. */
+  --color-tactic-1: #e6d12b;
+  --color-tactic-2: #d19662;
+  --color-tactic-3: #cd6cae;
+  --color-tactic-4: #bbaefc;
+  --color-tactic-5: #7affde;
+
   /* The two the way in's background is drawn from, and the only hues in this file that mean nothing
      a demo said. Rule 1 above is narrowed rather than dropped (#332): it governs the screens that
      show a match, and the way in shows none, so there is no reading here for a colour to be
@@ -268,6 +304,12 @@
   --color-nade-molotov: #e94814;
   --color-nade-decoy: #c2bbad;
   --color-objective: #a26fab;
+
+  --color-tactic-1: #c4adf3;
+  --color-tactic-2: #eb848c;
+  --color-tactic-3: #54e8df;
+  --color-tactic-4: #9ffe91;
+  --color-tactic-5: #fb4195;
 }
 
 /* The cyberpunk look's data colours — #339, and the second half of a *look* rather than a palette
@@ -315,4 +357,10 @@
   --color-nade-molotov: #f04a1e;
   --color-nade-decoy: #7f83a3;
   --color-objective: #e879f9;
+
+  --color-tactic-1: #d0d086;
+  --color-tactic-2: #dc8f25;
+  --color-tactic-3: #d66a82;
+  --color-tactic-4: #bdadfc;
+  --color-tactic-5: #24feec;
 }

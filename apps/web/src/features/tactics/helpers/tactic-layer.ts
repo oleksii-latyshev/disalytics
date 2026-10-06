@@ -13,6 +13,7 @@ import {
   SQUARE_PLATE,
 } from '@/features/radar';
 import type { TacticClock } from './tactic-clock';
+import type { SlotColors } from './tactic-colors';
 import { grenadeColorOfKind } from './tactic-grenade-colors';
 import { drawUtilityHaloArea, renderSingleDrawingStroke } from './tactic-layer-drawing';
 import { drawLineupMarkers } from './tactic-lineup-markers';
@@ -30,6 +31,7 @@ export interface TacticPreview {
 export interface TacticLayerOptions {
   readonly overview: MapOverview;
   readonly colors: RadarColors;
+  readonly slotColors: SlotColors;
   readonly view: { readonly current: PlateView };
   readonly side: TacticSide;
   readonly schedule: TacticSchedule;
@@ -48,6 +50,10 @@ export interface TacticLayerOptions {
 }
 
 const NO_DASH: number[] = [];
+
+function slotInk(options: TacticLayerOptions, slot: number): string {
+  return options.slotColors[slot] ?? options.colors.team[options.side];
+}
 
 function marchOffset(motion: TacticMotion, nowMs: number): number {
   return motion.isReduced ? 0 : -((nowMs / 40) % 30);
@@ -89,7 +95,7 @@ function drawArc(
   context.lineWidth = 5;
   trace();
   context.stroke();
-  context.strokeStyle = grenadeColorOfKind(thrown.kind, options.colors);
+  context.strokeStyle = slotInk(options, thrown.slot);
   context.lineWidth = 2.5;
   context.setLineDash([2, 7]);
   context.lineDashOffset = marchOffset(options.motion, nowMs);
@@ -112,7 +118,7 @@ function drawThrowIcon(
   context.translate(x, y);
   context.scale(scale, scale);
   context.fillStyle = options.colors.hollow;
-  context.strokeStyle = options.colors.team[options.side];
+  context.strokeStyle = slotInk(options, thrown.slot);
   context.lineWidth = 2;
   context.beginPath();
   context.arc(0, 0, g.tokenRadius * 0.75, 0, Math.PI * 2);
@@ -149,11 +155,11 @@ function drawGhostRoutes(
   g: PlateGeometry,
   options: TacticLayerOptions,
 ): void {
-  const { schedule, stepIndex, colors, side } = options;
+  const { schedule, stepIndex, colors } = options;
   for (const leg of schedule.steps[stepIndex - 1]?.legs ?? []) {
     if (leg.isDead || leg.lengthPx < 1) continue;
     strokeLeg(context, leg, g, {
-      color: colors.team[side],
+      color: slotInk(options, leg.slot),
       under: colors.hollow,
       width: 2,
       alpha: 0.3,
@@ -168,8 +174,7 @@ function drawEditRoutes(
   options: TacticLayerOptions,
   nowMs: number,
 ): void {
-  const { schedule, stepIndex, selectedSlot, colors, side } = options;
-  const color = colors.team[side];
+  const { schedule, stepIndex, selectedSlot, colors } = options;
   const current = schedule.steps[stepIndex];
   if (current === undefined) return;
   drawGhostRoutes(context, g, options);
@@ -181,6 +186,7 @@ function drawEditRoutes(
     if (leg.isDead || leg.lengthPx < 1) continue;
     const isSelected = leg.slot === selectedSlot;
     const isDimmed = selectedSlot !== null && !isSelected;
+    const color = slotInk(options, leg.slot);
     strokeLeg(context, leg, g, {
       color,
       under: colors.hollow,
@@ -209,10 +215,10 @@ function drawHandles(
   options: TacticLayerOptions,
   nowMs: number,
 ): void {
-  const { step, selectedSlot, overview, colors, side } = options;
+  const { step, selectedSlot, overview, colors } = options;
   const player = step?.players.find((entry) => entry.slot === selectedSlot);
   if (player === undefined || player.route.mode !== 'points') return;
-  const ring = { ring: colors.team[side], ground: colors.hollow };
+  const ring = { ring: slotInk(options, player.slot), ground: colors.hollow };
 
   player.route.points.forEach((point, index) => {
     const x = radarX(overview, point.x) * g.scale + g.offsetX;
@@ -228,7 +234,7 @@ function drawPreview(
   options: TacticLayerOptions,
   nowMs: number,
 ): void {
-  const color = options.colors.team[options.side];
+  const color = slotInk(options, options.selectedSlot ?? 0);
   const stroke = {
     color,
     under: options.colors.hollow,
@@ -271,8 +277,14 @@ function drawTokenMark(
   options: TacticLayerOptions,
   mark: { readonly x: number; readonly y: number; readonly slot: number; readonly isDead: boolean },
 ): void {
-  const { colors, side } = options;
-  drawToken(context, mark.x, mark.y, g.tokenRadius, mark.isDead ? colors.dead : colors.team[side]);
+  const { colors } = options;
+  drawToken(
+    context,
+    mark.x,
+    mark.y,
+    g.tokenRadius,
+    mark.isDead ? colors.dead : slotInk(options, mark.slot),
+  );
   context.fillStyle = colors.hollow;
   context.font = `bold ${Math.round(g.tokenRadius * 1.05)}px IBM Plex Mono, monospace`;
   context.textAlign = 'center';
@@ -397,26 +409,36 @@ function drawPlayback(
   g: PlateGeometry,
   options: TacticLayerOptions,
 ): void {
-  const { schedule, scene, colors, side, clock } = options;
+  const { schedule, scene, colors, clock } = options;
   sampleScene(schedule, clock.time, scene);
-  const color = colors.team[side];
   const step = schedule.steps[scene.stepIndex];
   const local = clock.time - (step?.startSeconds ?? 0);
-  const routeStroke = { color, under: colors.hollow, width: 2, alpha: 0.45, dash: [3, 7] };
-  const doneStroke = { color, under: colors.hollow, width: 3.5, alpha: 1 };
 
   drawSceneAreas(context, g, options);
   for (const leg of step?.legs ?? []) {
     if (leg.isDead || leg.lengthPx < 1) continue;
-    strokeLeg(context, leg, g, routeStroke);
+    const color = slotInk(options, leg.slot);
+    strokeLeg(context, leg, g, {
+      color,
+      under: colors.hollow,
+      width: 2,
+      alpha: 0.45,
+      dash: [3, 7],
+    });
     const travelled = Math.max(0, (local - leg.delaySeconds) * schedule.speedPxPerSecond);
     let upTo = 0;
     while (upTo < leg.xs.length - 1 && (leg.cum[upTo + 1] ?? 0) <= travelled) upTo++;
-    strokeLeg(context, leg, g, doneStroke, {
-      upTo,
-      endX: scene.playerX[leg.slot] ?? 0,
-      endY: scene.playerY[leg.slot] ?? 0,
-    });
+    strokeLeg(
+      context,
+      leg,
+      g,
+      { color, under: colors.hollow, width: 3.5, alpha: 1 },
+      {
+        upTo,
+        endX: scene.playerX[leg.slot] ?? 0,
+        endY: scene.playerY[leg.slot] ?? 0,
+      },
+    );
   }
   drawSceneFlights(context, g, options);
 }

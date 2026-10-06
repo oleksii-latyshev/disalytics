@@ -7,6 +7,7 @@ import {
 } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { cn } from '@disa/ui';
+import { slotVar } from '../helpers/tactic-colors';
 import type { StepSchedule } from '../helpers/tactic-schedule';
 import { stepGrenadeCounts } from '../helpers/tactic-step-counts';
 import { GrenadeTally } from './GrenadeTally';
@@ -53,7 +54,6 @@ export function TacticRoster({
   onSelect,
 }: TacticRosterProps) {
   const t = useT();
-  const sideInk = side === 'CT' ? 'bg-ct' : 'bg-t';
 
   return (
     <section
@@ -98,8 +98,9 @@ export function TacticRoster({
                   aria-hidden="true"
                   className={cn(
                     'grid size-6 shrink-0 place-items-center rounded-full font-mono text-12 font-semibold text-surface-0',
-                    leg.isDead ? 'bg-ink-faint' : sideInk,
+                    leg.isDead && 'bg-ink-faint',
                   )}
+                  style={leg.isDead ? undefined : { background: slotVar(leg.slot) }}
                 >
                   {leg.isDead ? '✕' : leg.slot + 1}
                 </span>

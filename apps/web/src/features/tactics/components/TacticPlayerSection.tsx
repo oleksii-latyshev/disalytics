@@ -3,6 +3,7 @@ import { useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
 import { Minus, Pencil, Plus, Route } from 'lucide-react';
 import { useId } from 'react';
+import { slotVar } from '../helpers/tactic-colors';
 import type { PlayerLeg } from '../helpers/tactic-schedule';
 import { nearestSpawnIndex } from '../helpers/tactic-spawns';
 
@@ -64,7 +65,10 @@ export function TacticPlayerSection({
       className="flex flex-col gap-3 p-3 [border-block-start:1px_solid_var(--color-line)]"
     >
       <div className="flex items-center gap-2.5">
-        <span className="grid size-7 place-items-center rounded-full bg-ink font-mono text-12 font-semibold text-surface-0">
+        <span
+          className="grid size-7 place-items-center rounded-full font-mono text-12 font-semibold text-surface-0"
+          style={{ background: slotVar(slot) }}
+        >
           {slot + 1}
         </span>
         <span className="text-14 font-semibold">
