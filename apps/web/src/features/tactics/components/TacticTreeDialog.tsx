@@ -2,7 +2,14 @@ import type { Tactic } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button, Dialog } from '@disa/ui';
 import { Minus, Plus, Undo2, X } from 'lucide-react';
-import { type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
+import {
+  type MouseEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   type GraphNodeKey,
   graphSize,
@@ -31,6 +38,9 @@ export interface TacticTreeDialogProps {
   readonly onDeleteStep: (key: GraphNodeKey) => void;
   readonly onDeletePlan: (planId: string) => void;
 }
+
+/** Opening the tree never shrinks it past what can be read; Fit still goes lower. */
+const OPEN_ZOOM_FLOOR = 0.6;
 
 export function TacticTreeDialog(props: TacticTreeDialogProps) {
   const t = useT();
@@ -93,10 +103,19 @@ function TreeBody({
     return () => element.removeEventListener('wheel', handleWheel);
   }, []);
 
-  const fit = () => {
-    const width = scroller.current?.clientWidth ?? 0;
-    setZoom(fitZoom(width - 48, graphSize(TREE_METRICS, graph).width));
-  };
+  const fitToView = useCallback(
+    (floor = 0) => {
+      const width = scroller.current?.clientWidth ?? 0;
+      setZoom(Math.max(floor, fitZoom(width - 48, graphSize(TREE_METRICS, graph, false).width)));
+    },
+    [graph],
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fits once, when the tree opens
+  useEffect(() => {
+    const frameId = requestAnimationFrame(() => fitToView(OPEN_ZOOM_FLOOR));
+    return () => cancelAnimationFrame(frameId);
+  }, []);
 
   const handlePanStart = (event: PointerEvent<HTMLFieldSetElement>) => {
     const element = scroller.current;
@@ -133,7 +152,7 @@ function TreeBody({
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 [border-block-end:1px_solid_var(--color-line)] lg:col-span-2">
-        <h2 className="font-semibold text-17">{t('library.tactics.board.tree.title')}</h2>
+        <h2 className="font-semibold text-20">{t('library.tactics.board.tree.title')}</h2>
         <span className="font-mono text-12 text-ink-faint">
           {t('library.tactics.board.tree.summary', { plans: graph.rowCount, steps: stepCount })}
         </span>
@@ -211,7 +230,7 @@ function TreeBody({
           >
             <Plus aria-hidden="true" />
           </Button>
-          <Button variant="ghost" onClick={fit}>
+          <Button variant="ghost" onClick={() => fitToView()}>
             {t('library.tactics.board.tree.fit')}
           </Button>
         </fieldset>

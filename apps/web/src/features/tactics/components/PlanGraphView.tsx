@@ -2,6 +2,7 @@ import { useT } from '@disa/i18n';
 import { cn } from '@disa/ui';
 import { GitBranch, Plus } from 'lucide-react';
 import { type KeyboardEvent, type MouseEvent, useRef } from 'react';
+import { slotVar } from '../helpers/tactic-colors';
 import {
   edgePath,
   type GraphDirection,
@@ -20,9 +21,9 @@ import { formatRoundClock, type TacticSchedule } from '../helpers/tactic-schedul
 
 export const STRIP_METRICS: GraphMetrics = {
   nodeWidth: 176,
-  nodeHeight: 68,
+  nodeHeight: 64,
   colGap: 28,
-  rowGap: 30,
+  rowGap: 28,
   labelWidth: 150,
   padding: 8,
 };
@@ -72,7 +73,7 @@ function GraphEdges({
   readonly metrics: GraphMetrics;
   readonly isTree: boolean;
 }) {
-  const size = graphSize(metrics, graph);
+  const size = graphSize(metrics, graph, !isTree);
   return (
     <svg
       aria-hidden="true"
@@ -152,7 +153,9 @@ function LaneRow({
           <GitBranch aria-hidden="true" className="size-3.5 shrink-0 text-ink-dim" />
         )}
         <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="truncate font-semibold text-12">{name}</span>
+          <span className="line-clamp-2 break-words font-semibold text-12 leading-dense">
+            {name}
+          </span>
           <span className="truncate font-mono text-11 text-ink-faint">{meta}</span>
         </span>
       </button>
@@ -200,7 +203,7 @@ function AliveDots({ node }: { readonly node: GraphNode }) {
           // biome-ignore lint/suspicious/noArrayIndexKey: slots are positions
           key={slot}
           className={cn('size-2.5 rounded-full', isAlive ? undefined : 'border border-ink-faint')}
-          style={isAlive ? { background: `var(--color-tactic-${slot + 1})` } : undefined}
+          style={isAlive ? { background: slotVar(slot) } : undefined}
         />
       ))}
       <span className="flex-1" />
@@ -327,8 +330,8 @@ export function PlanGraphView({
 }: PlanGraphViewProps) {
   const t = useT();
   const cards = useRef(new Map<string, HTMLButtonElement>());
-  const size = graphSize(metrics, graph);
   const isTree = variant === 'tree';
+  const size = graphSize(metrics, graph, !isTree);
   const selectedKey = selected === null ? null : nodeKey(selected.planId, selected.index);
   const tabStop = graph.nodes.find((node) => node.key === selectedKey) ?? graph.nodes[0];
   const titles = {

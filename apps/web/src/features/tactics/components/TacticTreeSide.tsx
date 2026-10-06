@@ -2,6 +2,7 @@ import { childPlans, type Tactic, type UtilityKind } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
 import { useState } from 'react';
+import { slotVar } from '../helpers/tactic-colors';
 import type { GraphNode, PlanGraph } from '../helpers/tactic-plan-graph';
 import { planTitle } from '../helpers/tactic-plan-labels';
 import { formatRoundClock, type TacticSchedule } from '../helpers/tactic-schedule';
@@ -111,7 +112,7 @@ function TasksSection({ node }: { readonly node: GraphNode }) {
                 'grid size-4.5 shrink-0 place-items-center rounded-full font-mono font-semibold text-11',
                 isAlive ? 'text-surface-0' : 'bg-surface-3 text-ink-faint',
               )}
-              style={isAlive ? { background: `var(--color-tactic-${slot + 1})` } : undefined}
+              style={isAlive ? { background: slotVar(slot) } : undefined}
             >
               {slot + 1}
             </span>

@@ -225,9 +225,13 @@ export function nodeOrigin(metrics: GraphMetrics, row: number, col: number): Gra
   };
 }
 
-export function graphSize(metrics: GraphMetrics, graph: PlanGraph) {
-  const last = nodeOrigin(metrics, graph.rowCount - 1, graph.colCount);
-  return { width: last.x + metrics.padding, height: last.y + metrics.nodeHeight + metrics.padding };
+/** The canvas size; the strip keeps a column for each lane's add-a-step button, the tree does not. */
+export function graphSize(metrics: GraphMetrics, graph: PlanGraph, hasAddColumn = true) {
+  const last = nodeOrigin(metrics, graph.rowCount - 1, graph.colCount - (hasAddColumn ? 0 : 1));
+  return {
+    width: last.x + metrics.padding,
+    height: last.y + metrics.nodeHeight + metrics.rowGap + metrics.padding,
+  };
 }
 
 /** A cubic curve from the right edge of one card to the left edge of the next, or a straight line on one row. */

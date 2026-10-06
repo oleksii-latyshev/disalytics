@@ -80,7 +80,7 @@ export function TacticPlanStrip({
       <fieldset
         ref={scroller}
         aria-label={t('library.tactics.board.strip.label')}
-        className="m-0 max-h-56 min-w-0 overflow-auto rounded-card border border-line bg-surface-0 p-0"
+        className="m-0 max-h-44 min-w-0 overflow-auto rounded-card border border-line bg-surface-0 p-0"
       >
         <PlanGraphView
           graph={graph}
