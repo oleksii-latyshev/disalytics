@@ -1,48 +1,30 @@
-import type {
-  Lineup,
-  TacticDrawingStroke,
-  TacticSide,
-  TacticThrow,
-  UtilityKind,
-} from '@disa/demo-core';
-import type { EditorStep } from '../helpers/editor-tactic';
+import type { Lineup, TacticPoint, TacticSide, TacticStep } from '@disa/demo-core';
+import type { NavGrid } from '@disa/map-data';
+import type { RefObject } from 'react';
+import type { TacticClock } from '../helpers/tactic-clock';
+import type { TacticTool } from '../helpers/tactic-editor-state';
+import type { TacticSchedule } from '../helpers/tactic-schedule';
+import type { PlateActions } from '../hooks/use-tactic-plate-pointer';
 
 export interface TacticPlateProps {
   readonly map: string;
-  readonly side?: TacticSide | undefined;
-  readonly steps: readonly EditorStep[];
-  readonly activeStepIndex?: number | undefined;
-  readonly currentTime?: number | undefined;
-  readonly selectedSlot?: number | null | undefined;
-  readonly selectedThrowId?: string | null | undefined;
-  readonly onSelectSlot?: ((slot: number | null) => void) | undefined;
-  readonly onSelectThrow?: ((throwId: string | null) => void) | undefined;
-  readonly onPlayerDrag?:
-    | ((slot: number, worldPoint: { x: number; y: number }) => void)
-    | undefined;
-  /** The player was let go after a drag; the opening step snaps it onto a spawn spot. */
-  readonly onPlayerDragEnd?: ((slot: number) => void) | undefined;
-  /** A free spawn spot was clicked with a player selected. */
-  readonly onPickSpawn?: ((spot: number) => void) | undefined;
-  readonly onThrowDrag?:
-    | ((throwId: string, end: 'from' | 'to', worldPoint: { x: number; y: number }) => void)
-    | undefined;
-  readonly onPlateClick?: ((worldPoint: { x: number; y: number }) => void) | undefined;
-  readonly isEditable?: boolean | undefined;
-  readonly levelIndex?: number | undefined;
-  readonly className?: string | undefined;
-  /** Draw the `−`/`+` pair and the zoom it reads on the plate. */
-  readonly hasZoomControls?: boolean | undefined;
-
-  readonly activeTool?: 'select' | 'pencil' | 'throw' | 'eraser' | undefined;
-  readonly pencilColor?: string | undefined;
-  readonly newThrowKind?: UtilityKind | undefined;
-  readonly onAddDrawingStroke?: ((stroke: TacticDrawingStroke) => void) | undefined;
-  readonly onAddThrow?:
-    | ((throwData: Partial<TacticThrow> & Pick<TacticThrow, 'kind' | 'from' | 'to'>) => void)
-    | undefined;
-  readonly onDeleteThrow?: ((throwId: string) => void) | undefined;
-  readonly lineups?: readonly Lineup[] | undefined;
-  readonly onPickLineup?: ((lineup: Lineup) => void) | undefined;
-  readonly onDeleteDrawingStroke?: ((index: number) => void) | undefined;
+  readonly side: TacticSide;
+  readonly grid: NavGrid | undefined;
+  readonly schedule: TacticSchedule;
+  readonly step: TacticStep | undefined;
+  readonly stepIndex: number;
+  readonly selectedSlot: number | null;
+  readonly tool: TacticTool;
+  readonly clock: TacticClock;
+  readonly isShown: boolean;
+  /** Lineups of the kind being placed, shown only with the grenade tool. */
+  readonly lineups: readonly Lineup[];
+  /** Spawn spots a click can take, set only on the opening step with the select tool. */
+  /** Where each slot starts the round. */
+  readonly spawns: readonly TacticPoint[];
+  readonly spawnSpots: readonly TacticPoint[] | undefined;
+  readonly actions: PlateActions;
+  /** Set by the plate to its own repaint, so the playback loop can paint without React. */
+  readonly repaintRef: RefObject<() => void>;
+  readonly onPreviewReach: (isReachable: boolean | null) => void;
 }

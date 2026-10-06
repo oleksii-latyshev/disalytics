@@ -256,8 +256,8 @@ Mono, **chroma reserved for data in review; coloured tiles identify way-in dock 
 1. The frame budget is the only motion constraint; canvas changes follow `clock.frame`.
 2. `backdrop-filter` only on full-screen sheets and the dialog scrim.
 3. Numbers use tabular figures (Plex Mono, `tabular-nums`).
-4. Colour means something the demo said; interaction is luminance; side identity never rests on hue
-   alone. Palettes: default, colour-blind, cyber.
+4. Colour means something the demo said (tactic players carry slot colours — owner exception, a
+   plan is not demo data); interaction is luminance; identity never rests on hue alone. Palettes: default, colour-blind, cyber.
 5. Reduced motion is honoured everywhere, WebGL included.
 6. Layouts are designed against Russian (15–30% longer); no fixed-width labels.
 7. Empty, progress and error states are designed screens. Keyboard first; pointer is the fallback.

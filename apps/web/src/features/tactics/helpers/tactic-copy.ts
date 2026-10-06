@@ -1,5 +1,5 @@
 import type { Tactic, TacticPlan } from '@disa/demo-core';
-import { generateId } from './editor-actions';
+import { generateId } from './tactic-ids';
 
 /**
  * A tactic's plans with every step, throw, drawing and enemy under a new id, so a copy shares

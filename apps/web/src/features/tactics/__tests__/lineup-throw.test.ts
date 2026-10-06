@@ -1,9 +1,8 @@
 import type { Lineup } from '@disa/demo-core';
 import { getMapOverview, worldToRadar } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import type { EditorStep } from '../helpers/editor-tactic';
-import { addLineupThrowToStep, selectableLineups } from '../helpers/lineup-throw';
-import { findNearestTacticLineup } from '../helpers/tactic-plot';
+import { selectableLineups, throwFromLineup } from '../helpers/lineup-throw';
+import { lineupAt } from '../helpers/tactic-hit';
 
 function lineup(id: string, side: Lineup['side'], kind: Lineup['kind']): Lineup {
   return {
@@ -24,17 +23,6 @@ function lineup(id: string, side: Lineup['side'], kind: Lineup['kind']): Lineup 
   };
 }
 
-const step: EditorStep = {
-  id: 's',
-  name: '',
-  timeOffsetSeconds: 0,
-  players: [
-    { slot: 0, x: 0, y: 0 },
-    { slot: 1, x: 10, y: 10 },
-  ],
-  throws: [],
-};
-
 describe('selectableLineups', () => {
   it('keeps the side and both-sides lineups of the chosen kind', () => {
     const all = [
@@ -50,13 +38,9 @@ describe('selectableLineups', () => {
   });
 });
 
-describe('addLineupThrowToStep', () => {
-  it('moves the thrower to the origin and adds a throw that remembers the lineup', () => {
-    const next = addLineupThrowToStep(step, lineup('l1', 'T', 'smoke'), 1);
-    expect(next.players.find((player) => player.slot === 1)).toMatchObject({ x: -1000, y: -200 });
-    expect(next.players.find((player) => player.slot === 0)).toMatchObject({ x: 0, y: 0 });
-    expect(next.throws).toHaveLength(1);
-    expect(next.throws[0]).toMatchObject({
+describe('throwFromLineup', () => {
+  it('throws from the lineup origin to its landing and remembers the lineup', () => {
+    expect(throwFromLineup(lineup('l1', 'T', 'smoke'), 1)).toMatchObject({
       throwerSlot: 1,
       kind: 'smoke',
       lineupId: 'l1',
@@ -66,15 +50,22 @@ describe('addLineupThrowToStep', () => {
   });
 });
 
-describe('findNearestTacticLineup', () => {
+describe('lineupAt', () => {
+  const overview = getMapOverview('de_mirage');
+  if (overview === undefined) throw new Error('no overview');
+
   it('picks the lineup landing under the pointer and none far away', () => {
-    const overview = getMapOverview('de_mirage');
-    if (overview === undefined) throw new Error('no overview');
     const near = lineup('near', 'T', 'smoke');
     const point = worldToRadar(overview, near.landing);
-    expect(findNearestTacticLineup(point, [near], overview, 1)?.id).toBe('near');
-    expect(
-      findNearestTacticLineup({ x: point.x + 200, y: point.y }, [near], overview, 1),
-    ).toBeNull();
+    expect(lineupAt([near], point, point, overview, 1)?.id).toBe('near');
+    expect(lineupAt([near], { x: point.x + 200, y: point.y }, point, overview, 1)).toBeNull();
+  });
+
+  it('prefers the origin nearest the player where several land on one spot', () => {
+    const far = { ...lineup('far', 'T', 'smoke'), origin: { x: -3000, y: 900, z: 0 } };
+    const close = lineup('close', 'T', 'smoke');
+    const landing = worldToRadar(overview, close.landing);
+    const player = worldToRadar(overview, close.origin);
+    expect(lineupAt([far, close], landing, player, overview, 1)?.id).toBe('close');
   });
 });

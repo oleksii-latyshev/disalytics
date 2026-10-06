@@ -2,8 +2,7 @@ import { mainSteps, type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Copy, Download, Trash2 } from 'lucide-react';
-import { computeTotalDuration } from '../helpers/editor-actions';
-import { toEditorTactic } from '../helpers/editor-tactic';
+import { tacticDurationSeconds } from '../helpers/tactic-duration';
 import { nameOrFallback } from '../helpers/tactic-names';
 import { GrenadeTally } from './GrenadeTally';
 import { TacticThumbnail } from './TacticThumbnail';
@@ -21,7 +20,7 @@ const CHIP = 'rounded-chip bg-surface-2 px-2 py-0.5 font-mono text-11 text-ink-d
 export function TacticCard({ tactic, onOpen, onDuplicate, onExport, onDelete }: TacticCardProps) {
   const t = useT();
 
-  const totalDuration = computeTotalDuration(toEditorTactic(tactic).steps);
+  const totalDuration = tacticDurationSeconds(tactic);
   const loadout = tacticLoadout(tactic);
   const rounds = tactic.rounds ?? [];
   const title = nameOrFallback(tactic.title, t('library.tactics.untitled'));

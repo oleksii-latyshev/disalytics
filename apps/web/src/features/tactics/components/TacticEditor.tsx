@@ -1,25 +1,25 @@
-import { type Tactic, tacticLoadout } from '@disa/demo-core';
+import type { Tactic } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
+import { getMapOverview } from '@disa/map-data';
 import { cn } from '@disa/ui';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLineupCatalog } from '@/core/lineup-catalog';
-import { selectableLineups } from '../helpers/lineup-throw';
+import { useCallback, useEffect, useState } from 'react';
+import { UnknownMap } from '@/features/radar';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
-import { spawnSpotOf } from '../helpers/tactic-spawns';
-import { stepThrowRows } from '../helpers/tactic-step-throws';
 import { replacementFor } from '../helpers/tactic-transfer';
-import { useTacticEditor } from '../hooks/use-tactic-editor';
+import { useTacticBoard } from '../hooks/use-tactic-board';
 import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticEditorHeader } from './TacticEditorHeader';
-import { TacticLoadoutPanel } from './TacticLoadoutPanel';
+import { TacticPlanStrip } from './TacticPlanStrip';
 import { TacticPlate } from './TacticPlate';
-import { TacticStepRail } from './TacticStepRail';
-import { TacticTimeline } from './TacticTimeline';
-import { TacticToolStrip } from './TacticToolStrip';
+import { TacticPlayerSection } from './TacticPlayerSection';
+import { TacticProperties } from './TacticProperties';
+import { TacticRoster } from './TacticRoster';
+import { TacticStepSection } from './TacticStepSection';
+import { TacticThrowList } from './TacticThrowList';
+import { TacticHint, TacticToolbar } from './TacticToolbar';
 import { TacticTransferDialog } from './TacticTransferDialog';
-
-const PHONE_TABS = ['step', 'loadout'] as const;
+import { TacticTransport } from './TacticTransport';
 
 export interface TacticEditorProps {
   readonly initialTactic: Tactic;
@@ -28,282 +28,222 @@ export interface TacticEditorProps {
   readonly className?: string | undefined;
 }
 
-export function TacticEditor({ initialTactic, onSave, onBack, className }: TacticEditorProps) {
+export function TacticEditor(props: TacticEditorProps) {
+  const overview = getMapOverview(props.initialTactic.map);
+  if (overview === undefined) return <UnknownMap map={props.initialTactic.map} />;
+  return <TacticBoard {...props} overview={overview} />;
+}
+
+function TacticBoard({
+  initialTactic,
+  onSave,
+  onBack,
+  className,
+  overview,
+}: TacticEditorProps & { readonly overview: NonNullable<ReturnType<typeof getMapOverview>> }) {
   const t = useT();
+  const board = useTacticBoard({ initialTactic, overview, onSave });
+  const { editor, playback, schedule, stepSchedule, step } = board;
+  const { tactic, stepIndex, selectedSlot, tool, throwKind } = editor;
 
-  const editor = useTacticEditor({
-    initialTactic,
-    onSave,
-  });
+  const [savedTactic, setSavedTactic] = useState(initialTactic);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const isStored = useTacticStored(initialTactic.id);
+  const [hasSaved, setHasSaved] = useState(false);
+  const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
 
-  const {
-    tactic,
-    activeStepIndex,
-    activeStep,
-    steps,
-    spawns,
-    selectedSlot,
-    selectedThrowId,
-    activeTool,
-    pencilColor,
-    newThrowKind,
-    canUndo,
-    canRedo,
-    isPlaying,
-    playbackTime,
-    playbackSpeed,
-    totalDuration,
-    setSelectedSlot,
-    setSelectedThrowId,
-    setActiveTool,
-    setPencilColor,
-    setNewThrowKind,
-    setPlaybackSpeed,
-    undo,
-    replaceTactic,
-    redo,
-    addStep,
-    duplicateStep,
-    deleteStep,
-    moveStep,
-    updateStepName,
-    updateStepOffset,
-    updateStepNotes,
-    updatePlayerPosition,
-    placePlayerOnSpawn,
-    snapPlayerToSpawnSpot,
-    updatePlayerYaw,
-    updatePlayerLabel,
-    addThrow,
-    addLineupThrow,
-    updateThrowPosition,
-    updateThrowDroppedBy,
-    deleteThrow,
-    addDrawingStroke,
-    deleteDrawingStroke,
-    clearDrawings,
-    changeMap,
-    changeSide,
-    toggleRound,
-    updateTitle,
-    updateDescription,
-    save,
-    togglePlay,
-    seek,
-    jumpStep,
-    selectStep,
-  } = editor;
+  const handleSave = useCallback(() => {
+    editor.save();
+    setSavedTactic(tactic);
+    setHasSaved(true);
+  }, [editor, tactic]);
 
-  const { lineups } = useLineupCatalog(tactic.map);
-  const loadout = useMemo(() => tacticLoadout(tactic), [tactic]);
-  const pickableLineups = useMemo(
-    () => selectableLineups(lineups, tactic.side, newThrowKind),
-    [lineups, tactic.side, newThrowKind],
-  );
+  const handleImported = (written: readonly Tactic[]) => {
+    const imported = replacementFor(written, tactic.id);
+    if (imported === null) return;
+    editor.replaceTactic(imported);
+    setSavedTactic(imported);
+    setHasSaved(true);
+  };
 
   const handleChangeMap = (map: string) => {
     if (map === tactic.map) return;
     if (hasEditorWork(tactic) && !window.confirm(t('library.tactics.editor.mapChangeConfirm'))) {
       return;
     }
-    changeMap(map);
+    editor.changeMap(map);
   };
 
-  const throwHint =
-    selectedSlot === null
-      ? t('library.tactics.throw.pickPlayer')
-      : pickableLineups.length === 0
-        ? t('library.tactics.throw.noLineups')
-        : t('library.tactics.throw.pickLineup', { slot: selectedSlot + 1 });
-
-  const [savedTactic, setSavedTactic] = useState(initialTactic);
-  const [isTransferring, setIsTransferring] = useState(false);
-  const [phoneTab, setPhoneTab] = useState<'step' | 'loadout'>('step');
-  const isStored = useTacticStored(initialTactic.id);
-  const [hasSaved, setHasSaved] = useState(false);
-  const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
-
-  const handleImported = (written: readonly Tactic[]) => {
-    const imported = replacementFor(written, tactic.id);
-    if (imported === null) return;
-    replaceTactic(imported);
-    setSavedTactic(imported);
-    setHasSaved(true);
-  };
-
-  const handleSave = useCallback(() => {
-    save();
-    setSavedTactic(tactic);
-    setHasSaved(true);
-  }, [save, tactic]);
-
-  const selectedPlayer = useMemo(() => {
-    if (selectedSlot === null || activeTool !== 'select') return undefined;
-    return activeStep?.players.find((p) => p.slot === selectedSlot);
-  }, [activeStep, selectedSlot, activeTool]);
-
-  const selectedSpawnSpot = useMemo(
-    () => (selectedPlayer === undefined ? null : spawnSpotOf(spawns, selectedPlayer)),
-    [selectedPlayer, spawns],
-  );
-
-  const handlePickSpawn = (spot: number) => {
-    if (selectedSlot !== null) placePlayerOnSpawn(selectedSlot, spot);
-  };
-
-  const throwRows = useMemo(() => stepThrowRows(activeStep, lineups), [activeStep, lineups]);
-
+  const { shortcuts } = board;
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) =>
-      handleTacticShortcut(event, {
-        undo,
-        redo,
-        save: handleSave,
-        togglePlay,
-        jumpStep,
-        selectTool: setActiveTool,
-      });
-
+      handleTacticShortcut(event, { ...shortcuts, save: handleSave });
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, jumpStep, setActiveTool, undo, redo, handleSave]);
+  });
+
+  const selectedLeg = selectedSlot === null ? undefined : stepSchedule?.legs[selectedSlot];
+  const spotsAreOffered =
+    stepIndex === 0 && tool === 'select' && !playback.isShown && board.spawnSpots.length > 0;
 
   return (
     <section
       className={cn(
-        'flex h-full w-full flex-col overflow-hidden bg-surface-0 font-sans text-ink selection:bg-white/20 lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)_18.75rem] lg:grid-rows-[auto_minmax(0,1fr)_auto]',
+        'flex h-full w-full flex-col overflow-y-auto bg-surface-0 font-sans text-ink selection:bg-white/20 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)_19rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:overflow-hidden xl:grid-cols-[17rem_minmax(0,1fr)_20rem]',
         className,
       )}
       aria-label={t('library.tactics.editor.title')}
     >
-      <TacticEditorHeader
-        tactic={tactic}
-        isDirty={isDirty}
-        onBack={onBack}
-        onUpdateTitle={updateTitle}
-        onUpdateDescription={updateDescription}
-        onChangeMap={handleChangeMap}
-        onChangeSide={changeSide}
-        onToggleRound={toggleRound}
-        onTransfer={() => setIsTransferring(true)}
-        onSave={handleSave}
-      />
-
-      <div className="relative order-2 aspect-square w-full shrink-0 lg:order-none lg:col-start-2 lg:row-start-2 lg:aspect-auto lg:h-full lg:min-h-0 lg:min-w-0">
-        <TacticPlate
-          map={tactic.map}
-          side={tactic.side}
-          steps={steps}
-          activeStepIndex={activeStepIndex}
-          currentTime={isPlaying ? playbackTime : undefined}
-          selectedSlot={selectedSlot}
-          selectedThrowId={selectedThrowId}
-          onSelectSlot={setSelectedSlot}
-          onSelectThrow={setSelectedThrowId}
-          onPlayerDrag={updatePlayerPosition}
-          onPlayerDragEnd={snapPlayerToSpawnSpot}
-          onPickSpawn={handlePickSpawn}
-          onThrowDrag={updateThrowPosition}
-          isEditable={!isPlaying}
-          activeTool={isPlaying ? 'select' : activeTool}
-          pencilColor={pencilColor}
-          newThrowKind={newThrowKind}
-          lineups={pickableLineups}
-          onPickLineup={addLineupThrow}
-          onAddDrawingStroke={addDrawingStroke}
-          onAddThrow={addThrow}
-          onDeleteThrow={deleteThrow}
-          onDeleteDrawingStroke={deleteDrawingStroke}
-          hasZoomControls
+      <div className="lg:col-span-3">
+        <TacticEditorHeader
+          tactic={tactic}
+          isDirty={isDirty}
+          onBack={onBack}
+          onUpdateTitle={editor.updateTitle}
+          onUpdateDescription={editor.updateDescription}
+          onChangeMap={handleChangeMap}
+          onChangeSide={editor.changeSide}
+          onToggleRound={editor.toggleRound}
+          onTransfer={() => setIsTransferring(true)}
+          onSave={handleSave}
+          canUndo={editor.canUndo}
+          canRedo={editor.canRedo}
+          onUndo={editor.undo}
+          onRedo={editor.redo}
         />
       </div>
 
-      <TacticTimeline
+      <TacticRoster
         side={tactic.side}
-        steps={steps}
-        activeStepIndex={activeStepIndex}
-        isPlaying={isPlaying}
-        playbackTime={playbackTime}
-        totalDuration={totalDuration}
-        playbackSpeed={playbackSpeed}
-        onSelectStep={selectStep}
-        onAddStep={addStep}
-        onTogglePlay={togglePlay}
-        onSeek={seek}
-        onJumpStep={jumpStep}
-        onSpeedChange={setPlaybackSpeed}
+        loadout={board.loadout}
+        step={step}
+        stepIndex={stepIndex}
+        stepSchedule={stepSchedule}
+        selectedSlot={selectedSlot}
+        onSelect={(slot) => {
+          playback.stop();
+          editor.select(slot);
+        }}
       />
 
-      <div
-        role="tablist"
-        aria-label={t('library.tactics.tabs.label')}
-        className="order-4 flex shrink-0 gap-1 px-3 pt-2 lg:hidden"
-      >
-        {PHONE_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            aria-selected={phoneTab === tab}
-            onClick={() => setPhoneTab(tab)}
-            className={cn(
-              'h-8 flex-1 rounded-chip font-mono text-12 font-medium transition-colors',
-              phoneTab === tab ? 'bg-surface-3 text-ink' : 'text-ink-dim hover:bg-hover',
-            )}
-          >
-            {t(`library.tactics.tabs.${tab}`)}
-          </button>
-        ))}
+      <div className="@container relative aspect-square w-full shrink-0 lg:aspect-auto lg:h-full lg:min-h-0 lg:min-w-0">
+        <TacticPlate
+          map={tactic.map}
+          side={tactic.side}
+          grid={board.grid}
+          schedule={schedule}
+          step={step}
+          stepIndex={stepIndex}
+          selectedSlot={selectedSlot}
+          tool={tool}
+          clock={playback.clock}
+          isShown={playback.isShown}
+          lineups={board.pickableLineups}
+          spawns={tactic.spawns}
+          spawnSpots={spotsAreOffered ? board.spawnSpots : undefined}
+          actions={board.plateActions}
+          repaintRef={board.repaintRef}
+          onPreviewReach={board.onPreviewReach}
+        />
+        <TacticToolbar
+          tool={tool}
+          throwKind={throwKind}
+          onTool={board.chooseTool}
+          onThrowKind={board.chooseThrowKind}
+        />
+        <TacticHint>
+          {t(`library.tactics.board.hint.${board.hint.key}`, { slot: board.hint.slot })}
+        </TacticHint>
       </div>
 
-      <TacticLoadoutPanel
-        side={tactic.side}
-        loadout={loadout}
-        players={activeStep?.players ?? []}
-        selectedSlot={selectedSlot}
-        onSelectSlot={setSelectedSlot}
-        isOpenOnPhone={phoneTab === 'loadout'}
-      />
+      {step !== undefined && (
+        <TacticProperties
+          label={t('library.tactics.board.step.eyebrow', {
+            index: stepIndex + 1,
+            total: board.steps.length,
+          })}
+          step={
+            <TacticStepSection
+              step={step}
+              stepIndex={stepIndex}
+              stepCount={board.steps.length}
+              stepSchedule={stepSchedule}
+              deleteBlock={board.deleteBlock}
+              onRename={editor.rename}
+              onIdea={editor.setIdea}
+              onStart={editor.setStart}
+              onDelete={editor.deleteStep}
+              onCommit={editor.endGesture}
+            />
+          }
+          player={
+            selectedSlot !== null && (
+              <TacticPlayerSection
+                slot={selectedSlot}
+                step={step}
+                leg={selectedLeg}
+                isOpeningStep={stepIndex === 0}
+                spawn={tactic.spawns[selectedSlot]}
+                spawnSpots={board.spawnSpots}
+                onMode={(mode) => {
+                  editor.setRouteMode(selectedSlot, mode);
+                  board.chooseTool(mode === 'pen' ? 'pen' : 'route');
+                }}
+                onTask={(task) => editor.setTask(selectedSlot, task)}
+                onDelay={(seconds) => editor.setDelay(selectedSlot, seconds)}
+                onClearRoute={() => editor.clearRoute(selectedSlot)}
+                onRemovePoint={() => editor.removeWaypoint(selectedSlot)}
+                onSpawn={(spot) => {
+                  const point = board.spawnSpots[spot];
+                  if (point !== undefined) editor.setSpawn(selectedSlot, point);
+                }}
+                onCommit={editor.endGesture}
+              />
+            )
+          }
+          throws={
+            <TacticThrowList
+              throws={stepSchedule?.throws ?? []}
+              lineups={board.lineups}
+              onRemove={editor.removeThrow}
+            />
+          }
+        />
+      )}
 
-      <TacticStepRail
-        step={activeStep}
-        stepIndex={activeStepIndex}
-        stepCount={steps.length}
-        throwRows={throwRows}
-        selectedThrowId={selectedThrowId}
-        selectedPlayer={selectedPlayer}
-        spawnCount={spawns.length}
-        selectedSpawnSpot={selectedSpawnSpot}
-        throwHint={activeTool === 'throw' ? throwHint : undefined}
-        isOpenOnPhone={phoneTab === 'step'}
-        onSelectThrow={setSelectedThrowId}
-        onDeleteThrow={deleteThrow}
-        onUpdateThrowDroppedBy={updateThrowDroppedBy}
-        onAddStep={addStep}
-        onDuplicateStep={duplicateStep}
-        onDeleteStep={deleteStep}
-        onMoveStep={moveStep}
-        onUpdateName={updateStepName}
-        onUpdateOffset={updateStepOffset}
-        onUpdateNotes={updateStepNotes}
-        onSelectSpawn={placePlayerOnSpawn}
-        onUpdatePlayerYaw={updatePlayerYaw}
-        onUpdatePlayerLabel={updatePlayerLabel}
-      />
-
-      <TacticToolStrip
-        activeTool={activeTool}
-        pencilColor={pencilColor}
-        newThrowKind={newThrowKind}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onSelectTool={setActiveTool}
-        onSelectColor={setPencilColor}
-        onSelectThrowKind={setNewThrowKind}
-        onUndo={undo}
-        onRedo={redo}
-        onClearDrawings={clearDrawings}
-      />
+      <footer className="flex flex-col [border-block-start:1px_solid_var(--color-line)] lg:col-span-3">
+        <TacticTransport
+          isPlaying={playback.isPlaying}
+          speed={playback.speed}
+          seconds={board.clockSeconds}
+          canPrev={stepIndex > 0}
+          canNext={stepIndex < board.steps.length - 1}
+          onPrev={() => board.jump('prev')}
+          onNext={() => board.jump('next')}
+          onToggle={playback.toggle}
+          onSpeed={playback.setSpeed}
+        />
+        <TacticPlanStrip
+          lanes={[
+            {
+              planId: editor.planId,
+              firstIndex: 0,
+              steps: board.steps,
+              schedule: schedule.steps,
+            },
+          ]}
+          currentPlanId={editor.planId}
+          stepIndex={stepIndex}
+          onSelect={(_planId, index) => {
+            playback.stop();
+            editor.goToStep(index);
+          }}
+          onAddStep={() => {
+            playback.stop();
+            editor.addStep();
+          }}
+        />
+      </footer>
 
       <TacticTransferDialog
         isOpen={isTransferring}

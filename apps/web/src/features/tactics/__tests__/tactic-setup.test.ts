@@ -1,24 +1,23 @@
 import { isTactic, type Tactic } from '@disa/demo-core';
 import { getMapOverview, MAP_IDS, mapSpawns, RADAR_IMAGE_SIZE, worldToRadar } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import { toEditorTactic, withEditorTactic } from '../helpers/editor-tactic';
+import { addWaypoint } from '../helpers/tactic-edits';
 import {
   changeTacticMap,
   changeTacticSide,
   createNewTactic,
   hasEditorWork,
   spawnIndices,
-  startingPlayers,
   tacticSpawns,
   toggleTacticRound,
 } from '../helpers/tactic-setup';
 
-describe('startingPlayers', () => {
+describe('tacticSpawns', () => {
   it('spreads five players across a map without spawns, far enough apart for their tokens', () => {
     for (const map of MAP_IDS.filter((id) => mapSpawns(id, 'T').length === 0)) {
       const overview = getMapOverview(map);
       if (overview === undefined) throw new Error(`no overview for ${map}`);
-      const points = startingPlayers(map, 'T').map((player) => worldToRadar(overview, player));
+      const points = tacticSpawns(map, 'T').map((player) => worldToRadar(overview, player));
       expect(points).toHaveLength(5);
       for (const point of points) {
         expect(point.x).toBeGreaterThan(0);
@@ -38,8 +37,8 @@ describe('startingPlayers', () => {
   it('puts T and CT on opposite edges', () => {
     const overview = getMapOverview('de_overpass');
     if (overview === undefined) throw new Error('no overview');
-    const t = worldToRadar(overview, startingPlayers('de_overpass', 'T')[0] ?? { x: 0, y: 0 });
-    const ct = worldToRadar(overview, startingPlayers('de_overpass', 'CT')[0] ?? { x: 0, y: 0 });
+    const t = worldToRadar(overview, tacticSpawns('de_overpass', 'T')[0] ?? { x: 0, y: 0 });
+    const ct = worldToRadar(overview, tacticSpawns('de_overpass', 'CT')[0] ?? { x: 0, y: 0 });
     expect(t.y).toBeGreaterThan(ct.y);
   });
 });
@@ -56,7 +55,7 @@ describe('spawn placement', () => {
     for (const map of ['de_dust2', 'de_inferno']) {
       for (const side of ['CT', 'T'] as const) {
         const spawns = mapSpawns(map, side);
-        const players = startingPlayers(map, side);
+        const players = tacticSpawns(map, side);
         expect(players).toHaveLength(5);
         const keys = players.map((player) => `${player.x},${player.y}`);
         expect(new Set(keys).size).toBe(5);
@@ -68,19 +67,16 @@ describe('spawn placement', () => {
   });
 
   it('is deterministic, and follows the side while the formation is untouched', () => {
-    expect(startingPlayers('de_dust2', 'T')).toEqual(startingPlayers('de_dust2', 'T'));
+    expect(tacticSpawns('de_dust2', 'T')).toEqual(tacticSpawns('de_dust2', 'T'));
     const next = changeTacticSide(createNewTactic('de_dust2', 'T'), 'CT');
-    expect(toEditorTactic(next).steps[0]?.players).toMatchObject(startingPlayers('de_dust2', 'CT'));
     expect(next.spawns).toEqual(tacticSpawns('de_dust2', 'CT'));
     const other = changeTacticMap(createNewTactic('de_dust2', 'T'), 'de_inferno');
-    expect(toEditorTactic(other).steps[0]?.players).toMatchObject(
-      startingPlayers('de_inferno', 'T'),
-    );
+    expect(other.spawns).toEqual(tacticSpawns('de_inferno', 'T'));
   });
 
   it('falls back to the row formation for a map without spawn data', () => {
     expect(mapSpawns('de_overpass', 'T')).toEqual([]);
-    const players = startingPlayers('de_overpass', 'T');
+    const players = tacticSpawns('de_overpass', 'T');
     expect(players).toHaveLength(5);
     expect(new Set(players.map((player) => player.y)).size).toBeLessThanOrEqual(5);
   });
@@ -95,59 +91,56 @@ describe('createNewTactic', () => {
     expect(tactic.plans).toHaveLength(1);
     expect(tactic.plans[0]?.parentId).toBeNull();
     expect(tactic.spawns).toEqual(tacticSpawns('de_dust2', 'CT'));
-    const [step] = toEditorTactic(tactic).steps;
+    const step = tactic.plans[0]?.steps[0];
     expect(step?.name).toBe('');
     expect(step?.players).toHaveLength(5);
-    expect(step?.players.every((player) => player.label === undefined)).toBe(true);
+    expect(step?.players.every((player) => player.route.points.length === 0)).toBe(true);
     expect(isTactic(tactic)).toBe(true);
   });
 });
 
-function withFirstPlayerMoved(tactic: Tactic, dx: number): Tactic {
-  return withEditorTactic(tactic, (editor) => ({
-    ...editor,
-    steps: editor.steps.map((step, index) =>
-      index === 0
-        ? { ...step, players: step.players.map((p) => (p.slot === 0 ? { ...p, x: p.x + dx } : p)) }
-        : step,
-    ),
-  }));
+function withFirstPlayerRouted(tactic: Tactic): Tactic {
+  const at = { planId: tactic.plans[0]?.id ?? '', stepIndex: 0 };
+  return addWaypoint(tactic, at, 0, { x: 10, y: 10 });
 }
 
 describe('hasEditorWork', () => {
-  it('is false for a fresh tactic and true once a player moves', () => {
+  it('is false for a fresh tactic and true once a player is given a route', () => {
     const fresh = createNewTactic('de_mirage', 'T');
     expect(hasEditorWork(fresh)).toBe(false);
-    expect(hasEditorWork(withFirstPlayerMoved(fresh, 40))).toBe(true);
+    expect(hasEditorWork(withFirstPlayerRouted(fresh))).toBe(true);
   });
 });
 
 describe('changeTacticMap', () => {
   it('resets formation, throws and drawings to the new map', () => {
     const base = createNewTactic('de_mirage', 'T');
-    const worked = withEditorTactic(base, (editor) => ({
-      ...editor,
-      steps: editor.steps.map((step) => ({
-        ...step,
-        throws: [
-          {
-            id: 'a',
-            throwerSlot: 0,
-            kind: 'smoke' as const,
-            from: { x: 0, y: 0 },
-            to: { x: 1, y: 1 },
-            releaseTime: 0,
-          },
-        ],
-        drawings: [{ id: 'd', color: 'red', points: [{ x: 0, y: 0 }] }],
+    const worked = withFirstPlayerRouted({
+      ...base,
+      plans: base.plans.map((plan) => ({
+        ...plan,
+        steps: plan.steps.map((step) => ({
+          ...step,
+          throws: [
+            {
+              id: 'a',
+              throwerSlot: 0,
+              kind: 'smoke' as const,
+              from: { x: 0, y: 0 },
+              to: { x: 1, y: 1 },
+              releaseTime: 0,
+            },
+          ],
+          drawings: [{ id: 'd', color: 'red', points: [{ x: 0, y: 0 }] }],
+        })),
       })),
-    }));
+    });
     const next = changeTacticMap(worked, 'de_inferno');
-    const [step] = toEditorTactic(next).steps;
+    const step = next.plans[0]?.steps[0];
     expect(next.map).toBe('de_inferno');
     expect(step?.throws).toEqual([]);
     expect(step?.drawings).toEqual([]);
-    expect(step?.players).toMatchObject(startingPlayers('de_inferno', 'T'));
+    expect(step?.players.every((player) => player.route.points.length === 0)).toBe(true);
     expect(next.spawns).toEqual(tacticSpawns('de_inferno', 'T'));
     expect(changeTacticMap(worked, 'de_mirage')).toBe(worked);
   });
@@ -157,13 +150,11 @@ describe('changeTacticSide', () => {
   it('moves an untouched formation to the new side edge', () => {
     const next = changeTacticSide(createNewTactic('de_mirage', 'T'), 'CT');
     expect(next.side).toBe('CT');
-    expect(toEditorTactic(next).steps[0]?.players).toMatchObject(
-      startingPlayers('de_mirage', 'CT'),
-    );
+    expect(next.spawns).toEqual(tacticSpawns('de_mirage', 'CT'));
   });
 
   it('keeps positions the user already set', () => {
-    const moved = withFirstPlayerMoved(createNewTactic('de_mirage', 'T'), 5);
+    const moved = withFirstPlayerRouted(createNewTactic('de_mirage', 'T'));
     const next = changeTacticSide(moved, 'CT');
     expect(next.side).toBe('CT');
     expect(next.plans).toEqual(moved.plans);

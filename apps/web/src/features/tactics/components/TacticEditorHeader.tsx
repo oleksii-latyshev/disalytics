@@ -17,9 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@disa/ui';
-import { ArrowLeft, Check, ChevronDown, Save } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Redo2, Save, Undo2 } from 'lucide-react';
 import { useId, useState } from 'react';
-import { calledOnRounds } from '../helpers/tactic-timeline';
+import { calledOnRounds } from '../helpers/tactic-names';
 
 interface TacticEditorHeaderProps {
   readonly tactic: Tactic;
@@ -32,6 +32,10 @@ interface TacticEditorHeaderProps {
   readonly onToggleRound: (round: TacticRound) => void;
   readonly onTransfer: () => void;
   readonly onSave: () => void;
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly onUndo: () => void;
+  readonly onRedo: () => void;
 }
 
 function TacticDetails({
@@ -125,6 +129,10 @@ export function TacticEditorHeader({
   onBack,
   onTransfer,
   onSave,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   ...details
 }: TacticEditorHeaderProps) {
   const t = useT();
@@ -185,6 +193,26 @@ export function TacticEditorHeader({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            onClick={onUndo}
+            disabled={!canUndo}
+            aria-label={t('library.tactics.board.header.undo')}
+            title={t('library.tactics.board.header.undo')}
+          >
+            <Undo2 />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            onClick={onRedo}
+            disabled={!canRedo}
+            aria-label={t('library.tactics.board.header.redo')}
+            title={t('library.tactics.board.header.redo')}
+          >
+            <Redo2 />
+          </Button>
           <Button variant="outline" size="lg" onClick={onTransfer}>
             {t('library.tactics.transfer.open')}
           </Button>
