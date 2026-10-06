@@ -1,4 +1,4 @@
-import type { Tactic, TacticRound, TacticSide } from '@disa/demo-core';
+import { mainSteps, type Tactic, type TacticRound, type TacticSide } from '@disa/demo-core';
 
 export interface TacticFilterOptions {
   readonly map?: string | 'all' | undefined;
@@ -18,10 +18,10 @@ function matchesQuery(tactic: Tactic, query: string): boolean {
     tactic.title.toLowerCase().includes(query) ||
     (tactic.description?.toLowerCase().includes(query) ?? false) ||
     (tactic.author?.toLowerCase().includes(query) ?? false) ||
-    tactic.steps.some(
+    mainSteps(tactic).some(
       (step) =>
         step.name.toLowerCase().includes(query) ||
-        (step.notes?.toLowerCase().includes(query) ?? false),
+        (step.idea?.toLowerCase().includes(query) ?? false),
     )
   );
 }

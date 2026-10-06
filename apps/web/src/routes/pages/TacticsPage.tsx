@@ -1,6 +1,6 @@
 import { decodeTacticFromHash } from '@disa/demo-core';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { TacticsView } from '@/features/tactics';
+import { TACTIC_READ_OPTIONS, TacticsView } from '@/features/tactics';
 
 export function TacticsPage() {
   const navigate = useNavigate({ from: '/tactics' });
@@ -8,7 +8,7 @@ export function TacticsPage() {
 
   return (
     <TacticsView
-      initialTactic={decodeTacticFromHash(hash)}
+      initialTactic={decodeTacticFromHash(hash, TACTIC_READ_OPTIONS)}
       onClearInitialTactic={() => void navigate({ hash: '', replace: true })}
     />
   );

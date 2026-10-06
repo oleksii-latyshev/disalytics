@@ -1,4 +1,5 @@
-import type { Lineup, TacticStep, UtilityKind } from '@disa/demo-core';
+import type { Lineup, UtilityKind } from '@disa/demo-core';
+import type { EditorStep } from './editor-tactic';
 
 export interface StepThrowRow {
   readonly id: string;
@@ -15,7 +16,7 @@ export interface StepThrowRow {
 
 /** What the step rail lists for a step: its throws with the thrower and lineup resolved. */
 export function stepThrowRows(
-  step: TacticStep | undefined,
+  step: EditorStep | undefined,
   lineups: readonly Pick<Lineup, 'id' | 'title'>[],
 ): readonly StepThrowRow[] {
   if (step === undefined) return [];

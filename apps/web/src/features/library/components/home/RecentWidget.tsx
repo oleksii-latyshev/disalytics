@@ -1,3 +1,4 @@
+import { mainSteps } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { Link } from '@tanstack/react-router';
 import { NotebookPen, Play } from 'lucide-react';
@@ -45,7 +46,7 @@ function ItemRow({
           meta={
             <Text
               path="library.home.widget.recent.tacticMeta"
-              values={{ map: mapTitle(item.tactic.map), count: item.tactic.steps.length }}
+              values={{ map: mapTitle(item.tactic.map), count: mainSteps(item.tactic).length }}
             />
           }
         />

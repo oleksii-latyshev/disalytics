@@ -1,5 +1,6 @@
 import type { Tactic } from '@disa/demo-core';
 import { getMapOverview, type RadarPoint } from '@disa/map-data';
+import { toEditorTactic } from './editor-tactic';
 import { tacticWorldToRadar } from './tactic-plot';
 
 export interface TacticTrail {
@@ -25,7 +26,8 @@ export function tacticSketch(tactic: Tactic): TacticSketch | null {
   if (overview === undefined) return null;
 
   const bySlot = new Map<number, RadarPoint[]>();
-  for (const step of tactic.steps) {
+  const { steps } = toEditorTactic(tactic);
+  for (const step of steps) {
     for (const player of step.players) {
       const point = tacticWorldToRadar(overview, player);
       const trail = bySlot.get(player.slot) ?? [];
@@ -45,7 +47,7 @@ export function tacticSketch(tactic: Tactic): TacticSketch | null {
     });
   }
 
-  const smokes = tactic.steps.flatMap((step) =>
+  const smokes = steps.flatMap((step) =>
     step.throws
       .filter((grenade) => grenade.kind === 'smoke')
       .map((grenade) => tacticWorldToRadar(overview, grenade.to)),

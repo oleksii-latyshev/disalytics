@@ -1,6 +1,7 @@
-import type { TacticDrawingStroke, TacticPlayerPosition, TacticThrow } from '@disa/demo-core';
+import type { TacticDrawingStroke, TacticThrow } from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
+import type { EditorPlayer } from '../helpers/editor-tactic';
 import {
   findNearestTacticDrawing,
   findNearestTacticPlayer,
@@ -37,7 +38,7 @@ describe('tactic coordinates', () => {
 });
 
 describe('findNearestTacticPlayer', () => {
-  const players: readonly TacticPlayerPosition[] = [
+  const players: readonly EditorPlayer[] = [
     { slot: 0, x: -1000, y: 500, label: '1' },
     { slot: 1, x: 0, y: 0, label: '2' },
   ];

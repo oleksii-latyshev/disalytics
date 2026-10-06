@@ -2,15 +2,15 @@ import type {
   Lineup,
   TacticDrawingStroke,
   TacticSide,
-  TacticStep,
   TacticThrow,
   UtilityKind,
 } from '@disa/demo-core';
+import type { EditorStep } from '../helpers/editor-tactic';
 
 export interface TacticPlateProps {
   readonly map: string;
   readonly side?: TacticSide | undefined;
-  readonly steps: readonly TacticStep[];
+  readonly steps: readonly EditorStep[];
   readonly activeStepIndex?: number | undefined;
   readonly currentTime?: number | undefined;
   readonly selectedSlot?: number | null | undefined;

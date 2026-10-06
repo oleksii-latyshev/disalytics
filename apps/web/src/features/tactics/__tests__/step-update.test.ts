@@ -1,13 +1,22 @@
-import type { Tactic, TacticStep } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep, EditorTactic } from '../helpers/editor-tactic';
 import { updateStepAt } from '../helpers/step-update';
 
-function step(name: string): TacticStep {
+function step(name: string): EditorStep {
   return { id: name, name, timeOffsetSeconds: 0, players: [], throws: [] };
 }
 
-function tacticOf(steps: readonly TacticStep[]): Tactic {
-  return { id: 't', title: 't', map: 'de_mirage', side: 'CT', steps, createdAt: 0, updatedAt: 0 };
+function tacticOf(steps: readonly EditorStep[]): EditorTactic {
+  return {
+    id: 't',
+    title: 't',
+    map: 'de_mirage',
+    side: 'CT',
+    spawns: [],
+    steps,
+    createdAt: 0,
+    updatedAt: 0,
+  };
 }
 
 describe('updateStepAt', () => {

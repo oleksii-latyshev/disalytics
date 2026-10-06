@@ -1,12 +1,7 @@
-import type {
-  Lineup,
-  TacticDrawingStroke,
-  TacticPlayerPosition,
-  TacticThrow,
-  WorldPoint,
-} from '@disa/demo-core';
+import type { Lineup, TacticDrawingStroke, TacticThrow, WorldPoint } from '@disa/demo-core';
 import { type MapOverview, type RadarPoint, radarToWorld, radarX, radarY } from '@disa/map-data';
 import { pointDistance, pointToSegmentDistance } from '@/features/radar';
+import type { EditorPlayer } from './editor-tactic';
 
 /**
  * Transforms a world point to 1024x1024 radar coordinates.
@@ -42,7 +37,7 @@ export interface PlayerHitResult {
  */
 export function findNearestTacticPlayer(
   radarPt: RadarPoint,
-  players: readonly TacticPlayerPosition[],
+  players: readonly EditorPlayer[],
   overview: MapOverview,
   scale: number,
   maxDistPx = 20,

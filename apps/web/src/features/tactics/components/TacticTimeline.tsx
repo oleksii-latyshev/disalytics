@@ -1,14 +1,15 @@
-import type { TacticSide, TacticStep } from '@disa/demo-core';
+import type { TacticSide } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
 import { Pause, Play, Plus, SkipBack, SkipForward } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { UTILITY_INK } from '@/core/glyphs';
+import type { EditorStep } from '../helpers/editor-tactic';
 import { formatClock, stepSegments, throwMarkers } from '../helpers/tactic-timeline';
 
 export interface TacticTimelineProps {
   readonly side: TacticSide;
-  readonly steps: readonly TacticStep[];
+  readonly steps: readonly EditorStep[];
   readonly activeStepIndex: number;
   readonly isPlaying: boolean;
   readonly playbackTime: number;

@@ -28,13 +28,26 @@ function tacticWith(side: TacticSide, ...stepThrows: readonly (readonly TacticTh
     side,
     createdAt: 0,
     updatedAt: 0,
-    steps: stepThrows.map((throws, index) => ({
-      id: `s${index}`,
-      name: '',
-      timeOffsetSeconds: index * 5,
-      players: [0, 1, 2, 3, 4].map((slot) => ({ slot, x: 0, y: 0 })),
-      throws,
-    })),
+    spawns: [],
+    plans: [
+      {
+        id: 'main',
+        condition: '',
+        parentId: null,
+        forkAfter: 0,
+        deaths: {},
+        steps: stepThrows.map((throws, index) => ({
+          id: `s${index}`,
+          name: '',
+          startsAt: index * 5,
+          players: [0, 1, 2, 3, 4].map((slot) => ({
+            slot,
+            route: { mode: 'points' as const, points: [] },
+          })),
+          throws,
+        })),
+      },
+    ],
   };
 }
 

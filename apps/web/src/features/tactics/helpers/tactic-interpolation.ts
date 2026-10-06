@@ -1,11 +1,5 @@
-import type {
-  TacticDrawingStroke,
-  TacticPlayerPosition,
-  TacticPoint,
-  TacticStep,
-  TacticThrow,
-  UtilityKind,
-} from '@disa/demo-core';
+import type { TacticDrawingStroke, TacticPoint, TacticThrow, UtilityKind } from '@disa/demo-core';
+import type { EditorPlayer, EditorStep } from './editor-tactic';
 
 /** Duration of a grenade in flight in seconds. */
 export const GRENADE_FLIGHT_DURATION = 2.0;
@@ -64,7 +58,7 @@ export interface InterpolatedUtilityActive {
 }
 
 export interface InterpolatedTacticState {
-  readonly players: readonly TacticPlayerPosition[];
+  readonly players: readonly EditorPlayer[];
   readonly activeStepIndex: number;
   readonly flyingGrenades: readonly InterpolatedGrenadeFlight[];
   readonly activeUtilities: readonly InterpolatedUtilityActive[];
@@ -104,7 +98,7 @@ export function grenadeControlPoint(
   };
 }
 
-export function findActiveStepIndex(steps: readonly TacticStep[], currentTime: number): number {
+export function findActiveStepIndex(steps: readonly EditorStep[], currentTime: number): number {
   for (let i = 0; i < steps.length - 1; i++) {
     const s = steps[i];
     const nextS = steps[i + 1];
@@ -121,10 +115,10 @@ export function findActiveStepIndex(steps: readonly TacticStep[], currentTime: n
 }
 
 function interpolatePlayerPair(
-  pA: TacticPlayerPosition,
-  pB: TacticPlayerPosition | undefined,
+  pA: EditorPlayer,
+  pB: EditorPlayer | undefined,
   t: number,
-): TacticPlayerPosition {
+): EditorPlayer {
   if (pB === undefined) return pA;
 
   const x = pA.x + (pB.x - pA.x) * t;
@@ -150,19 +144,19 @@ function interpolatePlayerPair(
 }
 
 function interpolatePlayers(
-  stepA: TacticStep,
-  stepB: TacticStep,
+  stepA: EditorStep,
+  stepB: EditorStep,
   currentTime: number,
-): readonly TacticPlayerPosition[] {
+): readonly EditorPlayer[] {
   const span = stepB.timeOffsetSeconds - stepA.timeOffsetSeconds;
   const t = span > 0 ? Math.max(0, Math.min(1, (currentTime - stepA.timeOffsetSeconds) / span)) : 0;
 
-  const playerMapB = new Map<number, TacticPlayerPosition>();
+  const playerMapB = new Map<number, EditorPlayer>();
   for (const p of stepB.players) {
     playerMapB.set(p.slot, p);
   }
 
-  const merged: TacticPlayerPosition[] = [];
+  const merged: EditorPlayer[] = [];
   const handledSlots = new Set<number>();
 
   for (const pA of stepA.players) {
@@ -219,7 +213,7 @@ function checkThrowProjectile(
 }
 
 function collectActiveProjectiles(
-  steps: readonly TacticStep[],
+  steps: readonly EditorStep[],
   maxStepIndex: number,
   currentTime: number,
 ): {
@@ -252,7 +246,7 @@ function collectActiveProjectiles(
  * and step annotations at a given playback timestamp.
  */
 export function interpolateTacticStep(
-  steps: readonly TacticStep[],
+  steps: readonly EditorStep[],
   currentTime: number,
 ): InterpolatedTacticState {
   if (steps.length === 0) return EMPTY_INTERPOLATED_STATE;
@@ -276,7 +270,7 @@ export function interpolateTacticStep(
 
   const activeIndex = findActiveStepIndex(steps, currentTime);
 
-  let players: readonly TacticPlayerPosition[];
+  let players: readonly EditorPlayer[];
   if (activeIndex >= steps.length - 1) {
     players = lastStep.players;
   } else {

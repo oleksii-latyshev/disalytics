@@ -1,4 +1,4 @@
-import type { Tactic } from '@disa/demo-core';
+import { mainSteps, type Tactic } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { X } from 'lucide-react';
@@ -24,7 +24,7 @@ export function SharedTacticBanner({ tactic, onSave, onOpen, onDismiss }: Shared
             title: nameOrFallback(tactic.title, t('library.tactics.untitled')),
             map: tactic.map,
             side: tactic.side,
-            steps: tactic.steps.length,
+            steps: mainSteps(tactic).length,
           }}
         />
       </p>

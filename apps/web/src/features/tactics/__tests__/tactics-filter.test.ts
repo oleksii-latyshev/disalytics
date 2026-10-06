@@ -1,4 +1,4 @@
-import { decodeTacticFromHash, encodeTacticToHash, type Tactic } from '@disa/demo-core';
+import type { Tactic } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import { createNewTactic } from '../helpers/tactic-setup';
 import { countByMap, filterTactics, isCalledOn } from '../helpers/tactics-filter';
@@ -21,14 +21,24 @@ function makeMockTactic(
     description,
     createdAt: updatedAt - 1000,
     updatedAt,
-    steps: [
+    spawns: [],
+    plans: [
       {
-        id: `step-${id}`,
-        name: 'Default Execute',
-        timeOffsetSeconds: 0,
-        players: [],
-        throws: [],
-        drawings: [],
+        id: 'main',
+        condition: title,
+        parentId: null,
+        forkAfter: 0,
+        deaths: {},
+        steps: [
+          {
+            id: `step-${id}`,
+            name: 'Default Execute',
+            startsAt: null,
+            players: [],
+            throws: [],
+            drawings: [],
+          },
+        ],
       },
     ],
   };
@@ -135,21 +145,6 @@ describe('filtering by round type', () => {
 
   it('treats an empty round list as any round', () => {
     expect(isCalledOn({ ...anyRound, rounds: [] }, 'eco')).toBe(true);
-  });
-});
-
-describe('link sharing codec round-trip', () => {
-  it('encodes tactic into a URL fragment and decodes accurately', () => {
-    const tactic = { ...createNewTactic('de_anubis', 'T'), title: 'Anubis Mid Rush' };
-    const hash = encodeTacticToHash(tactic);
-    expect(hash.startsWith('#tactic=')).toBe(true);
-
-    const decoded = decodeTacticFromHash(hash);
-    expect(decoded).not.toBeNull();
-    expect(decoded?.id).toBe(tactic.id);
-    expect(decoded?.title).toBe('Anubis Mid Rush');
-    expect(decoded?.map).toBe('de_anubis');
-    expect(decoded?.steps).toHaveLength(1);
   });
 });
 

@@ -1,8 +1,9 @@
-import { type Tactic, tacticLoadout } from '@disa/demo-core';
+import { mainSteps, type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { Copy, Download, Link2, Trash2 } from 'lucide-react';
+import { Copy, Download, Trash2 } from 'lucide-react';
 import { computeTotalDuration } from '../helpers/editor-actions';
+import { toEditorTactic } from '../helpers/editor-tactic';
 import { nameOrFallback } from '../helpers/tactic-names';
 import { GrenadeTally } from './GrenadeTally';
 import { TacticThumbnail } from './TacticThumbnail';
@@ -10,7 +11,6 @@ import { TacticThumbnail } from './TacticThumbnail';
 export interface TacticCardProps {
   readonly tactic: Tactic;
   readonly onOpen: (tactic: Tactic) => void;
-  readonly onShare: (tactic: Tactic) => void;
   readonly onDuplicate: (tactic: Tactic) => void;
   readonly onExport: (tactic: Tactic) => void;
   readonly onDelete: (id: string) => void;
@@ -18,17 +18,10 @@ export interface TacticCardProps {
 
 const CHIP = 'rounded-chip bg-surface-2 px-2 py-0.5 font-mono text-11 text-ink-dim tabular-nums';
 
-export function TacticCard({
-  tactic,
-  onOpen,
-  onShare,
-  onDuplicate,
-  onExport,
-  onDelete,
-}: TacticCardProps) {
+export function TacticCard({ tactic, onOpen, onDuplicate, onExport, onDelete }: TacticCardProps) {
   const t = useT();
 
-  const totalDuration = computeTotalDuration(tactic.steps);
+  const totalDuration = computeTotalDuration(toEditorTactic(tactic).steps);
   const loadout = tacticLoadout(tactic);
   const rounds = tactic.rounds ?? [];
   const title = nameOrFallback(tactic.title, t('library.tactics.untitled'));
@@ -70,7 +63,7 @@ export function TacticCard({
           <span className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
             <span className={CHIP}>
               {t('library.tactics.library.stepsDuration', {
-                count: tactic.steps.length,
+                count: mainSteps(tactic).length,
                 seconds: totalDuration,
               })}
             </span>
@@ -92,16 +85,6 @@ export function TacticCard({
       <div className="flex items-center justify-between gap-2 [border-block-start:1px_solid_var(--color-line)] pt-2.5">
         {loadout.teamTotal > 0 ? <GrenadeTally counts={loadout.teamCounts} /> : <span />}
         <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onShare(tactic)}
-            title={t('library.tactics.library.share')}
-            aria-label={t('library.tactics.library.share')}
-            className="text-ink-dim hover:text-ink"
-          >
-            <Link2 />
-          </Button>
           <Button
             variant="ghost"
             size="icon"

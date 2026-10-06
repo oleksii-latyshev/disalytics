@@ -1,5 +1,4 @@
-import type { Tactic, TacticSide } from '@disa/demo-core';
-import { isTactic } from '@disa/demo-core';
+import { readTactic, type Tactic, type TacticReadOptions, type TacticSide } from '@disa/demo-core';
 
 const DATABASE = 'disalytics-user-tactics';
 const DATABASE_VERSION = 1;
@@ -68,8 +67,11 @@ export interface TacticStore {
   close(): void;
 }
 
-/** `null` when IndexedDB is absent or refuses to open. */
-export async function openTacticStore(): Promise<TacticStore | null> {
+/**
+ * `null` when IndexedDB is absent or refuses to open. Tactics of an older shape migrate as they are
+ * read (`options` says how to fill what they never stored); every write stores the current shape.
+ */
+export async function openTacticStore(options?: TacticReadOptions): Promise<TacticStore | null> {
   if (typeof indexedDB === 'undefined') return null;
 
   const opening = indexedDB.open(DATABASE, DATABASE_VERSION);
@@ -102,13 +104,16 @@ export async function openTacticStore(): Promise<TacticStore | null> {
         items = await settled(store.getAll());
       }
 
-      return items.filter(isTactic).filter((tactic) => matchesFilter(tactic, filter));
+      return items
+        .map((item) => readTactic(item, options))
+        .filter((tactic): tactic is Tactic => tactic !== null)
+        .filter((tactic) => matchesFilter(tactic, filter));
     },
 
     async get(id) {
       const store = storeIn(database, 'readonly');
       const item: unknown = await settled(store.get(id));
-      return isTactic(item) ? item : null;
+      return readTactic(item, options);
     },
 
     async put(tactic) {

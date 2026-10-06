@@ -8,15 +8,16 @@ import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { spawnSpotOf } from '../helpers/tactic-spawns';
 import { stepThrowRows } from '../helpers/tactic-step-throws';
+import { replacementFor } from '../helpers/tactic-transfer';
 import { useTacticEditor } from '../hooks/use-tactic-editor';
 import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticEditorHeader } from './TacticEditorHeader';
 import { TacticLoadoutPanel } from './TacticLoadoutPanel';
 import { TacticPlate } from './TacticPlate';
-import { TacticShareModal } from './TacticShareModal';
 import { TacticStepRail } from './TacticStepRail';
 import { TacticTimeline } from './TacticTimeline';
 import { TacticToolStrip } from './TacticToolStrip';
+import { TacticTransferDialog } from './TacticTransferDialog';
 
 const PHONE_TABS = ['step', 'loadout'] as const;
 
@@ -39,6 +40,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     tactic,
     activeStepIndex,
     activeStep,
+    steps,
     spawns,
     selectedSlot,
     selectedThrowId,
@@ -58,6 +60,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     setNewThrowKind,
     setPlaybackSpeed,
     undo,
+    replaceTactic,
     redo,
     addStep,
     duplicateStep,
@@ -114,11 +117,19 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         : t('library.tactics.throw.pickLineup', { slot: selectedSlot + 1 });
 
   const [savedTactic, setSavedTactic] = useState(initialTactic);
-  const [isSharing, setIsSharing] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
   const [phoneTab, setPhoneTab] = useState<'step' | 'loadout'>('step');
   const isStored = useTacticStored(initialTactic.id);
   const [hasSaved, setHasSaved] = useState(false);
   const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
+
+  const handleImported = (written: readonly Tactic[]) => {
+    const imported = replacementFor(written, tactic.id);
+    if (imported === null) return;
+    replaceTactic(imported);
+    setSavedTactic(imported);
+    setHasSaved(true);
+  };
 
   const handleSave = useCallback(() => {
     save();
@@ -174,7 +185,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         onChangeMap={handleChangeMap}
         onChangeSide={changeSide}
         onToggleRound={toggleRound}
-        onShare={() => setIsSharing(true)}
+        onTransfer={() => setIsTransferring(true)}
         onSave={handleSave}
       />
 
@@ -182,7 +193,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         <TacticPlate
           map={tactic.map}
           side={tactic.side}
-          steps={tactic.steps}
+          steps={steps}
           activeStepIndex={activeStepIndex}
           currentTime={isPlaying ? playbackTime : undefined}
           selectedSlot={selectedSlot}
@@ -209,7 +220,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
 
       <TacticTimeline
         side={tactic.side}
-        steps={tactic.steps}
+        steps={steps}
         activeStepIndex={activeStepIndex}
         isPlaying={isPlaying}
         playbackTime={playbackTime}
@@ -257,7 +268,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
       <TacticStepRail
         step={activeStep}
         stepIndex={activeStepIndex}
-        stepCount={tactic.steps.length}
+        stepCount={steps.length}
         throwRows={throwRows}
         selectedThrowId={selectedThrowId}
         selectedPlayer={selectedPlayer}
@@ -294,7 +305,12 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
         onClearDrawings={clearDrawings}
       />
 
-      <TacticShareModal isOpen={isSharing} onClose={() => setIsSharing(false)} tactic={tactic} />
+      <TacticTransferDialog
+        isOpen={isTransferring}
+        onDismiss={() => setIsTransferring(false)}
+        onImported={handleImported}
+        tactic={tactic}
+      />
     </section>
   );
 }

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@disa/ui';
-import { ArrowLeft, Check, ChevronDown, Link2, Save } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Save } from 'lucide-react';
 import { useId, useState } from 'react';
 import { calledOnRounds } from '../helpers/tactic-timeline';
 
@@ -30,7 +30,7 @@ interface TacticEditorHeaderProps {
   readonly onChangeMap: (map: string) => void;
   readonly onChangeSide: (side: TacticSide) => void;
   readonly onToggleRound: (round: TacticRound) => void;
-  readonly onShare: () => void;
+  readonly onTransfer: () => void;
   readonly onSave: () => void;
 }
 
@@ -123,7 +123,7 @@ export function TacticEditorHeader({
   tactic,
   isDirty,
   onBack,
-  onShare,
+  onTransfer,
   onSave,
   ...details
 }: TacticEditorHeaderProps) {
@@ -185,16 +185,8 @@ export function TacticEditorHeader({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={onShare}
-            aria-label={t('library.tactics.library.share')}
-            title={t('library.tactics.library.share')}
-            className="max-sm:size-(--height-control-lg) max-sm:p-0"
-          >
-            <Link2 className="sm:hidden" />
-            <span className="max-sm:hidden">{t('library.tactics.library.share')}</span>
+          <Button variant="outline" size="lg" onClick={onTransfer}>
+            {t('library.tactics.transfer.open')}
           </Button>
           <Button
             variant={isDirty ? 'primary' : 'secondary'}

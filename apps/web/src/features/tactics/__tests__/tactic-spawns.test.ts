@@ -1,6 +1,7 @@
-import type { Lineup, TacticStep } from '@disa/demo-core';
+import type { Lineup } from '@disa/demo-core';
 import { getMapOverview, mapSpawns, worldToRadar } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep } from '../helpers/editor-tactic';
 import { addLineupThrowToStep } from '../helpers/lineup-throw';
 import { findNearestTacticSpawn } from '../helpers/tactic-plot';
 import {
@@ -20,7 +21,7 @@ const spawns = [
   { x: 400, y: 0, z: 0 },
 ];
 
-function stepAt(...positions: readonly (readonly [number, number])[]): TacticStep {
+function stepAt(...positions: readonly (readonly [number, number])[]): EditorStep {
   return {
     id: 's',
     name: '',
@@ -30,7 +31,7 @@ function stepAt(...positions: readonly (readonly [number, number])[]): TacticSte
   };
 }
 
-function at(step: TacticStep, slot: number) {
+function at(step: EditorStep, slot: number) {
   const player = step.players.find((entry) => entry.slot === slot);
   return [player?.x, player?.y];
 }

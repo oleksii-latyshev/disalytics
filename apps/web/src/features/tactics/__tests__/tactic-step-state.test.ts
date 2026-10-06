@@ -1,8 +1,8 @@
-import type { TacticStep } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep } from '../helpers/editor-tactic';
 import { tacticStateAt } from '../helpers/tactic-step-state';
 
-const steps: readonly TacticStep[] = [
+const steps: readonly EditorStep[] = [
   {
     id: 'a',
     name: 'a',
