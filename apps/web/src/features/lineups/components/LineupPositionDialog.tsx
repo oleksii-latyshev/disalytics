@@ -6,6 +6,7 @@ import { UtilityGlyph } from '@/core/glyphs';
 import { targetTitle } from '../helpers/lineup-labels';
 import { captionsOf, photosOf } from '../helpers/lineup-photos';
 import type { SavedTarget, SavedVariant } from '../helpers/lineup-targets';
+import { useShotZoom } from '../hooks/use-shot-zoom';
 import { LineupChips } from './LineupChips';
 import { LineupHowToRepeat } from './LineupHowToRepeat';
 import { LineupMiniMap } from './LineupMiniMap';
@@ -28,6 +29,9 @@ const STEP_OF_KEY: Readonly<Record<string, number>> = {
   ArrowRight: 1,
   ']': 1,
 };
+
+/** The zoom keys: `+` (and `=`, its unshifted key) in, `-` out, `0` back to fitted. */
+const ZOOM_OF_KEY: Readonly<Record<string, 1 | -1 | 0>> = { '+': 1, '=': 1, '-': -1, '0': 0 };
 
 /** The position `by` steps from `index`, round the target's positions. */
 function positionAt(target: SavedTarget, index: number, by: number): SavedVariant | undefined {
@@ -59,6 +63,7 @@ export function LineupPositionDialog({
   const count = target.variants.length;
   const [shot, setShot] = useState({ variantId: variant.id, index: 0 });
   const photoIndex = shot.variantId === variant.id ? Math.min(shot.index, photos.length - 1) : 0;
+  const zoom = useShotZoom(`${variant.id}:${photoIndex}`);
 
   const goToPosition = (by: number) => {
     const next = positionAt(target, index, by);
@@ -72,6 +77,14 @@ export function LineupPositionDialog({
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+
+    const zoomKey = ZOOM_OF_KEY[event.key];
+    if (zoomKey !== undefined && photos.length > 0) {
+      event.preventDefault();
+      if (zoomKey === 0) zoom.reset();
+      else zoom.zoomBy(zoomKey);
+      return;
+    }
 
     const direction = STEP_OF_KEY[event.key];
     if (direction === undefined) return;
@@ -89,7 +102,7 @@ export function LineupPositionDialog({
       aria-label={lineup.title}
       data-shortcuts-suspended
       onKeyDown={handleKeyDown}
-      className="grid h-[min(92dvh,56rem)] w-[min(96vw,84rem)] grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] overflow-hidden p-0 lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:grid-rows-1"
+      className="grid h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] grid-cols-1 sm:h-[calc(100dvh-3.5rem)] sm:w-[calc(100vw-4rem)] grid-rows-[minmax(0,1fr)_minmax(0,1fr)] overflow-hidden p-0 lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:grid-rows-1"
     >
       <LineupPositionShots
         photos={photos}
@@ -98,6 +111,7 @@ export function LineupPositionDialog({
         index={photoIndex}
         onIndex={(next) => setShot({ variantId: variant.id, index: next })}
         onAdd={onEdit}
+        zoom={zoom}
       />
 
       <aside className="flex min-h-0 flex-col [border-block-start:1px_solid_var(--color-line)] lg:[border-block-start:0] lg:[border-inline-start:1px_solid_var(--color-line)]">
