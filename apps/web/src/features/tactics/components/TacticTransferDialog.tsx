@@ -15,8 +15,8 @@ export interface TacticTransferDialogProps {
   readonly onDismiss: () => void;
   /** The tactic being edited, so it can be exported alone; null from the library list. */
   readonly tactic?: Tactic | null | undefined;
-  /** Called after tactics were imported, so a list behind the dialog can refresh. */
-  readonly onImported?: (() => void) | undefined;
+  /** Called with the tactics that were written, so what is behind the dialog can refresh. */
+  readonly onImported?: ((written: readonly Tactic[]) => void) | undefined;
 }
 
 /**
@@ -105,7 +105,7 @@ export function TacticTransferDialog({
           <TacticImportPanel
             readLibrary={readLibrary}
             write={write}
-            onImported={() => onImported?.()}
+            onImported={(written) => onImported?.(written)}
             onClose={onDismiss}
           />
         )}

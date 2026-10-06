@@ -27,7 +27,7 @@ interface TacticImportPanelProps {
   readonly readLibrary: () => Promise<readonly Tactic[]>;
   readonly write: (tactics: readonly Tactic[]) => Promise<void>;
   /** Called once tactics have been written, so a list behind the dialog can refresh. */
-  readonly onImported: () => void;
+  readonly onImported: (written: readonly Tactic[]) => void;
   readonly onClose: () => void;
 }
 
@@ -123,7 +123,7 @@ export function TacticImportPanel({
       }
       if (plan.fresh.length > 0) {
         await write(plan.fresh);
-        onImported();
+        onImported(plan.fresh);
       }
       setState({ kind: 'done', written: plan.fresh.length, unchanged: plan.unchanged });
     } catch {
@@ -147,7 +147,7 @@ export function TacticImportPanel({
     try {
       if (tactics.length > 0) {
         await write(tactics);
-        onImported();
+        onImported(tactics);
       }
       setState({
         kind: 'done',

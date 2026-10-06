@@ -59,7 +59,18 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   const spawns = useMemo(() => mapSpawns(tactic.map, tactic.side), [tactic.map, tactic.side]);
   const isOpeningStep = activeStepIndex === 0;
 
-  const { canUndo, canRedo, pushHistory, undo, redo } = useTacticHistory(tactic, setTactic);
+  const { canUndo, canRedo, pushHistory, undo, redo, reset } = useTacticHistory(tactic, setTactic);
+
+  /** Swaps in another version of this tactic, as when an import replaced it: no undo past it. */
+  const replaceTactic = useCallback(
+    (next: Tactic) => {
+      setTactic(next);
+      reset();
+      setActiveStepIndex(0);
+      setSelectedThrowId(null);
+    },
+    [reset],
+  );
 
   const updateTactic = useCallback(
     (updater: (prev: Tactic) => Tactic) => {
@@ -358,6 +369,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     setPlaybackSpeed: playback.setPlaybackSpeed,
     undo,
     redo,
+    replaceTactic,
     addStep,
     duplicateStep,
     deleteStep,

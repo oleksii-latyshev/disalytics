@@ -85,6 +85,11 @@ export function tacticsToWrite(
   ];
 }
 
+/** The imported version of the tactic open in the editor, if the import replaced it. */
+export function replacementFor(written: readonly Tactic[], openId: string): Tactic | null {
+  return written.find((tactic) => tactic.id === openId) ?? null;
+}
+
 function slug(name: string): string {
   return (
     name

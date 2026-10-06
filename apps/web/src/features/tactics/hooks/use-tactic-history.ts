@@ -37,7 +37,10 @@ export function useTacticHistory(tactic: Tactic, setTactic: (tactic: Tactic) => 
     });
   }, [tactic, setTactic]);
 
+  const reset = useCallback(() => setHistory({ past: [], future: [] }), []);
+
   return {
+    reset,
     canUndo: history.past.length > 0,
     canRedo: history.future.length > 0,
     pushHistory,

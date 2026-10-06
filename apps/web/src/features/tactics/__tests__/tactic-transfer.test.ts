@@ -5,6 +5,7 @@ import {
   libraryDownload,
   planImport,
   readTacticsFile,
+  replacementFor,
   tacticDownload,
   tacticsToWrite,
 } from '../helpers/tactic-transfer';
@@ -94,5 +95,13 @@ describe('downloads', () => {
       'disalytics-tactics-2026-10-06.json',
     );
     expect(JSON.parse(tacticDownload(a).content).version).toBe(2);
+  });
+});
+
+describe('replacementFor', () => {
+  it('finds the written version of the open tactic, and nothing for others', () => {
+    const edited = { ...a, title: 'A edited' };
+    expect(replacementFor([b, edited], 'a')).toBe(edited);
+    expect(replacementFor([b], 'a')).toBeNull();
   });
 });

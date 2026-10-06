@@ -8,6 +8,7 @@ import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { spawnSpotOf } from '../helpers/tactic-spawns';
 import { stepThrowRows } from '../helpers/tactic-step-throws';
+import { replacementFor } from '../helpers/tactic-transfer';
 import { useTacticEditor } from '../hooks/use-tactic-editor';
 import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticEditorHeader } from './TacticEditorHeader';
@@ -59,6 +60,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
     setNewThrowKind,
     setPlaybackSpeed,
     undo,
+    replaceTactic,
     redo,
     addStep,
     duplicateStep,
@@ -120,6 +122,14 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
   const isStored = useTacticStored(initialTactic.id);
   const [hasSaved, setHasSaved] = useState(false);
   const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
+
+  const handleImported = (written: readonly Tactic[]) => {
+    const imported = replacementFor(written, tactic.id);
+    if (imported === null) return;
+    replaceTactic(imported);
+    setSavedTactic(imported);
+    setHasSaved(true);
+  };
 
   const handleSave = useCallback(() => {
     save();
@@ -298,6 +308,7 @@ export function TacticEditor({ initialTactic, onSave, onBack, className }: Tacti
       <TacticTransferDialog
         isOpen={isTransferring}
         onDismiss={() => setIsTransferring(false)}
+        onImported={handleImported}
         tactic={tactic}
       />
     </section>
