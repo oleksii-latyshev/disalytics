@@ -51,6 +51,24 @@ export function isFollowable(path: string): boolean {
   return extension === '.js' || extension === '.css';
 }
 
+/** Vite names a `new Worker(new URL(…))` chunk `worker-<hash>.js`; the parse worker is one. */
+const WORKER_CHUNK = /\/worker-[A-Za-z0-9_-]+\.js$/;
+
+/**
+ * Where a path joins the queue of chunks still to read: a worker goes ahead of everything waiting,
+ * because the worker is the only file that names the binary, and behind the lazy chunks of every
+ * screen and every map it would be read after the walk's bound — #598.
+ */
+export function enqueue(frontier: string[], path: string): void {
+  if (!WORKER_CHUNK.test(path)) {
+    frontier.push(path);
+    return;
+  }
+
+  const firstOther = frontier.findIndex((queued) => !WORKER_CHUNK.test(queued));
+  frontier.splice(firstOther === -1 ? frontier.length : firstOther, 0, path);
+}
+
 /**
  * Whether two reads of the deployed document name the same assets. `representativesOf` sorts, so an
  * ordered comparison is a set comparison here — and the caller needs to know that the *set* moved

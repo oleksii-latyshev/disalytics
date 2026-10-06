@@ -3,6 +3,7 @@ import { readdir } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import {
   assetPathsIn,
+  enqueue,
   extensionOf,
   isFollowable,
   representativesOf,
@@ -36,7 +37,8 @@ const ASSET_POLL_MS = 3_000;
 
 // Following the document's own scripts and stylesheets: index.html names the entry chunk and the
 // stylesheet, the entry chunk names the parse worker, and the worker is the only thing that names
-// the binary. Three hops with room to spare, and a bound so a redirect loop cannot spin here.
+// the binary. Three hops with room to spare, and a bound so a redirect loop cannot spin here — which
+// holds only because a worker is read before the lazy chunks queued ahead of it (`enqueue`, #598).
 const DISCOVERY_FETCH_LIMIT = 24;
 
 type Status = 'pass' | 'fail' | 'skip';
@@ -127,7 +129,7 @@ async function discoverAssets(baseUrl: string): Promise<string[]> {
     for (const asset of assetPathsIn(await response.text())) {
       if (found.has(asset)) continue;
       found.add(asset);
-      if (isFollowable(asset)) frontier.push(asset);
+      if (isFollowable(asset)) enqueue(frontier, asset);
     }
   }
 
