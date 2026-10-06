@@ -8,6 +8,7 @@ import {
 import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
 import { useMemo, useState } from 'react';
+import { BOTH_SHOWN, type HeatShown } from '@/features/radar';
 import { filterSummary, heatLegendKind, heatTitle } from '../helpers/heat-copy';
 import {
   pickBin,
@@ -55,6 +56,7 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
   const [subject, setSubject] = useState<PlayerSlot | null>(null);
   const [second, setSecond] = useState<HeatSecond | null>(null);
   const [compareView, setCompareView] = useState<HeatCompareView>('side');
+  const [shown, setShown] = useState<HeatShown>(BOTH_SHOWN);
   const [isPicking, setIsPicking] = useState(false);
   const play = useRoundPlay();
 
@@ -88,7 +90,6 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
     () => (second === null ? null : { name: second.name, origin: second.origin }),
     [second],
   );
-  const isDifference = isComparing && compareView === 'difference';
 
   const handleRange = (next: RoundRange) => {
     play.stop();
@@ -120,7 +121,11 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
         onRemoveSecond={() => {
           setSecond(null);
           setCompareView('side');
+          setShown(BOTH_SHOWN);
         }}
+        shown={shown}
+        isToggleable={isComparing && compareView !== 'difference'}
+        onShown={(who, isShown) => setShown((current) => ({ ...current, [who]: isShown }))}
       />
 
       <div className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-2.5">
@@ -143,9 +148,10 @@ export function MatchHeatmap({ demo, demoKey }: { demo: ParsedDemo; demoKey: str
           demo={demo}
           plates={heat?.plates ?? [{ picture: null, identity: 'field', total: 0 }]}
           reading={reading}
-          labels={isComparing && !isDifference ? [names.first, names.second] : [null]}
+          labels={isComparing && compareView === 'side' ? [names.first, names.second] : [null]}
           legend={heatLegendKind(reading, compare)}
           names={names}
+          shown={shown}
         />
 
         <HeatRoundTime

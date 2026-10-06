@@ -8,8 +8,9 @@ import {
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { cn } from '@disa/ui';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight, Eye, EyeOff } from 'lucide-react';
 import { type ReactNode, useMemo } from 'react';
+import type { HeatShown } from '@/features/radar';
 import { type HeatReading, type HeatSecond, OTHER_READINGS } from '../helpers/heat-view';
 import type { SideScope } from '../helpers/map-scope';
 import { HeatFigure } from './HeatFigure';
@@ -38,6 +39,10 @@ interface Props {
   second: Pick<HeatSecond, 'name' | 'origin'> | null;
   onCompare: () => void;
   onRemoveSecond: () => void;
+  /** Which compared players are drawn; the eyes on their cards change it. */
+  shown: HeatShown;
+  isToggleable: boolean;
+  onShown: (who: 'first' | 'second', isShown: boolean) => void;
 }
 
 function Dot({ identity }: { identity: 'first' | 'second' }) {
@@ -49,6 +54,40 @@ function Dot({ identity }: { identity: 'first' | 'second' }) {
         identity === 'first' ? 'bg-heat-high' : 'bg-heat-second',
       )}
     />
+  );
+}
+
+/**
+ * The eye on a compared player's card: whether their layer is drawn on the plate. It is a pressed
+ * toggle with one name — *Show Player A* — so a screen reader hears the state and not a new label.
+ */
+function LayerToggle({
+  who,
+  isShown,
+  isToggleable,
+  onShown,
+}: {
+  who: 'first' | 'second';
+  isShown: boolean;
+  isToggleable: boolean;
+  onShown: Props['onShown'];
+}) {
+  const t = useT();
+  const Icon = isShown ? Eye : EyeOff;
+
+  return (
+    <button
+      type="button"
+      aria-pressed={isShown}
+      disabled={!isToggleable}
+      aria-label={t('review.heat.layer', {
+        player: t(who === 'first' ? 'review.heat.playerA' : 'review.heat.playerB'),
+      })}
+      onClick={() => onShown(who, !isShown)}
+      className="ms-auto grid size-7 shrink-0 cursor-pointer place-items-center rounded-chip text-ink-dim transition-colors duration-(--duration-micro) ease-out hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
+    >
+      <Icon aria-hidden="true" className="size-4" />
+    </button>
   );
 }
 
@@ -155,11 +194,17 @@ function CompareFoot({
   second,
   onCompare,
   onRemoveSecond,
+  isShown,
+  isToggleable,
+  onShown,
 }: {
   map: string;
   second: Pick<HeatSecond, 'name' | 'origin'> | null;
   onCompare: () => void;
   onRemoveSecond: () => void;
+  isShown: boolean;
+  isToggleable: boolean;
+  onShown: Props['onShown'];
 }) {
   if (second === null) {
     return (
@@ -186,6 +231,7 @@ function CompareFoot({
       <h3 className={LABEL}>
         <Dot identity="second" />
         <Text path="review.heat.playerB" />
+        <LayerToggle who="second" isShown={isShown} isToggleable={isToggleable} onShown={onShown} />
       </h3>
       <div className="flex items-center gap-2.5 rounded-card bg-surface-2 px-3 py-2.5">
         <span className="flex min-w-0 flex-1 flex-col gap-px">
@@ -278,12 +324,20 @@ export function HeatPanel(props: Props) {
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-1">
+      <div className="flex shrink-0 flex-col gap-1">
         <h2 className={LABEL}>
           {isComparing && <Dot identity="first" />}
           <Text path={isComparing ? 'review.heat.playerA' : 'review.heat.player'} />
+          {isComparing && (
+            <LayerToggle
+              who="first"
+              isShown={props.shown.first}
+              isToggleable={props.isToggleable}
+              onShown={props.onShown}
+            />
+          )}
         </h2>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div>
           <Seats
             demo={demo}
             reading={reading}
@@ -318,6 +372,9 @@ export function HeatPanel(props: Props) {
           second={second}
           onCompare={props.onCompare}
           onRemoveSecond={props.onRemoveSecond}
+          isShown={props.shown.second}
+          isToggleable={props.isToggleable}
+          onShown={props.onShown}
         />
       </div>
     </aside>
