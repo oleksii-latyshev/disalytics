@@ -8,7 +8,10 @@ import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { replacementFor } from '../helpers/tactic-transfer';
 import { useTacticBoard } from '../hooks/use-tactic-board';
+import { useTacticPlans } from '../hooks/use-tactic-plans';
 import { useTacticStored } from '../hooks/use-tactic-stored';
+import { TacticBranchActions } from './TacticBranchActions';
+import { TacticBranchPanel } from './TacticBranchPanel';
 import { TacticEditorHeader } from './TacticEditorHeader';
 import { TacticPlanStrip } from './TacticPlanStrip';
 import { TacticPlate } from './TacticPlate';
@@ -20,6 +23,7 @@ import { TacticThrowList } from './TacticThrowList';
 import { TacticHint, TacticToolbar } from './TacticToolbar';
 import { TacticTransferDialog } from './TacticTransferDialog';
 import { TacticTransport } from './TacticTransport';
+import { TacticTreeDialog } from './TacticTreeDialog';
 
 export interface TacticEditorProps {
   readonly initialTactic: Tactic;
@@ -48,6 +52,14 @@ function TacticBoard({
 
   const [savedTactic, setSavedTactic] = useState(initialTactic);
   const [isTransferring, setIsTransferring] = useState(false);
+  const [isTreeOpen, setIsTreeOpen] = useState(false);
+  const plans = useTacticPlans({
+    editor,
+    overview,
+    grid: board.grid,
+    schedule,
+    stop: playback.stop,
+  });
   const isStored = useTacticStored(initialTactic.id);
   const [hasSaved, setHasSaved] = useState(false);
   const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
@@ -162,6 +174,31 @@ function TacticBoard({
             index: stepIndex + 1,
             total: board.steps.length,
           })}
+          beforeStep={
+            plans.isBranch && (
+              <TacticBranchPanel
+                key={editor.planId}
+                forkNumber={plans.forkNumber}
+                condition={plans.condition}
+                parentName={plans.parentName}
+                shouldFocus={editor.conditionFocus === editor.planId}
+                sharedOwnerName={plans.sharedOwnerName}
+                onCondition={editor.setCondition}
+                onCommit={editor.endGesture}
+                onFocused={editor.conditionSeen}
+              />
+            )
+          }
+          afterStep={
+            <TacticBranchActions
+              onBranch={plans.branchFromHere}
+              diesSlot={
+                selectedSlot !== null && selectedLeg?.isDead === false ? selectedSlot + 1 : null
+              }
+              canDie={stepIndex > 0}
+              onDies={() => selectedSlot !== null && plans.dieHere(selectedSlot)}
+            />
+          }
           step={
             <TacticStepSection
               step={step}
@@ -224,26 +261,40 @@ function TacticBoard({
           onSpeed={playback.setSpeed}
         />
         <TacticPlanStrip
-          lanes={[
-            {
-              planId: editor.planId,
-              firstIndex: 0,
-              steps: board.steps,
-              schedule: schedule.steps,
-            },
-          ]}
-          currentPlanId={editor.planId}
-          stepIndex={stepIndex}
-          onSelect={(_planId, index) => {
-            playback.stop();
-            editor.goToStep(index);
-          }}
-          onAddStep={() => {
-            playback.stop();
-            editor.addStep();
-          }}
+          graph={plans.graph}
+          schedules={plans.schedules}
+          selected={plans.selected}
+          onOpen={plans.open}
+          onLane={plans.openLane}
+          onBranch={plans.branchAfter}
+          onAddStep={plans.addStep}
+          onDelete={plans.deleteStep}
+          deleteBlockOf={plans.deleteBlockOf}
+          onOpenTree={() => setIsTreeOpen(true)}
         />
       </footer>
+
+      <TacticTreeDialog
+        isOpen={isTreeOpen}
+        onDismiss={() => setIsTreeOpen(false)}
+        tactic={tactic}
+        graph={plans.graph}
+        schedules={plans.schedules}
+        selected={plans.selected}
+        canUndo={editor.canUndo}
+        deleteBlockOf={plans.deleteBlockOf}
+        onUndo={editor.undo}
+        onOpenStep={(key) => {
+          setIsTreeOpen(false);
+          plans.open(key);
+        }}
+        onBranch={(key) => {
+          setIsTreeOpen(false);
+          plans.branchAfter(key);
+        }}
+        onDeleteStep={plans.deleteStep}
+        onDeletePlan={plans.deletePlan}
+      />
 
       <TacticTransferDialog
         isOpen={isTransferring}

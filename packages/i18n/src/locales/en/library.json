@@ -699,7 +699,6 @@
         "card": "Step {index}: {name}",
         "unnamed": "Step {index}",
         "noIdea": "No idea yet",
-        "addStep": "Add a step after this one",
         "addStepTo": "Add a step to {plan}",
         "branchAfter": "Branch after step {index}",
         "lane": "Open plan {plan}",
@@ -757,7 +756,7 @@
         "confirm": "Delete",
         "cancel": "Cancel",
         "undoNote": "Undo brings it back.",
-        "sharedDelete": "This step is shared with {owner}; deleting it removes it from every plan that shares it.",
+        "sharedDelete": "Branches below share this step; deleting it removes it from them too.",
         "branchDeleteNote": "Deleting a branch removes every branch under it.",
         "rootDeleteNote": "The main plan cannot be deleted, only its steps.",
         "openStep": "Open this step on the map"
