@@ -1,5 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { assetPathsIn, extensionOf, isFollowable, representativesOf, sameAssets } from '../assets';
+import {
+  assetPathsIn,
+  enqueue,
+  extensionOf,
+  isFollowable,
+  representativesOf,
+  sameAssets,
+} from '../assets';
+
+describe('enqueue', () => {
+  it('puts a worker ahead of the chunks already waiting', () => {
+    const frontier = ['/assets/HeatMap-a1.js', '/assets/de_mirage-b2.js'];
+    enqueue(frontier, '/assets/worker-DLJhRE-7.js');
+    expect(frontier[0]).toBe('/assets/worker-DLJhRE-7.js');
+  });
+
+  it('keeps workers in the order they were found', () => {
+    const frontier = ['/assets/worker-A.js', '/assets/HeatMap-a1.js'];
+    enqueue(frontier, '/assets/worker-B.js');
+    expect(frontier).toEqual([
+      '/assets/worker-A.js',
+      '/assets/worker-B.js',
+      '/assets/HeatMap-a1.js',
+    ]);
+  });
+
+  it('queues any other chunk at the back', () => {
+    const frontier = ['/assets/worker-A.js'];
+    enqueue(frontier, '/assets/index-C.css');
+    expect(frontier).toEqual(['/assets/worker-A.js', '/assets/index-C.css']);
+  });
+});
 
 describe('assetPathsIn', () => {
   it('reads a script the document names', () => {
