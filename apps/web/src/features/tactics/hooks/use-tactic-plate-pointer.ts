@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { type PlateView, radarPointAt, SQUARE_PLATE, zoomAbout } from '@/features/radar';
 import type { TacticTool } from '../helpers/tactic-editor-state';
+import { enemiesOf } from '../helpers/tactic-enemies';
+import { enemyAt } from '../helpers/tactic-enemy-hit';
 import { handleAt, lineupAt, tokenAt } from '../helpers/tactic-hit';
 import type { TacticPreview } from '../helpers/tactic-layer';
 import { snapPoint, toRadar, toWorld, walkBetween } from '../helpers/tactic-route';
@@ -19,6 +21,9 @@ const SPOT_HIT_PX = 14;
 
 export interface PlateActions {
   readonly onSelect: (slot: number | null) => void;
+  readonly onSelectEnemy: (id: string | null) => void;
+  readonly onPlaceEnemy: (point: TacticPoint) => void;
+  readonly onMoveEnemy: (id: string, point: TacticPoint) => void;
   readonly onAddWaypoint: (slot: number, point: TacticPoint) => void;
   readonly onMoveWaypoint: (slot: number, index: number, point: TacticPoint) => void;
   readonly onPenStroke: (slot: number, points: readonly TacticPoint[]) => void;
@@ -54,6 +59,7 @@ interface Options {
 type Drag =
   | { readonly type: 'handle'; readonly slot: number; readonly index: number }
   | { readonly type: 'pen'; readonly slot: number }
+  | { readonly type: 'enemy'; readonly id: string }
   | { readonly type: 'pan'; readonly x: number; readonly y: number };
 
 function endOf(stepSchedule: StepSchedule | undefined, slot: number | null): RadarPoint | null {
@@ -145,13 +151,38 @@ export function useTacticPlatePointer(options: Options) {
     let drag: Drag | null = null;
     if (event.button === 1 || (options.tool === 'select' && viewRef.current.zoom > 1)) {
       drag = { type: 'pan', x: event.clientX, y: event.clientY };
-    } else if (options.tool !== 'grenade' && slot !== null) {
+    } else if (options.tool !== 'grenade' && options.tool !== 'enemy' && slot !== null) {
       const index = handleAt(options.step, slot, point, overview, scale);
       if (index !== null) drag = { type: 'handle', slot, index };
     }
     if (drag === null) return false;
     dragRef.current = drag;
     event.currentTarget.setPointerCapture(event.pointerId);
+    return true;
+  };
+
+  /** A press with the enemy tool: picks and drags the mark under it, or puts a new one there. */
+  const pressEnemy = (
+    event: ReactPointerEvent<HTMLCanvasElement>,
+    point: RadarPoint,
+    scale: number,
+  ) => {
+    const id = enemyAt(enemiesOf(options.step), point, overview, scale);
+    if (id === null) {
+      actions.onPlaceEnemy(toWorld(overview, point));
+      return;
+    }
+    actions.onSelectEnemy(id);
+    dragRef.current = { type: 'enemy', id };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  /** With the select tool, a press on an enemy mark picks it. */
+  const pickEnemyAt = (point: RadarPoint, scale: number): boolean => {
+    if (options.tool !== 'select') return false;
+    const id = enemyAt(enemiesOf(options.step), point, overview, scale);
+    if (id === null) return false;
+    actions.onSelectEnemy(id);
     return true;
   };
 
@@ -162,6 +193,7 @@ export function useTacticPlatePointer(options: Options) {
       actions.onSelect(token);
       return true;
     }
+    if (pickEnemyAt(point, scale)) return true;
     if (options.spawnSpots !== undefined && options.selectedSlot !== null) {
       const spot = nearestSpot(options.spawnSpots, point, overview, scale);
       if (spot !== null) {
@@ -171,6 +203,7 @@ export function useTacticPlatePointer(options: Options) {
     }
     if (options.tool !== 'select') return false;
     actions.onSelect(null);
+    actions.onSelectEnemy(null);
     return true;
   };
 
@@ -210,7 +243,12 @@ export function useTacticPlatePointer(options: Options) {
     const info = read(event);
     if (info === null) return;
     actions.onInteract();
-    if (options.isShown || beginDrag(event, info.point, info.scale)) return;
+    if (options.isShown) return;
+    if (options.tool === 'enemy' && event.button !== 1) {
+      pressEnemy(event, info.point, info.scale);
+      return;
+    }
+    if (beginDrag(event, info.point, info.scale)) return;
     if (pickAt(info.point, info.scale)) return;
 
     const slot = options.selectedSlot;
@@ -237,6 +275,10 @@ export function useTacticPlatePointer(options: Options) {
         drag.index,
         toWorld(overview, snapPoint(options.grid, info.point)),
       );
+      return;
+    }
+    if (drag?.type === 'enemy') {
+      actions.onMoveEnemy(drag.id, toWorld(overview, info.point));
       return;
     }
     if (drag?.type === 'pen') {

@@ -19,8 +19,7 @@ import {
   undo,
 } from './tactic-history';
 
-/** Tools of the map. The enemy tool of the expected-enemies work takes its slot here. */
-export type TacticTool = 'select' | 'route' | 'pen' | 'grenade';
+export type TacticTool = 'select' | 'route' | 'pen' | 'grenade' | 'enemy';
 
 export type ThrowKind = Extract<UtilityKind, 'smoke' | 'flash' | 'fire' | 'he'>;
 
@@ -34,6 +33,8 @@ export interface EditorState {
   readonly conditionFocus: string | null;
   readonly stepIndex: number;
   readonly selectedSlot: number | null;
+  /** An expected enemy of the step in view; only one of a player and an enemy is picked at a time. */
+  readonly selectedEnemyId: string | null;
   readonly tool: TacticTool;
   readonly throwKind: ThrowKind;
 }
@@ -58,6 +59,7 @@ export type EditorAction =
   | { readonly type: 'branch'; readonly request: BranchRequest }
   | { readonly type: 'conditionSeen' }
   | { readonly type: 'select'; readonly slot: number | null }
+  | { readonly type: 'selectEnemy'; readonly id: string | null }
   | { readonly type: 'tool'; readonly tool: TacticTool }
   | { readonly type: 'throwKind'; readonly kind: ThrowKind };
 
@@ -68,6 +70,7 @@ export function initialEditorState(tactic: Tactic): EditorState {
     conditionFocus: null,
     stepIndex: 0,
     selectedSlot: 0,
+    selectedEnemyId: null,
     tool: 'route',
     throwKind: 'smoke',
   };
@@ -87,6 +90,48 @@ function withHistory(state: EditorState, history: TacticHistory): EditorState {
   const planId = survivingPlanId(state.history.present, history.present, state.planId);
   const fallback = rootPlan(history.present)?.id ?? state.planId;
   return clampStep({ ...state, history, planId: planId ?? fallback });
+}
+
+/** Opens `planId` at its step `index`, held to the steps the plan has. */
+function goToPlan(state: EditorState, planId: string, index: number): EditorState {
+  const { present } = state.history;
+  if (planById(present, planId) === undefined) return state;
+  const count = effectiveSteps(present, planId).length;
+  return {
+    ...state,
+    planId,
+    conditionFocus: null,
+    stepIndex: Math.max(0, Math.min(index, count - 1)),
+  };
+}
+
+/** A new step at the end of `planId`, opened. */
+function appendStepTo(state: EditorState, planId: string): EditorState {
+  const { present } = state.history;
+  const count = effectiveSteps(present, planId).length;
+  if (count === 0) return state;
+  const next = insertStep(present, planId, count, newStep(present.spawns.length));
+  return {
+    ...state,
+    planId,
+    conditionFocus: null,
+    history: applyEdit(state.history, next, null),
+    stepIndex: count,
+  };
+}
+
+/** A new branch, opened on its first own step with its condition field asking to be filled. */
+function branchFrom(state: EditorState, request: BranchRequest): EditorState {
+  const { present } = state.history;
+  const made = createBranch(present, request, present.spawns.length);
+  if (made === null) return state;
+  return {
+    ...state,
+    history: applyEdit(state.history, made.tactic, null),
+    planId: made.planId,
+    stepIndex: made.stepIndex,
+    conditionFocus: made.planId,
+  };
 }
 
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -109,39 +154,12 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...initialEditorState(action.tactic), tool: state.tool, throwKind: state.throwKind };
     case 'goToStep':
       return { ...state, stepIndex: Math.max(0, Math.min(action.index, stepCountOf(state) - 1)) };
-    case 'goToPlan': {
-      if (planById(present, action.planId) === undefined) return state;
-      const count = effectiveSteps(present, action.planId).length;
-      return {
-        ...state,
-        planId: action.planId,
-        conditionFocus: null,
-        stepIndex: Math.max(0, Math.min(action.index, count - 1)),
-      };
-    }
-    case 'appendStep': {
-      const count = effectiveSteps(present, action.planId).length;
-      if (count === 0) return state;
-      const next = insertStep(present, action.planId, count, newStep(present.spawns.length));
-      return {
-        ...state,
-        planId: action.planId,
-        conditionFocus: null,
-        history: applyEdit(state.history, next, null),
-        stepIndex: count,
-      };
-    }
-    case 'branch': {
-      const made = createBranch(present, action.request, present.spawns.length);
-      if (made === null) return state;
-      return {
-        ...state,
-        history: applyEdit(state.history, made.tactic, null),
-        planId: made.planId,
-        stepIndex: made.stepIndex,
-        conditionFocus: made.planId,
-      };
-    }
+    case 'goToPlan':
+      return goToPlan(state, action.planId, action.index);
+    case 'appendStep':
+      return appendStepTo(state, action.planId);
+    case 'branch':
+      return branchFrom(state, action.request);
     case 'conditionSeen':
       return state.conditionFocus === null ? state : { ...state, conditionFocus: null };
     case 'deleteStepAt': {
@@ -167,7 +185,17 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return withHistory(state, applyEdit(state.history, next, null));
     }
     case 'select':
-      return { ...state, selectedSlot: action.slot };
+      return {
+        ...state,
+        selectedSlot: action.slot,
+        selectedEnemyId: action.slot === null ? state.selectedEnemyId : null,
+      };
+    case 'selectEnemy':
+      return {
+        ...state,
+        selectedEnemyId: action.id,
+        selectedSlot: action.id === null ? state.selectedSlot : null,
+      };
     case 'tool':
       return { ...state, tool: action.tool };
     case 'throwKind':

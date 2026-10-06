@@ -10,6 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLineupCatalog } from '@/core/lineup-catalog';
 import { selectableLineups, throwFromLineup } from '../helpers/lineup-throw';
 import type { TacticTool } from '../helpers/tactic-editor-state';
+import { enemiesOf, enemyMarksByStep } from '../helpers/tactic-enemies';
+import { newEnemy } from '../helpers/tactic-enemy-edits';
 import { type BoardHint, boardHint } from '../helpers/tactic-hint';
 import { generateId } from '../helpers/tactic-ids';
 import { toWorld } from '../helpers/tactic-route';
@@ -29,7 +31,8 @@ export interface UseTacticBoardOptions {
 /** The editor, the schedule it implies and the playback over it, wired to what the board draws. */
 export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoardOptions) {
   const editor = useTacticEditor({ initialTactic, onSave });
-  const { tactic, planId, stepIndex, steps, step, selectedSlot, tool, throwKind } = editor;
+  const { tactic, planId, stepIndex, steps, step, selectedSlot, selectedEnemyId, tool, throwKind } =
+    editor;
 
   const grid = useTacticNavGrid(tactic.map);
   const schedule = useMemo(
@@ -65,6 +68,8 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
     return spots.map((spot): TacticPoint => ({ x: spot.x, y: spot.y }));
   }, [tactic.map, tactic.side]);
   const loadout = useMemo(() => tacticLoadout(tactic), [tactic]);
+  const enemyMarks = useMemo(() => enemyMarksByStep(steps), [steps]);
+  const pickedEnemy = enemiesOf(step).find((enemy) => enemy.id === selectedEnemyId);
 
   const [previewUnreachable, setPreviewUnreachable] = useState<boolean | null>(null);
   const onPreviewReach = useCallback(
@@ -77,7 +82,7 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
     (next: TacticTool) => {
       stop();
       editor.setTool(next);
-      if (next !== 'select' && selectedSlot === null) editor.select(0);
+      if (next !== 'select' && next !== 'enemy' && selectedSlot === null) editor.select(0);
     },
     [editor, selectedSlot, stop],
   );
@@ -106,6 +111,13 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
     };
     return {
       onSelect: editor.select,
+      onSelectEnemy: editor.selectEnemy,
+      onPlaceEnemy: (point: TacticPoint) => {
+        const enemy = newEnemy(point);
+        editor.addEnemy(enemy);
+        editor.selectEnemy(enemy.id);
+      },
+      onMoveEnemy: editor.moveEnemy,
       onAddWaypoint: editor.addWaypoint,
       onMoveWaypoint: editor.moveWaypoint,
       onPenStroke: editor.setPenRoute,
@@ -141,6 +153,7 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
     isShown: playback.isShown,
     isPreviewUnreachable: previewUnreachable,
     lineupCount: pickableLineups.length,
+    hasPickedEnemy: pickedEnemy !== undefined,
   });
 
   const readout = useClockReadout(playback.clock, playback.isPlaying);
@@ -159,7 +172,10 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
       if (slot < schedule.slotCount) editor.select(slot);
     },
     removePoint: () => {
-      if (selectedSlot !== null) editor.removeWaypoint(selectedSlot);
+      if (pickedEnemy !== undefined) {
+        editor.removeEnemy(pickedEnemy.id);
+        editor.selectEnemy(null);
+      } else if (selectedSlot !== null) editor.removeWaypoint(selectedSlot);
     },
   };
 
@@ -176,6 +192,8 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
     lineups,
     spawnSpots,
     loadout,
+    enemyMarks,
+    pickedEnemy,
     hint,
     onPreviewReach,
     chooseTool,

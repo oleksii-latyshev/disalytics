@@ -14,6 +14,13 @@ import {
 } from '@/features/radar';
 import type { TacticClock } from './tactic-clock';
 import type { SlotColors } from './tactic-colors';
+import { type EnemyMarks, oppositeSide } from './tactic-enemies';
+import {
+  createEnemyTextCache,
+  drawEnemies,
+  type EnemyDrawing,
+  type EnemyRoleLabels,
+} from './tactic-enemy-drawing';
 import { grenadeColorOfKind } from './tactic-grenade-colors';
 import { drawUtilityHaloArea, renderSingleDrawingStroke } from './tactic-layer-drawing';
 import { drawLineupMarkers } from './tactic-lineup-markers';
@@ -45,6 +52,10 @@ export interface TacticLayerOptions {
   readonly hoveredLineupId?: string | null | undefined;
   readonly spawnSpots?: SpawnSpots | undefined;
   readonly hoveredHandle?: number | null | undefined;
+  /** The expected enemies of every step, by step index. */
+  readonly enemyMarks: readonly EnemyMarks[];
+  readonly selectedEnemyId: string | null;
+  readonly enemyRoleLabels: EnemyRoleLabels;
   readonly preview: { readonly current: TacticPreview | null };
   readonly liveStroke: { readonly current: readonly RadarPoint[] | null };
 }
@@ -443,9 +454,24 @@ function drawPlayback(
   drawSceneFlights(context, g, options);
 }
 
-/** The tactic board's layer: routes, grenades, marks and tokens, for the step edited or the plan playing. */
+/**
+ * The tactic board's layer, for the step edited or the plan playing. Bottom to top: drawings, spawn
+ * spots, lineup marks, routes, grenades and handles, expected enemies, then the players' tokens.
+ */
 export function tacticLayer(options: TacticLayerOptions): Layer {
   const geometry: PlateGeometry = plateGeometry();
+  const enemyDrawing: EnemyDrawing = {
+    overview: options.overview,
+    colors: options.colors,
+    slotColors: options.slotColors,
+    enemySide: oppositeSide(options.side),
+    selectedId: null,
+    roleLabels: options.enemyRoleLabels,
+    text: createEnemyTextCache(),
+    marks: undefined,
+    legs: undefined,
+    dashOffset: 0,
+  };
 
   return (context: CanvasRenderingContext2D, size: CanvasSize) => {
     readPlateGeometry(options.view.current, size, SQUARE_PLATE, geometry);
@@ -477,9 +503,17 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
         options.colors,
       );
       drawEditScene(context, geometry, options, nowMs);
+      enemyDrawing.marks = options.enemyMarks[options.stepIndex];
+      enemyDrawing.legs = options.schedule.steps[options.stepIndex]?.legs;
+      enemyDrawing.selectedId = options.selectedEnemyId;
+      enemyDrawing.dashOffset = marchOffset(options.motion, nowMs);
     } else {
       drawPlayback(context, geometry, options);
+      enemyDrawing.marks = options.enemyMarks[options.scene.stepIndex];
+      enemyDrawing.legs = undefined;
+      enemyDrawing.selectedId = null;
     }
+    drawEnemies(context, geometry, enemyDrawing);
     drawTokens(context, geometry, options, nowMs);
     options.motion.isPriming = false;
   };

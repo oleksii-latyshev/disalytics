@@ -17,7 +17,7 @@ export interface TacticToolbarProps {
 const BUTTON =
   'flex h-8 items-center gap-1.5 rounded-chip px-2.5 text-13 transition-colors whitespace-nowrap';
 
-function toolClass(isOn: boolean): string {
+export function toolClass(isOn: boolean): string {
   return cn(BUTTON, isOn ? 'bg-ink font-semibold text-surface-0' : 'text-ink-dim hover:bg-hover');
 }
 

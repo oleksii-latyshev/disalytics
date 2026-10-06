@@ -4,6 +4,7 @@ import { getMapOverview } from '@disa/map-data';
 import { cn } from '@disa/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { UnknownMap } from '@/features/radar';
+import { enemiesOf, oppositeSide } from '../helpers/tactic-enemies';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { replacementFor } from '../helpers/tactic-transfer';
@@ -13,6 +14,8 @@ import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticBranchActions } from './TacticBranchActions';
 import { TacticBranchPanel } from './TacticBranchPanel';
 import { TacticEditorHeader } from './TacticEditorHeader';
+import { TacticEnemySection } from './TacticEnemySection';
+import { TacticEnemyToolButton } from './TacticEnemyToolButton';
 import { TacticPlanStrip } from './TacticPlanStrip';
 import { TacticPlate } from './TacticPlate';
 import { TacticPlayerSection } from './TacticPlayerSection';
@@ -48,7 +51,8 @@ function TacticBoard({
   const t = useT();
   const board = useTacticBoard({ initialTactic, overview, onSave });
   const { editor, playback, schedule, stepSchedule, step } = board;
-  const { tactic, stepIndex, selectedSlot, tool, throwKind } = editor;
+  const { tactic, stepIndex, selectedSlot, selectedEnemyId, tool, throwKind } = editor;
+  const enemySide = oppositeSide(tactic.side);
 
   const [savedTactic, setSavedTactic] = useState(initialTactic);
   const [isTransferring, setIsTransferring] = useState(false);
@@ -147,6 +151,8 @@ function TacticBoard({
           step={step}
           stepIndex={stepIndex}
           selectedSlot={selectedSlot}
+          enemyMarks={board.enemyMarks}
+          selectedEnemyId={selectedEnemyId}
           tool={tool}
           clock={playback.clock}
           isShown={playback.isShown}
@@ -162,6 +168,13 @@ function TacticBoard({
           throwKind={throwKind}
           onTool={board.chooseTool}
           onThrowKind={board.chooseThrowKind}
+          extra={
+            <TacticEnemyToolButton
+              isOn={tool === 'enemy'}
+              enemySide={enemySide}
+              onPick={() => board.chooseTool('enemy')}
+            />
+          }
         />
         <TacticHint>
           {t(`library.tactics.board.hint.${board.hint.key}`, { slot: board.hint.slot })}
@@ -237,6 +250,29 @@ function TacticBoard({
                 onCommit={editor.endGesture}
               />
             )
+          }
+          afterPlayer={
+            <TacticEnemySection
+              enemies={enemiesOf(step)}
+              pickedId={selectedEnemyId}
+              stepNumber={stepIndex + 1}
+              slotCount={schedule.slotCount}
+              enemySide={enemySide}
+              isToolInHand={tool === 'enemy'}
+              onPick={(id) => {
+                playback.stop();
+                editor.selectEnemy(id);
+              }}
+              onNote={editor.setEnemyNote}
+              onRole={editor.setEnemyRole}
+              onTaker={editor.setEnemyTaker}
+              onDead={editor.setEnemyDead}
+              onRemove={(id) => {
+                editor.removeEnemy(id);
+                editor.selectEnemy(null);
+              }}
+              onCommit={editor.endGesture}
+            />
           }
           throws={
             <TacticThrowList

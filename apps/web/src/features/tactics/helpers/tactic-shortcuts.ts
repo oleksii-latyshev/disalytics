@@ -23,6 +23,7 @@ const TOOL_KEYS: Readonly<Record<string, ShortcutCommand>> = {
   v: { type: 'tool', tool: 'select' },
   r: { type: 'tool', tool: 'route' },
   p: { type: 'tool', tool: 'pen' },
+  e: { type: 'tool', tool: 'enemy' },
   s: { type: 'grenade', kind: 'smoke' },
   f: { type: 'grenade', kind: 'flash' },
   m: { type: 'grenade', kind: 'fire' },
