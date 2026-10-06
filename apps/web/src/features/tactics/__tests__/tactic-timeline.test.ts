@@ -1,5 +1,5 @@
-import type { TacticStep } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep } from '../helpers/editor-tactic';
 import {
   calledOnRounds,
   formatClock,
@@ -7,7 +7,7 @@ import {
   throwMarkers,
 } from '../helpers/tactic-timeline';
 
-function step(id: string, offset: number, releaseTimes: readonly number[] = []): TacticStep {
+function step(id: string, offset: number, releaseTimes: readonly number[] = []): EditorStep {
   return {
     id,
     name: id,

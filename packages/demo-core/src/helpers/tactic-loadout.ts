@@ -1,4 +1,5 @@
 import { GRENADE_REFERENCES } from './reference-data';
+import { effectiveSteps, rootPlan } from './tactic-plans';
 import type { Tactic, TacticSide, TacticThrow } from './tactics';
 import { THROWN_UTILITY_KINDS, type UtilityKind } from './utility';
 
@@ -110,7 +111,8 @@ function holdThrow(holdings: Holdings, thrown: TacticThrow): void {
 /** Who carries each thrown grenade at buy time, and which of those are dropped to a teammate. */
 function collectHoldings(tactic: Tactic): Holdings {
   const holdings: Holdings = { bySlot: new Map(), dropsBySlot: new Map() };
-  for (const step of tactic.steps) {
+  const main = rootPlan(tactic);
+  for (const step of main === undefined ? [] : effectiveSteps(tactic, main.id)) {
     for (const player of step.players) {
       if (!holdings.bySlot.has(player.slot)) holdings.bySlot.set(player.slot, emptyCounts());
     }

@@ -1,10 +1,10 @@
-import type { TacticStep } from '@disa/demo-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { computeTotalDuration } from '../helpers/editor-actions';
+import type { EditorStep } from '../helpers/editor-tactic';
 import { findActiveStepIndex } from '../helpers/tactic-interpolation';
 
 interface UseTacticPlaybackOptions {
-  readonly steps: readonly TacticStep[];
+  readonly steps: readonly EditorStep[];
   readonly activeStepIndex: number;
   readonly setActiveStepIndex: (index: number) => void;
 }

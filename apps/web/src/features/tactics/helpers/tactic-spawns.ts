@@ -1,5 +1,6 @@
-import type { TacticPlayerPosition, TacticStep, WorldPoint } from '@disa/demo-core';
+import type { WorldPoint } from '@disa/demo-core';
 import { updatePlayerPosition } from './editor-actions';
+import type { EditorPlayer, EditorStep } from './editor-tactic';
 
 /** How close a released player or a lineup origin must be to a spawn spot to take it, in world units. */
 export const SPAWN_SNAP_UNITS = 64;
@@ -47,7 +48,7 @@ export function snapToSpawn(
 /** Which spots have a player on them, in the order of `spawns`. */
 export function occupiedSpots(
   spawns: readonly WorldPoint[],
-  players: readonly TacticPlayerPosition[],
+  players: readonly EditorPlayer[],
 ): readonly boolean[] {
   const occupied = spawns.map(() => false);
   for (const player of players) {
@@ -62,11 +63,11 @@ export function occupiedSpots(
  * so two players never stack on one spot.
  */
 export function assignPlayerToSpawn(
-  step: TacticStep,
+  step: EditorStep,
   slot: number,
   spawns: readonly WorldPoint[],
   spot: number,
-): TacticStep {
+): EditorStep {
   const target = spawns[spot];
   const mover = step.players.find((player) => player.slot === slot);
   if (target === undefined) return step;
@@ -81,11 +82,11 @@ export function assignPlayerToSpawn(
 
 /** Moves a player to `point`, onto the spawn spot within the snap radius when there is one. */
 export function placeWithSpawnSwap(
-  step: TacticStep,
+  step: EditorStep,
   slot: number,
   point: Point,
   spawns: readonly WorldPoint[],
-): TacticStep {
+): EditorStep {
   const spot = nearestSpawnIndex(spawns, point);
   return spot === null
     ? updatePlayerPosition(step, slot, point)
@@ -94,10 +95,10 @@ export function placeWithSpawnSwap(
 
 /** A dropped player takes the spot it was released near; anywhere else it stays where it is. */
 export function snapPlayerToSpawn(
-  step: TacticStep,
+  step: EditorStep,
   slot: number,
   spawns: readonly WorldPoint[],
-): TacticStep {
+): EditorStep {
   const player = step.players.find((entry) => entry.slot === slot);
   if (player === undefined) return step;
   const spot = nearestSpawnIndex(spawns, player);

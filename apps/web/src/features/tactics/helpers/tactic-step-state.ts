@@ -1,8 +1,8 @@
-import type { TacticStep } from '@disa/demo-core';
+import type { EditorStep } from './editor-tactic';
 import { type InterpolatedTacticState, interpolateTacticStep } from './tactic-interpolation';
 
 export function tacticStateAt(
-  steps: readonly TacticStep[],
+  steps: readonly EditorStep[],
   activeStepIndex: number,
   currentTime: number | undefined,
 ): InterpolatedTacticState {

@@ -1,10 +1,10 @@
-import type { Tactic, TacticStep } from '@disa/demo-core';
+import type { EditorStep, EditorTactic } from './editor-tactic';
 
 export function updateStepAt(
-  tactic: Tactic,
+  tactic: EditorTactic,
   index: number,
-  update: (step: TacticStep) => TacticStep,
-): Tactic {
+  update: (step: EditorStep) => EditorStep,
+): EditorTactic {
   const step = tactic.steps[index];
   if (step === undefined) return tactic;
 

@@ -1,5 +1,5 @@
-import type { TacticStep } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep } from '../helpers/editor-tactic';
 import {
   interpolateAngleDeg,
   interpolateTacticStep,
@@ -54,7 +54,7 @@ describe('quadraticBezierPoint', () => {
 });
 
 describe('interpolateTacticStep', () => {
-  const sampleSteps: readonly TacticStep[] = [
+  const sampleSteps: readonly EditorStep[] = [
     {
       id: 'step-1',
       name: 'Spawn Setup',

@@ -2,17 +2,19 @@ import type { Tactic, TacticRound, TacticSide } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
 import { Button } from '@disa/ui';
-import { Download, Plus, Search } from 'lucide-react';
-import { type ChangeEvent, useMemo, useRef, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { saveDownload } from '../helpers/save-download';
 import { nameOrFallback } from '../helpers/tactic-names';
 import { createNewTactic } from '../helpers/tactic-setup';
+import { tacticDownload } from '../helpers/tactic-transfer';
 import { countByMap, filterTactics } from '../helpers/tactics-filter';
 import { useTactics } from '../hooks/use-tactics';
 import { SharedTacticBanner } from './SharedTacticBanner';
 import { TacticCard } from './TacticCard';
 import { TacticEditor } from './TacticEditor';
-import { TacticShareModal } from './TacticShareModal';
 import { TacticsFilterBar } from './TacticsFilterBar';
+import { TacticTransferDialog } from './TacticTransferDialog';
 
 const DEFAULT_NEW_TACTIC_MAP = 'de_mirage';
 
@@ -23,20 +25,10 @@ export interface TacticsViewProps {
 
 export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsViewProps) {
   const t = useT();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const {
-    tactics,
-    saveTactic,
-    deleteTactic,
-    duplicateTactic,
-    importTactics,
-    exportSingleTactic,
-    exportTactics,
-  } = useTactics();
+  const { tactics, saveTactic, deleteTactic, duplicateTactic, reload } = useTactics();
 
   const [editingTactic, setEditingTactic] = useState<Tactic | null>(null);
-  const [sharingTactic, setSharingTactic] = useState<Tactic | null>(null);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const [selectedMap, setSelectedMap] = useState<string>('all');
   const [selectedSide, setSelectedSide] = useState<TacticSide | 'ALL'>('ALL');
@@ -91,29 +83,6 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
     await saveTactic(tacticToSave);
   };
 
-  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const count = await importTactics(file);
-      setNotice({
-        message: t('library.tactics.library.importSuccess', { count }),
-        isError: false,
-      });
-    } catch {
-      setNotice({
-        message: t('library.tactics.library.importError'),
-        isError: true,
-      });
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      setTimeout(() => setNotice(null), 4000);
-    }
-  };
-
   const handleSaveInitialShared = async () => {
     if (!initialTactic) return;
     await saveTactic(initialTactic);
@@ -140,15 +109,6 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
 
   return (
     <div className="mx-auto flex w-full max-w-[80rem] flex-col gap-6 py-4">
-      {/* Hidden file input for import */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleImportFile}
-        className="hidden"
-      />
-
       {/* Status Notice Toast */}
       {notice !== null && (
         <div
@@ -171,16 +131,8 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
-            <Text path="library.tactics.library.importShort" />
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => exportTactics(filteredTactics)}
-            disabled={filteredTactics.length === 0}
-          >
-            <Download />
-            <span>{t('library.tactics.library.export')}</span>
+          <Button variant="secondary" onClick={() => setIsTransferring(true)}>
+            <Text path="library.tactics.transfer.open" />
           </Button>
           <Button variant="primary" onClick={handleCreateNew}>
             <Plus />
@@ -243,9 +195,8 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
             key={tactic.id}
             tactic={tactic}
             onOpen={setEditingTactic}
-            onShare={setSharingTactic}
             onDuplicate={handleDuplicate}
-            onExport={exportSingleTactic}
+            onExport={(tactic) => saveDownload(tacticDownload(tactic))}
             onDelete={deleteTactic}
           />
         ))}
@@ -262,15 +213,11 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         </button>
       </div>
 
-      {/* Share Modal */}
-      {sharingTactic !== null && (
-        <TacticShareModal
-          isOpen={true}
-          tactic={sharingTactic}
-          onClose={() => setSharingTactic(null)}
-          onExportFile={() => exportSingleTactic(sharingTactic)}
-        />
-      )}
+      <TacticTransferDialog
+        isOpen={isTransferring}
+        onDismiss={() => setIsTransferring(false)}
+        onImported={() => void reload()}
+      />
     </div>
   );
 }

@@ -1,17 +1,18 @@
-import { type TacticPlayerPosition, type TacticStep, UTILITY_NAMES } from '@disa/demo-core';
+import { UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
 import { ArrowLeft, ArrowRight, Clock, Compass, Copy, Plus, Trash2 } from 'lucide-react';
 import { UTILITY_INK, UtilityGlyph } from '@/core/glyphs';
+import type { EditorPlayer, EditorStep } from '../helpers/editor-tactic';
 import type { StepThrowRow } from '../helpers/tactic-step-throws';
 
 export interface TacticStepRailProps {
-  readonly step: TacticStep | undefined;
+  readonly step: EditorStep | undefined;
   readonly stepIndex: number;
   readonly stepCount: number;
   readonly throwRows: readonly StepThrowRow[];
   readonly selectedThrowId: string | null;
-  readonly selectedPlayer: TacticPlayerPosition | undefined;
+  readonly selectedPlayer: EditorPlayer | undefined;
   /** How many spawn spots the side has on this map; 0 hides the spawn controls. */
   readonly spawnCount: number;
   /** The spot the selected player stands on, or null for a position of their own. */
@@ -43,7 +44,7 @@ function DroppedByField({
   onChange,
 }: {
   readonly row: StepThrowRow;
-  readonly players: readonly TacticPlayerPosition[];
+  readonly players: readonly EditorPlayer[];
   readonly onChange: (droppedBy: number | undefined) => void;
 }) {
   const t = useT();
@@ -81,7 +82,7 @@ function ThrowRow({
   onUpdateDroppedBy,
 }: {
   readonly row: StepThrowRow;
-  readonly players: readonly TacticPlayerPosition[];
+  readonly players: readonly EditorPlayer[];
   readonly isSelected: boolean;
   readonly onSelect: () => void;
   readonly onDelete: () => void;
@@ -238,7 +239,7 @@ function SpawnField({
   spot,
   onSelect,
 }: {
-  readonly player: TacticPlayerPosition;
+  readonly player: EditorPlayer;
   readonly count: number;
   readonly spot: number | null;
   readonly onSelect: (slot: number, spot: number) => void;
@@ -275,7 +276,7 @@ function PlayerEditor({
   onUpdateYaw,
   onUpdateLabel,
 }: {
-  readonly player: TacticPlayerPosition;
+  readonly player: EditorPlayer;
   readonly spawnCount: number;
   readonly spawnSpot: number | null;
   readonly onSelectSpawn: (slot: number, spot: number) => void;

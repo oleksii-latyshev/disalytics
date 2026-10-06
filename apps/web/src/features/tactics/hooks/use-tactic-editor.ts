@@ -29,6 +29,7 @@ import {
   updateThrowDroppedBy as updateThrowDroppedByAction,
   updateThrowPositionInStep,
 } from '../helpers/editor-actions';
+import { type EditorTactic, toEditorTactic, withEditorTactic } from '../helpers/editor-tactic';
 import { addLineupThrowToStep } from '../helpers/lineup-throw';
 import { updateStepAt } from '../helpers/step-update';
 import { changeTacticMap, changeTacticSide, toggleTacticRound } from '../helpers/tactic-setup';
@@ -54,6 +55,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   const [pencilColor, setPencilColor] = useState('var(--color-ct)');
   const [newThrowKind, setNewThrowKind] = useState<UtilityKind>('smoke');
 
+  const steps = useMemo(() => toEditorTactic(tactic).steps, [tactic]);
   const spawns = useMemo(() => mapSpawns(tactic.map, tactic.side), [tactic.map, tactic.side]);
   const isOpeningStep = activeStepIndex === 0;
 
@@ -70,117 +72,124 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     [pushHistory],
   );
 
+  const updateEditor = useCallback(
+    (updater: (prev: EditorTactic) => EditorTactic) => {
+      updateTactic((prev) => withEditorTactic(prev, updater));
+    },
+    [updateTactic],
+  );
+
   // Step operations
   const addStep = useCallback(() => {
-    updateTactic((curr) => {
+    updateEditor((curr) => {
       const res = addStepAction(curr);
       setActiveStepIndex(res.newIndex);
       return res.tactic;
     });
-  }, [updateTactic]);
+  }, [updateEditor]);
 
   const duplicateStep = useCallback(
     (index: number) => {
-      updateTactic((curr) => {
+      updateEditor((curr) => {
         const res = duplicateStepAction(curr, index);
         setActiveStepIndex(res.newIndex);
         return res.tactic;
       });
     },
-    [updateTactic],
+    [updateEditor],
   );
 
   const deleteStep = useCallback(
     (index: number) => {
-      updateTactic((curr) => {
+      updateEditor((curr) => {
         const res = deleteStepAction(curr, index, activeStepIndex);
         setActiveStepIndex(res.newIndex);
         return res.tactic;
       });
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const moveStep = useCallback(
     (index: number, direction: 'earlier' | 'later') => {
-      updateTactic((curr) => {
+      updateEditor((curr) => {
         const res = moveStepAction(curr, index, direction);
         setActiveStepIndex(res.newIndex);
         return res.tactic;
       });
     },
-    [updateTactic],
+    [updateEditor],
   );
 
   const updateStepName = useCallback(
     (index: number, name: string) => {
-      updateTactic((curr) => updateStepNameAction(curr, index, name));
+      updateEditor((curr) => updateStepNameAction(curr, index, name));
     },
-    [updateTactic],
+    [updateEditor],
   );
 
   const updateStepOffset = useCallback(
     (index: number, timeOffsetSeconds: number) => {
-      updateTactic((curr) => updateStepOffsetAction(curr, index, timeOffsetSeconds));
+      updateEditor((curr) => updateStepOffsetAction(curr, index, timeOffsetSeconds));
     },
-    [updateTactic],
+    [updateEditor],
   );
 
   const updateStepNotes = useCallback(
     (index: number, notes: string) => {
-      updateTactic((curr) => updateStepNotesAction(curr, index, notes));
+      updateEditor((curr) => updateStepNotesAction(curr, index, notes));
     },
-    [updateTactic],
+    [updateEditor],
   );
 
   // Player position updates on the active step
   const updatePlayerPosition = useCallback(
     (slot: number, worldPos: { x: number; y: number }) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) =>
           updatePlayerPositionAction(step, slot, worldPos),
         ),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const placePlayerOnSpawn = useCallback(
     (slot: number, spot: number) => {
       if (!isOpeningStep) return;
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, 0, (step) => assignPlayerToSpawn(step, slot, spawns, spot)),
       );
     },
-    [isOpeningStep, spawns, updateTactic],
+    [isOpeningStep, spawns, updateEditor],
   );
 
   const snapPlayerToSpawnSpot = useCallback(
     (slot: number) => {
       if (!isOpeningStep || spawns.length === 0) return;
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, 0, (step) => snapPlayerToSpawn(step, slot, spawns)),
       );
     },
-    [isOpeningStep, spawns, updateTactic],
+    [isOpeningStep, spawns, updateEditor],
   );
 
   const updatePlayerYaw = useCallback(
     (slot: number, yaw: number) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) => updatePlayerYawAction(step, slot, yaw)),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const updatePlayerLabel = useCallback(
     (slot: number, label: string) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) => updatePlayerLabelAction(step, slot, label)),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   // Throw operations on the active step
@@ -191,7 +200,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
         | (Pick<TacticThrow, 'kind' | 'from' | 'to'> & Partial<TacticThrow>),
     ) => {
       let createdThrowId: string | null = null;
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) => {
           const { step: updatedStep, newThrow } = addThrowToStep(step, t, selectedSlot ?? 0);
           createdThrowId = newThrow.id;
@@ -203,34 +212,34 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
         setSelectedThrowId(createdThrowId);
       }
     },
-    [activeStepIndex, selectedSlot, updateTactic],
+    [activeStepIndex, selectedSlot, updateEditor],
   );
 
   const updateThrowPosition = useCallback(
     (throwId: string, end: 'from' | 'to', worldPos: { x: number; y: number }) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) =>
           updateThrowPositionInStep(step, throwId, end, worldPos),
         ),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const updateThrowDroppedBy = useCallback(
     (throwId: string, droppedBy: number | undefined) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) =>
           updateThrowDroppedByAction(step, throwId, droppedBy),
         ),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const deleteThrow = useCallback(
     (throwId: string) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) => deleteThrowFromStep(step, throwId)),
       );
 
@@ -238,46 +247,46 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
         setSelectedThrowId(null);
       }
     },
-    [activeStepIndex, selectedThrowId, updateTactic],
+    [activeStepIndex, selectedThrowId, updateEditor],
   );
 
   // Drawing operations on the active step
   const addDrawingStroke = useCallback(
     (stroke: TacticDrawingStroke | Omit<TacticDrawingStroke, 'id'>) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) => addDrawingStrokeToStep(step, stroke)),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const deleteDrawingStroke = useCallback(
     (strokeIndex: number) => {
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) =>
           deleteDrawingStrokeFromStep(step, strokeIndex),
         ),
       );
     },
-    [activeStepIndex, updateTactic],
+    [activeStepIndex, updateEditor],
   );
 
   const clearDrawings = useCallback(() => {
-    updateTactic((curr) =>
+    updateEditor((curr) =>
       updateStepAt(curr, activeStepIndex, (step) => clearDrawingsFromStep(step)),
     );
-  }, [activeStepIndex, updateTactic]);
+  }, [activeStepIndex, updateEditor]);
 
   const addLineupThrow = useCallback(
     (lineup: Lineup) => {
       if (selectedSlot === null) return;
-      updateTactic((curr) =>
+      updateEditor((curr) =>
         updateStepAt(curr, activeStepIndex, (step) =>
           addLineupThrowToStep(step, lineup, selectedSlot, isOpeningStep ? spawns : []),
         ),
       );
     },
-    [activeStepIndex, isOpeningStep, selectedSlot, spawns, updateTactic],
+    [activeStepIndex, isOpeningStep, selectedSlot, spawns, updateEditor],
   );
 
   const changeMap = useCallback(
@@ -321,7 +330,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
   }, [tactic, onSave]);
 
   const playback = useTacticPlayback({
-    steps: tactic.steps,
+    steps: steps,
     activeStepIndex,
     setActiveStepIndex,
   });
@@ -330,7 +339,8 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     tactic,
     activeStepIndex,
     spawns,
-    activeStep: tactic.steps[activeStepIndex] ?? tactic.steps[0],
+    steps,
+    activeStep: steps[activeStepIndex] ?? steps[0],
     selectedSlot,
     selectedThrowId,
     activeTool,

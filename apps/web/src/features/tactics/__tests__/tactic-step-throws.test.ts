@@ -1,8 +1,8 @@
-import type { TacticStep } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep } from '../helpers/editor-tactic';
 import { stepThrowRows } from '../helpers/tactic-step-throws';
 
-const step: TacticStep = {
+const step: EditorStep = {
   id: 's',
   name: 'Utility',
   timeOffsetSeconds: 0,

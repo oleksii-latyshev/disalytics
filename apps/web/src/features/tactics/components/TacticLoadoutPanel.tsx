@@ -1,18 +1,18 @@
-import type {
-  CarryWarning,
-  TacticLoadout,
-  TacticPlayerPosition,
-  TacticSide,
+import {
+  type CarryWarning,
+  type TacticLoadout,
+  type TacticSide,
+  UTILITY_NAMES,
 } from '@disa/demo-core';
-import { UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { cn } from '@disa/ui';
+import type { EditorPlayer } from '../helpers/editor-tactic';
 import { GrenadeTally } from './GrenadeTally';
 
 export interface TacticLoadoutPanelProps {
   readonly side: TacticSide;
   readonly loadout: TacticLoadout;
-  readonly players: readonly TacticPlayerPosition[];
+  readonly players: readonly EditorPlayer[];
   readonly selectedSlot: number | null;
   readonly onSelectSlot: (slot: number) => void;
   /** Below the desktop breakpoint the rail is one tab of two and shows only when it is the open one. */

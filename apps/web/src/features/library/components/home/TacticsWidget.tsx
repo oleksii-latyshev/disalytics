@@ -1,3 +1,4 @@
+import { mainSteps } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
@@ -48,7 +49,7 @@ export function TacticsWidget({ data }: WidgetProps) {
                 values={{
                   map: mapTitle(tactic.map),
                   side: tactic.side,
-                  count: tactic.steps.length,
+                  count: mainSteps(tactic).length,
                 }}
               />
             </p>

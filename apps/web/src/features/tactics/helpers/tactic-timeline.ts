@@ -1,5 +1,5 @@
-import type { TacticRound, TacticStep, UtilityKind } from '@disa/demo-core';
-import { TACTIC_ROUNDS } from '@disa/demo-core';
+import { TACTIC_ROUNDS, type TacticRound, type UtilityKind } from '@disa/demo-core';
+import type { EditorStep } from './editor-tactic';
 
 export interface StepSegment {
   readonly index: number;
@@ -21,7 +21,7 @@ function percentOf(seconds: number, total: number): number {
 }
 
 /** Each step runs from its own offset to the next step's, the last one to the end of the tactic. */
-export function stepSegments(steps: readonly TacticStep[], total: number): readonly StepSegment[] {
+export function stepSegments(steps: readonly EditorStep[], total: number): readonly StepSegment[] {
   return steps.map((step, index) => {
     const start = percentOf(step.timeOffsetSeconds, total);
     const next = steps[index + 1];
@@ -31,7 +31,7 @@ export function stepSegments(steps: readonly TacticStep[], total: number): reado
 }
 
 /** A throw leaves its thrower `releaseTime` seconds after its step begins. */
-export function throwMarkers(steps: readonly TacticStep[], total: number): readonly ThrowMarker[] {
+export function throwMarkers(steps: readonly EditorStep[], total: number): readonly ThrowMarker[] {
   return steps.flatMap((step) =>
     step.throws.map((thrown) => {
       const seconds = step.timeOffsetSeconds + thrown.releaseTime;

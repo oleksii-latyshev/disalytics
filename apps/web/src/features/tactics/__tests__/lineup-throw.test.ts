@@ -1,6 +1,7 @@
-import type { Lineup, TacticStep } from '@disa/demo-core';
+import type { Lineup } from '@disa/demo-core';
 import { getMapOverview, worldToRadar } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
+import type { EditorStep } from '../helpers/editor-tactic';
 import { addLineupThrowToStep, selectableLineups } from '../helpers/lineup-throw';
 import { findNearestTacticLineup } from '../helpers/tactic-plot';
 
@@ -23,7 +24,7 @@ function lineup(id: string, side: Lineup['side'], kind: Lineup['kind']): Lineup 
   };
 }
 
-const step: TacticStep = {
+const step: EditorStep = {
   id: 's',
   name: '',
   timeOffsetSeconds: 0,

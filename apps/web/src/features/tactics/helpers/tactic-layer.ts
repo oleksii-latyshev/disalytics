@@ -1,7 +1,6 @@
 import type {
   Lineup,
   TacticDrawingStroke,
-  TacticPlayerPosition,
   TacticSide,
   TacticThrow,
   UtilityKind,
@@ -20,6 +19,7 @@ import {
   readPlateGeometry,
   SQUARE_PLATE,
 } from '@/features/radar';
+import type { EditorPlayer } from './editor-tactic';
 import type { InterpolatedGrenadeFlight, InterpolatedUtilityActive } from './tactic-interpolation';
 import {
   drawArrowhead,
@@ -36,7 +36,7 @@ export interface TacticLayerOptions {
   readonly colors: RadarColors;
   readonly view: { readonly current: PlateView };
   readonly side?: TacticSide | undefined;
-  readonly players: readonly TacticPlayerPosition[];
+  readonly players: readonly EditorPlayer[];
   readonly throws: readonly TacticThrow[];
   readonly flyingGrenades?: readonly InterpolatedGrenadeFlight[] | undefined;
   readonly activeUtilities?: readonly InterpolatedUtilityActive[] | undefined;
@@ -206,7 +206,7 @@ function renderFlyingGrenades(
 
 function renderTacticPlayers(
   context: CanvasRenderingContext2D,
-  players: readonly TacticPlayerPosition[],
+  players: readonly EditorPlayer[],
   side: TacticSide,
   overview: MapOverview,
   geometry: PlateGeometry,

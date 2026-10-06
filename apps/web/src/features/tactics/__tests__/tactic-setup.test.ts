@@ -1,5 +1,7 @@
+import { isTactic, type Tactic } from '@disa/demo-core';
 import { getMapOverview, MAP_IDS, mapSpawns, RADAR_IMAGE_SIZE, worldToRadar } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
+import { toEditorTactic, withEditorTactic } from '../helpers/editor-tactic';
 import {
   changeTacticMap,
   changeTacticSide,
@@ -7,6 +9,7 @@ import {
   hasEditorWork,
   spawnIndices,
   startingPlayers,
+  tacticSpawns,
   toggleTacticRound,
 } from '../helpers/tactic-setup';
 
@@ -67,9 +70,12 @@ describe('spawn placement', () => {
   it('is deterministic, and follows the side while the formation is untouched', () => {
     expect(startingPlayers('de_dust2', 'T')).toEqual(startingPlayers('de_dust2', 'T'));
     const next = changeTacticSide(createNewTactic('de_dust2', 'T'), 'CT');
-    expect(next.steps[0]?.players).toEqual(startingPlayers('de_dust2', 'CT'));
+    expect(toEditorTactic(next).steps[0]?.players).toMatchObject(startingPlayers('de_dust2', 'CT'));
+    expect(next.spawns).toEqual(tacticSpawns('de_dust2', 'CT'));
     const other = changeTacticMap(createNewTactic('de_dust2', 'T'), 'de_inferno');
-    expect(other.steps[0]?.players).toEqual(startingPlayers('de_inferno', 'T'));
+    expect(toEditorTactic(other).steps[0]?.players).toMatchObject(
+      startingPlayers('de_inferno', 'T'),
+    );
   });
 
   it('falls back to the row formation for a map without spawn data', () => {
@@ -81,63 +87,68 @@ describe('spawn placement', () => {
 });
 
 describe('createNewTactic', () => {
-  it('starts untitled with one unnamed step and five players', () => {
+  it('starts untitled with one root plan, one unnamed step and five players at spawn', () => {
     const tactic = createNewTactic('de_dust2', 'CT');
     expect(tactic.map).toBe('de_dust2');
     expect(tactic.side).toBe('CT');
     expect(tactic.title).toBe('');
-    expect(tactic.steps).toHaveLength(1);
-    expect(tactic.steps[0]?.name).toBe('');
-    expect(tactic.steps[0]?.players).toHaveLength(5);
-    expect(tactic.steps[0]?.players.every((player) => player.label === undefined)).toBe(true);
+    expect(tactic.plans).toHaveLength(1);
+    expect(tactic.plans[0]?.parentId).toBeNull();
+    expect(tactic.spawns).toEqual(tacticSpawns('de_dust2', 'CT'));
+    const [step] = toEditorTactic(tactic).steps;
+    expect(step?.name).toBe('');
+    expect(step?.players).toHaveLength(5);
+    expect(step?.players.every((player) => player.label === undefined)).toBe(true);
+    expect(isTactic(tactic)).toBe(true);
   });
 });
+
+function withFirstPlayerMoved(tactic: Tactic, dx: number): Tactic {
+  return withEditorTactic(tactic, (editor) => ({
+    ...editor,
+    steps: editor.steps.map((step, index) =>
+      index === 0
+        ? { ...step, players: step.players.map((p) => (p.slot === 0 ? { ...p, x: p.x + dx } : p)) }
+        : step,
+    ),
+  }));
+}
 
 describe('hasEditorWork', () => {
   it('is false for a fresh tactic and true once a player moves', () => {
     const fresh = createNewTactic('de_mirage', 'T');
     expect(hasEditorWork(fresh)).toBe(false);
-    const [step] = fresh.steps;
-    if (step === undefined) throw new Error('no step');
-    const [first, ...rest] = step.players;
-    if (first === undefined) throw new Error('no player');
-    const moved = {
-      ...fresh,
-      steps: [{ ...step, players: [{ ...first, x: first.x + 40 }, ...rest] }],
-    };
-    expect(hasEditorWork(moved)).toBe(true);
+    expect(hasEditorWork(withFirstPlayerMoved(fresh, 40))).toBe(true);
   });
 });
 
 describe('changeTacticMap', () => {
   it('resets formation, throws and drawings to the new map', () => {
     const base = createNewTactic('de_mirage', 'T');
-    const [step] = base.steps;
-    if (step === undefined) throw new Error('no step');
-    const worked = {
-      ...base,
-      steps: [
-        {
-          ...step,
-          throws: [
-            {
-              id: 'a',
-              throwerSlot: 0,
-              kind: 'smoke' as const,
-              from: { x: 0, y: 0 },
-              to: { x: 1, y: 1 },
-              releaseTime: 0,
-            },
-          ],
-          drawings: [{ id: 'd', color: 'red', points: [{ x: 0, y: 0 }] }],
-        },
-      ],
-    };
+    const worked = withEditorTactic(base, (editor) => ({
+      ...editor,
+      steps: editor.steps.map((step) => ({
+        ...step,
+        throws: [
+          {
+            id: 'a',
+            throwerSlot: 0,
+            kind: 'smoke' as const,
+            from: { x: 0, y: 0 },
+            to: { x: 1, y: 1 },
+            releaseTime: 0,
+          },
+        ],
+        drawings: [{ id: 'd', color: 'red', points: [{ x: 0, y: 0 }] }],
+      })),
+    }));
     const next = changeTacticMap(worked, 'de_inferno');
+    const [step] = toEditorTactic(next).steps;
     expect(next.map).toBe('de_inferno');
-    expect(next.steps[0]?.throws).toEqual([]);
-    expect(next.steps[0]?.drawings).toEqual([]);
-    expect(next.steps[0]?.players).toEqual(startingPlayers('de_inferno', 'T'));
+    expect(step?.throws).toEqual([]);
+    expect(step?.drawings).toEqual([]);
+    expect(step?.players).toMatchObject(startingPlayers('de_inferno', 'T'));
+    expect(next.spawns).toEqual(tacticSpawns('de_inferno', 'T'));
     expect(changeTacticMap(worked, 'de_mirage')).toBe(worked);
   });
 });
@@ -146,17 +157,16 @@ describe('changeTacticSide', () => {
   it('moves an untouched formation to the new side edge', () => {
     const next = changeTacticSide(createNewTactic('de_mirage', 'T'), 'CT');
     expect(next.side).toBe('CT');
-    expect(next.steps[0]?.players).toEqual(startingPlayers('de_mirage', 'CT'));
+    expect(toEditorTactic(next).steps[0]?.players).toMatchObject(
+      startingPlayers('de_mirage', 'CT'),
+    );
   });
 
   it('keeps positions the user already set', () => {
-    const base = createNewTactic('de_mirage', 'T');
-    const [step] = base.steps;
-    if (step === undefined) throw new Error('no step');
-    const [first, ...rest] = step.players;
-    if (first === undefined) throw new Error('no player');
-    const moved = { ...base, steps: [{ ...step, players: [{ ...first, x: 5 }, ...rest] }] };
-    expect(changeTacticSide(moved, 'CT').steps).toEqual(moved.steps);
+    const moved = withFirstPlayerMoved(createNewTactic('de_mirage', 'T'), 5);
+    const next = changeTacticSide(moved, 'CT');
+    expect(next.side).toBe('CT');
+    expect(next.plans).toEqual(moved.plans);
   });
 });
 

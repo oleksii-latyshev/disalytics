@@ -1,4 +1,3 @@
-import type { Tactic, TacticStep } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
 import {
   addDrawingStrokeToStep,
@@ -24,8 +23,9 @@ import {
   updateThrowDroppedBy,
   updateThrowPositionInStep,
 } from '../helpers/editor-actions';
+import type { EditorStep, EditorTactic } from '../helpers/editor-tactic';
 
-function createMockTactic(): Tactic {
+function createMockTactic(): EditorTactic {
   return {
     id: 'tactic-1',
     title: 'A Site Mirage Execute',
@@ -35,6 +35,7 @@ function createMockTactic(): Tactic {
     description: 'Standard A site execution with 3 smokes',
     createdAt: 1000,
     updatedAt: 1000,
+    spawns: [],
     steps: [
       {
         id: 'step-1',
@@ -97,7 +98,7 @@ describe('editor-actions', () => {
     });
 
     it('calculates duration from last step offset + 3s margin, min 5s', () => {
-      const steps1: TacticStep[] = [
+      const steps1: EditorStep[] = [
         {
           id: '1',
           name: '1',
@@ -109,7 +110,7 @@ describe('editor-actions', () => {
       // 1 + 3 = 4 < 5, so min 5
       expect(computeTotalDuration(steps1)).toBe(5);
 
-      const steps2: TacticStep[] = [
+      const steps2: EditorStep[] = [
         {
           id: '1',
           name: '1',
@@ -173,7 +174,7 @@ describe('editor-actions', () => {
 
     it('prevents deleting the last remaining step', () => {
       const tactic = createMockTactic();
-      const withOneStep: Tactic = { ...tactic, steps: [tactic.steps[0] as TacticStep] };
+      const withOneStep: EditorTactic = { ...tactic, steps: [tactic.steps[0] as EditorStep] };
       const result = deleteStep(withOneStep, 0, 0);
 
       expect(result.tactic.steps).toHaveLength(1);
@@ -218,7 +219,7 @@ describe('editor-actions', () => {
   describe('player operations', () => {
     it('updates existing player position and adds missing player', () => {
       const tactic = createMockTactic();
-      const step = tactic.steps[0] as TacticStep;
+      const step = tactic.steps[0] as EditorStep;
 
       // Update existing slot 0
       const updated = updatePlayerPosition(step, 0, { x: 100, y: 200 });
@@ -242,7 +243,7 @@ describe('editor-actions', () => {
 
     it('updates player yaw and label', () => {
       const tactic = createMockTactic();
-      const step = tactic.steps[0] as TacticStep;
+      const step = tactic.steps[0] as EditorStep;
 
       const updatedYaw = updatePlayerYaw(step, 0, -90);
       expect(updatedYaw.players.find((p) => p.slot === 0)?.yaw).toBe(-90);
@@ -255,7 +256,7 @@ describe('editor-actions', () => {
   describe('throw operations', () => {
     it('adds, updates position, and deletes throws', () => {
       const tactic = createMockTactic();
-      const step = tactic.steps[0] as TacticStep;
+      const step = tactic.steps[0] as EditorStep;
 
       // Add throw
       const { step: withThrow, newThrow } = addThrowToStep(
@@ -285,7 +286,7 @@ describe('editor-actions', () => {
   describe('drawing operations', () => {
     it('adds, deletes, and clears drawing strokes', () => {
       const tactic = createMockTactic();
-      const step = tactic.steps[0] as TacticStep;
+      const step = tactic.steps[0] as EditorStep;
 
       // Add stroke
       const withDrawing = addDrawingStrokeToStep(step, {
@@ -313,7 +314,7 @@ describe('editor-actions', () => {
   describe('history state management (undo/redo)', () => {
     it('pushes snapshots up to MAX_HISTORY', () => {
       const tactic = createMockTactic();
-      let past: readonly Tactic[] = [];
+      let past: readonly EditorTactic[] = [];
 
       for (let i = 0; i < 35; i++) {
         past = pushHistoryState(past, { ...tactic, title: `Version ${i}` }, 30);
@@ -330,7 +331,7 @@ describe('editor-actions', () => {
       const t3 = { ...createMockTactic(), title: 'State 3' };
 
       const past = [t1, t2];
-      const future: readonly Tactic[] = [];
+      const future: readonly EditorTactic[] = [];
       const current = t3;
 
       // Undo once: from t3 to t2
@@ -363,7 +364,7 @@ describe('editor-actions', () => {
   describe('throw droppers', () => {
     it('names a dropper for one throw and clears it again', () => {
       const tactic = createMockTactic();
-      const step = tactic.steps[0] as TacticStep;
+      const step = tactic.steps[0] as EditorStep;
       const { step: withThrow, newThrow } = addThrowToStep(step, {
         kind: 'smoke',
         from: { x: 0, y: 0 },

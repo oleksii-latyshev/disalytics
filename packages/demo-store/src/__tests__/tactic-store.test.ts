@@ -1,64 +1,99 @@
 import 'fake-indexeddb/auto';
-import type { Tactic } from '@disa/demo-core';
+import { effectiveSteps, type Tactic } from '@disa/demo-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openTacticStore, type TacticStore } from '../tactic-store';
 
-const tacticA: Tactic = {
-  id: 'dust2-a-split',
-  title: 'A Short / Long Split',
+function tacticOf(
+  id: string,
+  title: string,
+  map: string,
+  side: 'CT' | 'T',
+  stamp: number,
+  at: { readonly x: number; readonly y: number },
+): Tactic {
+  return {
+    id,
+    title,
+    map,
+    side,
+    createdAt: stamp,
+    updatedAt: stamp,
+    spawns: [at],
+    plans: [
+      {
+        id: 'main',
+        condition: title,
+        parentId: null,
+        forkAfter: 0,
+        deaths: {},
+        steps: [
+          {
+            id: 'step-1',
+            name: title,
+            startsAt: null,
+            players: [{ slot: 0, route: { mode: 'points', points: [at] } }],
+            throws: [],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const tacticA = tacticOf('dust2-a-split', 'A Short / Long Split', 'de_dust2', 'T', 1000, {
+  x: -100,
+  y: 200,
+});
+const tacticB = tacticOf('dust2-b-retake', 'B Site Retake', 'de_dust2', 'CT', 2000, {
+  x: 500,
+  y: 600,
+});
+const tacticC = tacticOf('mirage-a-execute', 'Mirage A Execute', 'de_mirage', 'T', 3000, {
+  x: -1000,
+  y: -500,
+});
+
+const legacyRecord = {
+  id: 'legacy-1',
+  title: 'Stored before tactics v2',
   map: 'de_dust2',
   side: 'T',
-  createdAt: 1000,
-  updatedAt: 1000,
+  createdAt: 10,
+  updatedAt: 20,
   steps: [
     {
       id: 'step-1',
-      name: 'Default control',
+      name: 'Setup',
       timeOffsetSeconds: 0,
-      players: [
-        { slot: 0, x: -100, y: 200 },
-        { slot: 1, x: -200, y: 300 },
-      ],
+      players: [{ slot: 0, x: -100, y: 200 }],
+      throws: [],
+    },
+    {
+      id: 'step-2',
+      name: 'Go',
+      timeOffsetSeconds: 8,
+      players: [{ slot: 0, x: 300, y: 400 }],
       throws: [],
     },
   ],
 };
 
-const tacticB: Tactic = {
-  id: 'dust2-b-retake',
-  title: 'B Site Retake',
-  map: 'de_dust2',
-  side: 'CT',
-  createdAt: 2000,
-  updatedAt: 2000,
-  steps: [
-    {
-      id: 'step-1',
-      name: 'Retake start',
-      timeOffsetSeconds: 0,
-      players: [{ slot: 0, x: 500, y: 600 }],
-      throws: [],
-    },
-  ],
-};
-
-const tacticC: Tactic = {
-  id: 'mirage-a-execute',
-  title: 'Mirage A Execute',
-  map: 'de_mirage',
-  side: 'T',
-  createdAt: 3000,
-  updatedAt: 3000,
-  steps: [
-    {
-      id: 'step-1',
-      name: 'Lineup phase',
-      timeOffsetSeconds: 0,
-      players: [{ slot: 0, x: -1000, y: -500 }],
-      throws: [],
-    },
-  ],
-};
+function writeRaw(record: unknown): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const opening = indexedDB.open('disalytics-user-tactics', 1);
+    opening.onerror = () => reject(opening.error);
+    opening.onsuccess = () => {
+      const db = opening.result;
+      const transaction = db.transaction('tactics', 'readwrite');
+      transaction.objectStore('tactics').put(record);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => reject(transaction.error);
+    };
+  });
+}
 
 describe('TacticStore (IndexedDB)', () => {
   let store: TacticStore;
@@ -149,5 +184,44 @@ describe('TacticStore (IndexedDB)', () => {
 
     await store.clear();
     expect(await store.list()).toHaveLength(0);
+  });
+
+  it('migrates a tactic stored before version 2 on read', async () => {
+    await writeRaw(legacyRecord);
+
+    const migrated = await store.get('legacy-1');
+    expect(migrated?.plans).toHaveLength(1);
+    const steps = migrated === null ? [] : effectiveSteps(migrated, 'main');
+    expect(steps.map((step) => step.startsAt)).toEqual([null, 8]);
+    expect(steps[1]?.players[0]?.route.points).toEqual([{ x: 300, y: 400 }]);
+    expect(migrated?.spawns).toEqual([{ x: -100, y: 200 }]);
+
+    const listed = await store.list({ map: 'de_dust2', side: 'T' });
+    expect(listed.map((tactic) => tactic.id)).toEqual(['legacy-1']);
+  });
+
+  it("fills a migrated tactic spawns from the reader's resolver", async () => {
+    await writeRaw(legacyRecord);
+    store.close();
+    const opened = await openTacticStore({ spawnsFor: () => [{ x: 7, y: 8 }] });
+    if (opened === null) throw new Error('Expected tactic store to open');
+    store = opened;
+
+    expect((await store.get('legacy-1'))?.spawns).toEqual([{ x: 7, y: 8 }]);
+  });
+
+  it('writes the current shape, so a migrated tactic reads back as stored', async () => {
+    await writeRaw(legacyRecord);
+    const migrated = await store.get('legacy-1');
+    if (migrated === null) throw new Error('Expected a migrated tactic');
+
+    await store.put(migrated);
+    expect(await store.get('legacy-1')).toEqual(migrated);
+  });
+
+  it('skips a record that is no tactic at all', async () => {
+    await writeRaw({ id: 'junk', map: 'de_dust2', side: 'T' });
+    await store.put(tacticA);
+    expect((await store.list()).map((tactic) => tactic.id)).toEqual(['dust2-a-split']);
   });
 });

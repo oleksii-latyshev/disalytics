@@ -24,7 +24,8 @@ function tactic(id: string, updatedAt: number): Tactic {
     title: id,
     map: 'de_mirage',
     side: 'T',
-    steps: [],
+    spawns: [],
+    plans: [{ id: 'main', condition: id, parentId: null, forkAfter: 0, deaths: {}, steps: [] }],
     createdAt: updatedAt,
     updatedAt,
   };
