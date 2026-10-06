@@ -15,7 +15,7 @@ import { useLineupMapCounts } from '../hooks/use-lineup-map-counts';
 import { useMapLineups } from '../hooks/use-map-lineups';
 import { LineupConfirmDialog } from './LineupConfirmDialog';
 import { LineupFormModal } from './LineupFormModal';
-import { LineupPhotoViewer } from './LineupPhotoViewer';
+import { LineupPositionDialog } from './LineupPositionDialog';
 import { LineupsHeader } from './LineupsHeader';
 import { LineupsMap } from './LineupsMap';
 import { LineupsPanel, panelModeOf } from './LineupsPanel';
@@ -35,7 +35,8 @@ export function LineupsView() {
   const [move, setMove] = useState<PointMove | null>(null);
   const [formLineup, setFormLineup] = useState<Lineup | null>(null);
   const [removal, setRemoval] = useState<{ ids: readonly string[]; message: string } | null>(null);
-  const [viewer, setViewer] = useState<{ lineup: Lineup; index: number } | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { lineups, loading, reload, importLineups, exportLineups } = useMapLineups(map);
   const counts = useLineupMapCounts(map, loading ? null : lineups.length);
@@ -74,6 +75,8 @@ export function LineupsView() {
   const { bulk } = selection;
 
   const letGo = () => {
+    setIsDialogOpen(false);
+    setHoveredId(null);
     setPick(clearPick);
     setIsEditing(false);
     setMove(null);
@@ -84,7 +87,7 @@ export function LineupsView() {
     selection.stopSelecting();
   };
 
-  useEscape(formLineup === null && viewer === null && removal === null, () => {
+  useEscape(formLineup === null && !isDialogOpen && removal === null, () => {
     if (add.draft !== null) add.cancel();
     else if (isEditing) setIsEditing(false);
     else letGo();
@@ -93,6 +96,16 @@ export function LineupsView() {
   const pickId = (id: string) => {
     setIsEditing(false);
     setPick(pickTarget(id));
+  };
+  const pickVariant = (id: string) => setPick((current) => ({ ...current, variantId: id }));
+  const openVariant = (id: string) => {
+    pickVariant(id);
+    setHoveredId(null);
+    setIsDialogOpen(true);
+  };
+  const editFromDialog = () => {
+    setIsDialogOpen(false);
+    setIsEditing(true);
   };
   const startAdd = () => {
     letGo();
@@ -172,8 +185,11 @@ export function LineupsView() {
           openStack={pick.openStack}
           draft={add.draft}
           editing={isEditingNow ? variant.lineup : null}
+          hoveredVariantId={hoveredId}
+          onHoverVariant={setHoveredId}
           onSelectTarget={pickId}
-          onSelectVariant={(id) => setPick((current) => ({ ...current, variantId: id }))}
+          onOpenVariant={openVariant}
+          onSelectVariant={pickVariant}
           onOpenStack={(id) => setPick((current) => ({ ...current, openStack: id }))}
           onClear={letGo}
           onPlace={add.place}
@@ -188,9 +204,11 @@ export function LineupsView() {
           targets={targets}
           isSaving={add.isSaving}
           hasFailed={add.hasFailed}
+          hoveredVariantId={hoveredId}
           actions={{
             onPick: pickId,
-            onVariant: (id) => setPick((current) => ({ ...current, variantId: id })),
+            onHoverVariant: setHoveredId,
+            onOpenVariant: openVariant,
             onClose: letGo,
             onAdd: startAdd,
             onEdit: () => setIsEditing(true),
@@ -198,9 +216,6 @@ export function LineupsView() {
               if (selected === null || variant === null) return;
               setIsEditing(false);
               add.startAnother(selected, variant.lineup.side);
-            },
-            onOpenPhoto: (index) => {
-              if (variant !== null) setViewer({ lineup: variant.lineup, index });
             },
             onDone: () => setIsEditing(false),
             onDetails: setFormLineup,
@@ -237,11 +252,14 @@ export function LineupsView() {
         />
       )}
 
-      {viewer !== null && (
-        <LineupPhotoViewer
-          lineup={viewer.lineup}
-          index={viewer.index}
-          onDismiss={() => setViewer(null)}
+      {isDialogOpen && selected !== null && variant !== null && (
+        <LineupPositionDialog
+          map={map}
+          target={selected}
+          variant={variant}
+          onVariant={pickVariant}
+          onEdit={editFromDialog}
+          onDismiss={() => setIsDialogOpen(false)}
         />
       )}
     </div>

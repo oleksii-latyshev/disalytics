@@ -36,22 +36,33 @@ const WHITE: Rgb = [255, 255, 255];
 
 /** How far an identity's dark end is pulled towards black, and its light end towards white. */
 const SHADE = 0.62;
-const TINT = 0.82;
+const TINT = 0.55;
 
-/** A ramp through `stops`, evenly spaced. */
-function rampThrough(stops: readonly Rgb[]): HeatRamp {
+/** A colour at a position along the ramp, 0 for its coolest end and 1 for its hottest. */
+type Stop = readonly [position: number, colour: Rgb];
+
+function evenly(colours: readonly Rgb[]): readonly Stop[] {
+  const last = colours.length - 1;
+
+  return colours.map((colour, at): Stop => [at / last, colour]);
+}
+
+/** A ramp through `stops`, which are in order and run from 0 to 1. */
+function rampThrough(stops: readonly Stop[]): HeatRamp {
   const ramp = new Uint8ClampedArray(RAMP_STEPS * CHANNELS);
-  const last = stops.length - 1;
 
   for (let step = 0; step < RAMP_STEPS; step++) {
-    const position = (step / (RAMP_STEPS - 1)) * last;
-    const stop = Math.min(Math.floor(position), last - 1);
-    const from = stops[stop];
-    const to = stops[stop + 1];
+    const position = step / (RAMP_STEPS - 1);
+    const upper = Math.max(
+      stops.findIndex((stop) => stop[0] >= position),
+      1,
+    );
+    const from = stops[upper - 1];
+    const to = stops[upper];
     if (from === undefined || to === undefined) continue;
 
-    const colour = mix(from, to, position - stop);
-    ramp.set(colour, step * CHANNELS);
+    const span = to[0] - from[0];
+    ramp.set(mix(from[1], to[1], span === 0 ? 1 : (position - from[0]) / span), step * CHANNELS);
   }
 
   return ramp;
@@ -61,12 +72,18 @@ function rampThrough(stops: readonly Rgb[]): HeatRamp {
 function identityRamp(hex: string): HeatRamp {
   const base = rgbOf(hex);
 
-  return rampThrough([mix(base, BLACK, SHADE), base, mix(base, WHITE, TINT)]);
+  return rampThrough(evenly([mix(base, BLACK, SHADE), base, mix(base, WHITE, TINT)]));
 }
+
+/** Where the field ramp is its green and its yellow; past the yellow it is pale and only then white. */
+const FIELD_GREEN = 0.38;
+const FIELD_YELLOW = 0.78;
+const FIELD_PALE = 0.9;
 
 /**
  * The three ramps a heat picture is drawn in. A player's field climbs through green to the yellow
- * the first compared player is, and to white; each compared player keeps one hue from the dark end
+ * the first compared player is, which is where ordinary hot ground stops: only the last few percent
+ * of the ramp go on to white, and the ceiling is read so that is the top of the lit ground. Each compared player keeps one hue from the dark end
  * to the light one, which is what lets a reader find whose time a patch of ground was after the
  * two plates are shown as one.
  */
@@ -75,7 +92,13 @@ export function heatRamps(heat: RadarColors['heat']): Readonly<Record<HeatIdenti
   const high = rgbOf(heat.high);
 
   return {
-    field: rampThrough([mix(low, BLACK, 0.42), low, high, WHITE]),
+    field: rampThrough([
+      [0, mix(low, BLACK, 0.42)],
+      [FIELD_GREEN, low],
+      [FIELD_YELLOW, high],
+      [FIELD_PALE, high],
+      [1, WHITE],
+    ]),
     first: identityRamp(heat.high),
     second: identityRamp(heat.second),
   };

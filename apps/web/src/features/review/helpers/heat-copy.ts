@@ -42,7 +42,7 @@ export function heatTitleKey(
   | 'review.heat.title.pair'
   | 'review.heat.title.difference' {
   if (compare === 'difference') return 'review.heat.title.difference';
-  if (compare === 'side') return 'review.heat.title.pair';
+  if (compare === 'side' || compare === 'overlay') return 'review.heat.title.pair';
   if (reading === 'stood') return 'review.heat.title.stood';
 
   return reading === 'died' ? 'review.heat.title.died' : 'review.heat.title.other';
@@ -54,6 +54,7 @@ export function heatLegendKind(
   compare: HeatCompareView | null,
 ): HeatLegendKind {
   if (compare === 'difference') return 'difference';
+  if (compare === 'overlay') return 'overlay';
   if (reading === 'died') return 'rings';
   if (compare === 'side') return 'pair';
   if (reading === 'stood') return 'field';

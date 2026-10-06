@@ -4,37 +4,16 @@ import type { HeatDifference } from './heat-difference';
 import { DIFFERENCE_CUT } from './heat-difference';
 import type { HeatField, HeatRings } from './heat-field';
 import { type HeatIdentity, type HeatRamp, heatRamps, rampIndex } from './heat-ramp';
+import { alphaOf, curved, curveTable, FAINT_WEIGHT, hatchFactor } from './heat-shade';
 import { type PlateSize, type PlateView, plateGeometry, readPlateGeometry } from './view';
 
-/**
- * Weights below this share of the ramp are not drawn. A faint value is a place somebody passed once,
- * and a field that counts it ends up a haze over the whole map with the real holds lost in it.
- */
-const FAINT_WEIGHT = 0.03;
-
 /** How steeply the ramp climbs: below one, so that a modest weight is already clearly a colour. */
-const RAMP_CURVE = 0.45;
+const RAMP_CURVE = 0.6;
 const DIFFERENCE_CURVE = 0.5;
-
-/** A bin is drawn at least this opaque and at most fully so. */
-const ALPHA_FLOOR = 0.45;
-const ALPHA_SPAN = 1 - ALPHA_FLOOR;
-const BYTE = 255;
 const CHANNELS = 4;
-
-const CURVE_STEPS = 1024;
-
-/** `weight ** curve` for a weight in 0..1, tabulated: a power per bin was most of a repaint. */
-function curveTable(curve: number): Float32Array {
-  return Float32Array.from({ length: CURVE_STEPS + 1 }, (_, at) => (at / CURVE_STEPS) ** curve);
-}
 
 const RAMP_TABLE = curveTable(RAMP_CURVE);
 const DIFFERENCE_TABLE = curveTable(DIFFERENCE_CURVE);
-
-function curved(table: Float32Array, weight: number): number {
-  return table[Math.round(Math.min(Math.max(weight, 0), 1) * CURVE_STEPS)] ?? 0;
-}
 
 function paintingCanvas(width: number, height: number): CanvasRenderingContext2D {
   const canvas = document.createElement('canvas');
@@ -47,14 +26,22 @@ function paintingCanvas(width: number, height: number): CanvasRenderingContext2D
   return context;
 }
 
-function writePixel(data: Uint8ClampedArray, bin: number, ramp: HeatRamp, weight: number): void {
+/** One bin: the ramp's colour at `shade`, as opaque as the bin's own weight makes it. */
+function writePixel(
+  data: Uint8ClampedArray,
+  bin: number,
+  ramp: HeatRamp,
+  shade: number,
+  weight: number,
+  texture = 1,
+): void {
   const pixel = bin * CHANNELS;
-  const from = rampIndex(weight);
+  const from = rampIndex(shade);
 
   data[pixel] = ramp[from] ?? 0;
   data[pixel + 1] = ramp[from + 1] ?? 0;
   data[pixel + 2] = ramp[from + 2] ?? 0;
-  data[pixel + 3] = Math.round((ALPHA_FLOOR + ALPHA_SPAN * weight) * BYTE);
+  data[pixel + 3] = Math.round(alphaOf(weight) * texture);
 }
 
 /**
@@ -62,12 +49,13 @@ function writePixel(data: Uint8ClampedArray, bin: number, ramp: HeatRamp, weight
  *
  * The field arrives already smoothed by its kernel (#384), and a bin is about two plate pixels at
  * the plate's largest, so the scale is a resample of a smooth picture rather than the thing doing
- * the smoothing. Blurring the plate at draw time would spend a filter pass on every repaint.
+ * the smoothing. `isHatched` stripes it, which is how a second player is told from a first when the two share a plate. Blurring the plate at draw time would spend a filter pass on every repaint.
  */
 export function fieldImage(
   field: HeatField,
   colors: RadarColors,
   identity: HeatIdentity,
+  isHatched = false,
 ): HTMLCanvasElement {
   const context = paintingCanvas(field.width, field.height);
   const image = context.createImageData(field.width, field.height);
@@ -77,7 +65,9 @@ export function fieldImage(
     const weight = field.bins[bin] ?? 0;
     if (weight < FAINT_WEIGHT) continue;
 
-    writePixel(image.data, bin, ramp, curved(RAMP_TABLE, weight));
+    const texture = isHatched ? hatchFactor(bin % field.width, Math.floor(bin / field.width)) : 1;
+
+    writePixel(image.data, bin, ramp, curved(RAMP_TABLE, weight), weight, texture);
   }
 
   context.putImageData(image, 0, 0);
@@ -103,6 +93,7 @@ export function differenceImage(
       bin,
       delta > 0 ? ramps.first : ramps.second,
       curved(DIFFERENCE_TABLE, Math.abs(delta)),
+      Math.abs(delta),
     );
   }
 
@@ -154,8 +145,13 @@ export interface RingLayerOptions {
   readonly colour: string;
   /** The dark line round each ring, which keeps it apart from a field of any colour under it. */
   readonly outline: string;
+  /** Whether the colour is stroked dashed, which tells a second player's rings from a first's. */
+  readonly isDashed?: boolean;
   readonly view: { readonly current: PlateView };
 }
+
+const RING_DASH: readonly number[] = [3.2, 2.6];
+const NO_DASH: readonly number[] = [];
 
 /**
  * Where something happened, one ring each — deaths, which are too few to be a field and too exact
@@ -164,7 +160,14 @@ export interface RingLayerOptions {
  * **The draw allocates nothing**: the points were put on the plate when the narrowing changed, and
  * every ring goes into one path that is stroked twice, once dark and wide and once in the colour.
  */
-export function ringLayer({ marks, plate, colour, outline, view }: RingLayerOptions): Layer {
+export function ringLayer({
+  marks,
+  plate,
+  colour,
+  outline,
+  isDashed = false,
+  view,
+}: RingLayerOptions): Layer {
   const geometry = plateGeometry();
 
   return (context, size) => {
@@ -185,6 +188,8 @@ export function ringLayer({ marks, plate, colour, outline, view }: RingLayerOpti
 
     context.lineWidth = RING_LINE_PX;
     context.strokeStyle = colour;
+    context.setLineDash(isDashed ? RING_DASH : NO_DASH);
     context.stroke();
+    context.setLineDash(NO_DASH);
   };
 }

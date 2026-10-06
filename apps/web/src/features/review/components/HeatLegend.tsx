@@ -1,17 +1,29 @@
 import { Text } from '@disa/i18n';
 
-export type HeatLegendKind = 'field' | 'rings' | 'pair' | 'difference' | 'events' | 'utility';
+export type HeatLegendKind =
+  | 'field'
+  | 'rings'
+  | 'pair'
+  | 'overlay'
+  | 'difference'
+  | 'events'
+  | 'utility';
 
 /** A hue's own colour pulled towards black and towards white, the way the plate's ramps are. */
 const dark = (token: string) => `color-mix(in srgb, var(${token}) 38%, #000)`;
 
-const FIELD = `linear-gradient(90deg, ${dark('--color-heat-low')}, var(--color-heat-low), var(--color-heat-high), var(--color-ink))`;
+/** Dark green to green to yellow, and white only on the last sliver: the ramp the plate is drawn in. */
+const FIELD = `linear-gradient(90deg, ${dark('--color-heat-low')}, var(--color-heat-low) 40%, var(--color-heat-high) 86%, var(--color-ink))`;
+
+const STRIPES = (token: string) =>
+  `repeating-linear-gradient(135deg, var(${token}) 0 3px, transparent 3px 6px)`;
 
 const SWATCH: Readonly<Record<Exclude<HeatLegendKind, 'rings'>, string>> = {
   events: FIELD,
   utility: FIELD,
   field: FIELD,
   pair: `linear-gradient(90deg, ${dark('--color-heat-high')}, var(--color-heat-high) 50%, ${dark('--color-heat-second')} 50%, var(--color-heat-second))`,
+  overlay: `${STRIPES('--color-heat-second')} right / 50% 100% no-repeat, linear-gradient(90deg, var(--color-heat-high) 50%, transparent 50%)`,
   difference: `linear-gradient(90deg, var(--color-heat-second), ${dark('--color-heat-second')} 45%, ${dark('--color-heat-high')} 55%, var(--color-heat-high))`,
 };
 

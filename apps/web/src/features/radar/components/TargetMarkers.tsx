@@ -133,6 +133,10 @@ interface Props<T extends PlateTarget> {
   labels: PlateLabels<T>;
   /** Whether markers arrive one after another and lift under the pointer. */
   isAnimated?: boolean;
+  /** The origin the pointer or the keyboard is on, lit with the row that lists it. */
+  hoveredVariantId?: string | null | undefined;
+  /** Called with an origin's id when it is hovered or focused from the keyboard, and `null` when it is let go. */
+  onHoverVariant?: ((id: string | null) => void) | undefined;
   onSelectTarget: (id: string) => void;
   onSelectVariant: (id: string) => void;
   onOpenStack: (id: string | null) => void;
@@ -186,6 +190,7 @@ export function TargetMarkers<T extends PlateTarget>(props: Props<T>) {
 
       {selected?.variants.map((variant, index) => {
         const isActive = variant.id === props.activeVariantId;
+        const isLit = isActive || variant.id === props.hoveredVariantId;
 
         return (
           <button
@@ -194,6 +199,12 @@ export function TargetMarkers<T extends PlateTarget>(props: Props<T>) {
             aria-label={labels.origin(index + 1, variant)}
             aria-pressed={isActive}
             onClick={() => props.onSelectVariant(variant.id)}
+            onPointerEnter={() => props.onHoverVariant?.(variant.id)}
+            onPointerLeave={() => props.onHoverVariant?.(null)}
+            onFocus={(event) => {
+              if (event.currentTarget.matches(':focus-visible')) props.onHoverVariant?.(variant.id);
+            }}
+            onBlur={() => props.onHoverVariant?.(null)}
             style={{
               ...place(
                 plateX(overview, variant.origin.x, variant.origin.z),
@@ -201,7 +212,7 @@ export function TargetMarkers<T extends PlateTarget>(props: Props<T>) {
               ),
               ...(isAnimated ? popDelay(ORIGIN_POP_START_MS + index * ORIGIN_POP_STEP_MS) : {}),
             }}
-            className={`${MARKER} ${isAnimated ? 'plate-marker' : ''} numeric font-semibold ${isActive ? 'z-7 size-8 border-surface-0 bg-ink text-13 text-surface-0 ring-2 ring-ink' : 'z-6 size-6 border-line-strong bg-surface-3 text-12 text-ink'}`}
+            className={`${MARKER} ${isAnimated ? 'plate-marker' : ''} numeric font-semibold ${isLit ? 'z-7 border-surface-0 bg-ink text-surface-0 ring-2 ring-ink' : 'z-6 border-line-strong bg-surface-3 text-ink'} ${isActive ? 'size-8 text-13' : 'size-6 text-12'}`}
           >
             {index + 1}
             {savedVariantIds.has(variant.id) && (

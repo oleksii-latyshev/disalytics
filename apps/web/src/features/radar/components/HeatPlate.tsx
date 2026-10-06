@@ -6,7 +6,7 @@ import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
-import type { HeatPicture } from '../helpers/heat-picture';
+import type { HeatPicture, HeatShown } from '../helpers/heat-picture';
 import { mutedImage } from '../helpers/muted-image';
 import { plateBox } from '../helpers/plate-box';
 import { plateView } from '../helpers/view';
@@ -17,9 +17,19 @@ interface Props {
   demo: ParsedDemo;
   /** Already narrowed by whatever the screen above is narrowing by, or `null` on an unknown map. */
   picture: HeatPicture | null;
+  /** Which of two overlaid players are drawn; everyone is when it is left out. */
+  shown?: HeatShown;
 }
 
-function HeatCanvas({ picture, overview }: { picture: HeatPicture | null; overview: MapOverview }) {
+function HeatCanvas({
+  picture,
+  shown,
+  overview,
+}: {
+  picture: HeatPicture | null;
+  shown: HeatShown | undefined;
+  overview: MapOverview;
+}) {
   const t = useT();
 
   const [theme] = useSetting('radarTheme');
@@ -34,7 +44,16 @@ function HeatCanvas({ picture, overview }: { picture: HeatPicture | null; overvi
   // The picture is painted into an image when it changes rather than on every repaint, which is what
   // leaves the draw itself one `drawImage` — a resize re-reads nothing.
   const layers = useMemo(() => {
-    const over = picture === null ? [] : [picture(colors, { plate: layout, view: viewRef })];
+    const over =
+      picture === null
+        ? []
+        : [
+            picture(colors, {
+              plate: layout,
+              view: viewRef,
+              ...(shown === undefined ? {} : { shown }),
+            }),
+          ];
 
     return images.status === 'ready'
       ? [
@@ -48,7 +67,7 @@ function HeatCanvas({ picture, overview }: { picture: HeatPicture | null; overvi
           ...over,
         ]
       : over;
-  }, [picture, colors, images, layout, floorLabels]);
+  }, [picture, shown, colors, images, layout, floorLabels]);
 
   const { canvasRef } = useCanvasLayers(layers);
 
@@ -74,12 +93,12 @@ function HeatCanvas({ picture, overview }: { picture: HeatPicture | null; overvi
  * frame channel. **The map under the picture is greyed and dimmed**, so the only colour on the
  * plate is the reading.
  */
-export function HeatPlate({ demo, picture }: Props) {
+export function HeatPlate({ demo, picture, shown }: Props) {
   const overview = getMapOverview(demo.header.map);
 
   return overview === undefined ? (
     <UnknownMap map={demo.header.map} />
   ) : (
-    <HeatCanvas picture={picture} overview={overview} />
+    <HeatCanvas picture={picture} shown={shown} overview={overview} />
   );
 }
