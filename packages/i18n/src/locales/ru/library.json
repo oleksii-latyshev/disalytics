@@ -697,7 +697,7 @@
       "strip": {
         "label": "Шаги плана",
         "card": "Шаг {index}: {name}",
-        "unnamed": "Без названия",
+        "unnamed": "Шаг {index}",
         "noIdea": "Идеи пока нет",
         "addStep": "Добавить шаг после этого"
       },

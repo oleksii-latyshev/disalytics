@@ -40,12 +40,14 @@ export function TacticPlanStrip({
           {lane.steps.map((step, offset) => {
             const index = lane.firstIndex + offset;
             const isCurrent = lane.planId === currentPlanId && index === stepIndex;
-            const name = step.name.trim() || t('library.tactics.board.strip.unnamed');
+            const name =
+              step.name.trim() || t('library.tactics.board.strip.unnamed', { index: index + 1 });
             return (
               <li key={step.id}>
                 <button
                   type="button"
                   aria-pressed={isCurrent}
+                  title={name}
                   aria-label={t('library.tactics.board.strip.card', { index: index + 1, name })}
                   onClick={() => onSelect(lane.planId, index)}
                   className={cn(

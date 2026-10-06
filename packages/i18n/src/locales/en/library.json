@@ -697,7 +697,7 @@
       "strip": {
         "label": "Steps of the plan",
         "card": "Step {index}: {name}",
-        "unnamed": "Untitled",
+        "unnamed": "Step {index}",
         "noIdea": "No idea yet",
         "addStep": "Add a step after this one"
       },
