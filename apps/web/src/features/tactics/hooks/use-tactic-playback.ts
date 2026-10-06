@@ -1,116 +1,120 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { computeTotalDuration } from '../helpers/editor-actions';
-import type { EditorStep } from '../helpers/editor-tactic';
-import { findActiveStepIndex } from '../helpers/tactic-interpolation';
+import { frameElapsedMs } from '@/core/playback';
+import { advanceTacticClock, createTacticClock } from '../helpers/tactic-clock';
+import { stepIndexAt, type TacticSchedule } from '../helpers/tactic-schedule';
 
-interface UseTacticPlaybackOptions {
-  readonly steps: readonly EditorStep[];
-  readonly activeStepIndex: number;
-  readonly setActiveStepIndex: (index: number) => void;
+/** AGENTS.md §8: anything read as text follows the clock at 10 Hz, not at the rate it moves. */
+const READOUT_INTERVAL_MS = 100;
+
+interface Options {
+  readonly schedule: TacticSchedule;
+  readonly stepIndex: number;
+  readonly onStepChange: (index: number) => void;
+  /** Paints the plate; the animation loop calls it every frame, outside React. */
+  readonly repaint: () => void;
 }
 
-export function useTacticPlayback({
-  steps,
-  activeStepIndex,
-  setActiveStepIndex,
-}: UseTacticPlaybackOptions) {
+/**
+ * Plays the schedule on a frame clock. The clock is a plain object; React sees only whether it is
+ * playing and its speed, and a readout that ticks at 10 Hz.
+ */
+export function useTacticPlayback({ schedule, stepIndex, onStepChange, repaint }: Options) {
+  const clock = useMemo(createTacticClock, []);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackTime, setPlaybackTime] = useState(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [isShown, setIsShown] = useState(false);
+  const [speed, setSpeedState] = useState(clock.speed);
 
-  // Last step offset + 3s margin, min 5s
-  const totalDuration = useMemo(() => computeTotalDuration(steps), [steps]);
+  const latest = useRef({ schedule, stepIndex, onStepChange, repaint });
+  latest.current = { schedule, stepIndex, onStepChange, repaint };
 
-  const lastTimeRef = useRef<number | null>(null);
-  const wasPlayingRef = useRef(false);
+  const pause = useCallback(() => {
+    clock.isPlaying = false;
+    setIsPlaying(false);
+  }, [clock]);
+
+  const stop = useCallback(() => {
+    clock.isPlaying = false;
+    clock.isShown = false;
+    setIsPlaying(false);
+    setIsShown(false);
+    latest.current.repaint();
+  }, [clock]);
+
+  const play = useCallback(() => {
+    const { schedule: plan, stepIndex: index } = latest.current;
+    const isAtEnd = clock.isShown && clock.time >= plan.totalSeconds;
+    if (!clock.isShown || isAtEnd) clock.time = plan.steps[isAtEnd ? 0 : index]?.startSeconds ?? 0;
+    clock.isPlaying = true;
+    clock.isShown = true;
+    setIsPlaying(true);
+    setIsShown(true);
+  }, [clock]);
+
+  const toggle = useCallback(() => (clock.isPlaying ? pause() : play()), [clock, pause, play]);
+
+  const setSpeed = useCallback(
+    (next: number) => {
+      clock.speed = next;
+      setSpeedState(next);
+    },
+    [clock],
+  );
 
   useEffect(() => {
-    if (wasPlayingRef.current && !isPlaying) {
-      setActiveStepIndex(findActiveStepIndex(steps, playbackTime));
-    }
-    wasPlayingRef.current = isPlaying;
-  }, [isPlaying, playbackTime, steps, setActiveStepIndex]);
+    if (!isPlaying) return;
+    let handle = 0;
+    let previousMs = 0;
+    let lastStep = -1;
 
-  useEffect(() => {
-    if (!isPlaying) {
-      lastTimeRef.current = null;
-      return;
-    }
+    const frame = (nowMs: number): void => {
+      const { schedule: plan, onStepChange: follow, repaint: paint } = latest.current;
+      const isMore = advanceTacticClock(
+        clock,
+        frameElapsedMs(previousMs, nowMs),
+        plan.totalSeconds,
+      );
+      previousMs = nowMs;
 
-    let animationFrameId: number;
-
-    const tick = (now: number) => {
-      if (lastTimeRef.current === null) {
-        lastTimeRef.current = now;
-      } else {
-        const deltaSeconds = ((now - lastTimeRef.current) / 1000) * playbackSpeed;
-        lastTimeRef.current = now;
-
-        setPlaybackTime((prev) => {
-          const next = prev + deltaSeconds;
-          if (next >= totalDuration) {
-            setIsPlaying(false);
-            return totalDuration;
-          }
-          return next;
-        });
+      const index = stepIndexAt(plan, clock.time);
+      if (index !== lastStep) {
+        lastStep = index;
+        follow(index);
       }
+      paint();
 
-      animationFrameId = requestAnimationFrame(tick);
+      if (!isMore) {
+        clock.isPlaying = false;
+        setIsPlaying(false);
+        return;
+      }
+      handle = requestAnimationFrame(frame);
     };
 
-    animationFrameId = requestAnimationFrame(tick);
+    const forgetPreviousFrame = (): void => {
+      previousMs = 0;
+    };
 
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, playbackSpeed, totalDuration]);
+    document.addEventListener('visibilitychange', forgetPreviousFrame);
+    handle = requestAnimationFrame(frame);
+    return () => {
+      document.removeEventListener('visibilitychange', forgetPreviousFrame);
+      cancelAnimationFrame(handle);
+    };
+  }, [clock, isPlaying]);
 
-  const togglePlay = useCallback(() => {
-    setIsPlaying((prev) => {
-      if (!prev && playbackTime >= totalDuration) {
-        setPlaybackTime(0);
-      }
-      return !prev;
-    });
-  }, [playbackTime, totalDuration]);
+  return { clock, isPlaying, isShown, speed, play, pause, toggle, stop, setSpeed };
+}
 
-  const seek = useCallback(
-    (time: number) => {
-      const clamped = Math.max(0, Math.min(totalDuration, time));
-      setPlaybackTime(clamped);
-      setActiveStepIndex(findActiveStepIndex(steps, clamped));
-    },
-    [totalDuration, steps, setActiveStepIndex],
-  );
+/** The clock's time as text can read it: refreshed at 10 Hz while it moves. */
+export function useClockReadout(clock: { readonly time: number }, isActive: boolean): number {
+  const [seconds, setSeconds] = useState(clock.time);
 
-  const selectStep = useCallback(
-    (index: number) => {
-      setActiveStepIndex(index);
-      const step = steps[index];
-      if (step !== undefined) {
-        setPlaybackTime(step.timeOffsetSeconds);
-      }
-    },
-    [steps, setActiveStepIndex],
-  );
+  useEffect(() => {
+    setSeconds(clock.time);
+    if (!isActive) return;
+    const timer = setInterval(() => setSeconds(clock.time), READOUT_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [clock, isActive]);
 
-  const jumpStep = useCallback(
-    (direction: 'prev' | 'next') => {
-      const targetIndex =
-        direction === 'prev'
-          ? Math.max(0, activeStepIndex - 1)
-          : Math.min(steps.length - 1, activeStepIndex + 1);
-
-      selectStep(targetIndex);
-    },
-    [activeStepIndex, steps.length, selectStep],
-  );
-
-  return {
-    state: { isPlaying, playbackTime, playbackSpeed, totalDuration },
-    setPlaybackSpeed,
-    togglePlay,
-    seek,
-    jumpStep,
-    selectStep,
-  };
+  return seconds;
 }

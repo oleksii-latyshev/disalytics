@@ -1,8 +1,8 @@
 import type { Tactic } from '@disa/demo-core';
 import { openTacticStore, type TacticStore } from '@disa/demo-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { generateId } from '../helpers/editor-actions';
 import { renewedPlans } from '../helpers/tactic-copy';
+import { generateId } from '../helpers/tactic-ids';
 import { TACTIC_READ_OPTIONS } from '../helpers/tactic-transfer';
 
 export function useTactics() {
