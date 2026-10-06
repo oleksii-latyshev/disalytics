@@ -8,6 +8,7 @@ export interface BoardHintInput {
   /** Whether the route under the pointer has no walkable way, or null when none is shown. */
   readonly isPreviewUnreachable: boolean | null;
   readonly lineupCount: number;
+  readonly hasPickedEnemy?: boolean | undefined;
 }
 
 export interface BoardHint {
@@ -20,7 +21,9 @@ export interface BoardHint {
     | 'routeBroken'
     | 'pen'
     | 'grenade'
-    | 'grenadeNone';
+    | 'grenadeNone'
+    | 'enemy'
+    | 'enemyPicked';
   readonly slot: number;
 }
 
@@ -28,6 +31,9 @@ export interface BoardHint {
 export function boardHint(input: BoardHintInput): BoardHint {
   const slot = (input.selectedSlot ?? 0) + 1;
   if (input.isShown) return { key: 'playing', slot };
+  if (input.tool === 'enemy') {
+    return { key: input.hasPickedEnemy === true ? 'enemyPicked' : 'enemy', slot };
+  }
   if (input.tool === 'select') return { key: 'select', slot };
   if (input.selectedSlot === null) return { key: 'pickPlayer', slot };
   if (input.isDead) return { key: 'dead', slot };

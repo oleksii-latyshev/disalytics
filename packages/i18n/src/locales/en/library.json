@@ -627,7 +627,9 @@
         "pen": "Drag to draw player {slot}'s route by hand.",
         "grenade": "Click a lineup mark and player {slot} stands at its spot and throws; click anywhere else for a hand throw.",
         "grenadeNone": "No lineups of this kind here. Click anywhere to throw by hand.",
-        "playing": "Playing the plan. Click the map to stop and edit."
+        "playing": "Playing the plan. Click the map to stop and edit.",
+        "enemy": "Click where you expect an enemy; click a mark to pick it, drag to move it.",
+        "enemyPicked": "Drag the picked enemy to move it; Delete removes it. Click empty ground to place another."
       },
       "roster": {
         "title": "Players · step {index}",
@@ -704,6 +706,30 @@
       "header": {
         "undo": "Undo",
         "redo": "Redo"
+      },
+      "enemy": {
+        "section": "Expected enemies",
+        "tool": "Enemy",
+        "toolTip": "Mark where you expect an enemy and what they do",
+        "title": "Enemy",
+        "assumption": "Assumption for step {step}",
+        "remove": "Remove enemy",
+        "note": "What we expect",
+        "notePlaceholder": "e.g. AWP holds window",
+        "role": "Role",
+        "roles": {
+          "anchor": "Anchor",
+          "awp": "AWP",
+          "rotator": "Rotator",
+          "lurker": "Lurker"
+        },
+        "taker": "Who takes him",
+        "nobody": "Nobody",
+        "pickPlayer": "Player {slot}",
+        "kill": "Mark as killed in this step",
+        "killed": "Killed in this step; press to bring back",
+        "pick": "Enemy {number}",
+        "empty": "No enemies marked in this step."
       }
     }
   },

@@ -1,6 +1,8 @@
 import {
   effectiveSteps,
   type Tactic,
+  type TacticEnemy,
+  type TacticEnemyRole,
   type TacticPoint,
   type TacticRound,
   type TacticRouteMode,
@@ -15,6 +17,7 @@ import {
   type ThrowKind,
 } from '../helpers/tactic-editor-state';
 import * as edits from '../helpers/tactic-edits';
+import * as enemyEdits from '../helpers/tactic-enemy-edits';
 import { changeTacticMap, changeTacticSide, toggleTacticRound } from '../helpers/tactic-setup';
 
 export type { TacticTool, ThrowKind };
@@ -48,6 +51,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
       addStep: () => dispatch({ type: 'addStep' }),
       deleteStep: () => dispatch({ type: 'deleteStep' }),
       select: (slot: number | null) => dispatch({ type: 'select', slot }),
+      selectEnemy: (id: string | null) => dispatch({ type: 'selectEnemy', id }),
       setTool: (tool: TacticTool) => dispatch({ type: 'tool', tool }),
       setThrowKind: (kind: ThrowKind) => dispatch({ type: 'throwKind', kind }),
       endGesture,
@@ -78,6 +82,18 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
         edit((t, at) => edits.addLineupThrow(t, at, thrown, origin)),
       removeThrow: (throwId: string) => edit((t, at) => edits.removeThrow(t, at, throwId)),
       setSpawn: (slot: number, point: TacticPoint) => edit((t) => edits.setSpawn(t, slot, point)),
+      addEnemy: (enemy: TacticEnemy) => edit((t, at) => enemyEdits.addEnemy(t, at, enemy)),
+      removeEnemy: (id: string) => edit((t, at) => enemyEdits.removeEnemy(t, at, id)),
+      moveEnemy: (id: string, point: TacticPoint) =>
+        edit((t, at) => enemyEdits.moveEnemy(t, at, id, point), `enemy-move:${stepIndex}:${id}`),
+      setEnemyNote: (id: string, note: string) =>
+        edit((t, at) => enemyEdits.setEnemyNote(t, at, id, note), `enemy-note:${stepIndex}:${id}`),
+      setEnemyRole: (id: string, role: TacticEnemyRole) =>
+        edit((t, at) => enemyEdits.setEnemyRole(t, at, id, role)),
+      setEnemyTaker: (id: string, slot: number | null) =>
+        edit((t, at) => enemyEdits.setEnemyTaker(t, at, id, slot)),
+      setEnemyDead: (id: string, isDead: boolean) =>
+        edit((t, at) => enemyEdits.setEnemyDead(t, at, id, isDead)),
       changeMap: (map: string) => edit((t) => changeTacticMap(t, map)),
       changeSide: (side: TacticSide) => edit((t) => changeTacticSide(t, side)),
       toggleRound: (round: TacticRound) => edit((t) => toggleTacticRound(t, round)),
@@ -99,6 +115,7 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
     steps,
     step,
     selectedSlot: state.selectedSlot,
+    selectedEnemyId: state.selectedEnemyId,
     tool: state.tool,
     throwKind: state.throwKind,
     canUndo: state.history.past.length > 0,
