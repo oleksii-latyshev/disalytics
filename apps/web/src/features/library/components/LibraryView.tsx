@@ -165,32 +165,17 @@ export function LibraryView({ onEnter, onSample, onFile }: Props) {
               onRemove={forget}
             />
           ))}
+          {offered.map((sample) => (
+            <SampleCard key={sample.id} sample={sample} theme={theme} onOpen={onSample} />
+          ))}
           <OpenDemoCard onFile={onFile} />
         </ul>
       )}
 
-      {hasDemos && shown.length === 0 && (
+      {hasDemos && shown.length === 0 && offered.length === 0 && (
         <p className="text-13 text-ink-dim">
           <Text path="library.grid.noMatch" />
         </p>
-      )}
-
-      {offered.length > 0 && (
-        <section className="mt-4" aria-labelledby="library-samples-heading">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 pb-3">
-            <h3 id="library-samples-heading" className="text-13 font-medium">
-              <Text path="library.samples.title" />
-            </h3>
-            <p className="max-w-[60ch] text-11 text-ink-dim leading-prose">
-              <Text path="library.samples.note" />
-            </p>
-          </div>
-          <ul className="list-none [border-block-start:1px_solid_var(--color-line)] p-0">
-            {offered.map((sample) => (
-              <SampleCard key={sample.id} sample={sample} theme={theme} onOpen={onSample} />
-            ))}
-          </ul>
-        </section>
       )}
 
       {hasDemos && (
