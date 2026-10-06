@@ -22,6 +22,7 @@ import {
   heatFieldOf,
   heatFieldOfBins,
   heatRingsOf,
+  overlayPicture,
   ringPicture,
   routesOverlap,
   warmBin,
@@ -32,8 +33,11 @@ export const OTHER_READINGS = ['damageDealt', 'damageTaken', 'kills', 'utility']
 
 export type HeatReading = 'stood' | 'died' | (typeof OTHER_READINGS)[number];
 
-/** Two compared players on two plates, or on one, as the difference between them. */
-export type HeatCompareView = 'side' | 'difference';
+/**
+ * Two compared players on two plates, on one plate laid over each other, or on one as the
+ * difference between them.
+ */
+export type HeatCompareView = 'side' | 'overlay' | 'difference';
 
 /** One plate of the screen: what is drawn on it, whose it is, and the figure that goes beside it. */
 export interface HeatPlateSpec {
@@ -134,6 +138,11 @@ function ringPlate(rings: HeatRings, identity: HeatIdentity): HeatPlateSpec {
   return { picture: ringPicture(rings, identity), identity, total: rings.total };
 }
 
+/** Both players on one plate: the second striped, or dashed for rings, so hue is not all that tells them apart. */
+function overlayPlate(first: HeatPicture, second: HeatPicture, total: number): HeatPlateSpec {
+  return { picture: overlayPicture(first, second), identity: 'first', total };
+}
+
 function onePlayer(reading: HeatReading, provider: Provider): HeatView {
   const read = readOf(reading);
 
@@ -156,6 +165,19 @@ function twoPlayers(reading: HeatReading, view: HeatCompareView, provider: Provi
     provider.field('second', 'presence'),
   );
 
+  if (view === 'overlay' && reading === 'died') {
+    const first = provider.rings('first', read);
+    const second = provider.rings('second', read);
+
+    return {
+      plates: [
+        overlayPlate(ringPicture(first, 'first'), ringPicture(second, 'second', true), first.total),
+      ],
+      roster: first,
+      overlap,
+    };
+  }
+
   if (view === 'side' && reading === 'died') {
     const first = provider.rings('first', read);
 
@@ -172,6 +194,20 @@ function twoPlayers(reading: HeatReading, view: HeatCompareView, provider: Provi
   if (view === 'side') {
     return {
       plates: [fieldPlate(first, 'first'), fieldPlate(second, 'second')],
+      roster: first,
+      overlap,
+    };
+  }
+
+  if (view === 'overlay') {
+    return {
+      plates: [
+        overlayPlate(
+          fieldPicture(first, 'first'),
+          fieldPicture(second, 'second', true),
+          first.total,
+        ),
+      ],
       roster: first,
       overlap,
     };

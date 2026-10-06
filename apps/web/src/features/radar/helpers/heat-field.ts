@@ -28,7 +28,7 @@ const BLUR_RADIUS = 2;
 const BLUR_PASSES = 3;
 
 /** Where the ramp's hot end sits in the lit bins' own distribution. Everything past it saturates. */
-const HOT_QUANTILE = 0.95;
+const HOT_QUANTILE = 0.96;
 
 /**
  * A bin is lit when the kernel leaves it more than this share of the densest bin. The kernel's own

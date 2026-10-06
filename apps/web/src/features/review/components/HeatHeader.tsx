@@ -18,6 +18,7 @@ export function HeatHeader({ title, subtitle, figure, view, onView }: Props) {
   const t = useT();
   const options: readonly ChoiceOption<HeatCompareView>[] = [
     { value: 'side', label: t('review.heat.views.side') },
+    { value: 'overlay', label: t('review.heat.views.overlay') },
     { value: 'difference', label: t('review.heat.views.difference') },
   ];
 

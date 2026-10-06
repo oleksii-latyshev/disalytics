@@ -402,6 +402,7 @@
     "player": "Player",
     "playerA": "Player A",
     "playerB": "Player B",
+    "layer": "Show {player} on the plate",
     "team": "Started {side}",
     "deaths": "{count, plural, one {# death} other {# deaths}}",
     "buy": {
@@ -450,6 +451,7 @@
     "views": {
       "label": "How to compare",
       "side": "Side by side",
+      "overlay": "Overlay",
       "difference": "Difference"
     },
     "overlap": "routes overlap {share, number, percent}",
@@ -457,6 +459,7 @@
       "field": "less often → more often; counts time while the player is alive",
       "rings": "a ring is where they died",
       "pair": "each player has their own colour; brightness is the share of their own total",
+      "overlay": "{first} in yellow, {second} in pink and striped (rings dashed); brighter is more of their own time, and where both were, both show",
       "difference": "{second} in pink — where they spend more of their time; {first} in yellow — where they do; where it is the same, nothing",
       "events": "each mark stands where the player was at the event; damage counts only the health left",
       "utility": "each grenade stands where it went off; one that never did is not drawn"

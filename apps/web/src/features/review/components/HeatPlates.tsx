@@ -1,6 +1,6 @@
 import type { ParsedDemo } from '@disa/demo-core';
 import { cn } from '@disa/ui';
-import { HeatPlate } from '@/features/radar';
+import { HeatPlate, type HeatShown } from '@/features/radar';
 import type { HeatPlateSpec, HeatReading } from '../helpers/heat-view';
 import { HeatFigure } from './HeatFigure';
 import { HeatLegend, type HeatLegendKind } from './HeatLegend';
@@ -13,24 +13,35 @@ interface Props {
   labels: readonly (string | null)[];
   legend: HeatLegendKind;
   names: { first: string; second: string };
+  /** Which compared players are drawn: an overlay leaves the hidden one out, side by side dims its plate. */
+  shown: HeatShown;
 }
 
 /**
  * The plate, or two of them side by side, each at the largest size its cell allows.
  *
- * Two compared players keep one colour each — yellow and pink — on their own plate and in the
- * difference, and the name above a plate carries the same dot.
+ * Two compared players keep one colour each — yellow and pink — on their own plate, in the
+ * difference and in the overlay, where the second is also striped; the name above a plate carries
+ * the same dot.
  */
-export function HeatPlates({ demo, plates, reading, labels, legend, names }: Props) {
+export function HeatPlates({ demo, plates, reading, labels, legend, names, shown }: Props) {
   return (
     <section
       className={cn('relative grid min-h-0 min-w-0 gap-4', plates.length === 2 && 'grid-cols-2')}
     >
       {plates.map((plate, at) => {
         const label = labels[at] ?? null;
+        const isDimmed =
+          plates.length === 2 && !shown[plate.identity === 'second' ? 'second' : 'first'];
 
         return (
-          <div key={plate.identity} className="flex min-h-0 min-w-0 flex-col items-center gap-1.5">
+          <div
+            key={plate.identity}
+            className={cn(
+              'flex min-h-0 min-w-0 flex-col items-center gap-1.5 transition-opacity duration-(--duration-micro) ease-out',
+              isDimmed && 'opacity-30',
+            )}
+          >
             {label !== null && (
               <span className="flex items-center gap-2 font-semibold text-13 text-ink">
                 <span
@@ -48,7 +59,7 @@ export function HeatPlates({ demo, plates, reading, labels, legend, names }: Pro
             )}
 
             <div className="grid min-h-0 w-full flex-1">
-              <HeatPlate demo={demo} picture={plate.picture} />
+              <HeatPlate demo={demo} picture={plate.picture} shown={shown} />
             </div>
           </div>
         );
