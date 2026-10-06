@@ -1,4 +1,4 @@
-import { useT } from '@disa/i18n';
+import { useLocale, useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
 import { useReducedMotionConfig } from '@disa/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -34,11 +34,23 @@ function TacticCanvas({
 }: Omit<TacticPlateProps, 'map'> & { readonly overview: MapOverview }) {
   const t = useT();
   const { side, schedule, step, stepIndex, selectedSlot, tool, clock, isShown } = props;
+  const { enemyMarks, selectedEnemyId } = props;
   const [theme] = useSetting('radarTheme');
   const [palette] = useSetting('palette');
   const isReduced = useReducedMotionConfig() === true;
 
   const image = useRadarImage(radarAssetPath(levelAt(overview, 0), theme));
+  const locale = useLocale();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `t` is new every render and the labels change only with the locale
+  const roleLabels = useMemo(
+    () => ({
+      anchor: t('library.tactics.board.enemy.roles.anchor'),
+      awp: t('library.tactics.board.enemy.roles.awp'),
+      rotator: t('library.tactics.board.enemy.roles.rotator'),
+      lurker: t('library.tactics.board.enemy.roles.lurker'),
+    }),
+    [locale],
+  );
   const colors = radarColors(palette);
   const slotInks = slotColors(palette);
 
@@ -96,6 +108,9 @@ function TacticCanvas({
       lineups: tool === 'grenade' ? props.lineups : undefined,
       hoveredLineupId: hover.lineupId,
       hoveredHandle: hover.handle,
+      enemyMarks,
+      selectedEnemyId,
+      enemyRoleLabels: roleLabels,
       spawnSpots,
       preview: previewRef,
       liveStroke: liveStrokeRef,
@@ -118,6 +133,9 @@ function TacticCanvas({
     hover,
     spawnSpots,
     image,
+    enemyMarks,
+    selectedEnemyId,
+    roleLabels,
   ]);
 
   const { canvasRef, repaint } = useCanvasLayers(layers);

@@ -28,3 +28,8 @@ export function slotColors(palette: Palette): SlotColors {
 export function slotVar(slot: number): string {
   return SLOT_VARS[slot % SLOT_VARS.length] ?? SLOT_VARS[0] ?? '';
 }
+
+/** A side's colour as a CSS value for markup, so the enemy's marks follow the palette too. */
+export function enemySideVar(side: 'CT' | 'T'): string {
+  return side === 'CT' ? 'var(--color-ct)' : 'var(--color-t)';
+}

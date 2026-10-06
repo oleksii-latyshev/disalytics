@@ -15,8 +15,7 @@ import {
   undo,
 } from './tactic-history';
 
-/** Tools of the map. The enemy tool of the expected-enemies work takes its slot here. */
-export type TacticTool = 'select' | 'route' | 'pen' | 'grenade';
+export type TacticTool = 'select' | 'route' | 'pen' | 'grenade' | 'enemy';
 
 export type ThrowKind = Extract<UtilityKind, 'smoke' | 'flash' | 'fire' | 'he'>;
 
@@ -28,6 +27,8 @@ export interface EditorState {
   readonly planId: string;
   readonly stepIndex: number;
   readonly selectedSlot: number | null;
+  /** An expected enemy of the step in view; only one of a player and an enemy is picked at a time. */
+  readonly selectedEnemyId: string | null;
   readonly tool: TacticTool;
   readonly throwKind: ThrowKind;
 }
@@ -46,6 +47,7 @@ export type EditorAction =
   | { readonly type: 'addStep' }
   | { readonly type: 'deleteStep' }
   | { readonly type: 'select'; readonly slot: number | null }
+  | { readonly type: 'selectEnemy'; readonly id: string | null }
   | { readonly type: 'tool'; readonly tool: TacticTool }
   | { readonly type: 'throwKind'; readonly kind: ThrowKind };
 
@@ -55,6 +57,7 @@ export function initialEditorState(tactic: Tactic): EditorState {
     planId: rootPlan(tactic)?.id ?? '',
     stepIndex: 0,
     selectedSlot: 0,
+    selectedEnemyId: null,
     tool: 'route',
     throwKind: 'smoke',
   };
@@ -107,7 +110,17 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return withHistory(state, applyEdit(state.history, next, null));
     }
     case 'select':
-      return { ...state, selectedSlot: action.slot };
+      return {
+        ...state,
+        selectedSlot: action.slot,
+        selectedEnemyId: action.slot === null ? state.selectedEnemyId : null,
+      };
+    case 'selectEnemy':
+      return {
+        ...state,
+        selectedEnemyId: action.id,
+        selectedSlot: action.id === null ? state.selectedSlot : null,
+      };
     case 'tool':
       return { ...state, tool: action.tool };
     case 'throwKind':
