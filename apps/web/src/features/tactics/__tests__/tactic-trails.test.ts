@@ -1,28 +1,21 @@
 import { getMapOverview } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import { type EditorStep, toEditorTactic } from '../helpers/editor-tactic';
+import { addWaypoint } from '../helpers/tactic-edits';
 import { createNewTactic } from '../helpers/tactic-setup';
 import { tacticSketch } from '../helpers/tactic-trails';
-import { tacticFromEditor } from './tactic-fixture';
 
 describe('tacticSketch', () => {
   const base = createNewTactic('de_mirage', 'T');
-  const editor = toEditorTactic(base);
-  const first = editor.steps[0] as EditorStep;
+  const at = { planId: base.plans[0]?.id ?? '', stepIndex: 0 };
 
   it('leaves players who never move without a trail', () => {
-    const sketch = tacticSketch(base);
-    expect(sketch?.trails).toHaveLength(0);
+    expect(tacticSketch(base)?.trails).toHaveLength(0);
   });
 
-  it('draws a trail for a player who moves between steps', () => {
-    const moved: EditorStep = {
-      ...first,
-      id: 'second',
-      players: first.players.map((p) => (p.slot === 0 ? { ...p, x: p.x + 500 } : p)),
-    };
-    const tactic = tacticFromEditor({ ...editor, steps: [first, moved] });
-    const sketch = tacticSketch(tactic);
+  it('draws a trail for a player with a route', () => {
+    const spawn = base.spawns[0] ?? { x: 0, y: 0 };
+    const routed = addWaypoint(base, at, 0, { x: spawn.x + 500, y: spawn.y });
+    const sketch = tacticSketch(routed);
     expect(sketch?.trails).toHaveLength(1);
     expect(sketch?.trails[0]?.d.startsWith('M')).toBe(true);
   });
@@ -39,10 +32,16 @@ describe('tacticSketch', () => {
       to: point,
       releaseTime: 0,
     });
-    const tactic = tacticFromEditor({
-      ...editor,
-      steps: [{ ...first, throws: [grenade('a', 'smoke'), grenade('b', 'flash')] }],
-    });
+    const tactic = {
+      ...base,
+      plans: base.plans.map((plan) => ({
+        ...plan,
+        steps: plan.steps.map((step) => ({
+          ...step,
+          throws: [grenade('a', 'smoke'), grenade('b', 'flash')],
+        })),
+      })),
+    };
     expect(tacticSketch(tactic)?.smokes).toEqual([{ x: 0, y: 0 }]);
   });
 

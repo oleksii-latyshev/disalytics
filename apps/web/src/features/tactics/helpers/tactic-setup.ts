@@ -1,13 +1,14 @@
 import {
+  mainSteps,
   TACTIC_ROUNDS,
   type Tactic,
   type TacticPoint,
   type TacticRound,
   type TacticSide,
+  type TacticStep,
 } from '@disa/demo-core';
 import { getMapOverview, mapSpawns, RADAR_IMAGE_SIZE } from '@disa/map-data';
-import { generateId } from './editor-actions';
-import { type EditorPlayer, toEditorTactic } from './editor-tactic';
+import { generateId } from './tactic-ids';
 import { tacticRadarToWorld } from './tactic-plot';
 
 export const TACTIC_SLOT_COUNT = 5;
@@ -24,42 +25,31 @@ export function spawnIndices(count: number): readonly number[] {
   );
 }
 
-/** Five players on distinct spawn spots of their side, where a round starts; null without data. */
-function spawnPlayers(map: string, side: TacticSide): readonly EditorPlayer[] | null {
-  const spawns = mapSpawns(map, side);
-  const indices = spawnIndices(spawns.length);
-  if (indices.length === 0) return null;
-  return indices.map((spawnIndex, slot) => {
-    const spawn = spawns[spawnIndex];
-    return { slot, x: spawn?.x ?? 0, y: spawn?.y ?? 0, yaw: 0 };
-  });
-}
-
 /**
- * Five players on their side's spawn spots when the map has them, so a tactic starts where a round
- * does; otherwise in a row along the plate edge of their side, spaced so tokens and their labels
- * do not touch. The tactic builder drags them from there.
+ * The five spawn spots of a side, one per slot: where a tactic's players start the round. A map
+ * without measured spots gets a row along the plate edge of the side, spaced so tokens and their
+ * labels do not touch.
  */
-export function startingPlayers(map: string, side: TacticSide): readonly EditorPlayer[] {
-  const spawned = spawnPlayers(map, side);
-  if (spawned !== null) return spawned;
+export function tacticSpawns(map: string, side: TacticSide): readonly TacticPoint[] {
+  const spots = mapSpawns(map, side);
+  const indices = spawnIndices(spots.length);
+  if (indices.length > 0) {
+    return indices.map((spotIndex) => ({
+      x: spots[spotIndex]?.x ?? 0,
+      y: spots[spotIndex]?.y ?? 0,
+    }));
+  }
+
   const overview = getMapOverview(map);
   return Array.from({ length: TACTIC_SLOT_COUNT }, (_, slot) => {
-    if (overview === undefined) {
-      return { slot, x: slot * FALLBACK_SPACING_UNITS, y: 0, yaw: 0 };
-    }
+    if (overview === undefined) return { x: slot * FALLBACK_SPACING_UNITS, y: 0 };
     const offset = (slot - (TACTIC_SLOT_COUNT - 1) / 2) * FORMATION_SPACING_RADAR;
     const world = tacticRadarToWorld(overview, {
       x: RADAR_IMAGE_SIZE / 2 + offset,
       y: side === 'T' ? RADAR_IMAGE_SIZE - FORMATION_MARGIN_RADAR : FORMATION_MARGIN_RADAR,
     });
-    return { slot, x: Math.round(world.x), y: Math.round(world.y), yaw: 0 };
+    return { x: Math.round(world.x), y: Math.round(world.y) };
   });
-}
-
-/** The five spawn spots of a side, one per slot: where a tactic's players start the round. */
-export function tacticSpawns(map: string, side: TacticSide): readonly TacticPoint[] {
-  return startingPlayers(map, side).map(({ x, y }) => ({ x, y }));
 }
 
 export function createNewTactic(map: string, side: TacticSide): Tactic {
@@ -88,7 +78,6 @@ export function createNewTactic(map: string, side: TacticSide): Tactic {
             players: spawns.map((_, slot) => ({
               slot,
               route: { mode: 'points', points: [] },
-              yaw: 0,
             })),
             throws: [],
             drawings: [],
@@ -99,29 +88,35 @@ export function createNewTactic(map: string, side: TacticSide): Tactic {
   };
 }
 
-function samePositions(a: readonly EditorPlayer[], b: readonly EditorPlayer[]): boolean {
+function isBlankStep(step: TacticStep): boolean {
   return (
-    a.length === b.length &&
-    a.every((player, index) => {
-      const other = b[index];
-      return other !== undefined && player.x === other.x && player.y === other.y;
-    })
+    step.name === '' &&
+    (step.idea ?? '') === '' &&
+    step.startsAt === null &&
+    step.throws.length === 0 &&
+    (step.drawings?.length ?? 0) === 0 &&
+    (step.enemies?.length ?? 0) === 0 &&
+    step.players.every(
+      (player) =>
+        player.route.points.length === 0 &&
+        (player.task ?? '') === '' &&
+        player.delaySeconds === undefined,
+    )
   );
+}
+
+function sameSpawns(a: readonly TacticPoint[], b: readonly TacticPoint[]): boolean {
+  return a.length === b.length && a.every((spot, i) => spot.x === b[i]?.x && spot.y === b[i]?.y);
 }
 
 /** Whether the board holds anything beyond the starting formation, so a reset would lose work. */
 export function hasEditorWork(tactic: Tactic): boolean {
-  const formation = startingPlayers(tactic.map, tactic.side);
-  const { steps } = toEditorTactic(tactic);
+  const steps = mainSteps(tactic);
   return (
     tactic.plans.length > 1 ||
     steps.length > 1 ||
-    steps.some(
-      (step) =>
-        step.throws.length > 0 ||
-        (step.drawings?.length ?? 0) > 0 ||
-        !samePositions(step.players, formation),
-    )
+    !steps.every(isBlankStep) ||
+    !sameSpawns(tactic.spawns, tacticSpawns(tactic.map, tactic.side))
   );
 }
 
@@ -141,7 +136,6 @@ function startOver(tactic: Tactic, map: string, side: TacticSide): Tactic {
         players: spawns.map((_, slot) => ({
           slot,
           route: { mode: 'points' as const, points: [] },
-          yaw: 0,
         })),
         throws: [],
         drawings: [],
