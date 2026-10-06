@@ -52,4 +52,54 @@ describe('editorReducer', () => {
     expect(replaced.throwKind).toBe('he');
     expect(replaced.history.past).toHaveLength(0);
   });
+
+  describe('branches', () => {
+    const withBranch = () => {
+      let state = editorReducer(start(), { type: 'addStep' });
+      state = editorReducer(state, { type: 'goToStep', index: 0 });
+      return editorReducer(state, {
+        type: 'branch',
+        request: { planId: state.planId, stepIndex: 0, deadSlot: null, condition: '' },
+      });
+    };
+
+    it('moves into the new branch and asks for its condition once', () => {
+      const state = withBranch();
+      expect(state.planId).not.toBe(state.history.present.plans[0]?.id);
+      expect(state.stepIndex).toBe(1);
+      expect(state.conditionFocus).toBe(state.planId);
+      expect(editorReducer(state, { type: 'conditionSeen' }).conditionFocus).toBeNull();
+    });
+
+    it('returns to the parent when undo takes the branch away, and brings it back on redo', () => {
+      const state = withBranch();
+      const root = state.history.present.plans[0]?.id ?? '';
+      const undone = editorReducer(state, { type: 'undo' });
+      expect(undone.planId).toBe(root);
+      expect(editorReducer(undone, { type: 'redo' }).history.present.plans).toHaveLength(2);
+    });
+
+    it('deletes a branch with its steps and lands on the parent', () => {
+      const state = withBranch();
+      const root = state.history.present.plans[0]?.id ?? '';
+      const next = editorReducer(state, { type: 'deletePlan', planId: state.planId });
+      expect(next.planId).toBe(root);
+      expect(next.history.present.plans).toHaveLength(1);
+      expect(editorReducer(next, { type: 'undo' }).history.present.plans).toHaveLength(2);
+    });
+
+    it('appends a step to the end of the lane it names', () => {
+      const state = withBranch();
+      const next = editorReducer(state, { type: 'appendStep', planId: state.planId });
+      expect(stepCountOf(next)).toBe(3);
+      expect(next.stepIndex).toBe(2);
+    });
+
+    it('refuses to delete a fork point', () => {
+      const state = withBranch();
+      const root = state.history.present.plans[0]?.id ?? '';
+      const next = editorReducer(state, { type: 'deleteStepAt', planId: root, index: 0 });
+      expect(next).toBe(state);
+    });
+  });
 });

@@ -1,96 +1,122 @@
-import type { TacticStep } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { cn } from '@disa/ui';
-import { Plus } from 'lucide-react';
-import { formatRoundClock, type StepSchedule } from '../helpers/tactic-schedule';
-
-/** One row of the strip: a plan's own steps. Branches add rows below the root's. */
-export interface PlanLane {
-  readonly planId: string;
-  /** Index in the plan's effective steps of the first card this lane shows. */
-  readonly firstIndex: number;
-  readonly steps: readonly TacticStep[];
-  readonly schedule: readonly (StepSchedule | undefined)[];
-}
+import { Button } from '@disa/ui';
+import { GitFork } from 'lucide-react';
+import { type MouseEvent, useEffect, useRef, useState } from 'react';
+import type { GraphNodeKey, PlanGraph } from '../helpers/tactic-plan-graph';
+import type { TacticSchedule } from '../helpers/tactic-schedule';
+import { PlanGraphView, STRIP_METRICS } from './PlanGraphView';
+import { TacticStepMenu } from './TacticStepMenu';
 
 export interface TacticPlanStripProps {
-  readonly lanes: readonly PlanLane[];
-  readonly currentPlanId: string;
-  readonly stepIndex: number;
-  readonly onSelect: (planId: string, index: number) => void;
+  readonly graph: PlanGraph;
+  readonly schedules: ReadonlyMap<string, TacticSchedule>;
+  /** The card of the step in view. */
+  readonly selected: GraphNodeKey | null;
+  readonly onOpen: (key: GraphNodeKey) => void;
+  readonly onLane: (planId: string) => void;
+  readonly onBranch: (key: GraphNodeKey) => void;
   readonly onAddStep: (planId: string) => void;
+  readonly onDelete: (key: GraphNodeKey) => void;
+  readonly deleteBlockOf: (key: GraphNodeKey) => string | null;
+  readonly onOpenTree: () => void;
 }
 
+interface OpenMenu {
+  readonly key: GraphNodeKey;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** The plans as lanes under the map: each branch row leaves the step it branches after. */
 export function TacticPlanStrip({
-  lanes,
-  currentPlanId,
-  stepIndex,
-  onSelect,
+  graph,
+  schedules,
+  selected,
+  onOpen,
+  onLane,
+  onBranch,
   onAddStep,
+  onDelete,
+  deleteBlockOf,
+  onOpenTree,
 }: TacticPlanStripProps) {
   const t = useT();
+  const root = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLFieldSetElement>(null);
+  const [menu, setMenu] = useState<OpenMenu | null>(null);
+  const selectedKey = selected === null ? '' : `${selected.planId}:${selected.index}`;
+
+  useEffect(() => {
+    if (selectedKey === '') return;
+    const card = scroller.current?.querySelector('[aria-pressed="true"][tabindex="0"]');
+    card?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [selectedKey]);
+
+  const handleMenu = (key: GraphNodeKey, event: MouseEvent<HTMLElement>) => {
+    const box = root.current?.getBoundingClientRect();
+    if (box === undefined) return;
+    setMenu({ key, x: event.clientX - box.left, y: event.clientY - box.top });
+  };
+
+  const menuNode =
+    menu === null
+      ? undefined
+      : graph.nodes.find((n) => n.planId === menu.key.planId && n.index === menu.key.index);
+  const box = root.current?.getBoundingClientRect();
 
   return (
-    <fieldset
-      aria-label={t('library.tactics.board.strip.label')}
-      className="m-0 flex min-w-0 flex-col gap-2 overflow-x-auto border-none px-3 pt-1 pb-3"
-    >
-      {lanes.map((lane) => (
-        <ol key={lane.planId} className="flex min-w-max items-stretch gap-2">
-          {lane.steps.map((step, offset) => {
-            const index = lane.firstIndex + offset;
-            const isCurrent = lane.planId === currentPlanId && index === stepIndex;
-            const name =
-              step.name.trim() || t('library.tactics.board.strip.unnamed', { index: index + 1 });
-            return (
-              <li key={step.id}>
-                <button
-                  type="button"
-                  aria-pressed={isCurrent}
-                  title={name}
-                  aria-label={t('library.tactics.board.strip.card', { index: index + 1, name })}
-                  onClick={() => onSelect(lane.planId, index)}
-                  className={cn(
-                    'flex h-full w-44 flex-col gap-1 rounded-card border p-2.5 text-left transition-colors',
-                    isCurrent
-                      ? 'border-ink bg-surface-2'
-                      : 'border-line bg-surface-1 hover:bg-hover',
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-surface-3 font-mono text-11">
-                      {index + 1}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-13 font-semibold">{name}</span>
-                    <span
-                      className={cn(
-                        'font-mono text-11 tabular-nums',
-                        step.startsAt === null ? 'text-ink-dim' : 'font-semibold text-ink',
-                      )}
-                    >
-                      {formatRoundClock(lane.schedule[offset]?.startSeconds ?? 0)}
-                    </span>
-                  </span>
-                  <span className="line-clamp-2 text-12 text-ink-dim leading-dense">
-                    {step.idea?.trim() || t('library.tactics.board.strip.noIdea')}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-          <li>
-            <button
-              type="button"
-              onClick={() => onAddStep(lane.planId)}
-              className="flex h-full min-h-16 items-center gap-1.5 rounded-card border border-dashed border-line-strong px-3 text-13 text-ink-dim transition-colors hover:bg-hover hover:text-ink"
-              aria-label={t('library.tactics.board.strip.addStep')}
-            >
-              <Plus className="size-4" />
-              {t('library.tactics.board.step.add')}
-            </button>
-          </li>
-        </ol>
-      ))}
-    </fieldset>
+    <div ref={root} className="relative flex min-w-0 flex-col gap-1.5 px-3 pt-1 pb-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-12 text-ink-dim">{t('library.tactics.board.strip.label')}</span>
+        <Button
+          variant="outline"
+          onClick={onOpenTree}
+          title={t('library.tactics.board.tree.openTip')}
+        >
+          <GitFork aria-hidden="true" />
+          {t('library.tactics.board.tree.open', { count: graph.rowCount })}
+        </Button>
+      </div>
+      <fieldset
+        ref={scroller}
+        aria-label={t('library.tactics.board.strip.label')}
+        className="m-0 max-h-44 min-w-0 overflow-auto rounded-card border border-line bg-surface-0 p-0"
+      >
+        <PlanGraphView
+          graph={graph}
+          metrics={STRIP_METRICS}
+          variant="strip"
+          schedules={schedules}
+          selected={selected}
+          onSelect={onOpen}
+          onLane={onLane}
+          onMenu={handleMenu}
+          onBranch={onBranch}
+          onAddStep={onAddStep}
+        />
+      </fieldset>
+      {menu !== null && menuNode !== undefined && box !== undefined && (
+        <TacticStepMenu
+          point={menu}
+          box={{ width: box.width, height: box.height }}
+          stepIndex={menu.key.index}
+          stepName={menuNode.step.name}
+          deleteBlock={deleteBlockOf(menu.key)}
+          onOpen={() => {
+            setMenu(null);
+            onOpen(menu.key);
+          }}
+          onBranch={() => {
+            setMenu(null);
+            onBranch(menu.key);
+          }}
+          onDelete={() => {
+            setMenu(null);
+            onDelete(menu.key);
+          }}
+          onClose={() => setMenu(null)}
+        />
+      )}
+    </div>
   );
 }
