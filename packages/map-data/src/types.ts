@@ -61,3 +61,38 @@ export interface PlateLayout {
   readonly height: number;
   readonly slots: readonly [PlateSlot, ...PlateSlot[]];
 }
+
+/**
+ * What `navgrid:generate` commits for one map: the floor traced off each level's radar image, one
+ * bit per cell (row-major, most significant bit first), base64. Level order is
+ * `MapOverview.levels`; every grid is `size` x `size` cells of `cell` radar pixels.
+ */
+export interface NavGridData {
+  readonly cell: number;
+  readonly size: number;
+  readonly levels: readonly string[];
+}
+
+/** One level's walkable cells, unpacked to a byte each so the path-finder reads them directly. */
+export interface NavLevel {
+  readonly cell: number;
+  readonly size: number;
+  /** `size * size` bytes, 1 = walkable, index `y * size + x`. */
+  readonly walkable: Uint8Array;
+}
+
+/** A map's walkable grids, one per `MapOverview.levels` entry. */
+export interface NavGrid {
+  readonly map: string;
+  readonly levels: readonly NavLevel[];
+}
+
+/**
+ * A route between two points. `points` start at the (snapped) origin and end at the (snapped)
+ * destination, so a drawn route never starts inside a wall. When `reachable` is false the two ends
+ * share no walkable ground — a straight two-point segment, which the caller should mark as such.
+ */
+export interface NavPath {
+  readonly points: readonly RadarPoint[];
+  readonly reachable: boolean;
+}
