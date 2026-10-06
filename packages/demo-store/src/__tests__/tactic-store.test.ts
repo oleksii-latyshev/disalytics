@@ -80,7 +80,7 @@ const legacyRecord = {
 
 function writeRaw(record: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
-    const opening = indexedDB.open('disalytics-user-tactics', 1);
+    const opening = indexedDB.open('disalytics-user-tactics', 2);
     opening.onerror = () => reject(opening.error);
     opening.onsuccess = () => {
       const db = opening.result;
@@ -223,5 +223,78 @@ describe('TacticStore (IndexedDB)', () => {
     await writeRaw({ id: 'junk', map: 'de_dust2', side: 'T' });
     await store.put(tacticA);
     expect((await store.list()).map((tactic) => tactic.id)).toEqual(['dust2-a-split']);
+  });
+});
+
+function dropDatabase(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deleting = indexedDB.deleteDatabase('disalytics-user-tactics');
+    deleting.onsuccess = () => resolve();
+    deleting.onerror = () => reject(deleting.error);
+  });
+}
+
+/** A database as the version before seeding left it, holding `records`. */
+function createVersionOne(records: readonly unknown[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const opening = indexedDB.open('disalytics-user-tactics', 1);
+    opening.onupgradeneeded = () => {
+      const store = opening.result.createObjectStore('tactics', { keyPath: 'id' });
+      store.createIndex('map', 'map', { unique: false });
+      store.createIndex('side', 'side', { unique: false });
+      for (const record of records) store.put(record);
+    };
+    opening.onerror = () => reject(opening.error);
+    opening.onsuccess = () => {
+      opening.result.close();
+      resolve();
+    };
+  });
+}
+
+async function openSeeded(): Promise<TacticStore> {
+  const opened = await openTacticStore({ seed: () => [tacticC] });
+  if (opened === null) throw new Error('Expected tactic store to open');
+  return opened;
+}
+
+describe('TacticStore seed', () => {
+  beforeEach(dropDatabase);
+  afterEach(dropDatabase);
+
+  it('plants the seed in a new database', async () => {
+    const store = await openSeeded();
+    expect(await store.list()).toEqual([tacticC]);
+    store.close();
+  });
+
+  it('plants it once, so a deleted seed stays deleted', async () => {
+    const first = await openSeeded();
+    await first.delete(tacticC.id);
+    first.close();
+
+    const second = await openSeeded();
+    expect(await second.list()).toEqual([]);
+    second.close();
+  });
+
+  it('plants it in a database from before seeding, beside what it holds', async () => {
+    await createVersionOne([tacticA]);
+
+    const store = await openSeeded();
+    expect((await store.list()).map((tactic) => tactic.id).sort()).toEqual([
+      tacticA.id,
+      tacticC.id,
+    ]);
+    store.close();
+  });
+
+  it('keeps the stored tactic when it has the seed id', async () => {
+    const yours = { ...tacticC, title: 'Edited' };
+    await createVersionOne([yours]);
+
+    const store = await openSeeded();
+    expect(await store.list()).toEqual([yours]);
+    store.close();
   });
 });

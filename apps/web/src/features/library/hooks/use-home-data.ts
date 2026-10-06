@@ -1,8 +1,9 @@
 import type { CoachNote, ParsedDemo, Tactic } from '@disa/demo-core';
-import { openCoachNoteStore, openTacticStore, type SavedDemo } from '@disa/demo-store';
+import { openCoachNoteStore, type SavedDemo } from '@disa/demo-store';
 import { useEffect, useMemo, useState } from 'react';
 import { readSavedDemo } from '@/core/parsing';
 import { useSetting } from '@/core/settings';
+import { openTactics } from '@/core/tactic-defaults';
 import { parseReading, type Reading } from '../helpers/home-reading';
 import { lastMatchOf } from '../helpers/home-recent';
 import { useSavedDemos } from './use-saved-demos';
@@ -46,7 +47,7 @@ function useStoredList<T>(read: () => Promise<readonly T[]>, key: string): reado
 }
 
 async function tacticsNewestFirst(): Promise<readonly Tactic[]> {
-  const store = await openTacticStore();
+  const store = await openTactics();
   if (store === null) return NONE;
 
   try {

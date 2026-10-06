@@ -1,5 +1,5 @@
-import { openTacticStore } from '@disa/demo-store';
 import { useEffect, useState } from 'react';
+import { openTactics } from '@/core/tactic-defaults';
 
 /**
  * Whether a tactic with this id is already in the store: `true`, `false`, or `null` while the
@@ -10,7 +10,7 @@ export function useTacticStored(id: string): boolean | null {
 
   useEffect(() => {
     let isCurrent = true;
-    openTacticStore()
+    openTactics()
       .then(async (store) => {
         if (store === null) return;
         try {

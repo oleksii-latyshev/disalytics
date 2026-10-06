@@ -1,0 +1,861 @@
+{
+  "version": 2,
+  "generator": "disalytics",
+  "exportedAt": "2026-10-06T00:00:00.000Z",
+  "tactics": [
+    {
+      "id": "tactic-muwsc7ca-4lr07",
+      "title": "Магнолия",
+      "map": "de_mirage",
+      "side": "T",
+      "createdAt": 1791297596458,
+      "updatedAt": 1791300427041,
+      "spawns": [
+        {
+          "x": 1136,
+          "y": -256
+        },
+        {
+          "x": 1136,
+          "y": -64
+        },
+        {
+          "x": 1216,
+          "y": -307
+        },
+        {
+          "x": 1216,
+          "y": -115
+        },
+        {
+          "x": 1296,
+          "y": -352
+        }
+      ],
+      "plans": [
+        {
+          "id": "plan-muwsc7ca-w47q8",
+          "condition": "",
+          "parentId": null,
+          "forkAfter": 0,
+          "deaths": {},
+          "steps": [
+            {
+              "id": "step-muwsc7ca-m1ck9",
+              "name": "Занятие зон",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -12,
+                        "y": -860
+                      }
+                    ]
+                  },
+                  "task": "Дается инста смок (любой из игроков, что имеет респу под это) и происходит занятие мида громкое, чтоб игрок шорта был ближе на шорте к вам, чем к апсам"
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1460,
+                        "y": 683
+                      }
+                    ]
+                  },
+                  "task": "Имея первую респу, он покупает ПП и его главная задача занять B апсы так, чтоб игрок, что прыгает на машине его не увидел. Это делается прижавшивсь в апсах к левой стене и на шифте идя к стене с цветком внизу"
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": 340,
+                        "y": -267
+                      }
+                    ]
+                  },
+                  "task": "Дается инста смок (любой из игроков, что имеет респу под это) и происходит занятие мида громкое, чтоб игрок шорта был ближе на шорте к вам, чем к апсам"
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -258,
+                        "y": 542
+                      }
+                    ]
+                  },
+                  "task": "Он как вторая респа ближайшая к B апсам идет на первой респой, но останавливается проконтролировать андер, что его не пушат дожидаясь кола на втором шаге от игркоа 2"
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": 1290.76,
+                        "y": -352.57
+                      },
+                      {
+                        "x": -178,
+                        "y": -407
+                      }
+                    ]
+                  },
+                  "task": "Дается инста смок (любой из игроков, что имеет респу под это) и происходит занятие мида громкое, чтоб игрок шорта был ближе на шорте к вам, чем к апсам"
+                }
+              ],
+              "throws": [
+                {
+                  "throwerSlot": 4,
+                  "kind": "smoke",
+                  "from": {
+                    "x": 1290.76,
+                    "y": -352.57,
+                    "z": -167.97
+                  },
+                  "to": {
+                    "x": -1163.51,
+                    "y": -633.64,
+                    "z": -165.97
+                  },
+                  "releaseTime": 0,
+                  "id": "throw-muwsmfdp-r6r13"
+                }
+              ],
+              "drawings": [],
+              "idea": "Необходимо занять зоны в Б апсах так, чтоб противник этого не заметил и произвести основной шум на миду, чтоб игрок шорта не смотрел B апсы",
+              "enemies": [
+                {
+                  "id": "enemy-muwsv8e7-s6036",
+                  "at": {
+                    "x": -2159,
+                    "y": 748
+                  }
+                },
+                {
+                  "id": "enemy-muwsv9ra-thky5",
+                  "at": {
+                    "x": -783,
+                    "y": 219
+                  }
+                },
+                {
+                  "id": "enemy-muwsvcb2-iii9l",
+                  "at": {
+                    "x": -1175,
+                    "y": -840
+                  }
+                },
+                {
+                  "id": "enemy-muwsve3v-omo2r",
+                  "at": {
+                    "x": -611,
+                    "y": -1364
+                  }
+                },
+                {
+                  "id": "enemy-muwsvg57-c4xak",
+                  "at": {
+                    "x": -405,
+                    "y": -2163
+                  }
+                }
+              ]
+            },
+            {
+              "id": "step-muwsr4yq-6t7y0",
+              "name": "Врыв B",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": 143,
+                        "y": -457
+                      },
+                      {
+                        "x": -734,
+                        "y": -457
+                      }
+                    ]
+                  },
+                  "task": "Бежит помогать игроку 5 выбивать шорт"
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -2150,
+                        "y": 665
+                      }
+                    ]
+                  }
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": 501,
+                        "y": -154
+                      }
+                    ]
+                  },
+                  "task": "Должен кинуть смок кон поздний, чтоб можно была безопасно зайти шорт и кидает молик или смок в окно, чтоб АВП не могло пикать"
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -394,
+                        "y": 552
+                      }
+                    ]
+                  },
+                  "task": "Данный игрок становится на позицию откуда дается флешка на пик B апсов, чтоб она флешела B кар игрока и по колу игрока 2 дает ее"
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -415,
+                        "y": -408
+                      },
+                      {
+                        "x": -758,
+                        "y": -364
+                      }
+                    ]
+                  }
+                }
+              ],
+              "throws": [
+                {
+                  "id": "throw-muwsrmus-atnt9",
+                  "throwerSlot": 3,
+                  "kind": "flash",
+                  "from": {
+                    "x": -401,
+                    "y": 547
+                  },
+                  "to": {
+                    "x": -2101,
+                    "y": 576
+                  },
+                  "releaseTime": 0
+                },
+                {
+                  "id": "throw-muwt0rl2-e2lzq",
+                  "throwerSlot": 2,
+                  "kind": "smoke",
+                  "from": {
+                    "x": 501,
+                    "y": -154
+                  },
+                  "to": {
+                    "x": -694,
+                    "y": -845
+                  },
+                  "releaseTime": 0
+                },
+                {
+                  "id": "throw-muwt3um4-hvapp",
+                  "throwerSlot": 2,
+                  "kind": "fire",
+                  "from": {
+                    "x": -337,
+                    "y": -428
+                  },
+                  "to": {
+                    "x": -1194,
+                    "y": -668
+                  },
+                  "releaseTime": 0
+                },
+                {
+                  "id": "throw-muwtqszh-4efl2",
+                  "throwerSlot": 3,
+                  "kind": "flash",
+                  "from": {
+                    "x": -394,
+                    "y": 552
+                  },
+                  "to": {
+                    "x": -2112,
+                    "y": 557
+                  },
+                  "releaseTime": 0
+                }
+              ],
+              "idea": "Игроку 2 необходимо услышать действия противника на машине и после прыжка вправо противника заколить флешки игроку 4 и в это же время побежать убивать B кар",
+              "enemies": [
+                {
+                  "id": "enemy-muwsu9js-hx0ff",
+                  "at": {
+                    "x": -2179,
+                    "y": 787
+                  },
+                  "killedBy": 1,
+                  "role": "anchor",
+                  "note": "Будет чекать Б апсы прыгая"
+                },
+                {
+                  "id": "enemy-muwsxa8e-9av3w",
+                  "at": {
+                    "x": -807,
+                    "y": -154
+                  },
+                  "note": "Должен быть ближе к миду"
+                },
+                {
+                  "id": "enemy-muwsxx9t-fsvud",
+                  "at": {
+                    "x": -641,
+                    "y": -933
+                  }
+                },
+                {
+                  "id": "enemy-muwsxxrf-9o57b",
+                  "at": {
+                    "x": -1219,
+                    "y": -864
+                  }
+                },
+                {
+                  "id": "enemy-muwsxyxn-q4sfg",
+                  "at": {
+                    "x": -386,
+                    "y": -2167
+                  }
+                }
+              ]
+            },
+            {
+              "id": "step-muwt4078-13ff8",
+              "name": "Занятие B",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1307,
+                        "y": 287
+                      }
+                    ]
+                  },
+                  "task": "Помогает игроку номер 5"
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -2346,
+                        "y": -423
+                      }
+                    ]
+                  },
+                  "task": "После убийства B кара бежит занимать китчен"
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1199,
+                        "y": 209
+                      }
+                    ]
+                  },
+                  "task": "Бежит помагать игроку 5 и 1 добивать шорт"
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1704,
+                        "y": 459
+                      }
+                    ]
+                  },
+                  "task": "Помогает занимать B с апсов"
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1341,
+                        "y": 199
+                      }
+                    ]
+                  },
+                  "task": "Должен убить игрока шорта пока он фониться из-за пуша B апсов"
+                }
+              ],
+              "throws": [],
+              "enemies": [
+                {
+                  "id": "enemy-muwt4c1m-k0ku9",
+                  "at": {
+                    "x": -2179,
+                    "y": 782
+                  },
+                  "isDead": true
+                },
+                {
+                  "id": "enemy-muwt4d13-i8byt",
+                  "at": {
+                    "x": -851,
+                    "y": 204
+                  },
+                  "killedBy": 4
+                },
+                {
+                  "id": "enemy-muwt4g18-234c1",
+                  "at": {
+                    "x": -1660,
+                    "y": -1045
+                  },
+                  "role": "awp",
+                  "note": "Ротейтиться в китчен"
+                },
+                {
+                  "id": "enemy-muwt4id7-eyswb",
+                  "at": {
+                    "x": -675,
+                    "y": -869
+                  },
+                  "note": "Может подпушить кон"
+                },
+                {
+                  "id": "enemy-muwt4jq1-lh2cy",
+                  "at": {
+                    "x": -1238,
+                    "y": -2398
+                  },
+                  "note": "Ротейтиться в китчен"
+                }
+              ]
+            },
+            {
+              "id": "step-muwtakeh-f6adh",
+              "name": "Поставка бомбы",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1547,
+                        "y": 184
+                      },
+                      {
+                        "x": -1812,
+                        "y": 52
+                      }
+                    ]
+                  },
+                  "task": "Кидает флешку по колу 2 в китчен и может сыграть в размер с игроком 5"
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  },
+                  "task": "Дожидается перетяг и просит флешку от игроков 1, 3, 5"
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -905,
+                        "y": 126
+                      }
+                    ]
+                  },
+                  "task": "Отстается на шорту контролировать спину дожидаясь игрока, что мог подпушить кон"
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -2042,
+                        "y": 420
+                      },
+                      {
+                        "x": -2228,
+                        "y": 767
+                      }
+                    ]
+                  },
+                  "task": "Ставит бомбу и возвращаеться на кар смотреть апсы"
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1870,
+                        "y": -213
+                      }
+                    ]
+                  },
+                  "task": "Может занять позицию поближе к окну китчена, чтоб помочь игроку 2 убить ротейт плеера"
+                }
+              ],
+              "throws": [
+                {
+                  "id": "throw-muwtdyha-w0e1q",
+                  "throwerSlot": 0,
+                  "kind": "flash",
+                  "from": {
+                    "x": -1547,
+                    "y": 184
+                  },
+                  "to": {
+                    "x": -1949,
+                    "y": -408
+                  },
+                  "releaseTime": 0
+                }
+              ],
+              "enemies": [
+                {
+                  "id": "enemy-muwtanid-27msm",
+                  "at": {
+                    "x": -846,
+                    "y": 189
+                  },
+                  "isDead": true
+                },
+                {
+                  "id": "enemy-muwtay9x-cqow8",
+                  "at": {
+                    "x": -1993,
+                    "y": -492
+                  },
+                  "note": "Игрок мида пришел в китчен",
+                  "killedBy": 1
+                },
+                {
+                  "id": "enemy-muwtb0nz-8npk5",
+                  "at": {
+                    "x": -195,
+                    "y": -423
+                  },
+                  "note": "Подпушил кон"
+                },
+                {
+                  "id": "enemy-muwtb2or-kfbqn",
+                  "at": {
+                    "x": -1630,
+                    "y": -683
+                  },
+                  "note": "Перетянулся с А в китчен",
+                  "killedBy": 4
+                }
+              ]
+            },
+            {
+              "id": "step-muwtgm60-97325",
+              "name": "Удержание B",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1312,
+                        "y": 356
+                      }
+                    ]
+                  },
+                  "task": "Идет на ближе к Едварду, чтоб в случае чего  разменять игрока 3 или же не дать выпрыгнуть с апсом если там был противник"
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1978,
+                        "y": -619
+                      }
+                    ]
+                  },
+                  "task": "Забирает более ближнюю позицию китчена"
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  },
+                  "task": "Берет дуель с ротейт игроком"
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -1895,
+                        "y": -335
+                      }
+                    ]
+                  },
+                  "task": "Занимает окно китчена, чтоб помочь в случае его с апсами или же китченом"
+                }
+              ],
+              "throws": [],
+              "enemies": [
+                {
+                  "id": "enemy-muwtgptf-jti6z",
+                  "at": {
+                    "x": -2057,
+                    "y": -585
+                  },
+                  "isDead": true
+                },
+                {
+                  "id": "enemy-muwtgqky-7u14q",
+                  "at": {
+                    "x": -1875,
+                    "y": -536
+                  },
+                  "isDead": true
+                },
+                {
+                  "id": "enemy-muwtgyra-jktog",
+                  "at": {
+                    "x": -788,
+                    "y": -56
+                  },
+                  "killedBy": 2
+                }
+              ]
+            },
+            {
+              "id": "step-muwtkf7l-scvvh",
+              "name": "Победа",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                }
+              ],
+              "throws": [],
+              "enemies": [
+                {
+                  "id": "enemy-muwtkhwe-ahkx3",
+                  "at": {
+                    "x": -792,
+                    "y": -36
+                  },
+                  "isDead": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "plan-muwtlbsf-bnn1i",
+          "condition": "Если игрок 3 погибнет",
+          "parentId": "plan-muwsc7ca-w47q8",
+          "forkAfter": 4,
+          "deaths": {
+            "2": 5
+          },
+          "steps": [
+            {
+              "id": "step-muwtlbsf-y8t2x",
+              "name": "Размен",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": [
+                      {
+                        "x": -963,
+                        "y": 222
+                      }
+                    ]
+                  }
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                }
+              ],
+              "throws": [],
+              "enemies": [
+                {
+                  "id": "enemy-muwtlbsf-ph9qb",
+                  "at": {
+                    "x": -792,
+                    "y": -36
+                  },
+                  "killedBy": 0
+                }
+              ],
+              "idea": "Если дуель игрок 3 не выиграл, то игрок 1 должен разменять. Можно просто ожидая пика на Едварде"
+            },
+            {
+              "id": "step-muwtml3h-hvuoj",
+              "name": "Дуель выигран",
+              "startsAt": null,
+              "players": [
+                {
+                  "slot": 0,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 1,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 2,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 3,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                },
+                {
+                  "slot": 4,
+                  "route": {
+                    "mode": "points",
+                    "points": []
+                  }
+                }
+              ],
+              "throws": [],
+              "enemies": [
+                {
+                  "id": "enemy-muwtmrns-n3qi5",
+                  "at": {
+                    "x": -769,
+                    "y": 76
+                  },
+                  "isDead": true
+                }
+              ],
+              "idea": ""
+            }
+          ]
+        }
+      ],
+      "rounds": ["force"]
+    }
+  ]
+}
