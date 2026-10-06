@@ -270,15 +270,11 @@
     "coordinatesTitle": "Coordinates and console commands",
     "coordinatesOrigin": "Throw coordinates",
     "coordinatesLanding": "Landing coordinates",
-    "noImagesNotice": "No screenshot attached",
-    "zoomReset": "Reset zoom",
     "media": "Open image or guide",
     "delete": "Delete lineup",
     "deleteConfirm": "Delete this custom lineup?",
     "importSuccess": "Imported {count, plural, one {# lineup} other {# lineups}}.",
     "importError": "Failed to import lineups file.",
-    "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out",
     "previousPhoto": "Previous photo",
     "nextPhoto": "Next photo",
     "create": "Create lineup",
@@ -414,11 +410,9 @@
       "byHand": "Or press “Add lineup” and mark two points on the map: where it lands and where it was thrown from.",
       "onThisMap": "On this map"
     },
-    "origins": "Throw from · {count}",
-    "originMeta": "{type} · {count, plural, one {# photo} other {# photos}}",
+    "origins": "Where to throw from · {count}",
+    "originMeta": "{type} · {count, plural, one {# screenshot} other {# screenshots}}",
     "targetMeta": "{count, plural, one {# position} other {# positions}} · {side}",
-    "noPhotos": "No photos — add a crosshair screenshot, it makes the lineup easier to repeat.",
-    "openPhoto": "Open photo {number}",
     "howTo": {
       "title": "How to repeat",
       "stand": "Stand",
@@ -488,6 +482,23 @@
       "delete": "Delete",
       "discard": "Discard changes",
       "keepEditing": "Keep editing"
+    },
+    "originsHint": "hover — preview",
+    "peek": {
+      "shot": "{index} / {count}",
+      "noShot": "no screenshot",
+      "open": "Click — open full"
+    },
+    "position": {
+      "of": "{target} · position {index} of {count}",
+      "fromTo": "from → to",
+      "noShots": "This position has no crosshair screenshots yet.",
+      "addShot": "Add screenshot",
+      "shot": "Crosshair screenshot · {index} / {count}",
+      "shotNumber": "Screenshot {number}",
+      "previous": "Previous position",
+      "next": "Next position",
+      "keys": "[ ] position · ← → screenshot · Esc close"
     }
   },
   "tactics": {

@@ -62,7 +62,7 @@ export function arcPath(points: readonly PlatePoint[]): string {
   return path;
 }
 
-function ringRadius(overview: MapOverview, kind: UtilityKind): number {
+export function ringRadius(overview: MapOverview, kind: UtilityKind): number {
   const type = GRENADE_OF_KIND[kind];
   const units = type === undefined ? 0 : grenadeRadiusUnits(type);
 

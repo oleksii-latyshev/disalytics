@@ -270,15 +270,11 @@
     "coordinatesTitle": "Координаты и консольные данные",
     "coordinatesOrigin": "Координаты броска",
     "coordinatesLanding": "Координаты приземления",
-    "noImagesNotice": "Скриншот не прикреплен",
-    "zoomReset": "Сбросить масштаб",
     "media": "Открыть картинку или гайд",
     "delete": "Удалить лайнап",
     "deleteConfirm": "Удалить этот лайнап?",
     "importSuccess": "Импортировано: {count, plural, one {# лайнап} few {# лайнапа} many {# лайнапов} other {# лайнапа}}.",
     "importError": "Не удалось импортировать файл лайнапов.",
-    "zoomIn": "Приблизить карту",
-    "zoomOut": "Отдалить карту",
     "previousPhoto": "Предыдущее фото",
     "nextPhoto": "Следующее фото",
     "create": "Создать лайнап",
@@ -415,10 +411,8 @@
       "onThisMap": "На этой карте"
     },
     "origins": "Откуда бросать · {count}",
-    "originMeta": "{type} · {count, plural, one {# фото} few {# фото} many {# фото} other {# фото}}",
+    "originMeta": "{type} · {count, plural, one {# скриншот} few {# скриншота} many {# скриншотов} other {# скриншота}}",
     "targetMeta": "{count, plural, one {# позиция} few {# позиции} many {# позиций} other {# позиции}} · {side}",
-    "noPhotos": "Фото нет — добавьте скриншот прицела, так лайнап проще повторить.",
-    "openPhoto": "Открыть фото {number}",
     "howTo": {
       "title": "Как повторить",
       "stand": "Встать",
@@ -488,6 +482,23 @@
       "delete": "Удалить",
       "discard": "Отбросить изменения",
       "keepEditing": "Продолжить"
+    },
+    "originsHint": "наведите — предпросмотр",
+    "peek": {
+      "shot": "{index} / {count}",
+      "noShot": "нет скриншота",
+      "open": "Нажмите — открыть полностью"
+    },
+    "position": {
+      "of": "{target} · позиция {index} из {count}",
+      "fromTo": "откуда → куда",
+      "noShots": "У этой позиции пока нет скриншотов прицела.",
+      "addShot": "Добавить скриншот",
+      "shot": "Скриншот прицела · {index} / {count}",
+      "shotNumber": "Скриншот {number}",
+      "previous": "Предыдущая позиция",
+      "next": "Следующая позиция",
+      "keys": "[ ] позиция · ← → скриншот · Esc закрыть"
     }
   },
   "tactics": {
