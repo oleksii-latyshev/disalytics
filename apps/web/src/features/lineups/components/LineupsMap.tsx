@@ -21,10 +21,12 @@ import type { SavedTarget } from '../helpers/lineup-targets';
 import { platePointOf, worldPointAt } from '../helpers/plate-point';
 import { LineupAddMarks } from './LineupAddMarks';
 import { LineupEditHandles } from './LineupEditHandles';
+import { LineupPeek } from './LineupPeek';
 import { LineupSelectionOverlay } from './LineupSelectionOverlay';
 import { LineupStackMenu } from './LineupStackMenu';
 
 const NO_SAVED: ReadonlySet<string> = new Set();
+const PEEK_ID = 'lineup-peek';
 
 interface Props {
   map: string;
@@ -37,7 +39,12 @@ interface Props {
   draft: AddDraft | null;
   /** The lineup whose points can be taken hold of, or `null` when nothing is being edited. */
   editing: Lineup | null;
+  /** The position under the pointer or the keyboard, here or in the panel's list, or `null`. */
+  hoveredVariantId: string | null;
+  onHoverVariant: (id: string | null) => void;
   onSelectTarget: (id: string) => void;
+  /** A numbered origin was pressed: the position is opened — or only picked, while one is edited. */
+  onOpenVariant: (id: string) => void;
   onSelectVariant: (id: string) => void;
   onOpenStack: (id: string | null) => void;
   onClear: () => void;
@@ -61,6 +68,12 @@ function MapCanvas({ overview, ...props }: Props & { overview: MapOverview }) {
       t('library.lineups.originAria', { number, name: variant.lineup.title }),
     stack: (count, positions) => t('library.lineups.stackAria', { targets: count, positions }),
   };
+
+  const isEditing = editing !== null;
+  const peeked = isEditing
+    ? undefined
+    : selected?.variants.find(({ id }) => id === props.hoveredVariantId);
+  const peekedIndex = peeked === undefined ? -1 : (selected?.variants.indexOf(peeked) ?? -1);
 
   const step = draft === null ? null : addStep(draft);
   const landing = draft?.landing == null ? null : platePointOf(overview, draft.landing);
@@ -108,8 +121,10 @@ function MapCanvas({ overview, ...props }: Props & { overview: MapOverview }) {
               openStack={props.openStack}
               labels={labels}
               isAnimated
+              hoveredVariantId={isEditing ? null : props.hoveredVariantId}
+              onHoverVariant={isEditing ? undefined : props.onHoverVariant}
               onSelectTarget={props.onSelectTarget}
-              onSelectVariant={props.onSelectVariant}
+              onSelectVariant={isEditing ? props.onSelectVariant : props.onOpenVariant}
               onOpenStack={props.onOpenStack}
               stackMenu={(ids) => (
                 <LineupStackMenu
@@ -117,6 +132,16 @@ function MapCanvas({ overview, ...props }: Props & { overview: MapOverview }) {
                   onPick={props.onSelectTarget}
                 />
               )}
+            />
+          )}
+
+          {draft === null && peeked !== undefined && (
+            <LineupPeek
+              id={PEEK_ID}
+              variant={peeked}
+              number={peekedIndex + 1}
+              origin={platePointOf(overview, peeked.origin)}
+              layout={layout}
             />
           )}
 

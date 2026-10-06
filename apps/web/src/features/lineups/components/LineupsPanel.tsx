@@ -29,12 +29,12 @@ export function panelModeOf(
 
 export interface PanelActions {
   onPick: (id: string) => void;
-  onVariant: (id: string) => void;
+  onHoverVariant: (id: string | null) => void;
+  onOpenVariant: (id: string) => void;
   onClose: () => void;
   onAdd: () => void;
   onEdit: () => void;
   onAnother: () => void;
-  onOpenPhoto: (index: number) => void;
   onDone: () => void;
   onDetails: (lineup: Lineup) => void;
   onAddBounce: (lineup: Lineup) => void;
@@ -54,11 +54,21 @@ interface Props {
   targets: readonly SavedTarget[];
   isSaving: boolean;
   hasFailed: boolean;
+  /** The position hovered on the map or in the list, so the list lights the same one. */
+  hoveredVariantId: string | null;
   actions: PanelActions;
 }
 
 /** The right column: it is whatever the reader is doing — nothing yet, reading one, editing one, or adding one. */
-export function LineupsPanel({ map, mode, targets, isSaving, hasFailed, actions }: Props) {
+export function LineupsPanel({
+  map,
+  mode,
+  targets,
+  isSaving,
+  hasFailed,
+  hoveredVariantId,
+  actions,
+}: Props) {
   const t = useT();
 
   return (
@@ -74,11 +84,12 @@ export function LineupsPanel({ map, mode, targets, isSaving, hasFailed, actions 
           map={map}
           target={mode.target}
           variant={mode.variant}
-          onVariant={actions.onVariant}
+          hoveredId={hoveredVariantId}
+          onHover={actions.onHoverVariant}
+          onOpenVariant={actions.onOpenVariant}
           onClose={actions.onClose}
           onEdit={actions.onEdit}
           onAnother={actions.onAnother}
-          onOpenPhoto={actions.onOpenPhoto}
         />
       )}
       {mode.kind === 'edit' && (

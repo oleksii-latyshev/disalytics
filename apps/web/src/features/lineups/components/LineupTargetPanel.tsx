@@ -9,17 +9,17 @@ import { LineupChips } from './LineupChips';
 import { LineupCoordinatesCollapsible } from './LineupCoordinatesCollapsible';
 import { LineupHowToRepeat } from './LineupHowToRepeat';
 import { LineupOriginList } from './LineupOriginList';
-import { LineupPhotoStrip } from './LineupPhotoStrip';
 
 interface Props {
   map: string;
   target: SavedTarget;
   variant: SavedVariant;
-  onVariant: (id: string) => void;
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+  onOpenVariant: (id: string) => void;
   onClose: () => void;
   onEdit: () => void;
   onAnother: () => void;
-  onOpenPhoto: (index: number) => void;
 }
 
 /**
@@ -30,11 +30,12 @@ export function LineupTargetPanel({
   map,
   target,
   variant,
-  onVariant,
+  hoveredId,
+  onHover,
+  onOpenVariant,
   onClose,
   onEdit,
   onAnother,
-  onOpenPhoto,
 }: Props) {
   const t = useT();
   const { lineup } = variant;
@@ -70,10 +71,13 @@ export function LineupTargetPanel({
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-3.5 py-3">
-        {target.variants.length > 1 && (
-          <LineupOriginList target={target} activeId={variant.id} onPick={onVariant} />
-        )}
-        <LineupPhotoStrip lineup={lineup} onOpen={onOpenPhoto} />
+        <LineupOriginList
+          target={target}
+          activeId={variant.id}
+          hoveredId={hoveredId}
+          onHover={onHover}
+          onOpen={onOpenVariant}
+        />
         <LineupHowToRepeat map={map} lineup={lineup} />
         <LineupChips lineup={lineup} source={target.source} />
         {lineup.fromDemo === true && (
