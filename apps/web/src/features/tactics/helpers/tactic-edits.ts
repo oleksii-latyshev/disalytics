@@ -249,6 +249,13 @@ export function deleteStep(tactic: Tactic, planId: string, index: number): Tacti
   return removeStep(tactic, planId, index);
 }
 
+/** The gun a slot buys; `null` leaves the choice to the player. */
+export function setWeapon(tactic: Tactic, slot: number, weapon: string | null): Tactic {
+  const { [slot]: _previous, ...others } = tactic.weapons ?? {};
+  const weapons = weapon === null ? others : { ...others, [slot]: weapon };
+  return { ...tactic, weapons: Object.keys(weapons).length === 0 ? undefined : weapons };
+}
+
 /** Where a slot starts the round; another slot standing on that spot trades places. */
 export function setSpawn(tactic: Tactic, slot: number, point: TacticPoint): Tactic {
   const previous = tactic.spawns[slot];

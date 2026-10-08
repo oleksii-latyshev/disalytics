@@ -613,6 +613,8 @@ export const TRANSLATION_KEYS = [
   'library.tactics.board.player.task',
   'library.tactics.board.player.taskPlaceholder',
   'library.tactics.board.player.title',
+  'library.tactics.board.player.weapon',
+  'library.tactics.board.player.weaponAny',
   'library.tactics.board.roster.dead',
   'library.tactics.board.roster.player',
   'library.tactics.board.roster.stands',

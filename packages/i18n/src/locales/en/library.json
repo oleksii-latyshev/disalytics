@@ -679,6 +679,8 @@
         "spawn": "Spawn",
         "spawnSpot": "Spot {number}",
         "spawnCustom": "Custom",
+        "weapon": "Weapon",
+        "weaponAny": "Any",
         "isOut": "Out from this step",
         "title": "Player {slot}"
       },

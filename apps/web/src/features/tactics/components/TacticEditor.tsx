@@ -133,6 +133,7 @@ function TacticBoard({
       <TacticRoster
         side={tactic.side}
         loadout={board.loadout}
+        weapons={tactic.weapons}
         step={step}
         stepIndex={stepIndex}
         stepSchedule={stepSchedule}
@@ -236,6 +237,8 @@ function TacticBoard({
                 isOpeningStep={stepIndex === 0}
                 spawn={tactic.spawns[selectedSlot]}
                 spawnSpots={board.spawnSpots}
+                side={tactic.side}
+                weapon={tactic.weapons?.[selectedSlot]}
                 onMode={(mode) => {
                   editor.setRouteMode(selectedSlot, mode);
                   board.chooseTool(mode === 'pen' ? 'pen' : 'route');
@@ -248,6 +251,7 @@ function TacticBoard({
                   const point = board.spawnSpots[spot];
                   if (point !== undefined) editor.setSpawn(selectedSlot, point);
                 }}
+                onWeapon={(weapon) => editor.setWeapon(selectedSlot, weapon)}
                 onCommit={editor.endGesture}
               />
             )

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { grenadePrice, tacticLoadout } from '../helpers/tactic-loadout';
+import {
+  grenadePrice,
+  tacticLoadout,
+  tacticWeaponChoices,
+  weaponsForSide,
+} from '../helpers/tactic-loadout';
 import type { Tactic, TacticSide, TacticThrow } from '../helpers/tactics';
 import type { UtilityKind } from '../helpers/utility';
 
@@ -192,5 +197,25 @@ describe('tacticLoadout', () => {
       expect(loadout.players.find((player) => player.slot === 1)?.drops).toEqual([]);
       expect(loadout.players.find((player) => player.slot === 1)?.counts.smoke).toBe(1);
     });
+  });
+});
+
+describe('tacticWeaponChoices', () => {
+  it('offers a side its own guns and the shared ones', () => {
+    const t = tacticWeaponChoices('T').map((weapon) => weapon.name);
+    const ct = tacticWeaponChoices('CT').map((weapon) => weapon.name);
+    expect(t).toContain('AK-47');
+    expect(t).toContain('AWP');
+    expect(t).not.toContain('M4A4');
+    expect(ct).toContain('M4A1-S');
+    expect(ct).not.toContain('Glock-18');
+  });
+});
+
+describe('weaponsForSide', () => {
+  it('drops the guns the other side cannot buy', () => {
+    expect(weaponsForSide({ 0: 'AK-47', 1: 'AWP' }, 'CT')).toEqual({ 1: 'AWP' });
+    expect(weaponsForSide({ 0: 'AK-47' }, 'CT')).toBeUndefined();
+    expect(weaponsForSide(undefined, 'T')).toBeUndefined();
   });
 });

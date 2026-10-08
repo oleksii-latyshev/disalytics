@@ -679,6 +679,8 @@
         "spawn": "Респа",
         "spawnSpot": "Точка {number}",
         "spawnCustom": "Своя",
+        "weapon": "Оружие",
+        "weaponAny": "Любое",
         "isOut": "Выбыл с этого шага",
         "title": "Игрок {slot}"
       },

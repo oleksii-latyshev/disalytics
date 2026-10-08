@@ -1,4 +1,4 @@
-import { GRENADE_REFERENCES } from './reference-data';
+import { GRENADE_REFERENCES, WEAPON_REFERENCES, type WeaponReference } from './reference-data';
 import { effectiveSteps, rootPlan } from './tactic-plans';
 import type { Tactic, TacticSide, TacticThrow } from './tactics';
 import { THROWN_UTILITY_KINDS, type UtilityKind } from './utility';
@@ -65,6 +65,23 @@ export function grenadePrice(kind: GrenadeKind, side: TacticSide): number {
     (entry) => entry.kind === kind && (entry.team === 'both' || entry.team === team),
   );
   return reference?.price ?? 0;
+}
+
+/** The guns a side can buy, in the buy menu's order. */
+export function tacticWeaponChoices(side: TacticSide): readonly WeaponReference[] {
+  const team = side === 'CT' ? 'ct' : 't';
+  return WEAPON_REFERENCES.filter((weapon) => weapon.team === 'both' || weapon.team === team);
+}
+
+/** The tactic's weapons a side can still buy; a side switch drops the other side's guns. */
+export function weaponsForSide(
+  weapons: Readonly<Record<number, string>> | undefined,
+  side: TacticSide,
+): Readonly<Record<number, string>> | undefined {
+  if (weapons === undefined) return undefined;
+  const choices = new Set(tacticWeaponChoices(side).map((weapon) => weapon.name));
+  const kept = Object.entries(weapons).filter(([, weapon]) => choices.has(weapon));
+  return kept.length === 0 ? undefined : Object.fromEntries(kept);
 }
 
 function carryWarnings(slot: number, counts: GrenadeCounts, total: number): CarryWarning[] {

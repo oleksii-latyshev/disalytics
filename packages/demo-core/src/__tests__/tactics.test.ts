@@ -148,6 +148,12 @@ describe('isTactic validator', () => {
     expect(isTactic(validTactic)).toBe(true);
   });
 
+  it('reads the weapon each slot buys, and rejects a malformed one', () => {
+    expect(isTactic({ ...validTactic, weapons: { 0: 'AWP', 3: 'Zeus x27' } })).toBe(true);
+    expect(isTactic({ ...validTactic, weapons: { 0: 7 } })).toBe(false);
+    expect(isTactic({ ...validTactic, weapons: { first: 'AWP' } })).toBe(false);
+  });
+
   it('rejects the shapes of file version 1', () => {
     expect(isTactic(legacyTactic)).toBe(false);
   });

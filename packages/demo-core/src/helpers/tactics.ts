@@ -116,6 +116,8 @@ export interface Tactic {
   /** Where each slot starts the round, indexed by slot. */
   readonly spawns: readonly TacticPoint[];
   readonly plans: readonly TacticPlan[];
+  /** The gun a slot buys, by `WEAPON_REFERENCES` name; a slot without one buys what it likes. */
+  readonly weapons?: Readonly<Record<number, string>> | undefined;
   readonly author?: string | undefined;
   readonly description?: string | undefined;
   readonly createdAt: number;
@@ -245,7 +247,15 @@ function isPlanTree(plans: readonly TacticPlan[]): boolean {
   return plans.every((plan) => lengthOf(plan, new Set()) !== null);
 }
 
+function isWeapons(value: unknown): value is Readonly<Record<number, string>> {
+  if (!isObject(value)) return false;
+  return Object.entries(value).every(
+    ([slot, weapon]) => Number.isInteger(Number(slot)) && typeof weapon === 'string',
+  );
+}
+
 function hasValidOptionalFields(value: Record<string, unknown>): boolean {
+  if (value.weapons !== undefined && !isWeapons(value.weapons)) return false;
   if (
     value.rounds !== undefined &&
     !(Array.isArray(value.rounds) && value.rounds.every(isTacticRound))
