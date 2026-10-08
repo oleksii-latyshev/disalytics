@@ -684,7 +684,11 @@
       },
       "throws": {
         "title": "Grenades of the step · {count}",
-        "empty": "Pick a grenade on the map toolbar and click: a lineup mark makes the player stand at its spot, anywhere else is thrown by hand from where the route ends so far, and the player walks on along the points added after it.",
+        "empty": "Pick a grenade on the map toolbar and click: a lineup mark makes the player stand at its spot, anywhere else is thrown by hand from where the route ends so far, and the player walks on along the points added after it. Change which route point it leaves from in the list below.",
+        "from": "Throws from",
+        "fromStart": "the step’s start",
+        "fromPoint": "point {number}",
+        "fromEnd": "the end of the route",
         "byHand": "by hand",
         "fromLineup": "lineup",
         "remove": "Remove grenade",

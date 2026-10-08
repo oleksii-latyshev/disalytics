@@ -4,15 +4,29 @@ import { Button } from '@disa/ui';
 import { X } from 'lucide-react';
 import { UtilityGlyph } from '@/core/glyphs';
 import { formatRoundClock, type ScheduledThrow } from '../helpers/tactic-schedule';
+import type { ThrowOrigin } from '../helpers/tactic-throw-origins';
+import { TacticThrowOrigin } from './TacticThrowOrigin';
 
 export interface TacticThrowListProps {
   readonly throws: readonly ScheduledThrow[];
   readonly lineups: readonly Pick<Lineup, 'id' | 'title'>[];
+  /** Where a hand throw of this slot can leave from, and which of those it leaves from. */
+  readonly originsOf: (thrown: ScheduledThrow) => {
+    readonly origins: readonly ThrowOrigin[];
+    readonly chosen: number;
+  };
   readonly onRemove: (throwId: string) => void;
+  readonly onFrom: (throwId: string, origin: ThrowOrigin) => void;
 }
 
 /** The grenades of the step, each with who throws it, how, and when it lands on the round clock. */
-export function TacticThrowList({ throws, lineups, onRemove }: TacticThrowListProps) {
+export function TacticThrowList({
+  throws,
+  lineups,
+  originsOf,
+  onRemove,
+  onFrom,
+}: TacticThrowListProps) {
   const t = useT();
 
   return (
@@ -38,29 +52,43 @@ export function TacticThrowList({ throws, lineups, onRemove }: TacticThrowListPr
           return (
             <li
               key={thrown.id}
-              className="flex items-center gap-2.5 rounded-card border border-line bg-surface-0 p-2"
+              className="flex flex-col gap-2 rounded-card border border-line bg-surface-0 p-2"
             >
-              <UtilityGlyph kind={thrown.kind} label={UTILITY_NAMES[thrown.kind]} size="control" />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-13 font-semibold">{UTILITY_NAMES[thrown.kind]}</span>
-                <span className="truncate text-11 text-ink-dim">
-                  {t('library.tactics.board.throws.meta', {
-                    slot: thrown.slot + 1,
-                    how,
-                    clock: formatRoundClock(thrown.landAt),
-                  })}
+              <span className="flex items-center gap-2.5">
+                <UtilityGlyph
+                  kind={thrown.kind}
+                  label={UTILITY_NAMES[thrown.kind]}
+                  size="control"
+                />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-13 font-semibold">
+                    {UTILITY_NAMES[thrown.kind]}
+                  </span>
+                  <span className="truncate text-11 text-ink-dim">
+                    {t('library.tactics.board.throws.meta', {
+                      slot: thrown.slot + 1,
+                      how,
+                      clock: formatRoundClock(thrown.landAt),
+                    })}
+                  </span>
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t('library.tactics.board.throws.remove')}
+                  title={t('library.tactics.board.throws.remove')}
+                  onClick={() => onRemove(thrown.id)}
+                  className="text-ink-dim hover:text-ink"
+                >
+                  <X />
+                </Button>
               </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t('library.tactics.board.throws.remove')}
-                title={t('library.tactics.board.throws.remove')}
-                onClick={() => onRemove(thrown.id)}
-                className="text-ink-dim hover:text-ink"
-              >
-                <X />
-              </Button>
+              {thrown.lineupId === undefined && (
+                <TacticThrowOrigin
+                  {...originsOf(thrown)}
+                  onFrom={(origin) => onFrom(thrown.id, origin)}
+                />
+              )}
             </li>
           );
         })}

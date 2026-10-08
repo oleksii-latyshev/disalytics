@@ -106,6 +106,13 @@ export function addWaypoint(
   );
 }
 
+/** Within this many world units a hand throw stands on a waypoint, and moves when it moves. */
+const SAME_SPOT_UNITS = 2;
+
+function isSameSpot(a: TacticPoint, b: TacticPoint): boolean {
+  return Math.abs(a.x - b.x) <= SAME_SPOT_UNITS && Math.abs(a.y - b.y) <= SAME_SPOT_UNITS;
+}
+
 export function moveWaypoint(
   tactic: Tactic,
   at: StepAddress,
@@ -113,15 +120,25 @@ export function moveWaypoint(
   index: number,
   point: TacticPoint,
 ): Tactic {
-  return editStep(tactic, at, (step) =>
-    editPlayer(step, slot, (player) => ({
+  return editStep(tactic, at, (step) => {
+    const previous = step.players.find((player) => player.slot === slot)?.route.points[index];
+    const moved = editPlayer(step, slot, (player) => ({
       ...player,
       route: {
         ...player.route,
         points: player.route.points.map((existing, i) => (i === index ? point : existing)),
       },
-    })),
-  );
+    }));
+    if (previous === undefined) return moved;
+    const throws = moved.throws.map((thrown) =>
+      thrown.throwerSlot === slot &&
+      thrown.lineupId === undefined &&
+      isSameSpot(thrown.from, previous)
+        ? { ...thrown, from: point }
+        : thrown,
+    );
+    return { ...moved, throws };
+  });
 }
 
 /** Drops the last waypoint, or the one at `index`. */
@@ -181,6 +198,21 @@ export function setRouteMode(
 
 export function addThrow(tactic: Tactic, at: StepAddress, thrown: TacticThrow): Tactic {
   return editStep(tactic, at, (step) => ({ ...step, throws: [...step.throws, thrown] }));
+}
+
+/** Where on the thrower's route a hand throw leaves; a lineup keeps its own spot. */
+export function setThrowFrom(
+  tactic: Tactic,
+  at: StepAddress,
+  throwId: string,
+  from: TacticPoint,
+): Tactic {
+  return editStep(tactic, at, (step) => ({
+    ...step,
+    throws: step.throws.map((thrown) =>
+      thrown.id === throwId && thrown.lineupId === undefined ? { ...thrown, from } : thrown,
+    ),
+  }));
 }
 
 export function removeThrow(tactic: Tactic, at: StepAddress, throwId: string): Tactic {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addLineupThrow,
   addStepAfter,
+  addThrow,
   addWaypoint,
   clearRoute,
   deleteStep,
@@ -14,6 +15,7 @@ import {
   setRouteMode,
   setStepStart,
   setTask,
+  setThrowFrom,
 } from '../helpers/tactic-edits';
 import { createNewTactic } from '../helpers/tactic-setup';
 
@@ -101,5 +103,36 @@ describe('steps and throws', () => {
     expect(step?.throws).toHaveLength(1);
     expect(step?.players.find((entry) => entry.slot === 2)?.route.points).toEqual([origin]);
     expect(effectiveSteps(removeThrow(tactic, at, 't'), planId)[0]?.throws).toHaveLength(0);
+  });
+});
+
+describe('hand throw origin', () => {
+  const a = { x: 100, y: 200 };
+  const b = { x: 400, y: 200 };
+  const hand: TacticThrow = {
+    id: 'g',
+    throwerSlot: 0,
+    kind: 'smoke',
+    from: b,
+    to: { x: 0, y: 0 },
+    releaseTime: 0,
+  };
+  const routed = addThrow(addWaypoint(addWaypoint(base, at, 0, a), at, 0, b), at, hand);
+  const throwOf = (tactic: typeof base) => effectiveSteps(tactic, planId)[0]?.throws[0];
+
+  it('moves a hand throw to another spot of the route', () => {
+    expect(throwOf(setThrowFrom(routed, at, 'g', a))?.from).toEqual(a);
+  });
+
+  it('leaves a lineup throw where its lineup is', () => {
+    const lineup = addThrow(base, at, { ...hand, lineupId: 'l1' });
+    expect(throwOf(setThrowFrom(lineup, at, 'g', a))?.from).toEqual(b);
+  });
+
+  it('carries a hand throw with the waypoint it stands on', () => {
+    const atA = setThrowFrom(routed, at, 'g', { x: a.x + 1, y: a.y });
+    const moved = moveWaypoint(atA, at, 0, 0, { x: 150, y: 250 });
+    expect(throwOf(moved)?.from).toEqual({ x: 150, y: 250 });
+    expect(throwOf(moveWaypoint(routed, at, 0, 0, { x: 150, y: 250 }))?.from).toEqual(b);
   });
 });

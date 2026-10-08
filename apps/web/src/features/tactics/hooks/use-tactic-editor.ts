@@ -92,6 +92,8 @@ export function useTacticEditor({ initialTactic, onSave }: UseTacticEditorOption
       addLineupThrow: (thrown: TacticThrow, origin: TacticPoint) =>
         edit((t, at) => edits.addLineupThrow(t, at, thrown, origin)),
       removeThrow: (throwId: string) => edit((t, at) => edits.removeThrow(t, at, throwId)),
+      setThrowFrom: (throwId: string, from: TacticPoint) =>
+        edit((t, at) => edits.setThrowFrom(t, at, throwId, from)),
       setSpawn: (slot: number, point: TacticPoint) => edit((t) => edits.setSpawn(t, slot, point)),
       addEnemy: (enemy: TacticEnemy) => edit((t, at) => enemyEdits.addEnemy(t, at, enemy)),
       removeEnemy: (id: string) => edit((t, at) => enemyEdits.removeEnemy(t, at, id)),
