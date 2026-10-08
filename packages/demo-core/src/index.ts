@@ -313,6 +313,7 @@ export {
   MAX_OF_OTHER_KIND_CARRIED,
   tacticLoadout,
   tacticWeaponChoices,
+  weaponPrice,
   weaponsForSide,
 } from './helpers/tactic-loadout';
 export {

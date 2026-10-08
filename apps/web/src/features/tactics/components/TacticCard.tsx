@@ -68,10 +68,12 @@ export function TacticCard({ tactic, onOpen, onDuplicate, onExport, onDelete }: 
             </span>
             {loadout.teamTotal > 0 && (
               <span className={CHIP}>
-                {t('library.tactics.library.throwsCost', {
-                  count: loadout.teamTotal,
-                  amount: loadout.teamCost,
-                })}
+                {t('library.tactics.library.throws', { count: loadout.teamTotal })}
+              </span>
+            )}
+            {loadout.teamCost > 0 && (
+              <span className={CHIP}>
+                {t('library.tactics.library.buyCost', { amount: loadout.teamCost })}
               </span>
             )}
             <span className={CHIP}>

@@ -87,7 +87,7 @@ export function TacticRoster({
           {t('library.tactics.board.roster.title', { index: stepIndex + 1 })}
         </span>
         <span className="text-ink-dim">
-          {t('library.tactics.board.roster.utility')}{' '}
+          {t('library.tactics.board.roster.buy')}{' '}
           <span className="text-ink tabular-nums">
             {t('library.tactics.loadout.cost', { amount: loadout.teamCost })}
           </span>

@@ -3,6 +3,7 @@ import {
   grenadePrice,
   tacticLoadout,
   tacticWeaponChoices,
+  weaponPrice,
   weaponsForSide,
 } from '../helpers/tactic-loadout';
 import type { Tactic, TacticSide, TacticThrow } from '../helpers/tactics';
@@ -217,5 +218,24 @@ describe('weaponsForSide', () => {
     expect(weaponsForSide({ 0: 'AK-47', 1: 'AWP' }, 'CT')).toEqual({ 1: 'AWP' });
     expect(weaponsForSide({ 0: 'AK-47' }, 'CT')).toBeUndefined();
     expect(weaponsForSide(undefined, 'T')).toBeUndefined();
+  });
+});
+
+describe('weapons in the loadout', () => {
+  it('adds the named guns to the cost, a player who throws nothing included', () => {
+    const tactic = {
+      ...tacticWith('T', [thrown('a', 0, 'smoke')]),
+      weapons: { 0: 'AK-47', 2: 'AWP' },
+    };
+    const loadout = tacticLoadout(tactic);
+    expect(weaponPrice('AWP')).toBe(4750);
+    expect(loadout.players.find((player) => player.slot === 0)?.cost).toBe(300 + 2700);
+    expect(loadout.players.find((player) => player.slot === 2)).toMatchObject({
+      weapon: 'AWP',
+      cost: 4750,
+      total: 0,
+    });
+    expect(loadout.teamCost).toBe(300 + 2700 + 4750);
+    expect(loadout.teamTotal).toBe(1);
   });
 });

@@ -37,6 +37,9 @@ export interface PlayerLoadout {
   /** What the player buys and holds when the round starts, dropped grenades included. */
   readonly counts: GrenadeCounts;
   readonly total: number;
+  /** The gun the tactic names for this player, if any. */
+  readonly weapon?: string | undefined;
+  /** What the player spends: their grenades, dropped ones included, and the named gun. */
   readonly cost: number;
   /** The part of `counts` that is bought to be dropped to a teammate. */
   readonly drops: readonly PlayerDrop[];
@@ -82,6 +85,11 @@ export function weaponsForSide(
   const choices = new Set(tacticWeaponChoices(side).map((weapon) => weapon.name));
   const kept = Object.entries(weapons).filter(([, weapon]) => choices.has(weapon));
   return kept.length === 0 ? undefined : Object.fromEntries(kept);
+}
+
+/** What a gun costs, by `WEAPON_REFERENCES` name; an unknown name costs nothing. */
+export function weaponPrice(weapon: string): number {
+  return WEAPON_REFERENCES.find((entry) => entry.name === weapon)?.price ?? 0;
 }
 
 function carryWarnings(slot: number, counts: GrenadeCounts, total: number): CarryWarning[] {
@@ -135,6 +143,9 @@ function collectHoldings(tactic: Tactic): Holdings {
     }
     for (const thrown of step.throws) holdThrow(holdings, thrown);
   }
+  for (const slot of Object.keys(tactic.weapons ?? {}).map(Number)) {
+    if (!holdings.bySlot.has(slot)) holdings.bySlot.set(slot, emptyCounts());
+  }
   return holdings;
 }
 
@@ -143,6 +154,7 @@ function collectHoldings(tactic: Tactic): Holdings {
  * totals are the minimum to buy for the tactic to be playable as drawn. A grenade is bought and
  * carried at buy time by whoever holds it then: its thrower, or the teammate named in `droppedBy`,
  * who drops it. Carry limits are checked on that, not on what a player throws over the round.
+ * The cost adds the gun the tactic names for each player.
  */
 export function tacticLoadout(tactic: Tactic): TacticLoadout {
   const { bySlot, dropsBySlot } = collectHoldings(tactic);
@@ -155,8 +167,9 @@ export function tacticLoadout(tactic: Tactic): TacticLoadout {
   const players = [...bySlot.entries()]
     .sort(([a], [b]) => a - b)
     .map(([slot, counts]): PlayerLoadout => {
+      const weapon = tactic.weapons?.[slot];
       let total = 0;
-      let cost = 0;
+      let cost = weapon === undefined ? 0 : weaponPrice(weapon);
       for (const kind of GRENADE_KINDS) {
         total += counts[kind];
         cost += counts[kind] * grenadePrice(kind, tactic.side);
@@ -169,7 +182,7 @@ export function tacticLoadout(tactic: Tactic): TacticLoadout {
         (a, b) =>
           a.toSlot - b.toSlot || GRENADE_KINDS.indexOf(a.kind) - GRENADE_KINDS.indexOf(b.kind),
       );
-      return { slot, counts, total, cost, drops };
+      return { slot, counts, total, weapon, cost, drops };
     });
 
   return { players, teamCounts, teamTotal, teamCost, warnings };
