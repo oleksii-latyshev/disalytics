@@ -1,4 +1,4 @@
-import type { TacticPoint, TacticRouteMode, TacticStep } from '@disa/demo-core';
+import type { TacticPoint, TacticRouteMode, TacticSide, TacticStep } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
 import { Minus, Pencil, Plus, Route } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useId } from 'react';
 import { slotVar } from '../helpers/tactic-colors';
 import type { PlayerLeg } from '../helpers/tactic-schedule';
 import { nearestSpawnIndex } from '../helpers/tactic-spawns';
+import { TacticWeaponSelect } from './TacticWeaponSelect';
 
 export interface TacticPlayerSectionProps {
   readonly slot: number;
@@ -14,12 +15,15 @@ export interface TacticPlayerSectionProps {
   readonly isOpeningStep: boolean;
   readonly spawn: TacticPoint | undefined;
   readonly spawnSpots: readonly TacticPoint[];
+  readonly side: TacticSide;
+  readonly weapon: string | undefined;
   readonly onMode: (mode: TacticRouteMode) => void;
   readonly onTask: (task: string) => void;
   readonly onDelay: (seconds: number) => void;
   readonly onClearRoute: () => void;
   readonly onRemovePoint: () => void;
   readonly onSpawn: (spot: number) => void;
+  readonly onWeapon: (weapon: string | null) => void;
   readonly onCommit: () => void;
 }
 
@@ -36,12 +40,15 @@ export function TacticPlayerSection({
   isOpeningStep,
   spawn,
   spawnSpots,
+  side,
+  weapon,
   onMode,
   onTask,
   onDelay,
   onClearRoute,
   onRemovePoint,
   onSpawn,
+  onWeapon,
   onCommit,
 }: TacticPlayerSectionProps) {
   const t = useT();
@@ -105,6 +112,13 @@ export function TacticPlayerSection({
               </select>
             </label>
           )}
+
+          <TacticWeaponSelect
+            side={side}
+            weapon={weapon}
+            className={cn(FIELD, 'h-9')}
+            onWeapon={onWeapon}
+          />
 
           <fieldset
             aria-label={t('library.tactics.board.player.move')}

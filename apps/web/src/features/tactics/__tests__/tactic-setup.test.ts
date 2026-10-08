@@ -1,7 +1,7 @@
 import { isTactic, type Tactic } from '@disa/demo-core';
 import { getMapOverview, MAP_IDS, mapSpawns, RADAR_IMAGE_SIZE, worldToRadar } from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
-import { addWaypoint } from '../helpers/tactic-edits';
+import { addWaypoint, setWeapon } from '../helpers/tactic-edits';
 import {
   changeTacticMap,
   changeTacticSide,
@@ -158,6 +158,12 @@ describe('changeTacticSide', () => {
     const next = changeTacticSide(moved, 'CT');
     expect(next.side).toBe('CT');
     expect(next.plans).toEqual(moved.plans);
+  });
+
+  it('drops a gun the new side cannot buy and keeps a shared one', () => {
+    const armed = setWeapon(setWeapon(createNewTactic('de_mirage', 'T'), 0, 'AK-47'), 1, 'AWP');
+    expect(changeTacticSide(armed, 'CT').weapons).toEqual({ 1: 'AWP' });
+    expect(changeTacticSide(withFirstPlayerRouted(armed), 'CT').weapons).toEqual({ 1: 'AWP' });
   });
 });
 

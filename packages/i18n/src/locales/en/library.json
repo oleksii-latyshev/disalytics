@@ -552,7 +552,8 @@
       "searchLabel": "Search tactics",
       "openTactic": "Open {title}",
       "stepsDuration": "{count, plural, one {# step} other {# steps}} · {seconds, number, ::.#} s",
-      "throwsCost": "{count, plural, one {# throw} other {# throws}} · ${amount, number}",
+      "throws": "{count, plural, one {# throw} other {# throws}}",
+      "buyCost": "buy ${amount, number}",
       "newOnMap": "New tactic on {map}",
       "newOnMapHint": "Starts with five players at spawn",
       "noMatch": "No tactic matches these filters",
@@ -641,7 +642,7 @@
         "stands": "stands",
         "player": "Player {slot}",
         "dead": "out",
-        "utility": "Utility"
+        "buy": "Buy"
       },
       "step": {
         "eyebrow": "Step {index} of {total}",
@@ -679,6 +680,8 @@
         "spawn": "Spawn",
         "spawnSpot": "Spot {number}",
         "spawnCustom": "Custom",
+        "weapon": "Weapon",
+        "weaponAny": "Any",
         "isOut": "Out from this step",
         "title": "Player {slot}"
       },

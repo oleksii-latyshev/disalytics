@@ -6,6 +6,7 @@ import {
   type TacticRound,
   type TacticSide,
   type TacticStep,
+  weaponsForSide,
 } from '@disa/demo-core';
 import { getMapOverview, mapSpawns, RADAR_IMAGE_SIZE } from '@disa/map-data';
 import { generateId } from './tactic-ids';
@@ -154,8 +155,9 @@ export function changeTacticMap(tactic: Tactic, map: string): Tactic {
 /** An untouched formation follows the side to its own edge; anything the user moved stays put. */
 export function changeTacticSide(tactic: Tactic, side: TacticSide): Tactic {
   if (side === tactic.side) return tactic;
-  if (hasEditorWork(tactic)) return { ...tactic, side, updatedAt: Date.now() };
-  return startOver(tactic, tactic.map, side);
+  const weapons = weaponsForSide(tactic.weapons, side);
+  if (hasEditorWork(tactic)) return { ...tactic, side, weapons, updatedAt: Date.now() };
+  return { ...startOver(tactic, tactic.map, side), weapons };
 }
 
 export function toggleTacticRound(tactic: Tactic, round: TacticRound): Tactic {

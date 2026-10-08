@@ -552,7 +552,8 @@
       "searchLabel": "Поиск тактик",
       "openTactic": "Открыть «{title}»",
       "stepsDuration": "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}} · {seconds, number, ::.#} с",
-      "throwsCost": "{count, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}} · ${amount, number}",
+      "throws": "{count, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}",
+      "buyCost": "закуп ${amount, number}",
       "newOnMap": "Новая тактика на {map}",
       "newOnMapHint": "Начинается с пятью игроками на спавне",
       "noMatch": "Нет тактик под эти фильтры",
@@ -641,7 +642,7 @@
         "stands": "стоит",
         "player": "Игрок {slot}",
         "dead": "выбыл",
-        "utility": "Гранаты"
+        "buy": "Закуп"
       },
       "step": {
         "eyebrow": "Шаг {index} из {total}",
@@ -679,6 +680,8 @@
         "spawn": "Респа",
         "spawnSpot": "Точка {number}",
         "spawnCustom": "Своя",
+        "weapon": "Оружие",
+        "weaponAny": "Любое",
         "isOut": "Выбыл с этого шага",
         "title": "Игрок {slot}"
       },

@@ -1,5 +1,6 @@
 import {
   type CarryWarning,
+  type GrenadeCounts,
   type TacticLoadout,
   type TacticSide,
   type TacticStep,
@@ -15,6 +16,7 @@ import { GrenadeTally } from './GrenadeTally';
 export interface TacticRosterProps {
   readonly side: TacticSide;
   readonly loadout: TacticLoadout;
+  readonly weapons: Readonly<Record<number, string>> | undefined;
   readonly step: TacticStep | undefined;
   readonly stepIndex: number;
   readonly stepSchedule: StepSchedule | undefined;
@@ -43,10 +45,30 @@ function WarningLine({ warning }: { readonly warning: CarryWarning }) {
   }
 }
 
+/** What a roster row carries: the gun the tactic names, if any, and the step's grenades. */
+function RowLoadout({
+  weapon,
+  counts,
+}: {
+  readonly weapon: string | undefined;
+  readonly counts: GrenadeCounts;
+}) {
+  const hasGrenades = Object.values(counts).some((count) => count > 0);
+  return (
+    <>
+      {weapon !== undefined && (
+        <span className="shrink-0 font-mono text-12 text-ink">{weapon}</span>
+      )}
+      {hasGrenades && <GrenadeTally counts={counts} />}
+    </>
+  );
+}
+
 /** The five players of the step: their number, role, task and grenades, and who is picked. */
 export function TacticRoster({
   side,
   loadout,
+  weapons,
   step,
   stepIndex,
   stepSchedule,
@@ -65,7 +87,7 @@ export function TacticRoster({
           {t('library.tactics.board.roster.title', { index: stepIndex + 1 })}
         </span>
         <span className="text-ink-dim">
-          {t('library.tactics.board.roster.utility')}{' '}
+          {t('library.tactics.board.roster.buy')}{' '}
           <span className="text-ink tabular-nums">
             {t('library.tactics.loadout.cost', { amount: loadout.teamCost })}
           </span>
@@ -76,8 +98,6 @@ export function TacticRoster({
         {stepSchedule?.legs.map((leg) => {
           const entry = step?.players.find((player) => player.slot === leg.slot);
           const label = entry?.label?.trim();
-          const counts = stepGrenadeCounts(step, leg.slot);
-          const hasGrenades = Object.values(counts).some((count) => count > 0);
           const isSelected = leg.slot === selectedSlot;
           const task = entry?.task?.trim();
           return (
@@ -116,7 +136,10 @@ export function TacticRoster({
                       : task || t('library.tactics.board.roster.stands')}
                   </span>
                 </span>
-                {hasGrenades && <GrenadeTally counts={counts} />}
+                <RowLoadout
+                  weapon={weapons?.[leg.slot]}
+                  counts={stepGrenadeCounts(step, leg.slot)}
+                />
               </button>
             </li>
           );

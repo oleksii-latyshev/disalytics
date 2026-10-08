@@ -16,6 +16,7 @@ import {
   setStepStart,
   setTask,
   setThrowFrom,
+  setWeapon,
 } from '../helpers/tactic-edits';
 import { createNewTactic } from '../helpers/tactic-setup';
 
@@ -134,5 +135,14 @@ describe('hand throw origin', () => {
     const moved = moveWaypoint(atA, at, 0, 0, { x: 150, y: 250 });
     expect(throwOf(moved)?.from).toEqual({ x: 150, y: 250 });
     expect(throwOf(moveWaypoint(routed, at, 0, 0, { x: 150, y: 250 }))?.from).toEqual(b);
+  });
+});
+
+describe('setWeapon', () => {
+  it('names the gun a slot buys and clears it back to any', () => {
+    const armed = setWeapon(setWeapon(base, 0, 'AWP'), 2, 'Galil AR');
+    expect(armed.weapons).toEqual({ 0: 'AWP', 2: 'Galil AR' });
+    expect(setWeapon(armed, 0, null).weapons).toEqual({ 2: 'Galil AR' });
+    expect(setWeapon(setWeapon(armed, 0, null), 2, null).weapons).toBeUndefined();
   });
 });
