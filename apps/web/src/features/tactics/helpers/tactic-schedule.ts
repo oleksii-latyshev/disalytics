@@ -195,18 +195,29 @@ interface ThrowTimes {
   readonly landLocal: number;
 }
 
-function throwFrom(thrown: TacticThrow, leg: PlayerLeg, overview: MapOverview): RadarPoint {
-  if (thrown.lineupId !== undefined) return toRadar(overview, thrown.from);
-  return { x: leg.xs[leg.xs.length - 1] ?? 0, y: leg.ys[leg.ys.length - 1] ?? 0 };
+interface ThrowSpot {
+  readonly from: RadarPoint;
+  /** The route point the thrower stands on when the grenade leaves. */
+  readonly vertex: number;
+}
+
+/**
+ * A lineup leaves from its own spot, which the route runs through. A hand throw leaves from the
+ * point of the walked route nearest to where it was placed, and the player walks on after it.
+ */
+function throwSpot(thrown: TacticThrow, leg: PlayerLeg, overview: MapOverview): ThrowSpot {
+  const placed = toRadar(overview, thrown.from);
+  const vertex = nearestVertex(leg, placed.x, placed.y);
+  if (thrown.lineupId !== undefined) return { from: placed, vertex };
+  return { from: { x: leg.xs[vertex] ?? 0, y: leg.ys[vertex] ?? 0 }, vertex };
 }
 
 function throwTimes(
   thrown: TacticThrow,
   leg: PlayerLeg,
-  from: RadarPoint,
+  vertex: number,
   speedPxPerSecond: number,
 ): ThrowTimes {
-  const vertex = nearestVertex(leg, from.x, from.y);
   const standsAt = leg.delaySeconds + (leg.cum[vertex] ?? 0) / speedPxPerSecond;
   const releaseLocal = standsAt + THROW_WINDUP_SECONDS + Math.max(0, thrown.releaseTime);
   return { releaseLocal, landLocal: releaseLocal + GRENADE_FLIGHT_SECONDS };
@@ -223,9 +234,9 @@ function stepThrows(
   for (const thrown of step.throws) {
     const leg = legs[thrown.throwerSlot];
     if (leg === undefined || leg.isDead) continue;
-    const from = throwFrom(thrown, leg, input.overview);
+    const { from, vertex } = throwSpot(thrown, leg, input.overview);
     const to = toRadar(input.overview, thrown.to);
-    const times = throwTimes(thrown, leg, from, speedPxPerSecond);
+    const times = throwTimes(thrown, leg, vertex, speedPxPerSecond);
     scheduled.push({
       landLocal: times.landLocal,
       throwData: {
