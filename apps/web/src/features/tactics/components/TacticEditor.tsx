@@ -7,6 +7,7 @@ import { UnknownMap } from '@/features/radar';
 import { enemiesOf, oppositeSide } from '../helpers/tactic-enemies';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
+import { originIndexOf, throwOrigins } from '../helpers/tactic-throw-origins';
 import { replacementFor } from '../helpers/tactic-transfer';
 import { useTacticBoard } from '../hooks/use-tactic-board';
 import { useTacticPlans } from '../hooks/use-tactic-plans';
@@ -278,7 +279,12 @@ function TacticBoard({
             <TacticThrowList
               throws={stepSchedule?.throws ?? []}
               lineups={board.lineups}
+              originsOf={(thrown) => {
+                const origins = throwOrigins(step, stepSchedule?.legs[thrown.slot], overview);
+                return { origins, chosen: originIndexOf(origins, thrown, overview) };
+              }}
               onRemove={editor.removeThrow}
+              onFrom={(throwId, origin) => editor.setThrowFrom(throwId, origin.at)}
             />
           }
         />

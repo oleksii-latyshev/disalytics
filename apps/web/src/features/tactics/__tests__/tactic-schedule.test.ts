@@ -94,6 +94,29 @@ describe('buildSchedule', () => {
     expect(schedule.steps[0]?.durationSeconds).toBeCloseTo(entry?.landAt ?? NaN);
   });
 
+  it('throws a hand grenade from where it was placed on the route, then walks on', () => {
+    const further = { x: ahead.x - 400, y: ahead.y };
+    const route = { mode: 'points' as const, points: [ahead, further] };
+    const thrown = {
+      id: 'g',
+      throwerSlot: 0,
+      kind: 'flash' as const,
+      from: { x: ahead.x + 10, y: ahead.y },
+      to: { x: ahead.x, y: ahead.y + 300 },
+      releaseTime: 0,
+    };
+    const schedule = run([step('a', { players: [{ slot: 0, route }], throws: [thrown] })]);
+    const leg = schedule.steps[0]?.legs[0];
+    const entry = schedule.throws[0];
+    expect(entry?.fromX).toBeCloseTo(radarX(overview, ahead.x));
+    expect(entry?.fromY).toBeCloseTo(radarY(overview, ahead.y));
+    expect(entry?.releaseAt).toBeCloseTo(
+      (leg?.cum[1] ?? NaN) / schedule.speedPxPerSecond + THROW_WINDUP_SECONDS,
+    );
+    expect(entry?.releaseAt).toBeLessThan(leg?.arriveSeconds ?? NaN);
+    expect(leg?.xs[leg.xs.length - 1]).toBeCloseTo(radarX(overview, further.x));
+  });
+
   it('throws nothing for a player who is dead', () => {
     const base = tactic([
       step('a'),
