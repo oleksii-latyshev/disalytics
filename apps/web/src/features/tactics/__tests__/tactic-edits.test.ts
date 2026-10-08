@@ -135,6 +135,9 @@ describe('hand throw origin', () => {
     const moved = moveWaypoint(atA, at, 0, 0, { x: 150, y: 250 });
     expect(throwOf(moved)?.from).toEqual({ x: 150, y: 250 });
     expect(throwOf(moveWaypoint(routed, at, 0, 0, { x: 150, y: 250 }))?.from).toEqual(b);
+  });
+});
+
 describe('setWeapon', () => {
   it('names the gun a slot buys and clears it back to any', () => {
     const armed = setWeapon(setWeapon(base, 0, 'AWP'), 2, 'Galil AR');
