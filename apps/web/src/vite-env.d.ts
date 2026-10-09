@@ -9,3 +9,8 @@ interface NavigatorUAData {
 interface Navigator {
   readonly userAgentData?: NavigatorUAData;
 }
+
+interface ImportMetaEnv {
+  /** Base URL of the metadata API; the production Worker when unset. */
+  readonly VITE_DISALYTICS_API_URL?: string;
+}

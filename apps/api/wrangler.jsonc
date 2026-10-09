@@ -4,5 +4,19 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-07-01",
   "workers_dev": true,
-  "preview_urls": false
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "LINEUPS_DB",
+      "database_name": "disalytics-lineups",
+      "database_id": "e16017ec-b60d-42f1-bad0-63d6f7db5672",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "LINEUP_PHOTOS",
+      "id": "d66b24c9fd294ba7a4749d402c0a3571"
+    }
+  ]
 }

@@ -68,7 +68,7 @@ Cloudflare Workers static assets plus a separate Effect API Worker. No Zustand: 
 | `packages/i18n` · `packages/ui` | locales + typed keys + `<Text>`/`useT` · components, tokens, motion |
 | `apps/web/src/core` | playback, renderer, shortcuts, settings, parsing, events, glyphs, lineup-catalog, motion, pwa, samples |
 | `apps/web/src/features` | library (way in), review (stage + views), radar, timeline, controls |
-| `apps/api` | Cloudflare Worker for future external metadata and key-backed requests; never demos |
+| `apps/api` | Cloudflare Worker: built-in lineups (D1) and their photos (KV), future key-backed requests; never demos |
 | `crates/demo-parser` · `-wasm` | Rust core (no wasm-bindgen, forbid unsafe) · thin wrapper → `pkg/` (gitignored) |
 | `vendor/` · `tools/` | upstream parser, pinned and patched · `scripts/` behind `bun run`, `probes/` |
 | `repos/effect/` | pinned, read-only Effect source for reference; imports use the npm package |
