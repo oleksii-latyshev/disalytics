@@ -72,6 +72,7 @@
         "@disa/demo-store": "*",
         "@disa/i18n": "*",
         "@disa/map-data": "*",
+        "@disa/plate": "*",
         "@disa/ui": "*",
         "@tanstack/react-router": "^1.170.40",
         "lucide-react": "^1.31.0",
@@ -164,6 +165,24 @@
       "devDependencies": {
         "@disa/tsconfig": "*",
         "typescript": "5.9.2",
+        "vitest": "^4.1.10",
+      },
+    },
+    "packages/plate": {
+      "name": "@disa/plate",
+      "version": "0.0.0",
+      "dependencies": {
+        "@disa/demo-core": "*",
+        "@disa/i18n": "*",
+        "@disa/map-data": "*",
+        "lucide-react": "^1.38.0",
+        "react": "^19.2.0",
+      },
+      "devDependencies": {
+        "@disa/tsconfig": "*",
+        "@types/react": "19.2.2",
+        "typescript": "5.9.2",
+        "vite": "^8.2.0",
         "vitest": "^4.1.10",
       },
     },
@@ -441,6 +460,8 @@
     "@disa/i18n": ["@disa/i18n@workspace:packages/i18n"],
 
     "@disa/map-data": ["@disa/map-data@workspace:packages/map-data"],
+
+    "@disa/plate": ["@disa/plate@workspace:packages/plate"],
 
     "@disa/tsconfig": ["@disa/tsconfig@workspace:packages/tsconfig"],
 

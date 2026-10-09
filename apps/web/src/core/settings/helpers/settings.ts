@@ -1,17 +1,13 @@
 import { DEFAULT_RADAR_THEME, RADAR_THEMES, type RadarTheme } from '@disa/map-data';
+import type { Palette, TrajectoryVisibility } from '@disa/plate';
 
 /** Where the scoreboard stands — `docs/DESIGN.md` §5.2. */
 export type ScoreboardPosition = 'block' | 'plate';
 
-/** Which grenades draw the 1px flight path §6.2 describes. */
-export type TrajectoryVisibility = 'flight' | 'selected' | 'off';
-
-/**
- * `docs/DESIGN.md` §2.4's data colours, the colour-blind-safe variant beside them, or the
- * cyberpunk look's — #339. The third is a *look* rather than an accessibility answer, and
- * `tokens.css` states its measured floors either way.
- */
-export type Palette = 'default' | 'colour-blind' | 'cyber';
+/* The colour set (`docs/DESIGN.md` §2.4's data colours, the colour-blind-safe variant or the
+   cyberpunk look's — #339) and the grenade paths drawn are what a plate is told, so their types
+   live in `@disa/plate`. */
+export type { Palette, TrajectoryVisibility };
 
 /** What `prefers-reduced-motion` says, or the reader's own answer over the top of it. */
 export type MotionPreference = 'system' | 'reduced' | 'full';

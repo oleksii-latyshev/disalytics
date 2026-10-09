@@ -1,5 +1,13 @@
 import type { ParsedDemo, PlayerSlot, Team } from '@disa/demo-core';
 import type { MapOverview, PlateLayout, RadarPoint } from '@disa/map-data';
+import type { PlateBox, PlateNavigation, RadarColors } from '@disa/plate';
+import {
+  type PlateGeometry,
+  type PlateView,
+  plateGeometry,
+  radarPointAt,
+  readPlateGeometry,
+} from '@disa/plate';
 import {
   type MutableRefObject,
   type PointerEvent,
@@ -15,18 +23,8 @@ import { type CoachHover, hoverAt } from '../helpers/coach-edit';
 import { playerPointsAtFrame } from '../helpers/coach-originals';
 import { type CoachSession, coachDisplay } from '../helpers/coach-session';
 import { type CoachAnnotations, type CoachTool, resolvePencilColor } from '../helpers/coach-types';
-import type { RadarColors } from '../helpers/colors';
 import type { LabelStyle } from '../helpers/label-box';
-import type { PlateBox } from '../helpers/plate-box';
-import {
-  type PlateGeometry,
-  type PlateView,
-  plateGeometry,
-  radarPointAt,
-  readPlateGeometry,
-} from '../helpers/view';
 import { useCoachState } from '../hooks/use-coach-session';
-import type { PlateNavigation } from '../hooks/use-plate-navigation';
 
 interface Props {
   readonly session: CoachSession;

@@ -1,3 +1,16 @@
+import {
+  DEAD_ALPHA,
+  DEAD_RADIUS_FRACTION,
+  drawAudibleRing,
+  drawBlindDisc,
+  drawNeedle,
+  drawProgressArc,
+  drawSelectionRing,
+  drawToken,
+  drawWalkHollow,
+  needleReach,
+  TOKEN_RADIUS_PX,
+} from '@disa/plate';
 import { damageFigure, drawDamageFigure } from './damage-figure';
 import { drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { haloStroke, LABEL_HEIGHT_PX } from './label-box';
@@ -12,19 +25,6 @@ import {
   type PlateMark,
   RIGHT_X,
 } from './legend-box';
-import {
-  DEAD_ALPHA,
-  DEAD_RADIUS_FRACTION,
-  drawAudibleRing,
-  drawBlindDisc,
-  drawNeedle,
-  drawProgressArc,
-  drawSelectionRing,
-  drawToken,
-  drawWalkHollow,
-  needleReach,
-  TOKEN_RADIUS_PX,
-} from './tokens';
 import { tracerStart, tracerStroke } from './tracer';
 
 /** One instance for the sheet, for the reason the layer holds one: the gradient is cached in it. */

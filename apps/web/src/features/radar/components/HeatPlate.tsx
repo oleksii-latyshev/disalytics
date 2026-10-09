@@ -1,17 +1,19 @@
 import type { ParsedDemo } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview } from '@disa/map-data';
+import {
+  plateBox,
+  plateView,
+  radarBackdrop,
+  radarColors,
+  UnknownMap,
+  useRadarPlate,
+} from '@disa/plate';
 import { useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
-import { radarBackdrop } from '../helpers/backdrop';
-import { radarColors } from '../helpers/colors';
 import type { HeatPicture, HeatShown } from '../helpers/heat-picture';
 import { mutedImage } from '../helpers/muted-image';
-import { plateBox } from '../helpers/plate-box';
-import { plateView } from '../helpers/view';
-import { useRadarPlate } from '../hooks/use-radar-plate';
-import { UnknownMap } from './UnknownMap';
 
 interface Props {
   demo: ParsedDemo;

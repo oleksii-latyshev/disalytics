@@ -22,13 +22,7 @@ import {
   weaponIcons,
 } from '@disa/demo-core';
 import { type MapOverview, plateLayout } from '@disa/map-data';
-import { positionScratch, readPositions } from '@/core/playback';
-import type { Layer } from '@/core/renderer';
-import type { RadarColors } from './colors';
-import type { LabelStyle } from './label-box';
-import type { LabelSubject } from './label-subject';
-import { labelPass } from './labels';
-import { plateProjection } from './projection';
+import type { RadarColors } from '@disa/plate';
 import {
   DEAD_ALPHA,
   DEAD_RADIUS_FRACTION,
@@ -41,11 +35,6 @@ import {
   drawToken,
   drawWalkHollow,
   needleReach,
-  screenAngle,
-  screenAngleOf,
-} from './tokens';
-import { tracerLength, tracerStroke } from './tracer';
-import {
   type PlateBounds,
   type PlateGeometry,
   type PlateView,
@@ -53,7 +42,16 @@ import {
   plateGeometry,
   readPlateBounds,
   readPlateGeometry,
-} from './view';
+  screenAngle,
+  screenAngleOf,
+} from '@disa/plate';
+import { positionScratch, readPositions } from '@/core/playback';
+import type { Layer } from '@/core/renderer';
+import type { LabelStyle } from './label-box';
+import type { LabelSubject } from './label-subject';
+import { labelPass } from './labels';
+import { plateProjection } from './projection';
+import { tracerLength, tracerStroke } from './tracer';
 import { visionRadius, visionWedge } from './vision';
 
 export interface PlayerTokensOptions {

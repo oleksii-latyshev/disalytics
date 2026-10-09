@@ -4,10 +4,10 @@ import {
   type WeaponClass,
   type WeaponIconId,
 } from '@disa/demo-core';
+import type { PlateBounds } from '@disa/plate';
 import { describe, expect, it } from 'vitest';
 import { labelPlacer } from '../helpers/label-placer';
 import { LABEL_HEIGHT_PX, labelPass, labelsBySlot } from '../helpers/labels';
-import type { PlateBounds } from '../helpers/view';
 import { stubPath2D } from './canvas-globals';
 
 stubPath2D();

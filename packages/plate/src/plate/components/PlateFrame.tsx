@@ -1,14 +1,14 @@
 import { useT } from '@disa/i18n';
 import type { MapOverview, PlateLayout } from '@disa/map-data';
 import { type ReactNode, useMemo, useRef } from 'react';
-import { useCanvasLayers } from '@/core/renderer';
-import { useSetting } from '@/core/settings';
+import { useCanvasLayers } from '../../renderer/hooks/use-canvas-layers';
 import { radarBackdrop } from '../helpers/backdrop';
 import { radarColors } from '../helpers/colors';
 import { plateBox } from '../helpers/plate-box';
 import type { PlatePoint } from '../helpers/plate-target';
 import { plateView } from '../helpers/view';
 import { useRadarPlate } from '../hooks/use-radar-plate';
+import { usePlateSettings } from '../settings';
 
 interface Props {
   overview: MapOverview;
@@ -32,8 +32,7 @@ interface Props {
  */
 export function PlateFrame({ overview, isDimmed, isPlacing, onPlateClick, children }: Props) {
   const t = useT();
-  const [theme] = useSetting('radarTheme');
-  const [palette] = useSetting('palette');
+  const { palette, radarTheme: theme } = usePlateSettings();
 
   const { layout, images, floorLabels } = useRadarPlate(overview, theme);
   const colors = radarColors(palette);

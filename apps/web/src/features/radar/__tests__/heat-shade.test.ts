@@ -1,9 +1,9 @@
+import type { RadarColors } from '@disa/plate';
+import { plateView, SQUARE_PLATE } from '@disa/plate';
 import { describe, expect, it } from 'vitest';
-import type { RadarColors } from '../helpers/colors';
 import { type HeatPicture, overlayPicture } from '../helpers/heat-picture';
 import { heatRamps, rampIndex } from '../helpers/heat-ramp';
 import { alphaOf, curved, curveTable, FAINT_WEIGHT, hatchFactor } from '../helpers/heat-shade';
-import { plateView, SQUARE_PLATE } from '../helpers/view';
 
 describe('alphaOf', () => {
   it('is transparent at the faint end and opaque only near the hot ceiling', () => {

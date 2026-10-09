@@ -1,5 +1,5 @@
 import { sampleAt } from '@disa/demo-core';
-import type { PlateBounds } from './view';
+import type { PlateBounds } from '@disa/plate';
 
 /** How far the name sits from the token it names, on whichever side it ends up on. */
 const LABEL_GAP_PX = 4;

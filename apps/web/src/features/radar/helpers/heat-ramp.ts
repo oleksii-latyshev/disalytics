@@ -1,4 +1,4 @@
-import type { RadarColors } from './colors';
+import type { RadarColors } from '@disa/plate';
 
 const HEX_RADIX = 16;
 const CHANNELS = 3;

@@ -1,5 +1,5 @@
+import type { RadarColors } from '@disa/plate';
 import type { Layer } from '@/core/renderer';
-import type { RadarColors } from './colors';
 import type { HeatDifference } from './heat-difference';
 import type { HeatField, HeatRings } from './heat-field';
 import {

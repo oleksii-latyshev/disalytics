@@ -3,7 +3,7 @@ import type { MapOverview, PlateLayout } from '@disa/map-data';
 import { plateX, plateY } from '@disa/map-data';
 import { Bookmark } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { UtilityGlyph } from '@/core/glyphs';
+import { UtilityGlyph } from '../../glyphs/components/UtilityGlyph';
 import type { PlateTarget } from '../helpers/plate-target';
 import type { TargetStack } from '../helpers/target-stacks';
 

@@ -6,7 +6,7 @@ import {
 } from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
 import { plateX, plateY } from '@disa/map-data';
-import type { TrajectoryVisibility } from '@/core/settings';
+import type { TrajectoryVisibility } from '../settings';
 import type { RadarColors } from './colors';
 
 /**

@@ -1,7 +1,21 @@
 import type { Team } from '@disa/demo-core';
-import type { Palette } from '@/core/settings';
-import { readCssToken } from '@/shared/lib';
-import type { LabelColors } from './labels';
+import { readCssToken } from '../../lib/css-token';
+import type { Palette } from '../settings';
+
+/** Behind the name rather than around it: a halo, not a chip. */
+export interface LabelColors {
+  readonly halo: string;
+  readonly ink: string;
+  /** What a hit took, beside the token that took it — the same token the flash on it is drawn in. */
+  readonly damage: string;
+  /**
+   * The hairline back to the token, for a name the placer had to put outside the four boxes
+   * "beside" used to mean. It is a mark and nothing on it is read aloud, which is what lets it sit
+   * at the ink §14 keeps for marks — a line loud enough to be found by following it from a name is
+   * a line loud enough to be mistaken for something the map is telling you.
+   */
+  readonly leader: string;
+}
 
 export interface RadarColors {
   readonly team: Readonly<Record<Team, string>>;

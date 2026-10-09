@@ -1,5 +1,5 @@
 import { type PlateLayout, SQUARE_PLATE_LAYOUT } from '@disa/map-data';
-import type { Layer } from '@/core/renderer';
+import type { Layer } from '../../renderer/helpers/canvas';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 const FLOOR_LABEL_FONT = '600 11px Onest, sans-serif';

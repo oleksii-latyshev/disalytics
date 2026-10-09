@@ -1,6 +1,6 @@
+import type { RadarColors } from '@disa/plate';
 import { useEffect, useRef } from 'react';
 import { paintLayers } from '@/core/renderer';
-import type { RadarColors } from '../helpers/colors';
 import { readLabelStyle } from '../helpers/labels';
 import { MARK_HEIGHT_PX, MARK_WIDTH_PX, type PlateMark } from '../helpers/plate-legend';
 

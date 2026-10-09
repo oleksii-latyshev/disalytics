@@ -1,11 +1,11 @@
+import type { RadarColors } from '@disa/plate';
+import { type PlateSize, type PlateView, plateGeometry, readPlateGeometry } from '@disa/plate';
 import type { Layer } from '@/core/renderer';
-import type { RadarColors } from './colors';
 import type { HeatDifference } from './heat-difference';
 import { DIFFERENCE_CUT } from './heat-difference';
 import type { HeatField, HeatRings } from './heat-field';
 import { type HeatIdentity, type HeatRamp, heatRamps, rampIndex } from './heat-ramp';
 import { alphaOf, curved, curveTable, FAINT_WEIGHT, hatchFactor } from './heat-shade';
-import { type PlateSize, type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /** How steeply the ramp climbs: below one, so that a modest weight is already clearly a colour. */
 const RAMP_CURVE = 0.6;

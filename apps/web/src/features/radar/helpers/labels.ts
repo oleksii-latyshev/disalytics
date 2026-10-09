@@ -1,5 +1,6 @@
 import type { WeaponClass, WeaponIconId } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
+import type { LabelColors, PlateBounds } from '@disa/plate';
 import { damagePass } from './damage-pass';
 import { drawWeaponMark } from './equipment-marks';
 import {
@@ -14,8 +15,8 @@ import {
 import { labelPlacer } from './label-placer';
 import type { LabelSubject } from './label-subject';
 import { drawLeaderLine, leaderStroke } from './leader-line';
-import type { PlateBounds } from './view';
 
+export type { LabelColors } from '@disa/plate';
 export type { LabelStyle } from './label-box';
 /* The names beside the tokens on the plate, and what the two other label modules are for.
    `label-box.ts` is every size and box a label is made of, `damage-pass.ts` is the hit's figure —
@@ -25,21 +26,6 @@ export type { LabelStyle } from './label-box';
 export { LABEL_HEIGHT_PX, readLabelStyle } from './label-box';
 export type { LabelSubject } from './label-subject';
 export { labelsBySlot } from './label-subject';
-
-/** Behind the name rather than around it: a halo, not the chip #111 shipped — DESIGN.md §6.1. */
-export interface LabelColors {
-  readonly halo: string;
-  readonly ink: string;
-  /** What a hit took, beside the token that took it — the same token the flash on it is drawn in. */
-  readonly damage: string;
-  /**
-   * The hairline back to the token, for a name the placer had to put outside the four boxes
-   * "beside" used to mean. It is a mark and nothing on it is read aloud, which is what lets it sit
-   * at the ink §14 keeps for marks — a line loud enough to be found by following it from a name is
-   * a line loud enough to be mistaken for something the map is telling you.
-   */
-  readonly leader: string;
-}
 
 export interface LabelPass {
   /** Measured once per demo: a width taken against the fallback face would be wrong all match. */

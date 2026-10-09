@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePlateSettings } from '../settings';
 
 export type RadarImageState =
   | { status: 'loading' }
@@ -9,10 +10,11 @@ const LOADING: RadarImageState = { status: 'loading' };
 
 /**
  * Fetches a radar image as a decoded `HTMLImageElement`. The images are static assets served under
- * the app's own base — `AGENTS.md` §9 keeps them out of the JS graph, so there is no import to
+ * the host's `imageBase` — `AGENTS.md` §9 keeps them out of the JS graph, so there is no import to
  * resolve and the path is built at runtime.
  */
 export function useRadarImage(assetPath: string): RadarImageState {
+  const { imageBase, imageCrossOrigin } = usePlateSettings();
   const [state, setState] = useState<RadarImageState>(LOADING);
 
   useEffect(() => {
@@ -28,12 +30,13 @@ export function useRadarImage(assetPath: string): RadarImageState {
       if (isCurrent) setState({ status: 'failed' });
     });
 
-    image.src = `${import.meta.env.BASE_URL}${assetPath}`;
+    if (imageCrossOrigin !== undefined) image.crossOrigin = imageCrossOrigin;
+    image.src = `${imageBase}${assetPath}`;
 
     return () => {
       isCurrent = false;
     };
-  }, [assetPath]);
+  }, [assetPath, imageBase, imageCrossOrigin]);
 
   return state;
 }
@@ -53,6 +56,7 @@ const PATH_SEPARATOR = '\n';
  * a single image that fails fails the lot.
  */
 export function useRadarImages(assetPaths: readonly string[]): RadarImagesState {
+  const { imageBase, imageCrossOrigin } = usePlateSettings();
   const [state, setState] = useState<RadarImagesState>(IMAGES_LOADING);
   const key = assetPaths.join(PATH_SEPARATOR);
 
@@ -73,13 +77,14 @@ export function useRadarImages(assetPaths: readonly string[]): RadarImagesState 
         if (isCurrent) setState({ status: 'failed' });
       });
 
-      image.src = `${import.meta.env.BASE_URL}${paths[index]}`;
+      if (imageCrossOrigin !== undefined) image.crossOrigin = imageCrossOrigin;
+      image.src = `${imageBase}${paths[index]}`;
     }
 
     return () => {
       isCurrent = false;
     };
-  }, [key]);
+  }, [key, imageBase, imageCrossOrigin]);
 
   return state;
 }

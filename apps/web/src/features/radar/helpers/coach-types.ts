@@ -1,6 +1,6 @@
 import type { PlayerSlot } from '@disa/demo-core';
 import type { RadarPoint } from '@disa/map-data';
-import type { RadarColors } from './colors';
+import type { RadarColors } from '@disa/plate';
 
 export type CoachTool = 'pencil' | 'eraser' | 'move' | 'smoke' | 'molotov' | 'flash' | 'he';
 
