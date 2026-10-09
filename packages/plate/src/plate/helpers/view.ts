@@ -1,5 +1,5 @@
 import { RADAR_IMAGE_SIZE } from '@disa/map-data';
-import type { CanvasSize } from '@/core/renderer';
+import type { CanvasSize } from '../../renderer/helpers/canvas';
 import { TOKEN_MAX_RADIUS_PX, TOKEN_MIN_RADIUS_PX, TOKEN_RADIUS_PX } from './tokens';
 
 /**

@@ -7,17 +7,13 @@ import {
 } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview } from '@disa/map-data';
+import { plateView, radarBackdrop, radarColors, UnknownMap, useRadarPlate } from '@disa/plate';
 import { useEffect, useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
 import { useFontReady } from '@/shared/hooks';
-import { radarBackdrop } from '../helpers/backdrop';
-import { radarColors } from '../helpers/colors';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
 import { playerTokens } from '../helpers/token-layer';
-import { plateView } from '../helpers/view';
-import { useRadarPlate } from '../hooks/use-radar-plate';
-import { UnknownMap } from './UnknownMap';
 
 /** Held outside the component so an unmeasurable font does not remount the layer every render. */
 const NO_LABELS: readonly string[] = [];

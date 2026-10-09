@@ -1,4 +1,4 @@
-import type { RadarColors } from './colors';
+import type { RadarColors } from '@disa/plate';
 import type { LabelStyle } from './label-box';
 
 /**

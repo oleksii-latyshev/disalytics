@@ -1,6 +1,5 @@
 import type { RadarPoint } from '@disa/map-data';
 import { type PointerEvent, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
-import { useShortcuts } from '@/core/shortcuts';
 import {
   MAX_ZOOM,
   MIN_ZOOM,
@@ -9,7 +8,6 @@ import {
   panBy,
   radarPointAt,
   resetView,
-  ZOOM_STEP,
   zoomAbout,
   zoomByStep,
 } from '../helpers/view';
@@ -23,8 +21,6 @@ interface Options {
   /** What the plate holds, which is what the view fits to the canvas. */
   readonly plate: PlateSize;
   readonly repaint: () => void;
-  /** DESIGN.md §9.1's `+` and `−` stand down while a sheet is open. */
-  readonly isSuspended: boolean;
   /**
    * Where the pointer is over the plate, in plate coordinates. Omitted when nobody is reading it, which is what keeps an
    * idle plate from setting state on every move. Leaving the plate is not reported here: clearing
@@ -63,7 +59,6 @@ export function usePlateNavigation({
   overlayCanvasRef,
   plate,
   repaint,
-  isSuspended,
   onHover,
 }: Options): PlateNavigation {
   const panRef = useRef({ isPanning: false, x: 0, y: 0 });
@@ -81,15 +76,6 @@ export function usePlateNavigation({
       repaint();
     },
     [canvasRef, plate, repaint, view],
-  );
-
-  // Bound here rather than on the stage: the view they move is this plate's own box, and reaching
-  // it from there would mean a second source of truth for the zoom. What this second `useShortcuts`
-  // call does not get for free is the stage's suspension, which is why that arrives as an option —
-  // a plate that zooms behind an open sheet is the failure this avoids.
-  useShortcuts(
-    { zoomIn: () => zoomBy(ZOOM_STEP), zoomOut: () => zoomBy(1 / ZOOM_STEP) },
-    { isSuspended },
   );
 
   // Non-passive, because a wheel over the plate zooms or pans instead of scrolling the page and only

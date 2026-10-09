@@ -12,7 +12,7 @@ import { simplifyIconPath } from './icons/simplify';
 const SETS = [
   {
     assetDir: 'apps/web/assets/weapon-icons',
-    outputPath: 'apps/web/src/core/glyphs/generated/weapon-icons.ts',
+    outputPath: 'packages/plate/src/glyphs/generated/weapon-icons.ts',
     typeName: 'WeaponIcon',
     tableName: 'WEAPON_ICONS',
     idImport: "import type { WeaponIconId } from '@disa/demo-core';",
@@ -24,7 +24,7 @@ const SETS = [
   },
   {
     assetDir: 'apps/web/assets/equipment-icons',
-    outputPath: 'apps/web/src/core/glyphs/generated/equipment-icons.ts',
+    outputPath: 'packages/plate/src/glyphs/generated/equipment-icons.ts',
     typeName: 'EquipmentIcon',
     tableName: 'EQUIPMENT_ICONS',
     idImport: "import type { EquipmentIconId } from '../helpers/equipment';",

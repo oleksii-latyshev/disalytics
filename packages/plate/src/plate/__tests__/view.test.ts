@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CanvasSize } from '@/core/renderer';
+import type { CanvasSize } from '../../renderer/helpers/canvas';
 import { TOKEN_MAX_RADIUS_PX, TOKEN_MIN_RADIUS_PX, TOKEN_RADIUS_PX } from '../helpers/tokens';
 import {
   MAX_ZOOM,

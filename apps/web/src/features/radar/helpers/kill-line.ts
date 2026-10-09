@@ -1,10 +1,10 @@
 import { type Clock, type ParsedDemo, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
 import { type MapOverview, plateLayout, plateX, plateY } from '@disa/map-data';
+import type { RadarColors } from '@disa/plate';
+import { type PlateView, plateGeometry, readPlateGeometry } from '@disa/plate';
 import type { KillLine } from '@/core/events';
 import { POSITION_STRIDE, positionScratch, readPositions } from '@/core/playback';
 import type { Layer } from '@/core/renderer';
-import type { RadarColors } from './colors';
-import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /** Plate `x` and plate `y`, per end. */
 export const END_STRIDE = 2;

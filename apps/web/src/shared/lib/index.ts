@@ -1,1 +1,1 @@
-export { readCssToken } from './css-token';
+export { readCssToken } from '@disa/plate';

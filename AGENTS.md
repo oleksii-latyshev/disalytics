@@ -64,9 +64,9 @@ Cloudflare Workers static assets plus a separate Effect API Worker. No Zustand: 
 | `packages/demo-core` | schema, `SCHEMA_VERSION`, clock, game rules and derivations — pure TS |
 | `packages/demo-parser` | worker protocol and client; `src/wasm-glue.d.ts` is hand-written |
 | `packages/demo-store` | OPFS/IndexedDB cache, catalog, container codec (`@disa/demo-store/codec`) |
-| `packages/map-data` | overview constants, world→radar transform, themed radar images |
+| `packages/map-data` · `plate` | overview constants, transform, radar images · the plate every app shares: canvas, view, backdrop, target marks, glyphs (`PlateSettingsProvider`) |
 | `packages/i18n` · `packages/ui` | locales + typed keys + `<Text>`/`useT` · components, tokens, motion |
-| `apps/web/src/core` | playback, renderer, shortcuts, settings, parsing, events, glyphs, lineup-catalog, motion, pwa, samples |
+| `apps/web/src/core` | playback, renderer (re-export), shortcuts, settings, parsing, events, glyphs, lineup-catalog, motion, pwa, samples |
 | `apps/web/src/features` | library (way in), review (stage + views), radar, timeline, controls |
 | `apps/api` · `apps/admin` | Worker: built-in lineups (D1) and photos (KV), never demos · lineups admin page, its Worker in `apps/api/src/admin` |
 | `crates/demo-parser` · `-wasm` | Rust core (no wasm-bindgen, forbid unsafe) · thin wrapper → `pkg/` (gitignored) |
@@ -162,7 +162,7 @@ poisoned, so one worker per parse. `ErrorCode` mirrors `crates/demo-parser/src/e
 
 ## 9. Radar Rendering
 
-`core/renderer` is CS2-agnostic canvas plumbing; `features/radar` knows maps, sides and players.
+`@disa/plate` holds the CS2-agnostic canvas plumbing and the plate shared with the admin (`apps/web/src/core/renderer` and `core/glyphs` only re-export it); `features/radar` knows maps, sides and players.
 
 - Transform from Valve overviews: `radarX = (worldX − pos_x) / scale`, `radarY = (pos_y − worldY) /
   scale` on 1024²; a two-floor map stacks on one plate (`layout.ts`), so `plateX`/`plateY` take `z`.

@@ -6,23 +6,28 @@ import {
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import type { MapOverview, RadarPoint } from '@disa/map-data';
+import {
+  MIN_ZOOM,
+  plateBox,
+  plateView,
+  radarBackdrop,
+  radarColors,
+  usePlateNavigation,
+  useRadarPlate,
+  ZOOM_STEP,
+} from '@disa/plate';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KillLine, RowFocus } from '@/core/events';
 import { type Transport, useFrameReadout, useFrameSink } from '@/core/playback';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
+import { useShortcuts } from '@/core/shortcuts';
 import { useFontReady } from '@/shared/hooks';
-import { radarBackdrop } from '../helpers/backdrop';
 import type { CoachSession } from '../helpers/coach-session';
-import { radarColors } from '../helpers/colors';
 import { killLineLayer } from '../helpers/kill-line';
 import { labelsBySlot, readLabelStyle } from '../helpers/labels';
-import { plateBox } from '../helpers/plate-box';
 import { playerTokens } from '../helpers/token-layer';
 import { utilityLayer } from '../helpers/utility-layer';
-import { MIN_ZOOM, plateView } from '../helpers/view';
-import { usePlateNavigation } from '../hooks/use-plate-navigation';
-import { useRadarPlate } from '../hooks/use-radar-plate';
 import { CoachOverlay } from './CoachOverlay';
 import { RadarDebug } from './RadarDebug';
 
@@ -209,10 +214,21 @@ export function RadarView({
     canvasRef,
     overlayCanvasRef: coachCanvasRef,
     repaint: repaintAll,
-    isSuspended,
     plate: layout,
     onHover: isDebugShown ? setPointer : undefined,
   });
+
+  // Bound here rather than on the stage: the view they move is this plate's own box, and reaching
+  // it from there would mean a second source of truth for the zoom. What this second `useShortcuts`
+  // call does not get for free is the stage's suspension, which is why that arrives as an option —
+  // a plate that zooms behind an open sheet is the failure this avoids.
+  useShortcuts(
+    {
+      zoomIn: () => navigation.zoomBy(ZOOM_STEP),
+      zoomOut: () => navigation.zoomBy(1 / ZOOM_STEP),
+    },
+    { isSuspended },
+  );
 
   const isExpanded = navigation.zoom > MIN_ZOOM;
 

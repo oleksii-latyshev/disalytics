@@ -1,19 +1,24 @@
 import type { LineupTarget, LineupVariant, UtilityThrow } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview } from '@disa/map-data';
+import {
+  dotPlot,
+  type PlateLabels,
+  plateBox,
+  plateView,
+  radarBackdrop,
+  radarColors,
+  selectionPlot,
+  stackPoints,
+  TargetMarkers,
+  targetLayer,
+  targetPoints,
+  UnknownMap,
+  useRadarPlate,
+} from '@disa/plate';
 import { type ReactNode, useMemo, useRef } from 'react';
 import { useCanvasLayers } from '@/core/renderer';
 import { useSetting } from '@/core/settings';
-import { radarBackdrop } from '../helpers/backdrop';
-import { radarColors } from '../helpers/colors';
-import { plateBox } from '../helpers/plate-box';
-import { targetLayer } from '../helpers/target-layer';
-import { dotPlot, selectionPlot, targetPoints } from '../helpers/target-plot';
-import { stackPoints } from '../helpers/target-stacks';
-import { plateView } from '../helpers/view';
-import { useRadarPlate } from '../hooks/use-radar-plate';
-import { type PlateLabels, TargetMarkers } from './TargetMarkers';
-import { UnknownMap } from './UnknownMap';
 
 interface Props {
   map: string;

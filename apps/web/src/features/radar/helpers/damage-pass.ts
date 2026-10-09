@@ -1,8 +1,8 @@
+import type { PlateBounds } from '@disa/plate';
 import { DAMAGE_FIGURE_PREFIX, damageFigure, drawDamageFigure } from './damage-figure';
 import { isOnPlate, LABEL_HALO_PX, LABEL_HEIGHT_PX, type LabelStyle } from './label-box';
 import type { LabelPlacer } from './label-placer';
 import type { LabelSubject } from './label-subject';
-import type { PlateBounds } from './view';
 
 export interface DamagePass {
   /** Measured once per demo: a width taken against the fallback face would be wrong all match. */

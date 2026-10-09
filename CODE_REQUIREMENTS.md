@@ -19,8 +19,8 @@ of `apps/web`:
 apps/web/src/
   core/           App-specific building blocks. No dependency on features.
     playback/     rAF clock binding, interpolation reads, transport state machine.
-    renderer/     Canvas setup, layer compositing, resize, device-pixel handling.
-                  Knows nothing about CS2 — it draws what it is told.
+    renderer/     Re-exports the canvas plumbing of `@disa/plate` (setup, layer compositing,
+                  resize, device pixels). It knows nothing about CS2 — it draws what it is told.
     parsing/      Parse worker lifecycle, progress state machine, cancellation.
     pwa/          Service worker registration and the update it offers the reader.
     shortcuts/    Keyboard registry and scope handling.

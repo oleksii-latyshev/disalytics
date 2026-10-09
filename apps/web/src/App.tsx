@@ -1,3 +1,4 @@
+import { PlateSettingsProvider } from '@disa/plate';
 import { MotionProvider } from '@disa/ui';
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useRef, useState } from 'react';
@@ -13,6 +14,8 @@ const REDUCED_MOTION = { system: 'user', reduced: 'always', full: 'never' } as c
 export function App() {
   const parse = useDemoParse();
   const [motion] = useSetting('motion');
+  const [palette] = useSetting('palette');
+  const [radarTheme] = useSetting('radarTheme');
   const update = useWorkerUpdate();
   const parseOrigin = useRef<string | null>(null);
   const [router] = useState(() => createAppRouter({ parse, onUpdate: update, parseOrigin }));
@@ -33,9 +36,15 @@ export function App() {
 
   return (
     <MotionProvider reducedMotion={REDUCED_MOTION[motion]}>
-      <AppRouteContext.Provider value={{ parse, onUpdate: update, parseOrigin }}>
-        <RouterProvider router={router} context={{ parse, onUpdate: update, parseOrigin }} />
-      </AppRouteContext.Provider>
+      <PlateSettingsProvider
+        palette={palette}
+        radarTheme={radarTheme}
+        imageBase={import.meta.env.BASE_URL}
+      >
+        <AppRouteContext.Provider value={{ parse, onUpdate: update, parseOrigin }}>
+          <RouterProvider router={router} context={{ parse, onUpdate: update, parseOrigin }} />
+        </AppRouteContext.Provider>
+      </PlateSettingsProvider>
     </MotionProvider>
   );
 }

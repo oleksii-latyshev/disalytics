@@ -1,6 +1,6 @@
 import { UTILITY_NAMES } from '@disa/demo-core';
+import type { RadarColors } from '@disa/plate';
 import { describe, expect, it } from 'vitest';
-import type { RadarColors } from '../helpers/colors';
 import { PLATE_MARKS, type PlateMarkId } from '../helpers/plate-legend';
 import { stubPath2D } from './canvas-globals';
 

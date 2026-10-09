@@ -1,4 +1,5 @@
 import { useT } from '@disa/i18n';
+import { radarColors } from '@disa/plate';
 import { Button, Popover, PopoverPanel, PopoverTrigger } from '@disa/ui';
 import {
   BookmarkMinus,
@@ -20,7 +21,6 @@ import {
   EMPTY_COACH_ANNOTATIONS,
   resolvePencilColor,
 } from '../helpers/coach-types';
-import { radarColors } from '../helpers/colors';
 import { useCoachState } from '../hooks/use-coach-session';
 
 interface Props {

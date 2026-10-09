@@ -15,10 +15,7 @@ import {
   visibleGrenades,
 } from '@disa/demo-core';
 import { type MapOverview, plateLayout, plateX, plateY } from '@disa/map-data';
-import type { Layer } from '@/core/renderer';
-import type { TrajectoryVisibility } from '@/core/settings';
-import type { RadarColors } from './colors';
-import { drawGrenadeMark } from './equipment-marks';
+import type { RadarColors } from '@disa/plate';
 import {
   drawDecoyPulse,
   drawFlashMark,
@@ -26,7 +23,13 @@ import {
   drawTrajectory,
   grenadeColor,
   isTrajectoryDrawn,
-} from './grenades';
+  type PlateView,
+  plateGeometry,
+  readPlateGeometry,
+} from '@disa/plate';
+import type { Layer } from '@/core/renderer';
+import type { TrajectoryVisibility } from '@/core/settings';
+import { drawGrenadeMark } from './equipment-marks';
 import {
   bodyParts,
   countdownLabels,
@@ -35,7 +38,6 @@ import {
   drawSmokeBody,
   resolveCountdownFont,
 } from './utility-body';
-import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 export interface UtilityLayerOptions {
   readonly demo: ParsedDemo;

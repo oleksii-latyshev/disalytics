@@ -1,6 +1,6 @@
 import { FIRE_AREA_ALPHA, SMOKE_AREA_ALPHA, UTILITY_NAMES } from '@disa/demo-core';
+import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from '@disa/plate';
 import { drawGrenadeMark } from './equipment-marks';
-import { drawDecoyPulse, drawFlashMark, drawHeRing, trajectoryStroke } from './grenades';
 import { drawKillFall, drawKillOrigin, drawKillPath } from './kill-line';
 import {
   CENTRE_X,

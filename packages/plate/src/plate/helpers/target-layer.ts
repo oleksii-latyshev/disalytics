@@ -1,6 +1,6 @@
 import { sampleAt } from '@disa/demo-core';
 import { type MapOverview, plateLayout } from '@disa/map-data';
-import type { Layer } from '@/core/renderer';
+import type { Layer } from '../../renderer/helpers/canvas';
 import type { RadarColors } from './colors';
 import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 

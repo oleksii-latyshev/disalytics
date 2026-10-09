@@ -1,16 +1,24 @@
-export { ArmourGlyph } from './components/ArmourGlyph';
-export type { EventKind } from './components/EventGlyph';
-export { EventGlyph } from './components/EventGlyph';
-export type { KillMarkKind } from './components/KillMark';
-export { KillMark } from './components/KillMark';
-export { UTILITY_INK, UtilityGlyph } from './components/UtilityGlyph';
-export { WeaponGlyph } from './components/WeaponGlyph';
-export type { EquipmentIcon } from './generated/equipment-icons';
-export { EQUIPMENT_ICONS } from './generated/equipment-icons';
-export type { WeaponIcon } from './generated/weapon-icons';
-export { WEAPON_ICONS } from './generated/weapon-icons';
-export type { EquipmentIconId } from './helpers/equipment';
-export { armourIcon, UTILITY_ICON } from './helpers/equipment';
-export type { SilhouetteClass } from './helpers/silhouettes';
-export { SILHOUETTE_HEIGHT, SILHOUETTE_PATHS, SILHOUETTE_WIDTH } from './helpers/silhouettes';
-export type { GlyphSize } from './helpers/size';
+export type {
+  EquipmentIcon,
+  EquipmentIconId,
+  EventKind,
+  GlyphSize,
+  KillMarkKind,
+  SilhouetteClass,
+  WeaponIcon,
+} from '@disa/plate';
+export {
+  ArmourGlyph,
+  armourIcon,
+  EQUIPMENT_ICONS,
+  EventGlyph,
+  KillMark,
+  SILHOUETTE_HEIGHT,
+  SILHOUETTE_PATHS,
+  SILHOUETTE_WIDTH,
+  UTILITY_ICON,
+  UTILITY_INK,
+  UtilityGlyph,
+  WEAPON_ICONS,
+  WeaponGlyph,
+} from '@disa/plate';

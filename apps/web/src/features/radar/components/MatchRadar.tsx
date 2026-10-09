@@ -1,11 +1,11 @@
 import type { ParsedDemo, PlayerSlot } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
+import { UnknownMap } from '@disa/plate';
 import type { RowFocus } from '@/core/events';
 import type { Transport } from '@/core/playback';
 import type { CoachSession } from '../helpers/coach-session';
 import { RadarView } from './RadarView';
-import { UnknownMap } from './UnknownMap';
 
 interface Props {
   demo: ParsedDemo;

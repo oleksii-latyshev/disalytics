@@ -1,9 +1,9 @@
 import { type Duel, sampleAt, type Team, type TickTrack } from '@disa/demo-core';
 import { type MapOverview, plateLayout } from '@disa/map-data';
+import type { RadarColors } from '@disa/plate';
+import { type PlateView, plateGeometry, readPlateGeometry } from '@disa/plate';
 import type { Layer } from '@/core/renderer';
-import type { RadarColors } from './colors';
 import { drawKillPath, END_STRIDE, ENDS_LENGTH, killLineGeometry } from './kill-line';
-import { type PlateView, plateGeometry, readPlateGeometry } from './view';
 
 /**
  * What a match's worth of marks keeps of one mark's own opacity.
