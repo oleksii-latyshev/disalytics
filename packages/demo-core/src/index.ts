@@ -152,6 +152,19 @@ export {
 } from './helpers/heat-filter';
 export type { HeatMarks, HeatPoints, HeatPointsScope } from './helpers/heat-points';
 export { collectHeatPoints, presenceByRoundTime, replayHeatPoints } from './helpers/heat-points';
+export type { LineupCollection } from './helpers/lineup-collections';
+export {
+  cleanCollectionName,
+  collectionsToImport,
+  isCollectionNameTaken,
+  isLineupCollection,
+  MAX_COLLECTION_NAME_LENGTH,
+  newLineupCollection,
+  prunedCollection,
+  renamedCollection,
+  withCollectionMembers,
+  withoutCollectionMembers,
+} from './helpers/lineup-collections';
 export type { LineupOfVariantOptions } from './helpers/lineup-of-variant';
 export { lineupOfVariant, savedLineupId } from './helpers/lineup-of-variant';
 export type {

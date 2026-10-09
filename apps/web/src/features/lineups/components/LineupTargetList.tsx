@@ -8,6 +8,8 @@ interface Props {
   selectedId: string | null;
   /** Whether the map has any lineups at all, so the empty list can say why it is empty. */
   hasLineups: boolean;
+  /** A collection is open, and whether it holds any lineup that exists on this map. */
+  collection: { readonly hasMembers: boolean } | null;
   isSelecting: boolean;
   checkedIds: ReadonlySet<string>;
   onPick: (id: string) => void;
@@ -17,9 +19,16 @@ interface Props {
 
 const HEADING = 'label-dense text-ink-dim';
 
+function emptyPath(hasLineups: boolean, collection: Props['collection']) {
+  if (!hasLineups) return 'library.lineups.emptyMap';
+  if (collection !== null && !collection.hasMembers)
+    return 'library.lineups.collections.emptyCollection';
+  return 'library.lineups.empty';
+}
+
 /** "Where it lands": every target the filters leave, most positions first. */
 export function LineupTargetList(props: Props) {
-  const { targets, selectedId, hasLineups, isSelecting, checkedIds } = props;
+  const { targets, selectedId, hasLineups, collection, isSelecting, checkedIds } = props;
 
   return (
     <>
@@ -51,8 +60,11 @@ export function LineupTargetList(props: Props) {
 
       {targets.length === 0 && (
         <div className="flex flex-col gap-2 px-2 py-4 text-13 text-ink-dim leading-prose">
-          <Text path={hasLineups ? 'library.lineups.empty' : 'library.lineups.emptyMap'} />
+          <Text path={emptyPath(hasLineups, collection)} />
           {!hasLineups && <Text path="library.lineups.emptyMapHint" />}
+          {hasLineups && collection !== null && !collection.hasMembers && (
+            <Text path="library.lineups.collections.emptyCollectionHint" />
+          )}
         </div>
       )}
     </>

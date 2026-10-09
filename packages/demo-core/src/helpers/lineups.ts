@@ -1,4 +1,5 @@
 import type { Team, WorldPoint } from '../schema';
+import { isLineupCollection, type LineupCollection } from './lineup-collections';
 import type { MovementKey, ThrowType } from './throw-detail';
 import { isThrownUtilityKind, type UtilityKind } from './utility';
 
@@ -111,11 +112,14 @@ export interface LineupFile {
   readonly lineups: readonly Lineup[];
   /** Lowercase hex SHA-256 of the photo bytes → `data:image/…;base64,…`. */
   readonly images: Readonly<Record<string, string>>;
+  /** Older builds neither write nor read this; it is absent when there is nothing to carry. */
+  readonly collections?: readonly LineupCollection[];
 }
 
 export interface ParsedLineupFile {
   readonly lineups: readonly Lineup[];
   readonly images: Readonly<Record<string, string>>;
+  readonly collections: readonly LineupCollection[];
 }
 
 const LOCAL_IMAGE_PREFIX = 'local:';
@@ -362,6 +366,7 @@ export function isLineup(value: unknown): value is Lineup {
 export function serializeLineupFile(
   lineups: readonly Lineup[],
   images: Readonly<Record<string, string>> = {},
+  collections: readonly LineupCollection[] = [],
 ): string {
   const referenced = referencedLocalImageHashes(lineups);
   const included: Record<string, string> = {};
@@ -376,6 +381,7 @@ export function serializeLineupFile(
     exportedAt: new Date().toISOString(),
     lineups,
     images: included,
+    ...(collections.length > 0 ? { collections } : {}),
   };
 
   return JSON.stringify(file, null, 2);
@@ -399,7 +405,23 @@ function parseImages(value: unknown): Record<string, string> {
   return images;
 }
 
-/** Parses and validates a JSON string as a version 1 or 2 `LineupFile`. */
+function parseCollections(value: unknown): readonly LineupCollection[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    throw new LineupFileError('Field "collections" must be an array', 'INVALID_SCHEMA');
+  }
+  const collections: LineupCollection[] = [];
+  for (let i = 0; i < value.length; i++) {
+    const item: unknown = value[i];
+    if (!isLineupCollection(item)) {
+      throw new LineupFileError(`Invalid collection entry at index ${i}`, 'INVALID_SCHEMA');
+    }
+    collections.push(item);
+  }
+  return collections;
+}
+
+/** Parses and validates a JSON string as a version 1 or 2 `LineupFile`; `collections` is optional. */
 export function parseLineupFile(json: string): ParsedLineupFile {
   let parsed: unknown;
   try {
@@ -448,5 +470,5 @@ export function parseLineupFile(json: string): ParsedLineupFile {
     }
   }
 
-  return { lineups: validLineups, images };
+  return { lineups: validLineups, images, collections: parseCollections(parsed.collections) };
 }

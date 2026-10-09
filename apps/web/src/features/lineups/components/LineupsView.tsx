@@ -1,7 +1,12 @@
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupCollection } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import type { MapId } from '@disa/map-data';
 import { useMemo, useState } from 'react';
+import { memberLineupIds } from '../helpers/lineup-collection-membership';
+import {
+  readCollectionPreference,
+  writeCollectionPreference,
+} from '../helpers/lineup-collection-pref';
 import { countsByKind, filterLineups } from '../helpers/lineup-filter';
 import { type PointMove, withMove } from '../helpers/lineup-move';
 import { clearPick, type LineupPick, NO_PICK, pickTarget } from '../helpers/lineup-pick';
@@ -10,6 +15,7 @@ import { lineupTargets } from '../helpers/lineup-targets';
 import { useAddFlow } from '../hooks/use-add-flow';
 import { useBulkSelection } from '../hooks/use-bulk-selection';
 import { useEscape } from '../hooks/use-escape';
+import { useLineupCollections } from '../hooks/use-lineup-collections';
 import { useLineupEdits } from '../hooks/use-lineup-edits';
 import { useLineupMapCounts } from '../hooks/use-lineup-map-counts';
 import { useMapLineups } from '../hooks/use-map-lineups';
@@ -37,14 +43,33 @@ export function LineupsView() {
   const [removal, setRemoval] = useState<{ ids: readonly string[]; message: string } | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [collectionId, setCollectionId] = useState<string | null>(() =>
+    readCollectionPreference('de_mirage'),
+  );
+  const [collectionRemoval, setCollectionRemoval] = useState<LineupCollection | null>(null);
 
   const { lineups, loading, reload, importLineups, exportLineups } = useMapLineups(map);
   const counts = useLineupMapCounts(map, loading ? null : lineups.length);
+  const knownIds = useMemo(() => new Set(lineups.map(({ id }) => id)), [lineups]);
+  const collectionsApi = useLineupCollections({ map, knownIds, isLineupsLoading: loading });
+  const { collections } = collectionsApi;
+  const activeCollection = collections.find(({ id }) => id === collectionId) ?? null;
+  const members = useMemo(() => {
+    if (activeCollection !== null) return new Set(memberLineupIds(activeCollection, knownIds));
+    return collectionId !== null && collectionsApi.isLoading ? new Set<string>() : null;
+  }, [activeCollection, collectionId, collectionsApi.isLoading, knownIds]);
+  const collectionCounts = useMemo(
+    () =>
+      new Map(
+        collections.map((item) => [item.id, memberLineupIds(item, knownIds).length] as const),
+      ),
+    [collections, knownIds],
+  );
 
   const shown = useMemo(() => withMove(lineups, move), [lineups, move]);
   const criteria = useMemo(
-    () => ({ side: scope.side, tag: scope.tag, search: scope.search }),
-    [scope.side, scope.tag, scope.search],
+    () => ({ side: scope.side, tag: scope.tag, search: scope.search, members }),
+    [scope.side, scope.tag, scope.search, members],
   );
   const filtered = useMemo(
     () => filterLineups(shown, { ...criteria, kind: scope.kind }),
@@ -130,6 +155,25 @@ export function LineupsView() {
     selection.clear();
   };
 
+  const selectCollection = (id: string | null) => {
+    letGo();
+    selection.clear();
+    setCollectionId(id);
+    writeCollectionPreference(map, id);
+  };
+  const createCollection = (name: string, ids: readonly string[]) =>
+    collectionsApi.create(name, ids);
+  const removeCollectionConfirmed = async (collection: LineupCollection) => {
+    setCollectionRemoval(null);
+    if (!(await collectionsApi.remove(collection.id))) return;
+    if (collection.id === collectionId) selectCollection(null);
+  };
+  const importWithCollections = async (file: File) => {
+    const result = await importLineups(file);
+    await collectionsApi.reload();
+    return result;
+  };
+
   const mode = panelModeOf(add.draft, selected, variant, isEditing);
 
   return (
@@ -138,24 +182,42 @@ export function LineupsView() {
         map={map}
         counts={counts}
         ownCount={lineups.filter((lineup) => lineup.isBuiltIn !== true).length}
+        collectionCount={collections.length}
         onMap={(next) => {
           resetScreen();
+          setCollectionId(readCollectionPreference(next));
           setMap(next);
         }}
         onAdd={startAdd}
         onExport={exportLineups}
-        onImport={importLineups}
+        onImport={importWithCollections}
       />
 
       <div className="grid min-h-[36rem] min-w-0 grid-cols-1 gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,14.5rem)_minmax(0,1fr)_minmax(0,16rem)] wide:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_minmax(0,22rem)]">
         <LineupsSidebar
+          collections={{
+            collections,
+            counts: collectionCounts,
+            activeId: activeCollection?.id ?? null,
+            onSelect: selectCollection,
+            onCreate: (name) =>
+              void createCollection(name, []).then((id) => {
+                if (id !== null) selectCollection(id);
+              }),
+            onRename: (id, name) => void collectionsApi.rename(id, name),
+            onDelete: setCollectionRemoval,
+            onToggleMembers: (id, ids) =>
+              void collectionsApi.toggleMembers(id, ids).then(selection.clear),
+            onCreateWith: (name, ids) => void createCollection(name, ids).then(selection.clear),
+          }}
           scope={scope}
           onScope={(next) => {
             letGo();
             setScope(next);
           }}
           kindCounts={kindCounts}
-          totalCount={lineups.length}
+          totalCount={members?.size ?? lineups.length}
+          mapCount={lineups.length}
           targets={targets}
           selectedId={selected?.id ?? null}
           isSelecting={selection.isSelecting}
@@ -207,6 +269,7 @@ export function LineupsView() {
           map={map}
           mode={mode}
           targets={targets}
+          collections={collections}
           isSaving={add.isSaving}
           hasFailed={add.hasFailed}
           hoveredVariantId={hoveredId}
@@ -234,6 +297,8 @@ export function LineupsView() {
             onRedo: add.redo,
             onSave: (photos) => void add.save(photos),
             onCancelAdd: add.cancel,
+            onToggleCollection: (id, ids) => void collectionsApi.toggleMembers(id, ids),
+            onCreateCollection: (name, ids) => void createCollection(name, ids),
           }}
         />
       </div>
@@ -256,6 +321,17 @@ export function LineupsView() {
           isDestructive
           onConfirm={() => void removeConfirmed(removal.ids)}
           onCancel={() => setRemoval(null)}
+        />
+      )}
+
+      {collectionRemoval !== null && (
+        <LineupConfirmDialog
+          message={t('library.lineups.collections.deleteConfirm', { name: collectionRemoval.name })}
+          confirmLabel={t('library.lineups.confirm.delete')}
+          cancelLabel={t('library.lineups.form.cancel')}
+          isDestructive
+          onConfirm={() => void removeCollectionConfirmed(collectionRemoval)}
+          onCancel={() => setCollectionRemoval(null)}
         />
       )}
 

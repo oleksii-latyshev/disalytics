@@ -3,6 +3,7 @@ import type { MapId } from '@disa/map-data';
 import { Button } from '@disa/ui';
 import { Plus } from 'lucide-react';
 import { mapName } from '../helpers/map-name';
+import type { ImportResult } from '../hooks/use-map-lineups';
 import { LineupMapTabs } from './LineupMapTabs';
 import { LineupsTransfer } from './LineupsTransfer';
 
@@ -10,14 +11,24 @@ interface Props {
   map: MapId;
   counts: ReadonlyMap<string, number>;
   ownCount: number;
+  collectionCount: number;
   onMap: (map: MapId) => void;
   onAdd: () => void;
   onExport: () => Promise<void>;
-  onImport: (file: File) => Promise<number>;
+  onImport: (file: File) => Promise<ImportResult>;
 }
 
 /** The title, a tab per map, and the two things a reader does to their own lineups. */
-export function LineupsHeader({ map, counts, ownCount, onMap, onAdd, onExport, onImport }: Props) {
+export function LineupsHeader({
+  map,
+  counts,
+  ownCount,
+  collectionCount,
+  onMap,
+  onAdd,
+  onExport,
+  onImport,
+}: Props) {
   return (
     <header className="flex flex-wrap items-center gap-x-3 gap-y-3 wide:gap-x-4">
       <h1 className="font-ui font-semibold text-20 text-ink leading-tight wide:text-28">
@@ -28,6 +39,7 @@ export function LineupsHeader({ map, counts, ownCount, onMap, onAdd, onExport, o
       <LineupsTransfer
         mapName={mapName(map)}
         ownCount={ownCount}
+        collectionCount={collectionCount}
         onExport={onExport}
         onImport={onImport}
       />

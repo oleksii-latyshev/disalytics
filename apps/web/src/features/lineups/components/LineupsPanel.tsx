@@ -1,4 +1,4 @@
-import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
+import type { Lineup, LineupCollection, LineupGroupTarget } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import type { AddDraft } from '../helpers/lineup-add';
 import type { SavedTarget, SavedVariant } from '../helpers/lineup-targets';
@@ -46,6 +46,8 @@ export interface PanelActions {
   onRedo: (point: 'landing' | 'origin') => void;
   onSave: (photos: readonly PreparedImage[]) => void;
   onCancelAdd: () => void;
+  onToggleCollection: (collectionId: string, lineupIds: readonly string[]) => void;
+  onCreateCollection: (name: string, lineupIds: readonly string[]) => void;
 }
 
 interface Props {
@@ -53,6 +55,7 @@ interface Props {
   mode: PanelMode;
   /** What the intro offers to start from. */
   targets: readonly SavedTarget[];
+  collections: readonly LineupCollection[];
   isSaving: boolean;
   hasFailed: boolean;
   /** The position hovered on the map or in the list, so the list lights the same one. */
@@ -65,6 +68,7 @@ export function LineupsPanel({
   map,
   mode,
   targets,
+  collections,
   isSaving,
   hasFailed,
   hoveredVariantId,
@@ -86,6 +90,9 @@ export function LineupsPanel({
           target={mode.target}
           variant={mode.variant}
           hoveredId={hoveredVariantId}
+          collections={collections}
+          onToggleCollection={actions.onToggleCollection}
+          onCreateCollection={actions.onCreateCollection}
           onHover={actions.onHoverVariant}
           onOpenVariant={actions.onOpenVariant}
           onClose={actions.onClose}
