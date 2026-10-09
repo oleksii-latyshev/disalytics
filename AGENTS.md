@@ -68,7 +68,7 @@ Cloudflare Workers static assets plus a separate Effect API Worker. No Zustand: 
 | `packages/i18n` · `packages/ui` | locales + typed keys + `<Text>`/`useT` · components, tokens, motion |
 | `apps/web/src/core` | playback, renderer, shortcuts, settings, parsing, events, glyphs, lineup-catalog, motion, pwa, samples |
 | `apps/web/src/features` | library (way in), review (stage + views), radar, timeline, controls |
-| `apps/api` | Cloudflare Worker: built-in lineups (D1) and their photos (KV), future key-backed requests; never demos |
+| `apps/api` · `apps/admin` | Worker: built-in lineups (D1) and photos (KV), never demos · lineups admin page, its Worker in `apps/api/src/admin` |
 | `crates/demo-parser` · `-wasm` | Rust core (no wasm-bindgen, forbid unsafe) · thin wrapper → `pkg/` (gitignored) |
 | `vendor/` · `tools/` | upstream parser, pinned and patched · `scripts/` behind `bun run`, `probes/` |
 | `repos/effect/` | pinned, read-only Effect source for reference; imports use the npm package |
@@ -202,7 +202,7 @@ per whole sentence. Locale: stored → `navigator.language` → `en`. Use the `i
 The web remains an assets-only Worker (`wrangler.jsonc`, no `main`, SPA fallback, `preview_urls: false`).
 `/assets/*` immutable, `index.html` and `/radar/*` revalidate, `.wasm` is `application/wasm`, **never COOP/COEP**; keep `.assetsignore`. `bun run smoke <url>` checks the deployed page.
 `apps/api/wrangler.jsonc` is a separate Worker for metadata and secrets, never `.dem` or parsed-demo
-bytes. Green main `ci` deploys and smokes it separately from the static Worker.
+bytes. Green main `ci` deploys and smokes it and `disalytics-admin` (Access, `apps/admin/README.md`) apart from the web.
 
 ## 14. Contribution Flow
 

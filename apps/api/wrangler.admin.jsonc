@@ -1,0 +1,38 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "disalytics-admin",
+  "main": "./src/admin/index.ts",
+  "compatibility_date": "2026-07-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  // The page is built by `@disa/admin` into ../admin/dist. Only /api/* runs this Worker's code;
+  // everything else is served as a static asset, with the SPA fallback.
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "../admin/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // Same stores as the API Worker (wrangler.jsonc). Migrations are applied from there.
+  "d1_databases": [
+    {
+      "binding": "LINEUPS_DB",
+      "database_name": "disalytics-lineups",
+      "database_id": "e16017ec-b60d-42f1-bad0-63d6f7db5672",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "LINEUP_PHOTOS",
+      "id": "d66b24c9fd294ba7a4749d402c0a3571"
+    }
+  ],
+  "vars": {
+    // Fill these two after enabling Cloudflare Access on this Worker (see apps/admin/README.md).
+    // While either is empty every /api/* request is refused with 403.
+    "TEAM_DOMAIN": "", // https://<your-team>.cloudflareaccess.com
+    "POLICY_AUD": "", // the Access application's "Application Audience (AUD) Tag"
+    "PHOTO_BASE_URL": "https://disalytics-api.disa-67b.workers.dev/photos"
+  }
+}

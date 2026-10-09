@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@disa/ui/styles";
+
+@source "../../../packages/ui/src";
+@source "./";
+
+/* The admin is dark, like the product it edits: there is no light palette. */
+@custom-variant dark (&);

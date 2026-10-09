@@ -35,3 +35,10 @@ export const lineupChanges = sqliteTable(
   },
   (table) => [index('lineup_changes_lineup').on(table.lineupId, table.at)],
 );
+
+/** Which stored photo a copied link became, so a re-imported file's links are recognised. */
+export const photoLinks = sqliteTable('photo_links', {
+  url: text('url').primaryKey(),
+  sha256: text('sha256').notNull(),
+  createdAt: integer('created_at').notNull(),
+});

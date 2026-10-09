@@ -1,0 +1,20 @@
+{
+  "name": "@disa/admin-contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@disa/demo-core": "*",
+    "effect": "4.0.0-rc.117"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "typescript": "5.9.2"
+  }
+}

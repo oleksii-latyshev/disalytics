@@ -11,7 +11,9 @@ function collectInto(target: Record<string, string>, prefix: string, tree: Messa
   }
 }
 
-export function flattenResources(resources: LocaleResources): Record<string, string> {
+export function flattenResources(
+  resources: LocaleResources | Readonly<Record<string, MessageTree>>,
+): Record<string, string> {
   const flat: Record<string, string> = {};
   for (const [namespace, tree] of Object.entries(resources)) {
     collectInto(flat, namespace, tree);

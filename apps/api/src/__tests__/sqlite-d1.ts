@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import type { D1Binding } from '../db/client';
 
@@ -36,7 +36,7 @@ if (!hasSqlite && process.env.CI !== undefined) {
   throw new Error('node:sqlite is unavailable in CI; the D1 tests would skip');
 }
 
-const MIGRATION = new URL('../../migrations/0001_lineups.sql', import.meta.url);
+const MIGRATIONS = new URL('../../migrations/', import.meta.url);
 
 class Statement {
   constructor(
@@ -76,7 +76,11 @@ class Statement {
 export function sqliteD1(): D1Binding {
   if (sqlite === null) throw new Error('node:sqlite is unavailable');
   const db = new sqlite.DatabaseSync(':memory:');
-  db.exec(readFileSync(MIGRATION, 'utf8'));
+  for (const name of readdirSync(MIGRATIONS)
+    .filter((file) => file.endsWith('.sql'))
+    .sort()) {
+    db.exec(readFileSync(new URL(name, MIGRATIONS), 'utf8'));
+  }
   return {
     prepare: (sql: string) => new Statement(db, sql),
     async batch(statements: Statement[]) {

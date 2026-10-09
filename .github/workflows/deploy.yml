@@ -167,3 +167,58 @@ jobs:
             exit 1
           fi
           bun run api:smoke "$DEPLOYED_URL"
+
+  admin-production:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.name == 'ci' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: admin-production
+      url: ${{ steps.deploy-admin.outputs.deployment-url }}
+    concurrency:
+      group: deploy-admin-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      # The Worker serves apps/admin/dist, so the page is built first (its build ends in a dry run).
+      - name: build admin
+        run: bunx turbo run build --filter=@disa/admin
+
+      - name: deploy admin
+        id: deploy-admin
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: bun
+          command: deploy --config apps/api/wrangler.admin.jsonc
+
+      - name: smoke admin
+        env:
+          DEPLOYED_URL: ${{ steps.deploy-admin.outputs.deployment-url }}
+        run: |
+          if [ -z "$DEPLOYED_URL" ]; then
+            echo "wrangler-action returned no admin deployment-url." >&2
+            exit 1
+          fi
+          bun run admin:smoke "$DEPLOYED_URL"

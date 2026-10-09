@@ -14,8 +14,13 @@ async function importResources(locale: Locale): Promise<Record<string, string>> 
   return flattenResources(resources);
 }
 
+// The admin's strings live in their own file per locale and load only in the admin app
+// (`@disa/i18n/admin`), so the web app's locale chunk does not carry them. The key union still
+// lists them, which is why a web load does not count them as missing.
+const ADMIN_KEY = /^admin\./;
+
 function missingKeys(messages: Record<string, string>): string[] {
-  return TRANSLATION_KEYS.filter((key) => messages[key] === undefined);
+  return TRANSLATION_KEYS.filter((key) => messages[key] === undefined && !ADMIN_KEY.test(key));
 }
 
 function assertComplete(

@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:admin": "wrangler dev --config wrangler.admin.jsonc --local --port 8788",
     "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@disa/admin-contract": "*",
     "@disa/demo-core": "*",
     "drizzle-orm": "0.45.3",
     "effect": "4.0.0-rc.117"
