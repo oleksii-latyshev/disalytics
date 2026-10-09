@@ -37,8 +37,6 @@ export function adminEnv(overrides: Partial<Omit<AdminEnv, 'LINEUP_PHOTOS'>> = {
     LINEUPS_DB: sqliteD1(),
     LINEUP_PHOTOS: fakeKv(),
     ASSETS: { fetch: async () => new Response('asset') },
-    TEAM_DOMAIN: '',
-    POLICY_AUD: '',
     PHOTO_BASE_URL: PHOTO_BASE,
     ALLOW_DEV_IDENTITY: 'dev@localhost',
     ...overrides,

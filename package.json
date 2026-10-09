@@ -10,6 +10,7 @@
     "smoke": "bun tools/scripts/smoke.ts",
     "api:smoke": "bun tools/scripts/api-smoke.ts",
     "admin:smoke": "bun tools/scripts/admin-smoke.ts",
+    "admin:invite": "bun tools/scripts/admin-invite.ts",
     "lineups:seed": "bun tools/scripts/lineups-seed.ts",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.tools.json",
     "test": "turbo run test && vitest run",

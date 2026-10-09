@@ -9,26 +9,40 @@ import {
   Unauthorized,
 } from './errors';
 import {
+  type AdminRole,
   ChangesResponse,
   CommitRequest,
   CommitResponse,
+  Done,
+  InviteCreated,
+  InviteInfo,
+  InviteRequest,
+  InviteToken,
   MapId,
   MapLineupsResponse,
+  PeopleResponse,
   PreviewRequest,
   PreviewResponse,
+  RedeemRequest,
   Removed,
   WhoAmI,
 } from './schemas';
 
-/** The signed-in person, as Cloudflare Access names them. */
-export class Actor extends Context.Service<Actor, { readonly email: string }>()(
-  'disalytics/admin/Actor',
-) {}
+/** The signed-in person: who they are, what they may do, and which device session this is. */
+export interface ActorShape {
+  readonly id: string;
+  readonly name: string;
+  readonly role: AdminRole;
+  /** The session this request came on; `null` for the local dev identity. */
+  readonly sessionId: string | null;
+}
 
-/** Verifies the Access token and provides the {@link Actor}. */
-export class AccessAuth extends HttpApiMiddleware.Service<AccessAuth, { provides: Actor }>()(
-  'disalytics/admin/AccessAuth',
-  { error: [Unauthorized, Forbidden] },
+export class Actor extends Context.Service<Actor, ActorShape>()('disalytics/admin/Actor') {}
+
+/** Reads the device session cookie and provides the {@link Actor}. */
+export class SessionAuth extends HttpApiMiddleware.Service<SessionAuth, { provides: Actor }>()(
+  'disalytics/admin/SessionAuth',
+  { error: Unauthorized },
 ) {}
 
 /** Refuses cross-site writes, non-JSON bodies and oversized bodies. */
@@ -50,51 +64,97 @@ export const MalformedAsBadRequestLive = HttpApiMiddleware.layerSchemaErrorTrans
 
 export const LineupId = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(200));
 
-const MeGroup = HttpApiGroup.make('me').add(
-  HttpApiEndpoint.get('whoami', '/whoami', { success: WhoAmI }),
-);
-
-const PreviewGroup = HttpApiGroup.make('preview').add(
-  HttpApiEndpoint.post('run', '/preview', {
-    payload: PreviewRequest,
-    success: PreviewResponse,
+/** Signing in and out. No session needed: this is how a device gets one. */
+const AuthGroup = HttpApiGroup.make('auth').add(
+  HttpApiEndpoint.post('invite', '/auth/invite', {
+    payload: InviteToken,
+    success: InviteInfo,
     error: BadRequest,
   }),
-);
-
-const CommitGroup = HttpApiGroup.make('commit').add(
-  HttpApiEndpoint.post('run', '/commit', {
-    payload: CommitRequest,
-    success: CommitResponse,
+  HttpApiEndpoint.post('redeem', '/auth/redeem', {
+    payload: RedeemRequest,
+    success: WhoAmI,
     error: BadRequest,
   }),
+  HttpApiEndpoint.post('signOut', '/auth/sign-out', { success: Done }),
 );
 
-const LineupsGroup = HttpApiGroup.make('lineups').add(
-  HttpApiEndpoint.get('byMap', '/lineups/:map', {
-    params: { map: MapId },
-    success: MapLineupsResponse,
-  }),
-  HttpApiEndpoint.delete('remove', '/lineups/:id', {
-    params: { id: LineupId },
-    success: Removed,
-    error: NotFound,
-  }),
-);
+const MeGroup = HttpApiGroup.make('me')
+  .add(HttpApiEndpoint.get('whoami', '/whoami', { success: WhoAmI }))
+  .middleware(SessionAuth);
 
-const ChangesGroup = HttpApiGroup.make('changes').add(
-  HttpApiEndpoint.get('list', '/changes', {
-    query: { map: Schema.optional(MapId) },
-    success: ChangesResponse,
-  }),
-);
+/** The owner's: invites, people and their devices. */
+const PeopleGroup = HttpApiGroup.make('people')
+  .add(
+    HttpApiEndpoint.get('list', '/people', { success: PeopleResponse, error: Forbidden }),
+    HttpApiEndpoint.post('invite', '/people/invites', {
+      payload: InviteRequest,
+      success: InviteCreated,
+      error: [Forbidden, NotFound],
+    }),
+    HttpApiEndpoint.delete('revokeDevice', '/people/devices/:id', {
+      params: { id: Schema.String },
+      success: Done,
+      error: [Forbidden, NotFound],
+    }),
+    HttpApiEndpoint.delete('disable', '/people/:id', {
+      params: { id: Schema.String },
+      success: Done,
+      error: [Forbidden, NotFound, BadRequest],
+    }),
+  )
+  .middleware(SessionAuth);
+
+const PreviewGroup = HttpApiGroup.make('preview')
+  .add(
+    HttpApiEndpoint.post('run', '/preview', {
+      payload: PreviewRequest,
+      success: PreviewResponse,
+      error: BadRequest,
+    }),
+  )
+  .middleware(SessionAuth);
+
+const CommitGroup = HttpApiGroup.make('commit')
+  .add(
+    HttpApiEndpoint.post('run', '/commit', {
+      payload: CommitRequest,
+      success: CommitResponse,
+      error: BadRequest,
+    }),
+  )
+  .middleware(SessionAuth);
+
+const LineupsGroup = HttpApiGroup.make('lineups')
+  .add(
+    HttpApiEndpoint.get('byMap', '/lineups/:map', {
+      params: { map: MapId },
+      success: MapLineupsResponse,
+    }),
+    HttpApiEndpoint.delete('remove', '/lineups/:id', {
+      params: { id: LineupId },
+      success: Removed,
+      error: NotFound,
+    }),
+  )
+  .middleware(SessionAuth);
+
+const ChangesGroup = HttpApiGroup.make('changes')
+  .add(
+    HttpApiEndpoint.get('list', '/changes', {
+      query: { map: Schema.optional(MapId) },
+      success: ChangesResponse,
+    }),
+  )
+  .middleware(SessionAuth);
 
 export const AdminApi = HttpApi.make('disalytics-admin')
+  .add(AuthGroup.prefix('/api'))
   .add(MeGroup.prefix('/api'))
+  .add(PeopleGroup.prefix('/api'))
   .add(PreviewGroup.prefix('/api'))
   .add(CommitGroup.prefix('/api'))
   .add(LineupsGroup.prefix('/api'))
   .add(ChangesGroup.prefix('/api'))
   .middleware(MalformedAsBadRequest)
-  .middleware(WriteGuard)
-  .middleware(AccessAuth);
+  .middleware(WriteGuard);

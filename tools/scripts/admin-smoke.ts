@@ -4,10 +4,9 @@ if (baseUrl === undefined) {
   throw new Error('Usage: bun run admin:smoke <admin-url>');
 }
 
-// The admin sits behind Cloudflare Access, so an anonymous request must never be answered with
-// data: Access redirects it to the login (3xx) once enabled, and the Worker itself refuses it
-// (401, or 403 while TEAM_DOMAIN and POLICY_AUD are unset). A 200 here would mean the write API is open.
-const REFUSED = new Set([301, 302, 303, 307, 308, 401, 403]);
+// A request without a device session must never be answered with data: the Worker refuses it
+// with 401. A 200 here would mean the write API is open.
+const REFUSED = new Set([401]);
 const READY_ATTEMPTS = 36;
 const READY_INTERVAL_MS = 5_000;
 const url = new URL('/api/whoami', baseUrl);

@@ -4,25 +4,30 @@ import { HttpRouter, HttpServer, HttpServerResponse } from 'effect/unstable/http
 import { HttpApiBuilder } from 'effect/unstable/httpapi';
 import { LineupStorage, makeLineupStorage } from '../modules/lineups';
 import { makePhotoStorage, PhotoStorage } from '../modules/photos';
+import { AdminAuth, makeAdminAuth } from './auth/store';
 import { ChangeLog, makeChangeLog } from './change-log';
 import { AdminConfig, type AdminConfigShape } from './config';
 import type { AdminEnv } from './env';
 import {
+  AuthHandlers,
   ChangesHandlers,
   CommitHandlers,
   LineupsHandlers,
   MeHandlers,
+  PeopleHandlers,
   PreviewHandlers,
 } from './handlers';
-import { AccessAuthLive, WriteGuardLive } from './middleware';
+import { SessionAuthLive, WriteGuardLive } from './middleware';
 import { makePhotoLinks, PhotoLinks } from './photo-links';
 
-const Middleware = Layer.mergeAll(MalformedAsBadRequestLive, AccessAuthLive, WriteGuardLive);
+const Middleware = Layer.mergeAll(MalformedAsBadRequestLive, SessionAuthLive, WriteGuardLive);
 
 const AdminApiLive = HttpApiBuilder.layer(AdminApi).pipe(
   Layer.provide(
     Layer.mergeAll(
+      AuthHandlers,
       MeHandlers,
+      PeopleHandlers,
       PreviewHandlers,
       CommitHandlers,
       LineupsHandlers,
@@ -45,11 +50,8 @@ const { handler } = HttpRouter.toWebHandler(Layer.mergeAll(AdminApiLive, NotFoun
 
 export function configOf(env: AdminEnv, now: () => number = Date.now): AdminConfigShape {
   return {
-    teamDomain: env.TEAM_DOMAIN,
-    audience: env.POLICY_AUD,
     photoBaseUrl: env.PHOTO_BASE_URL.replace(/\/+$/, ''),
     devIdentity: env.ALLOW_DEV_IDENTITY,
-    keys: null,
     fetchPhoto: null,
     now,
   };
@@ -66,6 +68,7 @@ export function handleApi(
     Context.add(PhotoStorage, makePhotoStorage(env.LINEUP_PHOTOS)),
     Context.add(ChangeLog, makeChangeLog(env.LINEUPS_DB)),
     Context.add(PhotoLinks, makePhotoLinks(env.LINEUPS_DB)),
+    Context.add(AdminAuth, makeAdminAuth(env.LINEUPS_DB)),
     Context.add(AdminConfig, config),
   );
   return handler(request, services);

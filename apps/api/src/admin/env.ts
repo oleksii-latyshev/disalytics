@@ -10,10 +10,6 @@ export interface AdminEnv {
   readonly LINEUPS_DB: D1Binding;
   readonly LINEUP_PHOTOS: KvBinding;
   readonly ASSETS: AssetsBinding;
-  /** `https://<team>.cloudflareaccess.com`. Empty until the owner enables Access. */
-  readonly TEAM_DOMAIN: string;
-  /** The Access application's AUD tag. Empty until the owner enables Access. */
-  readonly POLICY_AUD: string;
   /** Public base of the photo route, no trailing slash: where `/photos/<sha256>` is served. */
   readonly PHOTO_BASE_URL: string;
   /**
