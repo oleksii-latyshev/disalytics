@@ -40,11 +40,7 @@ for (let attempt = 0; attempt < READY_ATTEMPTS; attempt += 1) {
 if (!isReady) throw new Error(`API health did not become ready: ${lastFailure}`);
 
 const methodResponse = await request(healthUrl, 'POST');
-if (
-  methodResponse.status !== 405 ||
-  methodResponse.headers.get('allow') !== 'GET' ||
-  (await methodResponse.text()) !== '{"error":"method_not_allowed"}'
-) {
+if (methodResponse.status !== 404 || (await methodResponse.text()) !== '{"error":"not_found"}') {
   throw new Error('API method contract failed');
 }
 

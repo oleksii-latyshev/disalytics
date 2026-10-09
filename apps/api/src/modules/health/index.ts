@@ -1,1 +1,2 @@
-export { routeHealth } from './router';
+export { HealthGroup } from './api';
+export { HealthHandlers } from './handlers';

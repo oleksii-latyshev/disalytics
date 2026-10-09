@@ -1,4 +1,6 @@
 export type { BackendKind } from './backend';
+export type { BuiltInLineupStore, BuiltInLineups } from './built-in-lineup-store';
+export { openBuiltInLineupStore } from './built-in-lineup-store';
 export type { SavedDemo } from './catalog';
 export { CACHE_BYTE_LIMIT } from './catalog';
 export { CorruptCacheError } from './container';

@@ -76,6 +76,11 @@ jobs:
           # Keep in step with devEngines.packageManager.version in package.json.
           bun-version: 1.3.13
 
+      # Vitest runs on Node; the API's D1 tests need `node:sqlite` (22.13+).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: Cache bun install
         uses: actions/cache@v6
         with:
