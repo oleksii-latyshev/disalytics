@@ -13,6 +13,8 @@ import {
   type Plan,
   planOf,
   problemsOfPlan,
+  resolveClashes,
+  targetClashes,
 } from '../helpers/review';
 import { EMPTY_REVIEW, reviewReducer } from '../helpers/review-state';
 import { usePhotoSizes } from './use-photo-sizes';
@@ -23,6 +25,8 @@ export interface Row {
   readonly plan: Plan;
   readonly problems: readonly Problem[];
   readonly outcome: Outcome;
+  /** Titles of the other lineups of the file that would replace the same lineup on the site. */
+  readonly clash: readonly string[];
 }
 
 let fileCounter = 0;
@@ -75,7 +79,11 @@ export function useReview(map: string, setMap: (map: string) => void, onOpened: 
   if (data !== seen) {
     setSeen(data);
     if (data !== null)
-      dispatch({ type: 'loaded', photoBase: data.photoBase, items: itemsOf(data) });
+      dispatch({
+        type: 'loaded',
+        photoBase: data.photoBase,
+        items: resolveClashes(itemsOf(data)),
+      });
   }
 
   const images = loaded?.file.images ?? NO_IMAGES;
@@ -91,10 +99,18 @@ export function useReview(map: string, setMap: (map: string) => void, onOpened: 
   ];
   const sizes = usePhotoSizes(refs, (ref) => photoSrc(ref, images));
 
-  const rows = items.map((item): Row => {
-    const plan = planOf(item, state.photoBase, sizes);
+  const plans = items.map((item) => ({
+    id: item.id,
+    title: item.edited.title,
+    plan: planOf(item, state.photoBase, sizes),
+  }));
+  const clashes = targetClashes(plans);
+  const rows = items.map((item, index): Row => {
+    const plan = plans[index]?.plan ?? { kind: 'skip', why: 'chosen' };
     const problems = problemsOfPlan(plan, map);
-    return { item, plan, problems, outcome: outcomeOf(item, plan, problems) };
+    const clash = clashes.get(item.id) ?? [];
+    const outcome = clash.length > 0 ? 'fix' : outcomeOf(item, plan, problems);
+    return { item, plan, problems, outcome, clash };
   });
 
   const serverOnly = useMemo(

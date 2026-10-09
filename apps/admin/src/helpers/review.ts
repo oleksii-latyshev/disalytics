@@ -141,3 +141,56 @@ export function outcomeOf(item: ItemState, plan: Plan, problems: readonly Proble
 export function needsDecision(item: ItemState): boolean {
   return item.status === 'update' || item.status === 'duplicate' || item.initialProblems.length > 0;
 }
+
+/** The stored lineup a plan would replace, or null when it replaces nothing. */
+function targetOf(plan: Plan): string | null {
+  return plan.kind === 'replace' ? plan.targetId : null;
+}
+
+/**
+ * For each lineup of the file that shares its target on the site with another, the titles of the
+ * others. The Worker refuses a request that replaces one lineup twice, so the page never lets it
+ * get that far.
+ */
+export function targetClashes(
+  entries: readonly { readonly id: string; readonly title: string; readonly plan: Plan }[],
+): ReadonlyMap<string, readonly string[]> {
+  const byTarget = new Map<string, typeof entries>();
+  for (const entry of entries) {
+    const target = targetOf(entry.plan);
+    if (target !== null) byTarget.set(target, [...(byTarget.get(target) ?? []), entry]);
+  }
+  const clashes = new Map<string, readonly string[]>();
+  for (const group of byTarget.values()) {
+    if (group.length < 2) continue;
+    for (const entry of group) {
+      clashes.set(
+        entry.id,
+        group.filter((other) => other.id !== entry.id).map((other) => other.title),
+      );
+    }
+  }
+  return clashes;
+}
+
+/**
+ * Starts a file that holds several versions of one stored lineup in a state that saves: the one
+ * with the stored id (else the first) keeps its place, the others are added as lineups of their own.
+ */
+export function resolveClashes(items: readonly ItemState[]): ItemState[] {
+  const taken = new Set<string>();
+  const ordered = [...items].sort(
+    (a, b) => Number(b.status === 'update') - Number(a.status === 'update'),
+  );
+  const demoted = new Set<string>();
+  for (const item of ordered) {
+    const plan = planOf(item, '', new Map());
+    const target = targetOf(plan);
+    if (target === null) continue;
+    if (taken.has(target)) demoted.add(item.id);
+    else taken.add(target);
+  }
+  return items.map((item) =>
+    demoted.has(item.id) ? { ...item, choice: item.status === 'update' ? 'both' : 'add' } : item,
+  );
+}

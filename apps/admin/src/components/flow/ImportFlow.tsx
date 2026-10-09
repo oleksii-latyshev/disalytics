@@ -126,6 +126,10 @@ export function ImportFlow({ map, onMap, onSite, onChanged }: Props) {
               onRetryPhotos={apply.retryPhotos}
               onWithoutPhotos={apply.continueWithout}
               onAgain={again}
+              onBackToCheck={() => {
+                apply.reset();
+                steps.go(3, -1);
+              }}
             />
           ) : null}
         </motion.div>
@@ -135,7 +139,7 @@ export function ImportFlow({ map, onMap, onSite, onChanged }: Props) {
         totals={totalsOf(rows, removals.length)}
         ready={review.data !== null && rows.length > 0}
         questionCount={questions.length}
-        blocked={current !== undefined && current.problems.length > 0}
+        blocked={current !== undefined && (current.problems.length > 0 || current.clash.length > 0)}
         isLastQuestion={question + 1 >= questions.length}
         onStart={() => steps.start(questions.length)}
         onNext={() => steps.next(questions.length)}

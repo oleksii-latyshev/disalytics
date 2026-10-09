@@ -1,7 +1,15 @@
 import type { PreviewItem } from '@disa/admin-contract';
 import { describe, expect, it } from 'vitest';
 import { planParts } from '../helpers/parts';
-import { initialItem, needsDecision, outcomeOf, planOf, problemsOfPlan } from '../helpers/review';
+import {
+  initialItem,
+  needsDecision,
+  outcomeOf,
+  planOf,
+  problemsOfPlan,
+  resolveClashes,
+  targetClashes,
+} from '../helpers/review';
 import { EMPTY_REVIEW, reviewReducer } from '../helpers/review-state';
 import { BASE, lineup, sha } from './support';
 
@@ -140,5 +148,35 @@ describe('planParts', () => {
     );
     expect(parts).toHaveLength(1);
     expect(Object.keys(parts[0]?.images ?? {})).toEqual([sha(2)]);
+  });
+});
+
+describe('two lineups for one stored lineup', () => {
+  const stored = lineup({ id: 'site-1' });
+  const original = itemOf('update', lineup({ id: 'site-1', title: 'Original v2' }), stored);
+  const copy = itemOf('duplicate', lineup({ id: 'friend-1', title: 'Copy' }), stored);
+  const entries = (items: ReturnType<typeof itemOf>[]) =>
+    items.map((item) => ({
+      id: item.id,
+      title: item.edited.title,
+      plan: planOf(item, BASE, none),
+    }));
+
+  it('names the others when both would replace the same lineup', () => {
+    const clashes = targetClashes(entries([original, copy]));
+    expect(clashes.get('site-1')).toEqual(['Copy']);
+    expect(clashes.get('friend-1')).toEqual(['Original v2']);
+  });
+
+  it('finds no clash once one of them adds or skips', () => {
+    expect(targetClashes(entries([original, { ...copy, choice: 'add' }])).size).toBe(0);
+    expect(targetClashes(entries([original, { ...copy, choice: 'skip' }])).size).toBe(0);
+  });
+
+  it('starts such a file in a state that saves: the stored id keeps the place', () => {
+    const resolved = resolveClashes([copy, original]);
+    expect(resolved.find((item) => item.id === 'friend-1')?.choice).toBe('add');
+    expect(resolved.find((item) => item.id === 'site-1')?.choice).toBe('merge');
+    expect(targetClashes(entries(resolved)).size).toBe(0);
   });
 });

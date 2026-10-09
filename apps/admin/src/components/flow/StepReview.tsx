@@ -74,6 +74,11 @@ function RowView({
           {shown.targetCallout ?? '—'} · <Text path="admin.row.photos" values={{ count: photos }} />
           {shown.author === undefined ? null : ` · ${shown.author.name}`}
         </div>
+        {row.clash.length === 0 ? null : (
+          <div className="text-12 text-[var(--status-invalid)]">
+            <Text path="admin.row.clash" values={{ others: row.clash.join(', ') }} />
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-1.5 max-sm:col-span-full max-sm:justify-start">
         <Chip>

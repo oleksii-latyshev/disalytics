@@ -3,6 +3,7 @@
 export const TRANSLATION_KEYS = [
   'admin.apply.attentionLede',
   'admin.apply.attentionTitle',
+  'admin.apply.backToCheck',
   'admin.apply.doneTitle',
   'admin.apply.embedded',
   'admin.apply.progress',
@@ -207,6 +208,7 @@ export const TRANSLATION_KEYS = [
   'admin.photos.unavailable',
   'admin.preview.empty',
   'admin.preview.loading',
+  'admin.q.clash',
   'admin.q.count',
   'admin.q.dupAdd',
   'admin.q.dupAddHint',
@@ -254,6 +256,7 @@ export const TRANSLATION_KEYS = [
   'admin.review.title',
   'admin.role.editor',
   'admin.role.owner',
+  'admin.row.clash',
   'admin.row.drop',
   'admin.row.edit',
   'admin.row.editDone',

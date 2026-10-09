@@ -138,12 +138,14 @@ export function StepDone({
   onRetryPhotos,
   onWithoutPhotos,
   onAgain,
+  onBackToCheck,
 }: {
   state: ApplyState;
   onRetry: () => void;
   onRetryPhotos: (ids: readonly string[]) => void;
   onWithoutPhotos: (ids: readonly string[]) => void;
   onAgain: () => void;
+  onBackToCheck: () => void;
 }) {
   return (
     <Card>
@@ -167,6 +169,9 @@ export function StepDone({
             />
           </p>
           <Notice failure={state.failure} onRetry={onRetry} />
+          <Button variant="outline" className="mt-3" onClick={onBackToCheck}>
+            <Text path="admin.apply.backToCheck" />
+          </Button>
         </>
       ) : null}
       {state.phase === 'attention' ? (

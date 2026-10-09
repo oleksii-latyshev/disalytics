@@ -156,6 +156,7 @@ interface Props {
 }
 
 export function Question({ row, review, placing, onPlacing }: Props) {
+  const locale = useLocale();
   const { item } = row;
   const { dispatch } = review;
   const kind = kindOf(row);
@@ -192,6 +193,21 @@ export function Question({ row, review, placing, onPlacing }: Props) {
             if (index >= 0) dispatch({ type: 'dropPhoto', id: item.id, index });
           }}
         />
+      ) : null}
+      {row.clash.length > 0 ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-chip border border-[color-mix(in_srgb,var(--status-invalid)_40%,transparent)] bg-[color-mix(in_srgb,var(--status-invalid)_7%,transparent)] p-3 text-13 text-ink"
+        >
+          <Text
+            path="admin.q.clash"
+            values={{
+              others: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
+                row.clash,
+              ),
+            }}
+          />
+        </p>
       ) : null}
       <Options
         label="admin.q.optionsLabel"
