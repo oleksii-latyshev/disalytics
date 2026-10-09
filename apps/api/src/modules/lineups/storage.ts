@@ -1,4 +1,4 @@
-import { isLineup, type Lineup } from '@disa/demo-core';
+import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { Context, type Effect } from 'effect';
 import { type D1Binding, makeDb } from '../../db/client';
@@ -84,7 +84,8 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
         const valid: Lineup[] = [];
         for (const { body } of rows) {
           const entry = parseBody(body);
-          if (isLineup(entry) && entry.map === map) valid.push({ ...entry, isBuiltIn: true });
+          if (isLineup(entry) && entry.map === map)
+            valid.push({ ...normalizeLineup(entry), isBuiltIn: true });
         }
         return { map, revision: revisions[0]?.revision ?? 0, lineups: valid };
       }),

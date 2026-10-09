@@ -27,8 +27,14 @@ function loadSqlite(): SqliteModule | null {
 
 const sqlite = loadSqlite();
 
-/** `node:sqlite` needs Node 22.13+; where it is missing the D1 tests skip rather than fail. */
+/**
+ * `node:sqlite` needs Node 22.13+; where it is missing the D1 tests skip locally, but CI pins a
+ * Node that has it, so there a missing module is a failure rather than a silent skip.
+ */
 export const hasSqlite = sqlite !== null;
+if (!hasSqlite && process.env.CI !== undefined) {
+  throw new Error('node:sqlite is unavailable in CI; the D1 tests would skip');
+}
 
 const MIGRATION = new URL('../../migrations/0001_lineups.sql', import.meta.url);
 

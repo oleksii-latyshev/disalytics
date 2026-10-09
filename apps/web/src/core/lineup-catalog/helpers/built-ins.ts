@@ -1,4 +1,4 @@
-import { isLineup, type Lineup } from '@disa/demo-core';
+import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
 import { type BuiltInLineups, openBuiltInLineupStore } from '@disa/demo-store';
 import { loadMapLineups } from '@disa/map-data';
 
@@ -18,6 +18,7 @@ function asBuiltIn(map: string, entries: readonly unknown[]): Lineup[] {
       typeof entry === 'object' && entry !== null ? { ...entry, isBuiltIn: true } : entry,
     )
     .filter(isLineup)
+    .map(normalizeLineup)
     .filter((lineup) => lineup.map === map);
 }
 
