@@ -7,7 +7,7 @@ export interface Bulk {
   readonly lineups: readonly Lineup[];
   /** Two targets or more can be made one by sharing a landing. */
   readonly canMergeLandings: boolean;
-  /** Targets of one position each can share a throw spot; a target of several has no one spot. */
+  /** Any two ticked lineups can share a throw spot: the reader chose them. */
   readonly canMergeOrigins: boolean;
   readonly canUngroupLandings: boolean;
   readonly canUngroupOrigins: boolean;
@@ -21,7 +21,7 @@ export function bulkOf(targets: readonly SavedTarget[]): Bulk {
   return {
     lineups,
     canMergeLandings: targets.length >= 2,
-    canMergeOrigins: targets.length >= 2 && lineups.length === targets.length,
+    canMergeOrigins: lineups.length >= 2,
     canUngroupLandings: lineups.some((lineup) => lineup.groupId !== undefined),
     canUngroupOrigins: lineups.some((lineup) => lineup.originGroupId !== undefined),
     deletable: lineups.filter((lineup) => lineup.isBuiltIn !== true),

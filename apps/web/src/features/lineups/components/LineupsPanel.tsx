@@ -39,6 +39,7 @@ export interface PanelActions {
   onDetails: (lineup: Lineup) => void;
   onAddBounce: (lineup: Lineup) => void;
   onRemoveBounce: (lineup: Lineup, index: number) => void;
+  onMergeOrigins: (lineups: readonly Lineup[]) => void;
   onUngroup: (lineup: Lineup, groupTarget: LineupGroupTarget) => void;
   onDelete: (lineup: Lineup) => void;
   onDraft: (patch: Partial<AddDraft>) => void;
@@ -95,6 +96,10 @@ export function LineupsPanel({
       {mode.kind === 'edit' && (
         <LineupEditPanel
           lineup={mode.variant.lineup}
+          siblings={mode.target.variants.map(({ lineup }) => lineup)}
+          onMergeOrigins={() =>
+            actions.onMergeOrigins(mode.target.variants.map(({ lineup }) => lineup))
+          }
           onDone={actions.onDone}
           onDetails={() => actions.onDetails(mode.variant.lineup)}
           onAddBounce={() => actions.onAddBounce(mode.variant.lineup)}

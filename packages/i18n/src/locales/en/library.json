@@ -288,6 +288,7 @@
     "selectLineup": "Select {title}",
     "mergeLandings": "Merge landings",
     "mergeOrigins": "Merge origins",
+    "mergeThrowSpots": "Merge throw spots",
     "deleteSelected": "Delete {count, plural, one {# lineup} other {# lineups}}",
     "deleteSelectedConfirm": "Delete the selected {count, plural, one {# lineup} other {# lineups}}?",
     "selectedOrigin": "Throw position",

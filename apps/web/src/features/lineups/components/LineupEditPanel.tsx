@@ -1,11 +1,14 @@
 import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { CornerDownRight, Pencil, Plus, Trash2, Unlink } from 'lucide-react';
+import { CornerDownRight, Layers, Pencil, Plus, Trash2, Unlink } from 'lucide-react';
 import { EDIT_HINT_ID } from '../helpers/edit-hint';
 
 interface Props {
   lineup: Lineup;
+  /** Every position of the lineup's target, the one being edited among them. */
+  siblings: readonly Lineup[];
+  onMergeOrigins: () => void;
   onDone: () => void;
   onDetails: () => void;
   onAddBounce: () => void;
@@ -23,6 +26,11 @@ export function LineupEditPanel(props: Props) {
   const { lineup } = props;
   const t = useT();
   const bounces = lineup.waypoints ?? [];
+  const canMergeOrigins =
+    props.siblings.length >= 2 &&
+    !props.siblings.every(
+      (item) => item.originGroupId !== undefined && item.originGroupId === lineup.originGroupId,
+    );
 
   return (
     <div className="lineup-rise flex min-h-0 flex-1 flex-col">
@@ -67,6 +75,13 @@ export function LineupEditPanel(props: Props) {
             <Text path="library.lineups.addBounce" />
           </Button>
         </section>
+
+        {canMergeOrigins && (
+          <Button variant="outline" onClick={props.onMergeOrigins} className="self-start">
+            <Layers aria-hidden="true" />
+            <Text path="library.lineups.mergeThrowSpots" />
+          </Button>
+        )}
 
         {lineup.groupId !== undefined && (
           <section className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">

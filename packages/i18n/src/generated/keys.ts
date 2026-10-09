@@ -373,6 +373,7 @@ export const TRANSLATION_KEYS = [
   'library.lineups.media',
   'library.lineups.mergeLandings',
   'library.lineups.mergeOrigins',
+  'library.lineups.mergeThrowSpots',
   'library.lineups.mouseShort.left',
   'library.lineups.mouseShort.right',
   'library.lineups.nextPhoto',

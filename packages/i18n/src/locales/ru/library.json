@@ -288,6 +288,7 @@
     "selectLineup": "Выбрать {title}",
     "mergeLandings": "Объединить по падению",
     "mergeOrigins": "Объединить по броску",
+    "mergeThrowSpots": "Объединить точки броска",
     "deleteSelected": "Удалить {count, plural, one {# лайнап} few {# лайнапа} many {# лайнапов} other {# лайнапа}}",
     "deleteSelectedConfirm": "Удалить {count, plural, one {выбранный # лайнап} few {выбранные # лайнапа} many {выбранных # лайнапов} other {выбранных # лайнапа}}?",
     "selectedOrigin": "Точка броска",

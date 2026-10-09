@@ -33,6 +33,30 @@ function percent(value: number, extent: number): string {
   return `${((value / extent) * 100).toFixed(2)}%`;
 }
 
+interface ThrowSpot<V> {
+  readonly lead: V;
+  /** The lead's position in the whole list, which is the number the marker shows. */
+  readonly index: number;
+  readonly members: readonly V[];
+}
+
+/** Positions thrown from one exact spot are one marker, not a stack of identical ones. */
+function spotsOf<
+  V extends { readonly origin: { readonly x: number; readonly y: number; readonly z: number } },
+>(variants: readonly V[]): readonly ThrowSpot<V>[] {
+  const spots = new Map<string, { lead: V; index: number; members: V[] }>();
+
+  variants.forEach((variant, index) => {
+    const { x, y, z } = variant.origin;
+    const key = `${x}|${y}|${z}`;
+    const spot = spots.get(key);
+    if (spot === undefined) spots.set(key, { lead: variant, index, members: [variant] });
+    else spot.members.push(variant);
+  });
+
+  return [...spots.values()];
+}
+
 function sizeClass(throwCount: number): string {
   if (throwCount >= 5) return 'size-8';
 
@@ -188,39 +212,42 @@ export function TargetMarkers<T extends PlateTarget>(props: Props<T>) {
         );
       })}
 
-      {selected?.variants.map((variant, index) => {
-        const isActive = variant.id === props.activeVariantId;
-        const isLit = isActive || variant.id === props.hoveredVariantId;
+      {selected !== null &&
+        spotsOf(selected.variants).map(({ lead, index, members }) => {
+          const variant = members.find(({ id }) => id === props.activeVariantId) ?? lead;
+          const isActive = members.some(({ id }) => id === props.activeVariantId);
+          const isLit = isActive || members.some(({ id }) => id === props.hoveredVariantId);
 
-        return (
-          <button
-            key={variant.id}
-            type="button"
-            aria-label={labels.origin(index + 1, variant)}
-            aria-pressed={isActive}
-            onClick={() => props.onSelectVariant(variant.id)}
-            onPointerEnter={() => props.onHoverVariant?.(variant.id)}
-            onPointerLeave={() => props.onHoverVariant?.(null)}
-            onFocus={(event) => {
-              if (event.currentTarget.matches(':focus-visible')) props.onHoverVariant?.(variant.id);
-            }}
-            onBlur={() => props.onHoverVariant?.(null)}
-            style={{
-              ...place(
-                plateX(overview, variant.origin.x, variant.origin.z),
-                plateY(overview, variant.origin.y, variant.origin.z),
-              ),
-              ...(isAnimated ? popDelay(ORIGIN_POP_START_MS + index * ORIGIN_POP_STEP_MS) : {}),
-            }}
-            className={`${MARKER} ${isAnimated ? 'plate-marker' : ''} numeric font-semibold ${isLit ? 'z-7 border-surface-0 bg-ink text-surface-0 ring-2 ring-ink' : 'z-6 border-line-strong bg-surface-3 text-ink'} ${isActive ? 'size-8 text-13' : 'size-6 text-12'}`}
-          >
-            {index + 1}
-            {savedVariantIds.has(variant.id) && (
-              <Bookmark aria-hidden="true" className={BOOKMARK} />
-            )}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={lead.id}
+              type="button"
+              aria-label={labels.origin(index + 1, variant)}
+              aria-pressed={isActive}
+              onClick={() => props.onSelectVariant(variant.id)}
+              onPointerEnter={() => props.onHoverVariant?.(variant.id)}
+              onPointerLeave={() => props.onHoverVariant?.(null)}
+              onFocus={(event) => {
+                if (event.currentTarget.matches(':focus-visible'))
+                  props.onHoverVariant?.(variant.id);
+              }}
+              onBlur={() => props.onHoverVariant?.(null)}
+              style={{
+                ...place(
+                  plateX(overview, variant.origin.x, variant.origin.z),
+                  plateY(overview, variant.origin.y, variant.origin.z),
+                ),
+                ...(isAnimated ? popDelay(ORIGIN_POP_START_MS + index * ORIGIN_POP_STEP_MS) : {}),
+              }}
+              className={`${MARKER} ${isAnimated ? 'plate-marker' : ''} numeric font-semibold ${isLit ? 'z-7 border-surface-0 bg-ink text-surface-0 ring-2 ring-ink' : 'z-6 border-line-strong bg-surface-3 text-ink'} ${isActive ? 'size-8 text-13' : 'size-6 text-12'}`}
+            >
+              {index + 1}
+              {members.some(({ id }) => savedVariantIds.has(id)) && (
+                <Bookmark aria-hidden="true" className={BOOKMARK} />
+              )}
+            </button>
+          );
+        })}
 
       {selected === null &&
         stacks.map((stack) => {

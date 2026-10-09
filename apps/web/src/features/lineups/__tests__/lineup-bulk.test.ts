@@ -24,7 +24,7 @@ const lineup = (id: string, patch: Partial<Lineup> = {}): Lineup => ({
 const far = { x: 3000, y: 3000, z: 0 };
 
 describe('bulkOf', () => {
-  it('can merge two targets by landing, and by throw spot only when each has one position', () => {
+  it('can merge two targets by landing, and any two lineups by throw spot', () => {
     const single = bulkOf(
       lineupTargets('de_mirage', [lineup('a1'), lineup('a2', { landing: far })]),
     );
@@ -33,8 +33,12 @@ describe('bulkOf', () => {
     );
 
     expect([single.canMergeLandings, single.canMergeOrigins]).toEqual([true, true]);
-    expect([several.canMergeLandings, several.canMergeOrigins]).toEqual([true, false]);
+    expect([several.canMergeLandings, several.canMergeOrigins]).toEqual([true, true]);
     expect(bulkOf(lineupTargets('de_mirage', [lineup('a1')])).canMergeLandings).toBe(false);
+    expect(bulkOf(lineupTargets('de_mirage', [lineup('a1')])).canMergeOrigins).toBe(false);
+    expect(bulkOf(lineupTargets('de_mirage', [lineup('a1'), lineup('a2')])).canMergeOrigins).toBe(
+      true,
+    );
   });
 
   it('offers to separate only what is grouped, and to delete only what is the user own', () => {

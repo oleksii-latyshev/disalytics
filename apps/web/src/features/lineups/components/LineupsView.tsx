@@ -226,6 +226,7 @@ export function LineupsView() {
             onDetails: setFormLineup,
             onAddBounce: (lineup) => void edits.addBounce(lineup),
             onRemoveBounce: (lineup, index) => void edits.removeBounce(lineup, index),
+            onMergeOrigins: (positions) => void edits.merge(positions, 'origin'),
             onUngroup: (lineup, groupTarget) =>
               void edits.ungroup(new Set([lineup.id]), groupTarget),
             onDelete: (lineup) => askRemoval([lineup.id], t('library.lineups.deleteConfirm')),
