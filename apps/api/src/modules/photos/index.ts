@@ -1,2 +1,4 @@
-export { isPhotoHash, readPhoto, savePhoto } from './helpers/storage';
-export { routePhotos } from './router';
+export { PhotosGroup } from './api';
+export { PhotosHandlers } from './handlers';
+export type { KvBinding, StoredPhoto } from './storage';
+export { makePhotoStorage, PhotoStorage, photoHash } from './storage';

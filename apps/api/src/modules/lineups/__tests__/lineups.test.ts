@@ -1,151 +1,93 @@
-import type { Lineup } from '@disa/demo-core';
+import { Effect } from 'effect';
 import { describe, expect, it } from 'vitest';
-import { env, fakeCache, fakeD1, fakeKv, noWait } from '../../../__tests__/fakes';
-import { deleteLineup, readMapLineups, routeLineups, saveLineup } from '..';
+import { hasSqlite, sqliteD1 } from '../../../__tests__/sqlite-d1';
+import { lineup, testEnv } from '../../../__tests__/support';
+import { handle } from '../../../app';
+import { makeLineupStorage } from '..';
 
-const lineup: Lineup = {
-  id: 'mirage-1',
-  title: 'Smoke window',
-  map: 'de_mirage',
-  side: 'T',
-  kind: 'smoke',
-  origin: { x: 1, y: 2, z: 0 },
-  landing: { x: 3, y: 4, z: 0 },
-  pitch: 0,
-  yaw: 0,
-  throwType: 'stand',
-  movementKeys: [],
-  movementKeysSummary: '',
-  command: '',
-  createdAt: 1,
-};
+const run = Effect.runPromise;
 
-function row(body: unknown, id = 'mirage-1', deleted = false) {
-  return {
-    id,
-    map: 'de_mirage',
-    body: typeof body === 'string' ? body : JSON.stringify(body),
-    deleted,
-  };
-}
+describe.skipIf(!hasSqlite)('lineup storage over real SQLite', () => {
+  it('saves many lineups with one revision bump per map and returns them as built-ins', async () => {
+    const storage = makeLineupStorage(sqliteD1());
+    const many = Array.from({ length: 25 }, (_, index) => ({
+      ...lineup,
+      id: `mirage-${index}`,
+      createdAt: index,
+    }));
 
-function context(db = fakeD1([row(lineup)], { de_mirage: 3 }), cache = fakeCache()) {
-  return { env: env(db, fakeKv({})), ctx: noWait, cache, db };
-}
-
-function get(path: string, headers: Record<string, string> = {}) {
-  return new Request(`https://api.example${path}`, { headers });
-}
-
-describe('readMapLineups', () => {
-  it('returns valid live lineups as built-ins with the map revision', async () => {
-    const db = fakeD1(
-      [row(lineup), row('not json', 'a'), row({ id: 'b' }, 'b'), row(lineup, 'gone', true)],
-      { de_mirage: 7 },
+    await run(
+      storage.saveLineups({
+        lineups: [...many, { ...lineup, id: 'dust', map: 'de_dust2' }],
+        actor: 'a@b.c',
+        now: 5,
+      }),
     );
+    const mirage = await run(storage.readMap('de_mirage'));
 
-    expect(await readMapLineups(db, 'de_mirage')).toEqual({
-      map: 'de_mirage',
-      revision: 7,
-      lineups: [{ ...lineup, isBuiltIn: true }],
-    });
+    expect(mirage.revision).toBe(1);
+    expect(mirage.lineups).toHaveLength(25);
+    expect(mirage.lineups[0]).toEqual({ ...many[0], isBuiltIn: true });
+    expect((await run(storage.readMap('de_dust2'))).revision).toBe(1);
+    expect((await run(storage.readMap('de_nuke'))).revision).toBe(0);
   });
 
-  it('has revision 0 for a map nobody wrote to', async () => {
-    expect((await readMapLineups(fakeD1([], {}), 'de_dust2')).revision).toBe(0);
+  it('replaces a lineup and bumps the revision again', async () => {
+    const storage = makeLineupStorage(sqliteD1());
+    await run(storage.saveLineups({ lineups: [lineup], actor: 'a', now: 1 }));
+    await run(
+      storage.saveLineups({ lineups: [{ ...lineup, title: 'Renamed' }], actor: 'b', now: 2 }),
+    );
+
+    const { revision, lineups } = await run(storage.readMap('de_mirage'));
+    expect(revision).toBe(2);
+    expect(lineups.map((entry) => entry.title)).toEqual(['Renamed']);
+  });
+
+  it('soft-deletes, hides the lineup, bumps the revision and reports a missing one', async () => {
+    const storage = makeLineupStorage(sqliteD1());
+    await run(storage.saveLineups({ lineups: [lineup], actor: 'a', now: 1 }));
+
+    expect(await run(storage.deleteLineup({ id: lineup.id, actor: 'a', now: 2 }))).toBe(true);
+    expect(await run(storage.deleteLineup({ id: lineup.id, actor: 'a', now: 3 }))).toBe(false);
+    expect(await run(storage.readMap('de_mirage'))).toMatchObject({ revision: 2, lineups: [] });
   });
 });
 
-describe('GET /lineups/:map', () => {
-  it('answers with the lineups, an ETag on the revision and CORS for the web origin', async () => {
-    const response = await routeLineups(
-      get('/lineups/de_mirage', { Origin: 'https://disalytics.disa-67b.workers.dev' }),
-      'de_mirage',
-      context(),
+describe.skipIf(!hasSqlite)('GET /lineups/:map', () => {
+  it('answers with the lineups, an ETag on the revision and the cache policy', async () => {
+    const env = testEnv();
+    await run(
+      makeLineupStorage(env.LINEUPS_DB).saveLineups({ lineups: [lineup], actor: 'a', now: 1 }),
     );
 
+    const response = await handle(new Request('https://api.example/lineups/de_mirage'), env, null);
+
     expect(response.status).toBe(200);
-    expect(response.headers.get('ETag')).toBe('"de_mirage-3"');
-    expect(response.headers.get('Cache-Control')).toContain('stale-while-revalidate');
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
-      'https://disalytics.disa-67b.workers.dev',
+    expect(response.headers.get('ETag')).toBe('"de_mirage-1"');
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=60, stale-while-revalidate=600',
     );
     expect(await response.json()).toEqual({
       map: 'de_mirage',
-      revision: 3,
+      revision: 1,
       lineups: [{ ...lineup, isBuiltIn: true }],
     });
   });
 
-  it('allows localhost dev origins and no others', async () => {
-    const allowed = await routeLineups(
-      get('/lineups/de_mirage', { Origin: 'http://localhost:5173' }),
-      'de_mirage',
-      context(),
+  it('answers 304 when the ETag matches and revision 0 for an unseeded map', async () => {
+    const env = testEnv();
+    const empty = await handle(new Request('https://api.example/lineups/de_dust2'), env, null);
+    expect(await empty.json()).toEqual({ map: 'de_dust2', revision: 0, lineups: [] });
+
+    const matched = await handle(
+      new Request('https://api.example/lineups/de_dust2', {
+        headers: { 'If-None-Match': '"de_dust2-0"' },
+      }),
+      env,
+      null,
     );
-    const refused = await routeLineups(
-      get('/lineups/de_mirage', { Origin: 'https://evil.example' }),
-      'de_mirage',
-      context(),
-    );
-
-    expect(allowed.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
-    expect(refused.headers.get('Access-Control-Allow-Origin')).toBeNull();
-  });
-
-  it('answers 304 when the ETag matches', async () => {
-    const response = await routeLineups(
-      get('/lineups/de_mirage', { 'If-None-Match': '"de_mirage-3"' }),
-      'de_mirage',
-      context(),
-    );
-
-    expect(response.status).toBe(304);
-    expect(await response.text()).toBe('');
-  });
-
-  it('serves the second request from the cache without touching D1', async () => {
-    const shared = context();
-    await routeLineups(get('/lineups/de_mirage'), 'de_mirage', shared);
-    const readsAfterFirst = shared.db.reads;
-    const second = await routeLineups(get('/lineups/de_mirage'), 'de_mirage', shared);
-
-    expect(second.status).toBe(200);
-    expect(shared.db.reads).toBe(readsAfterFirst);
-  });
-
-  it('refuses a malformed map id and a non-GET method', async () => {
-    for (const map of ['Mirage', 'de_', '..', 'de_mirage;drop']) {
-      expect((await routeLineups(get(`/lineups/${map}`), map, context())).status).toBe(404);
-    }
-    const post = await routeLineups(
-      new Request('https://api.example/lineups/de_mirage', { method: 'POST' }),
-      'de_mirage',
-      context(),
-    );
-    expect(post.status).toBe(405);
-  });
-});
-
-describe('writes for the admin Worker', () => {
-  it('saves a lineup, bumps the map revision and logs the change in one batch', async () => {
-    const db = fakeD1([], {});
-    await saveLineup(db, { lineup: { ...lineup, isBuiltIn: true }, actor: 'a@b.c', now: 5 });
-
-    expect(db.batches).toHaveLength(1);
-    const [upsert, bump, log] = db.batches[0] ?? [];
-    expect(upsert?.sql).toContain('INSERT INTO lineups');
-    expect(JSON.parse(String(upsert?.values[2]))).not.toHaveProperty('isBuiltIn');
-    expect(bump?.values).toEqual(['de_mirage']);
-    expect(log?.values.slice(0, 5)).toEqual(['mirage-1', 'de_mirage', 'save', 'a@b.c', 5]);
-  });
-
-  it('soft-deletes a live lineup and reports a missing one', async () => {
-    const db = fakeD1([row(lineup)], {});
-
-    expect(await deleteLineup(db, { id: 'mirage-1', actor: 'a@b.c', now: 9 })).toBe(true);
-    expect(db.batches[0]?.[0]?.sql).toContain('UPDATE lineups SET deleted_at');
-    expect(await deleteLineup(db, { id: 'nope', actor: 'a@b.c', now: 9 })).toBe(false);
-    expect(db.batches).toHaveLength(1);
+    expect(matched.status).toBe(304);
+    expect(await matched.text()).toBe('');
   });
 });

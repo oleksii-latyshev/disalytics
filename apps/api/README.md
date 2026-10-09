@@ -39,12 +39,35 @@ response shaping lives under `src/shared/`. The same `CODE_REQUIREMENTS.md` rule
 CORS (GET) is allowed for the web origin and `localhost`/`127.0.0.1` dev origins only.
 
 Bindings (`wrangler.jsonc`): D1 `LINEUPS_DB` (`disalytics-lineups`) and KV `LINEUP_PHOTOS`
-(`disalytics-lineup-photos`). Schema is in `migrations/`: `lineups` (one row per lineup, JSON `body`,
-soft delete), `lineup_revisions` (one counter per map, so an edit only invalidates its own map's
-ETag and cache), `lineup_changes` (append-only log for the admin Worker). Reads and writes live in
-`modules/lineups/helpers/storage.ts` and `modules/photos/helpers/storage.ts` as pure functions over
-the bindings (`saveLineup`, `deleteLineup`, `savePhoto`), so the admin Worker (#616) imports them and
-no write route exists here. A write must go through them to bump the revision.
+(`disalytics-lineup-photos`).
+
+### Structure
+
+- `src/api.ts` defines the whole HTTP surface with Effect `HttpApi` (path params are `Schema`s, so
+  a malformed id is a `404 not_found`); each `modules/<x>/api.ts` holds one group and
+  `handlers.ts` its implementation.
+- `src/app.ts` builds the router (handlers, a catch-all `404`, the CORS / `304` / edge-cache
+  middleware in `shared/http/middleware.ts`) and `handle(request, env, cache)` passes this request's
+  bindings in as services.
+- `src/db/schema.ts` is the Drizzle schema: `lineups` (one row per lineup, JSON `body`, soft
+  delete), `lineup_revisions` (one counter per map, so an edit only invalidates its own map's ETag
+  and cache) and `lineup_changes` (append-only log for the admin Worker).
+- `LineupStorage` (`modules/lineups/storage.ts`) and `PhotoStorage` (`modules/photos/storage.ts`)
+  are Effect services built from a binding (`makeLineupStorage(env.LINEUPS_DB)`,
+  `makePhotoStorage(env.LINEUP_PHOTOS)`). The admin Worker (#616) imports them; every write goes
+  through them so the revision is bumped and logged. There is no write route here.
+
+### Changing the schema
+
+Edit `src/db/schema.ts`, run `bun run --cwd apps/api db:generate`, review the new
+`migrations/NNNN_*.sql`, commit it with `migrations/meta/`, then apply it with
+`bunx wrangler d1 migrations apply disalytics-lineups --remote` (`--local` for `wrangler dev`).
+`0001_lineups.sql` was written by hand before Drizzle and is the baseline; the snapshot in
+`migrations/meta/` matches it, so `db:generate` prints "nothing to migrate" until the schema changes.
+Never edit or rename an applied migration.
+
+Tests run the real migration on in-memory SQLite (`node:sqlite`, Node 22.13+; they skip where it is
+missing).
 
 Migrations and seeding are manual (deploy does not run them):
 
