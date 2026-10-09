@@ -1,6 +1,6 @@
 {
   "title": "Lineups admin",
-  "signedIn": "Signed in as {email}",
+  "signedIn": "Signed in as {name}",
   "map": {
     "label": "Map",
     "note": "Changes go to this map's built-in lineups."
@@ -100,8 +100,8 @@
   "error": {
     "title": "Something went wrong",
     "retry": "Try again",
-    "unauthorized": "Your session has expired. Reload the page to sign in again.",
-    "forbidden": "You are not allowed to do this, or the admin is not set up yet.",
+    "unauthorized": "You are not signed in on this device. Open an invite link from the owner.",
+    "forbidden": "Only the owner can do this, or the request came from another site.",
     "notFound": "That no longer exists.",
     "invalidJson": "The request was not understood.",
     "bodyTooLarge": "That is too much data for one request.",
@@ -112,7 +112,52 @@
     "invalidPhoto": "A photo in the file is not a usable image.",
     "tooManyPhotos": "Too many photos for one request.",
     "invalidLineup": "A lineup would be invalid once saved.",
-    "network": "The server could not be reached. Reload the page; if you were signed out, that signs you back in.",
-    "invalidRequest": "The request was not understood."
+    "network": "The server could not be reached. Try again in a moment.",
+    "invalidRequest": "The request was not understood.",
+    "invalidInvite": "This link is unknown, already used or expired. Ask the owner for a new one.",
+    "nameRequired": "Enter your name.",
+    "lastOwner": "The last owner cannot be disabled."
+  },
+  "role": {
+    "owner": "owner",
+    "editor": "editor"
+  },
+  "signOut": "Sign out",
+  "signedOut": {
+    "title": "Sign in with an invite link",
+    "body": "This admin has no passwords: you get in with a one-time link from the owner. Ask for one; it signs in this device.",
+    "owner": "Owner who lost every device: run `bun run admin:invite -- --remote` with the Cloudflare account to get a new link."
+  },
+  "invite": {
+    "title": "Invite",
+    "checking": "Checking the link…",
+    "newPerson": "This link adds you as {role, select, owner {an owner} other {an editor}}. It works once and expires {expires}.",
+    "device": "This link signs in one more device for {name}. It works once and expires {expires}.",
+    "name": "Your name",
+    "namePlaceholder": "Shown next to every change you make",
+    "submit": "Sign in on this device",
+    "signingIn": "Signing in…"
+  },
+  "people": {
+    "title": "People and devices",
+    "loading": "Loading people…",
+    "disabled": "access disabled",
+    "devices": "{count, plural, =0 {No signed-in devices} one {# device} other {# devices}}",
+    "unknownDevice": "Unknown device",
+    "thisDevice": "this device",
+    "lastSeen": "last used {when}",
+    "revoke": "Sign out",
+    "addDevice": "Link for a new device",
+    "disable": "Disable",
+    "disableConfirm": "Disable {name}? Every device of theirs is signed out and their invite links stop working.",
+    "confirm": "Disable",
+    "cancel": "Cancel",
+    "inviteNew": "Invite someone",
+    "inviteRole": "Role",
+    "linkFor": "One-time link for {who}",
+    "newPerson": "a new {role, select, owner {owner} other {editor}}",
+    "linkNote": "Send it privately. It works once, on the first device that opens it, and expires {expires}.",
+    "copy": "Copy link",
+    "copied": "Copied"
   }
 }

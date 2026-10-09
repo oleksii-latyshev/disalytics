@@ -11,6 +11,9 @@ export const BAD_REQUEST_CODES = [
   'invalid_photo',
   'too_many_photos',
   'invalid_lineup',
+  'invalid_invite',
+  'name_required',
+  'last_owner',
 ] as const;
 
 export type BadRequestCode = (typeof BAD_REQUEST_CODES)[number];
@@ -22,13 +25,13 @@ export const BadRequest = Schema.Struct({
 }).pipe(HttpApiSchema.status(400));
 export type BadRequest = typeof BadRequest.Type;
 
-/** `401`: no valid Cloudflare Access token on the request. */
+/** `401`: no valid session cookie on the request: the person has to open an invite link. */
 export const Unauthorized = Schema.Struct({ error: Schema.Literal('unauthorized') }).pipe(
   HttpApiSchema.status(401),
 );
 export const unauthorized = Unauthorized.make({ error: 'unauthorized' });
 
-/** `403`: the admin is not set up yet, or the request came from another site. */
+/** `403`: the person may not do this (an editor managing people), or the request came from another site. */
 export const Forbidden = Schema.Struct({ error: Schema.Literal('forbidden') }).pipe(
   HttpApiSchema.status(403),
 );

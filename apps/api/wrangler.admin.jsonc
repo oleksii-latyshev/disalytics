@@ -29,10 +29,6 @@
     }
   ],
   "vars": {
-    // Fill these two after enabling Cloudflare Access on this Worker (see apps/admin/README.md).
-    // While either is empty every /api/* request is refused with 403.
-    "TEAM_DOMAIN": "", // https://<your-team>.cloudflareaccess.com
-    "POLICY_AUD": "", // the Access application's "Application Audience (AUD) Tag"
     "PHOTO_BASE_URL": "https://disalytics-api.disa-67b.workers.dev/photos"
   }
 }

@@ -202,7 +202,7 @@ per whole sentence. Locale: stored → `navigator.language` → `en`. Use the `i
 The web remains an assets-only Worker (`wrangler.jsonc`, no `main`, SPA fallback, `preview_urls: false`).
 `/assets/*` immutable, `index.html` and `/radar/*` revalidate, `.wasm` is `application/wasm`, **never COOP/COEP**; keep `.assetsignore`. `bun run smoke <url>` checks the deployed page.
 `apps/api/wrangler.jsonc` is a separate Worker for metadata and secrets, never `.dem` or parsed-demo
-bytes. Green main `ci` deploys and smokes it and `disalytics-admin` (Access, `apps/admin/README.md`) apart from the web.
+bytes. Green main `ci` deploys and smokes it and `disalytics-admin` (invite-link sign-in, `apps/admin/README.md`) apart from the web.
 
 ## 14. Contribution Flow
 

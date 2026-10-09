@@ -115,7 +115,67 @@ export type ChangeEntry = typeof ChangeEntry.Type;
 export const ChangesResponse = Schema.Struct({ changes: Schema.Array(ChangeEntry) });
 export type ChangesResponse = typeof ChangesResponse.Type;
 
-export const WhoAmI = Schema.Struct({ email: Schema.String });
+/** `owner` invites people and manages devices; `editor` edits lineups. */
+export const ADMIN_ROLES = ['owner', 'editor'] as const;
+export const AdminRole = Schema.Literals(ADMIN_ROLES);
+export type AdminRole = typeof AdminRole.Type;
+
+export const MAX_NAME_LENGTH = 60;
+export const PersonName = Schema.String.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(MAX_NAME_LENGTH),
+);
+
+/** An invite or session token as it travels: 32 random bytes, base64url. */
+export const Token = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{43}$/));
+
+export const WhoAmI = Schema.Struct({ id: Schema.String, name: Schema.String, role: AdminRole });
 export type WhoAmI = typeof WhoAmI.Type;
+
+export const InviteToken = Schema.Struct({ token: Token });
+
+/** What an invite will do, read without spending it. `name` is set when it adds a device. */
+export const InviteInfo = Schema.Struct({
+  role: AdminRole,
+  name: Schema.optional(Schema.String),
+  expiresAt: Schema.Number,
+});
+export type InviteInfo = typeof InviteInfo.Type;
+
+/** Spends an invite. A new person's invite needs `name`; a device invite ignores it. */
+export const RedeemRequest = Schema.Struct({ token: Token, name: Schema.optional(PersonName) });
+
+/** An owner asks for a link: for a new person of `role`, or for one more device of `personId`. */
+export const InviteRequest = Schema.Struct({
+  role: AdminRole,
+  personId: Schema.optional(Schema.String),
+});
+
+export const InviteCreated = Schema.Struct({ token: Token, expiresAt: Schema.Number });
+export type InviteCreated = typeof InviteCreated.Type;
+
+export const Device = Schema.Struct({
+  id: Schema.String,
+  label: Schema.String,
+  createdAt: Schema.Number,
+  lastSeenAt: Schema.Number,
+  current: Schema.Boolean,
+});
+export type Device = typeof Device.Type;
+
+export const Person = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  role: AdminRole,
+  createdAt: Schema.Number,
+  disabled: Schema.Boolean,
+  devices: Schema.Array(Device),
+});
+export type Person = typeof Person.Type;
+
+export const PeopleResponse = Schema.Struct({ people: Schema.Array(Person) });
+export type PeopleResponse = typeof PeopleResponse.Type;
+
+export const Done = Schema.Struct({ ok: Schema.Literal(true) });
 
 export const Removed = Schema.Struct({ id: Schema.String });

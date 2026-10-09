@@ -33,6 +33,9 @@ const KEYS: Readonly<Record<string, TranslationKey>> = {
   invalid_photo: 'admin.error.invalidPhoto',
   too_many_photos: 'admin.error.tooManyPhotos',
   invalid_lineup: 'admin.error.invalidLineup',
+  invalid_invite: 'admin.error.invalidInvite',
+  name_required: 'admin.error.nameRequired',
+  last_owner: 'admin.error.lastOwner',
 };
 
 function field(value: unknown, name: string): unknown {

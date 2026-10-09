@@ -42,3 +42,42 @@ export const photoLinks = sqliteTable('photo_links', {
   sha256: text('sha256').notNull(),
   createdAt: integer('created_at').notNull(),
 });
+
+/** The people who may use the admin. A disabled person keeps their name on past changes. */
+export const admins = sqliteTable('admins', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  role: text('role', { enum: ['owner', 'editor'] }).notNull(),
+  createdAt: integer('created_at').notNull(),
+  disabledAt: integer('disabled_at'),
+});
+
+/** One signed-in device. Only the SHA-256 of its cookie token is kept. */
+export const adminSessions = sqliteTable(
+  'admin_sessions',
+  {
+    id: text('id').primaryKey(),
+    tokenHash: text('token_hash').notNull().unique(),
+    adminId: text('admin_id').notNull(),
+    label: text('label').notNull(),
+    createdAt: integer('created_at').notNull(),
+    lastSeenAt: integer('last_seen_at').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+    revokedAt: integer('revoked_at'),
+  },
+  (table) => [index('admin_sessions_admin').on(table.adminId)],
+);
+
+/**
+ * A one-time link. With `admin_id` it adds a device for that person; without, it makes a new
+ * person of `role`. Only the SHA-256 of its token is kept.
+ */
+export const adminInvites = sqliteTable('admin_invites', {
+  tokenHash: text('token_hash').primaryKey(),
+  role: text('role', { enum: ['owner', 'editor'] }).notNull(),
+  adminId: text('admin_id'),
+  createdBy: text('created_by').notNull(),
+  createdAt: integer('created_at').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+  usedAt: integer('used_at'),
+});

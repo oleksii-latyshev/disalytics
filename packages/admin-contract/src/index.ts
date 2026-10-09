@@ -1,10 +1,11 @@
+export type { ActorShape } from './api';
 export {
-  AccessAuth,
   Actor,
   AdminApi,
   LineupId,
   MalformedAsBadRequest,
   MalformedAsBadRequestLive,
+  SessionAuth,
   WriteGuard,
 } from './api';
 export type { BadRequestCode } from './errors';
@@ -22,13 +23,19 @@ export {
   unauthorized,
 } from './errors';
 export type {
+  AdminRole,
   ChangeEntry,
   ChangesResponse,
   CommitRequest,
   CommitResponse,
+  Device,
   FieldDiff,
+  InviteCreated,
+  InviteInfo,
   LinkPhotoFailure,
   MapLineupsResponse,
+  PeopleResponse,
+  Person,
   PhotoStats,
   PreviewItem,
   PreviewRequest,
@@ -39,7 +46,9 @@ export type {
   WhoAmI,
 } from './schemas';
 export {
+  ADMIN_ROLES,
   DUPLICATE_RADIUS,
+  MAX_NAME_LENGTH,
   MAX_PHOTOS_PER_COMMIT,
   MAX_TITLE_LENGTH,
   MapId,

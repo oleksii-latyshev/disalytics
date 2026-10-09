@@ -6,7 +6,8 @@ import { adminEnv, api, file, lineup, NOW, PHOTO_BASE, PNG_DATA_URL, seededEnv }
 
 interface Body {
   error: string;
-  email: string;
+  name: string;
+  role: string;
   revision: number;
   ignored: number;
   saved: number;
@@ -21,17 +22,21 @@ const json = async (response: Response) => (await response.json()) as Body;
 const idsOf = async (response: Response) => (await json(response)).lineups.map((l) => l.id);
 
 describe.skipIf(!hasSqlite)('auth and guards', () => {
-  it('refuses everything with 403 until Access is configured', async () => {
+  it('refuses a request without a session with 401', async () => {
     const env = adminEnv({ ALLOW_DEV_IDENTITY: undefined });
     const response = await api(env, '/api/whoami', { host: 'x.workers.dev' });
-    expect(response.status).toBe(403);
-    expect(await json(response)).toEqual({ error: 'forbidden' });
+    expect(response.status).toBe(401);
+    expect(await json(response)).toEqual({ error: 'unauthorized' });
   });
 
   it('answers whoami with the dev identity on localhost, and refuses it elsewhere', async () => {
     const env = adminEnv();
-    expect(await json(await api(env, '/api/whoami'))).toEqual({ email: 'dev@localhost' });
-    expect((await api(env, '/api/whoami', { host: 'x.workers.dev' })).status).toBe(403);
+    expect(await json(await api(env, '/api/whoami'))).toEqual({
+      id: 'dev',
+      name: 'dev@localhost',
+      role: 'owner',
+    });
+    expect((await api(env, '/api/whoami', { host: 'x.workers.dev' })).status).toBe(401);
   });
 
   it('refuses a cross-site write, a non-JSON body and an oversized one', async () => {

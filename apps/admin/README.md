@@ -29,37 +29,41 @@ place that writes to the lineups tables.
 
 ## Who is signed in
 
-The Worker accepts a request only with a valid `Cf-Access-Jwt-Assertion`: RS256, checked with
-WebCrypto against `${TEAM_DOMAIN}/cdn-cgi/access/certs`, with `iss`, `aud`, `exp` and `nbf` verified.
-The verified email is recorded as the author of every write. While `TEAM_DOMAIN` or `POLICY_AUD` is
-empty every `/api/*` request is refused with 403. Writes must also be same-origin JSON.
+No passwords and no outside provider. Cloudflare Access would ask for a payment method even on the
+Free plan, so the Worker signs people in itself (#623):
 
-## Database migration
+- **Invite links.** The owner presses *Invite someone* (or *Link for a new device* on a person) and
+  gets `https://…/#invite=<token>`: one use, 24 hours. The token sits in the fragment, so it never
+  reaches a server log or a `Referer`. Opening it asks a new person for a name and signs that device in.
+- **Device sessions.** A 256-bit token in a `__Host-disa_admin` cookie (`HttpOnly; Secure;
+  SameSite=Strict`), 180 days, extended when used after a day's rest. D1 keeps only SHA-256 hashes of
+  invite and session tokens.
+- **Roles.** An *owner* invites people, sees every device, signs a device out and disables a person
+  (never the last owner). An *editor* edits lineups. Every write records the person's name.
+- Writes must also be same-origin JSON (or carry no body at all).
 
-`migrations/0002_photo_links.sql` adds the `photo_links` table (which copied link became which stored
-photo, so a re-imported file reads as unchanged). It is one `CREATE TABLE` and applies on top of the
-remote 0001. Migrations are manual; apply it before the new admin goes live:
+**Lost every device?** Whoever holds the Cloudflare account is the root of trust:
+
+```bash
+bun run admin:invite -- --remote     # prints a fresh owner invite link for production
+```
+
+## Database migrations
+
+Migrations are manual. `0002_photo_links.sql` remembers which copied link became which stored photo;
+`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`. Apply before the
+Worker that needs them goes live:
 
 ```bash
 cd apps/api && bunx wrangler d1 migrations apply disalytics-lineups --remote --config wrangler.admin.jsonc
 ```
 
-## Setting it up (once, in the Cloudflare dashboard)
+## Setting it up (once)
 
-1. Deploy the Worker (green `ci` on `main` does it, or `cd apps/api && bunx wrangler deploy --config
-   wrangler.admin.jsonc` after `bun run --cwd apps/admin build`). Its URL is
+1. Apply the migrations above, then merge: green `ci` on `main` deploys the Worker at
    `https://disalytics-admin.<account>.workers.dev`.
-2. **Workers & Pages > disalytics-admin > Settings > Domains & Routes**: on the `workers.dev` row choose
-   **Enable Cloudflare Access**. Leave `preview_urls` off (it is off in the config).
-3. Click **Manage Cloudflare Access** to open the Access application. In its policy choose **Allow**
-   and add the emails that may sign in (yours and your friends'), with login method *One-time PIN*.
-   Anyone not listed never reaches the Worker.
-4. Copy the application's **Application Audience (AUD) Tag** and your **team domain**
-   (`https://<team>.cloudflareaccess.com`, Zero Trust > Settings > Custom Pages / General).
-5. Put them in `apps/api/wrangler.admin.jsonc` under `vars` as `POLICY_AUD` and `TEAM_DOMAIN`, commit
-   and let `main` redeploy. (Edit them there, not only in the dashboard: a deploy overwrites
-   dashboard variables.)
-6. Open the Worker URL, sign in with a one-time code; the page shows "Signed in as ..." in its header.
+2. `bun run admin:invite -- --remote` and open the printed link on your device; enter your name.
+3. In the page, *People and devices* → *Invite someone* for each friend; send each link privately.
 
 ## Running it locally
 
@@ -67,11 +71,14 @@ cd apps/api && bunx wrangler d1 migrations apply disalytics-lineups --remote --c
 bun install
 bun run --cwd apps/admin build                                  # the page the Worker serves
 cd apps/api
-printf 'ALLOW_DEV_IDENTITY=dev@localhost\n' > .dev.vars        # gitignored
 bunx wrangler d1 migrations apply disalytics-lineups --local --config wrangler.admin.jsonc
 bun run --cwd ../.. lineups:seed -- --local                    # the Mirage built-ins, optional
 bun run dev:admin                                               # http://localhost:8788
+bun run --cwd ../.. admin:invite -- --local                    # a link to sign in locally
 ```
+
+To skip invites while developing, `printf 'ALLOW_DEV_IDENTITY=dev@localhost\n' > .dev.vars`
+(gitignored) makes every localhost request an owner.
 
 `ALLOW_DEV_IDENTITY` is honoured only when the request host is `localhost`, `127.0.0.1` or `[::1]`.
 A deployed Worker is reached on its `workers.dev` host and the variable is not in the deployed config
@@ -80,7 +87,7 @@ in `apps/api/.wrangler/` and never touches the remote D1 or KV. For hot reload o
 `bun run --cwd apps/admin dev` too and open `http://localhost:5174`; it proxies `/api` to 8788.
 
 ```bash
-bun run --cwd apps/api test       # Worker: verifier, planning, commit, routes (real SQLite)
+bun run --cwd apps/api test       # Worker: invites, sessions, planning, commit, routes (real SQLite)
 bun run --cwd apps/admin test     # page helpers
 bun run --cwd apps/admin build    # typecheck, build, wrangler deploy --dry-run
 ```

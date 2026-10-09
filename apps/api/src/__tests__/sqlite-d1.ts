@@ -5,8 +5,10 @@ import type { D1Binding } from '../db/client';
 
 interface SqliteStatement {
   columns(): unknown[];
-  all(...values: unknown[]): Record<string, unknown>[];
+  all(...values: unknown[]): unknown[];
   run(...values: unknown[]): unknown;
+  /** Rows as arrays, so two columns of one name (a join's `id`s) both survive. */
+  setReturnArrays(enabled: boolean): void;
 }
 
 interface SqliteDatabase {
@@ -49,13 +51,14 @@ class Statement {
     return new Statement(this.db, this.sql, values);
   }
 
-  private rows(): Record<string, unknown>[] {
+  private rows(arrays = false): unknown[] {
     const statement = this.db.prepare(this.sql);
     if (statement.columns().length === 0) {
       statement.run(...this.values);
       return [];
     }
-    return statement.all(...this.values).map((row) => ({ ...row }));
+    statement.setReturnArrays(arrays);
+    return statement.all(...this.values);
   }
 
   async run() {
@@ -68,7 +71,7 @@ class Statement {
   }
 
   async raw() {
-    return this.rows().map((row) => Object.values(row));
+    return this.rows(true);
   }
 }
 

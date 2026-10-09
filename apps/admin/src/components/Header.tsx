@@ -1,22 +1,25 @@
 import type { WhoAmI } from '@disa/admin-contract';
 import { Text } from '@disa/i18n';
-import type { Resource } from '../hooks/use-resource';
-import { Notice } from './Notice';
+import { Button } from '@disa/ui';
 
-export function Header({ me }: { me: Resource<WhoAmI> }) {
+export function Header({ me, onSignOut }: { me: WhoAmI | null; onSignOut: () => void }) {
   return (
-    <>
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="font-medium text-20 text-ink">
-          <Text path="admin.title" />
-        </h1>
-        {me.status === 'ready' ? (
-          <p className="numeric text-12 text-ink-dim">
-            <Text path="admin.signedIn" values={{ email: me.data.email }} />
-          </p>
-        ) : null}
-      </header>
-      {me.status === 'error' ? <Notice failure={me.failure} /> : null}
-    </>
+    <header className="flex flex-wrap items-baseline justify-between gap-2">
+      <h1 className="font-medium text-20 text-ink">
+        <Text path="admin.title" />
+      </h1>
+      {me === null ? null : (
+        <span className="flex flex-wrap items-center gap-2 text-12 text-ink-dim">
+          <span>
+            <Text path="admin.signedIn" values={{ name: me.name }} />
+            {' · '}
+            <Text path={me.role === 'owner' ? 'admin.role.owner' : 'admin.role.editor'} />
+          </span>
+          <Button variant="ghost" onClick={onSignOut}>
+            <Text path="admin.signOut" />
+          </Button>
+        </span>
+      )}
+    </header>
   );
 }
