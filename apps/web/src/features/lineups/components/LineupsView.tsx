@@ -206,9 +206,8 @@ export function LineupsView() {
               }),
             onRename: (id, name) => void collectionsApi.rename(id, name),
             onDelete: setCollectionRemoval,
-            onToggleMembers: (id, ids) =>
-              void collectionsApi.toggleMembers(id, ids).then(selection.clear),
-            onCreateWith: (name, ids) => void createCollection(name, ids).then(selection.clear),
+            onToggleMembers: (id, ids) => void collectionsApi.toggleMembers(id, ids),
+            onCreateWith: (name, ids) => void createCollection(name, ids),
           }}
           scope={scope}
           onScope={(next) => {

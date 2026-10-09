@@ -38,7 +38,7 @@ export function LineupCollections(props: Props) {
   return (
     <section
       aria-label={t('library.lineups.collections.nav')}
-      className="flex min-w-0 flex-col gap-1"
+      className="flex min-w-0 shrink-0 flex-col gap-1"
     >
       <div className="flex items-center justify-between gap-2 px-0.5">
         <h2 className="label-dense text-ink-dim">
@@ -55,7 +55,7 @@ export function LineupCollections(props: Props) {
         </Button>
       </div>
 
-      <ul className="-mx-1 flex max-h-40 min-h-0 list-none flex-col gap-0.5 overflow-y-auto px-1">
+      <ul className="-mx-1 flex max-h-28 min-h-0 list-none flex-col gap-0.5 overflow-y-auto px-1">
         <li className="flex">
           <button
             type="button"

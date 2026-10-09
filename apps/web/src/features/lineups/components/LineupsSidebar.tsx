@@ -52,7 +52,7 @@ export function LineupsSidebar(props: Props) {
   return (
     <aside
       aria-label={t('library.lineups.sidebar')}
-      className="surface-card flex min-h-0 min-w-0 flex-col gap-2.5 rounded-float p-3"
+      className="surface-card flex min-h-0 min-w-0 flex-col gap-2.5 overflow-y-auto rounded-float p-3"
     >
       <LineupCollections
         collections={props.collections.collections}
@@ -64,12 +64,14 @@ export function LineupsSidebar(props: Props) {
         onRename={props.collections.onRename}
         onDelete={props.collections.onDelete}
       />
-      <LineupFilters
-        scope={props.scope}
-        onScope={props.onScope}
-        kindCounts={props.kindCounts}
-        totalCount={props.totalCount}
-      />
+      <div className="flex shrink-0 flex-col gap-2.5">
+        <LineupFilters
+          scope={props.scope}
+          onScope={props.onScope}
+          kindCounts={props.kindCounts}
+          totalCount={props.totalCount}
+        />
+      </div>
       <LineupTargetList
         targets={props.targets}
         selectedId={props.selectedId}

@@ -32,7 +32,7 @@ export function LineupTargetList(props: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 px-0.5 pt-1">
+      <div className="flex shrink-0 items-center justify-between gap-2 px-0.5 pt-1">
         <h2 className={HEADING}>
           <Text path="library.lineups.listTitle" />{' '}
           <span className="numeric text-11 text-ink-faint">{targets.length}</span>
@@ -44,7 +44,7 @@ export function LineupTargetList(props: Props) {
         )}
       </div>
 
-      <ul className="-mx-1 flex min-h-0 flex-1 list-none flex-col gap-1 overflow-y-auto px-1">
+      <ul className="-mx-1 flex min-h-36 flex-1 list-none flex-col gap-1 overflow-y-auto px-1">
         {targets.map((target, index) => (
           <LineupTargetRow
             key={target.id}

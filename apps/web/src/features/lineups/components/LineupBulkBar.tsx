@@ -37,7 +37,7 @@ export function LineupBulkBar({
   onClear,
 }: Props) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 rounded-card border border-line bg-surface-2 p-2">
+    <div className="flex min-w-0 shrink-0 flex-col gap-1.5 rounded-card border border-line bg-surface-2 p-2">
       <div className="flex items-center justify-between gap-2">
         <span className="numeric text-11 font-medium text-ink">
           <Text path="library.lineups.selectedCount" values={{ count }} />
