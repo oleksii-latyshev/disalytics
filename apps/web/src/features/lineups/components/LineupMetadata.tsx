@@ -1,26 +1,100 @@
-import { Text } from '@disa/i18n';
+import { LINEUP_TAGS, toggledLineupTag } from '@disa/demo-core';
+import { Text, useT } from '@disa/i18n';
 import { Input } from '@disa/ui';
+import { useEffect, useState } from 'react';
 import type { LineupFormValues } from '../helpers/lineup-form-model';
+import { LineupOptionalMark } from './LineupOptionalMark';
 
 type UpdateValue = <K extends keyof LineupFormValues>(key: K, value: LineupFormValues[K]) => void;
 
-export function LineupTechnicalDetails({
+/** Tags, author and the numbers behind the lineup: closed until asked for, open when it holds the error. */
+export function LineupMetadata({
   values,
+  hasError,
   hasDemoCommand,
   updateValue,
   updateLandingCoord,
 }: {
   readonly values: LineupFormValues;
+  readonly hasError: boolean;
   readonly hasDemoCommand: boolean;
   readonly updateValue: UpdateValue;
   readonly updateLandingCoord: (axis: 'landingX' | 'landingY' | 'landingZ', value: string) => void;
 }) {
+  const t = useT();
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (hasError) setIsOpen(true);
+  }, [hasError]);
+
   return (
-    <details className="rounded-card border border-line bg-surface-1 p-3">
+    <details
+      open={isOpen}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      className="rounded-card border border-line bg-surface-1 p-3"
+    >
       <summary className="cursor-pointer label-dense text-ink-dim">
-        <Text path="library.lineups.form.technicalDetails" />
+        <Text path="library.lineups.form.metadata" />
       </summary>
       <div className="mt-3 flex flex-col gap-3">
+        <fieldset className="flex flex-col gap-1.5 border-0 p-0">
+          <legend className="label-dense text-ink-dim">
+            <Text path="library.lineups.form.tags" />
+            <LineupOptionalMark />
+          </legend>
+          <div className="flex flex-wrap gap-1.5">
+            {LINEUP_TAGS.map((tag) => {
+              const isOn = values.tags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  aria-pressed={isOn}
+                  onClick={() => updateValue('tags', toggledLineupTag(values.tags, tag))}
+                  className={`rounded-chip border px-3 py-1.5 text-11 ${
+                    isOn
+                      ? 'border-line bg-surface-3 text-ink'
+                      : 'border-transparent bg-surface-1 text-ink-dim hover:text-ink'
+                  }`}
+                >
+                  <Text path={`library.lineups.tags.${tag}`} />
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="lineup-author-name" className="label-dense text-ink-dim">
+              <Text path="library.lineups.form.authorName" />
+              <LineupOptionalMark />
+            </label>
+            <Input
+              id="lineup-author-name"
+              type="text"
+              value={values.authorName}
+              onChange={(e) => updateValue('authorName', e.target.value)}
+              placeholder={t('library.lineups.form.authorNamePlaceholder')}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="lineup-author-url" className="label-dense text-ink-dim">
+              <Text path="library.lineups.form.authorUrl" />
+              <LineupOptionalMark />
+            </label>
+            <input
+              id="lineup-author-url"
+              type="url"
+              value={values.authorUrl}
+              onChange={(e) => updateValue('authorUrl', e.target.value)}
+              placeholder="https://steamcommunity.com/id/..."
+              className="h-8 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
+            />
+          </div>
+        </div>
+
         {/* Coordinates: Origin, Landing, Angles */}
         <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-1 p-3">
           {!hasDemoCommand && (
@@ -116,6 +190,7 @@ export function LineupTechnicalDetails({
             <div className="flex flex-col gap-1.5">
               <label htmlFor="lineup-command" className="label-dense text-ink-dim">
                 <Text path="library.lineups.form.command" />
+                <LineupOptionalMark />
               </label>
               <Input
                 id="lineup-command"

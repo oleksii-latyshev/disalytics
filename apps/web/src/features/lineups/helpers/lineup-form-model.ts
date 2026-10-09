@@ -20,18 +20,6 @@ export function moved<T>(items: readonly T[], from: number, to: number): readonl
   return result;
 }
 
-export function reorderLineupPhotos(
-  values: LineupFormValues,
-  from: number,
-  to: number,
-): LineupFormValues {
-  return {
-    ...values,
-    imageUrls: moved(values.imageUrls, from, to),
-    imageCaptions: moved(values.imageCaptions, from, to),
-  };
-}
-
 export interface LineupFormData {
   readonly id?: string;
   readonly title?: string;

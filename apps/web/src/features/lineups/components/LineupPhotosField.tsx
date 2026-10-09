@@ -1,17 +1,15 @@
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import type { LineupFormValues } from '../helpers/lineup-form-model';
-import { isHttpUrl, moved, reorderLineupPhotos } from '../helpers/lineup-form-model';
+import { isHttpUrl, moved } from '../helpers/lineup-form-model';
+import { type FormPhoto, withPhotoCaption, withPhotoLink } from '../helpers/lineup-form-photos';
 import type { PreparedImage } from '../helpers/prepared-image';
-import { AddedImagesList, PreparedImagesList } from './LineupPhotoLists';
+import { LineupOptionalMark } from './LineupOptionalMark';
+import { PhotoList } from './LineupPhotoList';
 
 export function LineupPhotosField({
-  values,
-  updateValue,
-  setValues,
+  photos,
+  setPhotos,
   errorSection,
-  preparedImages,
-  setPreparedImages,
   newImageUrl,
   setNewImageUrl,
   photosRef,
@@ -24,15 +22,9 @@ export function LineupPhotosField({
   previewUrlsRef,
   setError,
 }: {
-  readonly values: LineupFormValues;
-  readonly updateValue: <K extends keyof LineupFormValues>(
-    key: K,
-    value: LineupFormValues[K],
-  ) => void;
-  readonly setValues: React.Dispatch<React.SetStateAction<LineupFormValues>>;
-  readonly errorSection: 'title' | 'photos' | 'coordinates' | 'media' | null;
-  readonly preparedImages: readonly PreparedImage[];
-  readonly setPreparedImages: React.Dispatch<React.SetStateAction<readonly PreparedImage[]>>;
+  readonly photos: readonly FormPhoto[];
+  readonly setPhotos: React.Dispatch<React.SetStateAction<readonly FormPhoto[]>>;
+  readonly errorSection: 'title' | 'photos' | 'coordinates' | 'metadata' | 'media' | null;
   readonly newImageUrl: string;
   readonly setNewImageUrl: (value: string) => void;
   readonly photosRef: React.RefObject<HTMLDivElement | null>;
@@ -55,6 +47,7 @@ export function LineupPhotosField({
     >
       <label htmlFor="lineup-image-url" className="label-dense text-ink-dim">
         <Text path="library.lineups.form.imageUrls" />
+        <LineupOptionalMark />
       </label>
       <input
         ref={fileInputRef}
@@ -107,41 +100,22 @@ export function LineupPhotosField({
           <Text path="library.lineups.form.choosePhotos" />
         </Button>
       </fieldset>
-      <PreparedImagesList
-        images={preparedImages}
+      <PhotoList
+        photos={photos}
         onPreviewEnlarged={setPreviewEnlargedUrl}
         onManualUpload={handleManualUploadClick}
-        onReorder={(from, to) => setPreparedImages((current) => moved(current, from, to))}
+        onReorder={(from, to) => setPhotos((current) => moved(current, from, to))}
         onRemove={(index) => {
-          const image = preparedImages[index];
-          if (image) {
-            URL.revokeObjectURL(image.previewUrl);
-            previewUrlsRef.current.delete(image.previewUrl);
-            setPreparedImages((previous) => previous.filter((_, at) => at !== index));
+          const photo = photos[index];
+          if (photo?.kind === 'prepared') {
+            URL.revokeObjectURL(photo.image.previewUrl);
+            previewUrlsRef.current.delete(photo.image.previewUrl);
           }
+          setPhotos((current) => current.filter((_, at) => at !== index));
         }}
         onCaptionChange={(index, caption) =>
-          setPreparedImages((current) =>
-            current.map((item, at) => (at === index ? { ...item, caption } : item)),
-          )
-        }
-      />
-      <AddedImagesList
-        urls={values.imageUrls}
-        captions={values.imageCaptions}
-        onPreviewEnlarged={setPreviewEnlargedUrl}
-        onReorder={(from, to) => setValues((current) => reorderLineupPhotos(current, from, to))}
-        onRemove={(index) =>
-          setValues((current) => ({
-            ...current,
-            imageUrls: current.imageUrls.filter((_, at) => at !== index),
-            imageCaptions: current.imageCaptions.filter((_, at) => at !== index),
-          }))
-        }
-        onCaptionChange={(index, caption) =>
-          updateValue(
-            'imageCaptions',
-            values.imageCaptions.map((item, at) => (at === index ? caption : item)),
+          setPhotos((current) =>
+            current.map((item, at) => (at === index ? withPhotoCaption(item, caption) : item)),
           )
         }
       />
@@ -163,19 +137,12 @@ export function LineupPhotosField({
               setError(t('library.lineups.form.validation.mediaUrlInvalid'));
               return;
             }
-            const firstPrepared = preparedImages[0];
-            if (!values.imageUrls.includes(url)) {
-              setValues((current) => ({
-                ...current,
-                imageUrls: [...current.imageUrls, url],
-                imageCaptions: [...current.imageCaptions, firstPrepared?.caption ?? ''],
-              }));
+            const { photos: next, replaced } = withPhotoLink(photos, url);
+            if (replaced !== null) {
+              URL.revokeObjectURL(replaced.previewUrl);
+              previewUrlsRef.current.delete(replaced.previewUrl);
             }
-            if (firstPrepared !== undefined) {
-              URL.revokeObjectURL(firstPrepared.previewUrl);
-              previewUrlsRef.current.delete(firstPrepared.previewUrl);
-              setPreparedImages((previous) => previous.slice(1));
-            }
+            setPhotos(next);
             setNewImageUrl('');
             setError(null);
           }}

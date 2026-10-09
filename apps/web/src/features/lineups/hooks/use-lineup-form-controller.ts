@@ -9,24 +9,23 @@ import {
   type LineupFormData,
   type LineupFormValues,
 } from '../helpers/lineup-form-model';
+import {
+  type FormPhoto,
+  hasPreparedPhotos,
+  photoCaption,
+  preparedImagesOf,
+  resolvePhotos,
+  storedPhotosOf,
+  storedUrlsOf,
+} from '../helpers/lineup-form-photos';
 import { persistLineup, storePreparedPhotos } from '../helpers/persist-lineup';
 import { prepareLineupImage, submitImageToCatbox } from '../helpers/prepare-image';
 import type { PreparedImage } from '../helpers/prepared-image';
 import { useLineupFormExitGuard } from './use-lineup-form-exit-guard';
 
-function withLocalPhotos(
-  values: LineupFormValues,
-  refs: readonly string[],
-  images: readonly PreparedImage[],
-): LineupFormValues {
-  const imageUrls = [...values.imageUrls];
-  const imageCaptions = [...values.imageCaptions];
-  refs.forEach((ref, index) => {
-    if (imageUrls.includes(ref)) return;
-    imageUrls.push(ref);
-    imageCaptions.push(images[index]?.caption ?? '');
-  });
-  return { ...values, imageUrls, imageCaptions };
+function errorSectionOf(key: string): 'title' | 'metadata' | 'media' {
+  if (key.includes('title')) return 'title';
+  return key.includes('author') ? 'metadata' : 'media';
 }
 
 export function useLineupFormController({
@@ -48,11 +47,13 @@ export function useLineupFormController({
   );
   const [error, setError] = useState<string | null>(null);
   const [errorSection, setErrorSection] = useState<
-    'title' | 'photos' | 'coordinates' | 'media' | null
+    'title' | 'photos' | 'coordinates' | 'metadata' | 'media' | null
   >(null);
   const [saving, setSaving] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState('');
-  const [preparedImages, setPreparedImages] = useState<readonly PreparedImage[]>([]);
+  const [photos, setPhotos] = useState<readonly FormPhoto[]>(() =>
+    storedPhotosOf(values.imageUrls, values.imageCaptions),
+  );
   const [previewEnlargedUrl, setPreviewEnlargedUrl] = useState<string | null>(null);
   const [showCatboxModal, setShowCatboxModal] = useState(false);
   const [pendingCatboxImage, setPendingCatboxImage] = useState<PreparedImage | null>(null);
@@ -163,7 +164,10 @@ export function useLineupFormController({
         caption: '',
       }));
       for (const image of images) previewUrlsRef.current.add(image.previewUrl);
-      setPreparedImages((previous) => [...previous, ...images]);
+      setPhotos((previous) => [
+        ...previous,
+        ...images.map((image): FormPhoto => ({ kind: 'prepared', image })),
+      ]);
       setError(null);
     } catch {
       setError(t('library.lineups.form.validation.imageProcessingFailed'));
@@ -172,10 +176,10 @@ export function useLineupFormController({
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    const validationKey = basicValidationKey(values);
+    const validationKey = basicValidationKey({ ...values, imageUrls: storedUrlsOf(photos) });
     if (validationKey !== null) {
       setError(t(validationKey));
-      setErrorSection(validationKey.includes('title') ? 'title' : 'media');
+      setErrorSection(errorSectionOf(validationKey));
       requestAnimationFrame(() => {
         errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
@@ -191,7 +195,7 @@ export function useLineupFormController({
     }
 
     setSaving(true);
-    const localRefs = await storePreparedPhotos(preparedImages);
+    const localRefs = await storePreparedPhotos(preparedImagesOf(photos));
     if (localRefs === null) {
       setSaving(false);
       setError(t('library.lineups.form.validation.saveFailed'));
@@ -199,7 +203,7 @@ export function useLineupFormController({
     }
 
     const lineup = buildLineupFromForm(
-      withLocalPhotos(values, localRefs, preparedImages),
+      { ...values, ...resolvePhotos(photos, localRefs) },
       initialData?.id,
       initialData?.createdAt,
       values.fromDemo,
@@ -227,7 +231,12 @@ export function useLineupFormController({
   const initialValues = initFormValues(initialData, defaultMap);
   const isDirty =
     JSON.stringify(values) !== JSON.stringify(initialValues) ||
-    preparedImages.length > 0 ||
+    hasPreparedPhotos(photos) ||
+    JSON.stringify(storedUrlsOf(photos)) !== JSON.stringify(initialValues.imageUrls) ||
+    JSON.stringify(photos.map(photoCaption)) !==
+      JSON.stringify(
+        storedPhotosOf(initialValues.imageUrls, initialValues.imageCaptions).map(photoCaption),
+      ) ||
     newImageUrl.trim().length > 0;
   const exitGuard = useLineupFormExitGuard({ isOpen, isDirty, onDismiss });
 
@@ -241,8 +250,8 @@ export function useLineupFormController({
     setSaving,
     newImageUrl,
     setNewImageUrl,
-    preparedImages,
-    setPreparedImages,
+    photos,
+    setPhotos,
     previewEnlargedUrl,
     setPreviewEnlargedUrl,
     showCatboxModal,

@@ -1,9 +1,7 @@
 import {
   isThrownUtilityKind,
-  LINEUP_TAGS,
   type MovementKey,
   THROWN_UTILITY_KINDS,
-  toggledLineupTag,
   UTILITY_NAMES,
 } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
@@ -11,6 +9,7 @@ import { MAP_IDS } from '@disa/map-data';
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@disa/ui';
 import type { LineupFormValues } from '../helpers/lineup-form-model';
 import { LineupCalloutField } from './LineupCalloutField';
+import { LineupOptionalMark } from './LineupOptionalMark';
 
 const ALL_MOVEMENT_KEYS: readonly MovementKey[] = [
   'W',
@@ -129,6 +128,7 @@ export function LineupBasicFields({
         <div className="flex flex-col gap-1.5">
           <span className="label-dense text-ink-dim">
             <Text path="library.lineups.form.throwType" />
+            <LineupOptionalMark />
           </span>
           <div className="flex flex-wrap items-center gap-1">
             {ALL_THROW_TYPES.map((tt) => (
@@ -151,6 +151,7 @@ export function LineupBasicFields({
         <div className="flex flex-col gap-1.5">
           <span className="label-dense text-ink-dim">
             <Text path="library.lineups.form.movementKeys" />
+            <LineupOptionalMark />
           </span>
           <div className="flex flex-wrap items-center gap-1.5">
             {ALL_MOVEMENT_KEYS.map((k) => {
@@ -176,6 +177,7 @@ export function LineupBasicFields({
         <fieldset className="flex flex-col gap-1.5 border-0 p-0">
           <legend className="label-dense text-ink-dim">
             <Text path="library.lineups.form.mouseButtons" />
+            <LineupOptionalMark />
           </legend>
           <div className="flex flex-wrap gap-1.5">
             {(['left', 'right'] as const).map((button) => (
@@ -205,6 +207,7 @@ export function LineupBasicFields({
         <div className="flex flex-col gap-1.5">
           <label htmlFor="lineup-movement-instructions" className="label-dense text-ink-dim">
             <Text path="library.lineups.form.movementInstructions" />
+            <LineupOptionalMark />
           </label>
           <input
             id="lineup-movement-instructions"
@@ -217,66 +220,11 @@ export function LineupBasicFields({
         </div>
       </div>
 
-      {/* Tags */}
-      <fieldset className="flex flex-col gap-1.5 border-0 p-0">
-        <legend className="label-dense text-ink-dim">
-          <Text path="library.lineups.form.tags" />
-        </legend>
-        <div className="flex flex-wrap gap-1.5">
-          {LINEUP_TAGS.map((tag) => {
-            const isOn = values.tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                aria-pressed={isOn}
-                onClick={() => updateValue('tags', toggledLineupTag(values.tags, tag))}
-                className={`rounded-chip border px-3 py-1.5 text-11 ${
-                  isOn
-                    ? 'border-line bg-surface-3 text-ink'
-                    : 'border-transparent bg-surface-1 text-ink-dim hover:text-ink'
-                }`}
-              >
-                <Text path={`library.lineups.tags.${tag}`} />
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      {/* Author */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="lineup-author-name" className="label-dense text-ink-dim">
-            <Text path="library.lineups.form.authorName" />
-          </label>
-          <Input
-            id="lineup-author-name"
-            type="text"
-            value={values.authorName}
-            onChange={(e) => updateValue('authorName', e.target.value)}
-            placeholder={t('library.lineups.form.authorNamePlaceholder')}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="lineup-author-url" className="label-dense text-ink-dim">
-            <Text path="library.lineups.form.authorUrl" />
-          </label>
-          <input
-            id="lineup-author-url"
-            type="url"
-            value={values.authorUrl}
-            onChange={(e) => updateValue('authorUrl', e.target.value)}
-            placeholder="https://steamcommunity.com/id/..."
-            className="h-8 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
-          />
-        </div>
-      </div>
-
       {/* Notes */}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="lineup-notes" className="label-dense text-ink-dim">
           <Text path="library.lineups.form.notes" />
+          <LineupOptionalMark />
         </label>
         <textarea
           id="lineup-notes"
@@ -292,6 +240,7 @@ export function LineupBasicFields({
       <div className="flex flex-col gap-1.5">
         <label htmlFor="lineup-media" className="label-dense text-ink-dim">
           <Text path="library.lineups.form.mediaUrl" />
+          <LineupOptionalMark />
         </label>
         <input
           id="lineup-media"

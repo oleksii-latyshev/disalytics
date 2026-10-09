@@ -2,6 +2,7 @@ import { Text, useT } from '@disa/i18n';
 import { getMapCallouts } from '@disa/map-data';
 import { Input } from '@disa/ui';
 import { useMemo } from 'react';
+import { LineupOptionalMark } from './LineupOptionalMark';
 
 interface LineupCalloutFieldProps {
   readonly map: string;
@@ -19,6 +20,7 @@ export function LineupCalloutField({ map, value, onChange }: LineupCalloutFieldP
       <div className="flex items-center justify-between">
         <label htmlFor="lineup-callout" className="label-dense text-ink-dim">
           <Text path="library.lineups.form.callout" />
+          <LineupOptionalMark />
         </label>
         {value.length > 0 && (
           <button
