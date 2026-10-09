@@ -13,6 +13,8 @@
     "@disa/admin-contract": "*",
     "@disa/demo-core": "*",
     "@disa/i18n": "*",
+    "@disa/map-data": "*",
+    "@disa/plate": "*",
     "@disa/ui": "*",
     "effect": "4.0.0-rc.117",
     "lucide-react": "^1.31.0",

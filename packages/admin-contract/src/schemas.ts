@@ -1,10 +1,9 @@
 import { LINEUP_TAGS } from '@disa/demo-core';
 import { Schema } from 'effect';
+import { PROBLEM_CODES } from './validation';
 
 /** World units within which two lineups of one map, kind and side count as the same throw. */
 export const DUPLICATE_RADIUS = 48;
-
-export const MAX_TITLE_LENGTH = 120;
 
 /**
  * Photo operations one commit may start. Each upload is a KV write and each copied link a fetch
@@ -20,20 +19,31 @@ export const LineupTagSchema = Schema.Literals(LINEUP_TAGS);
 export const PreviewStatus = Schema.Literals(['new', 'update', 'duplicate', 'unchanged']);
 export type PreviewStatus = typeof PreviewStatus.Type;
 
+/** A side that has no value for the field leaves its key out. */
 export const FieldDiff = Schema.Struct({
   field: Schema.String,
-  before: Schema.Unknown,
-  after: Schema.Unknown,
+  before: Schema.optionalKey(Schema.Unknown),
+  after: Schema.optionalKey(Schema.Unknown),
 });
 export type FieldDiff = typeof FieldDiff.Type;
 
-/** `lineup` is a full lineup (it passed `isLineup` on the way in); the wire keeps it opaque. */
+export const ProblemSchema = Schema.Struct({
+  code: Schema.Literals(PROBLEM_CODES),
+  index: Schema.optionalKey(Schema.Int),
+});
+
+/**
+ * One lineup of the file against the map. `lineup` and `stored` are full lineups (they passed
+ * `isLineup`; the wire keeps them opaque). `stored` is the lineup this one updates or may duplicate.
+ */
 export const PreviewItem = Schema.Struct({
   id: Schema.String,
   status: PreviewStatus,
   lineup: Schema.Unknown,
+  stored: Schema.optionalKey(Schema.Unknown),
   diff: Schema.optionalKey(Schema.Array(FieldDiff)),
-  candidate: Schema.optionalKey(Schema.Struct({ id: Schema.String, title: Schema.String })),
+  /** What stops `lineup` from being saved as it is; empty when nothing does. */
+  problems: Schema.Array(ProblemSchema),
 });
 export type PreviewItem = typeof PreviewItem.Type;
 
@@ -54,44 +64,57 @@ export const PreviewResponse = Schema.Struct({
   map: Schema.String,
   revision: Schema.Int,
   items: Schema.Array(PreviewItem),
+  /** Stored lineups of the map whose id is not in the file. */
+  serverOnly: Schema.Array(Schema.Unknown),
   photos: PhotoStats,
+  /** Where our stored photos are served from, no trailing slash. */
+  photoBase: Schema.String,
   /** Lineups of the file that belong to another map. */
   ignored: Schema.Int,
 });
 export type PreviewResponse = typeof PreviewResponse.Type;
 
-export const ResolutionAction = Schema.Literals(['add', 'replace', 'keep-both', 'skip']);
-export type ResolutionAction = typeof ResolutionAction.Type;
+export const DecisionAction = Schema.Literals(['add', 'replace', 'skip']);
+export type DecisionAction = typeof DecisionAction.Type;
 
-export const Resolution = Schema.Struct({
-  id: Schema.String,
-  action: ResolutionAction,
-  title: Schema.optionalKey(Schema.String),
-  tags: Schema.optionalKey(Schema.Array(LineupTagSchema)),
+/**
+ * What the page decided for one lineup, with the lineup exactly as it should be saved. `replace`
+ * names the stored lineup it takes the place of; the saved lineup keeps that id. A photo ref in
+ * `lineup.imageUrls` is one of our stored photos, a `local:` ref the request carries in `images`,
+ * or an https link the Worker fetches and stores.
+ */
+export const CommitDecision = Schema.Struct({
+  action: DecisionAction,
+  targetId: Schema.optionalKey(Schema.String),
+  lineup: Schema.optionalKey(Schema.Unknown),
 });
-export type Resolution = typeof Resolution.Type;
+export type CommitDecision = typeof CommitDecision.Type;
 
 export const CommitRequest = Schema.Struct({
   map: MapId,
-  file: Schema.Unknown,
-  resolutions: Schema.Array(Resolution),
-  copyLinkPhotos: Schema.Boolean,
+  decisions: Schema.Array(CommitDecision),
+  /** Lowercase hex SHA-256 → `data:image/…;base64,…`, for the `local:` refs the decisions use. */
+  images: Schema.Record(Schema.String, Schema.String),
 });
 export type CommitRequest = typeof CommitRequest.Type;
 
-export const LinkPhotoFailure = Schema.Struct({ url: Schema.String, reason: Schema.String });
-export type LinkPhotoFailure = typeof LinkPhotoFailure.Type;
+export const PhotoFailure = Schema.Struct({ ref: Schema.String, reason: Schema.String });
+export type PhotoFailure = typeof PhotoFailure.Type;
+
+/** A lineup that was not saved because some of its photos could not be stored. */
+export const WithheldLineup = Schema.Struct({
+  id: Schema.String,
+  failures: Schema.Array(PhotoFailure),
+});
+export type WithheldLineup = typeof WithheldLineup.Type;
 
 export const CommitResponse = Schema.Struct({
   map: Schema.String,
   revision: Schema.Int,
   saved: Schema.Int,
   skipped: Schema.Int,
-  photos: Schema.Struct({
-    uploaded: Schema.Int,
-    copied: Schema.Int,
-    failed: Schema.Array(LinkPhotoFailure),
-  }),
+  photos: Schema.Struct({ uploaded: Schema.Int, copied: Schema.Int }),
+  withheld: Schema.Array(WithheldLineup),
 });
 export type CommitResponse = typeof CommitResponse.Type;
 
@@ -138,6 +161,8 @@ export const InviteToken = Schema.Struct({ token: Token });
 export const InviteInfo = Schema.Struct({
   role: AdminRole,
   name: Schema.optional(Schema.String),
+  /** Who made the link, when that is a person. */
+  invitedBy: Schema.optional(Schema.String),
   expiresAt: Schema.Number,
 });
 export type InviteInfo = typeof InviteInfo.Type;

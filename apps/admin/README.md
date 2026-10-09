@@ -13,19 +13,28 @@ place that writes to the lineups tables.
 
 ## What the page does
 
-1. Pick a map, drop the file exported from the lineups library (version 2: photos embedded as
-   `local:` refs plus an `images` map, or as links).
-2. The server compares each lineup of that map with what is stored and the page groups them:
-   **updates** (same id, with a field diff), **possible duplicates** (another id, same map, kind and
-   side, origin and landing each within 48 world units), **new**, **unchanged**.
-3. Per row: add, replace, keep both or skip. Title and tags are editable in place. Embedded photos
-   are uploaded to our storage; "copy link photos into our storage" also fetches linked photos on
-   the server (https only, up to 5 MB, webp/png/jpeg checked by their bytes, at most 3 redirects, 10 s).
-4. Apply writes in parts of at most 24 photos each (a Worker request has a subrequest limit on the
-   free plan), shows progress and a per-part result, and bumps the map's revision. The public API
-   serves the new set within about a minute.
-5. Below: the map's current built-ins, each deletable (soft delete, logged), and the recent changes
-   with the person who made them.
+Sections: **Import**, **On the site**, **People** (owner) and **History**. Import is a guided flow with
+the counts and one button pinned at the bottom:
+
+1. **File**: pick the map and drop the file exported from the lineups library. Plain-language tiles say
+   how many lineups changed on the site, look like an existing one, need fixing, are new or are the same.
+2. **Your decisions**: only what needs a person, one question per screen, the map beside it
+   (`@disa/plate`, radar images from `VITE_DISALYTICS_WEB_URL`, default the production web app).
+   - *Changed* (same id): take the best of both (every field and photo side by side), take the new
+     version, keep the site's, or save as two.
+   - *Looks the same* (another id, same map, kind and side, origin and landing within 48 units): merge,
+     add as a different throw, or skip.
+   - *Needs fixing*: a point off the radar (click the map or drag), a blank title, a non-https photo
+     link. The rules live in `packages/admin-contract` (`lineupProblems`) and the Worker applies them too.
+3. **Check everything**: every lineup with its outcome, edit (fields and points on the map) or leave out
+   any of them; lineups only the site has can be deleted. Apply is blocked while one needs fixing.
+4. **Done**: progress in parts, per-photo problems (retry, or continue without the photo), the result.
+
+The page sends the final lineup bodies; the Worker re-validates each, puts every photo into our storage
+(embedded photos are uploaded, https links are fetched by the Worker: up to 5 MB, webp/png/jpeg checked
+by their bytes, at most 3 redirects, 10 s) and saves each part in one batch. A part carries at most 24
+photos (free-plan subrequest limit). **On the site** lists the stored lineups: edit one with the same
+editor, or delete it (soft delete, logged).
 
 ## Who is signed in
 
@@ -96,5 +105,6 @@ bun run --cwd apps/admin build    # typecheck, build, wrangler deploy --dry-run
 
 Embedded and copied photos are stored in KV under the SHA-256 of their bytes and linked as
 `https://disalytics-api.disa-67b.workers.dev/photos/<sha256>` (`PHOTO_BASE_URL`). Content addressing
-makes a repeated upload harmless. Free-plan ceilings (1,000 KV writes a day) are the reason to keep
-"copy link photos" for the first import and not for every run.
+makes a repeated upload harmless. Every imported photo is stored here, so a big first import (the 42 photos of a map) is a large part
+of the free plan's 1,000 KV writes a day; a re-import costs none, because `photo_links` remembers each
+copied link and a `local:<sha>` photo is the stored photo with that SHA-256.

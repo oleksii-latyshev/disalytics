@@ -17,7 +17,13 @@ import { ChangeLog } from './change-log';
 import { runCommit } from './commit';
 import { AdminConfig } from './config';
 import { lineupsOfMap } from './helpers/parse';
-import { linkUrls, photoStats, planLineups, withKnownLinks } from './helpers/plan';
+import {
+  linkUrls,
+  photoStats,
+  planLineups,
+  serverOnlyLineups,
+  withKnownLinks,
+} from './helpers/plan';
 import { PhotoLinks } from './photo-links';
 
 const invalidInvite = badRequest('invalid_invite', 'The invite is unknown, used or expired');
@@ -147,8 +153,10 @@ export const PreviewHandlers = HttpApiBuilder.group(AdminApi, 'preview', (handle
       const response: PreviewResponse = {
         map: payload.map,
         revision: existing.revision,
-        items: planLineups(existing.lineups, lineups),
+        items: planLineups(existing.lineups, lineups, payload.map, config.photoBaseUrl),
+        serverOnly: serverOnlyLineups(existing.lineups, lineups),
         photos: photoStats(lineups, config.photoBaseUrl),
+        photoBase: config.photoBaseUrl,
         ignored,
       };
       return response;

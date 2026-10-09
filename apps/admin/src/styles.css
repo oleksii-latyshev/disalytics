@@ -2,7 +2,18 @@
 @import "@disa/ui/styles";
 
 @source "../../../packages/ui/src";
+@source "../../../packages/plate/src";
 @source "./";
 
 /* The admin is dark, like the product it edits: there is no light palette. */
 @custom-variant dark (&);
+
+/* What is going to happen to a lineup, as a colour on the map, the chips and the stripes. */
+:root {
+  --status-new: #6fd394;
+  --status-update: #b59cff;
+  --status-duplicate: #ff8fb8;
+  --status-invalid: #f04248;
+  --status-same: #6b6b6b;
+  --status-stored: #d8d8d8;
+}

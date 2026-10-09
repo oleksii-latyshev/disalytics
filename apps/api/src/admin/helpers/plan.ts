@@ -1,6 +1,7 @@
 import {
   DUPLICATE_RADIUS,
   type FieldDiff,
+  lineupProblems,
   type PhotoStats,
   type PreviewItem,
 } from '@disa/admin-contract';
@@ -30,7 +31,11 @@ export function diffLineups(before: Lineup, after: Lineup): FieldDiff[] {
   const diffs: FieldDiff[] = [];
   for (const field of [...fields].sort()) {
     if (stable(left[field]) !== stable(right[field])) {
-      diffs.push({ field, before: left[field], after: right[field] });
+      diffs.push({
+        field,
+        ...(left[field] === undefined ? {} : { before: left[field] }),
+        ...(right[field] === undefined ? {} : { after: right[field] }),
+      });
     }
   }
   return diffs;
@@ -64,30 +69,63 @@ export function findDuplicate(lineup: Lineup, existing: readonly Lineup[]): Line
   return best;
 }
 
-/** Classifies every incoming lineup against what is stored. */
-/** A preview row with its lineup typed. */
-export type PlanItem = Omit<PreviewItem, 'lineup'> & { readonly lineup: Lineup };
+/** A preview row with its lineups typed. */
+export type PlanItem = Omit<PreviewItem, 'lineup' | 'stored'> & {
+  readonly lineup: Lineup;
+  readonly stored?: Lineup;
+};
 
-export function planLineups(existing: readonly Lineup[], incoming: readonly Lineup[]): PlanItem[] {
+/**
+ * The lineup as it compares: a `local:<sha>` photo is the photo our storage keeps under that same
+ * SHA-256, so a file that carries the bytes again reads equal to a lineup that already stores them.
+ */
+function comparable(lineup: Lineup, photoBaseUrl: string): Lineup {
+  if (lineup.imageUrls === undefined) return lineup;
+  const imageUrls = lineup.imageUrls.map((url) => {
+    const hash = localImageHash(url);
+    return hash === null ? url : `${photoBaseUrl}/${hash}`;
+  });
+  return { ...lineup, imageUrls };
+}
+
+/** Classifies every incoming lineup against what is stored. */
+export function planLineups(
+  existing: readonly Lineup[],
+  incoming: readonly Lineup[],
+  map: string,
+  photoBaseUrl: string,
+): PlanItem[] {
   const byId = new Map(existing.map((lineup) => [lineup.id, lineup]));
   return incoming.map((lineup): PlanItem => {
+    const problems = lineupProblems(lineup, map);
     const stored = byId.get(lineup.id);
     if (stored !== undefined) {
-      const diff = diffLineups(stored, lineup);
+      const diff = diffLineups(stored, comparable(lineup, photoBaseUrl));
       return diff.length === 0
-        ? { id: lineup.id, status: 'unchanged', lineup }
-        : { id: lineup.id, status: 'update', lineup, diff };
+        ? { id: lineup.id, status: 'unchanged', lineup, stored, problems }
+        : { id: lineup.id, status: 'update', lineup, stored, diff, problems };
     }
     const twin = findDuplicate(lineup, existing);
     return twin === null
-      ? { id: lineup.id, status: 'new', lineup }
+      ? { id: lineup.id, status: 'new', lineup, problems }
       : {
           id: lineup.id,
           status: 'duplicate',
           lineup,
-          candidate: { id: twin.id, title: twin.title },
+          stored: twin,
+          diff: diffLineups(twin, comparable(lineup, photoBaseUrl)),
+          problems,
         };
   });
+}
+
+/** Stored lineups the file does not mention by id. */
+export function serverOnlyLineups(
+  existing: readonly Lineup[],
+  incoming: readonly Lineup[],
+): Lineup[] {
+  const ids = new Set(incoming.map((lineup) => lineup.id));
+  return existing.filter((lineup) => !ids.has(lineup.id));
 }
 
 export function photoStats(lineups: readonly Lineup[], photoBaseUrl: string): PhotoStats {

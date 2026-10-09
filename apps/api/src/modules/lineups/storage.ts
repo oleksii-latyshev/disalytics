@@ -1,5 +1,5 @@
 import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { Context, type Effect } from 'effect';
 import { type D1Binding, makeDb } from '../../db/client';
 import { lineupChanges, lineupRevisions, lineups } from '../../db/schema';
@@ -31,6 +31,8 @@ export class LineupStorage extends Context.Service<
     readonly readMap: (map: string) => Effect.Effect<MapLineups, StorageError>;
     /** Creates or replaces lineups: one atomic batch, one revision bump per map. */
     readonly saveLineups: (write: LineupWrite) => Effect.Effect<void, StorageError>;
+    /** Which of these ids already have a row, deleted or not, in any map. */
+    readonly takenIds: (ids: readonly string[]) => Effect.Effect<ReadonlySet<string>, StorageError>;
     /** Soft-deletes a lineup; `false` when there is no live lineup with that id. */
     readonly deleteLineup: (removal: LineupRemoval) => Effect.Effect<boolean, StorageError>;
   }
@@ -38,6 +40,7 @@ export class LineupStorage extends Context.Service<
 
 /** D1 allows 100 bound parameters a statement, and a lineup row binds 8. */
 const ROWS_PER_INSERT = 10;
+const IDS_PER_LOOKUP = 50;
 
 function chunks<T>(items: readonly T[]): T[][] {
   const out: T[][] = [];
@@ -138,6 +141,19 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
         ];
         if (first === undefined) return;
         await db.batch([first, ...rest]);
+      }),
+
+    takenIds: (ids) =>
+      attempt(async () => {
+        const taken = new Set<string>();
+        for (let at = 0; at < ids.length; at += IDS_PER_LOOKUP) {
+          const rows = await db
+            .select({ id: lineups.id })
+            .from(lineups)
+            .where(inArray(lineups.id, ids.slice(at, at + IDS_PER_LOOKUP)));
+          for (const row of rows) taken.add(row.id);
+        }
+        return taken;
       }),
 
     deleteLineup: ({ id, actor, now }) =>

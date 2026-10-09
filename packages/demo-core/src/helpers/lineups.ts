@@ -360,6 +360,17 @@ export function isLineup(value: unknown): value is Lineup {
 }
 
 /**
+ * A lineup that is valid but for a blank title, which `isLineup` refuses. The lineups admin reads
+ * such a file so the person can be asked for a title instead of being told the file is damaged.
+ */
+export function looseLineup(value: unknown): Lineup | null {
+  if (isLineup(value)) return value;
+  if (!isObject(value) || typeof value.title !== 'string' || value.title.trim() !== '') return null;
+  const stand = { ...value, title: 'untitled' };
+  return isLineup(stand) ? { ...stand, title: value.title } : null;
+}
+
+/**
  * Serializes lineups into a versioned JSON envelope. `images` maps a photo hash to its data URL;
  * only hashes the lineups reference are written.
  */
@@ -421,8 +432,28 @@ function parseCollections(value: unknown): readonly LineupCollection[] {
   return collections;
 }
 
+function parseLineups(entries: readonly unknown[], allowBlankTitle: boolean): Lineup[] {
+  const lineups: Lineup[] = [];
+  for (const [index, item] of entries.entries()) {
+    const lineup = allowBlankTitle ? looseLineup(item) : isLineup(item) ? item : null;
+    if (lineup === null) {
+      throw new LineupFileError(`Invalid lineup entry at index ${index}`, 'INVALID_SCHEMA');
+    }
+    lineups.push(normalizeLineup(lineup));
+  }
+  return lineups;
+}
+
+export interface ParseLineupFileOptions {
+  /** Accept a lineup whose title is blank (see {@link looseLineup}); the caller must ask for one. */
+  readonly allowBlankTitle?: boolean;
+}
+
 /** Parses and validates a JSON string as a version 1 or 2 `LineupFile`; `collections` is optional. */
-export function parseLineupFile(json: string): ParsedLineupFile {
+export function parseLineupFile(
+  json: string,
+  options: ParseLineupFileOptions = {},
+): ParsedLineupFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -452,14 +483,7 @@ export function parseLineupFile(json: string): ParsedLineupFile {
 
   const images = parsed.version === 2 ? parseImages(parsed.images) : {};
 
-  const validLineups: Lineup[] = [];
-  for (let i = 0; i < parsed.lineups.length; i++) {
-    const item = parsed.lineups[i];
-    if (!isLineup(item)) {
-      throw new LineupFileError(`Invalid lineup entry at index ${i}`, 'INVALID_SCHEMA');
-    }
-    validLineups.push(normalizeLineup(item));
-  }
+  const validLineups = parseLineups(parsed.lineups, options.allowBlankTitle === true);
 
   for (const hash of referencedLocalImageHashes(validLineups)) {
     if (!(hash in images)) {

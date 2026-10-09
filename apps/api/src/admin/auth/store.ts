@@ -146,11 +146,14 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
           .from(adminInvites)
           .where(liveInvite(await hashToken(token), now));
         if (invite === undefined) return null;
-        if (invite.adminId === null) return { role: invite.role, expiresAt: invite.expiresAt };
+        const invitedBy = invite.createdBy !== 'cli' ? { invitedBy: invite.createdBy } : {};
+        if (invite.adminId === null) {
+          return { role: invite.role, ...invitedBy, expiresAt: invite.expiresAt };
+        }
         const person = await activePerson(invite.adminId);
         return person === undefined
           ? null
-          : { role: person.role, name: person.name, expiresAt: invite.expiresAt };
+          : { role: person.role, name: person.name, ...invitedBy, expiresAt: invite.expiresAt };
       }),
 
     redeem: ({ token, name, label, now }) =>
