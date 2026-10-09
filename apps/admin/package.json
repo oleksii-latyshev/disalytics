@@ -1,0 +1,34 @@
+{
+  "name": "@disa/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && wrangler deploy --dry-run --config ../api/wrangler.admin.jsonc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@disa/admin-contract": "*",
+    "@disa/demo-core": "*",
+    "@disa/i18n": "*",
+    "@disa/ui": "*",
+    "effect": "4.0.0-rc.117",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "^6.0.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "5.9.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10",
+    "wrangler": "4.118.0"
+  }
+}

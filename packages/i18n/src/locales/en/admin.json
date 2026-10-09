@@ -1,0 +1,122 @@
+{
+  "title": "Lineups admin",
+  "signedIn": "Signed in as {email}",
+  "map": {
+    "label": "Map",
+    "note": "Changes go to this map's built-in lineups."
+  },
+  "file": {
+    "drop": "Drop an exported lineups file here",
+    "or": "or",
+    "choose": "Choose a file",
+    "replace": "Choose another file",
+    "summary": "{name} — {count, plural, one {# lineup} other {# lineups}}",
+    "otherMaps": "{count, plural, one {# lineup belongs to another map and is ignored.} other {# lineups belong to other maps and are ignored.}}",
+    "invalidJson": "That file is not JSON.",
+    "unsupportedVersion": "That is not a lineups file exported by disalytics.",
+    "invalidSchema": "That lineups file is damaged or incomplete.",
+    "title": "Lineups file",
+    "hint": "Export a map's lineups from the lineups library, then drop the file here."
+  },
+  "preview": {
+    "title": "What would change",
+    "loading": "Comparing with the stored lineups…",
+    "empty": "Nothing in this file belongs to {map}.",
+    "revision": "Stored revision {revision}"
+  },
+  "status": {
+    "new": "New",
+    "update": "Updates",
+    "duplicate": "Possible duplicates",
+    "unchanged": "Unchanged"
+  },
+  "action": {
+    "label": "Action for {title}",
+    "add": "Add",
+    "replace": "Replace",
+    "keepBoth": "Keep both",
+    "skip": "Skip"
+  },
+  "row": {
+    "title": "Title",
+    "tags": "Tags",
+    "candidate": "Looks like “{title}” ({id})",
+    "diff": "{count, plural, one {# field differs} other {# fields differ}}",
+    "stored": "Stored",
+    "incoming": "In the file",
+    "none": "(none)",
+    "photos": "{count, plural, one {# photo} other {# photos}}"
+  },
+  "tag": {
+    "meta": "Meta",
+    "old": "Old"
+  },
+  "photos": {
+    "embedded": "{count, plural, one {# photo is} other {# photos are}} embedded in the file and will be uploaded.",
+    "copy": "Copy link photos into our storage",
+    "copyNote": "{count, plural, one {# linked photo is} other {# linked photos are}} fetched by the server (https only, up to 5 MB) and stored here. Left alone, links stay as they are.",
+    "ours": "{count, plural, one {# photo already lives} other {# photos already live}} in our storage."
+  },
+  "commit": {
+    "apply": "Apply {count, plural, one {# change} other {# changes}}",
+    "nothing": "Nothing is selected to apply.",
+    "progress": "Saving part {done} of {total}…"
+  },
+  "result": {
+    "title": "Done",
+    "saved": "{count, plural, one {# lineup saved} other {# lineups saved}}",
+    "skipped": "{count} skipped",
+    "uploaded": "{count, plural, one {# photo uploaded} other {# photos uploaded}}",
+    "copied": "{count, plural, one {# link copied} other {# links copied}}",
+    "revision": "The map is now at revision {revision}. Everyone sees it within a minute.",
+    "failedTitle": "These links were left as they are",
+    "again": "Start over"
+  },
+  "linkFailure": {
+    "notHttps": "not an https link",
+    "invalidUrl": "not a valid address",
+    "badRedirect": "bad redirect",
+    "tooManyRedirects": "too many redirects",
+    "timeout": "took longer than 10 seconds",
+    "network": "could not be reached",
+    "tooLarge": "larger than 5 MB",
+    "notAnImage": "not a webp, png or jpeg",
+    "httpStatus": "the server answered {status}",
+    "other": "could not be copied"
+  },
+  "current": {
+    "title": "Built-in lineups of {map}",
+    "loading": "Loading…",
+    "empty": "No built-in lineups are stored for this map yet.",
+    "delete": "Delete",
+    "deleteConfirm": "Delete “{title}” for everyone?",
+    "confirm": "Yes, delete",
+    "cancel": "Cancel"
+  },
+  "changes": {
+    "title": "Recent changes",
+    "loading": "Loading…",
+    "empty": "No changes yet.",
+    "save": "saved",
+    "delete": "deleted",
+    "entry": "{actor} {action} {lineup}"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "retry": "Try again",
+    "unauthorized": "Your session has expired. Reload the page to sign in again.",
+    "forbidden": "You are not allowed to do this, or the admin is not set up yet.",
+    "notFound": "That no longer exists.",
+    "invalidJson": "The request was not understood.",
+    "bodyTooLarge": "That is too much data for one request.",
+    "invalidMap": "That is not a map this admin can write to.",
+    "invalidFile": "The server rejected the lineups in that file.",
+    "invalidResolutions": "One of the choices is not possible for its lineup.",
+    "missingResolution": "A lineup has no choice yet.",
+    "invalidPhoto": "A photo in the file is not a usable image.",
+    "tooManyPhotos": "Too many photos for one request.",
+    "invalidLineup": "A lineup would be invalid once saved.",
+    "network": "The server could not be reached. Reload the page; if you were signed out, that signs you back in.",
+    "invalidRequest": "The request was not understood."
+  }
+}
