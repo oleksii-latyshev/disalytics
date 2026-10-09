@@ -1,16 +1,19 @@
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
-import { CornerDownRight, Pencil, Plus, Trash2, Unlink } from 'lucide-react';
+import { CornerDownRight, Layers, Pencil, Plus, Trash2, Unlink } from 'lucide-react';
 import { EDIT_HINT_ID } from '../helpers/edit-hint';
 
 interface Props {
   lineup: Lineup;
+  /** Every position of the lineup's target, the one being edited among them. */
+  siblings: readonly Lineup[];
+  onMergeOrigins: () => void;
   onDone: () => void;
   onDetails: () => void;
   onAddBounce: () => void;
   onRemoveBounce: (index: number) => void;
-  onUngroup: () => void;
+  onUngroup: (groupTarget: LineupGroupTarget) => void;
   onDelete: () => void;
 }
 
@@ -23,6 +26,11 @@ export function LineupEditPanel(props: Props) {
   const { lineup } = props;
   const t = useT();
   const bounces = lineup.waypoints ?? [];
+  const canMergeOrigins =
+    props.siblings.length >= 2 &&
+    !props.siblings.every(
+      (item) => item.originGroupId !== undefined && item.originGroupId === lineup.originGroupId,
+    );
 
   return (
     <div className="lineup-rise flex min-h-0 flex-1 flex-col">
@@ -68,20 +76,41 @@ export function LineupEditPanel(props: Props) {
           </Button>
         </section>
 
+        {canMergeOrigins && (
+          <Button variant="outline" onClick={props.onMergeOrigins} className="self-start">
+            <Layers aria-hidden="true" />
+            <Text path="library.lineups.mergeThrowSpots" />
+          </Button>
+        )}
+
         {lineup.groupId !== undefined && (
           <section className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">
             <p className="text-12 text-ink-dim leading-prose">
-              <Text
-                path={
-                  (lineup.groupTarget ?? 'landing') === 'landing'
-                    ? 'library.lineups.editing.sharedLanding'
-                    : 'library.lineups.editing.sharedOrigin'
-                }
-              />
+              <Text path="library.lineups.editing.sharedLanding" />
             </p>
-            <Button variant="outline" onClick={props.onUngroup} className="self-start">
+            <Button
+              variant="outline"
+              onClick={() => props.onUngroup('landing')}
+              className="self-start"
+            >
               <Unlink aria-hidden="true" />
-              <Text path="library.lineups.unmerge" />
+              <Text path="library.lineups.unmergeLandings" />
+            </Button>
+          </section>
+        )}
+
+        {lineup.originGroupId !== undefined && (
+          <section className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">
+            <p className="text-12 text-ink-dim leading-prose">
+              <Text path="library.lineups.editing.sharedOrigin" />
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => props.onUngroup('origin')}
+              className="self-start"
+            >
+              <Unlink aria-hidden="true" />
+              <Text path="library.lineups.unmergeOrigins" />
             </Button>
           </section>
         )}

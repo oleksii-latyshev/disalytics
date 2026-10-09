@@ -2,7 +2,6 @@ import {
   isHttpsUrl,
   isLocalImageRef,
   type LineupAuthor,
-  type LineupGroupTarget,
   type LineupMouseButton,
   type LineupSide,
   type LineupTag,
@@ -45,7 +44,7 @@ export interface LineupFormData {
     | readonly { readonly x: number; readonly y: number; readonly z?: number }[]
     | undefined;
   readonly groupId?: string | undefined;
-  readonly groupTarget?: LineupGroupTarget | undefined;
+  readonly originGroupId?: string | undefined;
   readonly pitch?: number;
   readonly yaw?: number;
   readonly throwType?: ThrowType;
@@ -87,7 +86,7 @@ export interface LineupFormValues {
     | readonly { readonly x: string; readonly y: string; readonly z: string }[]
     | undefined;
   readonly groupId?: string | undefined;
-  readonly groupTarget?: LineupGroupTarget | undefined;
+  readonly originGroupId?: string | undefined;
   readonly pitch: string;
   readonly yaw: string;
   readonly command: string;
@@ -258,7 +257,7 @@ export function initFormValues(
     landingZ: landing.z,
     waypoints: data.waypoints?.map((wp) => extractCoords(wp)) ?? [],
     groupId: data.groupId,
-    groupTarget: data.groupTarget,
+    originGroupId: data.originGroupId,
     pitch: formatCoord(data.pitch),
     yaw: formatCoord(data.yaw),
     command: commandOf(data, isFromDemo),

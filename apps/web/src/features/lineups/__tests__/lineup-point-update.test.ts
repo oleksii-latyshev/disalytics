@@ -22,15 +22,14 @@ const lineup = (id: string): Lineup => ({
 describe('updateLineupsAtPoint', () => {
   it('moves every origin in the matching shared-origin group and preserves z', () => {
     const lineups: readonly Lineup[] = [
-      { ...lineup('a'), groupId: 'shared', groupTarget: 'origin' },
+      { ...lineup('a'), originGroupId: 'shared' },
       {
         ...lineup('b'),
-        groupId: 'shared',
-        groupTarget: 'origin',
+        originGroupId: 'shared',
         origin: { x: -1, y: -2, z: 99 },
       },
-      { ...lineup('other'), groupId: 'other-group', groupTarget: 'origin' },
-      { ...lineup('landing-member'), groupId: 'shared', groupTarget: 'landing' },
+      { ...lineup('other'), originGroupId: 'other-group' },
+      { ...lineup('landing-member'), groupId: 'shared' },
     ];
 
     const updated = updateLineupsAtPoint({
@@ -48,15 +47,14 @@ describe('updateLineupsAtPoint', () => {
 
   it('moves every shared landing and recalculates each member callout', () => {
     const lineups: readonly Lineup[] = [
-      { ...lineup('a'), groupId: 'shared', groupTarget: 'landing', targetCallout: 'Old A' },
+      { ...lineup('a'), groupId: 'shared', targetCallout: 'Old A' },
       {
         ...lineup('b'),
         groupId: 'shared',
-        groupTarget: 'landing',
         landing: { x: -1, y: -2, z: 99 },
         targetCallout: 'Old B',
       },
-      { ...lineup('unrelated'), groupId: 'other-group', groupTarget: 'landing' },
+      { ...lineup('unrelated'), groupId: 'other-group' },
     ];
     const resolveCallout = (point: { readonly x: number; readonly y: number }) =>
       `${point.x},${point.y}`;
@@ -80,10 +78,9 @@ describe('updateLineupsAtPoint', () => {
       {
         ...lineup('a'),
         groupId: 'shared',
-        groupTarget: 'landing',
         waypoints: [{ x: 1, y: 2, z: 3 }],
       },
-      { ...lineup('b'), groupId: 'shared', groupTarget: 'landing' },
+      { ...lineup('b'), groupId: 'shared' },
     ];
     const updateIndependentOrigin = updateLineupsAtPoint({
       lineups,
@@ -105,6 +102,30 @@ describe('updateLineupsAtPoint', () => {
     expect(updateWaypoint?.map(({ id, waypoints }) => [id, waypoints])).toEqual([
       ['a', [{ x: 9, y: 10, z: 3 }]],
     ]);
+  });
+
+  it('moves each group of a lineup that is in both, by the point that was dragged', () => {
+    const lineups: readonly Lineup[] = [
+      { ...lineup('a'), groupId: 'land', originGroupId: 'org' },
+      { ...lineup('b'), groupId: 'land', origin: { x: 1, y: 1, z: 1 } },
+      { ...lineup('c'), originGroupId: 'org', landing: { x: 2, y: 2, z: 2 } },
+    ];
+
+    const origins = updateLineupsAtPoint({
+      lineups,
+      lineupId: 'a',
+      target: 'origin',
+      point: { x: 7, y: 8 },
+    });
+    const landings = updateLineupsAtPoint({
+      lineups,
+      lineupId: 'a',
+      target: 'landing',
+      point: { x: 5, y: 6 },
+    });
+
+    expect(origins?.map(({ id }) => id)).toEqual(['a', 'c']);
+    expect(landings?.map(({ id }) => id)).toEqual(['a', 'b']);
   });
 
   it('takes the altitude it is given, which is how a point reaches another floor', () => {

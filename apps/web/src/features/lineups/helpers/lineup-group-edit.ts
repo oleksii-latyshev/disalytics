@@ -1,8 +1,9 @@
-import type { Lineup, LineupGroupTarget, WorldPoint } from '@disa/demo-core';
+import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
 
 /**
- * The lineups merged into one group: they share the first one's landing, or its throw spot. Every
- * one of them is the user's own afterwards, which is what saving a built-in's edit means.
+ * The lineups merged into one group: they share the first one's landing or its throw spot. Only
+ * the group of that kind is set, so a lineup keeps whichever group of the other kind it was in.
+ * Every one of them is the user's own afterwards, which is what saving a built-in's edit means.
  */
 export function mergeLineups(
   lineups: readonly Lineup[],
@@ -12,35 +13,52 @@ export function mergeLineups(
   const [first] = lineups;
   if (first === undefined || lineups.length < 2) return [];
 
-  const shared: WorldPoint = groupTarget === 'landing' ? first.landing : first.origin;
+  if (groupTarget === 'landing') {
+    return lineups.map((lineup) => ({
+      ...lineup,
+      groupId,
+      landing: first.landing,
+      isBuiltIn: false,
+    }));
+  }
 
   return lineups.map((lineup) => ({
     ...lineup,
-    groupId,
-    groupTarget,
-    landing: groupTarget === 'landing' ? shared : lineup.landing,
-    origin: groupTarget === 'origin' ? shared : lineup.origin,
+    originGroupId: groupId,
+    origin: first.origin,
     isBuiltIn: false,
   }));
 }
 
-/** Every lineup of the groups the ids belong to, taken out of them. */
+/**
+ * Every lineup of the groups of one kind the ids belong to, taken out of them. The other kind of
+ * group is left as it is.
+ */
 export function ungroupLineups(
   lineups: readonly Lineup[],
   ids: ReadonlySet<string>,
+  groupTarget: LineupGroupTarget,
 ): readonly Lineup[] {
+  const groupOf = (lineup: Lineup): string | undefined =>
+    groupTarget === 'landing' ? lineup.groupId : lineup.originGroupId;
+
   const groupIds = new Set(
-    lineups.flatMap((lineup) =>
-      ids.has(lineup.id) && lineup.groupId !== undefined ? [lineup.groupId] : [],
-    ),
+    lineups.flatMap((lineup) => {
+      const group = groupOf(lineup);
+      return ids.has(lineup.id) && group !== undefined ? [group] : [];
+    }),
   );
 
   return lineups
-    .filter((lineup) => lineup.groupId !== undefined && groupIds.has(lineup.groupId))
-    .map(({ groupId: _groupId, groupTarget: _groupTarget, ...rest }) => ({
-      ...rest,
-      isBuiltIn: false,
-    }));
+    .filter((lineup) => {
+      const group = groupOf(lineup);
+      return group !== undefined && groupIds.has(group);
+    })
+    .map((lineup) => {
+      const { groupId: _groupId, groupTarget: _legacy, ...landingKept } = lineup;
+      const { originGroupId: _originGroupId, groupTarget: _legacyToo, ...originKept } = lineup;
+      return { ...(groupTarget === 'landing' ? landingKept : originKept), isBuiltIn: false };
+    });
 }
 
 /** A bounce added halfway between the last point of the throw and the landing, to be dragged into place. */

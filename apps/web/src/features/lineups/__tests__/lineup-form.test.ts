@@ -234,7 +234,7 @@ describe('lineup form helpers', () => {
     expect(explicitValues.targetCallout).toBe('Custom Callout');
   });
 
-  it('preserves and parses waypoints, groupId, and groupTarget', () => {
+  it('preserves and parses waypoints, groupId, and originGroupId', () => {
     const data: LineupFormData = {
       title: 'Mirage Flash with Bounce',
       map: 'de_mirage',
@@ -245,7 +245,7 @@ describe('lineup form helpers', () => {
         { x: -200, y: -300, z: 20 },
       ],
       groupId: 'grp-42',
-      groupTarget: 'landing',
+      originGroupId: 'org-7',
     };
 
     const values = initFormValues(data);
@@ -253,7 +253,7 @@ describe('lineup form helpers', () => {
     expect(values.waypoints?.[0]?.x).toBe('-150.00');
     expect(values.waypoints?.[1]?.x).toBe('-200.00');
     expect(values.groupId).toBe('grp-42');
-    expect(values.groupTarget).toBe('landing');
+    expect(values.originGroupId).toBe('org-7');
 
     const lineup = buildLineupFromForm(values, 'test-bounce');
     expect(lineup).not.toBeNull();
@@ -264,7 +264,8 @@ describe('lineup form helpers', () => {
       { x: -200, y: -300, z: 20 },
     ]);
     expect(lineup.groupId).toBe('grp-42');
-    expect(lineup.groupTarget).toBe('landing');
+    expect(lineup.originGroupId).toBe('org-7');
+    expect(lineup.groupTarget).toBeUndefined();
   });
 
   it('carries tags and author through the form and back out', () => {

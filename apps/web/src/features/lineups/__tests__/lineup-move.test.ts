@@ -22,7 +22,7 @@ const lineup = (id: string, patch: Partial<Lineup> = {}): Lineup => ({
 });
 
 describe('withMove', () => {
-  const group = { groupId: 'g', groupTarget: 'landing' } as const;
+  const group = { groupId: 'g' } as const;
   const lineups = [lineup('a', group), lineup('b', group), lineup('c')];
 
   it('is the lineups as they are when nothing is being moved', () => {

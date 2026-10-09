@@ -167,7 +167,12 @@ export function LineupsView() {
           onClearChecked={selection.clear}
           onMergeLandings={() => void afterBulk(edits.merge(bulk.lineups, 'landing'))}
           onMergeOrigins={() => void afterBulk(edits.merge(bulk.lineups, 'origin'))}
-          onUngroup={() => void afterBulk(edits.ungroup(new Set(bulk.lineups.map(({ id }) => id))))}
+          onUngroupLandings={() =>
+            void afterBulk(edits.ungroup(new Set(bulk.lineups.map(({ id }) => id)), 'landing'))
+          }
+          onUngroupOrigins={() =>
+            void afterBulk(edits.ungroup(new Set(bulk.lineups.map(({ id }) => id)), 'origin'))
+          }
           onDelete={() =>
             askRemoval(
               bulk.deletable.map(({ id }) => id),
@@ -221,7 +226,9 @@ export function LineupsView() {
             onDetails: setFormLineup,
             onAddBounce: (lineup) => void edits.addBounce(lineup),
             onRemoveBounce: (lineup, index) => void edits.removeBounce(lineup, index),
-            onUngroup: (lineup) => void edits.ungroup(new Set([lineup.id])),
+            onMergeOrigins: (positions) => void edits.merge(positions, 'origin'),
+            onUngroup: (lineup, groupTarget) =>
+              void edits.ungroup(new Set([lineup.id]), groupTarget),
             onDelete: (lineup) => askRemoval([lineup.id], t('library.lineups.deleteConfirm')),
             onDraft: add.update,
             onRedo: add.redo,

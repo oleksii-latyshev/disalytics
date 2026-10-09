@@ -154,7 +154,7 @@ describe('newLineup', () => {
       groupId: 'g',
     });
 
-    expect(lineup).toMatchObject({ groupId: 'g', groupTarget: 'landing' });
+    expect(lineup).toMatchObject({ groupId: 'g' });
   });
 });
 
@@ -174,7 +174,7 @@ describe('joinPlan', () => {
 
   it('joins the group the target already has', () => {
     const [target] = lineupTargets('de_mirage', [
-      saved('a', { groupId: 'old', groupTarget: 'landing' }),
+      saved('a', { groupId: 'old' }),
       saved('b', { createdAt: 2 }),
     ]);
     if (target === undefined) throw new Error('one target');

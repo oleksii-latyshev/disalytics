@@ -23,7 +23,8 @@ interface Props {
   onClearChecked: () => void;
   onMergeLandings: () => void;
   onMergeOrigins: () => void;
-  onUngroup: () => void;
+  onUngroupLandings: () => void;
+  onUngroupOrigins: () => void;
   onDelete: () => void;
 }
 
@@ -58,7 +59,8 @@ export function LineupsSidebar(props: Props) {
           bulk={props.bulk}
           onMergeLandings={props.onMergeLandings}
           onMergeOrigins={props.onMergeOrigins}
-          onUngroup={props.onUngroup}
+          onUngroupLandings={props.onUngroupLandings}
+          onUngroupOrigins={props.onUngroupOrigins}
           onDelete={props.onDelete}
           onClear={props.onClearChecked}
         />

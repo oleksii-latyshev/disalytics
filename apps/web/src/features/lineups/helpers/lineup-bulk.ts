@@ -7,9 +7,10 @@ export interface Bulk {
   readonly lineups: readonly Lineup[];
   /** Two targets or more can be made one by sharing a landing. */
   readonly canMergeLandings: boolean;
-  /** Targets of one position each can share a throw spot; a target of several has no one spot. */
+  /** Any two ticked lineups can share a throw spot: the reader chose them. */
   readonly canMergeOrigins: boolean;
-  readonly canUngroup: boolean;
+  readonly canUngroupLandings: boolean;
+  readonly canUngroupOrigins: boolean;
   /** The user's own; a built-in is not deleted, only copied by an edit. */
   readonly deletable: readonly Lineup[];
 }
@@ -20,8 +21,9 @@ export function bulkOf(targets: readonly SavedTarget[]): Bulk {
   return {
     lineups,
     canMergeLandings: targets.length >= 2,
-    canMergeOrigins: targets.length >= 2 && lineups.length === targets.length,
-    canUngroup: lineups.some((lineup) => lineup.groupId !== undefined),
+    canMergeOrigins: lineups.length >= 2,
+    canUngroupLandings: lineups.some((lineup) => lineup.groupId !== undefined),
+    canUngroupOrigins: lineups.some((lineup) => lineup.originGroupId !== undefined),
     deletable: lineups.filter((lineup) => lineup.isBuiltIn !== true),
   };
 }

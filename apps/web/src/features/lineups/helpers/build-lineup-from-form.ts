@@ -73,7 +73,7 @@ function optionalLineupFields(
   return {
     ...(parsedWaypoints.length > 0 ? { waypoints: parsedWaypoints } : {}),
     ...(values.groupId ? { groupId: values.groupId } : {}),
-    ...(values.groupTarget ? { groupTarget: values.groupTarget } : {}),
+    ...(values.originGroupId ? { originGroupId: values.originGroupId } : {}),
     ...(values.mouseButtons.length > 0 ? { mouseButtons: values.mouseButtons } : {}),
     ...(values.movementInstructions.trim()
       ? { movementInstructions: values.movementInstructions.trim() }

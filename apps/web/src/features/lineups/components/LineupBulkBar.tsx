@@ -8,7 +8,8 @@ interface Props {
   bulk: Bulk;
   onMergeLandings: () => void;
   onMergeOrigins: () => void;
-  onUngroup: () => void;
+  onUngroupLandings: () => void;
+  onUngroupOrigins: () => void;
   onDelete: () => void;
   onClear: () => void;
 }
@@ -19,7 +20,8 @@ export function LineupBulkBar({
   bulk,
   onMergeLandings,
   onMergeOrigins,
-  onUngroup,
+  onUngroupLandings,
+  onUngroupOrigins,
   onDelete,
   onClear,
 }: Props) {
@@ -49,10 +51,16 @@ export function LineupBulkBar({
             <Text path="library.lineups.mergeOrigins" />
           </Button>
         )}
-        {bulk.canUngroup && (
-          <Button variant="outline" onClick={onUngroup} className="h-7 px-2 text-11">
+        {bulk.canUngroupLandings && (
+          <Button variant="outline" onClick={onUngroupLandings} className="h-7 px-2 text-11">
             <Unlink aria-hidden="true" className="size-3" />
-            <Text path="library.lineups.unmerge" />
+            <Text path="library.lineups.unmergeLandings" />
+          </Button>
+        )}
+        {bulk.canUngroupOrigins && (
+          <Button variant="outline" onClick={onUngroupOrigins} className="h-7 px-2 text-11">
+            <Unlink aria-hidden="true" className="size-3" />
+            <Text path="library.lineups.unmergeOrigins" />
           </Button>
         )}
         {bulk.deletable.length > 0 && (

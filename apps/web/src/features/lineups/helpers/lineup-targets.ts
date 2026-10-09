@@ -39,12 +39,7 @@ function byAge(a: Lineup, b: Lineup): number {
 }
 
 function isSharedLanding(a: Lineup, b: Lineup): boolean {
-  return (
-    a.groupId !== undefined &&
-    a.groupId === b.groupId &&
-    (a.groupTarget ?? 'landing') === 'landing' &&
-    (b.groupTarget ?? 'landing') === 'landing'
-  );
+  return a.groupId !== undefined && a.groupId === b.groupId;
 }
 
 function landsTogether(anchor: Lineup, lineup: Lineup): boolean {
