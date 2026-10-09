@@ -13,6 +13,8 @@ export interface Part {
 export interface Writing {
   readonly action: 'add' | 'replace';
   readonly targetId?: string;
+  /** The id the lineup had in the file, so the Worker remembers it as an alias of the target. */
+  readonly sourceId?: string;
   readonly lineup: Lineup;
 }
 
@@ -65,6 +67,7 @@ function put(
   filling.part.decisions.push({
     action: writing.action,
     ...(writing.targetId === undefined ? {} : { targetId: writing.targetId }),
+    ...(writing.sourceId === undefined ? {} : { sourceId: writing.sourceId }),
     lineup: writing.lineup,
   });
 }

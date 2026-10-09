@@ -94,13 +94,15 @@ export function planLineups(
   incoming: readonly Lineup[],
   map: string,
   photoBaseUrl: string,
+  aliases: ReadonlyMap<string, string> = new Map(),
 ): PlanItem[] {
   const byId = new Map(existing.map((lineup) => [lineup.id, lineup]));
   return incoming.map((lineup): PlanItem => {
     const problems = lineupProblems(lineup, map);
-    const stored = byId.get(lineup.id);
+    const aliased = byId.get(aliases.get(lineup.id) ?? '');
+    const stored = byId.get(lineup.id) ?? aliased;
     if (stored !== undefined) {
-      const diff = diffLineups(stored, comparable(lineup, photoBaseUrl));
+      const diff = diffLineups(stored, { ...comparable(lineup, photoBaseUrl), id: stored.id });
       return diff.length === 0
         ? { id: lineup.id, status: 'unchanged', lineup, stored, problems }
         : { id: lineup.id, status: 'update', lineup, stored, diff, problems };
@@ -119,12 +121,13 @@ export function planLineups(
   });
 }
 
-/** Stored lineups the file does not mention by id. */
+/** Stored lineups the file does not mention, by id or by an alias it was merged under. */
 export function serverOnlyLineups(
   existing: readonly Lineup[],
   incoming: readonly Lineup[],
+  aliases: ReadonlyMap<string, string> = new Map(),
 ): Lineup[] {
-  const ids = new Set(incoming.map((lineup) => lineup.id));
+  const ids = new Set(incoming.flatMap((lineup) => [lineup.id, aliases.get(lineup.id) ?? '']));
   return existing.filter((lineup) => !ids.has(lineup.id));
 }
 

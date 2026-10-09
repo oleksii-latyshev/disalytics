@@ -345,6 +345,67 @@ describe.skipIf(!hasSqlite)('POST /api/commit', () => {
   });
 });
 
+describe.skipIf(!hasSqlite)('a duplicate that was merged', () => {
+  const twin = lineup({ id: 'friend-1', origin: { x: 110, y: 200, z: 0 } });
+  const previewOf = async (env: ReturnType<typeof adminEnv>) =>
+    json(await api(env, '/api/preview', { body: { map: 'de_mirage', file: file([twin]) } }));
+  const merge = (env: ReturnType<typeof adminEnv>, sourceId?: string) =>
+    api(env, '/api/commit', {
+      body: {
+        map: 'de_mirage',
+        images: {},
+        decisions: [
+          {
+            action: 'replace',
+            targetId: 'mirage-1',
+            ...(sourceId === undefined ? {} : { sourceId }),
+            lineup: lineup({ title: 'Merged' }),
+          },
+        ],
+      },
+    });
+
+  it('reads as the stored lineup, not a duplicate, when the same file comes again', async () => {
+    const env = await seededEnv([lineup()]);
+    expect((await previewOf(env)).items[0]?.status).toBe('duplicate');
+    await merge(env, 'friend-1');
+    const again = await previewOf(env);
+    expect(again.items[0]).toMatchObject({ id: 'friend-1', stored: { id: 'mirage-1' } });
+    expect(again.items[0]?.status).toBe('update');
+    expect(again.serverOnly).toEqual([]);
+  });
+
+  it('is unchanged once the file matches what was merged', async () => {
+    const env = await seededEnv([lineup()]);
+    await merge(env, 'friend-1');
+    const exact = lineup({ id: 'friend-1', title: 'Merged' });
+    const result = await json(
+      await api(env, '/api/preview', { body: { map: 'de_mirage', file: file([exact]) } }),
+    );
+    expect(result.items[0]?.status).toBe('unchanged');
+  });
+
+  it('remembers nothing when it was added as a different throw', async () => {
+    const env = await seededEnv([lineup()]);
+    await api(env, '/api/commit', {
+      body: { map: 'de_mirage', images: {}, decisions: [{ action: 'add', lineup: twin }] },
+    });
+    const again = await previewOf(env);
+    expect(again.items[0]?.status).toBe('unchanged');
+  });
+
+  it('reads as new when the lineup it was merged into is gone', async () => {
+    const env = await seededEnv([lineup()]);
+    await merge(env, 'friend-1');
+    await api(env, '/api/lineups/mirage-1', { method: 'DELETE' });
+    const far = lineup({ id: 'friend-1', origin: { x: 900, y: 0, z: 0 } });
+    const result = await json(
+      await api(env, '/api/preview', { body: { map: 'de_mirage', file: file([far]) } }),
+    );
+    expect(result.items[0]?.status).toBe('new');
+  });
+});
+
 describe.skipIf(!hasSqlite)('lineups and changes', () => {
   it('lists a map, deletes a lineup and logs it, 404s the unknown', async () => {
     const env = await seededEnv([lineup()]);

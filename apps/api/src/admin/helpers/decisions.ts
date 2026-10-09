@@ -11,6 +11,8 @@ import { Effect } from 'effect';
 export interface Write {
   readonly action: 'add' | 'replace';
   readonly lineup: Lineup;
+  /** The id the lineup had in the file, to remember as an alias of the stored lineup it replaced. */
+  readonly aliasFor?: string;
 }
 
 export interface CheckedDecisions {
@@ -55,6 +57,12 @@ function replaceWrite(
   return Effect.succeed({ ...lineup, id: targetId });
 }
 
+/** A file id worth remembering: it names nothing stored and is not the target itself. */
+function aliasOf(sourceId: string | undefined, targetId: string, stored: ReadonlySet<string>) {
+  const valid = sourceId !== undefined && sourceId.length > 0 && sourceId.length <= 200;
+  return valid && sourceId !== targetId && !stored.has(sourceId) ? sourceId : null;
+}
+
 function firstAdd(id: string, seen: Set<string>): Effect.Effect<void, BadRequest> {
   if (seen.has(id)) return Effect.fail(invalid(`${id} is added twice`));
   seen.add(id);
@@ -83,7 +91,13 @@ export function checkDecisions<E>(input: {
       const body = yield* bodyOf(decision);
       if (decision.action === 'replace') {
         const lineup = yield* replaceWrite(decision, body, stored, targets);
-        writes.push({ action: 'replace', lineup: yield* problemsOf(lineup, map) });
+        const checked = yield* problemsOf(lineup, map);
+        const alias = aliasOf(decision.sourceId, checked.id, stored);
+        writes.push({
+          action: 'replace',
+          lineup: checked,
+          ...(alias === null ? {} : { aliasFor: alias }),
+        });
         continue;
       }
       yield* firstAdd(body.id, addIds);

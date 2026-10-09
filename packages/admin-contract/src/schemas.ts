@@ -86,6 +86,8 @@ export type DecisionAction = typeof DecisionAction.Type;
 export const CommitDecision = Schema.Struct({
   action: DecisionAction,
   targetId: Schema.optionalKey(Schema.String),
+  /** The id the lineup had in the file, when a replace merges it into a stored lineup with another id. */
+  sourceId: Schema.optionalKey(Schema.String),
   lineup: Schema.optionalKey(Schema.Unknown),
 });
 export type CommitDecision = typeof CommitDecision.Type;

@@ -150,11 +150,12 @@ export const PreviewHandlers = HttpApiBuilder.group(AdminApi, 'preview', (handle
       const known = yield* links.lookup(linkUrls(parsed.lineups, config.photoBaseUrl));
       const lineups = withKnownLinks(parsed.lineups, known, config.photoBaseUrl);
       const existing = yield* storage.readMap(payload.map);
+      const aliases = yield* storage.aliasTargets(lineups.map(({ id }) => id));
       const response: PreviewResponse = {
         map: payload.map,
         revision: existing.revision,
-        items: planLineups(existing.lineups, lineups, payload.map, config.photoBaseUrl),
-        serverOnly: serverOnlyLineups(existing.lineups, lineups),
+        items: planLineups(existing.lineups, lineups, payload.map, config.photoBaseUrl, aliases),
+        serverOnly: serverOnlyLineups(existing.lineups, lineups, aliases),
         photos: photoStats(lineups, config.photoBaseUrl),
         photoBase: config.photoBaseUrl,
         ignored,

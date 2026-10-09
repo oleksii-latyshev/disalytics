@@ -60,7 +60,7 @@ bun run admin:invite -- --remote     # prints a fresh owner invite link for prod
 ## Database migrations
 
 Migrations are manual. `0002_photo_links.sql` remembers which copied link became which stored photo;
-`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`. Apply before the
+`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place). Apply before the
 Worker that needs them goes live:
 
 ```bash

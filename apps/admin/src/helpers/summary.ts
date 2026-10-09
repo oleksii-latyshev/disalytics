@@ -65,6 +65,13 @@ export function writingsOf(rows: readonly Row[]): Writing[] {
     if (plan.kind === 'skip') return [];
     return plan.kind === 'add'
       ? [{ action: 'add', lineup: plan.lineup }]
-      : [{ action: 'replace', targetId: plan.targetId, lineup: plan.lineup }];
+      : [
+          {
+            action: 'replace',
+            targetId: plan.targetId,
+            ...(row.item.id === plan.targetId ? {} : { sourceId: row.item.id }),
+            lineup: plan.lineup,
+          },
+        ];
   });
 }

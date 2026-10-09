@@ -79,6 +79,7 @@ function writingOf(held: Held, strip: boolean): Writing[] {
     {
       action: held.decision.action === 'replace' ? 'replace' : 'add',
       ...(held.decision.targetId === undefined ? {} : { targetId: held.decision.targetId }),
+      ...(held.decision.sourceId === undefined ? {} : { sourceId: held.decision.sourceId }),
       lineup: strip ? withoutRefs(lineup, refs) : lineup,
     },
   ];

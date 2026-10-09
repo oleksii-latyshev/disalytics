@@ -6,7 +6,7 @@ import type {
 } from '@disa/admin-contract';
 import type { Lineup } from '@disa/demo-core';
 import { Effect } from 'effect';
-import { LineupStorage } from '../modules/lineups';
+import { type LineupAlias, LineupStorage } from '../modules/lineups';
 import type { PhotoStorage } from '../modules/photos';
 import type { StorageError } from '../shared/storage-error';
 import { AdminConfig } from './config';
@@ -58,13 +58,17 @@ export function runCommit(
 
     const withheld: WithheldLineup[] = [];
     const final: Lineup[] = [];
-    for (const { lineup } of writes) {
+    const aliases: LineupAlias[] = [];
+    for (const { lineup, aliasFor } of writes) {
       const failures = failuresOf(lineup, photos.failures);
       if (failures.length > 0) withheld.push({ id: lineup.id, failures });
-      else final.push(withStoredPhotos(lineup, photos.urlByRef));
+      else {
+        final.push(withStoredPhotos(lineup, photos.urlByRef));
+        if (aliasFor !== undefined) aliases.push({ aliasId: aliasFor, lineupId: lineup.id });
+      }
     }
 
-    yield* storage.saveLineups({ lineups: final, actor, now: config.now() });
+    yield* storage.saveLineups({ lineups: final, aliases, actor, now: config.now() });
     const { revision } = yield* storage.readMap(map);
     return {
       map,

@@ -2,7 +2,7 @@ import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { Context, type Effect } from 'effect';
 import { type D1Binding, makeDb } from '../../db/client';
-import { lineupChanges, lineupRevisions, lineups } from '../../db/schema';
+import { lineupAliases, lineupChanges, lineupRevisions, lineups } from '../../db/schema';
 import { attempt, type StorageError } from '../../shared/storage-error';
 
 export interface MapLineups {
@@ -11,8 +11,15 @@ export interface MapLineups {
   readonly lineups: readonly Lineup[];
 }
 
+export interface LineupAlias {
+  readonly aliasId: string;
+  readonly lineupId: string;
+}
+
 export interface LineupWrite {
   readonly lineups: readonly Lineup[];
+  /** Ids the saved lineups were known by in a file, remembered in the same batch. */
+  readonly aliases?: readonly LineupAlias[];
   readonly actor: string;
   readonly now: number;
 }
@@ -31,6 +38,10 @@ export class LineupStorage extends Context.Service<
     readonly readMap: (map: string) => Effect.Effect<MapLineups, StorageError>;
     /** Creates or replaces lineups: one atomic batch, one revision bump per map. */
     readonly saveLineups: (write: LineupWrite) => Effect.Effect<void, StorageError>;
+    /** The stored lineup each of these ids was merged into earlier, by alias. */
+    readonly aliasTargets: (
+      ids: readonly string[],
+    ) => Effect.Effect<ReadonlyMap<string, string>, StorageError>;
     /** Which of these ids already have a row, deleted or not, in any map. */
     readonly takenIds: (ids: readonly string[]) => Effect.Effect<ReadonlySet<string>, StorageError>;
     /** Soft-deletes a lineup; `false` when there is no live lineup with that id. */
@@ -46,6 +57,14 @@ function chunks<T>(items: readonly T[]): T[][] {
   const out: T[][] = [];
   for (let at = 0; at < items.length; at += ROWS_PER_INSERT) {
     out.push(items.slice(at, at + ROWS_PER_INSERT));
+  }
+  return out;
+}
+
+function aliasChunks(aliases: readonly LineupAlias[]): LineupAlias[][] {
+  const out: LineupAlias[][] = [];
+  for (let at = 0; at < aliases.length; at += ROWS_PER_INSERT) {
+    out.push(aliases.slice(at, at + ROWS_PER_INSERT));
   }
   return out;
 }
@@ -93,7 +112,7 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
         return { map, revision: revisions[0]?.revision ?? 0, lineups: valid };
       }),
 
-    saveLineups: ({ lineups: entries, actor, now }) =>
+    saveLineups: ({ lineups: entries, aliases = [], actor, now }) =>
       attempt(async () => {
         if (entries.length === 0) return;
         const rows = entries.map((lineup) => ({
@@ -126,6 +145,15 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
               }),
           ),
           ...[...new Set(rows.map((row) => row.map))].map(bumpRevision),
+          ...aliasChunks(aliases).map((chunk) =>
+            db
+              .insert(lineupAliases)
+              .values(chunk.map((alias) => ({ ...alias, createdAt: now })))
+              .onConflictDoUpdate({
+                target: lineupAliases.aliasId,
+                set: { lineupId: sql`excluded.lineup_id` },
+              }),
+          ),
           ...chunks(rows).map((chunk) =>
             db.insert(lineupChanges).values(
               chunk.map((row) => ({
@@ -141,6 +169,19 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
         ];
         if (first === undefined) return;
         await db.batch([first, ...rest]);
+      }),
+
+    aliasTargets: (ids) =>
+      attempt(async () => {
+        const targets = new Map<string, string>();
+        for (let at = 0; at < ids.length; at += IDS_PER_LOOKUP) {
+          const rows = await db
+            .select()
+            .from(lineupAliases)
+            .where(inArray(lineupAliases.aliasId, ids.slice(at, at + IDS_PER_LOOKUP)));
+          for (const row of rows) targets.set(row.aliasId, row.lineupId);
+        }
+        return targets;
       }),
 
     takenIds: (ids) =>
