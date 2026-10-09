@@ -41,12 +41,12 @@ describe('bulkOf', () => {
     const bulk = bulkOf(
       lineupTargets('de_mirage', [
         lineup('a1', { isBuiltIn: true }),
-        lineup('a2', { landing: far, groupId: 'g', groupTarget: 'origin' }),
+        lineup('a2', { landing: far, originGroupId: 'g' }),
       ]),
     );
 
-    expect(bulk.canUngroup).toBe(true);
+    expect([bulk.canUngroupLandings, bulk.canUngroupOrigins]).toEqual([false, true]);
     expect(bulk.deletable.map(({ id }) => id)).toEqual(['a2']);
-    expect(bulkOf([]).canUngroup).toBe(false);
+    expect(bulkOf([]).canUngroupOrigins).toBe(false);
   });
 });

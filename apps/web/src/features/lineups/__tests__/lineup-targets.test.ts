@@ -49,7 +49,7 @@ describe('lineupTargets', () => {
   });
 
   it('joins a landing group however far a member has been moved', () => {
-    const grouped = { groupId: 'g', groupTarget: 'landing' } as const;
+    const grouped = { groupId: 'g' } as const;
     const targets = lineupTargets('de_mirage', [
       lineup('a1', grouped),
       lineup('a2', { ...grouped, landing: { x: 3000, y: 3000, z: 0 } }),
@@ -58,14 +58,24 @@ describe('lineupTargets', () => {
     expect(targets).toHaveLength(1);
   });
 
-  it('does not join an origin group, whose members share a throw spot and not a landing', () => {
-    const grouped = { groupId: 'g', groupTarget: 'origin' } as const;
+  it('does not join an origin group, even next to a landing group, whose members share a throw spot and not a landing', () => {
+    const grouped = { originGroupId: 'g' } as const;
     const targets = lineupTargets('de_mirage', [
       lineup('a1', grouped),
       lineup('a2', { ...grouped, landing: { x: 3000, y: 3000, z: 0 } }),
     ]);
 
     expect(targets).toHaveLength(2);
+  });
+
+  it('keeps an origin group out of the target a landing group makes', () => {
+    const targets = lineupTargets('de_mirage', [
+      lineup('a1', { groupId: 'g', originGroupId: 'o' }),
+      lineup('a2', { groupId: 'g', originGroupId: 'o' }),
+    ]);
+
+    expect(targets).toHaveLength(1);
+    expect(targets[0]?.throwCount).toBe(2);
   });
 
   it('takes the target id from the oldest lineup, so adding a position does not change it', () => {

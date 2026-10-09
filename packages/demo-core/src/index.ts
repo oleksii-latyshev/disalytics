@@ -175,6 +175,7 @@ export {
   LineupFileError,
   localImageHash,
   localImageRef,
+  normalizeLineup,
   parseLineupFile,
   referencedLocalImageHashes,
   serializeLineupFile,

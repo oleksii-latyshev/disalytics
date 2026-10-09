@@ -1,4 +1,4 @@
-import { isLineup, type Lineup } from '@disa/demo-core';
+import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
 
 /** Each map's built-ins load on demand, so a map nobody opens costs no bytes. */
 const BUILT_IN_LINEUPS: Readonly<Record<string, () => Promise<{ readonly default: unknown }>>> = {
@@ -15,6 +15,7 @@ export async function loadMapLineups(map: string): Promise<readonly Lineup[]> {
   return entries
     .map((entry: unknown) => (isObjectEntry(entry) ? { ...entry, isBuiltIn: true } : entry))
     .filter(isLineup)
+    .map(normalizeLineup)
     .filter((lineup) => lineup.map === map);
 }
 

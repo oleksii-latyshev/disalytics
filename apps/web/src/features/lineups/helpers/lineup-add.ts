@@ -142,7 +142,7 @@ export function newLineup(options: NewLineupOptions): Lineup | null {
       imageUrls,
       imageCaptions: imageUrls.map(() => ''),
       ...(callout === null ? {} : { targetCallout: callout }),
-      ...(groupId === undefined ? {} : { groupId, groupTarget: 'landing' as const }),
+      ...(groupId === undefined ? {} : { groupId }),
     },
     map,
   );
@@ -163,15 +163,13 @@ export interface JoinPlan {
  */
 export function joinPlan(target: SavedTarget, newGroupId: string): JoinPlan {
   const members = target.variants.map(({ lineup }) => lineup);
-  const existing = members.find(
-    (member) => member.groupId !== undefined && (member.groupTarget ?? 'landing') === 'landing',
-  );
+  const existing = members.find((member) => member.groupId !== undefined);
   const groupId = existing?.groupId ?? newGroupId;
 
   return {
     groupId,
     regrouped: members
       .filter((member) => member.groupId === undefined && member.isBuiltIn !== true)
-      .map((member) => ({ ...member, groupId, groupTarget: 'landing' })),
+      .map((member) => ({ ...member, groupId })),
   };
 }

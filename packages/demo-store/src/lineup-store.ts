@@ -1,5 +1,5 @@
 import type { Lineup, LineupSide, UtilityKind } from '@disa/demo-core';
-import { isLineup, referencedLocalImageHashes } from '@disa/demo-core';
+import { isLineup, normalizeLineup, referencedLocalImageHashes } from '@disa/demo-core';
 
 const DATABASE = 'disalytics-user-lineups';
 const DATABASE_VERSION = 2;
@@ -139,13 +139,16 @@ export async function openLineupStore(): Promise<LineupStore | null> {
         items = await settled(store.getAll());
       }
 
-      return items.filter(isLineup).filter((lineup) => matchesFilter(lineup, filter));
+      return items
+        .filter(isLineup)
+        .map(normalizeLineup)
+        .filter((lineup) => matchesFilter(lineup, filter));
     },
 
     async get(id) {
       const store = storeIn(database, 'readonly');
       const item: unknown = await settled(store.get(id));
-      return isLineup(item) ? item : null;
+      return isLineup(item) ? normalizeLineup(item) : null;
     },
 
     async put(lineup) {

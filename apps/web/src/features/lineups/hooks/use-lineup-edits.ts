@@ -39,8 +39,8 @@ export function useLineupEdits({ map, lineups, reload }: Options) {
   const removeBounce = (lineup: Lineup, index: number) =>
     write(() => persistLineups([withoutBounce(lineup, index)]));
 
-  const ungroup = (ids: ReadonlySet<string>) =>
-    write(() => persistLineups(ungroupLineups(lineups, ids)));
+  const ungroup = (ids: ReadonlySet<string>, groupTarget: LineupGroupTarget) =>
+    write(() => persistLineups(ungroupLineups(lineups, ids, groupTarget)));
 
   const merge = (selected: readonly Lineup[], groupTarget: LineupGroupTarget) =>
     write(() => persistLineups(mergeLineups(selected, groupTarget, newGroupId())));

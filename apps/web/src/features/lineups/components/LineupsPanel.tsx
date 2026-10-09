@@ -1,4 +1,4 @@
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import type { AddDraft } from '../helpers/lineup-add';
 import type { SavedTarget, SavedVariant } from '../helpers/lineup-targets';
@@ -39,7 +39,7 @@ export interface PanelActions {
   onDetails: (lineup: Lineup) => void;
   onAddBounce: (lineup: Lineup) => void;
   onRemoveBounce: (lineup: Lineup, index: number) => void;
-  onUngroup: (lineup: Lineup) => void;
+  onUngroup: (lineup: Lineup, groupTarget: LineupGroupTarget) => void;
   onDelete: (lineup: Lineup) => void;
   onDraft: (patch: Partial<AddDraft>) => void;
   onRedo: (point: 'landing' | 'origin') => void;
@@ -99,7 +99,7 @@ export function LineupsPanel({
           onDetails={() => actions.onDetails(mode.variant.lineup)}
           onAddBounce={() => actions.onAddBounce(mode.variant.lineup)}
           onRemoveBounce={(index) => actions.onRemoveBounce(mode.variant.lineup, index)}
-          onUngroup={() => actions.onUngroup(mode.variant.lineup)}
+          onUngroup={(groupTarget) => actions.onUngroup(mode.variant.lineup, groupTarget)}
           onDelete={() => actions.onDelete(mode.variant.lineup)}
         />
       )}

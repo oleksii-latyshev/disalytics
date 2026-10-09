@@ -5,6 +5,7 @@ import {
   type Lineup,
   LineupFileError,
   localImageHash,
+  normalizeLineup,
   parseLineupFile,
   serializeLineupFile,
   toggledLineupTag,
@@ -132,6 +133,11 @@ describe('isLineup', () => {
     ).toBe(true);
   });
 
+  it('accepts an originGroupId and rejects a blank one', () => {
+    expect(isLineup({ ...sampleLineup, groupId: 'g', originGroupId: 'o' })).toBe(true);
+    expect(isLineup({ ...sampleLineup, originGroupId: ' ' })).toBe(false);
+  });
+
   it('rejects lineup with invalid waypoints', () => {
     expect(
       isLineup({
@@ -204,7 +210,7 @@ describe('serializeLineupFile & parseLineupFile', () => {
     expect(item?.mediaUrl).toBe('https://example.com/lineup.mp4');
   });
 
-  it('round-trips lineups with waypoints, groupId, and groupTarget', () => {
+  it('round-trips lineups with waypoints, groupId, and originGroupId', () => {
     const lineupWithWaypoints: Lineup = {
       ...sampleLineup,
       waypoints: [
@@ -212,7 +218,7 @@ describe('serializeLineupFile & parseLineupFile', () => {
         { x: -500, y: -200, z: 80 },
       ],
       groupId: 'grp-test',
-      groupTarget: 'landing',
+      originGroupId: 'org-test',
     };
     const json = serializeLineupFile([lineupWithWaypoints]);
     const parsed = parseLineupFile(json).lineups;
@@ -451,5 +457,48 @@ describe('lineup tags and author', () => {
     expect(toggledLineupTag([], 'meta')).toEqual(['meta']);
     expect(toggledLineupTag(['meta'], 'meta')).toEqual([]);
     expect(toggledLineupTag(['meta'], 'old')).toEqual(['old']);
+  });
+});
+
+describe('normalizeLineup', () => {
+  it('reads a legacy origin group as an origin group with no landing group', () => {
+    const result = normalizeLineup({ ...sampleLineup, groupId: 'g', groupTarget: 'origin' });
+
+    expect(result.originGroupId).toBe('g');
+    expect(result.groupId).toBeUndefined();
+    expect('groupTarget' in result).toBe(false);
+  });
+
+  it('drops a legacy landing target and keeps the landing group', () => {
+    const result = normalizeLineup({ ...sampleLineup, groupId: 'g', groupTarget: 'landing' });
+
+    expect(result.groupId).toBe('g');
+    expect(result.originGroupId).toBeUndefined();
+    expect('groupTarget' in result).toBe(false);
+  });
+
+  it('leaves a lineup in both groups as it is', () => {
+    const both: Lineup = { ...sampleLineup, groupId: 'g', originGroupId: 'o' };
+
+    expect(normalizeLineup(both)).toBe(both);
+  });
+
+  it('keeps an origin group already set next to a legacy landing target', () => {
+    const result = normalizeLineup({
+      ...sampleLineup,
+      groupId: 'g',
+      groupTarget: 'landing',
+      originGroupId: 'o',
+    });
+
+    expect(result).toMatchObject({ groupId: 'g', originGroupId: 'o' });
+  });
+
+  it('normalises the lineups of an imported file', () => {
+    const json = serializeLineupFile([{ ...sampleLineup, groupId: 'g', groupTarget: 'origin' }]);
+    const [imported] = parseLineupFile(json).lineups;
+
+    expect(imported?.originGroupId).toBe('g');
+    expect(imported?.groupId).toBeUndefined();
   });
 });

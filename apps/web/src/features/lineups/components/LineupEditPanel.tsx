@@ -1,4 +1,4 @@
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupGroupTarget } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { CornerDownRight, Pencil, Plus, Trash2, Unlink } from 'lucide-react';
@@ -10,7 +10,7 @@ interface Props {
   onDetails: () => void;
   onAddBounce: () => void;
   onRemoveBounce: (index: number) => void;
-  onUngroup: () => void;
+  onUngroup: (groupTarget: LineupGroupTarget) => void;
   onDelete: () => void;
 }
 
@@ -71,17 +71,31 @@ export function LineupEditPanel(props: Props) {
         {lineup.groupId !== undefined && (
           <section className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">
             <p className="text-12 text-ink-dim leading-prose">
-              <Text
-                path={
-                  (lineup.groupTarget ?? 'landing') === 'landing'
-                    ? 'library.lineups.editing.sharedLanding'
-                    : 'library.lineups.editing.sharedOrigin'
-                }
-              />
+              <Text path="library.lineups.editing.sharedLanding" />
             </p>
-            <Button variant="outline" onClick={props.onUngroup} className="self-start">
+            <Button
+              variant="outline"
+              onClick={() => props.onUngroup('landing')}
+              className="self-start"
+            >
               <Unlink aria-hidden="true" />
-              <Text path="library.lineups.unmerge" />
+              <Text path="library.lineups.unmergeLandings" />
+            </Button>
+          </section>
+        )}
+
+        {lineup.originGroupId !== undefined && (
+          <section className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">
+            <p className="text-12 text-ink-dim leading-prose">
+              <Text path="library.lineups.editing.sharedOrigin" />
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => props.onUngroup('origin')}
+              className="self-start"
+            >
+              <Unlink aria-hidden="true" />
+              <Text path="library.lineups.unmergeOrigins" />
             </Button>
           </section>
         )}

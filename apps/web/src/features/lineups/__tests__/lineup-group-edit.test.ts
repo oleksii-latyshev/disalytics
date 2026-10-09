@@ -37,7 +37,7 @@ describe('mergeLineups', () => {
 
     expect(merged.map((item) => item.landing)).toEqual([pair[0]?.landing, pair[0]?.landing]);
     expect(merged.map((item) => item.origin)).toEqual([pair[0]?.origin, pair[1]?.origin]);
-    expect(merged.every((item) => item.groupId === 'g1' && item.groupTarget === 'landing')).toBe(
+    expect(merged.every((item) => item.groupId === 'g1' && item.originGroupId === undefined)).toBe(
       true,
     );
     expect(merged.every((item) => item.isBuiltIn === false)).toBe(true);
@@ -50,26 +50,56 @@ describe('mergeLineups', () => {
     expect(merged.map((item) => item.landing)).toEqual([pair[0]?.landing, pair[1]?.landing]);
   });
 
+  it('sets only the origin group, leaving the landing group alone', () => {
+    const landed = pair.map((item) => ({ ...item, groupId: 'land' }));
+    const merged = mergeLineups(landed, 'origin', 'g2');
+
+    expect(merged.every((item) => item.originGroupId === 'g2' && item.groupId === 'land')).toBe(
+      true,
+    );
+    expect(merged.every((item) => item.groupTarget === undefined)).toBe(true);
+  });
+
+  it('keeps an origin group when merging landings', () => {
+    const merged = mergeLineups(
+      pair.map((item) => ({ ...item, originGroupId: 'org' })),
+      'landing',
+      'g3',
+    );
+
+    expect(merged.every((item) => item.originGroupId === 'org' && item.groupId === 'g3')).toBe(
+      true,
+    );
+  });
+
   it('merges nothing from fewer than two', () => {
     expect(mergeLineups([lineup('a')], 'landing', 'g1')).toEqual([]);
   });
 });
 
 describe('ungroupLineups', () => {
-  it('takes the whole group out when one of its lineups is named', () => {
-    const lineups = [
-      lineup('a', { groupId: 'g', groupTarget: 'landing' }),
-      lineup('b', { groupId: 'g', groupTarget: 'landing' }),
-      lineup('c', { groupId: 'other', groupTarget: 'landing' }),
-      lineup('d'),
-    ];
+  const lineups = [
+    lineup('a', { groupId: 'g', originGroupId: 'o' }),
+    lineup('b', { groupId: 'g' }),
+    lineup('c', { groupId: 'other' }),
+    lineup('d', { originGroupId: 'o' }),
+    lineup('e'),
+  ];
 
-    const freed = ungroupLineups(lineups, new Set(['a', 'd']));
+  it('takes the whole landing group out and keeps the origin group', () => {
+    const freed = ungroupLineups(lineups, new Set(['a', 'e']), 'landing');
 
     expect(freed.map((item) => item.id)).toEqual(['a', 'b']);
-    expect(
-      freed.every((item) => item.groupId === undefined && item.groupTarget === undefined),
-    ).toBe(true);
+    expect(freed.every((item) => item.groupId === undefined)).toBe(true);
+    expect(freed.find((item) => item.id === 'a')?.originGroupId).toBe('o');
+  });
+
+  it('takes the whole origin group out and keeps the landing group', () => {
+    const freed = ungroupLineups(lineups, new Set(['d']), 'origin');
+
+    expect(freed.map((item) => item.id)).toEqual(['a', 'd']);
+    expect(freed.every((item) => item.originGroupId === undefined)).toBe(true);
+    expect(freed.find((item) => item.id === 'a')?.groupId).toBe('g');
   });
 });
 

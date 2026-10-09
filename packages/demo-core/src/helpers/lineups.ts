@@ -57,7 +57,11 @@ export interface Lineup {
   readonly origin: WorldPoint;
   readonly landing: WorldPoint;
   readonly waypoints?: readonly WorldPoint[] | undefined;
+  /** The group sharing this lineup's landing node. */
   readonly groupId?: string | undefined;
+  /** The group sharing this lineup's origin node; independent of `groupId`. */
+  readonly originGroupId?: string | undefined;
+  /** Legacy: older data put a lineup in one group of this kind. `normalizeLineup` folds it away. */
   readonly groupTarget?: LineupGroupTarget | undefined;
   readonly pitch: number;
   readonly yaw: number;
@@ -77,6 +81,27 @@ export interface Lineup {
   readonly imageCaptions?: readonly string[];
   readonly isBuiltIn?: boolean;
   readonly createdAt: number;
+}
+
+/**
+ * The lineup with its groups in the current shape: `groupId` is the landing group and
+ * `originGroupId` the origin group. A legacy `groupTarget: 'origin'` lineup reads as
+ * `originGroupId = groupId` with no landing group; `groupTarget` never survives.
+ */
+export function normalizeLineup(lineup: Lineup): Lineup {
+  if (lineup.groupTarget === undefined) return lineup;
+
+  const { groupTarget, groupId, originGroupId, ...rest } = lineup;
+  if (groupTarget === 'origin') {
+    const origin = originGroupId ?? groupId;
+    return { ...rest, ...(origin === undefined ? {} : { originGroupId: origin }) };
+  }
+
+  return {
+    ...rest,
+    ...(groupId === undefined ? {} : { groupId }),
+    ...(originGroupId === undefined ? {} : { originGroupId }),
+  };
 }
 
 export interface LineupFile {
@@ -264,6 +289,7 @@ function hasValidOptionals(value: Record<string, unknown>): boolean {
     isOptional(value.targetCallout, isString) &&
     isOptional(value.waypoints, isWorldPointList) &&
     isOptional(value.groupId, isNonBlankString) &&
+    isOptional(value.originGroupId, isNonBlankString) &&
     isOptional(value.groupTarget, isGroupTarget) &&
     isOptional(value.tags, isLineupTagList) &&
     isOptional(value.author, isLineupAuthor)
@@ -410,7 +436,7 @@ export function parseLineupFile(json: string): ParsedLineupFile {
     if (!isLineup(item)) {
       throw new LineupFileError(`Invalid lineup entry at index ${i}`, 'INVALID_SCHEMA');
     }
-    validLineups.push(item);
+    validLineups.push(normalizeLineup(item));
   }
 
   for (const hash of referencedLocalImageHashes(validLineups)) {

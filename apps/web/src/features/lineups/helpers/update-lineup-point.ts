@@ -42,14 +42,11 @@ export function updateLineupsAtPoint({
     return [{ ...lineup, waypoints, isBuiltIn: false }];
   }
 
-  const groupTarget = lineup.groupTarget ?? 'landing';
-  const updateGroup = lineup.groupId !== undefined && target === groupTarget;
-  const affected = updateGroup
-    ? lineups.filter(
-        (item) =>
-          item.groupId === lineup.groupId && (item.groupTarget ?? 'landing') === groupTarget,
-      )
-    : [lineup];
+  const groupOf = (item: Lineup): string | undefined =>
+    target === 'origin' ? item.originGroupId : item.groupId;
+  const group = groupOf(lineup);
+  const affected =
+    group === undefined ? [lineup] : lineups.filter((item) => groupOf(item) === group);
 
   return affected.map((item) => {
     if (target === 'origin') {
