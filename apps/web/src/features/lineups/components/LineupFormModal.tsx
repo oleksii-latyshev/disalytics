@@ -7,16 +7,15 @@ import type { LineupFormData } from '../helpers/lineup-form-model';
 import { useLineupFormController } from '../hooks/use-lineup-form-controller';
 import { LineupBasicFields } from './LineupBasicFields';
 import { LineupConfirmDialog } from './LineupConfirmDialog';
+import { LineupMetadata } from './LineupMetadata';
 import { CatboxNoticeDialog, EnlargedPhotoDialog } from './LineupPhotoDialogs';
 import { LineupPhotosField } from './LineupPhotosField';
-import { LineupTechnicalDetails } from './LineupTechnicalDetails';
 
 export { buildLineupFromForm } from '../helpers/build-lineup-from-form';
 export {
   initFormValues,
   type LineupFormData,
   type LineupFormValues,
-  reorderLineupPhotos,
 } from '../helpers/lineup-form-model';
 
 interface Props {
@@ -38,15 +37,14 @@ export function LineupFormModal({
 
   const {
     values,
-    setValues,
     error,
     setError,
     errorSection,
     saving,
     newImageUrl,
     setNewImageUrl,
-    preparedImages,
-    setPreparedImages,
+    photos,
+    setPhotos,
     previewEnlargedUrl,
     setPreviewEnlargedUrl,
     showCatboxModal,
@@ -136,12 +134,9 @@ export function LineupFormModal({
           />
 
           <LineupPhotosField
-            values={values}
-            updateValue={updateValue}
-            setValues={setValues}
+            photos={photos}
+            setPhotos={setPhotos}
             errorSection={errorSection}
-            preparedImages={preparedImages}
-            setPreparedImages={setPreparedImages}
             newImageUrl={newImageUrl}
             setNewImageUrl={setNewImageUrl}
             photosRef={photosRef}
@@ -155,8 +150,9 @@ export function LineupFormModal({
             setError={setError}
           />
 
-          <LineupTechnicalDetails
+          <LineupMetadata
             values={values}
+            hasError={errorSection === 'coordinates' || errorSection === 'metadata'}
             hasDemoCommand={Boolean(initialData?.command)}
             updateValue={updateValue}
             updateLandingCoord={updateLandingCoord}

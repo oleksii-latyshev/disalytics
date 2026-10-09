@@ -314,7 +314,8 @@
       },
       "movementInstructions": "Подробности движения",
       "movementInstructionsPlaceholder": "Например: зажать Shift, сделать два шага вперёд и бросить в прыжке",
-      "technicalDetails": "Координаты и консольные данные",
+      "metadata": "Метаданные",
+      "optional": "необязательно",
       "command": "Консольная команда (setpos / setang)",
       "origin": "Координаты броска (X, Y, Z)",
       "landing": "Координаты приземления (X, Y, Z)",
@@ -322,7 +323,7 @@
       "yaw": "Yaw (поворот)",
       "notes": "Примечания и ориентиры",
       "notesPlaceholder": "Куда целиться, ориентиры, позиция",
-      "mediaUrl": "Ссылка на видео или гайд (необязательно)",
+      "mediaUrl": "Ссылка на видео или гайд",
       "imageUrls": "Фотографии",
       "dropPhotos": "Перетащите сюда фотографии или выберите файлы",
       "choosePhotos": "Выбрать фотографии",
@@ -361,12 +362,12 @@
         "authorNameRequired": "Укажите имя автора или очистите ссылку на профиль",
         "authorUrlInvalid": "Нужна ссылка https"
       },
-      "tags": "Метки",
+      "tags": "Теги",
       "authorName": "Имя автора",
       "authorNamePlaceholder": "например, Аня",
       "authorUrl": "Ссылка на профиль (Steam)"
     },
-    "tagFilter": "Метка",
+    "tagFilter": "Тег",
     "allTags": "Все",
     "tags": {
       "meta": "Мета",

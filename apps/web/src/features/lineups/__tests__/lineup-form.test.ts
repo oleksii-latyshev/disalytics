@@ -4,9 +4,16 @@ import {
   initFormValues,
   type LineupFormData,
   type LineupFormValues,
-  reorderLineupPhotos,
 } from '../components/LineupFormModal';
-import { basicValidationKey } from '../helpers/lineup-form-model';
+import { basicValidationKey, moved } from '../helpers/lineup-form-model';
+import {
+  type FormPhoto,
+  resolvePhotos,
+  storedPhotosOf,
+  withPhotoCaption,
+  withPhotoLink,
+} from '../helpers/lineup-form-photos';
+import type { PreparedImage } from '../helpers/prepared-image';
 
 describe('lineup form helpers', () => {
   it('creates empty default form values when no initialData is provided', () => {
@@ -119,13 +126,6 @@ describe('lineup form helpers', () => {
     expect(lineup.mediaUrl).toBe('https://example.com/lineup.png');
     expect(lineup.isBuiltIn).toBe(false);
     expect(lineup.createdAt).toBe(1000);
-
-    const reordered = reorderLineupPhotos(values, 0, 1);
-    expect(reordered.imageUrls).toEqual([
-      'https://example.com/two.webp',
-      'https://example.com/one.webp',
-    ]);
-    expect(reordered.imageCaptions).toEqual(['Aim here', 'Stand here']);
   });
 
   it('compiles setpos and setang command automatically when fromDemo is true and command is blank', () => {
@@ -306,5 +306,89 @@ describe('lineup form helpers', () => {
     expect(basicValidationKey({ ...ok, authorName: 'Ann', authorUrl: 'http://a.example' })).toBe(
       'library.lineups.form.validation.authorUrlInvalid',
     );
+  });
+});
+
+function picked(name: string, caption = ''): PreparedImage {
+  return { file: new File([name], name), previewUrl: `blob:${name}`, caption };
+}
+
+describe('lineup form photo list', () => {
+  const link = (url: string, caption = ''): FormPhoto => ({ kind: 'stored', url, caption });
+  const file = (name: string, caption = ''): FormPhoto => ({
+    kind: 'prepared',
+    image: picked(name, caption),
+  });
+
+  it('lets a stored link move above a picked file and keeps captions with their photos', () => {
+    const photos = [file('a.webp', 'file a'), link('https://x.test/1.webp', 'link 1')];
+    const reordered = moved(photos, 1, 0);
+    expect(reordered.map((photo) => photo.kind)).toEqual(['stored', 'prepared']);
+    const saved = resolvePhotos(reordered, ['local:aaa']);
+    expect(saved.imageUrls).toEqual(['https://x.test/1.webp', 'local:aaa']);
+    expect(saved.imageCaptions).toEqual(['link 1', 'file a']);
+  });
+
+  it('places each picked file ref at its own position among stored photos', () => {
+    const photos = [
+      link('https://x.test/1.webp', 'one'),
+      file('a.webp', 'a'),
+      link('local:old', 'old'),
+      file('b.webp', 'b'),
+    ];
+    const saved = resolvePhotos(photos, ['local:aaa', 'local:bbb']);
+    expect(saved.imageUrls).toEqual([
+      'https://x.test/1.webp',
+      'local:aaa',
+      'local:old',
+      'local:bbb',
+    ]);
+    expect(saved.imageCaptions).toEqual(['one', 'a', 'old', 'b']);
+  });
+
+  it('keeps a ref once when the same file was picked twice', () => {
+    const saved = resolvePhotos(
+      [file('a.webp', 'first'), file('a2.webp', 'second')],
+      ['local:same', 'local:same'],
+    );
+    expect(saved.imageUrls).toEqual(['local:same']);
+    expect(saved.imageCaptions).toEqual(['first']);
+  });
+
+  it('rebuilds the list from saved urls with aligned captions', () => {
+    expect(storedPhotosOf(['https://x.test/1.webp', 'local:a'], ['one'])).toEqual([
+      link('https://x.test/1.webp', 'one'),
+      link('local:a', ''),
+    ]);
+  });
+
+  it('edits the caption of either kind', () => {
+    expect(withPhotoCaption(link('https://x.test/1.webp'), 'hi')).toEqual(
+      link('https://x.test/1.webp', 'hi'),
+    );
+    const edited = withPhotoCaption(file('a.webp'), 'hi');
+    expect(edited.kind === 'prepared' && edited.image.caption).toBe('hi');
+  });
+
+  it('puts a pasted link where the first picked file sits and hands the file back', () => {
+    const photos = [link('https://x.test/1.webp'), file('a.webp', 'cap'), file('b.webp')];
+    const { photos: next, replaced } = withPhotoLink(photos, 'https://x.test/2.webp');
+    expect(replaced?.file.name).toBe('a.webp');
+    expect(
+      next.map((photo) => (photo.kind === 'stored' ? photo.url : photo.image.file.name)),
+    ).toEqual(['https://x.test/1.webp', 'https://x.test/2.webp', 'b.webp']);
+    expect(next[1]).toEqual(link('https://x.test/2.webp', 'cap'));
+  });
+
+  it('appends a link when no file is waiting and drops the file when the link is already listed', () => {
+    expect(
+      withPhotoLink([link('https://x.test/1.webp')], 'https://x.test/2.webp').photos,
+    ).toHaveLength(2);
+    const listed = withPhotoLink(
+      [file('a.webp'), link('https://x.test/1.webp')],
+      'https://x.test/1.webp',
+    );
+    expect(listed.photos).toEqual([link('https://x.test/1.webp')]);
+    expect(listed.replaced?.file.name).toBe('a.webp');
   });
 });
