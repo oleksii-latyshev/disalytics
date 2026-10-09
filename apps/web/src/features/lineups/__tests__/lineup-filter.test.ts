@@ -1,6 +1,11 @@
 import type { Lineup } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { countsByKind, filterLineups, type LineupTagFilter } from '../helpers/lineup-filter';
+import {
+  countsByKind,
+  filterLineups,
+  type LineupFilterCriteria,
+  type LineupTagFilter,
+} from '../helpers/lineup-filter';
 
 const TEST_LINEUPS: readonly Lineup[] = [
   {
@@ -144,5 +149,33 @@ describe('countsByKind', () => {
       ['he', 1],
     ]);
     expect(countsByKind(TEST_LINEUPS, { side: 'CT', search: '' }).get('smoke')).toBeUndefined();
+  });
+});
+
+describe('filterLineups by collection', () => {
+  const open: LineupFilterCriteria = { side: 'ALL', kind: 'all', search: '' };
+  const ids = (members: ReadonlySet<string> | null | undefined, rest = open) =>
+    filterLineups(TEST_LINEUPS, { ...rest, members }).map((l) => l.id);
+
+  it('keeps every lineup without a collection', () => {
+    expect(ids(undefined)).toEqual(['1', '2', '3']);
+    expect(ids(null)).toEqual(['1', '2', '3']);
+  });
+
+  it('keeps only the members, and skips ids with no lineup', () => {
+    expect(ids(new Set(['3', '1', 'gone']))).toEqual(['1', '3']);
+    expect(ids(new Set())).toEqual([]);
+  });
+
+  it('lets the other filters narrow the members further', () => {
+    const members = new Set(['1', '2', '3']);
+    expect(ids(members, { ...open, side: 'CT' })).toEqual(['2', '3']);
+    expect(ids(members, { ...open, kind: 'smoke' })).toEqual(['1']);
+    expect(ids(new Set(['2']), { ...open, kind: 'smoke' })).toEqual([]);
+  });
+
+  it('counts kinds inside the collection only', () => {
+    const counts = countsByKind(TEST_LINEUPS, { side: 'ALL', search: '', members: new Set(['1']) });
+    expect([...counts]).toEqual([['smoke', 1]]);
   });
 });

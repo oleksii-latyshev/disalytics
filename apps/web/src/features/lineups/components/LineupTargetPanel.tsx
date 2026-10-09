@@ -1,3 +1,4 @@
+import type { LineupCollection } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { ExternalLink, X } from 'lucide-react';
@@ -6,6 +7,7 @@ import { sideLabel, targetTitle } from '../helpers/lineup-labels';
 import { mediaLinkOf } from '../helpers/lineup-photos';
 import type { SavedTarget, SavedVariant } from '../helpers/lineup-targets';
 import { LineupChips } from './LineupChips';
+import { LineupCollectionPicker } from './LineupCollectionPicker';
 import { LineupCoordinatesCollapsible } from './LineupCoordinatesCollapsible';
 import { LineupHowToRepeat } from './LineupHowToRepeat';
 import { LineupOriginList } from './LineupOriginList';
@@ -15,6 +17,9 @@ interface Props {
   target: SavedTarget;
   variant: SavedVariant;
   hoveredId: string | null;
+  collections: readonly LineupCollection[];
+  onToggleCollection: (collectionId: string, lineupIds: readonly string[]) => void;
+  onCreateCollection: (name: string, lineupIds: readonly string[]) => void;
   onHover: (id: string | null) => void;
   onOpenVariant: (id: string) => void;
   onClose: () => void;
@@ -31,6 +36,9 @@ export function LineupTargetPanel({
   target,
   variant,
   hoveredId,
+  collections,
+  onToggleCollection,
+  onCreateCollection,
   onHover,
   onOpenVariant,
   onClose,
@@ -103,6 +111,14 @@ export function LineupTargetPanel({
         <Button variant="outline" size="lg" onClick={onAnother}>
           <Text path="library.lineups.another" />
         </Button>
+        <LineupCollectionPicker
+          collections={collections}
+          lineupIds={[lineup.id]}
+          triggerPath="library.lineups.collections.title"
+          className="col-span-2"
+          onToggle={onToggleCollection}
+          onCreate={onCreateCollection}
+        />
         <p className="col-span-2 text-center text-11 text-ink-faint">
           <Text
             path={lineup.isBuiltIn ? 'library.lineups.note.builtIn' : 'library.lineups.note.mine'}

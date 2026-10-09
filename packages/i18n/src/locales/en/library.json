@@ -399,7 +399,8 @@
       "saveNone": "No lineups of yours on this map yet",
       "import": "Import from file",
       "importHint": "A .json file from a friend or a backup — matching lineups are not doubled",
-      "builtIn": "Built-in lineups are everyone’s — only yours and the ones saved from matches go into the file."
+      "builtIn": "Built-in lineups are everyone’s — only yours and the ones saved from matches go into the file.",
+      "saveCollections": "{count, plural, one {# collection} other {# collections}}"
     },
     "targetAria": "{title}, {count, plural, one {# position} other {# positions}}",
     "originAria": "Position {number}: {name}",
@@ -507,7 +508,35 @@
       "zoomReset": "Fit the screenshot",
       "zoomLevel": "{percent}%",
       "zoomHint": "Scroll or double-click to zoom, drag to look around"
-    }
+    },
+    "collections": {
+      "title": "Collections",
+      "nav": "Collections of this map",
+      "all": "All lineups",
+      "new": "New collection",
+      "nameLabel": "Collection name",
+      "namePlaceholder": "e.g. Execute B",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "nameTaken": "A collection with this name already exists.",
+      "rowAria": "{name}, {count, plural, one {# lineup} other {# lineups}}",
+      "actions": "Actions for {name}",
+      "rename": "Rename",
+      "delete": "Delete",
+      "deleteConfirm": "Delete the collection “{name}”? The lineups in it stay.",
+      "empty": "No collections yet. Group the lineups of an execute or a retake to see only those on the map.",
+      "emptyCollection": "This collection has no lineups yet.",
+      "emptyCollectionHint": "Press “Select”, tick targets and choose “Add to collection”, or open a lineup and add it from there.",
+      "add": "Add to collection",
+      "pickerTitle": "Collections",
+      "pickerHint": "Press a collection to put these in it, or take them out.",
+      "pickerEmpty": "No collections on this map yet. Name the first one below.",
+      "newCollection": "New collection…",
+      "createWith": "Create and add",
+      "partly": "some of them"
+    },
+    "importCollections": "Imported {count, plural, one {# collection} other {# collections}}."
   },
   "tactics": {
     "editor": {

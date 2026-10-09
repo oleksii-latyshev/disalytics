@@ -1,11 +1,16 @@
+import type { LineupCollection } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
 import { Layers, Trash2, Unlink, X } from 'lucide-react';
 import type { Bulk } from '../helpers/lineup-bulk';
+import { LineupCollectionPicker } from './LineupCollectionPicker';
 
 interface Props {
   count: number;
   bulk: Bulk;
+  collections: readonly LineupCollection[];
+  onToggleCollection: (collectionId: string, lineupIds: readonly string[]) => void;
+  onCreateCollection: (name: string, lineupIds: readonly string[]) => void;
   onMergeLandings: () => void;
   onMergeOrigins: () => void;
   onUngroupLandings: () => void;
@@ -21,6 +26,9 @@ const ACTION =
 export function LineupBulkBar({
   count,
   bulk,
+  collections,
+  onToggleCollection,
+  onCreateCollection,
   onMergeLandings,
   onMergeOrigins,
   onUngroupLandings,
@@ -29,7 +37,7 @@ export function LineupBulkBar({
   onClear,
 }: Props) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 rounded-card border border-line bg-surface-2 p-2">
+    <div className="flex min-w-0 shrink-0 flex-col gap-1.5 rounded-card border border-line bg-surface-2 p-2">
       <div className="flex items-center justify-between gap-2">
         <span className="numeric text-11 font-medium text-ink">
           <Text path="library.lineups.selectedCount" values={{ count }} />
@@ -42,6 +50,14 @@ export function LineupBulkBar({
         </Button>
       </div>
       <div className="flex min-w-0 flex-wrap gap-1">
+        <LineupCollectionPicker
+          collections={collections}
+          lineupIds={bulk.lineups.map(({ id }) => id)}
+          triggerPath="library.lineups.collections.add"
+          className={ACTION}
+          onToggle={onToggleCollection}
+          onCreate={onCreateCollection}
+        />
         {bulk.canMergeLandings && (
           <Button variant="outline" onClick={onMergeLandings} className={ACTION}>
             <Layers aria-hidden="true" className="size-3" />

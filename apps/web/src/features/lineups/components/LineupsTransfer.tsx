@@ -2,15 +2,20 @@ import { Text, useT } from '@disa/i18n';
 import { Button, Popover, PopoverPanel, PopoverTrigger } from '@disa/ui';
 import { Download, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
+import type { ImportResult } from '../hooks/use-map-lineups';
 
-type Outcome = { readonly kind: 'imported'; readonly count: number } | { readonly kind: 'failed' };
+type Outcome =
+  | { readonly kind: 'imported'; readonly lineups: number; readonly collections: number }
+  | { readonly kind: 'failed' };
 
 interface Props {
   mapName: string;
   /** How many lineups on this map are the user's own, and would go into a file. */
   ownCount: number;
+  /** How many collections this map has, which go into the file as well. */
+  collectionCount: number;
   onExport: () => Promise<void>;
-  onImport: (file: File) => Promise<number>;
+  onImport: (file: File) => Promise<ImportResult>;
 }
 
 const ACTION =
@@ -20,7 +25,7 @@ const ACTION =
  * Import and export, with the one thing a reader needs to know before either: lineups are kept in
  * this browser and nowhere else, and a file is how they move.
  */
-export function LineupsTransfer({ mapName, ownCount, onExport, onImport }: Props) {
+export function LineupsTransfer({ mapName, ownCount, collectionCount, onExport, onImport }: Props) {
   const t = useT();
   const fileInput = useRef<HTMLInputElement>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -31,7 +36,7 @@ export function LineupsTransfer({ mapName, ownCount, onExport, onImport }: Props
     if (file === undefined) return;
 
     try {
-      setOutcome({ kind: 'imported', count: await onImport(file) });
+      setOutcome({ kind: 'imported', ...(await onImport(file)) });
     } catch {
       setOutcome({ kind: 'failed' });
     }
@@ -61,7 +66,7 @@ export function LineupsTransfer({ mapName, ownCount, onExport, onImport }: Props
 
         <button
           type="button"
-          disabled={ownCount === 0}
+          disabled={ownCount === 0 && collectionCount === 0}
           onClick={() => void onExport()}
           className={`${ACTION} bg-ink text-surface-0`}
         >
@@ -71,10 +76,20 @@ export function LineupsTransfer({ mapName, ownCount, onExport, onImport }: Props
               <Text path="library.lineups.transfer.save" values={{ map: mapName }} />
             </span>
             <span className="text-11 opacity-70">
-              {ownCount === 0 ? (
+              {ownCount === 0 && collectionCount === 0 && (
                 <Text path="library.lineups.transfer.saveNone" />
-              ) : (
+              )}
+              {ownCount > 0 && (
                 <Text path="library.lineups.transfer.saveCount" values={{ count: ownCount }} />
+              )}
+              {collectionCount > 0 && (
+                <>
+                  {ownCount > 0 && ' + '}
+                  <Text
+                    path="library.lineups.transfer.saveCollections"
+                    values={{ count: collectionCount }}
+                  />
+                </>
               )}
             </span>
           </span>
@@ -107,7 +122,17 @@ export function LineupsTransfer({ mapName, ownCount, onExport, onImport }: Props
         {outcome !== null && (
           <p role="status" className="text-12 text-ink">
             {outcome.kind === 'imported' ? (
-              <Text path="library.lineups.importSuccess" values={{ count: outcome.count }} />
+              <>
+                {(outcome.lineups > 0 || outcome.collections === 0) && (
+                  <Text path="library.lineups.importSuccess" values={{ count: outcome.lineups }} />
+                )}{' '}
+                {outcome.collections > 0 && (
+                  <Text
+                    path="library.lineups.importCollections"
+                    values={{ count: outcome.collections }}
+                  />
+                )}
+              </>
             ) : (
               <Text path="library.lineups.importError" />
             )}

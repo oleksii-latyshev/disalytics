@@ -10,6 +10,8 @@ export interface LineupFilterCriteria {
   readonly kind: LineupKindFilter;
   readonly search: string;
   readonly tag?: LineupTagFilter;
+  /** The ids of the open collection; `null` or absent means every lineup of the map. */
+  readonly members?: ReadonlySet<string> | null | undefined;
 }
 
 function matchesTag(lineup: Lineup, tag: LineupTagFilter): boolean {
@@ -27,15 +29,18 @@ function matchesSearch(lineup: Lineup, q: string): boolean {
   );
 }
 
-/** Pure filter function for lineups by side, kind, tag, and search text. */
+/** Pure filter function for lineups by collection, side, kind, tag, and search text. */
 export function filterLineups(
   lineups: readonly Lineup[],
   criteria: LineupFilterCriteria,
 ): readonly Lineup[] {
-  const { side, kind, search, tag = 'all' } = criteria;
+  const { side, kind, search, tag = 'all', members = null } = criteria;
   const q = search.trim().toLowerCase();
 
   return lineups.filter((lineup) => {
+    if (members !== null && !members.has(lineup.id)) {
+      return false;
+    }
     if (side !== 'ALL' && lineup.side !== 'BOTH' && lineup.side !== side) {
       return false;
     }

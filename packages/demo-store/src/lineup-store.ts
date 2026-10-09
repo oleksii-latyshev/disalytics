@@ -1,10 +1,16 @@
-import type { Lineup, LineupSide, UtilityKind } from '@disa/demo-core';
-import { isLineup, normalizeLineup, referencedLocalImageHashes } from '@disa/demo-core';
+import type { Lineup, LineupCollection, LineupSide, UtilityKind } from '@disa/demo-core';
+import {
+  isLineup,
+  isLineupCollection,
+  normalizeLineup,
+  referencedLocalImageHashes,
+} from '@disa/demo-core';
 
 const DATABASE = 'disalytics-user-lineups';
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 const STORE = 'lineups';
 const PHOTOS = 'photos';
+const COLLECTIONS = 'collections';
 
 function settled<T>(source: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -97,6 +103,15 @@ export interface LineupStore {
   /** Retrieves a stored photo by its SHA-256 hex, or null if absent. */
   getPhoto(hash: string): Promise<Blob | null>;
 
+  /** A map's collections, or every collection when no map is given. */
+  listCollections(map?: string): Promise<readonly LineupCollection[]>;
+
+  /** Adds or updates collections in a single transaction. */
+  putCollections(collections: readonly LineupCollection[]): Promise<void>;
+
+  /** Deletes a collection by id; the lineups in it are untouched. */
+  deleteCollection(id: string): Promise<void>;
+
   /** Closes the database connection. */
   close(): void;
 }
@@ -117,6 +132,10 @@ export async function openLineupStore(): Promise<LineupStore | null> {
     }
     if (!db.objectStoreNames.contains(PHOTOS)) {
       db.createObjectStore(PHOTOS);
+    }
+    if (!db.objectStoreNames.contains(COLLECTIONS)) {
+      const collections = db.createObjectStore(COLLECTIONS, { keyPath: 'id' });
+      collections.createIndex('map', 'map', { unique: false });
     }
   };
 
@@ -196,6 +215,28 @@ export async function openLineupStore(): Promise<LineupStore | null> {
       const store = database.transaction(PHOTOS, 'readonly').objectStore(PHOTOS);
       const item: unknown = await settled(store.get(hash));
       return item instanceof Blob ? item : null;
+    },
+
+    async listCollections(map) {
+      const store = database.transaction(COLLECTIONS, 'readonly').objectStore(COLLECTIONS);
+      const items: unknown[] = await settled(
+        map === undefined ? store.getAll() : store.index('map').getAll(map),
+      );
+      return items.filter(isLineupCollection);
+    },
+
+    async putCollections(collections) {
+      if (collections.length === 0) return;
+      const transaction = database.transaction(COLLECTIONS, 'readwrite');
+      const store = transaction.objectStore(COLLECTIONS);
+      for (const collection of collections) store.put(collection);
+      await completed(transaction);
+    },
+
+    async deleteCollection(id) {
+      const transaction = database.transaction(COLLECTIONS, 'readwrite');
+      transaction.objectStore(COLLECTIONS).delete(id);
+      await completed(transaction);
     },
 
     close() {

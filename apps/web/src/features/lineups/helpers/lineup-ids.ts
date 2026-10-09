@@ -10,3 +10,7 @@ export function newLineupId(): string {
 export function newGroupId(): string {
   return `group-${Date.now()}-${suffix()}`;
 }
+
+export function newCollectionId(): string {
+  return `collection-${Date.now()}-${suffix()}`;
+}
