@@ -77,7 +77,11 @@ function Heading({ row, count }: { row: Row; count: number }) {
   if (item.status === 'update' && item.stored !== null) {
     return (
       <>
-        <h2 className="font-semibold text-20 text-ink" tabIndex={-1} ref={focusOnMount}>
+        <h2
+          className="font-semibold text-20 text-ink outline-none"
+          tabIndex={-1}
+          ref={focusOnMount}
+        >
           <Text path="admin.q.updateTitle" values={{ title: item.stored.title }} />
         </h2>
         <p className="max-w-[62ch] text-14 text-ink-dim">
@@ -93,7 +97,11 @@ function Heading({ row, count }: { row: Row; count: number }) {
     );
     return (
       <>
-        <h2 className="font-semibold text-20 text-ink" tabIndex={-1} ref={focusOnMount}>
+        <h2
+          className="font-semibold text-20 text-ink outline-none"
+          tabIndex={-1}
+          ref={focusOnMount}
+        >
           <Text path="admin.q.dupTitle" values={{ title: title || '—', site: item.stored.title }} />
         </h2>
         <p className="max-w-[62ch] text-14 text-ink-dim">
@@ -212,6 +220,11 @@ export function Question({ row, review, placing, onPlacing }: Props) {
       ) : null}
     </div>
   );
+}
+
+/** The colour a question is shown in, on its pill and on the map alike. */
+export function questionTone(row: Row): 'update' | 'duplicate' | 'invalid' | 'new' {
+  return pillOf(kindOf(row), row.problems.length).tone;
 }
 
 function pillOf(

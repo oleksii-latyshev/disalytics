@@ -7,8 +7,7 @@ import type { Review } from '../../hooks/use-review';
 import type { PointName } from '../map/MapMarks';
 import { MapCard } from './MapCard';
 import { Card } from './Parts';
-import { Question } from './Question';
-import { OUTCOME_TONE } from './status';
+import { Question, questionTone } from './Question';
 
 /**
  * One question at a time. The map beside it shows both versions, and a point can be dragged or
@@ -74,7 +73,7 @@ export function StepDecide({
         stored={others}
         counterpart={item.stored}
         current={current}
-        tone={OUTCOME_TONE[row.outcome]}
+        tone={questionTone(row)}
         invalid={row.problems.flatMap((problem) =>
           problem.code === 'origin_off_map'
             ? ['origin' as const]

@@ -102,12 +102,12 @@ function Gap({
   const t = useT();
   const units = gapUnits(from, to);
   if (units < 1) return null;
-  const a = visiblePoint(overview, layout, from);
   const b = visiblePoint(overview, layout, to);
   return (
     <text
-      x={(a.x + b.x) / 2 + 14}
-      y={(a.y + b.y) / 2 - 14}
+      // Beside the file's mark, past its ring: the two marks are often a few pixels apart.
+      x={b.x + 26}
+      y={b.y - 22}
       fill="var(--color-ink)"
       fontSize={22}
       className="numeric"

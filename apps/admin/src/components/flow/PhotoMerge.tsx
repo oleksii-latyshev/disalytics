@@ -89,7 +89,7 @@ function Tile({
         <span className={cn('numeric', best && 'text-[var(--status-new)]')}>{weight ?? ''}</span>
       </span>
       {tile.caption === '' ? null : (
-        <span className="block truncate border-line border-t px-2 py-1 text-11 text-ink-dim">
+        <span className="block truncate [border-block-start:1px_solid_var(--color-line)] px-2 py-1 text-11 text-ink-dim">
           {tile.caption}
         </span>
       )}

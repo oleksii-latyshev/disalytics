@@ -14,7 +14,7 @@ function Count({ value, children }: { value: number; children: ReactNode }) {
 /** The counts stay in view all the way through; the button on the right is the one next step. */
 export function BottomBar({ totals, children }: { totals: Totals | null; children: ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-line-strong border-t bg-surface-1 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+    <div className="fixed inset-x-0 bottom-0 z-20 [border-block-start:1px_solid_var(--color-line-strong)] bg-surface-1 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
       <div className="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-5 gap-y-2">
         {totals === null ? null : (
           <p className="m-0 flex flex-wrap gap-x-3.5 gap-y-1 text-13 text-ink-dim">

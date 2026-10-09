@@ -17,3 +17,9 @@
   --status-same: #6b6b6b;
   --status-stored: #d8d8d8;
 }
+
+/* A heading the page moves focus to (so a screen reader announces the new question) is not a
+   control: it gets no focus ring. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
