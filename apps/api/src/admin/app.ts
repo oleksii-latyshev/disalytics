@@ -15,6 +15,7 @@ import {
   PreviewHandlers,
 } from './handlers';
 import { AccessAuthLive, WriteGuardLive } from './middleware';
+import { makePhotoLinks, PhotoLinks } from './photo-links';
 
 const Middleware = Layer.mergeAll(MalformedAsBadRequestLive, AccessAuthLive, WriteGuardLive);
 
@@ -64,6 +65,7 @@ export function handleApi(
     Context.add(LineupStorage, makeLineupStorage(env.LINEUPS_DB)),
     Context.add(PhotoStorage, makePhotoStorage(env.LINEUP_PHOTOS)),
     Context.add(ChangeLog, makeChangeLog(env.LINEUPS_DB)),
+    Context.add(PhotoLinks, makePhotoLinks(env.LINEUPS_DB)),
     Context.add(AdminConfig, config),
   );
   return handler(request, services);

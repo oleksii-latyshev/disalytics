@@ -105,3 +105,34 @@ export function photoStats(lineups: readonly Lineup[], photoBaseUrl: string): Ph
   }
   return { embedded: embedded.size, links: links.size, ours: ours.size };
 }
+
+/** The `http(s)` photo links among the lineups' photos, without repeats. */
+export function linkUrls(lineups: readonly Lineup[], photoBaseUrl: string): string[] {
+  const links = new Set<string>();
+  for (const lineup of lineups) {
+    for (const url of lineup.imageUrls ?? []) {
+      if (!isLocalImageRef(url) && !url.startsWith(`${photoBaseUrl}/`)) links.add(url);
+    }
+  }
+  return [...links];
+}
+
+/**
+ * Points every link we already copied at our copy, so a re-imported file compares equal to what is
+ * stored and a replace does not bring the original links back.
+ */
+export function withKnownLinks(
+  lineups: readonly Lineup[],
+  known: ReadonlyMap<string, string>,
+  photoBaseUrl: string,
+): Lineup[] {
+  if (known.size === 0) return [...lineups];
+  return lineups.map((lineup) => {
+    if (lineup.imageUrls === undefined) return lineup;
+    const imageUrls = lineup.imageUrls.map((url) => {
+      const sha = known.get(url);
+      return sha === undefined ? url : `${photoBaseUrl}/${sha}`;
+    });
+    return { ...lineup, imageUrls };
+  });
+}

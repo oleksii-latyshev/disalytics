@@ -23,7 +23,8 @@ import { AdminConfig } from './config';
 import { decodeDataUrl } from './helpers/images';
 import { fetchLinkPhoto } from './helpers/link-photos';
 import { checkResolutions, parseCommitFile } from './helpers/parse';
-import { type PlanItem, planLineups } from './helpers/plan';
+import { linkUrls, type PlanItem, planLineups, withKnownLinks } from './helpers/plan';
+import { type CopiedLink, PhotoLinks } from './photo-links';
 
 interface Planned {
   readonly item: PlanItem;
@@ -131,6 +132,7 @@ interface PhotoOutcome {
   readonly uploaded: number;
   readonly copied: number;
   readonly failed: LinkPhotoFailure[];
+  readonly copiedLinks: CopiedLink[];
 }
 
 interface Embedded {
@@ -161,7 +163,7 @@ function copyLinks(
   links: readonly string[],
   urlByRef: Map<string, string>,
 ): Effect.Effect<
-  { copied: number; failed: LinkPhotoFailure[] },
+  { copied: number; failed: LinkPhotoFailure[]; copiedLinks: CopiedLink[] },
   StorageError,
   PhotoStorage | AdminConfig
 > {
@@ -170,6 +172,7 @@ function copyLinks(
     const config = yield* AdminConfig;
     const fetchPhoto = config.fetchPhoto ?? ((url: string) => fetchLinkPhoto(url));
     const failed: LinkPhotoFailure[] = [];
+    const copiedLinks: CopiedLink[] = [];
     let copied = 0;
     for (const link of links) {
       const result = yield* Effect.promise(() => fetchPhoto(link));
@@ -179,9 +182,10 @@ function copyLinks(
       }
       const hash = yield* photos.save(result.bytes, result.type);
       urlByRef.set(link, `${config.photoBaseUrl}/${hash}`);
+      copiedLinks.push({ url: link, sha256: hash });
       copied += 1;
     }
-    return { copied, failed };
+    return { copied, failed, copiedLinks };
   });
 }
 
@@ -218,8 +222,8 @@ function settlePhotos(
       const hash = yield* photos.save(photo.bytes, photo.type);
       urlByRef.set(ref, `${config.photoBaseUrl}/${hash}`);
     }
-    const { copied, failed } = yield* copyLinks(links, urlByRef);
-    return { urlByRef, uploaded: decoded.length, copied, failed };
+    const { copied, failed, copiedLinks } = yield* copyLinks(links, urlByRef);
+    return { urlByRef, uploaded: decoded.length, copied, failed, copiedLinks };
   });
 }
 
@@ -241,21 +245,27 @@ export function runCommit(
 ): Effect.Effect<
   CommitResponse,
   BadRequest | StorageError,
-  LineupStorage | PhotoStorage | AdminConfig
+  LineupStorage | PhotoStorage | PhotoLinks | AdminConfig
 > {
   return Effect.gen(function* () {
     const storage = yield* LineupStorage;
+    const links = yield* PhotoLinks;
     const config = yield* AdminConfig;
     const { map } = request;
 
     const file = yield* parseCommitFile(request.file, map);
     const resolutions = yield* checkResolutions(request.resolutions);
     const existing = yield* storage.readMap(map);
-    const items = planLineups(existing.lineups, file.lineups);
+    const known = yield* links.lookup(linkUrls(file.lineups, config.photoBaseUrl));
+    const items = planLineups(
+      existing.lineups,
+      withKnownLinks(file.lineups, known, config.photoBaseUrl),
+    );
     const planned = yield* pair(items, resolutions);
     const { writes, skipped } = selectWrites(planned, existing.lineups);
 
     const photos = yield* settlePhotos(writes, file.images, request.copyLinkPhotos);
+    yield* links.remember(photos.copiedLinks, config.now());
     const final = writes.map((lineup) => rewritten(lineup, photos.urlByRef));
     for (const lineup of final) {
       const candidate: unknown = lineup;

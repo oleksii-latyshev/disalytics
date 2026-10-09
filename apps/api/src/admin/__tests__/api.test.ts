@@ -317,3 +317,59 @@ describe.skipIf(!hasSqlite)('lineups and changes', () => {
     expect((await api(env, '/api/changes?map=nope')).status).toBe(400);
   });
 });
+
+describe.skipIf(!hasSqlite)('links that were copied before', () => {
+  const link = 'https://files.catbox.moe/a.webp';
+  const bytes = Uint8Array.from(atob(PNG_DATA_URL.split(',')[1] ?? ''), (c) => c.charCodeAt(0));
+  const fetchPhoto = async () => ({ ok: true, bytes, type: 'image/png' }) as const;
+  const body = (action: 'add' | 'replace', copy: boolean) => ({
+    map: 'de_mirage',
+    file: file([lineup({ imageUrls: [link] })]),
+    resolutions: [{ id: 'mirage-1', action }],
+    copyLinkPhotos: copy,
+  });
+
+  it('reads a re-imported file as unchanged and keeps our copy on replace', async () => {
+    const env = adminEnv();
+    await api(env, '/api/commit', { body: body('add', true) }, { fetchPhoto });
+    const [stored] = (await json(await api(env, '/api/lineups/de_mirage'))).lineups;
+    expect(stored?.imageUrls[0]).toMatch(new RegExp(`^${PHOTO_BASE}/[0-9a-f]{64}$`));
+
+    const again = await json(
+      await api(env, '/api/preview', {
+        body: { map: 'de_mirage', file: file([lineup({ imageUrls: [link] })]) },
+      }),
+    );
+    expect(again.items.map((item) => item.status)).toEqual(['unchanged']);
+    expect(again.photos).toMatchObject({ links: 0, ours: 1 });
+
+    // Edited in the file, then replaced: the stored copy stays, the catbox link does not return.
+    const changed = file([lineup({ title: 'Renamed', imageUrls: [link] })]);
+    const preview = await json(
+      await api(env, '/api/preview', { body: { map: 'de_mirage', file: changed } }),
+    );
+    expect(preview.items[0]?.status).toBe('update');
+    await api(env, '/api/commit', {
+      body: {
+        map: 'de_mirage',
+        file: changed,
+        resolutions: [{ id: 'mirage-1', action: 'replace' }],
+        copyLinkPhotos: false,
+      },
+    });
+    const [after] = (await json(await api(env, '/api/lineups/de_mirage'))).lineups;
+    expect(after).toMatchObject({ title: 'Renamed', imageUrls: stored?.imageUrls });
+  });
+
+  it('does not remember a link that was not copied', async () => {
+    const env = adminEnv();
+    await api(env, '/api/commit', { body: body('add', false) });
+    const preview = await json(
+      await api(env, '/api/preview', {
+        body: { map: 'de_mirage', file: file([lineup({ imageUrls: [link] })]) },
+      }),
+    );
+    expect(preview.items[0]?.status).toBe('unchanged');
+    expect(preview.photos.links).toBe(1);
+  });
+});

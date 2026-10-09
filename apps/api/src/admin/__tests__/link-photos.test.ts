@@ -18,6 +18,16 @@ const redirect = (to: string) => () =>
   new Response(null, { status: 302, headers: { Location: to } });
 
 describe('fetchLinkPhoto', () => {
+  it('sends a User-Agent, which some hosts require', async () => {
+    const seen: (string | null)[] = [];
+    const impl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push(new Headers(init?.headers).get('User-Agent'));
+      return new Response(PNG);
+    }) as typeof fetch;
+    await fetchLinkPhoto('https://files.example/a.png', impl);
+    expect(seen[0]).toMatch(/^disalytics-admin\//);
+  });
+
   it('downloads an image after checking its bytes', async () => {
     const { impl } = fetcher({ 'https://files.example/a.png': () => new Response(PNG) });
     expect(await fetchLinkPhoto('https://files.example/a.png', impl)).toMatchObject({

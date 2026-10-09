@@ -6,7 +6,8 @@ import { ChangeLog } from './change-log';
 import { runCommit } from './commit';
 import { AdminConfig } from './config';
 import { lineupsOfMap } from './helpers/parse';
-import { photoStats, planLineups } from './helpers/plan';
+import { linkUrls, photoStats, planLineups, withKnownLinks } from './helpers/plan';
+import { PhotoLinks } from './photo-links';
 
 export const MeHandlers = HttpApiBuilder.group(AdminApi, 'me', (handlers) =>
   handlers.handle('whoami', () =>
@@ -22,7 +23,11 @@ export const PreviewHandlers = HttpApiBuilder.group(AdminApi, 'preview', (handle
     Effect.gen(function* () {
       const storage = yield* LineupStorage;
       const config = yield* AdminConfig;
-      const { lineups, ignored } = yield* lineupsOfMap(payload.file, payload.map);
+      const links = yield* PhotoLinks;
+      const parsed = yield* lineupsOfMap(payload.file, payload.map);
+      const { ignored } = parsed;
+      const known = yield* links.lookup(linkUrls(parsed.lineups, config.photoBaseUrl));
+      const lineups = withKnownLinks(parsed.lineups, known, config.photoBaseUrl);
       const existing = yield* storage.readMap(payload.map);
       const response: PreviewResponse = {
         map: payload.map,

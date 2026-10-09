@@ -14,7 +14,8 @@ const ACTION_KEYS: Readonly<Record<ResolutionAction, TranslationKey>> = {
   skip: 'admin.action.skip',
 };
 
-const TAG_KEYS = { meta: 'admin.tag.meta', old: 'admin.tag.old' } as const;
+// The same wording as the lineups library, so a tag reads the same in both.
+const TAG_KEYS = { meta: 'library.lineups.tags.meta', old: 'library.lineups.tags.old' } as const;
 
 export function PreviewRow({
   item,
@@ -119,7 +120,7 @@ export function PreviewRow({
             <Text path="admin.row.diff" values={{ count: item.diff.length }} />
           </summary>
           <div className="pt-2">
-            <DiffList diff={item.diff} />
+            <DiffList diff={item.diff} images={images} />
           </div>
         </details>
       )}

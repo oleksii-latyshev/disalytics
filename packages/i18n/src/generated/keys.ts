@@ -90,8 +90,6 @@ export const TRANSLATION_KEYS = [
   'admin.status.new',
   'admin.status.unchanged',
   'admin.status.update',
-  'admin.tag.meta',
-  'admin.tag.old',
   'admin.title',
   'common.help',
   'common.settings',

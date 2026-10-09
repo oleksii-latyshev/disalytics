@@ -47,10 +47,6 @@
     "none": "(none)",
     "photos": "{count, plural, one {# photo} other {# photos}}"
   },
-  "tag": {
-    "meta": "Meta",
-    "old": "Old"
-  },
   "photos": {
     "embedded": "{count, plural, one {# photo is} other {# photos are}} embedded in the file and will be uploaded.",
     "copy": "Copy link photos into our storage",

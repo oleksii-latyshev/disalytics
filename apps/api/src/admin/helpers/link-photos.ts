@@ -2,6 +2,8 @@ import { MAX_PHOTO_BYTES, type PhotoType, sniffImageType } from './images';
 
 export const MAX_REDIRECTS = 3;
 export const FETCH_TIMEOUT_MS = 10_000;
+/** Some hosts (catbox) drop a request with no User-Agent, and a Worker's fetch sends none. */
+const USER_AGENT = 'disalytics-admin/1 (+https://disalytics.disa-67b.workers.dev)';
 
 export type LinkPhoto =
   | { readonly ok: true; readonly bytes: Uint8Array<ArrayBuffer>; readonly type: PhotoType }
@@ -63,7 +65,7 @@ async function fetchHop(current: URL, fetchImpl: typeof fetch, signal: AbortSign
   const response = await fetchImpl(current, {
     redirect: 'manual',
     signal,
-    headers: { Accept: 'image/webp,image/png,image/jpeg' },
+    headers: { Accept: 'image/webp,image/png,image/jpeg', 'User-Agent': USER_AGENT },
   });
 
   if (REDIRECT_STATUSES.has(response.status)) {

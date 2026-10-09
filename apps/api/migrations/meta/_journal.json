@@ -8,6 +8,13 @@
       "when": 1791523454066,
       "tag": "0001_lineups",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791525145764,
+      "tag": "0002_photo_links",
+      "breakpoints": true
     }
   ]
 }

@@ -34,6 +34,16 @@ WebCrypto against `${TEAM_DOMAIN}/cdn-cgi/access/certs`, with `iss`, `aud`, `exp
 The verified email is recorded as the author of every write. While `TEAM_DOMAIN` or `POLICY_AUD` is
 empty every `/api/*` request is refused with 403. Writes must also be same-origin JSON.
 
+## Database migration
+
+`migrations/0002_photo_links.sql` adds the `photo_links` table (which copied link became which stored
+photo, so a re-imported file reads as unchanged). It is one `CREATE TABLE` and applies on top of the
+remote 0001. Migrations are manual; apply it before the new admin goes live:
+
+```bash
+cd apps/api && bunx wrangler d1 migrations apply disalytics-lineups --remote --config wrangler.admin.jsonc
+```
+
 ## Setting it up (once, in the Cloudflare dashboard)
 
 1. Deploy the Worker (green `ci` on `main` does it, or `cd apps/api && bunx wrangler deploy --config
