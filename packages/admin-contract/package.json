@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@disa/demo-core": "*",
+    "@disa/map-data": "*",
     "effect": "4.0.0-rc.117"
   },
   "devDependencies": {

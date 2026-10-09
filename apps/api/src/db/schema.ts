@@ -36,6 +36,16 @@ export const lineupChanges = sqliteTable(
   (table) => [index('lineup_changes_lineup').on(table.lineupId, table.at)],
 );
 
+/**
+ * An id a lineup was known by in someone's file before it was merged into the stored lineup
+ * `lineup_id`, so a re-exported file reads as that lineup and not as a new duplicate.
+ */
+export const lineupAliases = sqliteTable('lineup_aliases', {
+  aliasId: text('alias_id').primaryKey(),
+  lineupId: text('lineup_id').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
+
 /** Which stored photo a copied link became, so a re-imported file's links are recognised. */
 export const photoLinks = sqliteTable('photo_links', {
   url: text('url').primaryKey(),

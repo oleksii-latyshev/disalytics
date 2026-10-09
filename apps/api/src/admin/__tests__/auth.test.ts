@@ -46,7 +46,11 @@ describe.skipIf(!hasSqlite)('invite links', () => {
     for (let i = 0; i < 2; i += 1) {
       const info = await api(target, '/api/auth/invite', { host: HOST, body: { token } });
       expect(info.status).toBe(200);
-      expect(await info.json()).toEqual({ role: 'editor', expiresAt: NOW + DAY_MS });
+      expect(await info.json()).toEqual({
+        role: 'editor',
+        invitedBy: 'test',
+        expiresAt: NOW + DAY_MS,
+      });
     }
   });
 

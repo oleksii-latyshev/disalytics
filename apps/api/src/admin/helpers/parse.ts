@@ -1,10 +1,5 @@
-import {
-  type BadRequest,
-  badRequest,
-  MAX_TITLE_LENGTH,
-  type Resolution,
-} from '@disa/admin-contract';
-import { isLineup, type Lineup, normalizeLineup, parseLineupFile } from '@disa/demo-core';
+import { type BadRequest, badRequest } from '@disa/admin-contract';
+import { type Lineup, looseLineup, normalizeLineup } from '@disa/demo-core';
 import { Effect } from 'effect';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -27,67 +22,20 @@ export function lineupsOfMap(
     const seen = new Set<string>();
     let ignored = 0;
     for (const [index, entry] of file.lineups.entries()) {
-      if (!isLineup(entry)) {
+      const lineup = looseLineup(entry);
+      if (lineup === null) {
         return Effect.fail(badRequest('invalid_file', `Invalid lineup entry at index ${index}`));
       }
-      if (entry.map !== map) {
+      if (lineup.map !== map) {
         ignored += 1;
         continue;
       }
-      if (seen.has(entry.id)) {
-        return Effect.fail(badRequest('invalid_file', `Lineup id ${entry.id} appears twice`));
+      if (seen.has(lineup.id)) {
+        return Effect.fail(badRequest('invalid_file', `Lineup id ${lineup.id} appears twice`));
       }
-      seen.add(entry.id);
-      lineups.push(normalizeLineup(entry));
+      seen.add(lineup.id);
+      lineups.push(normalizeLineup(lineup));
     }
     return Effect.succeed({ lineups, ignored });
-  });
-}
-
-export interface ParsedFile {
-  readonly lineups: Lineup[];
-  readonly ignored: number;
-  readonly images: Readonly<Record<string, string>>;
-}
-
-/** A commit's file must be whole: every `local:` photo it references has to be embedded. */
-export function parseCommitFile(file: unknown, map: string): Effect.Effect<ParsedFile, BadRequest> {
-  return Effect.gen(function* () {
-    const parsed = yield* Effect.try({
-      try: () => parseLineupFile(JSON.stringify(file)),
-      catch: (error) =>
-        badRequest('invalid_file', error instanceof Error ? error.message : 'Invalid file'),
-    });
-    const { lineups, ignored } = yield* lineupsOfMap({ lineups: parsed.lineups }, map);
-    return { lineups, ignored, images: parsed.images };
-  });
-}
-
-/** Checks what the schema cannot: a title must not be blank or overlong, ids must be distinct. */
-export function checkResolutions(
-  resolutions: readonly Resolution[],
-): Effect.Effect<readonly Resolution[], BadRequest> {
-  return Effect.suspend(() => {
-    if (new Set(resolutions.map((resolution) => resolution.id)).size !== resolutions.length) {
-      return Effect.fail(badRequest('invalid_resolutions', 'A lineup is resolved twice'));
-    }
-    const trimmed: Resolution[] = [];
-    for (const resolution of resolutions) {
-      if (resolution.title === undefined) {
-        trimmed.push(resolution);
-        continue;
-      }
-      const title = resolution.title.trim();
-      if (title.length === 0 || title.length > MAX_TITLE_LENGTH) {
-        return Effect.fail(
-          badRequest(
-            'invalid_resolutions',
-            `Title of ${resolution.id} must be 1 to ${MAX_TITLE_LENGTH} characters`,
-          ),
-        );
-      }
-      trimmed.push({ ...resolution, title });
-    }
-    return Effect.succeed(trimmed);
   });
 }

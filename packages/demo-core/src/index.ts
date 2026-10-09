@@ -176,6 +176,7 @@ export type {
   LineupSide,
   LineupTag,
   ParsedLineupFile,
+  ParseLineupFileOptions,
 } from './helpers/lineups';
 export {
   isBuiltInCopy,
@@ -188,6 +189,7 @@ export {
   LineupFileError,
   localImageHash,
   localImageRef,
+  looseLineup,
   normalizeLineup,
   parseLineupFile,
   referencedLocalImageHashes,

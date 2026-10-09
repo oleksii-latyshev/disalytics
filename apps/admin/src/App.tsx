@@ -1,26 +1,18 @@
 import type { ChangeEntry, WhoAmI } from '@disa/admin-contract';
-import { Text } from '@disa/i18n';
+import { isLineup } from '@disa/demo-core';
 import { useCallback, useState } from 'react';
 import { call } from './api/client';
 import { ChangesList } from './components/ChangesList';
-import { CommitBar, ResultSummary } from './components/CommitBar';
-import { CurrentLineups } from './components/CurrentLineups';
-import { FileDrop } from './components/FileDrop';
+import { ImportFlow } from './components/flow/ImportFlow';
 import { Header } from './components/Header';
 import { InviteScreen } from './components/InviteScreen';
-import { MapPicker } from './components/MapPicker';
 import { Notice } from './components/Notice';
+import { OnSite } from './components/OnSite';
 import { PeopleSection } from './components/PeopleSection';
-import { PreviewSection } from './components/PreviewSection';
-import { Muted, Section } from './components/Section';
+import { SectionTabs, type TabId, tabPanelId } from './components/SectionTabs';
 import { SignedOut } from './components/SignedOut';
-import { planChunks } from './helpers/chunks';
-import { toResolutions } from './helpers/decisions';
-import { DEFAULT_MAP, mapOptions } from './helpers/format';
+import { DEFAULT_MAP } from './helpers/format';
 import { forgetInvite, inviteTokenOf } from './helpers/invite-link';
-import { mapsOf } from './helpers/lineup-file';
-import { useCommit } from './hooks/use-commit';
-import { useImport } from './hooks/use-import';
 import { useResource } from './hooks/use-resource';
 
 /**
@@ -38,32 +30,38 @@ export function App() {
     call((client) => client.auth.signOut()).then(reloadMe, reloadMe);
   };
 
+  if (invite !== null) {
+    return (
+      <InviteScreen
+        token={invite}
+        onSignedIn={() => {
+          forgetInvite();
+          setInvite(null);
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 px-4 py-4">
       <Header me={me.status === 'ready' ? me.data : null} onSignOut={signOut} />
-      {invite !== null ? (
-        <InviteScreen
-          token={invite}
-          onSignedIn={() => {
-            forgetInvite();
-            setInvite(null);
-          }}
-        />
-      ) : null}
-      {invite === null && me.status === 'error' ? (
+      {me.status === 'error' ? (
         me.failure.key === 'admin.error.unauthorized' ? (
           <SignedOut />
         ) : (
           <Notice failure={me.failure} onRetry={reloadMe} />
         )
       ) : null}
-      {invite === null && me.status === 'ready' ? <Workspace me={me.data} /> : null}
+      {me.status === 'ready' ? <Workspace me={me.data} /> : null}
     </div>
   );
 }
 
+const PANEL_PREFIX = 'admin';
+
 function Workspace({ me }: { me: WhoAmI }) {
   const [map, setMap] = useState(DEFAULT_MAP);
+  const [tab, setTab] = useState<TabId>('import');
   const [current, reloadCurrent] = useResource(map, async () => {
     const { lineups } = await call((client) => client.lineups.byMap({ params: { map } }));
     return lineups;
@@ -73,90 +71,39 @@ function Workspace({ me }: { me: WhoAmI }) {
     return response.changes;
   });
 
-  const afterCommit = useCallback(() => {
+  const afterChange = useCallback(() => {
     reloadCurrent();
     reloadChanges();
   }, [reloadCurrent, reloadChanges]);
-  const commit = useCommit(afterCommit);
-  const imported = useImport(map, setMap, commit.reset);
-  const { loaded, data } = imported;
-
-  const resolutions = toResolutions(imported.decisions, imported.lineups);
-  const apply = () => {
-    if (loaded === null) return;
-    const entries = resolutions.flatMap((resolution) => {
-      const lineup = imported.lineups.get(resolution.id);
-      return lineup === undefined ? [] : [{ lineup, resolution }];
-    });
-    commit.start(map, planChunks(entries, loaded.file.images), imported.copyLinks);
-  };
-  const startOver = () => {
-    commit.reset();
-    imported.clear();
-  };
+  const tabs: readonly TabId[] =
+    me.role === 'owner'
+      ? ['import', 'onSite', 'people', 'history']
+      : ['import', 'onSite', 'history'];
+  const onSite = current.status === 'ready' ? current.data.filter(isLineup) : [];
 
   return (
     <>
-      <Section title={<Text path="admin.file.title" />}>
-        <MapPicker
+      <SectionTabs tabs={tabs} active={tab} onChange={setTab} idPrefix={PANEL_PREFIX} />
+      <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'import')} hidden={tab !== 'import'}>
+        <ImportFlow map={map} onMap={setMap} onSite={onSite} onChanged={afterChange} />
+      </div>
+      <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'onSite')} hidden={tab !== 'onSite'}>
+        <OnSite
           map={map}
-          options={mapOptions(loaded === null ? [] : mapsOf(loaded.file.lineups))}
-          onChange={setMap}
-        />
-        <FileDrop file={loaded?.file ?? null} onFile={imported.open} />
-        {imported.problem !== null && !imported.problem.ok ? (
-          <Notice failure={{ key: imported.problem.key, detail: imported.problem.detail }} />
-        ) : null}
-        {loaded === null && imported.problem === null ? (
-          <Muted>
-            <Text path="admin.file.hint" />
-          </Muted>
-        ) : null}
-      </Section>
-
-      {loaded !== null && commit.state.phase !== 'done' ? (
-        <>
-          <PreviewSection
-            map={map}
-            preview={imported.preview}
-            lineups={imported.lineups}
-            images={loaded.file.images}
-            decisions={imported.decisions}
-            onDecision={imported.setDecision}
-            copyLinks={imported.copyLinks}
-            onCopyLinks={imported.setCopyLinks}
-            onRetry={imported.reloadPreview}
-          />
-          {data !== null && data.items.length > 0 ? (
-            <CommitBar
-              count={resolutions.length}
-              state={commit.state}
-              onApply={apply}
-              onRetry={() => void commit.retry()}
-            />
-          ) : null}
-        </>
-      ) : null}
-
-      {commit.state.phase === 'done' ? (
-        <ResultSummary
-          results={commit.state.results}
-          skipped={data === null ? 0 : data.items.length - resolutions.length}
-          onAgain={startOver}
-        />
-      ) : null}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <CurrentLineups
-          map={map}
+          onMap={setMap}
           resource={current}
-          onChanged={afterCommit}
+          onChanged={afterChange}
           onRetry={reloadCurrent}
         />
+      </div>
+      {me.role === 'owner' ? (
+        <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'people')} hidden={tab !== 'people'}>
+          <PeopleSection me={me} />
+        </div>
+      ) : null}
+      <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'history')} hidden={tab !== 'history'}>
         <ChangesList resource={changes} onRetry={reloadChanges} />
       </div>
-
-      {me.role === 'owner' ? <PeopleSection me={me} /> : null}
     </>
   );
 }

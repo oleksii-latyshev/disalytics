@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./transform": "./src/transform.ts",
     "./assets/*": "./assets/*"
   },
   "scripts": {

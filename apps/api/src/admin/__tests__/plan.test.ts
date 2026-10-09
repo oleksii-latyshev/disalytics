@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { decodeDataUrl, sniffImageType } from '../helpers/images';
-import { diffLineups, findDuplicate, photoStats, planLineups } from '../helpers/plan';
+import {
+  diffLineups,
+  findDuplicate,
+  photoStats,
+  planLineups,
+  serverOnlyLineups,
+} from '../helpers/plan';
 import { lineup, PHOTO_BASE, PNG_DATA_URL } from './support';
+
+const plan = (
+  existing: Parameters<typeof planLineups>[0],
+  incoming: Parameters<typeof planLineups>[1],
+) => planLineups(existing, incoming, 'de_mirage', PHOTO_BASE);
 
 describe('planLineups', () => {
   it('marks a lineup with an unseen id and no twin as new', () => {
-    const [item] = planLineups(
-      [lineup()],
-      [lineup({ id: 'far', origin: { x: 5000, y: 0, z: 0 } })],
-    );
+    const [item] = plan([lineup()], [lineup({ id: 'far', origin: { x: 5000, y: 0, z: 0 } })]);
     expect(item?.status).toBe('new');
   });
 
@@ -17,11 +25,11 @@ describe('planLineups', () => {
     const reordered = Object.fromEntries(Object.entries(lineup()).reverse()) as ReturnType<
       typeof lineup
     >;
-    expect(planLineups([stored], [reordered])[0]?.status).toBe('unchanged');
+    expect(plan([stored], [reordered])[0]?.status).toBe('unchanged');
   });
 
   it('marks the same id with other content an update and lists the fields', () => {
-    const [item] = planLineups([lineup()], [lineup({ title: 'Renamed', pitch: -11 })]);
+    const [item] = plan([lineup()], [lineup({ title: 'Renamed', pitch: -11 })]);
     expect(item?.status).toBe('update');
     expect(item?.diff?.map((d) => d.field)).toEqual(['pitch', 'title']);
     expect(item?.diff?.find((d) => d.field === 'title')).toEqual({
@@ -32,7 +40,7 @@ describe('planLineups', () => {
   });
 
   it('marks another id at nearly the same throw a duplicate and names the candidate', () => {
-    const [item] = planLineups(
+    const [item] = plan(
       [lineup()],
       [
         lineup({
@@ -43,7 +51,7 @@ describe('planLineups', () => {
       ],
     );
     expect(item?.status).toBe('duplicate');
-    expect(item?.candidate).toEqual({ id: 'mirage-1', title: 'Smoke window' });
+    expect(item?.stored).toMatchObject({ id: 'mirage-1', title: 'Smoke window' });
   });
 
   it('is not a duplicate across kind, side, or beyond the radius', () => {
@@ -56,10 +64,48 @@ describe('planLineups', () => {
   });
 });
 
+describe('planLineups problems and photos', () => {
+  it('lists what stops a lineup from being saved', () => {
+    const [item] = plan(
+      [],
+      [
+        lineup({
+          id: 'bad',
+          title: ' ',
+          origin: { x: 90_000, y: 0, z: 0 },
+          imageUrls: ['http://x.example/a.webp'],
+        }),
+      ],
+    );
+    expect(item?.problems).toEqual([
+      { code: 'title_blank' },
+      { code: 'origin_off_map' },
+      { code: 'photo_not_https', index: 0 },
+    ]);
+  });
+
+  it('reads a local photo as the stored photo with the same SHA-256', () => {
+    const hash = 'a'.repeat(64);
+    const stored = lineup({ imageUrls: [`${PHOTO_BASE}/${hash}`] });
+    const [item] = plan([stored], [lineup({ imageUrls: [`local:${hash}`] })]);
+    expect(item?.status).toBe('unchanged');
+  });
+
+  it('names the stored lineup of an update and the server-only ones', () => {
+    const other = lineup({ id: 'other', origin: { x: 9000, y: 0, z: 0 } });
+    const incoming = [lineup({ title: 'Renamed' })];
+    const [item] = plan([lineup(), other], incoming);
+    expect(item?.stored?.id).toBe('mirage-1');
+    expect(serverOnlyLineups([lineup(), other], incoming).map((entry) => entry.id)).toEqual([
+      'other',
+    ]);
+  });
+});
+
 describe('diffLineups', () => {
   it('reports a removed optional field', () => {
     const diff = diffLineups(lineup({ notes: 'x' }), lineup());
-    expect(diff).toEqual([{ field: 'notes', before: 'x', after: undefined }]);
+    expect(diff).toEqual([{ field: 'notes', before: 'x' }]);
   });
 });
 

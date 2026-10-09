@@ -19,7 +19,7 @@ const KEYS: Readonly<Record<LineupFileError['code'], TranslationKey>> = {
 
 export function readLineupFile(name: string, text: string): FileResult {
   try {
-    const { lineups, images } = parseLineupFile(text);
+    const { lineups, images } = parseLineupFile(text, { allowBlankTitle: true });
     return { ok: true, file: { name, lineups, images } };
   } catch (error) {
     if (error instanceof LineupFileError) {

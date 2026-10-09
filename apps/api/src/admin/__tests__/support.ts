@@ -96,3 +96,19 @@ export function file(lineups: unknown[], images: Record<string, string> = {}) {
     images,
   };
 }
+
+/** A distinct lowercase hex "hash" for the nth synthetic photo. */
+export function sha(index: number): string {
+  return index.toString(16).padStart(64, '0');
+}
+
+/** A data URL that opens with the PNG signature and differs per `index`, which is all the Worker checks. */
+export function pngNumber(index: number): string {
+  const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, index, 1, 2, 3]);
+  return `data:image/png;base64,${btoa(String.fromCharCode(...bytes))}`;
+}
+
+export async function sha256Of(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
