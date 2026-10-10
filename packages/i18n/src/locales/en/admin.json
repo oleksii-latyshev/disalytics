@@ -113,6 +113,7 @@
     "network": "The server could not be reached. Try again in a moment.",
     "notFound": "That no longer exists.",
     "retry": "Try again",
+    "tacticChanged": "Someone else saved this tactic since you opened it. Reload it to see their version.",
     "title": "Something went wrong",
     "tooManyPhotos": "Too many photos for one request.",
     "unauthorized": "You are not signed in on this device. Open an invite link from the owner."
@@ -407,8 +408,11 @@
       "skip": "Skip"
     },
     "comparing": "Comparing with the site…",
+    "create": "New tactic",
     "deleteConfirm": "Delete the tactic “{title}” for everyone?",
+    "discardConfirm": "This tactic is not saved to the site yet. Close without saving?",
     "drop": "Drop an exported tactics file here",
+    "edit": "Edit",
     "field": {
       "author": "Author",
       "content": "The board changed (routes, throws or notes)",
@@ -432,11 +436,14 @@
       "title_too_long": "The name is too long (120 characters at most).",
       "too_large": "This tactic is too large to store."
     },
+    "reload": "Reload the tactic",
     "save": "{count, plural, one {Save # tactic} other {Save # tactics}}",
     "saved": "{count, plural, one {# tactic saved} other {# tactics saved}}",
+    "sideLabel": "Side",
     "siteEmpty": "No tactics are stored yet.",
     "siteTitle": "Tactics on the site",
     "skipped": "{count, number} left out",
+    "stale": "Someone else saved this tactic since you opened it, so your save was refused. Reload to see their version; your unsaved changes here will be lost.",
     "status": {
       "new": "new",
       "unchanged": "the same as on the site",

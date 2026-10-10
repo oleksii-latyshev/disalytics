@@ -15,6 +15,7 @@
     "@disa/i18n": "*",
     "@disa/map-data": "*",
     "@disa/plate": "*",
+    "@disa/tactic-board": "*",
     "@disa/ui": "*",
     "effect": "4.0.0-rc.117",
     "lucide-react": "^1.31.0",

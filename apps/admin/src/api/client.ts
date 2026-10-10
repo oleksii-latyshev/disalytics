@@ -34,6 +34,7 @@ const KEYS: Readonly<Record<string, TranslationKey>> = {
   invalid_lineup: 'admin.error.invalidLineup',
   invalid_collection: 'admin.error.invalidCollection',
   invalid_tactic: 'admin.error.invalidTactic',
+  tactic_changed: 'admin.error.tacticChanged',
   collection_name_taken: 'admin.error.collectionNameTaken',
   invalid_invite: 'admin.error.invalidInvite',
   name_required: 'admin.error.nameRequired',

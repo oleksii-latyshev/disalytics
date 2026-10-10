@@ -227,6 +227,23 @@ export const TacticsCommitResponse = Schema.Struct({
 });
 export type TacticsCommitResponse = typeof TacticsCommitResponse.Type;
 
+/**
+ * One tactic from the board editor. `basedOn` is the `updatedAt` of the version the editor started
+ * from (`null` for a new tactic): a stored tactic newer than that was saved by someone else.
+ */
+export const TacticSaveRequest = Schema.Struct({
+  tactic: Schema.Unknown,
+  basedOn: Schema.NullOr(Schema.Number),
+});
+export type TacticSaveRequest = typeof TacticSaveRequest.Type;
+
+export const TacticSaveResponse = Schema.Struct({
+  revision: Schema.Int,
+  /** The tactic as stored: an author added on create, otherwise as sent. */
+  tactic: Schema.Unknown,
+});
+export type TacticSaveResponse = typeof TacticSaveResponse.Type;
+
 export const SiteTacticsResponse = Schema.Struct({
   revision: Schema.Int,
   tactics: Schema.Array(Schema.Unknown),

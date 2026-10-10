@@ -45,6 +45,8 @@ export interface TacticEditorProps {
   readonly renderTransfer?: ((slot: TacticTransferSlot) => ReactNode) | undefined;
   readonly onSave?: ((tactic: Tactic) => void | Promise<void>) | undefined;
   readonly onBack?: (() => void) | undefined;
+  /** Fired whenever the editor's own unsaved indicator changes. */
+  readonly onDirtyChange?: ((isDirty: boolean) => void) | undefined;
   readonly className?: string | undefined;
 }
 
@@ -58,6 +60,7 @@ function TacticBoard({
   initialTactic,
   onSave,
   onBack,
+  onDirtyChange,
   className,
   overview,
   useLineups,
@@ -82,6 +85,10 @@ function TacticBoard({
   });
   const [hasSaved, setHasSaved] = useState(false);
   const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const handleSave = useCallback(() => {
     editor.save();

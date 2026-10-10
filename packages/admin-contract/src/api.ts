@@ -31,6 +31,8 @@ import {
   RedeemRequest,
   Removed,
   SiteTacticsResponse,
+  TacticSaveRequest,
+  TacticSaveResponse,
   TacticsCommitRequest,
   TacticsCommitResponse,
   TacticsPreviewRequest,
@@ -171,6 +173,12 @@ const TacticsGroup = HttpApiGroup.make('tactics')
     HttpApiEndpoint.post('commit', '/tactics/commit', {
       payload: TacticsCommitRequest,
       success: TacticsCommitResponse,
+      error: BadRequest,
+    }),
+    HttpApiEndpoint.put('save', '/tactics/:id', {
+      params: { id: LineupId },
+      payload: TacticSaveRequest,
+      success: TacticSaveResponse,
       error: BadRequest,
     }),
     HttpApiEndpoint.delete('remove', '/tactics/:id', {

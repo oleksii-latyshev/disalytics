@@ -203,4 +203,73 @@ describe.skipIf(!hasSqlite)('tactics over the admin API', () => {
     const again = await commit(env, [{ action: 'add', tactic: tactic() }]);
     expect(again.status).toBe(200);
   });
+
+  describe('saving one tactic', () => {
+    const put = (
+      env: ReturnType<typeof adminEnv>,
+      id: string,
+      tactic: unknown,
+      basedOn: number | null,
+    ) => api(env, `/api/tactics/${id}`, { method: 'PUT', body: { tactic, basedOn } });
+
+    it('creates with the admin as author, replaces keeping a credited author, bumps the revision and logs', async () => {
+      const env = adminEnv();
+      const created = await put(env, 'mirage-b-split', tactic(), null);
+      expect(created.status).toBe(200);
+      expect((await created.json()) as { revision: number; tactic: Tactic }).toMatchObject({
+        revision: 1,
+        tactic: { author: 'dev@localhost' },
+      });
+
+      const replaced = await put(env, 'mirage-b-split', tactic({ title: 'v2', updatedAt: 5 }), 1);
+      expect(replaced.status).toBe(200);
+      expect(((await replaced.json()) as Committed).revision).toBe(2);
+      expect((await listed(env)).tactics).toMatchObject([{ title: 'v2', author: 'dev@localhost' }]);
+
+      await put(env, 'mirage-b-split', tactic({ title: 'v3', updatedAt: 6, author: 'Ann' }), 5);
+      expect((await listed(env)).tactics).toMatchObject([{ title: 'v3', author: 'Ann' }]);
+
+      const changes = (await (await api(env, '/api/changes?map=de_mirage')).json()) as {
+        changes: { lineupId: string; action: string }[];
+      };
+      expect(changes.changes.map(({ action }) => action)).toEqual([
+        'tactic:save',
+        'tactic:save',
+        'tactic:save',
+      ]);
+    });
+
+    it('refuses an invalid body, an id that differs from the path and a bad map', async () => {
+      const env = adminEnv();
+      for (const [id, body] of [
+        ['mirage-b-split', { id: 'x' }],
+        ['other', tactic()],
+        ['mirage-b-split', tactic({ title: '' })],
+        ['mirage-b-split', tactic({ map: 'Mirage' })],
+      ] as const) {
+        const response = await put(env, id, body, null);
+        expect(response.status).toBe(400);
+        expect(((await response.json()) as Committed).error).toBe('invalid_tactic');
+      }
+      expect((await listed(env)).tactics).toEqual([]);
+    });
+
+    it('refuses a stale editor: a newer stored version, a new tactic whose id exists, a vanished one', async () => {
+      const env = adminEnv();
+      await put(env, 'mirage-b-split', tactic({ updatedAt: 10 }), null);
+      for (const basedOn of [5, 15, null]) {
+        const response = await put(
+          env,
+          'mirage-b-split',
+          tactic({ title: 'mine', updatedAt: 20 }),
+          basedOn,
+        );
+        expect(response.status).toBe(400);
+        expect(((await response.json()) as Committed).error).toBe('tactic_changed');
+      }
+      const gone = await put(env, 'other-one', tactic({ id: 'other-one' }), 3);
+      expect(((await gone.json()) as Committed).error).toBe('tactic_changed');
+      expect((await listed(env)).tactics).toMatchObject([{ title: 'B split' }]);
+    });
+  });
 });

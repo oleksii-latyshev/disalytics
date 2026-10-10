@@ -13,8 +13,7 @@ import { PeopleSection } from './components/PeopleSection';
 import { SectionTabs, type TabId, tabPanelId } from './components/SectionTabs';
 import { SignedOut } from './components/SignedOut';
 import { SiteCollections } from './components/SiteCollections';
-import { SiteTactics } from './components/SiteTactics';
-import { TacticsSection } from './components/TacticsSection';
+import { TacticsTab } from './components/TacticsTab';
 import { DEFAULT_MAP } from './helpers/format';
 import { forgetInvite, inviteTokenOf } from './helpers/invite-link';
 import { mapResource, useResource } from './hooks/use-resource';
@@ -124,8 +123,7 @@ function Workspace({ me }: { me: WhoAmI }) {
         <SiteCollections map={map} resource={collectionsResource} onChanged={afterChange} />
       </div>
       <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'tactics')} hidden={tab !== 'tactics'}>
-        <TacticsSection onChanged={afterTacticChange} />
-        <SiteTactics resource={siteTactics} onChanged={afterTacticChange} onRetry={reloadTactics} />
+        <TacticsTab resource={siteTactics} onChanged={afterTacticChange} onRetry={reloadTactics} />
       </div>
       {me.role === 'owner' ? (
         <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'people')} hidden={tab !== 'people'}>
