@@ -50,3 +50,8 @@ export function useResource<T>(
   const reload = useCallback(() => setVersion((value) => value + 1), []);
   return [state, reload];
 }
+
+/** The same resource with its data read through `pick`, for a screen that shows one part of it. */
+export function mapResource<T, U>(resource: Resource<T>, pick: (data: T) => U): Resource<U> {
+  return resource.status === 'ready' ? { status: 'ready', data: pick(resource.data) } : resource;
+}

@@ -16,6 +16,7 @@ import { withoutSession, withSession } from './auth/cookie';
 import { AdminAuth } from './auth/store';
 import { deviceLabel, SESSION_COOKIE } from './auth/tokens';
 import { ChangeLog } from './change-log';
+import { runCollectionsCommit, runCollectionsPreview } from './collections';
 import { runCommit } from './commit';
 import { AdminConfig } from './config';
 import { Contributors } from './contributors';
@@ -204,6 +205,33 @@ export const LineupsHandlers = HttpApiBuilder.group(AdminApi, 'lineups', (handle
         const actor = yield* Actor;
         const config = yield* AdminConfig;
         const removed = yield* storage.deleteLineup({
+          id: params.id,
+          actor: actor.name,
+          now: config.now(),
+        });
+        if (!removed) return yield* Effect.fail(notFound);
+        return { id: params.id };
+      }).pipe(Effect.catchTag('StorageError', Effect.die)),
+    ),
+);
+
+export const CollectionsHandlers = HttpApiBuilder.group(AdminApi, 'collections', (handlers) =>
+  handlers
+    .handle('preview', ({ payload }) =>
+      runCollectionsPreview(payload).pipe(Effect.catchTag('StorageError', Effect.die)),
+    )
+    .handle('commit', ({ payload }) =>
+      Effect.gen(function* () {
+        const actor = yield* Actor;
+        return yield* runCollectionsCommit(payload, actor);
+      }).pipe(Effect.catchTag('StorageError', Effect.die)),
+    )
+    .handle('remove', ({ params }) =>
+      Effect.gen(function* () {
+        const storage = yield* LineupStorage;
+        const actor = yield* Actor;
+        const config = yield* AdminConfig;
+        const removed = yield* storage.deleteCollection({
           id: params.id,
           actor: actor.name,
           now: config.now(),

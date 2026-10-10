@@ -16,6 +16,7 @@ export interface CollectionsProps {
   onCreate: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (collection: LineupCollection) => void;
+  onCopy: (collection: LineupCollection) => void;
   onToggleMembers: (collectionId: string, lineupIds: readonly string[]) => void;
   onCreateWith: (name: string, lineupIds: readonly string[]) => void;
 }
@@ -63,6 +64,7 @@ export function LineupsSidebar(props: Props) {
         onCreate={props.collections.onCreate}
         onRename={props.collections.onRename}
         onDelete={props.collections.onDelete}
+        onCopy={props.collections.onCopy}
       />
       <div className="flex shrink-0 flex-col gap-2.5">
         <LineupFilters

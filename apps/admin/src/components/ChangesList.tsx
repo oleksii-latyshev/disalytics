@@ -1,8 +1,14 @@
 import type { ChangeEntry } from '@disa/admin-contract';
-import { Text, useLocale, useT } from '@disa/i18n';
+import { Text, type TranslationKey, useLocale, useT } from '@disa/i18n';
 import type { Resource } from '../hooks/use-resource';
 import { Notice } from './Notice';
 import { Muted, Section } from './Section';
+
+const ACTION_KEYS: Readonly<Record<string, TranslationKey>> = {
+  delete: 'admin.changes.delete',
+  'collection:save': 'admin.changes.collectionSave',
+  'collection:delete': 'admin.changes.collectionDelete',
+};
 
 export function ChangesList({
   resource,
@@ -37,9 +43,7 @@ export function ChangesList({
                   path="admin.changes.entry"
                   values={{
                     actor: change.actor,
-                    action: t(
-                      change.action === 'delete' ? 'admin.changes.delete' : 'admin.changes.save',
-                    ),
+                    action: t(ACTION_KEYS[change.action] ?? 'admin.changes.save'),
                     lineup: change.lineupId,
                   }}
                 />

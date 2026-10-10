@@ -1,4 +1,4 @@
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupCollection } from '@disa/demo-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const stored = vi.hoisted(() => new Map<string, unknown>());
@@ -17,6 +17,8 @@ import {
   fetchBuiltIns,
   loadBuiltIns,
   loadOfflineBuiltIns,
+  loadOfflineCatalog,
+  refreshCatalog,
   syncBuiltIns,
 } from '../helpers/built-ins';
 
@@ -37,6 +39,15 @@ const remote: Lineup = {
   createdAt: 1,
 };
 
+const executeB: LineupCollection = {
+  id: 'exec-b',
+  name: 'Execute B',
+  map: 'de_mirage',
+  lineupIds: ['api-1'],
+  createdAt: 1,
+  updatedAt: 1,
+};
+
 afterEach(() => {
   stored.clear();
   vi.unstubAllGlobals();
@@ -52,7 +63,36 @@ describe('fetchBuiltIns', () => {
       }),
     );
 
-    expect(result).toEqual({ revision: 2, lineups: [{ ...remote, isBuiltIn: true }] });
+    expect(result).toEqual({
+      revision: 2,
+      lineups: [{ ...remote, isBuiltIn: true }],
+      collections: [],
+    });
+  });
+
+  it('reads the collections of the map, marks them built-in and drops the invalid ones', async () => {
+    const result = await fetchBuiltIns('de_mirage', async () =>
+      Response.json({
+        map: 'de_mirage',
+        revision: 2,
+        lineups: [remote],
+        collections: [executeB, { id: 'bad' }, { ...executeB, id: 'dust', map: 'de_dust2' }, 'x'],
+      }),
+    );
+
+    expect(result?.collections).toEqual([{ ...executeB, isBuiltIn: true }]);
+  });
+
+  it('reads a response from before collections as having none', async () => {
+    const result = await fetchBuiltIns('de_mirage', async () =>
+      Response.json({ map: 'de_mirage', revision: 2, lineups: [remote] }),
+    );
+    expect(result?.collections).toEqual([]);
+
+    const malformed = await fetchBuiltIns('de_mirage', async () =>
+      Response.json({ map: 'de_mirage', revision: 2, lineups: [], collections: 'x' }),
+    );
+    expect(malformed?.collections).toEqual([]);
   });
 
   it('is null for an error status, a thrown fetch, a malformed body and an unseeded map', async () => {
@@ -68,6 +108,36 @@ describe('fetchBuiltIns', () => {
     expect(
       await fetchBuiltIns('de_mirage', async () => Response.json({ revision: 0, lineups: [] })),
     ).toBeNull();
+  });
+});
+
+describe('the stored catalog', () => {
+  it('keeps the collections with the lineups and serves them offline', async () => {
+    const fresh = await refreshCatalog('de_mirage', async () =>
+      Response.json({ map: 'de_mirage', revision: 3, lineups: [remote], collections: [executeB] }),
+    );
+
+    expect(fresh?.collections).toEqual([{ ...executeB, isBuiltIn: true }]);
+    expect(stored.get('de_mirage')).toMatchObject({ revision: 3 });
+    const offline = await loadOfflineCatalog('de_mirage');
+    expect(offline.lineups.map((lineup) => lineup.id)).toEqual(['api-1']);
+    expect(offline.collections).toEqual([{ ...executeB, isBuiltIn: true }]);
+  });
+
+  it('reads a copy stored before collections existed, and the bundled snapshot, as having none', async () => {
+    stored.set('de_nuke', { revision: 1, lineups: [], collections: [] });
+    expect((await loadOfflineCatalog('de_nuke')).collections).toEqual([]);
+    expect((await loadOfflineCatalog('de_inferno')).collections).toEqual([]);
+  });
+
+  it('keeps the stored copy when the API cannot be reached', async () => {
+    stored.set('de_mirage', { revision: 1, lineups: [remote], collections: [executeB] });
+    expect(
+      await refreshCatalog('de_mirage', async () => {
+        throw new Error('offline');
+      }),
+    ).toBeNull();
+    expect((await loadOfflineCatalog('de_mirage')).collections).toHaveLength(1);
   });
 });
 

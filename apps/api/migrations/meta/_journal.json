@@ -36,6 +36,13 @@
       "when": 1791607886010,
       "tag": "0005_admin_steam",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791608606052,
+      "tag": "0006_lineup_collections",
+      "breakpoints": true
     }
   ]
 }

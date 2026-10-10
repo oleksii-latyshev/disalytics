@@ -162,6 +162,7 @@ export {
   newLineupCollection,
   prunedCollection,
   renamedCollection,
+  uniqueCollectionName,
   withCollectionMembers,
   withoutCollectionMembers,
 } from './helpers/lineup-collections';

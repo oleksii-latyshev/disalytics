@@ -1,5 +1,6 @@
 import {
   isHttpsUrl,
+  isLineupCollection,
   isLocalImageRef,
   type Lineup,
   looseLineup,
@@ -71,4 +72,17 @@ export function lineupProblems(value: unknown, map: string): Problem[] {
   if (!isOnRadar(lineup.map, lineup.landing)) problems.push({ code: 'landing_off_map' });
   problems.push(...photoProblems(lineup));
   return problems;
+}
+
+export const COLLECTION_PROBLEM_CODES = ['invalid_collection', 'wrong_map', 'name_taken'] as const;
+
+export type CollectionProblemCode = (typeof COLLECTION_PROBLEM_CODES)[number];
+
+/**
+ * What stops a collection from being saved to `map`, leaving out the one thing only the server
+ * knows: whether its name is taken by another collection there (`name_taken`).
+ */
+export function collectionProblems(value: unknown, map: string): CollectionProblemCode[] {
+  if (!isLineupCollection(value)) return ['invalid_collection'];
+  return value.map === map ? [] : ['wrong_map'];
 }

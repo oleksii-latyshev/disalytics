@@ -1,9 +1,15 @@
-import { type Lineup, LineupFileError, parseLineupFile } from '@disa/demo-core';
+import {
+  type Lineup,
+  type LineupCollection,
+  LineupFileError,
+  parseLineupFile,
+} from '@disa/demo-core';
 import type { TranslationKey } from '@disa/i18n';
 
 export interface LoadedFile {
   readonly name: string;
   readonly lineups: readonly Lineup[];
+  readonly collections: readonly LineupCollection[];
   readonly images: Readonly<Record<string, string>>;
 }
 
@@ -19,8 +25,8 @@ const KEYS: Readonly<Record<LineupFileError['code'], TranslationKey>> = {
 
 export function readLineupFile(name: string, text: string): FileResult {
   try {
-    const { lineups, images } = parseLineupFile(text, { allowBlankTitle: true });
-    return { ok: true, file: { name, lineups, images } };
+    const { lineups, images, collections } = parseLineupFile(text, { allowBlankTitle: true });
+    return { ok: true, file: { name, lineups, collections, images } };
   } catch (error) {
     if (error instanceof LineupFileError) {
       return { ok: false, key: KEYS[error.code], detail: error.message };

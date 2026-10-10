@@ -26,6 +26,12 @@ export type {
   AdminRole,
   ChangeEntry,
   ChangesResponse,
+  CollectionDecision,
+  CollectionPreviewItem,
+  CollectionStatus,
+  CollectionsCommitRequest,
+  CollectionsCommitResponse,
+  CollectionsPreviewResponse,
   CommitDecision,
   CommitRequest,
   CommitResponse,
@@ -57,5 +63,12 @@ export {
   SteamUrl,
 } from './schemas';
 export { isSteamUrl, MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
-export type { Problem, ProblemCode } from './validation';
-export { isOnRadar, lineupProblems, MAX_TITLE_LENGTH, PROBLEM_CODES } from './validation';
+export type { CollectionProblemCode, Problem, ProblemCode } from './validation';
+export {
+  COLLECTION_PROBLEM_CODES,
+  collectionProblems,
+  isOnRadar,
+  lineupProblems,
+  MAX_TITLE_LENGTH,
+  PROBLEM_CODES,
+} from './validation';

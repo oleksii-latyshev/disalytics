@@ -1,5 +1,11 @@
-import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
-import { type BuiltInLineups, openBuiltInLineupStore } from '@disa/demo-store';
+import {
+  isLineup,
+  isLineupCollection,
+  type Lineup,
+  type LineupCollection,
+  normalizeLineup,
+} from '@disa/demo-core';
+import { openBuiltInLineupStore, type StoredBuiltInLineups } from '@disa/demo-store';
 import { loadMapLineups } from '@disa/map-data';
 
 const DEFAULT_API_URL = 'https://disalytics-api.disa-67b.workers.dev';
@@ -22,6 +28,21 @@ function asBuiltIn(map: string, entries: readonly unknown[]): Lineup[] {
     .filter((lineup) => lineup.map === map);
 }
 
+/** A map's built-in lineups and collections, as one copy of them. */
+export interface BuiltInCatalog {
+  readonly lineups: readonly Lineup[];
+  readonly collections: readonly LineupCollection[];
+}
+
+function asBuiltInCollections(map: string, entries: readonly unknown[]): LineupCollection[] {
+  return entries
+    .map((entry) =>
+      typeof entry === 'object' && entry !== null ? { ...entry, isBuiltIn: true } : entry,
+    )
+    .filter(isLineupCollection)
+    .filter((collection) => collection.map === map);
+}
+
 /**
  * The API's lineups for a map, or `null` when it cannot be reached, answers badly, or has never
  * been seeded (revision 0) — the caller then keeps what it has.
@@ -29,7 +50,7 @@ function asBuiltIn(map: string, entries: readonly unknown[]): Lineup[] {
 export async function fetchBuiltIns(
   map: string,
   fetchImpl: Fetch = (input, init) => fetch(input, init),
-): Promise<BuiltInLineups | null> {
+): Promise<StoredBuiltInLineups | null> {
   try {
     const response = await fetchImpl(`${apiUrl()}/lineups/${encodeURIComponent(map)}`, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -47,13 +68,20 @@ export async function fetchBuiltIns(
     ) {
       return null;
     }
-    return { revision: body.revision, lineups: asBuiltIn(map, body.lineups) };
+    return {
+      revision: body.revision,
+      lineups: asBuiltIn(map, body.lineups),
+      collections:
+        'collections' in body && Array.isArray(body.collections)
+          ? asBuiltInCollections(map, body.collections)
+          : [],
+    };
   } catch {
     return null;
   }
 }
 
-async function readStored(map: string): Promise<BuiltInLineups | null> {
+async function readStored(map: string): Promise<StoredBuiltInLineups | null> {
   const store = await openBuiltInLineupStore();
   if (store === null) return null;
   try {
@@ -65,7 +93,7 @@ async function readStored(map: string): Promise<BuiltInLineups | null> {
   }
 }
 
-async function writeStored(map: string, copy: BuiltInLineups): Promise<void> {
+async function writeStored(map: string, copy: StoredBuiltInLineups): Promise<void> {
   const store = await openBuiltInLineupStore();
   if (store === null) return;
   try {
@@ -78,25 +106,30 @@ async function writeStored(map: string, copy: BuiltInLineups): Promise<void> {
 }
 
 /** What is on the device: the last copy the API sent, else the snapshot bundled with the app. */
-export async function loadOfflineBuiltIns(map: string): Promise<readonly Lineup[]> {
+export async function loadOfflineCatalog(map: string): Promise<BuiltInCatalog> {
   const stored = await readStored(map);
-  return stored === null ? loadMapLineups(map) : stored.lineups;
+  if (stored === null) return { lineups: await loadMapLineups(map), collections: [] };
+  return { lineups: stored.lineups, collections: stored.collections };
 }
 
 /** Fetches the API's copy and keeps it for the next offline start; `null` leaves the caller as is. */
-export async function refreshBuiltIns(
+export async function refreshCatalog(
   map: string,
   fetchImpl?: Fetch,
-): Promise<readonly Lineup[] | null> {
+): Promise<BuiltInCatalog | null> {
   const fresh = await fetchBuiltIns(map, fetchImpl);
   if (fresh === null) return null;
   await writeStored(map, fresh);
-  return fresh.lineups;
+  return { lineups: fresh.lineups, collections: fresh.collections };
+}
+
+export async function loadOfflineBuiltIns(map: string): Promise<readonly Lineup[]> {
+  return (await loadOfflineCatalog(map)).lineups;
 }
 
 /** The API's lineups when reachable, else what is on the device. */
 export async function loadBuiltIns(map: string): Promise<readonly Lineup[]> {
-  return (await refreshBuiltIns(map)) ?? loadOfflineBuiltIns(map);
+  return ((await refreshCatalog(map)) ?? (await loadOfflineCatalog(map))).lineups;
 }
 
 /** The newest revision the API holds for each map it has seeded, or `null` when it cannot be reached. */
@@ -155,7 +188,7 @@ export async function syncBuiltIns(
     if (stored === null || stored.revision < remote) stale.push(map);
   }
   const refreshed = await Promise.all(
-    stale.map(async (map) => ((await refreshBuiltIns(map, fetchImpl)) === null ? null : map)),
+    stale.map(async (map) => ((await refreshCatalog(map, fetchImpl)) === null ? null : map)),
   );
   return refreshed.filter((map) => map !== null);
 }

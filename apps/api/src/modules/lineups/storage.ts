@@ -1,14 +1,26 @@
-import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
+import { isLineup, type Lineup, type LineupCollection, normalizeLineup } from '@disa/demo-core';
 import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { Context, type Effect } from 'effect';
 import { type D1Binding, makeDb } from '../../db/client';
 import { lineupAliases, lineupChanges, lineupRevisions, lineups } from '../../db/schema';
 import { attempt, type StorageError } from '../../shared/storage-error';
+import {
+  type CollectionRemoval,
+  type CollectionWrite,
+  deleteCollection,
+  foreignCollectionIds,
+  saveCollections,
+  selectCollectionBodies,
+  servedCollections,
+} from './collection-storage';
+import { bumpRevision } from './revision';
 
 export interface MapLineups {
   readonly map: string;
   readonly revision: number;
   readonly lineups: readonly Lineup[];
+  /** Live collections, marked built-in, with members whose lineup is gone already left out. */
+  readonly collections: readonly LineupCollection[];
 }
 
 export interface MapSummary {
@@ -41,7 +53,7 @@ export interface LineupRemoval {
 export class LineupStorage extends Context.Service<
   LineupStorage,
   {
-    /** Live lineups of one map and its revision. Rows that fail `isLineup` are skipped. */
+    /** Live lineups and collections of one map and its revision. Malformed rows are skipped. */
     readonly readMap: (map: string) => Effect.Effect<MapLineups, StorageError>;
     /** Every map that has a revision or a live lineup, with both numbers. */
     readonly summary: Effect.Effect<readonly MapSummary[], StorageError>;
@@ -55,6 +67,15 @@ export class LineupStorage extends Context.Service<
     readonly takenIds: (ids: readonly string[]) => Effect.Effect<ReadonlySet<string>, StorageError>;
     /** Soft-deletes a lineup; `false` when there is no live lineup with that id. */
     readonly deleteLineup: (removal: LineupRemoval) => Effect.Effect<boolean, StorageError>;
+    /** Creates or replaces collections: one atomic batch, one revision bump per map. */
+    readonly saveCollections: (write: CollectionWrite) => Effect.Effect<void, StorageError>;
+    /** Soft-deletes a collection; `false` when there is no live collection with that id. */
+    readonly deleteCollection: (removal: CollectionRemoval) => Effect.Effect<boolean, StorageError>;
+    /** Which of these ids already belong to a collection of another map. */
+    readonly foreignCollectionIds: (
+      map: string,
+      ids: readonly string[],
+    ) => Effect.Effect<ReadonlySet<string>, StorageError>;
   }
 >()('disalytics/LineupStorage') {}
 
@@ -70,14 +91,6 @@ function chunks<T>(items: readonly T[]): T[][] {
   return out;
 }
 
-function aliasChunks(aliases: readonly LineupAlias[]): LineupAlias[][] {
-  const out: LineupAlias[][] = [];
-  for (let at = 0; at < aliases.length; at += ROWS_PER_INSERT) {
-    out.push(aliases.slice(at, at + ROWS_PER_INSERT));
-  }
-  return out;
-}
-
 function parseBody(body: string): unknown {
   try {
     return JSON.parse(body);
@@ -89,19 +102,10 @@ function parseBody(body: string): unknown {
 export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typeof LineupStorage> {
   const db = makeDb(binding);
 
-  const bumpRevision = (map: string) =>
-    db
-      .insert(lineupRevisions)
-      .values({ map, revision: 1 })
-      .onConflictDoUpdate({
-        target: lineupRevisions.map,
-        set: { revision: sql`${lineupRevisions.revision} + 1` },
-      });
-
   return {
     readMap: (map) =>
       attempt(async () => {
-        const [rows, revisions] = await db.batch([
+        const [rows, revisions, collectionRows] = await db.batch([
           db
             .select({ body: lineups.body })
             .from(lineups)
@@ -111,6 +115,7 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
             .select({ revision: lineupRevisions.revision })
             .from(lineupRevisions)
             .where(eq(lineupRevisions.map, map)),
+          selectCollectionBodies(db, map),
         ]);
         const valid: Lineup[] = [];
         for (const { body } of rows) {
@@ -118,7 +123,13 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
           if (isLineup(entry) && entry.map === map)
             valid.push({ ...normalizeLineup(entry), isBuiltIn: true });
         }
-        return { map, revision: revisions[0]?.revision ?? 0, lineups: valid };
+        const liveIds = new Set(valid.map(({ id }) => id));
+        return {
+          map,
+          revision: revisions[0]?.revision ?? 0,
+          lineups: valid,
+          collections: servedCollections(collectionRows, map, liveIds),
+        };
       }),
 
     summary: attempt(async () => {
@@ -174,8 +185,8 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
                 },
               }),
           ),
-          ...[...new Set(rows.map((row) => row.map))].map(bumpRevision),
-          ...aliasChunks(aliases).map((chunk) =>
+          ...[...new Set(rows.map((row) => row.map))].map((map) => bumpRevision(db, map)),
+          ...chunks(aliases).map((chunk) =>
             db
               .insert(lineupAliases)
               .values(chunk.map((alias) => ({ ...alias, createdAt: now })))
@@ -240,12 +251,18 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
             .update(lineups)
             .set({ deletedAt: now, updatedAt: now, updatedBy: actor })
             .where(eq(lineups.id, id)),
-          bumpRevision(found.map),
+          bumpRevision(db, found.map),
           db
             .insert(lineupChanges)
             .values({ lineupId: id, map: found.map, action: 'delete', actor, at: now }),
         ]);
         return true;
       }),
+
+    saveCollections: (write) => attempt(() => saveCollections(db, write)),
+
+    deleteCollection: (removal) => attempt(() => deleteCollection(db, removal)),
+
+    foreignCollectionIds: (map, ids) => attempt(() => foreignCollectionIds(db, map, ids)),
   };
 }

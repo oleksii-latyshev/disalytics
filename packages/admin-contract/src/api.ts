@@ -11,6 +11,9 @@ import {
 import {
   type AdminRole,
   ChangesResponse,
+  CollectionsCommitRequest,
+  CollectionsCommitResponse,
+  CollectionsPreviewResponse,
   CommitRequest,
   CommitResponse,
   ContributorsResponse,
@@ -132,6 +135,26 @@ const CommitGroup = HttpApiGroup.make('commit')
   )
   .middleware(SessionAuth);
 
+const CollectionsGroup = HttpApiGroup.make('collections')
+  .add(
+    HttpApiEndpoint.post('preview', '/collections/preview', {
+      payload: PreviewRequest,
+      success: CollectionsPreviewResponse,
+      error: BadRequest,
+    }),
+    HttpApiEndpoint.post('commit', '/collections/commit', {
+      payload: CollectionsCommitRequest,
+      success: CollectionsCommitResponse,
+      error: BadRequest,
+    }),
+    HttpApiEndpoint.delete('remove', '/collections/:id', {
+      params: { id: LineupId },
+      success: Removed,
+      error: NotFound,
+    }),
+  )
+  .middleware(SessionAuth);
+
 const LineupsGroup = HttpApiGroup.make('lineups')
   .add(
     HttpApiEndpoint.get('byMap', '/lineups/:map', {
@@ -167,6 +190,7 @@ export const AdminApi = HttpApi.make('disalytics-admin')
   .add(PreviewGroup.prefix('/api'))
   .add(CommitGroup.prefix('/api'))
   .add(LineupsGroup.prefix('/api'))
+  .add(CollectionsGroup.prefix('/api'))
   .add(ChangesGroup.prefix('/api'))
   .add(ContributorsGroup.prefix('/api'))
   .middleware(MalformedAsBadRequest)

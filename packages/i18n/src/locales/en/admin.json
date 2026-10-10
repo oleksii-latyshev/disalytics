@@ -26,16 +26,47 @@
     "remove": "will be deleted",
     "same": "unchanged",
     "start": "{count, plural, one {Start: # question} other {Start: # questions}}",
+    "toCollections": "To the collections",
     "toReview": "To the check",
     "update": "will be updated"
   },
   "changes": {
+    "collectionDelete": "deleted the collection",
+    "collectionSave": "saved the collection",
     "delete": "deleted",
     "empty": "No changes yet.",
     "entry": "{actor} {action} {lineup}",
     "loading": "Loading…",
     "save": "saved",
     "title": "Recent changes"
+  },
+  "collections": {
+    "adds": "{count, plural, one {Adds # lineup} other {Adds # lineups}}: {titles}",
+    "choice": {
+      "add": "Add",
+      "replace": "Replace",
+      "skip": "Skip"
+    },
+    "deleteConfirm": "Delete the collection “{name}” for everyone?",
+    "dropped": "Not on the site, left out: {count, number}",
+    "droppedTotal": "{count, plural, one {# lineup was left out because it is not on the site} other {# lineups were left out because they are not on the site}}",
+    "invalid": "This collection is not valid.",
+    "lede": "{count, plural, one {The file has # collection for {map}.} other {The file has # collections for {map}.}} Lineups they name that are not on the site are left out of them, so save the lineups first.",
+    "members": "{count, plural, one {# lineup} other {# lineups}}",
+    "nameTaken": "Another collection of this map already has this name.",
+    "nothingToDo": "Nothing to do",
+    "removes": "{count, plural, one {Removes # lineup} other {Removes # lineups}}: {titles}",
+    "renamed": "Renamed from “{name}”",
+    "save": "{count, plural, one {Save # collection} other {Save # collections}}",
+    "saved": "{count, plural, one {# collection saved} other {# collections saved}}",
+    "siteEmpty": "No collections are stored for this map yet.",
+    "siteTitle": "Collections of {map} on the site",
+    "status": {
+      "new": "new",
+      "unchanged": "the same as on the site",
+      "update": "changed"
+    },
+    "title": "Collections"
   },
   "contributors": {
     "empty": "No lineups yet.",
@@ -63,7 +94,9 @@
   },
   "error": {
     "bodyTooLarge": "That is too much data for one request.",
+    "collectionNameTaken": "Another collection of this map already has that name. Names are compared without regard to case.",
     "forbidden": "Only the owner can do this, or the request came from another site.",
+    "invalidCollection": "A collection would be invalid once saved.",
     "invalidDecisions": "One of the lineups cannot be saved the way it was chosen. The line below says which. Go back to the check, press “Edit” on that row or leave it out.",
     "invalidFile": "The server rejected the lineups in that file.",
     "invalidInvite": "This link is unknown, already used or expired. Ask the owner for a new one.",

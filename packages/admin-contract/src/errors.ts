@@ -10,6 +10,8 @@ export const BAD_REQUEST_CODES = [
   'invalid_photo',
   'too_many_photos',
   'invalid_lineup',
+  'invalid_collection',
+  'collection_name_taken',
   'invalid_invite',
   'name_required',
   'last_owner',

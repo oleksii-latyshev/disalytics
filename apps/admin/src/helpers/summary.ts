@@ -75,3 +75,15 @@ export function writingsOf(rows: readonly Row[]): Writing[] {
         ];
   });
 }
+
+export type ReviewAction = 'fix' | 'apply' | 'collections' | 'nothing';
+
+/**
+ * What the check step's main button does: apply the changes, or, with none to write, go on to the
+ * file's collections; blocked while a lineup still needs fixing.
+ */
+export function reviewActionOf(totals: Totals, hasCollections: boolean): ReviewAction {
+  if (totals.blocked > 0) return 'fix';
+  if (totals.add + totals.update + totals.remove > 0) return 'apply';
+  return hasCollections ? 'collections' : 'nothing';
+}

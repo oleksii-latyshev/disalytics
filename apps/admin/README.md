@@ -29,6 +29,17 @@ the counts and one button pinned at the bottom:
 3. **Check everything**: every lineup with its outcome, edit (fields and points on the map) or leave out
    any of them; lineups only the site has can be deleted. Apply is blocked while one needs fixing.
 4. **Done**: progress in parts, per-photo problems (retry, or continue without the photo), the result.
+   Below it, when the file has collections for the map: **Collections**.
+
+**Collections** (an execute or a retake) come from the same file's `collections` field and are previewed
+and saved after its lineups (`POST /api/collections/preview` and `/commit`), because a member is a lineup
+id that must be on the site by then. The Worker resolves each member: the lineup with that id when it is
+live, else the stored lineup that id was merged into (`lineup_aliases`), else it is dropped, and a lineup
+left out of the save is therefore a dropped member. Each collection reads as new, changed (same id; what is
+renamed, added or removed is shown) or the same, with add / replace / skip. Two collections of a map may not
+share a name, case aside (`name_taken`, `collection_name_taken`). Saving bumps the map's revision, so the
+web app picks them up with the map's lineups, read-only and marked built-in. **On the site** lists them
+under the lineups, each with a delete; a later deletion of a lineup drops it from the collections when served.
 
 The page sends the final lineup bodies; the Worker re-validates each, puts every photo into our storage
 (embedded photos are uploaded, https links are fetched by the Worker: up to 5 MB, webp/png/jpeg checked
@@ -61,7 +72,7 @@ bun run admin:invite -- --remote     # prints a fresh owner invite link for prod
 ## Database migrations
 
 Migrations are manual. `0002_photo_links.sql` remembers which copied link became which stored photo;
-`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place); `0005_admin_steam.sql` adds `admins.steam_url`. Apply before the
+`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place); `0005_admin_steam.sql` adds `admins.steam_url`; `0006_lineup_collections.sql` adds `lineup_collections`. Apply before the
 Worker that needs them goes live:
 
 ```bash
