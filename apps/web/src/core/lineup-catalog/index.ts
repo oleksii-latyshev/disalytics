@@ -1,4 +1,4 @@
-export { loadOfflineBuiltIns, syncBuiltIns } from './helpers/built-ins';
+export { apiUrl, loadOfflineBuiltIns, syncBuiltIns } from './helpers/built-ins';
 export { LINEUP_KIND_NAMES, LINEUP_KIND_ORDER } from './helpers/kind-names';
 export {
   combineCollections,

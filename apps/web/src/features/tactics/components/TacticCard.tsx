@@ -10,6 +10,8 @@ import { TacticThumbnail } from './TacticThumbnail';
 export interface TacticCardProps {
   readonly tactic: Tactic;
   readonly onOpen: (tactic: Tactic) => void;
+  /** A built-in is read-only: it can be opened and copied into the reader's playbook, nothing else. */
+  readonly isBuiltIn?: boolean | undefined;
   readonly onDuplicate: (tactic: Tactic) => void;
   readonly onExport: (tactic: Tactic) => void;
   readonly onDelete: (id: string) => void;
@@ -17,7 +19,14 @@ export interface TacticCardProps {
 
 const CHIP = 'rounded-chip bg-surface-2 px-2 py-0.5 font-mono text-11 text-ink-dim tabular-nums';
 
-export function TacticCard({ tactic, onOpen, onDuplicate, onExport, onDelete }: TacticCardProps) {
+export function TacticCard({
+  tactic,
+  isBuiltIn = false,
+  onOpen,
+  onDuplicate,
+  onExport,
+  onDelete,
+}: TacticCardProps) {
   const t = useT();
 
   const totalDuration = tacticDurationSeconds(tactic);
@@ -50,6 +59,11 @@ export function TacticCard({ tactic, onOpen, onDuplicate, onExport, onDelete }: 
               {tactic.side}
             </span>
             <span className="truncate font-mono text-12 text-ink-faint">{tactic.map}</span>
+            {isBuiltIn && (
+              <span className="rounded-chip border border-line-strong px-1.5 text-11 text-ink-dim">
+                {t('library.tactics.library.builtIn')}
+              </span>
+            )}
           </span>
           <span className="line-clamp-2 font-ui text-16 font-semibold text-ink leading-dense sm:text-20">
             {title}
@@ -90,32 +104,44 @@ export function TacticCard({ tactic, onOpen, onDuplicate, onExport, onDelete }: 
             variant="ghost"
             size="icon"
             onClick={() => onDuplicate(tactic)}
-            title={t('library.tactics.library.duplicate')}
-            aria-label={t('library.tactics.library.duplicate')}
+            title={t(
+              isBuiltIn
+                ? 'library.tactics.library.saveToPlaybook'
+                : 'library.tactics.library.duplicate',
+            )}
+            aria-label={t(
+              isBuiltIn
+                ? 'library.tactics.library.saveToPlaybook'
+                : 'library.tactics.library.duplicate',
+            )}
             className="text-ink-dim hover:text-ink"
           >
             <Copy />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onExport(tactic)}
-            title={t('library.tactics.library.exportOne')}
-            aria-label={t('library.tactics.library.exportOne')}
-            className="text-ink-dim hover:text-ink"
-          >
-            <Download />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            title={t('library.tactics.library.delete')}
-            aria-label={t('library.tactics.library.delete')}
-            className="text-ink-dim hover:text-damage"
-          >
-            <Trash2 />
-          </Button>
+          {!isBuiltIn && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onExport(tactic)}
+                title={t('library.tactics.library.exportOne')}
+                aria-label={t('library.tactics.library.exportOne')}
+                className="text-ink-dim hover:text-ink"
+              >
+                <Download />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDelete}
+                title={t('library.tactics.library.delete')}
+                aria-label={t('library.tactics.library.delete')}
+                className="text-ink-dim hover:text-damage"
+              >
+                <Trash2 />
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </article>

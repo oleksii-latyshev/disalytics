@@ -1,4 +1,4 @@
-import type { ChangeEntry, Contributor, WhoAmI } from '@disa/admin-contract';
+import type { ChangeEntry, Contributor, SiteTacticsResponse, WhoAmI } from '@disa/admin-contract';
 import { isLineup } from '@disa/demo-core';
 import { useCallback, useState } from 'react';
 import { call } from './api/client';
@@ -13,6 +13,8 @@ import { PeopleSection } from './components/PeopleSection';
 import { SectionTabs, type TabId, tabPanelId } from './components/SectionTabs';
 import { SignedOut } from './components/SignedOut';
 import { SiteCollections } from './components/SiteCollections';
+import { SiteTactics } from './components/SiteTactics';
+import { TacticsSection } from './components/TacticsSection';
 import { DEFAULT_MAP } from './helpers/format';
 import { forgetInvite, inviteTokenOf } from './helpers/invite-link';
 import { mapResource, useResource } from './hooks/use-resource';
@@ -83,15 +85,23 @@ function Workspace({ me }: { me: WhoAmI }) {
     },
   );
 
+  const [siteTactics, reloadTactics] = useResource<SiteTacticsResponse>('tactics', () =>
+    call((client) => client.tactics.list()),
+  );
+
   const afterChange = useCallback(() => {
     reloadCurrent();
     reloadChanges();
     reloadContributors();
   }, [reloadCurrent, reloadChanges, reloadContributors]);
+  const afterTacticChange = useCallback(() => {
+    reloadTactics();
+    reloadChanges();
+  }, [reloadTactics, reloadChanges]);
   const tabs: readonly TabId[] =
     me.role === 'owner'
-      ? ['import', 'onSite', 'people', 'contributors', 'history']
-      : ['import', 'onSite', 'contributors', 'history'];
+      ? ['import', 'onSite', 'tactics', 'people', 'contributors', 'history']
+      : ['import', 'onSite', 'tactics', 'contributors', 'history'];
   const onSite = current.status === 'ready' ? current.data.lineups.filter(isLineup) : [];
 
   const lineupsResource = mapResource(current, (data) => data.lineups);
@@ -112,6 +122,10 @@ function Workspace({ me }: { me: WhoAmI }) {
           onRetry={reloadCurrent}
         />
         <SiteCollections map={map} resource={collectionsResource} onChanged={afterChange} />
+      </div>
+      <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'tactics')} hidden={tab !== 'tactics'}>
+        <TacticsSection onChanged={afterTacticChange} />
+        <SiteTactics resource={siteTactics} onChanged={afterTacticChange} onRetry={reloadTactics} />
       </div>
       {me.role === 'owner' ? (
         <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'people')} hidden={tab !== 'people'}>

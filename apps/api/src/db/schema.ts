@@ -31,6 +31,28 @@ export const lineupCollections = sqliteTable(
   (table) => [index('lineup_collections_map').on(table.map)],
 );
 
+/** A built-in tactic, authored in the admin and served whole to every map's library. */
+export const tactics = sqliteTable(
+  'tactics',
+  {
+    id: text('id').primaryKey(),
+    map: text('map').notNull(),
+    body: text('body').notNull(),
+    createdAt: integer('created_at').notNull(),
+    createdBy: text('created_by').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+    updatedBy: text('updated_by').notNull(),
+    deletedAt: integer('deleted_at'),
+  },
+  (table) => [index('tactics_map').on(table.map)],
+);
+
+/** The one counter of the tactics, which the library reads for all maps at once. */
+export const tacticRevision = sqliteTable('tactic_revision', {
+  id: integer('id').primaryKey(),
+  revision: integer('revision').notNull(),
+});
+
 /** One counter per map, so an edit only invalidates its own map's ETag and cache. */
 export const lineupRevisions = sqliteTable('lineup_revisions', {
   map: text('map').primaryKey(),
@@ -39,7 +61,8 @@ export const lineupRevisions = sqliteTable('lineup_revisions', {
 
 /**
  * Append-only log of every write, for the admin Worker's history. A collection's write is logged
- * here under the collection's id, with an action that starts with `collection:`.
+ * here under the collection's id, with an action that starts with `collection:`; a tactic's write
+ * is logged under the tactic's id and map, with an action that starts with `tactic:`.
  */
 export const lineupChanges = sqliteTable(
   'lineup_changes',

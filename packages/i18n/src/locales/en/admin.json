@@ -38,6 +38,8 @@
     "entry": "{actor} {action} {lineup}",
     "loading": "Loading…",
     "save": "saved",
+    "tacticDelete": "deleted the tactic",
+    "tacticSave": "saved the tactic",
     "title": "Recent changes"
   },
   "collections": {
@@ -105,6 +107,7 @@
     "invalidMap": "That is not a map this admin can write to.",
     "invalidPhoto": "A photo in the file is not a usable image.",
     "invalidRequest": "The request was not understood.",
+    "invalidTactic": "A tactic would be invalid once saved. The line below says which.",
     "lastOwner": "The last owner cannot be disabled.",
     "nameRequired": "Enter your name.",
     "network": "The server could not be reached. Try again in a moment.",
@@ -394,7 +397,53 @@
     "history": "History",
     "import": "Import",
     "onSite": "On the site",
-    "people": "People"
+    "people": "People",
+    "tactics": "Tactics"
+  },
+  "tactics": {
+    "choice": {
+      "add": "Add",
+      "replace": "Replace",
+      "skip": "Skip"
+    },
+    "comparing": "Comparing with the site…",
+    "deleteConfirm": "Delete the tactic “{title}” for everyone?",
+    "drop": "Drop an exported tactics file here",
+    "field": {
+      "author": "Author",
+      "content": "The board changed (routes, throws or notes)",
+      "description": "Description",
+      "map": "Map",
+      "plans": "Plans",
+      "rounds": "Rounds",
+      "side": "Side",
+      "steps": "Steps",
+      "title": "Name",
+      "weapons": "Weapons"
+    },
+    "fileInvalid": "That tactics file is damaged or not one exported by disalytics.",
+    "fileSummary": "{name} — {count, plural, one {# tactic} other {# tactics}}",
+    "hint": "Drop a tactic file exported from the tactics library. Each tactic is matched to the one on the site by its id. A tactic without an author is signed with your name.",
+    "nothingToDo": "Nothing to do",
+    "problem": {
+      "invalid_map": "The map is not one this admin can write to.",
+      "invalid_tactic": "This tactic is not valid.",
+      "title_blank": "The tactic has no name.",
+      "title_too_long": "The name is too long (120 characters at most).",
+      "too_large": "This tactic is too large to store."
+    },
+    "save": "{count, plural, one {Save # tactic} other {Save # tactics}}",
+    "saved": "{count, plural, one {# tactic saved} other {# tactics saved}}",
+    "siteEmpty": "No tactics are stored yet.",
+    "siteTitle": "Tactics on the site",
+    "skipped": "{count, number} left out",
+    "status": {
+      "new": "new",
+      "unchanged": "the same as on the site",
+      "update": "changed"
+    },
+    "summary": "{map} · {side} · {steps, plural, one {# step} other {# steps}} · by {author} · updated {updated}",
+    "title": "Tactics file"
   },
   "throw": {
     "crouch": "Crouching",

@@ -30,6 +30,11 @@ import {
   ProfileUpdate,
   RedeemRequest,
   Removed,
+  SiteTacticsResponse,
+  TacticsCommitRequest,
+  TacticsCommitResponse,
+  TacticsPreviewRequest,
+  TacticsPreviewResponse,
   WhoAmI,
 } from './schemas';
 
@@ -155,6 +160,27 @@ const CollectionsGroup = HttpApiGroup.make('collections')
   )
   .middleware(SessionAuth);
 
+const TacticsGroup = HttpApiGroup.make('tactics')
+  .add(
+    HttpApiEndpoint.get('list', '/tactics', { success: SiteTacticsResponse }),
+    HttpApiEndpoint.post('preview', '/tactics/preview', {
+      payload: TacticsPreviewRequest,
+      success: TacticsPreviewResponse,
+      error: BadRequest,
+    }),
+    HttpApiEndpoint.post('commit', '/tactics/commit', {
+      payload: TacticsCommitRequest,
+      success: TacticsCommitResponse,
+      error: BadRequest,
+    }),
+    HttpApiEndpoint.delete('remove', '/tactics/:id', {
+      params: { id: LineupId },
+      success: Removed,
+      error: NotFound,
+    }),
+  )
+  .middleware(SessionAuth);
+
 const LineupsGroup = HttpApiGroup.make('lineups')
   .add(
     HttpApiEndpoint.get('byMap', '/lineups/:map', {
@@ -191,6 +217,7 @@ export const AdminApi = HttpApi.make('disalytics-admin')
   .add(CommitGroup.prefix('/api'))
   .add(LineupsGroup.prefix('/api'))
   .add(CollectionsGroup.prefix('/api'))
+  .add(TacticsGroup.prefix('/api'))
   .add(ChangesGroup.prefix('/api'))
   .add(ContributorsGroup.prefix('/api'))
   .middleware(MalformedAsBadRequest)

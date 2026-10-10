@@ -5,6 +5,7 @@ import { Button } from '@disa/ui';
 import { Plus, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { saveDownload } from '../helpers/save-download';
+import { copiedTactic } from '../helpers/tactic-copy';
 import { nameOrFallback } from '../helpers/tactic-names';
 import { createNewTactic } from '../helpers/tactic-setup';
 import { tacticDownload } from '../helpers/tactic-transfer';
@@ -25,7 +26,7 @@ export interface TacticsViewProps {
 
 export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsViewProps) {
   const t = useT();
-  const { tactics, saveTactic, deleteTactic, duplicateTactic, reload } = useTactics();
+  const { tactics, builtIns, saveTactic, deleteTactic, duplicateTactic, reload } = useTactics();
 
   const [editingTactic, setEditingTactic] = useState<Tactic | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
@@ -37,16 +38,19 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
 
   const [notice, setNotice] = useState<{ message: string; isError: boolean } | null>(null);
 
+  const shownTactics = useMemo(() => [...tactics, ...builtIns], [tactics, builtIns]);
+  const builtInIds = useMemo(() => new Set(builtIns.map(({ id }) => id)), [builtIns]);
+
   const filteredTactics = useMemo(() => {
-    return filterTactics(tactics, {
+    return filterTactics(shownTactics, {
       map: selectedMap,
       side: selectedSide,
       round: selectedRound,
       search: searchQuery,
     });
-  }, [tactics, selectedMap, selectedSide, selectedRound, searchQuery]);
+  }, [shownTactics, selectedMap, selectedSide, selectedRound, searchQuery]);
 
-  const mapCounts = useMemo(() => countByMap(tactics), [tactics]);
+  const mapCounts = useMemo(() => countByMap(shownTactics), [shownTactics]);
   const mapTabs = useMemo(
     () =>
       MAP_IDS.filter((id) => (mapCounts.get(id) ?? 0) > 0 || id === selectedMap).map((id) => ({
@@ -79,8 +83,26 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
       }),
     );
 
+  /** A built-in is never written over: saving one in the editor keeps the reader's copy of it. */
   const handleSaveTactic = async (tacticToSave: Tactic) => {
-    await saveTactic(tacticToSave);
+    if (!builtInIds.has(tacticToSave.id)) {
+      await saveTactic(tacticToSave);
+      return;
+    }
+    const copy = copiedTactic(tacticToSave);
+    await saveTactic(copy);
+    setEditingTactic(copy);
+  };
+
+  const handleSaveBuiltIn = async (source: Tactic) => {
+    await saveTactic(copiedTactic(source));
+    setNotice({
+      message: t('library.tactics.library.savedToPlaybook', {
+        title: nameOrFallback(source.title, t('library.tactics.untitled')),
+      }),
+      isError: false,
+    });
+    setTimeout(() => setNotice(null), 3000);
   };
 
   const handleSaveInitialShared = async () => {
@@ -99,6 +121,7 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
     return (
       <div className="fixed inset-0 z-40 bg-surface-0">
         <TacticEditor
+          key={editingTactic.id}
           initialTactic={editingTactic}
           onSave={handleSaveTactic}
           onBack={() => setEditingTactic(null)}
@@ -157,7 +180,7 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
         selectedRound={selectedRound}
         searchQuery={searchQuery}
         maps={mapTabs}
-        total={tactics.length}
+        total={shownTactics.length}
         onSelectMap={setSelectedMap}
         onSelectSide={setSelectedSide}
         onSelectRound={setSelectedRound}
@@ -171,17 +194,17 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
           </div>
           <div className="flex max-w-sm flex-col gap-1">
             <h3 className="font-ui text-16 font-semibold text-ink">
-              {tactics.length === 0
+              {shownTactics.length === 0
                 ? t('library.tactics.library.empty')
                 : t('library.tactics.library.noMatch')}
             </h3>
             <p className="text-13 text-ink-dim leading-prose">
-              {tactics.length === 0
+              {shownTactics.length === 0
                 ? t('library.tactics.library.emptyHint')
                 : t('library.tactics.library.noMatchHint')}
             </p>
           </div>
-          {tactics.length > 0 && (
+          {shownTactics.length > 0 && (
             <Button variant="secondary" onClick={clearFilters}>
               <Text path="library.tactics.library.clearFilters" />
             </Button>
@@ -194,8 +217,9 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
           <TacticCard
             key={tactic.id}
             tactic={tactic}
+            isBuiltIn={builtInIds.has(tactic.id)}
             onOpen={setEditingTactic}
-            onDuplicate={handleDuplicate}
+            onDuplicate={builtInIds.has(tactic.id) ? handleSaveBuiltIn : handleDuplicate}
             onExport={(tactic) => saveDownload(tacticDownload(tactic))}
             onDelete={deleteTactic}
           />

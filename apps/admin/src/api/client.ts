@@ -33,6 +33,7 @@ const KEYS: Readonly<Record<string, TranslationKey>> = {
   too_many_photos: 'admin.error.tooManyPhotos',
   invalid_lineup: 'admin.error.invalidLineup',
   invalid_collection: 'admin.error.invalidCollection',
+  invalid_tactic: 'admin.error.invalidTactic',
   collection_name_taken: 'admin.error.collectionNameTaken',
   invalid_invite: 'admin.error.invalidInvite',
   name_required: 'admin.error.nameRequired',

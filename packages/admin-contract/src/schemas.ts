@@ -1,7 +1,7 @@
 import { LINEUP_TAGS } from '@disa/demo-core';
 import { Schema } from 'effect';
 import { MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
-import { COLLECTION_PROBLEM_CODES, PROBLEM_CODES } from './validation';
+import { COLLECTION_PROBLEM_CODES, PROBLEM_CODES, TACTIC_PROBLEM_CODES } from './validation';
 
 /** World units within which two lineups of one map, kind and side count as the same throw. */
 export const DUPLICATE_RADIUS = 48;
@@ -179,6 +179,59 @@ export const CollectionsCommitResponse = Schema.Struct({
   dropped: Schema.Int,
 });
 export type CollectionsCommitResponse = typeof CollectionsCommitResponse.Type;
+
+export const TacticStatus = Schema.Literals(['new', 'update', 'unchanged']);
+export type TacticStatus = typeof TacticStatus.Type;
+
+/**
+ * One tactic of the file against the site's tactics, matched by id. `diff` names what moved:
+ * `title`, `side`, `map`, `rounds`, `description`, `weapons`, `steps` and `plans` (the last two as
+ * counts), and `content` when only the board itself differs.
+ */
+export const TacticPreviewItem = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  status: TacticStatus,
+  /** The tactic as the file has it; `isTactic` holds. */
+  tactic: Schema.Unknown,
+  /** The site's tactic with the same id. */
+  stored: Schema.optionalKey(Schema.Unknown),
+  diff: Schema.Array(FieldDiff),
+  problems: Schema.Array(Schema.Literals(TACTIC_PROBLEM_CODES)),
+});
+export type TacticPreviewItem = typeof TacticPreviewItem.Type;
+
+export const TacticsPreviewRequest = Schema.Struct({ file: Schema.Unknown });
+export type TacticsPreviewRequest = typeof TacticsPreviewRequest.Type;
+
+export const TacticsPreviewResponse = Schema.Struct({
+  revision: Schema.Int,
+  items: Schema.Array(TacticPreviewItem),
+});
+export type TacticsPreviewResponse = typeof TacticsPreviewResponse.Type;
+
+/** `replace` takes the place of the site's tactic with the same id; `add` needs an id not in use. */
+export const TacticDecision = Schema.Struct({
+  action: DecisionAction,
+  tactic: Schema.Unknown,
+});
+export type TacticDecision = typeof TacticDecision.Type;
+
+export const TacticsCommitRequest = Schema.Struct({ decisions: Schema.Array(TacticDecision) });
+export type TacticsCommitRequest = typeof TacticsCommitRequest.Type;
+
+export const TacticsCommitResponse = Schema.Struct({
+  revision: Schema.Int,
+  saved: Schema.Int,
+  skipped: Schema.Int,
+});
+export type TacticsCommitResponse = typeof TacticsCommitResponse.Type;
+
+export const SiteTacticsResponse = Schema.Struct({
+  revision: Schema.Int,
+  tactics: Schema.Array(Schema.Unknown),
+});
+export type SiteTacticsResponse = typeof SiteTacticsResponse.Type;
 
 export const MapLineupsResponse = Schema.Struct({
   map: Schema.String,

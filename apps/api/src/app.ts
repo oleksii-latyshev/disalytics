@@ -7,11 +7,12 @@ import { HealthHandlers } from './modules/health';
 import { LineupStorage, LineupsHandlers, makeLineupStorage } from './modules/lineups';
 import type { KvBinding } from './modules/photos';
 import { makePhotoStorage, PhotoStorage, PhotosHandlers } from './modules/photos';
+import { makeTacticStorage, TacticStorage, TacticsHandlers } from './modules/tactics';
 import { type CacheBinding, EdgeCache, edge } from './shared/http/middleware';
 
 const ApiLive = HttpApiBuilder.layer(Api).pipe(
   Layer.provide(
-    Layer.mergeAll(HealthHandlers, LineupsHandlers, PhotosHandlers).pipe(
+    Layer.mergeAll(HealthHandlers, LineupsHandlers, PhotosHandlers, TacticsHandlers).pipe(
       Layer.provide(MalformedAsNotFoundLive),
     ),
   ),
@@ -41,6 +42,7 @@ export function handle(request: Request, env: Env, cache: CacheBinding | null): 
   const services = Context.empty().pipe(
     Context.add(LineupStorage, makeLineupStorage(env.LINEUPS_DB)),
     Context.add(PhotoStorage, makePhotoStorage(env.LINEUP_PHOTOS)),
+    Context.add(TacticStorage, makeTacticStorage(env.LINEUPS_DB)),
     cache === null ? (context) => context : Context.add(EdgeCache, cache),
   );
   return handler(request, services);

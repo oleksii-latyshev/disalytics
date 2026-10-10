@@ -4,6 +4,7 @@ import { HttpRouter, HttpServer, HttpServerResponse } from 'effect/unstable/http
 import { HttpApiBuilder } from 'effect/unstable/httpapi';
 import { LineupStorage, makeLineupStorage } from '../modules/lineups';
 import { makePhotoStorage, PhotoStorage } from '../modules/photos';
+import { makeTacticStorage, TacticStorage } from '../modules/tactics';
 import { AdminAuth, makeAdminAuth } from './auth/store';
 import { ChangeLog, makeChangeLog } from './change-log';
 import { AdminConfig, type AdminConfigShape } from './config';
@@ -19,6 +20,7 @@ import {
   MeHandlers,
   PeopleHandlers,
   PreviewHandlers,
+  TacticsHandlers,
 } from './handlers';
 import { SessionAuthLive, WriteGuardLive } from './middleware';
 import { makePhotoLinks, PhotoLinks } from './photo-links';
@@ -35,6 +37,7 @@ const AdminApiLive = HttpApiBuilder.layer(AdminApi).pipe(
       CommitHandlers,
       LineupsHandlers,
       CollectionsHandlers,
+      TacticsHandlers,
       ChangesHandlers,
       ContributorsHandlers,
     ).pipe(Layer.provide(Middleware)),
@@ -71,6 +74,7 @@ export function handleApi(
   const services = Context.empty().pipe(
     Context.add(LineupStorage, makeLineupStorage(env.LINEUPS_DB)),
     Context.add(PhotoStorage, makePhotoStorage(env.LINEUP_PHOTOS)),
+    Context.add(TacticStorage, makeTacticStorage(env.LINEUPS_DB)),
     Context.add(ChangeLog, makeChangeLog(env.LINEUPS_DB)),
     Context.add(Contributors, makeContributors(env.LINEUPS_DB)),
     Context.add(PhotoLinks, makePhotoLinks(env.LINEUPS_DB)),

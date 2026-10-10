@@ -11,6 +11,7 @@ export const BAD_REQUEST_CODES = [
   'too_many_photos',
   'invalid_lineup',
   'invalid_collection',
+  'invalid_tactic',
   'collection_name_taken',
   'invalid_invite',
   'name_required',
