@@ -1,6 +1,7 @@
 import type { WhoAmI } from '@disa/admin-contract';
 import { Text } from '@disa/i18n';
 import { Button } from '@disa/ui';
+import { SteamLink } from './SteamLink';
 
 export function Header({ me, onSignOut }: { me: WhoAmI | null; onSignOut: () => void }) {
   return (
@@ -20,6 +21,7 @@ export function Header({ me, onSignOut }: { me: WhoAmI | null; onSignOut: () => 
           </Button>
         </span>
       )}
+      {me === null ? null : <SteamLink key={me.id} me={me} />}
     </header>
   );
 }

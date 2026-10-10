@@ -91,3 +91,41 @@ describe.skipIf(!hasSqlite)('GET /lineups/:map', () => {
     expect(await matched.text()).toBe('');
   });
 });
+
+describe.skipIf(!hasSqlite)('GET /lineups', () => {
+  it('summarises every map with its revision and live count, cached like a map', async () => {
+    const env = testEnv();
+    const storage = makeLineupStorage(env.LINEUPS_DB);
+    await run(
+      storage.saveLineups({
+        lineups: [
+          lineup,
+          { ...lineup, id: 'mirage-2' },
+          { ...lineup, id: 'dust', map: 'de_dust2' },
+        ],
+        actor: 'a',
+        now: 1,
+      }),
+    );
+    await run(storage.deleteLineup({ id: 'mirage-2', actor: 'a', now: 2 }));
+    await run(storage.deleteLineup({ id: 'dust', actor: 'a', now: 3 }));
+
+    const response = await handle(new Request('https://api.example/lineups'), env, null);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=60, stale-while-revalidate=600',
+    );
+    expect(await response.json()).toEqual({
+      maps: [
+        { map: 'de_dust2', revision: 2, count: 0 },
+        { map: 'de_mirage', revision: 2, count: 1 },
+      ],
+    });
+  });
+
+  it('is empty before anything is seeded', async () => {
+    const response = await handle(new Request('https://api.example/lineups'), testEnv(), null);
+    expect(await response.json()).toEqual({ maps: [] });
+  });
+});

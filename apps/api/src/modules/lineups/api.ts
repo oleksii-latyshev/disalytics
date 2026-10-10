@@ -12,9 +12,16 @@ const MapLineupsBody = Schema.Struct({
   lineups: Schema.Array(Schema.Unknown),
 });
 
+const MapSummary = Schema.Struct({ map: Schema.String, revision: Schema.Int, count: Schema.Int });
+
+const SummaryBody = Schema.Struct({ maps: Schema.Array(MapSummary) });
+
 export const LINEUPS_CACHE_CONTROL = 'public, max-age=60, stale-while-revalidate=600';
 
 export const LineupsGroup = HttpApiGroup.make('lineups').add(
+  HttpApiEndpoint.get('summary', '/lineups', {
+    success: HttpApiSchema.WithHeaders(SummaryBody, { 'cache-control': Schema.String }),
+  }),
   HttpApiEndpoint.get('byMap', '/lineups/:map', {
     params: { map: MapId },
     success: HttpApiSchema.WithHeaders(MapLineupsBody, {

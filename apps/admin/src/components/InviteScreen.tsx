@@ -7,9 +7,22 @@ import { useResource } from '../hooks/use-resource';
 import { Card, Pill } from './flow/Parts';
 import { Notice } from './Notice';
 import { Muted } from './Section';
+import { isSteamInputValid, SteamField } from './SteamField';
 
 function failureOf(error: unknown): Failure {
   return isFailure(error) ? error : { key: 'admin.error.network', detail: undefined };
+}
+
+/** A device invite sends the token alone; a new person's carries the name and the Steam link, if any. */
+function redeemPayload(token: string, name: string, steam: string) {
+  const trimmed = name.trim();
+  const steamUrl = steam.trim();
+  if (trimmed === '') return { token };
+  return steamUrl === '' ? { token, name: trimmed } : { token, name: trimmed, steamUrl };
+}
+
+function canSubmit(info: InviteInfo, name: string, steam: string): boolean {
+  return info.name !== undefined || (name.trim() !== '' && isSteamInputValid(steam));
 }
 
 const EXAMPLES = ['admin.invite.exampleA', 'admin.invite.exampleB'] as const;
@@ -53,6 +66,7 @@ export function InviteScreen({
     call((client) => client.auth.invite({ payload: { token } })),
   );
   const [name, setName] = useState('');
+  const [steam, setSteam] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
 
@@ -61,9 +75,8 @@ export function InviteScreen({
     setBusy(true);
     setFailure(null);
     try {
-      const trimmed = name.trim();
       const me = await call((client) =>
-        client.auth.redeem({ payload: trimmed === '' ? { token } : { token, name: trimmed } }),
+        client.auth.redeem({ payload: redeemPayload(token, name, steam) }),
       );
       onSignedIn(me);
     } catch (error) {
@@ -155,6 +168,7 @@ export function InviteScreen({
                         ))}
                       </fieldset>
                     </div>
+                    <SteamField value={steam} onChange={setSteam} />
                   </>
                 ) : (
                   <div className="flex flex-col items-start gap-2.5">
@@ -170,7 +184,7 @@ export function InviteScreen({
                 <Button
                   type="submit"
                   size="lg"
-                  disabled={busy || (info.data.name === undefined && name.trim() === '')}
+                  disabled={busy || !canSubmit(info.data, name, steam)}
                 >
                   <Text path={busy ? 'admin.invite.signingIn' : 'admin.invite.submit'} />
                 </Button>

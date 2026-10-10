@@ -37,6 +37,13 @@
     "save": "saved",
     "title": "Recent changes"
   },
+  "contributors": {
+    "empty": "No lineups yet.",
+    "lede": "Lineups that are on the site now, by the person who first saved them.",
+    "loading": "Loading…",
+    "title": "Who added lineups",
+    "total": "{count, plural, one {# lineup} other {# lineups}}"
+  },
   "current": {
     "cancel": "Cancel",
     "confirm": "Yes, delete",
@@ -322,6 +329,20 @@
     "owner": "Owner who lost every device: run `bun run admin:invite -- --remote` with the Cloudflare account to get a new link.",
     "title": "Sign in with an invite link"
   },
+  "steam": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "edit": "Change",
+    "hint": "Your name on the lineups you add links to this profile. For example: https://steamcommunity.com/id/yourname",
+    "invalid": "That is not a Steam profile link. Use https://steamcommunity.com/id/… or https://steamcommunity.com/profiles/…",
+    "label": "Steam profile link",
+    "none": "not set",
+    "optional": "optional",
+    "placeholder": "https://steamcommunity.com/id/…",
+    "remove": "Remove",
+    "save": "Save",
+    "yours": "Steam link"
+  },
   "step": {
     "decide": "Your decisions",
     "done": "Done",
@@ -336,6 +357,7 @@
     "update": "already on the site, but changed"
   },
   "tabs": {
+    "contributors": "Contributions",
     "history": "History",
     "import": "Import",
     "onSite": "On the site",

@@ -37,6 +37,13 @@
     "save": "сохранил(а)",
     "title": "Последние изменения"
   },
+  "contributors": {
+    "empty": "Лайнапов пока нет.",
+    "lede": "Лайнапы, которые сейчас есть на сайте, по тому, кто их сохранил первым.",
+    "loading": "Загрузка…",
+    "title": "Кто добавил лайнапы",
+    "total": "{count, plural, one {# лайнап} few {# лайнапа} many {# лайнапов} other {# лайнапа}}"
+  },
   "current": {
     "cancel": "Отмена",
     "confirm": "Да, удалить",
@@ -322,6 +329,20 @@
     "owner": "Главный админ, потерявший все устройства: выполните `bun run admin:invite -- --remote` с аккаунтом Cloudflare, чтобы получить новую ссылку.",
     "title": "Войдите по ссылке-приглашению"
   },
+  "steam": {
+    "add": "Добавить",
+    "cancel": "Отмена",
+    "edit": "Изменить",
+    "hint": "У лайнапов, которые вы добавите, ваше имя станет ссылкой на этот профиль. Например: https://steamcommunity.com/id/yourname",
+    "invalid": "Это не ссылка на профиль Steam. Нужна https://steamcommunity.com/id/… или https://steamcommunity.com/profiles/…",
+    "label": "Ссылка на профиль Steam",
+    "none": "не указана",
+    "optional": "необязательно",
+    "placeholder": "https://steamcommunity.com/id/…",
+    "remove": "Убрать",
+    "save": "Сохранить",
+    "yours": "Ссылка на Steam"
+  },
   "step": {
     "decide": "Ваши решения",
     "done": "Готово",
@@ -336,6 +357,7 @@
     "update": "уже есть на сайте, но изменился"
   },
   "tabs": {
+    "contributors": "Вклад",
     "history": "История",
     "import": "Импорт",
     "onSite": "На сайте",

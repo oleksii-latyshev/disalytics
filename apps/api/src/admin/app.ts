@@ -7,11 +7,13 @@ import { makePhotoStorage, PhotoStorage } from '../modules/photos';
 import { AdminAuth, makeAdminAuth } from './auth/store';
 import { ChangeLog, makeChangeLog } from './change-log';
 import { AdminConfig, type AdminConfigShape } from './config';
+import { Contributors, makeContributors } from './contributors';
 import type { AdminEnv } from './env';
 import {
   AuthHandlers,
   ChangesHandlers,
   CommitHandlers,
+  ContributorsHandlers,
   LineupsHandlers,
   MeHandlers,
   PeopleHandlers,
@@ -32,6 +34,7 @@ const AdminApiLive = HttpApiBuilder.layer(AdminApi).pipe(
       CommitHandlers,
       LineupsHandlers,
       ChangesHandlers,
+      ContributorsHandlers,
     ).pipe(Layer.provide(Middleware)),
   ),
   Layer.provide(HttpServer.layerServices),
@@ -67,6 +70,7 @@ export function handleApi(
     Context.add(LineupStorage, makeLineupStorage(env.LINEUPS_DB)),
     Context.add(PhotoStorage, makePhotoStorage(env.LINEUP_PHOTOS)),
     Context.add(ChangeLog, makeChangeLog(env.LINEUPS_DB)),
+    Context.add(Contributors, makeContributors(env.LINEUPS_DB)),
     Context.add(PhotoLinks, makePhotoLinks(env.LINEUPS_DB)),
     Context.add(AdminAuth, makeAdminAuth(env.LINEUPS_DB)),
     Context.add(AdminConfig, config),

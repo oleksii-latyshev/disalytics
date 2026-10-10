@@ -59,7 +59,7 @@ type ButtonProps = React.ComponentProps<'button'> &
 
 function Button({ className, variant, size, render, ...props }: ButtonProps) {
   return useRender({
-    render: render ?? <button type="button" />,
+    render: render ?? <button type={props.type ?? 'button'} />,
     props: {
       'data-slot': 'button',
       'data-variant': variant ?? 'primary',

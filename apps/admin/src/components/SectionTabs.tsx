@@ -2,12 +2,13 @@ import { Text, type TranslationKey } from '@disa/i18n';
 import { cn, DURATION_BASE_SECONDS, EASE_OUT, motion } from '@disa/ui';
 import { type KeyboardEvent, useId } from 'react';
 
-export type TabId = 'import' | 'onSite' | 'people' | 'history';
+export type TabId = 'import' | 'onSite' | 'people' | 'contributors' | 'history';
 
 const LABELS: Readonly<Record<TabId, TranslationKey>> = {
   import: 'admin.tabs.import',
   onSite: 'admin.tabs.onSite',
   people: 'admin.tabs.people',
+  contributors: 'admin.tabs.contributors',
   history: 'admin.tabs.history',
 };
 

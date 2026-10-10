@@ -1,0 +1,1 @@
+ALTER TABLE `admins` ADD `steam_url` text;

@@ -10,5 +10,5 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 export function devActor(url: string, devIdentity: string | undefined): ActorShape | null {
   if (devIdentity === undefined || devIdentity.length === 0) return null;
   if (!LOCAL_HOSTS.has(new URL(url).hostname)) return null;
-  return { id: 'dev', name: devIdentity, role: 'owner', sessionId: null };
+  return { id: 'dev', name: devIdentity, role: 'owner', steamUrl: null, sessionId: null };
 }

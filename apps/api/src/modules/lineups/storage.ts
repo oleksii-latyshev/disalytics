@@ -1,5 +1,5 @@
 import { isLineup, type Lineup, normalizeLineup } from '@disa/demo-core';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { Context, type Effect } from 'effect';
 import { type D1Binding, makeDb } from '../../db/client';
 import { lineupAliases, lineupChanges, lineupRevisions, lineups } from '../../db/schema';
@@ -9,6 +9,13 @@ export interface MapLineups {
   readonly map: string;
   readonly revision: number;
   readonly lineups: readonly Lineup[];
+}
+
+export interface MapSummary {
+  readonly map: string;
+  readonly revision: number;
+  /** Live lineups, without reading their bodies. */
+  readonly count: number;
 }
 
 export interface LineupAlias {
@@ -36,6 +43,8 @@ export class LineupStorage extends Context.Service<
   {
     /** Live lineups of one map and its revision. Rows that fail `isLineup` are skipped. */
     readonly readMap: (map: string) => Effect.Effect<MapLineups, StorageError>;
+    /** Every map that has a revision or a live lineup, with both numbers. */
+    readonly summary: Effect.Effect<readonly MapSummary[], StorageError>;
     /** Creates or replaces lineups: one atomic batch, one revision bump per map. */
     readonly saveLineups: (write: LineupWrite) => Effect.Effect<void, StorageError>;
     /** The stored lineup each of these ids was merged into earlier, by alias. */
@@ -111,6 +120,27 @@ export function makeLineupStorage(binding: D1Binding): Context.Service.Shape<typ
         }
         return { map, revision: revisions[0]?.revision ?? 0, lineups: valid };
       }),
+
+    summary: attempt(async () => {
+      const [counts, revisions] = await db.batch([
+        db
+          .select({ map: lineups.map, count: count() })
+          .from(lineups)
+          .where(isNull(lineups.deletedAt))
+          .groupBy(lineups.map),
+        db.select().from(lineupRevisions),
+      ]);
+      const byMap = new Map<string, MapSummary>();
+      for (const { map, revision } of revisions) byMap.set(map, { map, revision, count: 0 });
+      for (const row of counts) {
+        byMap.set(row.map, {
+          map: row.map,
+          revision: byMap.get(row.map)?.revision ?? 0,
+          count: row.count,
+        });
+      }
+      return [...byMap.values()].sort((a, b) => a.map.localeCompare(b.map));
+    }),
 
     saveLineups: ({ lineups: entries, aliases = [], actor, now }) =>
       attempt(async () => {

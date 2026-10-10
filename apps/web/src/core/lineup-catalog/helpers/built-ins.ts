@@ -84,8 +84,11 @@ export async function loadOfflineBuiltIns(map: string): Promise<readonly Lineup[
 }
 
 /** Fetches the API's copy and keeps it for the next offline start; `null` leaves the caller as is. */
-export async function refreshBuiltIns(map: string): Promise<readonly Lineup[] | null> {
-  const fresh = await fetchBuiltIns(map);
+export async function refreshBuiltIns(
+  map: string,
+  fetchImpl?: Fetch,
+): Promise<readonly Lineup[] | null> {
+  const fresh = await fetchBuiltIns(map, fetchImpl);
   if (fresh === null) return null;
   await writeStored(map, fresh);
   return fresh.lineups;
@@ -94,4 +97,65 @@ export async function refreshBuiltIns(map: string): Promise<readonly Lineup[] | 
 /** The API's lineups when reachable, else what is on the device. */
 export async function loadBuiltIns(map: string): Promise<readonly Lineup[]> {
   return (await refreshBuiltIns(map)) ?? loadOfflineBuiltIns(map);
+}
+
+/** The newest revision the API holds for each map it has seeded, or `null` when it cannot be reached. */
+export async function fetchRevisions(
+  fetchImpl: Fetch = (input, init) => fetch(input, init),
+): Promise<ReadonlyMap<string, number> | null> {
+  try {
+    const response = await fetchImpl(`${apiUrl()}/lineups`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const body: unknown = await response.json();
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      !('maps' in body) ||
+      !Array.isArray(body.maps)
+    ) {
+      return null;
+    }
+    const revisions = new Map<string, number>();
+    for (const entry of body.maps as readonly unknown[]) {
+      if (
+        typeof entry === 'object' &&
+        entry !== null &&
+        'map' in entry &&
+        typeof entry.map === 'string' &&
+        'revision' in entry &&
+        typeof entry.revision === 'number'
+      ) {
+        revisions.set(entry.map, entry.revision);
+      }
+    }
+    return revisions;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Brings the stored copy of each of `maps` up to what the API holds: a map whose revision there is
+ * newer than the stored one (or that has no stored copy) is fetched and kept. Resolves with the
+ * maps that changed; nothing changes, quietly, when the API cannot be reached.
+ */
+export async function syncBuiltIns(
+  maps: readonly string[],
+  fetchImpl?: Fetch,
+): Promise<readonly string[]> {
+  const revisions = await fetchRevisions(fetchImpl);
+  if (revisions === null) return [];
+  const stale: string[] = [];
+  for (const map of maps) {
+    const remote = revisions.get(map);
+    if (remote === undefined || remote < 1) continue;
+    const stored = await readStored(map);
+    if (stored === null || stored.revision < remote) stale.push(map);
+  }
+  const refreshed = await Promise.all(
+    stale.map(async (map) => ((await refreshBuiltIns(map, fetchImpl)) === null ? null : map)),
+  );
+  return refreshed.filter((map) => map !== null);
 }

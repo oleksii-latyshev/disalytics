@@ -29,6 +29,8 @@ export type {
   CommitDecision,
   CommitRequest,
   CommitResponse,
+  Contributor,
+  ContributorsResponse,
   DecisionAction,
   Device,
   FieldDiff,
@@ -52,6 +54,8 @@ export {
   MAX_NAME_LENGTH,
   MAX_PHOTOS_PER_COMMIT,
   MapId,
+  SteamUrl,
 } from './schemas';
+export { isSteamUrl, MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
 export type { Problem, ProblemCode } from './validation';
 export { isOnRadar, lineupProblems, MAX_TITLE_LENGTH, PROBLEM_CODES } from './validation';
