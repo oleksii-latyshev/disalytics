@@ -5,7 +5,7 @@ import {
   type Tactic,
   type TacticReadOptions,
 } from '@disa/demo-core';
-import { tacticSpawns } from './tactic-setup';
+import { tacticSpawns } from '@disa/tactic-board';
 
 /** How tactics of an older shape are filled in as they are read: spawns come from the map's spots. */
 export const TACTIC_READ_OPTIONS: TacticReadOptions = { spawnsFor: tacticSpawns };

@@ -1,10 +1,10 @@
 import type { Tactic } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
+import { nameOrFallback } from '@disa/tactic-board';
 import { Button, cn } from '@disa/ui';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { saveDownload } from '../helpers/save-download';
-import { nameOrFallback } from '../helpers/tactic-names';
 import { libraryDownload, tacticDownload } from '../helpers/tactic-transfer';
 
 type Scope = 'one' | 'library';

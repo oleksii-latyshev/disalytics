@@ -19,6 +19,7 @@ import type { RadarColors } from '@disa/plate';
 import {
   drawDecoyPulse,
   drawFlashMark,
+  drawGrenadeMark,
   drawHeRing,
   drawTrajectory,
   grenadeColor,
@@ -29,7 +30,6 @@ import {
 } from '@disa/plate';
 import type { Layer } from '@/core/renderer';
 import type { TrajectoryVisibility } from '@/core/settings';
-import { drawGrenadeMark } from './equipment-marks';
 import {
   bodyParts,
   countdownLabels,

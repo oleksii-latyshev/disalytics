@@ -7,7 +7,6 @@ import {
 } from '@disa/demo-core';
 import { type MapOverview, mapSpawns } from '@disa/map-data';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLineupCatalog } from '@/core/lineup-catalog';
 import { selectableLineups, throwFromLineup } from '../helpers/lineup-throw';
 import type { TacticTool } from '../helpers/tactic-editor-state';
 import { enemiesOf, enemyMarksByStep } from '../helpers/tactic-enemies';
@@ -26,10 +25,17 @@ export interface UseTacticBoardOptions {
   readonly initialTactic: Tactic;
   readonly overview: MapOverview;
   readonly onSave?: ((tactic: Tactic) => void | Promise<void>) | undefined;
+  /** The lineups of a map that a throw can be taken from; a hook, so it follows the map being edited. */
+  readonly useLineups: (map: string) => readonly Lineup[];
 }
 
 /** The editor, the schedule it implies and the playback over it, wired to what the board draws. */
-export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoardOptions) {
+export function useTacticBoard({
+  initialTactic,
+  overview,
+  onSave,
+  useLineups,
+}: UseTacticBoardOptions) {
   const editor = useTacticEditor({ initialTactic, onSave });
   const { tactic, planId, stepIndex, steps, step, selectedSlot, selectedEnemyId, tool, throwKind } =
     editor;
@@ -58,7 +64,7 @@ export function useTacticBoard({ initialTactic, overview, onSave }: UseTacticBoa
     stop();
   }, [tactic, stop]);
 
-  const { lineups } = useLineupCatalog(tactic.map);
+  const lineups = useLineups(tactic.map);
   const pickableLineups = useMemo(
     () => selectableLineups(lineups, tactic.side, throwKind),
     [lineups, tactic.side, throwKind],

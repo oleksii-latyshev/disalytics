@@ -30,7 +30,7 @@ interface TacticEditorHeaderProps {
   readonly onChangeMap: (map: string) => void;
   readonly onChangeSide: (side: TacticSide) => void;
   readonly onToggleRound: (round: TacticRound) => void;
-  readonly onTransfer: () => void;
+  readonly onTransfer?: (() => void) | undefined;
   readonly onSave: () => void;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
@@ -213,9 +213,11 @@ export function TacticEditorHeader({
           >
             <Redo2 />
           </Button>
-          <Button variant="outline" size="lg" onClick={onTransfer}>
-            {t('library.tactics.transfer.open')}
-          </Button>
+          {onTransfer !== undefined && (
+            <Button variant="outline" size="lg" onClick={onTransfer}>
+              {t('library.tactics.transfer.open')}
+            </Button>
+          )}
           <Button
             variant={isDirty ? 'primary' : 'secondary'}
             size="lg"

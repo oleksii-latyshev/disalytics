@@ -1,8 +1,8 @@
 import { mainSteps, type Tactic } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
+import { nameOrFallback } from '@disa/tactic-board';
 import { Button } from '@disa/ui';
 import { X } from 'lucide-react';
-import { nameOrFallback } from '../helpers/tactic-names';
 
 interface SharedTacticBannerProps {
   readonly tactic: Tactic;

@@ -1,12 +1,12 @@
 import type { Lineup, TacticPoint, TacticStep } from '@disa/demo-core';
 import type { MapOverview, NavGrid, RadarPoint } from '@disa/map-data';
+import { type PlateView, radarPointAt, SQUARE_PLATE, zoomAbout } from '@disa/plate';
 import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
   type RefObject,
   useRef,
 } from 'react';
-import { type PlateView, radarPointAt, SQUARE_PLATE, zoomAbout } from '@/features/radar';
 import type { TacticTool } from '../helpers/tactic-editor-state';
 import { enemiesOf } from '../helpers/tactic-enemies';
 import { enemyAt } from '../helpers/tactic-enemy-hit';

@@ -1,6 +1,6 @@
 import type { TacticPoint, TacticSide } from '@disa/demo-core';
 import { type MapOverview, radarX, radarY } from '@disa/map-data';
-import type { PlateGeometry, RadarColors } from '@/features/radar';
+import type { PlateGeometry, RadarColors } from '@disa/plate';
 
 /** The spots to mark, with what the draw needs already worked out so it allocates nothing. */
 export interface SpawnSpots {

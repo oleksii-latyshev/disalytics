@@ -1,9 +1,5 @@
 import { useLocale, useT } from '@disa/i18n';
 import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
-import { useReducedMotionConfig } from '@disa/ui';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useCanvasLayers } from '@/core/renderer';
-import { useSetting } from '@/core/settings';
 import {
   levelAt,
   MAX_ZOOM,
@@ -13,10 +9,14 @@ import {
   SQUARE_PLATE,
   squareBackdrop,
   UnknownMap,
+  useCanvasLayers,
+  usePlateSettings,
   useRadarImage,
   ZOOM_STEP,
   zoomByStep,
-} from '@/features/radar';
+} from '@disa/plate';
+import { useReducedMotionConfig } from '@disa/ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { slotColors } from '../helpers/tactic-colors';
 import { type TacticPreview, tacticLayer } from '../helpers/tactic-layer';
 import { createMotion, isAnimating, startGlide } from '../helpers/tactic-motion';
@@ -35,8 +35,7 @@ function TacticCanvas({
   const t = useT();
   const { side, schedule, step, stepIndex, selectedSlot, tool, clock, isShown } = props;
   const { enemyMarks, selectedEnemyId } = props;
-  const [theme] = useSetting('radarTheme');
-  const [palette] = useSetting('palette');
+  const { palette, radarTheme: theme } = usePlateSettings();
   const isReduced = useReducedMotionConfig() === true;
 
   const image = useRadarImage(radarAssetPath(levelAt(overview, 0), theme));

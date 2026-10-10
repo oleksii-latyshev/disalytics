@@ -1,5 +1,5 @@
 import type { UtilityKind } from '@disa/demo-core';
-import type { RadarColors } from '@/features/radar';
+import type { RadarColors } from '@disa/plate';
 
 export function grenadeColorOfKind(kind: UtilityKind, colors: RadarColors): string {
   switch (kind) {

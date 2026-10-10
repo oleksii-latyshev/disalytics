@@ -1,5 +1,5 @@
 import { GRENADE_KINDS, type GrenadeCounts, UTILITY_NAMES } from '@disa/demo-core';
-import { UtilityGlyph } from '@/core/glyphs';
+import { UtilityGlyph } from '@disa/plate';
 
 /** The grenades of a loadout as glyph and count pairs, leaving out the kinds not used. */
 export function GrenadeTally({ counts }: { readonly counts: GrenadeCounts }) {

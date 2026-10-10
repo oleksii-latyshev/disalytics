@@ -4,16 +4,15 @@ import {
   type WeaponClass,
   type WeaponIconId,
 } from '@disa/demo-core';
+import { EQUIPMENT_ICONS } from '../generated/equipment-icons';
+import { WEAPON_ICONS } from '../generated/weapon-icons';
+import { type EquipmentIconId, UTILITY_ICON } from './equipment';
 import {
-  EQUIPMENT_ICONS,
-  type EquipmentIconId,
   SILHOUETTE_HEIGHT,
   SILHOUETTE_PATHS,
   SILHOUETTE_WIDTH,
   type SilhouetteClass,
-  UTILITY_ICON,
-  WEAPON_ICONS,
-} from '@/core/glyphs';
+} from './silhouettes';
 
 /**
  * The box a weapon mark is drawn in, whose **left edge** and vertical middle the caller gives.

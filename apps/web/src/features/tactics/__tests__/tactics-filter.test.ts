@@ -1,6 +1,6 @@
 import type { Tactic } from '@disa/demo-core';
+import { createNewTactic } from '@disa/tactic-board';
 import { describe, expect, it } from 'vitest';
-import { createNewTactic } from '../helpers/tactic-setup';
 import { countByMap, filterTactics, isCalledOn } from '../helpers/tactics-filter';
 
 function makeMockTactic(

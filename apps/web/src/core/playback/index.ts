@@ -1,5 +1,5 @@
+export { frameElapsedMs } from '@disa/demo-core';
 export { createClockFormat, formatClock, formatElapsedOfTotal } from './helpers/elapsed';
-export { frameElapsedMs } from './helpers/frame-step';
 export { POSITION_STRIDE, positionScratch, readPositions } from './helpers/interpolation';
 export type { FrameSkip, Transport } from './helpers/transport';
 export { useBuyPhaseSkip } from './hooks/use-buy-phase-skip';

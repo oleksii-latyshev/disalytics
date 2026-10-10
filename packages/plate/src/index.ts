@@ -7,6 +7,7 @@ export { UnknownMap } from './plate/components/UnknownMap';
 export * from './plate/helpers/backdrop';
 export * from './plate/helpers/colors';
 export * from './plate/helpers/grenades';
+export * from './plate/helpers/levels';
 export * from './plate/helpers/plate-box';
 export * from './plate/helpers/plate-target';
 export * from './plate/helpers/target-layer';

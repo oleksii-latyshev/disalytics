@@ -9,12 +9,14 @@ export type {
 export {
   drawDecoyPulse,
   drawFlashMark,
+  drawGrenadeMark,
   drawHeRing,
   drawNeedle,
   drawSelectionRing,
   drawToken,
   drawWalkHollow,
   grenadeColor,
+  levelAt,
   MAX_ZOOM,
   MIN_ZOOM,
   PlateFrame,
@@ -51,7 +53,6 @@ export { UtilityPlate } from './components/UtilityPlate';
 export { pointDistance, pointToSegmentDistance } from './helpers/coach-draw';
 export type { CoachSession } from './helpers/coach-session';
 export { EMPTY_COACH_ANNOTATIONS } from './helpers/coach-types';
-export { drawGrenadeMark } from './helpers/equipment-marks';
 export { heatBinsOf, heatFieldOfBins, warmBin } from './helpers/heat-bins';
 export type { HeatDifference } from './helpers/heat-difference';
 export { heatDifference, routesOverlap } from './helpers/heat-difference';
@@ -67,7 +68,6 @@ export {
 } from './helpers/heat-picture';
 export type { HeatIdentity } from './helpers/heat-ramp';
 export { labelPass, readLabelStyle } from './helpers/labels';
-export { levelAt } from './helpers/levels';
 export type { PlateMark, PlateMarkId } from './helpers/plate-legend';
 export { PLATE_MARKS } from './helpers/plate-legend';
 export {

@@ -1,6 +1,6 @@
 import type { TacticEnemy, TacticEnemyRole, TacticSide } from '@disa/demo-core';
 import { type MapOverview, radarX, radarY } from '@disa/map-data';
-import type { PlateGeometry, RadarColors } from '@/features/radar';
+import type { PlateGeometry, RadarColors } from '@disa/plate';
 import type { SlotColors } from './tactic-colors';
 import type { EnemyMarks } from './tactic-enemies';
 import type { PlayerLeg } from './tactic-schedule';

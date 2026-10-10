@@ -1,6 +1,6 @@
 import { serializeTacticFile } from '@disa/demo-core';
+import { createNewTactic } from '@disa/tactic-board';
 import { describe, expect, it } from 'vitest';
-import { createNewTactic } from '../helpers/tactic-setup';
 import {
   libraryDownload,
   planImport,

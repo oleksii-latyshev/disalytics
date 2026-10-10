@@ -1,10 +1,8 @@
 import { mainSteps, type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
+import { GrenadeTally, nameOrFallback, tacticDurationSeconds } from '@disa/tactic-board';
 import { Button } from '@disa/ui';
 import { Copy, Download, Trash2 } from 'lucide-react';
-import { tacticDurationSeconds } from '../helpers/tactic-duration';
-import { nameOrFallback } from '../helpers/tactic-names';
-import { GrenadeTally } from './GrenadeTally';
 import { TacticThumbnail } from './TacticThumbnail';
 
 export interface TacticCardProps {

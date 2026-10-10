@@ -1,19 +1,18 @@
 import type { Tactic, TacticRound, TacticSide } from '@disa/demo-core';
 import { Text, useT } from '@disa/i18n';
 import { MAP_IDS } from '@disa/map-data';
+import { createNewTactic, nameOrFallback } from '@disa/tactic-board';
 import { Button } from '@disa/ui';
 import { Plus, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { saveDownload } from '../helpers/save-download';
 import { copiedTactic } from '../helpers/tactic-copy';
-import { nameOrFallback } from '../helpers/tactic-names';
-import { createNewTactic } from '../helpers/tactic-setup';
 import { tacticDownload } from '../helpers/tactic-transfer';
 import { countByMap, filterTactics } from '../helpers/tactics-filter';
 import { useTactics } from '../hooks/use-tactics';
 import { SharedTacticBanner } from './SharedTacticBanner';
 import { TacticCard } from './TacticCard';
-import { TacticEditor } from './TacticEditor';
+import { TacticEditorScreen } from './TacticEditorScreen';
 import { TacticsFilterBar } from './TacticsFilterBar';
 import { TacticTransferDialog } from './TacticTransferDialog';
 
@@ -120,7 +119,7 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
   if (editingTactic !== null) {
     return (
       <div className="fixed inset-0 z-40 bg-surface-0">
-        <TacticEditor
+        <TacticEditorScreen
           key={editingTactic.id}
           initialTactic={editingTactic}
           onSave={handleSaveTactic}

@@ -1,9 +1,8 @@
 import type { PlayerSlot, Team } from '@disa/demo-core';
 import type { MapOverview, RadarPoint } from '@disa/map-data';
 import type { PlateGeometry, RadarColors } from '@disa/plate';
-import { drawSelectionRing, drawToken } from '@disa/plate';
+import { drawGrenadeMark, drawSelectionRing, drawToken } from '@disa/plate';
 import type { CoachMovedPlayer, CoachStroke, CoachUtility } from './coach-types';
-import { drawGrenadeMark } from './equipment-marks';
 import { haloStroke, LABEL_HALO_PX } from './label-box';
 
 const SMOKE_RADIUS_UNITS = 144;

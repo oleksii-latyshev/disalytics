@@ -1,6 +1,6 @@
 import type { Lineup } from '@disa/demo-core';
 import type { MapOverview } from '@disa/map-data';
-import type { PlateGeometry, RadarColors } from '@/features/radar';
+import type { PlateGeometry, RadarColors } from '@disa/plate';
 import { drawTrajectoryArc, projectWorldToScreen } from './tactic-layer-drawing';
 
 const MARKER_RADIUS = 5;
