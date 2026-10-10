@@ -29,6 +29,13 @@
       "when": 1791562991432,
       "tag": "0004_lineup_aliases",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791607886010,
+      "tag": "0005_admin_steam",
+      "breakpoints": true
     }
   ]
 }

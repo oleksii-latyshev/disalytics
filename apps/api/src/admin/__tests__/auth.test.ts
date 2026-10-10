@@ -1,9 +1,10 @@
 import { Effect } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { hasSqlite } from '../../__tests__/sqlite-d1';
+import { makeLineupStorage } from '../../modules/lineups';
 import { makeAdminAuth } from '../auth/store';
 import { DAY_MS, deviceLabel, SESSION_COOKIE } from '../auth/tokens';
-import { adminEnv, api, NOW } from './support';
+import { adminEnv, api, lineup, NOW } from './support';
 
 const HOST = 'admin.example.workers.dev';
 const CHROME_MAC =
@@ -253,5 +254,103 @@ describe.skipIf(!hasSqlite)('the write guard and a body-less POST', () => {
       headers: { 'Content-Type': 'text/plain' },
     });
     expect(text.status).toBe(400);
+  });
+});
+
+const STEAM = 'https://steamcommunity.com/id/alex-cs';
+
+describe.skipIf(!hasSqlite)('steam links and contributions', () => {
+  async function redeem(target: ReturnType<typeof env>, name: string, steamUrl?: string) {
+    const response = await api(target, '/api/auth/redeem', {
+      host: HOST,
+      body: { token: await invite(target, 'editor'), name, ...(steamUrl ? { steamUrl } : {}) },
+    });
+    return { response, cookie: sessionOf(response) };
+  }
+
+  it('keeps the link given on the invite form and rejects a foreign one', async () => {
+    const target = env();
+    const bad = await api(target, '/api/auth/redeem', {
+      host: HOST,
+      body: { token: await invite(target), name: 'Eve', steamUrl: 'https://example.com/id/eve' },
+    });
+    expect(bad.status).toBe(400);
+
+    const { response, cookie } = await redeem(target, 'Alex', STEAM);
+    expect(await response.json()).toMatchObject({ name: 'Alex', steamUrl: STEAM });
+    const me = await api(target, '/api/whoami', asDevice(cookie));
+    expect(await me.json()).toMatchObject({ steamUrl: STEAM });
+  });
+
+  it('lets any signed-in person set, change and clear their own link', async () => {
+    const target = env();
+    const { cookie } = await redeem(target, 'Sam');
+    const patch = (steamUrl: string | null) =>
+      api(target, '/api/me', { method: 'PATCH', body: { steamUrl }, ...asDevice(cookie) });
+
+    expect(await (await patch(STEAM)).json()).toMatchObject({ name: 'Sam', steamUrl: STEAM });
+    const changed = 'https://steamcommunity.com/profiles/76561198000000000/';
+    expect(await (await patch(changed)).json()).toMatchObject({ steamUrl: changed });
+    expect(await (await api(target, '/api/whoami', asDevice(cookie))).json()).toMatchObject({
+      steamUrl: changed,
+    });
+    expect(await (await patch(null)).json()).not.toHaveProperty('steamUrl');
+    expect(await (await api(target, '/api/whoami', asDevice(cookie))).json()).not.toHaveProperty(
+      'steamUrl',
+    );
+    expect((await patch('https://steamcommunity.com/id/x')).status).toBe(400);
+    expect((await patch('http://steamcommunity.com/id/xyz')).status).toBe(400);
+  });
+
+  it('credits the committing person with name and link', async () => {
+    const target = env();
+    const { cookie } = await redeem(target, 'Alex', STEAM);
+    const commit = await api(target, '/api/commit', {
+      body: { map: 'de_mirage', decisions: [{ action: 'add', lineup: lineup() }], images: {} },
+      ...asDevice(cookie),
+    });
+    expect(commit.status).toBe(200);
+    const stored = (await (
+      await api(target, '/api/lineups/de_mirage', asDevice(cookie))
+    ).json()) as {
+      lineups: { author?: unknown }[];
+    };
+    expect(stored.lineups[0]?.author).toEqual({ name: 'Alex', url: STEAM });
+  });
+
+  it('counts live lineups per person and map for any role, newest total first', async () => {
+    const target = env();
+    const alex = await redeem(target, 'Alex', STEAM);
+    const sam = await redeem(target, 'Sam');
+    const add = (cookie: string, map: string, ids: string[]) =>
+      api(target, '/api/commit', {
+        body: {
+          map,
+          decisions: ids.map((id) => ({ action: 'add', lineup: lineup({ id, map }) })),
+          images: {},
+        },
+        ...asDevice(cookie),
+      });
+    await add(alex.cookie, 'de_mirage', ['a1', 'a2', 'a3']);
+    await add(sam.cookie, 'de_mirage', ['s1']);
+    await add(sam.cookie, 'de_dust2', ['s2', 's3']);
+    await api(target, '/api/lineups/a3', { method: 'DELETE', ...asDevice(alex.cookie) });
+    await Effect.runPromise(
+      makeLineupStorage(target.LINEUPS_DB).saveLineups({
+        lineups: [lineup({ id: 'seeded', map: 'de_inferno' })],
+        actor: 'seed',
+        now: 1,
+      }),
+    );
+
+    const response = await api(target, '/api/contributors', asDevice(alex.cookie));
+    expect(await response.json()).toEqual({
+      contributors: [
+        { name: 'Sam', total: 3, byMap: { de_mirage: 1, de_dust2: 2 } },
+        { name: 'Alex', steamUrl: STEAM, total: 2, byMap: { de_mirage: 2 } },
+        { name: 'seed', total: 1, byMap: { de_inferno: 1 } },
+      ],
+    });
+    expect((await api(target, '/api/contributors', { host: HOST })).status).toBe(401);
   });
 });

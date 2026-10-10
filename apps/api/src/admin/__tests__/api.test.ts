@@ -26,7 +26,12 @@ interface Body {
   photos: { embedded: number; links: number; ours: number; copied: number; failed: unknown[] };
   items: { id: string; status: string; stored?: { id: string }; problems: unknown[] }[];
   serverOnly: unknown[];
-  lineups: { id: string; title: string; imageUrls: string[] }[];
+  lineups: {
+    id: string;
+    title: string;
+    imageUrls: string[];
+    author?: { name: string; url?: string };
+  }[];
   changes: { lineupId: string; action: string; actor: string; at: number }[];
 }
 
@@ -177,6 +182,31 @@ describe.skipIf(!hasSqlite)('POST /api/commit', () => {
       action: 'save',
       actor: 'dev@localhost',
       at: NOW,
+    });
+  });
+
+  it('credits a lineup without an author to the committing person, and keeps one it has', async () => {
+    const env = await seededEnv([]);
+    const credited = lineup({
+      id: 'credited',
+      author: { name: 'Pro', url: 'https://example.com/p' },
+    });
+    const response = await commit(
+      env,
+      body([
+        { action: 'add', lineup: lineup({ id: 'plain' }) },
+        { action: 'add', lineup: credited },
+      ]),
+    );
+    expect(response.status).toBe(200);
+
+    const saved = await stored(env);
+    expect(saved.find((entry) => entry.id === 'plain')).toMatchObject({
+      author: { name: 'dev@localhost' },
+    });
+    expect(saved.find((entry) => entry.id === 'plain')).not.toHaveProperty('author.url');
+    expect(saved.find((entry) => entry.id === 'credited')).toMatchObject({
+      author: { name: 'Pro', url: 'https://example.com/p' },
     });
   });
 

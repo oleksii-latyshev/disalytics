@@ -13,6 +13,7 @@ import {
   ChangesResponse,
   CommitRequest,
   CommitResponse,
+  ContributorsResponse,
   Done,
   InviteCreated,
   InviteInfo,
@@ -23,6 +24,7 @@ import {
   PeopleResponse,
   PreviewRequest,
   PreviewResponse,
+  ProfileUpdate,
   RedeemRequest,
   Removed,
   WhoAmI,
@@ -33,6 +35,8 @@ export interface ActorShape {
   readonly id: string;
   readonly name: string;
   readonly role: AdminRole;
+  /** Their `steamcommunity.com` profile link, when they gave one. */
+  readonly steamUrl: string | null;
   /** The session this request came on; `null` for the local dev identity. */
   readonly sessionId: string | null;
 }
@@ -80,7 +84,10 @@ const AuthGroup = HttpApiGroup.make('auth').add(
 );
 
 const MeGroup = HttpApiGroup.make('me')
-  .add(HttpApiEndpoint.get('whoami', '/whoami', { success: WhoAmI }))
+  .add(
+    HttpApiEndpoint.get('whoami', '/whoami', { success: WhoAmI }),
+    HttpApiEndpoint.patch('update', '/me', { payload: ProfileUpdate, success: WhoAmI }),
+  )
   .middleware(SessionAuth);
 
 /** The owner's: invites, people and their devices. */
@@ -148,6 +155,11 @@ const ChangesGroup = HttpApiGroup.make('changes')
   )
   .middleware(SessionAuth);
 
+/** Who added how many live lineups; any signed-in person may read it. */
+const ContributorsGroup = HttpApiGroup.make('contributors')
+  .add(HttpApiEndpoint.get('list', '/contributors', { success: ContributorsResponse }))
+  .middleware(SessionAuth);
+
 export const AdminApi = HttpApi.make('disalytics-admin')
   .add(AuthGroup.prefix('/api'))
   .add(MeGroup.prefix('/api'))
@@ -156,5 +168,6 @@ export const AdminApi = HttpApi.make('disalytics-admin')
   .add(CommitGroup.prefix('/api'))
   .add(LineupsGroup.prefix('/api'))
   .add(ChangesGroup.prefix('/api'))
+  .add(ContributorsGroup.prefix('/api'))
   .middleware(MalformedAsBadRequest)
   .middleware(WriteGuard);

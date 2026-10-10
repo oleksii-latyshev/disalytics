@@ -13,7 +13,7 @@ place that writes to the lineups tables.
 
 ## What the page does
 
-Sections: **Import**, **On the site**, **People** (owner) and **History**. Import is a guided flow with
+Sections: **Import**, **On the site**, **People** (owner), **Contributions** (everyone: live lineups per person and map) and **History**. Import is a guided flow with
 the counts and one button pinned at the bottom:
 
 1. **File**: pick the map and drop the file exported from the lineups library. Plain-language tiles say
@@ -49,6 +49,7 @@ Free plan, so the Worker signs people in itself (#623):
   invite and session tokens.
 - **Roles.** An *owner* invites people, sees every device, signs a device out and disables a person
   (never the last owner). An *editor* edits lineups. Every write records the person's name.
+- **Authorship.** A person may give a Steam profile link (`https://steamcommunity.com/id/…` or `/profiles/<17 digits>`) on the invite form or later under the header (`PATCH /api/me`). A lineup committed without an `author` gets the committer's name and link; an author already in the file is kept.
 - Writes must also be same-origin JSON (or carry no body at all).
 
 **Lost every device?** Whoever holds the Cloudflare account is the root of trust:
@@ -60,7 +61,7 @@ bun run admin:invite -- --remote     # prints a fresh owner invite link for prod
 ## Database migrations
 
 Migrations are manual. `0002_photo_links.sql` remembers which copied link became which stored photo;
-`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place). Apply before the
+`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place); `0005_admin_steam.sql` adds `admins.steam_url`. Apply before the
 Worker that needs them goes live:
 
 ```bash

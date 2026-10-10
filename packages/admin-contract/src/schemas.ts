@@ -1,5 +1,6 @@
 import { LINEUP_TAGS } from '@disa/demo-core';
 import { Schema } from 'effect';
+import { MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
 import { PROBLEM_CODES } from './validation';
 
 /** World units within which two lineups of one map, kind and side count as the same throw. */
@@ -154,7 +155,17 @@ export const PersonName = Schema.String.check(
 /** An invite or session token as it travels: 32 random bytes, base64url. */
 export const Token = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{43}$/));
 
-export const WhoAmI = Schema.Struct({ id: Schema.String, name: Schema.String, role: AdminRole });
+export const SteamUrl = Schema.String.check(
+  Schema.isMaxLength(MAX_STEAM_URL_LENGTH),
+  Schema.isPattern(STEAM_URL_PATTERN),
+);
+
+export const WhoAmI = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  role: AdminRole,
+  steamUrl: Schema.optional(SteamUrl),
+});
 export type WhoAmI = typeof WhoAmI.Type;
 
 export const InviteToken = Schema.Struct({ token: Token });
@@ -169,8 +180,18 @@ export const InviteInfo = Schema.Struct({
 });
 export type InviteInfo = typeof InviteInfo.Type;
 
-/** Spends an invite. A new person's invite needs `name`; a device invite ignores it. */
-export const RedeemRequest = Schema.Struct({ token: Token, name: Schema.optional(PersonName) });
+/**
+ * Spends an invite. A new person's invite needs `name` and may carry `steamUrl`; a device invite
+ * ignores both.
+ */
+export const RedeemRequest = Schema.Struct({
+  token: Token,
+  name: Schema.optional(PersonName),
+  steamUrl: Schema.optional(SteamUrl),
+});
+
+/** A person's own profile edit; `null` clears the Steam link. */
+export const ProfileUpdate = Schema.Struct({ steamUrl: Schema.NullOr(SteamUrl) });
 
 /** An owner asks for a link: for a new person of `role`, or for one more device of `personId`. */
 export const InviteRequest = Schema.Struct({
@@ -206,3 +227,15 @@ export type PeopleResponse = typeof PeopleResponse.Type;
 export const Done = Schema.Struct({ ok: Schema.Literal(true) });
 
 export const Removed = Schema.Struct({ id: Schema.String });
+
+/** One person's live lineups, in all and per map. Names with no admin (the seed) are listed too. */
+export const Contributor = Schema.Struct({
+  name: Schema.String,
+  steamUrl: Schema.optional(SteamUrl),
+  total: Schema.Int,
+  byMap: Schema.Record(Schema.String, Schema.Int),
+});
+export type Contributor = typeof Contributor.Type;
+
+export const ContributorsResponse = Schema.Struct({ contributors: Schema.Array(Contributor) });
+export type ContributorsResponse = typeof ContributorsResponse.Type;

@@ -1,7 +1,7 @@
 # API Worker
 
 This Cloudflare Worker is a separate deployment from the replay PWA. Replay files and parsed replay
-data stay in the browser; no route here accepts them. It answers `GET /health`, `GET /lineups/:map`
+data stay in the browser; no route here accepts them. It answers `GET /health`, `GET /lineups`, `GET /lineups/:map`
 and `GET /photos/:sha256`; there are no write routes.
 Production: <https://disalytics-api.disa-67b.workers.dev>.
 
@@ -33,6 +33,7 @@ response shaping lives under `src/shared/`. The same `CODE_REQUIREMENTS.md` rule
 
 | Route | Answers |
 |---|---|
+| `GET /lineups` | `{ maps: [{ map, revision, count }] }`: the live count and revision of each map, so a client fetches only the maps that moved. Same `Cache-Control` as a map. |
 | `GET /lineups/:map` | `{ map, revision, lineups }`; `:map` is `de_[a-z0-9_]+`. Rows failing `isLineup` are skipped and the rest are marked `isBuiltIn`. `Cache-Control: max-age=60, stale-while-revalidate=600`, `ETag` on the map's revision, `304` on a match, edge-cached with the Cache API. |
 | `GET /photos/:sha256` | image bytes from KV (type in KV metadata), lowercase hex-64 only, `immutable` for a year, otherwise `404`. |
 

@@ -88,6 +88,16 @@ function comparable(lineup: Lineup, photoBaseUrl: string): Lineup {
   return { ...lineup, imageUrls };
 }
 
+/**
+ * A file that names no author reads as the stored lineup's own: the commit credits the person who
+ * saved it, and a re-exported file need not carry that credit back to compare equal.
+ */
+function withStoredAuthor(lineup: Lineup, stored: Lineup): Lineup {
+  return lineup.author === undefined && stored.author !== undefined
+    ? { ...lineup, author: stored.author }
+    : lineup;
+}
+
 /** Classifies every incoming lineup against what is stored. */
 export function planLineups(
   existing: readonly Lineup[],
@@ -102,7 +112,10 @@ export function planLineups(
     const aliased = byId.get(aliases.get(lineup.id) ?? '');
     const stored = byId.get(lineup.id) ?? aliased;
     if (stored !== undefined) {
-      const diff = diffLineups(stored, { ...comparable(lineup, photoBaseUrl), id: stored.id });
+      const diff = diffLineups(stored, {
+        ...comparable(withStoredAuthor(lineup, stored), photoBaseUrl),
+        id: stored.id,
+      });
       return diff.length === 0
         ? { id: lineup.id, status: 'unchanged', lineup, stored, problems }
         : { id: lineup.id, status: 'update', lineup, stored, diff, problems };
@@ -115,7 +128,7 @@ export function planLineups(
           status: 'duplicate',
           lineup,
           stored: twin,
-          diff: diffLineups(twin, comparable(lineup, photoBaseUrl)),
+          diff: diffLineups(twin, comparable(withStoredAuthor(lineup, twin), photoBaseUrl)),
           problems,
         };
   });

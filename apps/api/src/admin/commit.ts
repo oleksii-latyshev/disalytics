@@ -1,10 +1,11 @@
 import type {
+  ActorShape,
   BadRequest,
   CommitRequest,
   CommitResponse,
   WithheldLineup,
 } from '@disa/admin-contract';
-import type { Lineup } from '@disa/demo-core';
+import type { Lineup, LineupAuthor } from '@disa/demo-core';
 import { Effect } from 'effect';
 import { type LineupAlias, LineupStorage } from '../modules/lineups';
 import type { PhotoStorage } from '../modules/photos';
@@ -19,6 +20,15 @@ import {
 } from './helpers/settle-photos';
 import { PhotoLinks } from './photo-links';
 
+function authorOf({ name, steamUrl }: ActorShape): LineupAuthor {
+  return steamUrl === null ? { name } : { name, url: steamUrl };
+}
+
+/** A lineup the file already credits keeps that credit; one without gets the committing person. */
+function withAuthor(lineup: Lineup, author: LineupAuthor): Lineup {
+  return lineup.author === undefined ? { ...lineup, author } : lineup;
+}
+
 /**
  * Applies what the page decided. The lineups arrive exactly as they should be saved; the Worker
  * re-checks each against the shared rules, puts every photo into our storage, and writes the rest
@@ -27,7 +37,7 @@ import { PhotoLinks } from './photo-links';
  */
 export function runCommit(
   request: CommitRequest,
-  actor: string,
+  actor: ActorShape,
 ): Effect.Effect<
   CommitResponse,
   BadRequest | StorageError,
@@ -59,16 +69,17 @@ export function runCommit(
     const withheld: WithheldLineup[] = [];
     const final: Lineup[] = [];
     const aliases: LineupAlias[] = [];
+    const author = authorOf(actor);
     for (const { lineup, aliasFor } of writes) {
       const failures = failuresOf(lineup, photos.failures);
       if (failures.length > 0) withheld.push({ id: lineup.id, failures });
       else {
-        final.push(withStoredPhotos(lineup, photos.urlByRef));
+        final.push(withAuthor(withStoredPhotos(lineup, photos.urlByRef), author));
         if (aliasFor !== undefined) aliases.push({ aliasId: aliasFor, lineupId: lineup.id });
       }
     }
 
-    yield* storage.saveLineups({ lineups: final, aliases, actor, now: config.now() });
+    yield* storage.saveLineups({ lineups: final, aliases, actor: actor.name, now: config.now() });
     const { revision } = yield* storage.readMap(map);
     return {
       map,

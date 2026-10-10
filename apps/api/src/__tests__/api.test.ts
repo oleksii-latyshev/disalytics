@@ -20,7 +20,6 @@ describe('routing and CORS', () => {
     const env = testEnv();
     const probes: [string, string][] = [
       ['GET', '/other'],
-      ['GET', '/lineups'],
       ['GET', '/lineups/de_mirage/extra'],
       ['GET', '/photos/'],
       ['POST', '/health'],

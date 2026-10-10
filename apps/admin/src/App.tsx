@@ -1,8 +1,9 @@
-import type { ChangeEntry, WhoAmI } from '@disa/admin-contract';
+import type { ChangeEntry, Contributor, WhoAmI } from '@disa/admin-contract';
 import { isLineup } from '@disa/demo-core';
 import { useCallback, useState } from 'react';
 import { call } from './api/client';
 import { ChangesList } from './components/ChangesList';
+import { ContributorsSection } from './components/ContributorsSection';
 import { ImportFlow } from './components/flow/ImportFlow';
 import { Header } from './components/Header';
 import { InviteScreen } from './components/InviteScreen';
@@ -71,14 +72,23 @@ function Workspace({ me }: { me: WhoAmI }) {
     return response.changes;
   });
 
+  const [contributors, reloadContributors] = useResource<readonly Contributor[]>(
+    'contributors',
+    async () => {
+      const response = await call((client) => client.contributors.list());
+      return response.contributors;
+    },
+  );
+
   const afterChange = useCallback(() => {
     reloadCurrent();
     reloadChanges();
-  }, [reloadCurrent, reloadChanges]);
+    reloadContributors();
+  }, [reloadCurrent, reloadChanges, reloadContributors]);
   const tabs: readonly TabId[] =
     me.role === 'owner'
-      ? ['import', 'onSite', 'people', 'history']
-      : ['import', 'onSite', 'history'];
+      ? ['import', 'onSite', 'people', 'contributors', 'history']
+      : ['import', 'onSite', 'contributors', 'history'];
   const onSite = current.status === 'ready' ? current.data.filter(isLineup) : [];
 
   return (
@@ -101,6 +111,13 @@ function Workspace({ me }: { me: WhoAmI }) {
           <PeopleSection me={me} />
         </div>
       ) : null}
+      <div
+        role="tabpanel"
+        id={tabPanelId(PANEL_PREFIX, 'contributors')}
+        hidden={tab !== 'contributors'}
+      >
+        <ContributorsSection resource={contributors} onRetry={reloadContributors} />
+      </div>
       <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'history')} hidden={tab !== 'history'}>
         <ChangesList resource={changes} onRetry={reloadChanges} />
       </div>

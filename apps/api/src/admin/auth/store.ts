@@ -41,9 +41,15 @@ export class AdminAuth extends Context.Service<
     readonly redeem: (input: {
       readonly token: string;
       readonly name: string | undefined;
+      readonly steamUrl: string | undefined;
       readonly label: string;
       readonly now: number;
     }) => Effect.Effect<Redeemed, StorageError>;
+    /** Sets or clears (`null`) a person's own Steam link; `false` when they are gone. */
+    readonly setSteamUrl: (
+      id: string,
+      steamUrl: string | null,
+    ) => Effect.Effect<boolean, StorageError>;
     readonly resolve: (token: string, now: number) => Effect.Effect<Resolved | null, StorageError>;
     readonly signOut: (token: string, now: number) => Effect.Effect<void, StorageError>;
     readonly createInvite: (input: {
@@ -90,6 +96,7 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
   const checkInvite = async (
     tokenHash: string,
     name: string | undefined,
+    steamUrl: string | undefined,
     now: number,
   ): Promise<Checked> => {
     const [invite] = await db.select().from(adminInvites).where(liveInvite(tokenHash, now));
@@ -105,7 +112,14 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
     return {
       ok: true,
       isNew: true,
-      person: { id: newId(), name: trimmed, role: invite.role, createdAt: now, disabledAt: null },
+      person: {
+        id: newId(),
+        name: trimmed,
+        role: invite.role,
+        steamUrl: steamUrl ?? null,
+        createdAt: now,
+        disabledAt: null,
+      },
     };
   };
 
@@ -134,7 +148,13 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
     return {
       ok: true,
       token: sessionToken,
-      actor: { id: person.id, name: person.name, role: person.role, sessionId: session.id },
+      actor: {
+        id: person.id,
+        name: person.name,
+        role: person.role,
+        steamUrl: person.steamUrl,
+        sessionId: session.id,
+      },
     };
   };
 
@@ -156,10 +176,10 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
           : { role: person.role, name: person.name, ...invitedBy, expiresAt: invite.expiresAt };
       }),
 
-    redeem: ({ token, name, label, now }) =>
+    redeem: ({ token, name, steamUrl, label, now }) =>
       attempt(async (): Promise<Redeemed> => {
         const tokenHash = await hashToken(token);
-        const checked = await checkInvite(tokenHash, name, now);
+        const checked = await checkInvite(tokenHash, name, steamUrl, now);
         if (!checked.ok) return checked;
 
         // Spent here, atomically: of two tabs opening one link, only one gets a row back.
@@ -182,6 +202,7 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
             id: admins.id,
             name: admins.name,
             role: admins.role,
+            steamUrl: admins.steamUrl,
           })
           .from(adminSessions)
           .innerJoin(admins, eq(admins.id, adminSessions.adminId))
@@ -203,9 +224,25 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
             .where(eq(adminSessions.id, row.sessionId));
         }
         return {
-          actor: { id: row.id, name: row.name, role: row.role, sessionId: row.sessionId },
+          actor: {
+            id: row.id,
+            name: row.name,
+            role: row.role,
+            steamUrl: row.steamUrl,
+            sessionId: row.sessionId,
+          },
           touched,
         };
+      }),
+
+    setSteamUrl: (id, steamUrl) =>
+      attempt(async () => {
+        const updated = await db
+          .update(admins)
+          .set({ steamUrl })
+          .where(and(eq(admins.id, id), isNull(admins.disabledAt)))
+          .returning({ id: admins.id });
+        return updated.length > 0;
       }),
 
     signOut: (token, now) =>

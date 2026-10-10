@@ -19,7 +19,7 @@ export interface CacheBinding {
 /** Cloudflare's per-data-center cache. Absent in tests and local Node runs, where nothing is cached. */
 export class EdgeCache extends Context.Service<EdgeCache, CacheBinding>()('disalytics/EdgeCache') {}
 
-const CACHED_PATH = /^\/(?:lineups|photos)\//;
+const CACHED_PATH = /^\/(?:lineups(?:\/|$)|photos\/)/;
 
 /**
  * Serves GETs of lineups and photos from the edge cache, or stores the 200 it builds. The stored
