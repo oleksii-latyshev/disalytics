@@ -1,5 +1,7 @@
 import { useT } from '@disa/i18n';
-import { CircleQuestionMark, Settings } from 'lucide-react';
+import { CircleQuestionMark, Settings, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { adminUrl, readAdminHint } from '@/core/admin-hint';
 import { DOCK_SECTIONS, type ShellView } from '../helpers/views';
 import { useDockMagnify } from '../hooks/use-dock-magnify';
 import { DockEntry } from './DockEntry';
@@ -31,6 +33,8 @@ function pathFor(view: ShellView) {
 export function ShellDock({ view, onNavigate, onSettingsOpen, onHelpOpen }: Props) {
   const t = useT();
   const panelRef = useDockMagnify();
+  // Read once: the hint changes only by signing in to the admin, which is another page.
+  const [isAdmin] = useState(readAdminHint);
 
   return (
     // The band takes no pointer events, so the field and the content under it stay reachable
@@ -57,6 +61,15 @@ export function ShellDock({ view, onNavigate, onSettingsOpen, onHelpOpen }: Prop
 
         {/* The same two sheets settings and help own, so the way in keeps no copy of either. */}
         <div className="atlas-dock-group flex items-end">
+          {isAdmin && (
+            <DockEntry
+              icon={ShieldCheck}
+              labelPath="library.shell.admin"
+              tone="linear-gradient(160deg, #4b5565, #1f2531)"
+              href={adminUrl()}
+            />
+          )}
+
           <DockEntry
             icon={Settings}
             labelPath="common.settings"

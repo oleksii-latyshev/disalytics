@@ -235,6 +235,11 @@
     "onSite": "on the site now",
     "title": "Take the best of the two"
   },
+  "nav": {
+    "account": "Account",
+    "home": "Lineups admin, overview",
+    "label": "Sections"
+  },
   "onSite": {
     "cancel": "Cancel",
     "save": "Save changes"
@@ -247,6 +252,83 @@
     "same": "the same as on the site",
     "skip": "will not be added",
     "update": "will be updated"
+  },
+  "overview": {
+    "actions": {
+      "add": {
+        "count": "{count, plural, one {# lineup live} other {# lineups live}}",
+        "text": "Import a file, check it, save it to the site",
+        "title": "Add lineups"
+      },
+      "collections": {
+        "count": "{count, plural, one {# collection} other {# collections}}",
+        "text": "Named lists for an execute or a retake",
+        "title": "Collections"
+      },
+      "onSite": {
+        "count": "{count, plural, one {# map covered} other {# maps covered}}",
+        "text": "Edit, fix or delete what players see",
+        "title": "Lineups on the site"
+      },
+      "tactics": {
+        "count": "{count, plural, one {# tactic} other {# tactics}}",
+        "text": "Build and edit tactics on the board",
+        "title": "Tactics"
+      }
+    },
+    "add": "Add lineups",
+    "addSteam": "Add your Steam link",
+    "firstAction": "Import the first file",
+    "firstLede": "The site has no lineups yet. Import a file, check it and save it: the rest of this page fills in from that.",
+    "firstTitle": "Start with the first lineups",
+    "hello": "Hello, {name}",
+    "heroLede": "Add lineups from a file, tidy what is already on the site, or build a tactic on the board.",
+    "loading": "Loading the overview…",
+    "maps": {
+      "lede": "Open a map to work on its lineups.",
+      "nothing": "Nothing on the site yet",
+      "open": "Open {map} on the site",
+      "title": "Maps"
+    },
+    "newTactic": "New tactic",
+    "people": {
+      "count": "{count, plural, one {# person} other {# people}}",
+      "devices": "{count, plural, one {# device} other {# devices}}",
+      "manage": "Manage people",
+      "role": "Role of the new person",
+      "title": "People"
+    },
+    "recent": {
+      "all": "All history",
+      "collectionAdd": "added the collection",
+      "collectionDelete": "deleted the collection",
+      "collectionUpdate": "updated the collection",
+      "empty": "No changes yet. The first thing saved to the site shows up here.",
+      "lineupAdd": "added the lineup",
+      "lineupDelete": "deleted the lineup",
+      "lineupUpdate": "updated the lineup",
+      "tacticAdd": "added the tactic",
+      "tacticDelete": "deleted the tactic",
+      "tacticUpdate": "updated the tactic",
+      "title": "Recent changes",
+      "untitled": "an item that is gone"
+    },
+    "top": {
+      "all": "All",
+      "empty": "Nobody has added lineups yet.",
+      "title": "Top contributors"
+    },
+    "totals": {
+      "collections": "Collections",
+      "lineups": "Lineups",
+      "maps": "Maps covered",
+      "tactics": "Tactics",
+      "title": "On the site",
+      "week": "+{count, number} in 7 days"
+    },
+    "yourLast": "Your last change",
+    "yourLastNone": "None yet",
+    "yourLineups": "Your lineups"
   },
   "people": {
     "addDevice": "Link for a new device",
@@ -396,8 +478,9 @@
   "tabs": {
     "contributors": "Contributions",
     "history": "History",
-    "import": "Import",
+    "import": "Add lineups",
     "onSite": "On the site",
+    "overview": "Overview",
     "people": "People",
     "tactics": "Tactics"
   },

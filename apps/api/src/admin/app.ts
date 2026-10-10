@@ -5,6 +5,7 @@ import { HttpApiBuilder } from 'effect/unstable/httpapi';
 import { LineupStorage, makeLineupStorage } from '../modules/lineups';
 import { makePhotoStorage, PhotoStorage } from '../modules/photos';
 import { makeTacticStorage, TacticStorage } from '../modules/tactics';
+import { withHint } from './auth/hint-cookie';
 import { AdminAuth, makeAdminAuth } from './auth/store';
 import { ChangeLog, makeChangeLog } from './change-log';
 import { AdminConfig, type AdminConfigShape } from './config';
@@ -18,11 +19,13 @@ import {
   ContributorsHandlers,
   LineupsHandlers,
   MeHandlers,
+  OverviewHandlers,
   PeopleHandlers,
   PreviewHandlers,
   TacticsHandlers,
 } from './handlers';
 import { SessionAuthLive, WriteGuardLive } from './middleware';
+import { makeOverview, Overview } from './overview';
 import { makePhotoLinks, PhotoLinks } from './photo-links';
 
 const Middleware = Layer.mergeAll(MalformedAsBadRequestLive, SessionAuthLive, WriteGuardLive);
@@ -40,6 +43,7 @@ const AdminApiLive = HttpApiBuilder.layer(AdminApi).pipe(
       TacticsHandlers,
       ChangesHandlers,
       ContributorsHandlers,
+      OverviewHandlers,
     ).pipe(Layer.provide(Middleware)),
   ),
   Layer.provide(HttpServer.layerServices),
@@ -59,6 +63,7 @@ const { handler } = HttpRouter.toWebHandler(Layer.mergeAll(AdminApiLive, NotFoun
 export function configOf(env: AdminEnv, now: () => number = Date.now): AdminConfigShape {
   return {
     photoBaseUrl: env.PHOTO_BASE_URL.replace(/\/+$/, ''),
+    hintDomain: env.ADMIN_HINT_DOMAIN,
     devIdentity: env.ALLOW_DEV_IDENTITY,
     fetchPhoto: null,
     now,
@@ -77,9 +82,12 @@ export function handleApi(
     Context.add(TacticStorage, makeTacticStorage(env.LINEUPS_DB)),
     Context.add(ChangeLog, makeChangeLog(env.LINEUPS_DB)),
     Context.add(Contributors, makeContributors(env.LINEUPS_DB)),
+    Context.add(Overview, makeOverview(env.LINEUPS_DB)),
     Context.add(PhotoLinks, makePhotoLinks(env.LINEUPS_DB)),
     Context.add(AdminAuth, makeAdminAuth(env.LINEUPS_DB)),
     Context.add(AdminConfig, config),
   );
-  return handler(request, services);
+  return handler(request, services).then((response) =>
+    withHint(request, response, config.hintDomain),
+  );
 }

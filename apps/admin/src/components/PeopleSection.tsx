@@ -244,7 +244,7 @@ function DeviceRow({
   );
 }
 
-function LinkBox({ url, who, expires }: { url: string; who: string; expires: string }) {
+export function LinkBox({ url, who, expires }: { url: string; who: string; expires: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex flex-col gap-2 rounded-chip border border-line-strong bg-surface-2 p-3">

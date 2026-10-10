@@ -1,6 +1,6 @@
 import type { SiteTacticsResponse } from '@disa/admin-contract';
 import { isTactic, type Tactic, type TacticSide } from '@disa/demo-core';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { call } from '../api/client';
 import { type EditingTactic, editingFromSite, editingNew } from '../helpers/tactic-editing';
 import { forgetMapLineups } from '../hooks/use-map-lineups';
@@ -22,10 +22,18 @@ async function newTactic(map: string, side: TacticSide): Promise<Tactic> {
  * board editor in their place at full width.
  */
 export function TacticsTab({
+  map,
+  startNew,
+  onStarted,
   resource,
   onChanged,
   onRetry,
 }: {
+  /** The map a tactic started from the overview begins on. */
+  map: string;
+  /** The tab was opened to start a new tactic; `onStarted` clears that from the address. */
+  startNew: boolean;
+  onStarted: () => void;
   resource: Resource<SiteTacticsResponse>;
   onChanged: () => void;
   onRetry: () => void;
@@ -38,6 +46,21 @@ export function TacticsTab({
     setOpened(opened + 1);
     setEditing(next(opened + 1));
   };
+
+  const openRef = useRef(open);
+  openRef.current = open;
+  useEffect(() => {
+    if (!startNew) return;
+    let isCurrent = true;
+    void newTactic(map, 'T').then((tactic) => {
+      if (!isCurrent) return;
+      openRef.current((key) => editingNew(key, tactic));
+      onStarted();
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [startNew, map, onStarted]);
 
   /** The stored version of a tactic, read again, after someone else saved it. */
   const reload = async (id: string) => {

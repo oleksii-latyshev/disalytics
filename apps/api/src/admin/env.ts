@@ -12,6 +12,8 @@ export interface AdminEnv {
   readonly ASSETS: AssetsBinding;
   /** Public base of the photo route, no trailing slash: where `/photos/<sha256>` is served. */
   readonly PHOTO_BASE_URL: string;
+  /** The parent domain of the admin and the web app, for the `disa_admin` hint cookie; unset locally. */
+  readonly ADMIN_HINT_DOMAIN?: string | undefined;
   /**
    * Local development only. Honoured when the request host is localhost, ignored everywhere else;
    * kept in `.dev.vars`, never in `wrangler.admin.jsonc`.

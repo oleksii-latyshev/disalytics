@@ -24,6 +24,7 @@ import {
   InviteToken,
   MapId,
   MapLineupsResponse,
+  OverviewResponse,
   PeopleResponse,
   PreviewRequest,
   PreviewResponse,
@@ -217,6 +218,11 @@ const ContributorsGroup = HttpApiGroup.make('contributors')
   .add(HttpApiEndpoint.get('list', '/contributors', { success: ContributorsResponse }))
   .middleware(SessionAuth);
 
+/** The admin's home in one read: counts per map, the week, recent changes, top contributors. */
+const OverviewGroup = HttpApiGroup.make('overview')
+  .add(HttpApiEndpoint.get('read', '/overview', { success: OverviewResponse }))
+  .middleware(SessionAuth);
+
 export const AdminApi = HttpApi.make('disalytics-admin')
   .add(AuthGroup.prefix('/api'))
   .add(MeGroup.prefix('/api'))
@@ -228,5 +234,6 @@ export const AdminApi = HttpApi.make('disalytics-admin')
   .add(TacticsGroup.prefix('/api'))
   .add(ChangesGroup.prefix('/api'))
   .add(ContributorsGroup.prefix('/api'))
+  .add(OverviewGroup.prefix('/api'))
   .middleware(MalformedAsBadRequest)
   .middleware(WriteGuard);

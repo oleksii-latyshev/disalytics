@@ -7,7 +7,14 @@ import { Notice } from './Notice';
 import { isSteamInputValid, SteamField } from './SteamField';
 
 /** A signed-in person's own Steam link: shown, and set, changed or cleared in place. */
-export function SteamLink({ me }: { me: WhoAmI }) {
+export function SteamLink({
+  me,
+  onSaved,
+}: {
+  me: WhoAmI;
+  /** Told the new link (or `null` when cleared), so the rest of the page can follow. */
+  onSaved?: (steamUrl: string | null) => void;
+}) {
   const [saved, setSaved] = useState(me.steamUrl ?? null);
   const [draft, setDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -19,6 +26,7 @@ export function SteamLink({ me }: { me: WhoAmI }) {
     try {
       const updated = await call((client) => client.me.update({ payload: { steamUrl: next } }));
       setSaved(updated.steamUrl ?? null);
+      onSaved?.(updated.steamUrl ?? null);
       setDraft(null);
     } catch (error) {
       setFailure(isFailure(error) ? error : { key: 'admin.error.network', detail: undefined });
