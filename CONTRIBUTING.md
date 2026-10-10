@@ -189,7 +189,7 @@ an image it cannot carry, and a criterion phrased as "screenshots in the pull re
 **The review screen is never attachable** with a private demo open. It carries ten real players'
 names and SteamIDs (`AGENTS.md` §18), so its screenshots may not go into an issue, a pull request, or
 anything else that leaves this machine. The one exception is the shipped professional samples (public
-match, published names) — that is where `docs/images/review-dust2.png` comes from. Screen work on it is evidenced by measurement instead, and these are the forms
+match, published names) — that is where the screenshots in `docs/images/` come from. Screen work on it is evidenced by measurement instead, and these are the forms
 that have stood in for a picture:
 
 - **Measured geometry** at a named viewport, and it is a claim with a setup: state the viewport

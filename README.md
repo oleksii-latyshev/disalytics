@@ -1,72 +1,70 @@
 # disalytics
 
-Review a Counter-Strike 2 match in ten minutes instead of forty — right in the browser, without
-uploading the demo anywhere.
+Review a Counter-Strike 2 match in ten minutes instead of forty — in the browser, without uploading
+the demo anywhere.
 
-**[Open the app →](https://disalytics.disa-67b.workers.dev)** · English and Russian · installable, works offline
+**[Open the app →](https://disalytics.disa-67b.workers.dev)** · English and Russian · installable,
+works offline
 
-![A round of NaVi vs Vitality on Dust2 in disalytics](docs/images/review-dust2.png)
+![A round of NaVi vs Vitality on Dust2](docs/images/review.jpg)
 
-## Features
+| | |
+|---|---|
+| ![Home](docs/images/home.jpg) **Home** — open a demo or a shipped pro match | ![Stats](docs/images/stats.jpg) **Stats** — rounds, economy, ratings, best players |
+| ![Tactics](docs/images/tactics.jpg) **Tactics** — draw a play, branch it, play it back | ![Lineups](docs/images/lineups.jpg) **Lineups** — where to throw from, with screenshots |
 
-- **Private by design** — the `.dem` is parsed by Rust compiled to WebAssembly in a Web Worker; no
-  server, no account, no upload
-- **Opens what you have** — `.dem`, FACEIT `.dem.zst`, Valve `.dem.bz2`; drop a file, pick it, or
-  double-click it once the app is installed
-- **2D radar** — players, facing, weapons, health, flashes, smokes and fires, grenade flights,
-  tracers, audible radius; zoom and pan
-- **Round timeline** — every kill, grenade and objective as a glyph you can filter and jump to;
-  play at 0.5×–4×, hold an arrow to scrub
-- **Whole-match views** — scoreboard with per-round detail, duel map, heat map, and the match's lineups found by where they landed
-- **Library** — parsed demos reopen instantly from the browser's storage; two professional sample
-  matches to try without a demo of your own
-- **Keyboard first**, colour-blind palette, reduced-motion support
+## What it does
 
-The upload, library, tools, lineups, tactics and stats sections have direct routes. Match links use
-`/match/<local-cache-key>?round=<number>&view=<view>`; the round is one-based, and the selected
-view and round return when the local cache entry is still available.
+- **Replay** — 2D radar with players, utility, tracers and a filterable round timeline; 0.5×–4×
+- **Match views** — stats, duels, heat map, and the lineups thrown in the match
+- **Tactics and lineups** — a board for plays and a lineup library, with built-ins from the site
+- **Private by design** — `.dem`, `.dem.zst`, `.dem.bz2` are parsed by Rust → WebAssembly in a Web
+  Worker; no demo byte ever reaches a server
 
-## How it works
+## How it fits together
 
 ```mermaid
 flowchart LR
-  file[".dem / .zst / .bz2"] --> worker["Web Worker<br/>Rust → WASM parser"]
-  worker -->|typed arrays, transferred| app["React app"]
-  worker -.-> cache[("OPFS / IndexedDB cache")]
-  cache -.->|reopen| app
-  app --> radar["Canvas radar"]
-  app --> timeline["Timeline & match views"]
+  dem[".dem / .zst / .bz2"] --> worker["Web Worker<br/>Rust → WASM parser"]
+  worker -->|typed arrays| web["Web app<br/>React · Canvas"]
+  web <--> cache[("OPFS / IndexedDB")]
+  api["API Worker<br/>Effect · D1 · KV"] -->|built-in lineups,<br/>collections, tactics| web
+  admin["Admin<br/>React · tactic board"] -->|imports, edits| api
 ```
+
+The web app and the API are separate Cloudflare Workers; the API only ever holds metadata and
+photos, never a demo.
 
 ## Run it locally
 
-Requires [Bun](https://bun.com) 1.3+ and, for the first build, Rust with `wasm-pack`
-(`rust-toolchain.toml` pins the rest).
+Requires [Bun](https://bun.com) 1.3+ and, for the first build, Rust with `wasm-pack`.
 
 ```bash
 bun install
 bun run wasm:build   # once per parser change
-bun run dev
+bun run dev          # http://localhost:5173
 ```
 
-Monorepo: `apps/web` (the SPA), `packages/*` (schema, parser client, storage, map data, i18n, UI),
-`crates/*` (the Rust parser). The full command list, rules and architecture are in
-[`AGENTS.md`](AGENTS.md); workflow in [`CONTRIBUTING.md`](CONTRIBUTING.md);
-plans in [issues and milestones](https://github.com/oleksii-latyshev/disalytics/milestones).
+The admin and API run with `wrangler dev` — see [`apps/admin/README.md`](apps/admin/README.md).
+
+## Links
+
+- [`AGENTS.md`](AGENTS.md) — rules, architecture and every command
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — issue → PR workflow
+- [`docs/PARSER.md`](docs/PARSER.md) — the parser
+- [Milestones](https://github.com/oleksii-latyshev/disalytics/milestones) — what is next
 
 ## Credits
 
-- [`LaihoE/demoparser`](https://github.com/LaihoE/demoparser) (MIT) — the parser, vendored and patched in [`vendor/`](vendor/README.md)
-- [`MurkyYT/cs2-map-icons`](https://github.com/MurkyYT/cs2-map-icons) — radar images and overview data
-- [`Juknum/counter-strike-icons`](https://github.com/Juknum/counter-strike-icons) — weapon, utility and armour outlines
-- [HLTV](https://www.hltv.org/) — the IEM Atlanta 2026 sample matches, shipped as parses, never as demos
-- [`shadcn/ui`](https://github.com/shadcn-ui/ui) (MIT) — component source in `packages/ui`
-
-Counter-Strike 2, the `.dem` format and the map and weapon art are Valve Corporation's. disalytics is
-an unofficial tool, not affiliated with or endorsed by Valve.
+[`LaihoE/demoparser`](https://github.com/LaihoE/demoparser) (MIT, vendored in [`vendor/`](vendor/README.md)) ·
+[`MurkyYT/cs2-map-icons`](https://github.com/MurkyYT/cs2-map-icons) ·
+[`Juknum/counter-strike-icons`](https://github.com/Juknum/counter-strike-icons) ·
+[HLTV](https://www.hltv.org/) sample matches (shipped as parses, never as demos) ·
+[`shadcn/ui`](https://github.com/shadcn-ui/ui) (MIT).
+Counter-Strike 2 and its art are Valve Corporation's; disalytics is unofficial and not endorsed by
+Valve.
 
 ## License
 
-[AGPL-3.0-or-later](LICENSE), for this revision and every earlier one. Running a modified copy as a
-service means offering its users that copy's source under the same licence. Code in `vendor/` keeps
-its upstream MIT licence ([`vendor/LICENSE`](vendor/LICENSE)).
+[AGPL-3.0-or-later](LICENSE). Code in `vendor/` keeps its upstream MIT licence
+([`vendor/LICENSE`](vendor/LICENSE)).
