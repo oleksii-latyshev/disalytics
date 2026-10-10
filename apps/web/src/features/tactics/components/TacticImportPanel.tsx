@@ -1,9 +1,9 @@
 import { effectiveSteps, rootPlan, type Tactic } from '@disa/demo-core';
 import { Text, useLocale, useT } from '@disa/i18n';
+import { nameOrFallback } from '@disa/tactic-board';
 import { Button, cn } from '@disa/ui';
 import { Upload } from 'lucide-react';
 import { type DragEvent, useRef, useState } from 'react';
-import { nameOrFallback } from '../helpers/tactic-names';
 import {
   type ConflictChoice,
   type ImportConflict,

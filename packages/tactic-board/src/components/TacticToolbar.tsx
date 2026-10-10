@@ -1,8 +1,8 @@
 import { useT } from '@disa/i18n';
+import { UtilityGlyph } from '@disa/plate';
 import { cn } from '@disa/ui';
 import { MousePointer2, Pencil, Route } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { UtilityGlyph } from '@/core/glyphs';
 import { type TacticTool, THROW_KINDS, type ThrowKind } from '../helpers/tactic-editor-state';
 
 export interface TacticToolbarProps {

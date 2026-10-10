@@ -1,17 +1,15 @@
-import type { Tactic } from '@disa/demo-core';
+import type { Lineup, Tactic } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
 import { getMapOverview } from '@disa/map-data';
+import { UnknownMap } from '@disa/plate';
 import { cn } from '@disa/ui';
-import { useCallback, useEffect, useState } from 'react';
-import { UnknownMap } from '@/features/radar';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { enemiesOf, oppositeSide } from '../helpers/tactic-enemies';
 import { hasEditorWork } from '../helpers/tactic-setup';
 import { handleTacticShortcut } from '../helpers/tactic-shortcuts';
 import { originIndexOf, throwOrigins } from '../helpers/tactic-throw-origins';
-import { replacementFor } from '../helpers/tactic-transfer';
 import { useTacticBoard } from '../hooks/use-tactic-board';
 import { useTacticPlans } from '../hooks/use-tactic-plans';
-import { useTacticStored } from '../hooks/use-tactic-stored';
 import { TacticBranchActions } from './TacticBranchActions';
 import { TacticBranchPanel } from './TacticBranchPanel';
 import { TacticEditorHeader } from './TacticEditorHeader';
@@ -25,12 +23,26 @@ import { TacticRoster } from './TacticRoster';
 import { TacticStepSection } from './TacticStepSection';
 import { TacticThrowList } from './TacticThrowList';
 import { TacticHint, TacticToolbar } from './TacticToolbar';
-import { TacticTransferDialog } from './TacticTransferDialog';
 import { TacticTransport } from './TacticTransport';
 import { TacticTreeDialog } from './TacticTreeDialog';
 
+/** What the host's transfer dialog is given: the tactic open, and a way to hand back an import. */
+export interface TacticTransferSlot {
+  readonly isOpen: boolean;
+  readonly onDismiss: () => void;
+  readonly tactic: Tactic;
+  /** The imported version of the open tactic, when the import replaced it. */
+  readonly onReplaced: (tactic: Tactic) => void;
+}
+
 export interface TacticEditorProps {
   readonly initialTactic: Tactic;
+  /** The lineups of a map that a throw can be taken from; a stable hook, called with the map being edited. */
+  readonly useLineups: (map: string) => readonly Lineup[];
+  /** Whether the tactic is already kept by the host: `null` while that is looked up, or unknown. */
+  readonly isStored?: boolean | null | undefined;
+  /** The host's file out and in; the editor shows its Transfer button only when this is given. */
+  readonly renderTransfer?: ((slot: TacticTransferSlot) => ReactNode) | undefined;
   readonly onSave?: ((tactic: Tactic) => void | Promise<void>) | undefined;
   readonly onBack?: (() => void) | undefined;
   readonly className?: string | undefined;
@@ -48,9 +60,12 @@ function TacticBoard({
   onBack,
   className,
   overview,
+  useLineups,
+  isStored = null,
+  renderTransfer,
 }: TacticEditorProps & { readonly overview: NonNullable<ReturnType<typeof getMapOverview>> }) {
   const t = useT();
-  const board = useTacticBoard({ initialTactic, overview, onSave });
+  const board = useTacticBoard({ initialTactic, overview, onSave, useLineups });
   const { editor, playback, schedule, stepSchedule, step } = board;
   const { tactic, stepIndex, selectedSlot, selectedEnemyId, tool, throwKind } = editor;
   const enemySide = oppositeSide(tactic.side);
@@ -65,7 +80,6 @@ function TacticBoard({
     schedule,
     stop: playback.stop,
   });
-  const isStored = useTacticStored(initialTactic.id);
   const [hasSaved, setHasSaved] = useState(false);
   const isDirty = tactic !== savedTactic || (isStored === false && !hasSaved);
 
@@ -75,9 +89,7 @@ function TacticBoard({
     setHasSaved(true);
   }, [editor, tactic]);
 
-  const handleImported = (written: readonly Tactic[]) => {
-    const imported = replacementFor(written, tactic.id);
-    if (imported === null) return;
+  const handleReplaced = (imported: Tactic) => {
     editor.replaceTactic(imported);
     setSavedTactic(imported);
     setHasSaved(true);
@@ -121,7 +133,7 @@ function TacticBoard({
           onChangeMap={handleChangeMap}
           onChangeSide={editor.changeSide}
           onToggleRound={editor.toggleRound}
-          onTransfer={() => setIsTransferring(true)}
+          onTransfer={renderTransfer === undefined ? undefined : () => setIsTransferring(true)}
           onSave={handleSave}
           canUndo={editor.canUndo}
           canRedo={editor.canRedo}
@@ -342,12 +354,12 @@ function TacticBoard({
         onDeletePlan={plans.deletePlan}
       />
 
-      <TacticTransferDialog
-        isOpen={isTransferring}
-        onDismiss={() => setIsTransferring(false)}
-        onImported={handleImported}
-        tactic={tactic}
-      />
+      {renderTransfer?.({
+        isOpen: isTransferring,
+        onDismiss: () => setIsTransferring(false),
+        tactic,
+        onReplaced: handleReplaced,
+      })}
     </section>
   );
 }

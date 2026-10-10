@@ -1,0 +1,30 @@
+{
+  "name": "@disa/tactic-board",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@disa/demo-core": "*",
+    "@disa/i18n": "*",
+    "@disa/map-data": "*",
+    "@disa/plate": "*",
+    "@disa/ui": "*",
+    "lucide-react": "^1.38.0",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@disa/tsconfig": "*",
+    "@types/react": "19.2.2",
+    "typescript": "5.9.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}

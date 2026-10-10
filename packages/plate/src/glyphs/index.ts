@@ -11,6 +11,7 @@ export type { WeaponIcon } from './generated/weapon-icons';
 export { WEAPON_ICONS } from './generated/weapon-icons';
 export type { EquipmentIconId } from './helpers/equipment';
 export { armourIcon, UTILITY_ICON } from './helpers/equipment';
+export * from './helpers/equipment-marks';
 export type { SilhouetteClass } from './helpers/silhouettes';
 export { SILHOUETTE_HEIGHT, SILHOUETTE_PATHS, SILHOUETTE_WIDTH } from './helpers/silhouettes';
 export type { GlyphSize } from './helpers/size';

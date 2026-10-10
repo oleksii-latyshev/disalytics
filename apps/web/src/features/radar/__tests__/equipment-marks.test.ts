@@ -1,7 +1,7 @@
 import type { WeaponClass, WeaponIconId } from '@disa/demo-core';
+import { drawGrenadeMark, drawWeaponMark } from '@disa/plate';
 import { describe, expect, it } from 'vitest';
 import { EQUIPMENT_ICONS, SILHOUETTE_PATHS, WEAPON_ICONS } from '@/core/glyphs';
-import { drawGrenadeMark, drawWeaponMark } from '../helpers/equipment-marks';
 import { path2DCount, stubPath2D } from './canvas-globals';
 
 stubPath2D();

@@ -1,6 +1,6 @@
 import type { Lineup, TacticDrawingStroke, TacticSide, TacticStep } from '@disa/demo-core';
 import { type MapOverview, type RadarPoint, radarX, radarY } from '@disa/map-data';
-import type { CanvasSize, Layer } from '@/core/renderer';
+import type { CanvasSize, Layer } from '@disa/plate';
 import {
   drawGrenadeMark,
   drawSelectionRing,
@@ -11,7 +11,7 @@ import {
   type RadarColors,
   readPlateGeometry,
   SQUARE_PLATE,
-} from '@/features/radar';
+} from '@disa/plate';
 import type { TacticClock } from './tactic-clock';
 import type { SlotColors } from './tactic-colors';
 import { type EnemyMarks, oppositeSide } from './tactic-enemies';

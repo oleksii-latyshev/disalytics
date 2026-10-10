@@ -251,6 +251,7 @@
 
 @source "../../../packages/ui/src";
 @source "../../../packages/plate/src";
+@source "../../../packages/tactic-board/src";
 @source "./";
 
 /* The app is dark, full stop — DESIGN.md §1 argues the instrument is dark and no light palette

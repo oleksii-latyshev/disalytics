@@ -1,6 +1,6 @@
 import type { PlateBounds } from '@disa/plate';
+import { WEAPON_MARK_PX } from '@disa/plate';
 import { readCssToken } from '@/shared/lib';
-import { WEAPON_MARK_PX } from './equipment-marks';
 
 /*
  * The label's own measure: every size a name on the plate is set at, the boxes those sizes make,

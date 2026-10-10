@@ -111,6 +111,7 @@ export {
   OBSERVED_WEAPONS,
   observedWeaponSpend,
 } from './helpers/enemy-economy';
+export { frameElapsedMs, MAX_FRAME_MS } from './helpers/frame-step';
 export { flightEndTick, isInFlight, trajectoryClipCount } from './helpers/grenade-flight';
 export {
   FLASH_RADIUS_UNITS,

@@ -8,11 +8,12 @@ import {
   drawSelectionRing,
   drawToken,
   drawWalkHollow,
+  drawWeaponMark,
   needleReach,
   TOKEN_RADIUS_PX,
+  WEAPON_MARK_PX,
 } from '@disa/plate';
 import { damageFigure, drawDamageFigure } from './damage-figure';
-import { drawWeaponMark, WEAPON_MARK_PX } from './equipment-marks';
 import { haloStroke, LABEL_HEIGHT_PX } from './label-box';
 import { drawLeaderLine, leaderStroke } from './leader-line';
 import {

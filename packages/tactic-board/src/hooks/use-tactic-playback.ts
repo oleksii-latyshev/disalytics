@@ -1,5 +1,5 @@
+import { frameElapsedMs } from '@disa/demo-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { frameElapsedMs } from '@/core/playback';
 import { advanceTacticClock, createTacticClock } from '../helpers/tactic-clock';
 import { stepIndexAt, type TacticSchedule } from '../helpers/tactic-schedule';
 

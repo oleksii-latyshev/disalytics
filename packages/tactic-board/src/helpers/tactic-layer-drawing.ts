@@ -1,6 +1,6 @@
 import type { TacticDrawingStroke, UtilityKind } from '@disa/demo-core';
 import { type MapOverview, radarX, radarY } from '@disa/map-data';
-import type { PlateGeometry, RadarColors } from '@/features/radar';
+import type { PlateGeometry, RadarColors } from '@disa/plate';
 
 const SMOKE_RADIUS_UNITS = 144;
 const MOLOTOV_RADIUS_UNITS = 160;

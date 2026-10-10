@@ -19,6 +19,7 @@
     "@disa/i18n": "*",
     "@disa/map-data": "*",
     "@disa/plate": "*",
+    "@disa/tactic-board": "*",
     "@disa/ui": "*",
     "@tanstack/react-router": "^1.170.40",
     "lucide-react": "^1.31.0",

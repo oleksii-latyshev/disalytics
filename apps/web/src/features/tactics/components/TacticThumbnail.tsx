@@ -1,9 +1,9 @@
 import type { Tactic } from '@disa/demo-core';
 import { getMapOverview, radarAssetPath } from '@disa/map-data';
+import { tacticSketch } from '@disa/tactic-board';
 import { useMemo } from 'react';
 import { useSetting } from '@/core/settings';
 import { levelAt } from '@/features/radar';
-import { tacticSketch } from '../helpers/tactic-trails';
 
 export function TacticThumbnail({ tactic }: { readonly tactic: Tactic }) {
   const [theme] = useSetting('radarTheme');

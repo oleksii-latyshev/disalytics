@@ -1,8 +1,8 @@
 import { type Lineup, UTILITY_NAMES } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
+import { UtilityGlyph } from '@disa/plate';
 import { Button } from '@disa/ui';
 import { X } from 'lucide-react';
-import { UtilityGlyph } from '@/core/glyphs';
 import { formatRoundClock, type ScheduledThrow } from '../helpers/tactic-schedule';
 import type { ThrowOrigin } from '../helpers/tactic-throw-origins';
 import { TacticThrowOrigin } from './TacticThrowOrigin';

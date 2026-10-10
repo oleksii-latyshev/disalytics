@@ -1,5 +1,4 @@
-import type { Palette } from '@/core/settings';
-import { readCssToken } from '@/shared/lib';
+import { type Palette, readCssToken } from '@disa/plate';
 
 /** The colour of each of the five slots, as the document resolves `--color-tactic-1..5` now. */
 export type SlotColors = readonly string[];

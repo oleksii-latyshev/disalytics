@@ -64,7 +64,7 @@ Cloudflare Workers static assets plus a separate Effect API Worker. No Zustand: 
 | `packages/demo-core` | schema, `SCHEMA_VERSION`, clock, game rules and derivations — pure TS |
 | `packages/demo-parser` | worker protocol and client; `src/wasm-glue.d.ts` is hand-written |
 | `packages/demo-store` | OPFS/IndexedDB cache, catalog, container codec (`@disa/demo-store/codec`) |
-| `packages/map-data` · `plate` | overview constants, transform, radar images · the plate every app shares: canvas, view, backdrop, target marks, glyphs (`PlateSettingsProvider`) |
+| `packages/map-data` · `plate` · `tactic-board` | overview constants, transform, radar images · the plate every app shares: canvas, view, backdrop, target marks, glyphs (`PlateSettingsProvider`) · the tactic editor (host passes lineups, store flag, transfer dialog) |
 | `packages/i18n` · `packages/ui` | locales + typed keys + `<Text>`/`useT` · components, tokens, motion |
 | `apps/web/src/core` | playback, renderer (re-export), shortcuts, settings, parsing, events, glyphs, lineup-catalog, motion, pwa, samples |
 | `apps/web/src/features` | library (way in), review (stage + views), radar, timeline, controls |

@@ -1,6 +1,5 @@
-import { type Frame, openingFrame, type ParsedDemo } from '@disa/demo-core';
+import { type Frame, frameElapsedMs, openingFrame, type ParsedDemo } from '@disa/demo-core';
 import { useEffect, useMemo, useRef } from 'react';
-import { frameElapsedMs } from '../helpers/frame-step';
 import { createTransport, type Transport } from '../helpers/transport';
 
 /**

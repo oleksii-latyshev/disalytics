@@ -1,8 +1,8 @@
 import type { WeaponClass, WeaponIconId } from '@disa/demo-core';
 import { sampleAt } from '@disa/demo-core';
 import type { LabelColors, PlateBounds } from '@disa/plate';
+import { drawWeaponMark } from '@disa/plate';
 import { damagePass } from './damage-pass';
-import { drawWeaponMark } from './equipment-marks';
 import {
   DETAIL_LEAD_PX,
   haloStroke,

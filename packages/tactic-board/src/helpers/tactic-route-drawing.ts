@@ -1,5 +1,5 @@
 import type { RadarPoint } from '@disa/map-data';
-import type { PlateGeometry } from '@/features/radar';
+import type { PlateGeometry } from '@disa/plate';
 import type { PlayerLeg } from './tactic-schedule';
 
 const BROKEN_DASH_ON = 3;
