@@ -54,6 +54,8 @@ export type {
   SiteTacticsResponse,
   TacticDecision,
   TacticPreviewItem,
+  TacticSaveRequest,
+  TacticSaveResponse,
   TacticStatus,
   TacticsCommitRequest,
   TacticsCommitResponse,

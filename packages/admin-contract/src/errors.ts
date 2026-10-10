@@ -12,6 +12,7 @@ export const BAD_REQUEST_CODES = [
   'invalid_lineup',
   'invalid_collection',
   'invalid_tactic',
+  'tactic_changed',
   'collection_name_taken',
   'invalid_invite',
   'name_required',

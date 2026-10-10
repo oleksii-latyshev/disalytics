@@ -3,6 +3,7 @@
 
 @source "../../../packages/ui/src";
 @source "../../../packages/plate/src";
+@source "../../../packages/tactic-board/src";
 @source "./";
 
 /* The admin is dark, like the product it edits: there is no light palette. */

@@ -53,6 +53,12 @@ by the Worker too). Below the import, the site's tactics are listed (title, map,
 updated) with a delete (`GET /api/tactics`, `DELETE /api/tactics/:id`). Writes are logged in History under
 the tactic's id and map as `tactic:save` / `tactic:delete`. The app reads them from the public
 `GET /tactics`.
+The board editor is `@disa/tactic-board`, the one the app uses, in place of the tab while open: **New tactic**
+(map and side) or **Edit** on a row; its lineups for throws come from `GET /api/lineups/:map`, cached per map
+for the page. Save sends `PUT /api/tactics/:id` with `{ tactic, basedOn }` (the same rules as a commit; a new
+tactic is signed with the saver, a credited one keeps its author, a blank one on a replace keeps the stored
+author) and logs `tactic:save`. `basedOn` is the `updatedAt` the editor started from: a stored tactic newer
+than that (or a new one whose id exists) is refused with `tactic_changed`, and the page offers a reload.
 
 The page sends the final lineup bodies; the Worker re-validates each, puts every photo into our storage
 (embedded photos are uploaded, https links are fetched by the Worker: up to 5 MB, webp/png/jpeg checked

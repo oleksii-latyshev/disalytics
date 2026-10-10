@@ -30,7 +30,7 @@ import {
   withKnownLinks,
 } from './helpers/plan';
 import { PhotoLinks } from './photo-links';
-import { runTacticsCommit, runTacticsPreview } from './tactics';
+import { runTacticSave, runTacticsCommit, runTacticsPreview } from './tactics';
 
 const invalidInvite = badRequest('invalid_invite', 'The invite is unknown, used or expired');
 
@@ -259,6 +259,12 @@ export const TacticsHandlers = HttpApiBuilder.group(AdminApi, 'tactics', (handle
       Effect.gen(function* () {
         const actor = yield* Actor;
         return yield* runTacticsCommit(payload, actor);
+      }).pipe(Effect.catchTag('StorageError', Effect.die)),
+    )
+    .handle('save', ({ params, payload }) =>
+      Effect.gen(function* () {
+        const actor = yield* Actor;
+        return yield* runTacticSave(params.id, payload, actor);
       }).pipe(Effect.catchTag('StorageError', Effect.die)),
     )
     .handle('remove', ({ params }) =>
