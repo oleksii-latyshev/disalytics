@@ -34,7 +34,7 @@ response shaping lives under `src/shared/`. The same `CODE_REQUIREMENTS.md` rule
 | Route | Answers |
 |---|---|
 | `GET /lineups` | `{ maps: [{ map, revision, count }] }`: the live count and revision of each map, so a client fetches only the maps that moved. Same `Cache-Control` as a map. |
-| `GET /lineups/:map` | `{ map, revision, lineups }`; `:map` is `de_[a-z0-9_]+`. Rows failing `isLineup` are skipped and the rest are marked `isBuiltIn`. `Cache-Control: max-age=60, stale-while-revalidate=600`, `ETag` on the map's revision, `304` on a match, edge-cached with the Cache API. |
+| `GET /lineups/:map` | `{ map, revision, lineups, collections }`; `:map` is `de_[a-z0-9_]+`. Rows failing `isLineup` or `isLineupCollection` are skipped and the rest are marked `isBuiltIn`; a collection is served without members whose lineup is gone. An older client ignores `collections`. `Cache-Control: max-age=60, stale-while-revalidate=600`, `ETag` on the map's revision, `304` on a match, edge-cached with the Cache API. |
 | `GET /photos/:sha256` | image bytes from KV (type in KV metadata), lowercase hex-64 only, `immutable` for a year, otherwise `404`. |
 
 CORS (GET) is allowed for the web origin and `localhost`/`127.0.0.1` dev origins only.
@@ -52,7 +52,9 @@ Bindings (`wrangler.jsonc`): D1 `LINEUPS_DB` (`disalytics-lineups`) and KV `LINE
   bindings in as services.
 - `src/db/schema.ts` is the Drizzle schema: `lineups` (one row per lineup, JSON `body`, soft
   delete), `lineup_revisions` (one counter per map, so an edit only invalidates its own map's ETag
-  and cache) and `lineup_changes` (append-only log for the admin Worker).
+  and cache) `lineup_collections` (the map's built-in collections, same row shape as `lineups`; a write bumps the same
+  revision) and `lineup_changes` (append-only log for the admin Worker; a collection's rows have an action
+  starting `collection:`).
 - `LineupStorage` (`modules/lineups/storage.ts`) and `PhotoStorage` (`modules/photos/storage.ts`)
   are Effect services built from a binding (`makeLineupStorage(env.LINEUPS_DB)`,
   `makePhotoStorage(env.LINEUP_PHOTOS)`). The admin Worker (#616) imports them; every write goes

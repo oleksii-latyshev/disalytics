@@ -1,17 +1,25 @@
-import type { Lineup } from '@disa/demo-core';
-import { isLineup } from '@disa/demo-core';
+import type { Lineup, LineupCollection } from '@disa/demo-core';
+import { isLineup, isLineupCollection } from '@disa/demo-core';
 
 const DATABASE = 'disalytics-built-in-lineups';
 const STORE = 'maps';
 
-/** The last built-in lineups the API sent for one map. */
+/**
+ * The last built-in lineups and collections the API sent for one map. A copy stored before
+ * collections existed has none; one read back always lists them, empty or not.
+ */
 export interface BuiltInLineups {
   readonly revision: number;
   readonly lineups: readonly Lineup[];
+  readonly collections?: readonly LineupCollection[];
 }
 
+export type StoredBuiltInLineups = BuiltInLineups & {
+  readonly collections: readonly LineupCollection[];
+};
+
 export interface BuiltInLineupStore {
-  get(map: string): Promise<BuiltInLineups | null>;
+  get(map: string): Promise<StoredBuiltInLineups | null>;
   put(map: string, copy: BuiltInLineups): Promise<void>;
   close(): void;
 }
@@ -57,7 +65,12 @@ export async function openBuiltInLineupStore(): Promise<BuiltInLineupStore | nul
         database.transaction(STORE, 'readonly').objectStore(STORE).get(map),
       );
       if (!isCopy(item)) return null;
-      return { revision: item.revision, lineups: item.lineups.filter(isLineup) };
+      const stored: readonly unknown[] = Array.isArray(item.collections) ? item.collections : [];
+      return {
+        revision: item.revision,
+        lineups: item.lineups.filter(isLineup),
+        collections: stored.filter(isLineupCollection),
+      };
     },
 
     async put(map, copy) {

@@ -10,6 +10,8 @@ const MapLineupsBody = Schema.Struct({
   revision: Schema.Int,
   // Each entry passed `isLineup` on its way out of D1.
   lineups: Schema.Array(Schema.Unknown),
+  // Each entry passed `isLineupCollection` on its way out of D1; older clients ignore the field.
+  collections: Schema.Array(Schema.Unknown),
 });
 
 const MapSummary = Schema.Struct({ map: Schema.String, revision: Schema.Int, count: Schema.Int });

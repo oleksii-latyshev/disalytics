@@ -12,9 +12,10 @@ import { OnSite } from './components/OnSite';
 import { PeopleSection } from './components/PeopleSection';
 import { SectionTabs, type TabId, tabPanelId } from './components/SectionTabs';
 import { SignedOut } from './components/SignedOut';
+import { SiteCollections } from './components/SiteCollections';
 import { DEFAULT_MAP } from './helpers/format';
 import { forgetInvite, inviteTokenOf } from './helpers/invite-link';
-import { useResource } from './hooks/use-resource';
+import { mapResource, useResource } from './hooks/use-resource';
 
 /**
  * Who is here decides the screen: an invite link being opened, a device with no session, or a
@@ -64,8 +65,10 @@ function Workspace({ me }: { me: WhoAmI }) {
   const [map, setMap] = useState(DEFAULT_MAP);
   const [tab, setTab] = useState<TabId>('import');
   const [current, reloadCurrent] = useResource(map, async () => {
-    const { lineups } = await call((client) => client.lineups.byMap({ params: { map } }));
-    return lineups;
+    const { lineups, collections } = await call((client) =>
+      client.lineups.byMap({ params: { map } }),
+    );
+    return { lineups, collections };
   });
   const [changes, reloadChanges] = useResource<readonly ChangeEntry[]>(map, async () => {
     const response = await call((client) => client.changes.list({ query: { map } }));
@@ -89,7 +92,10 @@ function Workspace({ me }: { me: WhoAmI }) {
     me.role === 'owner'
       ? ['import', 'onSite', 'people', 'contributors', 'history']
       : ['import', 'onSite', 'contributors', 'history'];
-  const onSite = current.status === 'ready' ? current.data.filter(isLineup) : [];
+  const onSite = current.status === 'ready' ? current.data.lineups.filter(isLineup) : [];
+
+  const lineupsResource = mapResource(current, (data) => data.lineups);
+  const collectionsResource = mapResource(current, (data) => data.collections);
 
   return (
     <>
@@ -101,10 +107,11 @@ function Workspace({ me }: { me: WhoAmI }) {
         <OnSite
           map={map}
           onMap={setMap}
-          resource={current}
+          resource={lineupsResource}
           onChanged={afterChange}
           onRetry={reloadCurrent}
         />
+        <SiteCollections map={map} resource={collectionsResource} onChanged={afterChange} />
       </div>
       {me.role === 'owner' ? (
         <div role="tabpanel" id={tabPanelId(PANEL_PREFIX, 'people')} hidden={tab !== 'people'}>

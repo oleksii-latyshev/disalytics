@@ -16,7 +16,7 @@ export interface ImportResult {
 }
 
 export function useMapLineups(map: string) {
-  const { lineups, loading, reload } = useLineupCatalog(map);
+  const { lineups, builtInCollections, loading, reload } = useLineupCatalog(map);
 
   const deleteLineup = useCallback(
     async (id: string) => {
@@ -96,6 +96,7 @@ export function useMapLineups(map: string) {
 
   return {
     lineups,
+    builtInCollections,
     loading,
     reload,
     deleteLineup,

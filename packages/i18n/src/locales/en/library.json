@@ -534,7 +534,9 @@
       "pickerEmpty": "No collections on this map yet. Name the first one below.",
       "newCollection": "New collection…",
       "createWith": "Create and add",
-      "partly": "some of them"
+      "partly": "some of them",
+      "copy": "Copy to my collections",
+      "copyName": "{name} (copy)"
     },
     "importCollections": "Imported {count, plural, one {# collection} other {# collections}}."
   },

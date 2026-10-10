@@ -8,6 +8,7 @@ import {
   newLineupCollection,
   prunedCollection,
   renamedCollection,
+  uniqueCollectionName,
   withCollectionMembers,
   withoutCollectionMembers,
 } from '../helpers/lineup-collections';
@@ -112,5 +113,22 @@ describe('collections in the lineup file', () => {
 
     expect(() => parseLineupFile(file('x'))).toThrow(LineupFileError);
     expect(() => parseLineupFile(file([{ ...executeB, name: '' }]))).toThrow(LineupFileError);
+  });
+});
+
+describe('uniqueCollectionName', () => {
+  it('keeps a free name and numbers a taken one, ignoring case', () => {
+    expect(uniqueCollectionName([executeB], 'Retake B')).toBe('Retake B');
+    expect(uniqueCollectionName([executeB], 'execute b')).toBe('execute b 2');
+    const twice = [executeB, { ...executeB, id: 'c2', name: 'Execute B 2' }];
+    expect(uniqueCollectionName(twice, 'Execute B')).toBe('Execute B 3');
+  });
+
+  it('shortens the name rather than the number when the limit is reached', () => {
+    const long = 'x'.repeat(48);
+    const taken = [{ ...executeB, name: long }];
+    const unique = uniqueCollectionName(taken, long);
+    expect(unique).toBe(`${'x'.repeat(46)} 2`);
+    expect(unique.length).toBeLessThanOrEqual(48);
   });
 });

@@ -12,6 +12,7 @@ import type { AdminEnv } from './env';
 import {
   AuthHandlers,
   ChangesHandlers,
+  CollectionsHandlers,
   CommitHandlers,
   ContributorsHandlers,
   LineupsHandlers,
@@ -33,6 +34,7 @@ const AdminApiLive = HttpApiBuilder.layer(AdminApi).pipe(
       PreviewHandlers,
       CommitHandlers,
       LineupsHandlers,
+      CollectionsHandlers,
       ChangesHandlers,
       ContributorsHandlers,
     ).pipe(Layer.provide(Middleware)),

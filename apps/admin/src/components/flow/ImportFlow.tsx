@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { totalsOf, writingsOf } from '../../helpers/summary';
 import { useApply } from '../../hooks/use-apply';
 import { useReview } from '../../hooks/use-review';
+import { CollectionsStep } from './CollectionsStep';
 import { FlowBar } from './FlowBar';
 import { StepDecide } from './StepDecide';
 import { StepDone } from './StepDone';
@@ -132,6 +133,14 @@ export function ImportFlow({ map, onMap, onSite, onChanged }: Props) {
               }}
             />
           ) : null}
+          {step === 4 && apply.state.phase === 'done' && review.loaded !== null ? (
+            <CollectionsStep
+              map={map}
+              fileCollections={review.loaded.file.collections}
+              onSite={onSite}
+              onChanged={onChanged}
+            />
+          ) : null}
         </motion.div>
       </AnimatePresence>
       <FlowBar
@@ -139,6 +148,9 @@ export function ImportFlow({ map, onMap, onSite, onChanged }: Props) {
         totals={totalsOf(rows, removals.length)}
         ready={review.data !== null && rows.length > 0}
         questionCount={questions.length}
+        hasCollections={
+          review.loaded?.file.collections.some((collection) => collection.map === map) ?? false
+        }
         blocked={current !== undefined && (current.problems.length > 0 || current.clash.length > 0)}
         isLastQuestion={question + 1 >= questions.length}
         onStart={() => steps.start(questions.length)}

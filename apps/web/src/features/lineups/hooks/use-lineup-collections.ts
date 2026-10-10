@@ -8,6 +8,8 @@ import {
   withoutCollectionMembers,
 } from '@disa/demo-core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { combineCollections } from '@/core/lineup-catalog';
+import { copyOfCollection } from '../helpers/lineup-collection-copy';
 import { membershipOf } from '../helpers/lineup-collection-membership';
 import { newCollectionId } from '../helpers/lineup-ids';
 import {
@@ -18,16 +20,30 @@ import {
 
 const NONE: readonly LineupCollection[] = [];
 
+/** The collection with this id when it is the user's own; a built-in one is read-only. */
+function ownCollection(
+  collections: readonly LineupCollection[],
+  id: string,
+): LineupCollection | undefined {
+  const found = collections.find((collection) => collection.id === id);
+  return found?.isBuiltIn === true ? undefined : found;
+}
+
 interface Options {
   map: string;
   /** Every id the map's lineups have, built-ins included; ids outside it are dropped on a write. */
   knownIds: ReadonlySet<string>;
   /** Until the lineups are in, `knownIds` is empty and must not be used to prune. */
   isLineupsLoading: boolean;
+  /** The API's collections of the map: shown before the user's own and never edited here. */
+  builtIns: readonly LineupCollection[];
 }
 
-/** The map's collections and every change to them. Each write reads the map's collections again. */
-export function useLineupCollections({ map, knownIds, isLineupsLoading }: Options) {
+/**
+ * The map's collections, built-in ones first, and every change to the user's own. Each write reads
+ * the map's collections again. A built-in collection is changed by copying it, never in place.
+ */
+export function useLineupCollections({ map, knownIds, isLineupsLoading, builtIns }: Options) {
   const [loaded, setLoaded] = useState<{ map: string; collections: readonly LineupCollection[] }>({
     map: '',
     collections: NONE,
@@ -48,7 +64,10 @@ export function useLineupCollections({ map, knownIds, isLineupsLoading }: Option
   }, [map]);
 
   const isLoading = loaded.map !== map;
-  const collections = useMemo(() => (isLoading ? NONE : loaded.collections), [isLoading, loaded]);
+  const collections = useMemo(
+    () => combineCollections(isLoading ? NONE : loaded.collections, builtIns),
+    [isLoading, loaded, builtIns],
+  );
 
   const save = useCallback(
     async (changed: LineupCollection): Promise<boolean> => {
@@ -72,7 +91,7 @@ export function useLineupCollections({ map, knownIds, isLineupsLoading }: Option
 
   const rename = useCallback(
     async (id: string, name: string): Promise<boolean> => {
-      const found = collections.find((collection) => collection.id === id);
+      const found = ownCollection(collections, id);
       if (found === undefined || name.trim() === '') return false;
       if (isCollectionNameTaken(collections, name, id)) return false;
       return save(renamedCollection(found, name, Date.now()));
@@ -82,17 +101,29 @@ export function useLineupCollections({ map, knownIds, isLineupsLoading }: Option
 
   const remove = useCallback(
     async (id: string): Promise<boolean> => {
+      if (ownCollection(collections, id) === undefined) return false;
       const isRemoved = await removeCollection(id);
       if (isRemoved) await reload();
       return isRemoved;
     },
-    [reload],
+    [collections, reload],
+  );
+
+  /** A user collection with the same lineups as a built-in one; the new collection's id, or null. */
+  const copy = useCallback(
+    async (id: string, wantedName: string): Promise<string | null> => {
+      const source = collections.find((collection) => collection.id === id);
+      if (source === undefined) return null;
+      const made = copyOfCollection(source, collections, wantedName, newCollectionId(), Date.now());
+      return (await save(made)) ? made.id : null;
+    },
+    [collections, save],
   );
 
   /** Puts these lineups in the collection, or takes them out when it already holds all of them. */
   const toggleMembers = useCallback(
     async (id: string, lineupIds: readonly string[]): Promise<boolean> => {
-      const found = collections.find((collection) => collection.id === id);
+      const found = ownCollection(collections, id);
       if (found === undefined || lineupIds.length === 0) return false;
       const now = Date.now();
       return save(
@@ -104,5 +135,5 @@ export function useLineupCollections({ map, knownIds, isLineupsLoading }: Option
     [collections, save],
   );
 
-  return { collections, isLoading, reload, create, rename, remove, toggleMembers };
+  return { collections, isLoading, reload, create, rename, remove, toggleMembers, copy };
 }

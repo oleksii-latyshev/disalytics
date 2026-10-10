@@ -17,6 +17,8 @@ interface Props {
   onCreate: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (collection: LineupCollection) => void;
+  /** Makes a collection of the reader's own with the same lineups. */
+  onCopy: (collection: LineupCollection) => void;
 }
 
 const ROW =
@@ -74,8 +76,9 @@ export function LineupCollections(props: Props) {
         {collections.map((collection) => {
           const isOn = collection.id === activeId;
           const count = counts.get(collection.id) ?? 0;
+          const isBuiltIn = collection.isBuiltIn === true;
 
-          if (editing?.kind === 'rename' && editing.id === collection.id) {
+          if (editing?.kind === 'rename' && editing.id === collection.id && !isBuiltIn) {
             return (
               <li key={collection.id}>
                 <LineupCollectionName
@@ -110,6 +113,11 @@ export function LineupCollections(props: Props) {
                   <Folder aria-hidden="true" className="size-4 shrink-0" />
                 )}
                 <span className="min-w-0 flex-1 truncate">{collection.name}</span>
+                {isBuiltIn && (
+                  <span className="shrink-0 rounded-chip border border-line-strong px-1 text-11 text-ink-dim">
+                    <Text path="library.lineups.source.builtIn" />
+                  </span>
+                )}
                 <span className="numeric text-11 text-ink-dim">{count}</span>
               </button>
               <Menu>
@@ -120,12 +128,20 @@ export function LineupCollections(props: Props) {
                   <MoreHorizontal aria-hidden="true" className="size-4" />
                 </MenuTrigger>
                 <MenuPanel align="end">
-                  <MenuItem onClick={() => setEditing({ kind: 'rename', id: collection.id })}>
-                    <Text path="library.lineups.collections.rename" />
-                  </MenuItem>
-                  <MenuItem variant="destructive" onClick={() => props.onDelete(collection)}>
-                    <Text path="library.lineups.collections.delete" />
-                  </MenuItem>
+                  {isBuiltIn ? (
+                    <MenuItem onClick={() => props.onCopy(collection)}>
+                      <Text path="library.lineups.collections.copy" />
+                    </MenuItem>
+                  ) : (
+                    <>
+                      <MenuItem onClick={() => setEditing({ kind: 'rename', id: collection.id })}>
+                        <Text path="library.lineups.collections.rename" />
+                      </MenuItem>
+                      <MenuItem variant="destructive" onClick={() => props.onDelete(collection)}>
+                        <Text path="library.lineups.collections.delete" />
+                      </MenuItem>
+                    </>
+                  )}
                 </MenuPanel>
               </Menu>
             </li>

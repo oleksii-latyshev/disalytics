@@ -48,16 +48,24 @@ export function LineupsView() {
   );
   const [collectionRemoval, setCollectionRemoval] = useState<LineupCollection | null>(null);
 
-  const { lineups, loading, reload, importLineups, exportLineups } = useMapLineups(map);
+  const { lineups, builtInCollections, loading, reload, importLineups, exportLineups } =
+    useMapLineups(map);
   const counts = useLineupMapCounts(map, loading ? null : lineups.length);
   const knownIds = useMemo(() => new Set(lineups.map(({ id }) => id)), [lineups]);
-  const collectionsApi = useLineupCollections({ map, knownIds, isLineupsLoading: loading });
+  const collectionsApi = useLineupCollections({
+    map,
+    knownIds,
+    isLineupsLoading: loading,
+    builtIns: builtInCollections,
+  });
   const { collections } = collectionsApi;
   const activeCollection = collections.find(({ id }) => id === collectionId) ?? null;
   const members = useMemo(() => {
     if (activeCollection !== null) return new Set(memberLineupIds(activeCollection, knownIds));
-    return collectionId !== null && collectionsApi.isLoading ? new Set<string>() : null;
-  }, [activeCollection, collectionId, collectionsApi.isLoading, knownIds]);
+    return collectionId !== null && (collectionsApi.isLoading || loading)
+      ? new Set<string>()
+      : null;
+  }, [activeCollection, collectionId, collectionsApi.isLoading, loading, knownIds]);
   const collectionCounts = useMemo(
     () =>
       new Map(
@@ -168,6 +176,13 @@ export function LineupsView() {
     if (!(await collectionsApi.remove(collection.id))) return;
     if (collection.id === collectionId) selectCollection(null);
   };
+  const copyCollection = async (collection: LineupCollection) => {
+    const id = await collectionsApi.copy(
+      collection.id,
+      t('library.lineups.collections.copyName', { name: collection.name }),
+    );
+    if (id !== null) selectCollection(id);
+  };
   const importWithCollections = async (file: File) => {
     const result = await importLineups(file);
     await collectionsApi.reload();
@@ -182,7 +197,7 @@ export function LineupsView() {
         map={map}
         counts={counts}
         ownCount={lineups.filter((lineup) => lineup.isBuiltIn !== true).length}
-        collectionCount={collections.length}
+        collectionCount={collections.filter(({ isBuiltIn }) => isBuiltIn !== true).length}
         onMap={(next) => {
           resetScreen();
           setCollectionId(readCollectionPreference(next));
@@ -206,6 +221,7 @@ export function LineupsView() {
               }),
             onRename: (id, name) => void collectionsApi.rename(id, name),
             onDelete: setCollectionRemoval,
+            onCopy: (collection) => void copyCollection(collection),
             onToggleMembers: (id, ids) => void collectionsApi.toggleMembers(id, ids),
             onCreateWith: (name, ids) => void createCollection(name, ids),
           }}

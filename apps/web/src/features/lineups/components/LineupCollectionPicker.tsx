@@ -19,9 +19,12 @@ interface Props {
   onCreate: (name: string, lineupIds: readonly string[]) => void;
 }
 
-/** A list of the map's collections to put lineups in or take them out of, ending in a name field for a new one. */
+/**
+ * A list of the reader's own collections to put lineups in or take them out of, ending in a name
+ * field for a new one. A built-in collection is not on it, but its name still counts as taken.
+ */
 export function LineupCollectionPicker({
-  collections,
+  collections: all,
   lineupIds,
   triggerPath,
   className,
@@ -29,6 +32,7 @@ export function LineupCollectionPicker({
   onCreate,
 }: Props) {
   const [isNaming, setIsNaming] = useState(false);
+  const collections = all.filter((collection) => collection.isBuiltIn !== true);
 
   return (
     <Popover
@@ -98,7 +102,7 @@ export function LineupCollectionPicker({
           <LineupCollectionName
             initialName=""
             submitPath="library.lineups.collections.createWith"
-            isTaken={(name) => isCollectionNameTaken(collections, name)}
+            isTaken={(name) => isCollectionNameTaken(all, name)}
             onSubmit={(name) => {
               onCreate(name, lineupIds);
               setIsNaming(false);

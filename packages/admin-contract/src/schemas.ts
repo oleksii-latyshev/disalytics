@@ -1,7 +1,7 @@
 import { LINEUP_TAGS } from '@disa/demo-core';
 import { Schema } from 'effect';
 import { MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
-import { PROBLEM_CODES } from './validation';
+import { COLLECTION_PROBLEM_CODES, PROBLEM_CODES } from './validation';
 
 /** World units within which two lineups of one map, kind and side count as the same throw. */
 export const DUPLICATE_RADIUS = 48;
@@ -121,10 +121,70 @@ export const CommitResponse = Schema.Struct({
 });
 export type CommitResponse = typeof CommitResponse.Type;
 
+export const CollectionStatus = Schema.Literals(['new', 'update', 'unchanged']);
+export type CollectionStatus = typeof CollectionStatus.Type;
+
+/**
+ * One collection of the file against the map's collections on the site. Its lineup ids are the
+ * file's; `collection` is the same with each id resolved to a lineup on the site (the id itself, or
+ * the one it was merged into), which is what a commit would store.
+ */
+export const CollectionPreviewItem = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  status: CollectionStatus,
+  /** The collection with its lineup ids resolved; `isLineupCollection` holds. */
+  collection: Schema.Unknown,
+  /** The collection on the site with the same id. */
+  stored: Schema.optionalKey(Schema.Unknown),
+  /** Resolved lineup ids the site's collection does not hold. */
+  added: Schema.Array(Schema.String),
+  /** Lineup ids the site's collection holds that the resolved one does not. */
+  removed: Schema.Array(Schema.String),
+  /** Members of the file that no lineup on the site answers to. */
+  dropped: Schema.Int,
+  problems: Schema.Array(Schema.Literals(COLLECTION_PROBLEM_CODES)),
+});
+export type CollectionPreviewItem = typeof CollectionPreviewItem.Type;
+
+export const CollectionsPreviewResponse = Schema.Struct({
+  map: Schema.String,
+  revision: Schema.Int,
+  items: Schema.Array(CollectionPreviewItem),
+  /** Collections of the file that belong to another map. */
+  ignored: Schema.Int,
+});
+export type CollectionsPreviewResponse = typeof CollectionsPreviewResponse.Type;
+
+/** `replace` takes the place of the site's collection with the same id. */
+export const CollectionDecision = Schema.Struct({
+  action: DecisionAction,
+  /** The collection as the file has it; the Worker resolves its lineup ids. */
+  collection: Schema.Unknown,
+});
+export type CollectionDecision = typeof CollectionDecision.Type;
+
+export const CollectionsCommitRequest = Schema.Struct({
+  map: MapId,
+  decisions: Schema.Array(CollectionDecision),
+});
+export type CollectionsCommitRequest = typeof CollectionsCommitRequest.Type;
+
+export const CollectionsCommitResponse = Schema.Struct({
+  map: Schema.String,
+  revision: Schema.Int,
+  saved: Schema.Int,
+  skipped: Schema.Int,
+  /** Members left out of the saved collections because no lineup on the site answers to them. */
+  dropped: Schema.Int,
+});
+export type CollectionsCommitResponse = typeof CollectionsCommitResponse.Type;
+
 export const MapLineupsResponse = Schema.Struct({
   map: Schema.String,
   revision: Schema.Int,
   lineups: Schema.Array(Schema.Unknown),
+  collections: Schema.Array(Schema.Unknown),
 });
 export type MapLineupsResponse = typeof MapLineupsResponse.Type;
 

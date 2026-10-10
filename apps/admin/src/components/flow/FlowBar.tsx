@@ -1,4 +1,5 @@
-import type { Totals } from '../../helpers/summary';
+import type { TranslationKey } from '@disa/i18n';
+import { type ReviewAction, reviewActionOf, type Totals } from '../../helpers/summary';
 import { BarButton, BottomBar } from './BottomBar';
 import type { StepNumber } from './Stepper';
 
@@ -7,6 +8,8 @@ interface Props {
   totals: Totals;
   ready: boolean;
   questionCount: number;
+  /** The file has collections for this map, which a save with no lineup changes still reaches. */
+  hasCollections: boolean;
   /** The question on screen cannot be left yet: something in it still needs fixing. */
   blocked: boolean;
   isLastQuestion: boolean;
@@ -16,9 +19,15 @@ interface Props {
   onSave: () => void;
 }
 
-function ReviewButtons({ totals, questionCount, onBack, onSave }: Props) {
-  const nothing = totals.add + totals.update + totals.remove === 0;
-  const blocked = totals.blocked > 0;
+const REVIEW_LABEL: Readonly<Record<ReviewAction, TranslationKey>> = {
+  fix: 'admin.bar.fixFirst',
+  apply: 'admin.bar.apply',
+  collections: 'admin.bar.toCollections',
+  nothing: 'admin.bar.nothing',
+};
+
+function ReviewButtons({ totals, questionCount, hasCollections, onBack, onSave }: Props) {
+  const action = reviewActionOf(totals, hasCollections);
   return (
     <>
       <BarButton
@@ -27,8 +36,8 @@ function ReviewButtons({ totals, questionCount, onBack, onSave }: Props) {
       />
       <BarButton
         primary
-        disabled={blocked || nothing}
-        label={blocked ? 'admin.bar.fixFirst' : nothing ? 'admin.bar.nothing' : 'admin.bar.apply'}
+        disabled={action === 'fix' || action === 'nothing'}
+        label={REVIEW_LABEL[action]}
         values={{ count: totals.blocked }}
         onClick={onSave}
       />

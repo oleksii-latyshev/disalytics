@@ -15,13 +15,32 @@ export const lineups = sqliteTable(
   (table) => [index('lineups_map').on(table.map)],
 );
 
+/** A named list of one map's lineups, authored in the admin and served with the map's lineups. */
+export const lineupCollections = sqliteTable(
+  'lineup_collections',
+  {
+    id: text('id').primaryKey(),
+    map: text('map').notNull(),
+    body: text('body').notNull(),
+    createdAt: integer('created_at').notNull(),
+    createdBy: text('created_by').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+    updatedBy: text('updated_by').notNull(),
+    deletedAt: integer('deleted_at'),
+  },
+  (table) => [index('lineup_collections_map').on(table.map)],
+);
+
 /** One counter per map, so an edit only invalidates its own map's ETag and cache. */
 export const lineupRevisions = sqliteTable('lineup_revisions', {
   map: text('map').primaryKey(),
   revision: integer('revision').notNull(),
 });
 
-/** Append-only log of every write, for the admin Worker's history. */
+/**
+ * Append-only log of every write, for the admin Worker's history. A collection's write is logged
+ * here under the collection's id, with an action that starts with `collection:`.
+ */
 export const lineupChanges = sqliteTable(
   'lineup_changes',
   {

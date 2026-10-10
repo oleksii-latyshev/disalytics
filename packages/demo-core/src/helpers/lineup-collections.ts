@@ -7,6 +7,8 @@ export interface LineupCollection {
   readonly lineupIds: readonly string[];
   readonly createdAt: number;
   readonly updatedAt: number;
+  /** Set on collections the API serves: read-only on the device, copied into the user's own to edit. */
+  readonly isBuiltIn?: boolean;
 }
 
 export const MAX_COLLECTION_NAME_LENGTH = 48;
@@ -52,6 +54,24 @@ export function isCollectionNameTaken(
   return collections.some(
     (collection) => collection.id !== exceptId && collection.name.toLowerCase() === wanted,
   );
+}
+
+/**
+ * `wanted` if no collection has it, else the same with ` 2`, ` 3`… — kept within the length limit
+ * by shortening the name, never the number.
+ */
+export function uniqueCollectionName(
+  collections: readonly LineupCollection[],
+  wanted: string,
+): string {
+  const first = cleanCollectionName(wanted);
+  if (!isCollectionNameTaken(collections, first)) return first;
+  for (let number = 2; ; number += 1) {
+    const suffix = ` ${number}`;
+    const stem = cleanCollectionName(first.slice(0, MAX_COLLECTION_NAME_LENGTH - suffix.length));
+    const candidate = `${stem}${suffix}`;
+    if (!isCollectionNameTaken(collections, candidate)) return candidate;
+  }
 }
 
 export function newLineupCollection(
