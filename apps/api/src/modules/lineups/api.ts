@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi';
 import { NotFound } from '../../shared/errors';
+import { PUBLIC_CACHE_CONTROL } from '../../shared/http/cache-control';
 
 /** The ids `@disa/map-data` ships, without pulling that package's images and nav grids in. */
 export const MapId = Schema.String.check(Schema.isPattern(/^de_[a-z0-9_]{1,40}$/));
@@ -18,7 +19,7 @@ const MapSummary = Schema.Struct({ map: Schema.String, revision: Schema.Int, cou
 
 const SummaryBody = Schema.Struct({ maps: Schema.Array(MapSummary) });
 
-export const LINEUPS_CACHE_CONTROL = 'public, max-age=60, stale-while-revalidate=600';
+export const LINEUPS_CACHE_CONTROL = PUBLIC_CACHE_CONTROL;
 
 export const LineupsGroup = HttpApiGroup.make('lineups').add(
   HttpApiEndpoint.get('summary', '/lineups', {

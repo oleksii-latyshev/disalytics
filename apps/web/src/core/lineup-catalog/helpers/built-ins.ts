@@ -11,7 +11,8 @@ import { loadMapLineups } from '@disa/map-data';
 const DEFAULT_API_URL = 'https://disalytics-api.disa-67b.workers.dev';
 const FETCH_TIMEOUT_MS = 6000;
 
-function apiUrl(): string {
+/** Where the API is: `VITE_DISALYTICS_API_URL`, else production. */
+export function apiUrl(): string {
   const configured: unknown = import.meta.env.VITE_DISALYTICS_API_URL;
   return typeof configured === 'string' && configured !== '' ? configured : DEFAULT_API_URL;
 }

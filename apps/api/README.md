@@ -1,8 +1,8 @@
 # API Worker
 
 This Cloudflare Worker is a separate deployment from the replay PWA. Replay files and parsed replay
-data stay in the browser; no route here accepts them. It answers `GET /health`, `GET /lineups`, `GET /lineups/:map`
-and `GET /photos/:sha256`; there are no write routes.
+data stay in the browser; no route here accepts them. It answers `GET /health`, `GET /lineups`, `GET /lineups/:map`,
+`GET /tactics` and `GET /photos/:sha256`; there are no write routes.
 Production: <https://disalytics-api.disa-67b.workers.dev>.
 
 From the repository root:
@@ -35,6 +35,7 @@ response shaping lives under `src/shared/`. The same `CODE_REQUIREMENTS.md` rule
 |---|---|
 | `GET /lineups` | `{ maps: [{ map, revision, count }] }`: the live count and revision of each map, so a client fetches only the maps that moved. Same `Cache-Control` as a map. |
 | `GET /lineups/:map` | `{ map, revision, lineups, collections }`; `:map` is `de_[a-z0-9_]+`. Rows failing `isLineup` or `isLineupCollection` are skipped and the rest are marked `isBuiltIn`; a collection is served without members whose lineup is gone. An older client ignores `collections`. `Cache-Control: max-age=60, stale-while-revalidate=600`, `ETag` on the map's revision, `304` on a match, edge-cached with the Cache API. |
+| `GET /tactics` | `{ revision, tactics }`: every live built-in tactic of every map (the library shows all maps at once, and there are few), one global revision. Rows failing `isTactic` are skipped. Same `Cache-Control`, `ETag` (`"tactics-<revision>"`), `304` and edge cache as a map. |
 | `GET /photos/:sha256` | image bytes from KV (type in KV metadata), lowercase hex-64 only, `immutable` for a year, otherwise `404`. |
 
 CORS (GET) is allowed for the web origin and `localhost`/`127.0.0.1` dev origins only.
@@ -54,8 +55,9 @@ Bindings (`wrangler.jsonc`): D1 `LINEUPS_DB` (`disalytics-lineups`) and KV `LINE
   delete), `lineup_revisions` (one counter per map, so an edit only invalidates its own map's ETag
   and cache) `lineup_collections` (the map's built-in collections, same row shape as `lineups`; a write bumps the same
   revision) and `lineup_changes` (append-only log for the admin Worker; a collection's rows have an action
-  starting `collection:`).
-- `LineupStorage` (`modules/lineups/storage.ts`) and `PhotoStorage` (`modules/photos/storage.ts`)
+  starting `collection:`), `tactics` (built-in tactics, same row shape, soft delete), `tactic_revision` (their one counter;
+  a tactic's log rows have an action starting `tactic:` and the tactic's map).
+- `LineupStorage` (`modules/lineups/storage.ts`) and `TacticStorage` (`modules/tactics/storage.ts`) and `PhotoStorage` (`modules/photos/storage.ts`)
   are Effect services built from a binding (`makeLineupStorage(env.LINEUPS_DB)`,
   `makePhotoStorage(env.LINEUP_PHOTOS)`). The admin Worker (#616) imports them; every write goes
   through them so the revision is bumped and logged. There is no write route here.

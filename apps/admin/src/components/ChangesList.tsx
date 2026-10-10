@@ -8,6 +8,8 @@ const ACTION_KEYS: Readonly<Record<string, TranslationKey>> = {
   delete: 'admin.changes.delete',
   'collection:save': 'admin.changes.collectionSave',
   'collection:delete': 'admin.changes.collectionDelete',
+  'tactic:save': 'admin.changes.tacticSave',
+  'tactic:delete': 'admin.changes.tacticDelete',
 };
 
 export function ChangesList({

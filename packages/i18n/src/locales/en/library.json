@@ -592,7 +592,9 @@
       "newOnMapHint": "Starts with five players at spawn",
       "noMatch": "No tactic matches these filters",
       "noMatchHint": "Try another map, side or round type, or clear the search.",
-      "clearFilters": "Clear filters"
+      "clearFilters": "Clear filters",
+      "builtIn": "Built-in",
+      "savedToPlaybook": "Saved “{title}” to your playbook."
     },
     "transfer": {
       "open": "Import and export",

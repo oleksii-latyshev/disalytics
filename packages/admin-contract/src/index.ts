@@ -51,6 +51,14 @@ export type {
   PreviewRequest,
   PreviewResponse,
   PreviewStatus,
+  SiteTacticsResponse,
+  TacticDecision,
+  TacticPreviewItem,
+  TacticStatus,
+  TacticsCommitRequest,
+  TacticsCommitResponse,
+  TacticsPreviewRequest,
+  TacticsPreviewResponse,
   WhoAmI,
   WithheldLineup,
 } from './schemas';
@@ -63,12 +71,20 @@ export {
   SteamUrl,
 } from './schemas';
 export { isSteamUrl, MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
-export type { CollectionProblemCode, Problem, ProblemCode } from './validation';
+export type {
+  CollectionProblemCode,
+  Problem,
+  ProblemCode,
+  TacticProblemCode,
+} from './validation';
 export {
   COLLECTION_PROBLEM_CODES,
   collectionProblems,
   isOnRadar,
   lineupProblems,
+  MAX_TACTIC_BYTES,
   MAX_TITLE_LENGTH,
   PROBLEM_CODES,
+  TACTIC_PROBLEM_CODES,
+  tacticProblems,
 } from './validation';

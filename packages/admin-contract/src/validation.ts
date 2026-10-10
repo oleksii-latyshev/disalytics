@@ -2,6 +2,7 @@ import {
   isHttpsUrl,
   isLineupCollection,
   isLocalImageRef,
+  isTactic,
   type Lineup,
   looseLineup,
   normalizeLineup,
@@ -85,4 +86,39 @@ export type CollectionProblemCode = (typeof COLLECTION_PROBLEM_CODES)[number];
 export function collectionProblems(value: unknown, map: string): CollectionProblemCode[] {
   if (!isLineupCollection(value)) return ['invalid_collection'];
   return value.map === map ? [] : ['wrong_map'];
+}
+
+export const TACTIC_PROBLEM_CODES = [
+  'invalid_tactic',
+  'invalid_map',
+  'title_blank',
+  'title_too_long',
+  'too_large',
+] as const;
+
+export type TacticProblemCode = (typeof TACTIC_PROBLEM_CODES)[number];
+
+/** A stored tactic is one D1 row, and a row holds 2 MB; this leaves room for the rest of it. */
+export const MAX_TACTIC_BYTES = 1_500_000;
+
+const TACTIC_MAP = /^de_[a-z0-9_]{1,40}$/;
+const MAX_TACTIC_ID_LENGTH = 200;
+
+/**
+ * Everything that stops a tactic from being saved to the site. The page uses it to guide the
+ * choice and the Worker to refuse a body, so the two cannot disagree about what is valid.
+ */
+export function tacticProblems(value: unknown): TacticProblemCode[] {
+  if (!isTactic(value) || value.id.length === 0 || value.id.length > MAX_TACTIC_ID_LENGTH) {
+    return ['invalid_tactic'];
+  }
+  const problems: TacticProblemCode[] = [];
+  if (!TACTIC_MAP.test(value.map)) problems.push('invalid_map');
+  const title = value.title.trim().length;
+  if (title === 0) problems.push('title_blank');
+  else if (title > MAX_TITLE_LENGTH) problems.push('title_too_long');
+  if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_TACTIC_BYTES) {
+    problems.push('too_large');
+  }
+  return problems;
 }

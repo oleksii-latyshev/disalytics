@@ -17,3 +17,19 @@ export function renewedPlans(source: Tactic): readonly TacticPlan[] {
     })),
   }));
 }
+
+/**
+ * A tactic of the reader's own made from `source`: a new id, nothing shared with it, and the time
+ * it was made. A built-in becomes the reader's through this, and so does a duplicate.
+ */
+export function copiedTactic(source: Tactic, title: string = source.title): Tactic {
+  const now = Date.now();
+  return {
+    ...source,
+    id: generateId('tactic'),
+    title,
+    createdAt: now,
+    updatedAt: now,
+    plans: renewedPlans(source),
+  };
+}

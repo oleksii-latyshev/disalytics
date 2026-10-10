@@ -5,6 +5,8 @@ export type {
   StoredBuiltInLineups,
 } from './built-in-lineup-store';
 export { openBuiltInLineupStore } from './built-in-lineup-store';
+export type { BuiltInTacticStore, BuiltInTactics } from './built-in-tactic-store';
+export { openBuiltInTacticStore } from './built-in-tactic-store';
 export type { SavedDemo } from './catalog';
 export { CACHE_BYTE_LIMIT } from './catalog';
 export { CorruptCacheError } from './container';

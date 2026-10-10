@@ -13,7 +13,7 @@ place that writes to the lineups tables.
 
 ## What the page does
 
-Sections: **Import**, **On the site**, **People** (owner), **Contributions** (everyone: live lineups per person and map) and **History**. Import is a guided flow with
+Sections: **Import**, **On the site**, **Tactics**, **People** (owner), **Contributions** (everyone: live lineups per person and map) and **History**. Import is a guided flow with
 the counts and one button pinned at the bottom:
 
 1. **File**: pick the map and drop the file exported from the lineups library. Plain-language tiles say
@@ -40,6 +40,19 @@ renamed, added or removed is shown) or the same, with add / replace / skip. Two 
 share a name, case aside (`name_taken`, `collection_name_taken`). Saving bumps the map's revision, so the
 web app picks them up with the map's lineups, read-only and marked built-in. **On the site** lists them
 under the lineups, each with a delete; a later deletion of a lineup drops it from the collections when served.
+
+**Tactics** (a tab of its own, any signed-in person) are the built-in tactics of the playbook. Drop a tactic
+file exported from the app's tactics library (text only, no board here yet). `POST /api/tactics/preview`
+matches each tactic to the site's by id: new, changed (title, map, side, rounds, description, author,
+weapons, step and plan counts, or "the board changed") or the same, with add / replace / skip; a file
+without an author reads as the stored author. `POST /api/tactics/commit` saves the chosen ones in one
+request (a tactic is JSON, well under the 40 MB body limit, so there is no chunking) and signs a tactic
+that has no `author` with the committing person's name; an author in the file is kept. A tactic must pass
+`isTactic`, name a `de_` map, have a title of 1-120 characters and fit in 1.5 MB (`tacticProblems`, applied
+by the Worker too). Below the import, the site's tactics are listed (title, map, side, steps, author,
+updated) with a delete (`GET /api/tactics`, `DELETE /api/tactics/:id`). Writes are logged in History under
+the tactic's id and map as `tactic:save` / `tactic:delete`. The app reads them from the public
+`GET /tactics`.
 
 The page sends the final lineup bodies; the Worker re-validates each, puts every photo into our storage
 (embedded photos are uploaded, https links are fetched by the Worker: up to 5 MB, webp/png/jpeg checked
@@ -72,7 +85,7 @@ bun run admin:invite -- --remote     # prints a fresh owner invite link for prod
 ## Database migrations
 
 Migrations are manual. `0002_photo_links.sql` remembers which copied link became which stored photo;
-`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place); `0005_admin_steam.sql` adds `admins.steam_url`; `0006_lineup_collections.sql` adds `lineup_collections`. Apply before the
+`0003_admin_sessions.sql` adds `admins`, `admin_sessions` and `admin_invites`; `0004_lineup_aliases.sql` adds `lineup_aliases`, which remembers the id a merged duplicate had in someone's file, so a re-exported file reads as an update of the stored lineup, not as a duplicate again (an alias whose lineup was deleted is ignored and left in place); `0005_admin_steam.sql` adds `admins.steam_url`; `0006_lineup_collections.sql` adds `lineup_collections`; `0007_tactics.sql` adds `tactics` and `tactic_revision`. Apply before the
 Worker that needs them goes live:
 
 ```bash

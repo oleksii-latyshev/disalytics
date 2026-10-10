@@ -1,15 +1,16 @@
 import { Text, useT } from '@disa/i18n';
 import { Button, cn } from '@disa/ui';
 import { type DragEvent, useRef, useState } from 'react';
-import type { LoadedFile } from '../helpers/lineup-file';
 
 /** A drop target that is also a button: the file input behind it is what the keyboard reaches. */
 export function FileDrop({
   file,
   onFile,
+  kind = 'lineups',
 }: {
-  file: LoadedFile | null;
+  file: { readonly name: string; readonly count: number } | null;
   onFile: (name: string, text: string) => void;
+  kind?: 'lineups' | 'tactics';
 }) {
   const t = useT();
   const input = useRef<HTMLInputElement>(null);
@@ -39,13 +40,15 @@ export function FileDrop({
         over && 'border-ink bg-hover',
       )}
     >
-      <legend className="sr-only">{t('admin.file.drop')}</legend>
+      <legend className="sr-only">
+        {t(kind === 'tactics' ? 'admin.tactics.drop' : 'admin.file.drop')}
+      </legend>
       <input
         ref={input}
         type="file"
         accept=".json,application/json"
         className="sr-only"
-        data-testid="lineups-file"
+        data-testid={`${kind}-file`}
         onChange={(event) => {
           void read(event.currentTarget.files?.[0]);
           event.currentTarget.value = '';
@@ -54,7 +57,7 @@ export function FileDrop({
       {file === null ? (
         <>
           <p className="text-13 text-ink">
-            <Text path="admin.file.drop" />
+            <Text path={kind === 'tactics' ? 'admin.tactics.drop' : 'admin.file.drop'} />
           </p>
           <p className="text-12 text-ink-faint">
             <Text path="admin.file.or" />
@@ -63,8 +66,8 @@ export function FileDrop({
       ) : (
         <p className="numeric text-13 text-ink">
           <Text
-            path="admin.file.summary"
-            values={{ name: file.name, count: file.lineups.length }}
+            path={kind === 'tactics' ? 'admin.tactics.fileSummary' : 'admin.file.summary'}
+            values={{ name: file.name, count: file.count }}
           />
         </p>
       )}

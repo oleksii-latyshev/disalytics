@@ -12,6 +12,7 @@ import { Effect } from 'effect';
 import { HttpServerRequest, HttpServerResponse } from 'effect/unstable/http';
 import { HttpApiBuilder } from 'effect/unstable/httpapi';
 import { LineupStorage } from '../modules/lineups';
+import { TacticStorage } from '../modules/tactics';
 import { withoutSession, withSession } from './auth/cookie';
 import { AdminAuth } from './auth/store';
 import { deviceLabel, SESSION_COOKIE } from './auth/tokens';
@@ -29,6 +30,7 @@ import {
   withKnownLinks,
 } from './helpers/plan';
 import { PhotoLinks } from './photo-links';
+import { runTacticsCommit, runTacticsPreview } from './tactics';
 
 const invalidInvite = badRequest('invalid_invite', 'The invite is unknown, used or expired');
 
@@ -232,6 +234,39 @@ export const CollectionsHandlers = HttpApiBuilder.group(AdminApi, 'collections',
         const actor = yield* Actor;
         const config = yield* AdminConfig;
         const removed = yield* storage.deleteCollection({
+          id: params.id,
+          actor: actor.name,
+          now: config.now(),
+        });
+        if (!removed) return yield* Effect.fail(notFound);
+        return { id: params.id };
+      }).pipe(Effect.catchTag('StorageError', Effect.die)),
+    ),
+);
+
+export const TacticsHandlers = HttpApiBuilder.group(AdminApi, 'tactics', (handlers) =>
+  handlers
+    .handle('list', () =>
+      Effect.gen(function* () {
+        const storage = yield* TacticStorage;
+        return yield* storage.read;
+      }).pipe(Effect.catchTag('StorageError', Effect.die)),
+    )
+    .handle('preview', ({ payload }) =>
+      runTacticsPreview(payload).pipe(Effect.catchTag('StorageError', Effect.die)),
+    )
+    .handle('commit', ({ payload }) =>
+      Effect.gen(function* () {
+        const actor = yield* Actor;
+        return yield* runTacticsCommit(payload, actor);
+      }).pipe(Effect.catchTag('StorageError', Effect.die)),
+    )
+    .handle('remove', ({ params }) =>
+      Effect.gen(function* () {
+        const storage = yield* TacticStorage;
+        const actor = yield* Actor;
+        const config = yield* AdminConfig;
+        const removed = yield* storage.remove({
           id: params.id,
           actor: actor.name,
           now: config.now(),

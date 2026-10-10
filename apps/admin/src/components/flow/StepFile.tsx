@@ -34,7 +34,12 @@ export function StepFile({
           options={mapOptions(loaded === null ? [] : mapsOf(loaded.file.lineups))}
           onChange={onMap}
         />
-        <FileDrop file={loaded?.file ?? null} onFile={review.open} />
+        <FileDrop
+          file={
+            loaded === null ? null : { name: loaded.file.name, count: loaded.file.lineups.length }
+          }
+          onFile={review.open}
+        />
         {review.problem !== null && !review.problem.ok ? (
           <Notice failure={{ key: review.problem.key, detail: review.problem.detail }} />
         ) : null}
