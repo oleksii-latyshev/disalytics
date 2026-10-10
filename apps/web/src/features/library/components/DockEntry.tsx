@@ -11,9 +11,20 @@ interface Props {
   tone: string;
   onSelect?: () => void;
   to?: AppPath;
+  /** A page outside the app: an ordinary link that opens in a new tab. */
+  href?: string;
 }
 
-export function DockEntry({ icon: Icon, labelPath, isCurrent, isSoon, tone, onSelect, to }: Props) {
+export function DockEntry({
+  icon: Icon,
+  labelPath,
+  isCurrent,
+  isSoon,
+  tone,
+  onSelect,
+  to,
+  href,
+}: Props) {
   const content = (
     <>
       <Icon aria-hidden="true" className="size-6" strokeWidth={1.8} />
@@ -32,7 +43,18 @@ export function DockEntry({ icon: Icon, labelPath, isCurrent, isSoon, tone, onSe
 
   return (
     <span className="atlas-dock-seat group relative flex items-center justify-center">
-      {to === undefined ? (
+      {href !== undefined ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          data-dock-item
+          style={{ background: tone }}
+          className="atlas-dock-tile relative flex origin-bottom items-center justify-center text-white transition-[scale] duration-(--duration-micro) ease-out"
+        >
+          {content}
+        </a>
+      ) : to === undefined ? (
         <button
           type="button"
           data-dock-item

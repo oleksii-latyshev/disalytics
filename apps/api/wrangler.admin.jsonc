@@ -29,6 +29,9 @@
     }
   ],
   "vars": {
-    "PHOTO_BASE_URL": "https://disalytics-api.disa-67b.workers.dev/photos"
+    "PHOTO_BASE_URL": "https://disalytics-api.disa-67b.workers.dev/photos",
+    // The parent domain of the admin and the web app: the hint cookie the app reads to show its
+    // "Admin" tile is set on it. Leave it out locally and no hint is set.
+    "ADMIN_HINT_DOMAIN": "disa-67b.workers.dev"
   }
 }

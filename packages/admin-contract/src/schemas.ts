@@ -369,3 +369,60 @@ export type Contributor = typeof Contributor.Type;
 
 export const ContributorsResponse = Schema.Struct({ contributors: Schema.Array(Contributor) });
 export type ContributorsResponse = typeof ContributorsResponse.Type;
+
+/** What the overview counts: lineups, the collections of lineups, and tactics. */
+export const OVERVIEW_KINDS = ['lineup', 'collection', 'tactic'] as const;
+export const OverviewKind = Schema.Literals(OVERVIEW_KINDS);
+export type OverviewKind = typeof OverviewKind.Type;
+
+export const OverviewCounts = Schema.Struct({
+  lineups: Schema.Int,
+  collections: Schema.Int,
+  tactics: Schema.Int,
+});
+export type OverviewCounts = typeof OverviewCounts.Type;
+
+/** One map's live counts. Maps with nothing on the site are left out. */
+export const OverviewMap = Schema.Struct({
+  map: Schema.String,
+  lineups: Schema.Int,
+  collections: Schema.Int,
+  tactics: Schema.Int,
+});
+export type OverviewMap = typeof OverviewMap.Type;
+
+export const OVERVIEW_ACTIONS = ['add', 'update', 'delete'] as const;
+
+/** One write from the change log; `title` is read from the item and absent when it cannot be. */
+export const OverviewChange = Schema.Struct({
+  id: Schema.Int,
+  map: Schema.String,
+  kind: OverviewKind,
+  action: Schema.Literals(OVERVIEW_ACTIONS),
+  actor: Schema.String,
+  title: Schema.optional(Schema.String),
+  at: Schema.Number,
+});
+export type OverviewChange = typeof OverviewChange.Type;
+
+/** Everything the admin's home shows, in one read. */
+export const OverviewResponse = Schema.Struct({
+  maps: Schema.Array(OverviewMap),
+  totals: Schema.Struct({
+    lineups: Schema.Int,
+    collections: Schema.Int,
+    tactics: Schema.Int,
+    /** Maps with at least one lineup on the site. */
+    maps: Schema.Int,
+  }),
+  /** Created in the last seven days and still live. */
+  week: OverviewCounts,
+  recent: Schema.Array(OverviewChange),
+  /** The three people with the most live lineups. */
+  contributors: Schema.Array(Contributor),
+  /** The live lineups of the person asking. */
+  mine: Schema.Int,
+  /** When the person asking last wrote anything, or `null` if they never have. */
+  mineLastAt: Schema.NullOr(Schema.Number),
+});
+export type OverviewResponse = typeof OverviewResponse.Type;

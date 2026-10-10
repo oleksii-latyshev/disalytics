@@ -24,3 +24,72 @@
 [tabindex="-1"]:focus-visible {
   outline: none;
 }
+
+/* The overview's tiles are the app's home tiles: they arrive one after another, and a glow and a
+   hairline follow the pointer. Both read `--mx`/`--my`, which `BentoTile` writes straight onto the
+   element, so nothing here is React state. The reduced-motion reset in `motion.css` takes the
+   arrival to nothing. */
+.bento {
+  --tile-index: 0;
+
+  animation: bento-in var(--duration-panel) var(--ease-out) both;
+  animation-delay: calc(var(--tile-index) * 45ms);
+}
+.bento-lit {
+  --mx: 50%;
+  --my: 50%;
+}
+.bento-lit::before,
+.bento-lit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+.bento-lit::before {
+  background: radial-gradient(360px circle at var(--mx) var(--my), #ffffff12, transparent 65%);
+}
+.bento-lit::after {
+  padding: 1px;
+  background: radial-gradient(240px circle at var(--mx) var(--my), #ffffff8c, transparent 70%);
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+.bento-lit:hover::before,
+.bento-lit:hover::after {
+  opacity: 1;
+}
+@media (hover: none) {
+  .bento-lit::before,
+  .bento-lit::after {
+    display: none;
+  }
+}
+@keyframes bento-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes bento-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+.bento-skeleton {
+  animation: bento-pulse 1.4s ease-in-out infinite;
+}
+
+/* The identity colours of the way-in dock, one per place the overview leads to: lineups are green,
+   the site's lineups blue, collections violet, tactics rose. They name a place and carry no data. */
+:root {
+  --tone-add: linear-gradient(160deg, #5ac580, #218750);
+  --tone-site: linear-gradient(160deg, #42adff, #1672df);
+  --tone-collections: linear-gradient(160deg, #8d7cf5, #5a48ca);
+  --tone-tactics: linear-gradient(160deg, #ed7b99, #b43d63);
+}

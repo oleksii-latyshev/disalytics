@@ -13,7 +13,21 @@ place that writes to the lineups tables.
 
 ## What the page does
 
-Sections: **Import**, **On the site**, **Tactics**, **People** (owner), **Contributions** (everyone: live lineups per person and map) and **History**. Import is a guided flow with
+The page opens on the **Overview**, a fixed bento like the app's home: a hero (greeting, your live
+lineups, *Add lineups* and *New tactic*), the totals with what the last 7 days added, four coloured
+places to go (add lineups, lineups on the site, collections, tactics), every map with its radar
+thumbnail and counts (a click opens that map under *On the site*), the latest changes across maps,
+the top three contributors and, for the owner, People with *Invite someone*. It is one read,
+`GET /api/overview` (any signed-in person): per-map live counts, totals, rows created in the last 7
+days, the last 8 log rows with the item's title, the top three contributors and the asker's own count.
+"+N in 7 days" counts live rows whose `created_at` falls in the window, so re-importing a file does not
+inflate it; an add in the recent list is the save that created the row, any other save is an update.
+
+The place lives in the address hash, so reload and Back keep it: `#/` (overview), `#/lineups/add`,
+`#/lineups/site[/de_mirage]`, `#/tactics[/new]`, `#/people`, `#/contributors`, `#/history`
+(`helpers/route.ts`). `#invite=…` is untouched.
+
+Sections: **Add lineups** (the import), **On the site**, **Tactics**, **People** (owner), **Contributions** (everyone: live lineups per person and map) and **History**. Import is a guided flow with
 the counts and one button pinned at the bottom:
 
 1. **File**: pick the map and drop the file exported from the lineups library. Plain-language tiles say
@@ -77,6 +91,12 @@ Free plan, so the Worker signs people in itself (#623):
 - **Device sessions.** A 256-bit token in a `__Host-disa_admin` cookie (`HttpOnly; Secure;
   SameSite=Strict`), 180 days, extended when used after a day's rest. D1 keeps only SHA-256 hashes of
   invite and session tokens.
+- **Hint for the app.** When `ADMIN_HINT_DOMAIN` is set (`wrangler.admin.jsonc`: the parent domain of
+  the admin and the web app, `disa-67b.workers.dev`), a redeemed invite and a whoami that knows the
+  device also set `disa_admin=1; Domain=<it>; Path=/; Secure; SameSite=Lax` for the session's lifetime,
+  not `HttpOnly`; sign-out and a 401 from whoami clear it. The web app reads it only to show an *Admin*
+  tile in its dock (`VITE_DISALYTICS_ADMIN_URL`, default the production admin). It grants nothing: the
+  session cookie stays host-only and `HttpOnly`. Unset locally, no hint is sent.
 - **Roles.** An *owner* invites people, sees every device, signs a device out and disables a person
   (never the last owner). An *editor* edits lineups. Every write records the person's name.
 - **Authorship.** A person may give a Steam profile link (`https://steamcommunity.com/id/…` or `/profiles/<17 digits>`) on the invite form or later under the header (`PATCH /api/me`). A lineup committed without an `author` gets the committer's name and link; an author already in the file is kept.

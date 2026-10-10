@@ -43,6 +43,11 @@ export type {
   InviteCreated,
   InviteInfo,
   MapLineupsResponse,
+  OverviewChange,
+  OverviewCounts,
+  OverviewKind,
+  OverviewMap,
+  OverviewResponse,
   PeopleResponse,
   Person,
   PhotoFailure,
@@ -70,6 +75,8 @@ export {
   MAX_NAME_LENGTH,
   MAX_PHOTOS_PER_COMMIT,
   MapId,
+  OVERVIEW_ACTIONS,
+  OVERVIEW_KINDS,
   SteamUrl,
 } from './schemas';
 export { isSteamUrl, MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';

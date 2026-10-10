@@ -29,6 +29,7 @@ import {
   serverOnlyLineups,
   withKnownLinks,
 } from './helpers/plan';
+import { Overview, topContributors } from './overview';
 import { PhotoLinks } from './photo-links';
 import { runTacticSave, runTacticsCommit, runTacticsPreview } from './tactics';
 
@@ -297,6 +298,24 @@ export const ContributorsHandlers = HttpApiBuilder.group(AdminApi, 'contributors
     Effect.gen(function* () {
       const contributors = yield* Contributors;
       return { contributors: yield* contributors.list };
+    }).pipe(Effect.catchTag('StorageError', Effect.die)),
+  ),
+);
+
+export const OverviewHandlers = HttpApiBuilder.group(AdminApi, 'overview', (handlers) =>
+  handlers.handle('read', () =>
+    Effect.gen(function* () {
+      const actor = yield* Actor;
+      const config = yield* AdminConfig;
+      const overview = yield* Overview;
+      const contributors = yield* Contributors;
+      const [data, all, mineLastAt] = yield* Effect.all([
+        overview.read(config.now()),
+        contributors.list,
+        overview.lastWriteBy(actor.name),
+      ]);
+      const { top, mine } = topContributors(all, actor.name);
+      return { ...data, contributors: top, mine, mineLastAt };
     }).pipe(Effect.catchTag('StorageError', Effect.die)),
   ),
 );

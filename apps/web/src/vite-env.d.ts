@@ -13,4 +13,6 @@ interface Navigator {
 interface ImportMetaEnv {
   /** Base URL of the metadata API; the production Worker when unset. */
   readonly VITE_DISALYTICS_API_URL?: string;
+  /** Where the lineups admin is; the production Worker when unset. */
+  readonly VITE_DISALYTICS_ADMIN_URL?: string;
 }

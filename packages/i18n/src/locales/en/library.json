@@ -75,7 +75,8 @@
     "tactics": "Tactics",
     "stats": "Player stats",
     "empty": "Nothing here yet. A demo you open is kept on this device and appears here.",
-    "home": "Home"
+    "home": "Home",
+    "admin": "Admin"
   },
   "tools": {
     "title": "Tools",
