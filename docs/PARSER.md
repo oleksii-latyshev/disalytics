@@ -196,6 +196,8 @@ timed **from the drop** to the review screen, three runs per arm, arms interleav
   `DAMAGE_SOURCES` (`inferno`, `planted_c4`, `world`, `unknown`) mirror `schema.ts`; `weapons:check`
   holds them in parity. Six ids never fired in 7 FACEIT demos: `bizon mp5sd p90 g3sg1 sawedoff m249`.
 - Armour is `m_ArmorValue`, helmet `CCSPlayer_ItemServices.m_bHasHelmet`.
+- **`FLAG_HAS_BOMB` (bit 7, #672)** is the C4 (definition index 49) in `inventory_as_ids`, so it holds while the
+  bomb is stowed, unlike the weapon column. Clear while dropped or planted; a post-round plant is not carried.
 
 ## 18. Gunfire (#163)
 

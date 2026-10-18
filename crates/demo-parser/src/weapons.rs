@@ -35,6 +35,7 @@ const MOLOTOV: u32 = 46;
 const DECOY: u32 = 47;
 const INCENDIARY: u32 = 48;
 const DEFUSE_KIT: u32 = 55;
+const C4: u32 = 49;
 
 const fn is_knife(def_index: u32) -> bool {
     matches!(def_index, KNIFE_CT | KNIFE_BARE | KNIFE_T)
@@ -136,6 +137,12 @@ pub(crate) fn index_in(names: &[String], def_index: u32) -> u8 {
         .ok()
         .and_then(|index| u8::try_from(index).ok())
         .unwrap_or(WEAPON_NONE)
+}
+
+/// Whether the inventory holds the bomb, held or stowed — the active-weapon prop only names it
+/// while it is in hand.
+pub(crate) fn has_bomb(inventory: &[u32]) -> bool {
+    inventory.contains(&C4)
 }
 
 /// The `GRENADE_*` bitfield for one player's inventory.

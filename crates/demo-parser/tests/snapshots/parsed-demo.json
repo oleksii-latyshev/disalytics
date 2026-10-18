@@ -130,7 +130,7 @@
     "shots": 3500
   },
   "damage": {
-    "checksum": "afe1da0fdc41fe83",
+    "checksum": "d2d144538a6f39f3",
     "count": 913,
     "first": [
       {
@@ -140,7 +140,7 @@
         "hitGroup": "generic",
         "tick": 2306,
         "victim": 2,
-        "weapon": ""
+        "weapon": "world"
       },
       {
         "armorDamage": 3,
@@ -742,7 +742,7 @@
     ]
   },
   "kills": {
-    "checksum": "36b83ee35d72ba9d",
+    "checksum": "29b18864492754e2",
     "count": 225,
     "first": [
       {
@@ -757,7 +757,7 @@
         "isWallbang": false,
         "tick": 2806,
         "victim": 7,
-        "weapon": "knife_butterfly"
+        "weapon": "knife"
       },
       {
         "assister": 7,
@@ -771,7 +771,7 @@
         "isWallbang": false,
         "tick": 2809,
         "victim": 1,
-        "weapon": "knife_cord"
+        "weapon": "knife"
       },
       {
         "assister": 0,
@@ -799,7 +799,7 @@
         "isWallbang": false,
         "tick": 3151,
         "victim": 3,
-        "weapon": "knife_m9_bayonet"
+        "weapon": "knife"
       },
       {
         "assister": 4,
@@ -813,7 +813,7 @@
         "isWallbang": false,
         "tick": 3233,
         "victim": 0,
-        "weapon": "knife_cord"
+        "weapon": "knife"
       },
       {
         "assister": null,
@@ -827,7 +827,7 @@
         "isWallbang": false,
         "tick": 3375,
         "victim": 6,
-        "weapon": "knife_m9_bayonet"
+        "weapon": "knife"
       },
       {
         "assister": 6,
@@ -981,133 +981,133 @@
     {
       "detonationTick": null,
       "planter": 6,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 8870
     },
     {
       "detonationTick": null,
       "planter": 1,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 12513
     },
     {
       "detonationTick": null,
       "planter": 0,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 18619
     },
     {
       "detonationTick": null,
       "planter": 6,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 28511
     },
     {
       "detonationTick": null,
       "planter": 0,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 38025
     },
     {
       "detonationTick": null,
       "planter": 3,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 49555
     },
     {
       "detonationTick": null,
       "planter": 6,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 64304
     },
     {
       "detonationTick": null,
       "planter": 0,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 74447
     },
     {
       "detonationTick": null,
       "planter": 7,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 79872
     },
     {
       "detonationTick": null,
       "planter": 9,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 84243
     },
     {
       "detonationTick": null,
       "planter": 4,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 90141
     },
     {
       "detonationTick": null,
       "planter": 4,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 94527
     },
     {
       "detonationTick": null,
       "planter": 4,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 104605
     },
     {
       "detonationTick": 113893,
       "planter": 7,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 111269
     },
     {
       "detonationTick": 121180,
       "planter": 4,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 118556
     },
     {
       "detonationTick": null,
       "planter": 8,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 127281
     },
     {
       "detonationTick": null,
       "planter": 7,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 132813
     },
     {
       "detonationTick": null,
       "planter": 4,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 153190
     },
     {
       "detonationTick": null,
       "planter": 4,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 167476
     },
     {
       "detonationTick": null,
       "planter": 3,
-      "siteEntityId": 301,
+      "site": "B",
       "tick": 179367
     },
     {
       "detonationTick": 188263,
       "planter": 5,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 185639
     },
     {
       "detonationTick": null,
       "planter": 1,
-      "siteEntityId": 309,
+      "site": "A",
       "tick": 193474
     }
   ],
@@ -3670,7 +3670,7 @@
   "track": {
     "checksums": {
       "armour": "d11520c62c92973f",
-      "flags": "9cae13e2076edf5a",
+      "flags": "e1846cb1211f95ea",
       "grenades": "a60afe996c9f7534",
       "health": "ed579d3ae2d33105",
       "money": "fa787ed83ffb464a",
@@ -4144,7 +4144,7 @@
             4142,
             454,
             100,
-            65,
+            193,
             238,
             100,
             9,
@@ -4677,7 +4677,7 @@
             17804,
             215,
             100,
-            65,
+            193,
             73,
             100,
             0,
@@ -4738,7 +4738,7 @@
             7526,
             192,
             100,
-            65,
+            193,
             0,
             100,
             0,

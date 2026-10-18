@@ -11,8 +11,9 @@
 //! ```
 
 use demo_parser::{
-    DefuseOutcome, Grenade, GrenadeType, Kill, MatchHeader, PASS_COUNT, ParseObserver, ParsePhase,
-    ParsedDemo, Shot, TickTrack, WEAPON_NONE, parse_observed, parse_recording_passes,
+    DefuseOutcome, FLAG_HAS_BOMB, Grenade, GrenadeType, Kill, MatchHeader, PASS_COUNT,
+    ParseObserver, ParsePhase, ParsedDemo, Shot, Team, TickTrack, WEAPON_NONE, parse_observed,
+    parse_recording_passes,
 };
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -58,6 +59,7 @@ fn a_real_demo_parses_deterministically_into_the_committed_snapshot() {
 
     assert_track_is_rectangular(&first.track);
     assert_weapon_column_indexes_the_table(&first);
+    assert_the_bomb_has_one_carrier_until_it_is_planted(&first);
     assert_shots_name_a_weapon_in_the_table(&first);
     assert_events_are_sorted_by_tick(&first);
     assert_every_area_that_detonates_can_be_drawn(&first);
@@ -251,6 +253,76 @@ fn assert_track_is_rectangular(track: &TickTrack) {
     assert_eq!(track.money.len(), cells);
     assert!(track.tick_rate > 0);
     assert!(track.sample_hz > 0);
+}
+
+/// `FLAG_HAS_BOMB` comes from the inventory, so it holds while the bomb is stowed. There is one
+/// bomb, so a frame never has two carriers and a carrier is never a counter-terrorist; a round
+/// starts with a carrier, though a dropped bomb leaves gaps (players drop it in freeze time and
+/// the bomb lies there until someone picks it up). Once the bomb is planted nobody has it.
+fn assert_the_bomb_has_one_carrier_until_it_is_planted(demo: &ParsedDemo) {
+    let track = &demo.track;
+    let carriers = |frame: usize| -> Vec<usize> {
+        (0..track.slot_count)
+            .filter(|slot| track.flags[frame * track.slot_count + slot] & FLAG_HAS_BOMB != 0)
+            .collect()
+    };
+    let frame_of = |tick: i32| {
+        usize::try_from(i64::from(tick) * i64::from(track.sample_hz) / i64::from(track.tick_rate))
+            .expect("frame fits usize")
+    };
+
+    for round in &demo.events.rounds {
+        let first = frame_of(round.start_tick);
+        let last = frame_of(round.end_tick).min(track.frame_count - 1);
+        let mut ever_carried = false;
+        for frame in first..=last {
+            let holders = carriers(frame);
+            assert!(
+                holders.len() <= 1,
+                "round {}: {} players carry the bomb at frame {frame}",
+                round.number,
+                holders.len()
+            );
+            for slot in holders {
+                ever_carried = true;
+                let side = round
+                    .economy
+                    .iter()
+                    .find(|e| usize::try_from(e.slot) == Ok(slot))
+                    .and_then(|e| e.team);
+                assert_eq!(
+                    side,
+                    Some(Team::T),
+                    "round {}: a non-T carries the bomb",
+                    round.number
+                );
+            }
+        }
+        assert!(
+            ever_carried,
+            "round {}: nobody ever carried the bomb",
+            round.number
+        );
+    }
+
+    // A plant can land just after its round ended, with the next round a few ticks away, so the
+    // window stops where the next round starts and a fresh carrier is not mistaken for this one.
+    for plant in &demo.events.plants {
+        let next_round = demo
+            .events
+            .rounds
+            .iter()
+            .map(|round| round.start_tick)
+            .find(|start| *start > plant.tick)
+            .map_or(track.frame_count, frame_of);
+        let first = frame_of(plant.tick) + 1;
+        for frame in first..next_round.min(track.frame_count).min(first + 16) {
+            assert!(
+                carriers(frame).is_empty(),
+                "the bomb is planted, yet someone has it"
+            );
+        }
+    }
 }
 
 /// The weapon column is a `u8` into a list built on another pass over the same table. Nothing in
