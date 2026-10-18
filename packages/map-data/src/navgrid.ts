@@ -9,6 +9,7 @@ import type { NavGrid, NavGridData, NavLevel } from './types';
 const NAV_GRIDS: Readonly<Record<MapId, () => Promise<{ readonly NAV_GRID: NavGridData }>>> = {
   de_ancient: () => import('./generated/navgrids/de_ancient'),
   de_anubis: () => import('./generated/navgrids/de_anubis'),
+  de_cache: () => import('./generated/navgrids/de_cache'),
   de_dust2: () => import('./generated/navgrids/de_dust2'),
   de_inferno: () => import('./generated/navgrids/de_inferno'),
   de_mirage: () => import('./generated/navgrids/de_mirage'),
