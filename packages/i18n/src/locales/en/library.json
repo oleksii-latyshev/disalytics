@@ -885,7 +885,6 @@
     },
     "preview": {
       "label": "Tactic preview",
-      "steps": "Steps",
       "startsAt": "Starts at {time}",
       "throws": "{count, plural, =0 {No utility} one {# throw} other {# throws}}"
     }

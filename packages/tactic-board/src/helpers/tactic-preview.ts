@@ -2,12 +2,6 @@ import type { Tactic } from '@disa/demo-core';
 import { effectiveSteps, rootPlan } from '@disa/demo-core';
 import type { PlateActions } from '../hooks/use-tactic-plate-pointer';
 
-/** `m:ss` counted up from the start, for a clock that does not count down from a round's length. */
-export function formatElapsed(seconds: number): string {
-  const whole = Math.max(0, Math.round(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-}
-
 /** The plan a preview plays: the root. A tactic read for viewing has no branch in hand. */
 export function previewPlanId(tactic: Tactic): string {
   return rootPlan(tactic)?.id ?? '';

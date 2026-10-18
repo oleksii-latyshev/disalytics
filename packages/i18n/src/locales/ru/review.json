@@ -506,27 +506,28 @@
     "team": {
       "label": "Команда"
     },
-    "side": {
-      "label": "Сторона",
-      "all": "Все"
-    },
-    "sort": {
-      "label": "Сортировка раундов",
-      "round": "По раундам",
-      "coordination": "По слаженности"
+    "filter": {
+      "label": "Фильтр раундов",
+      "t": "Раунды за T",
+      "ct": "Раунды за CT",
+      "won": "Выигранные раунды",
+      "lost": "Проигранные раунды",
+      "planted": "Только раунды с закладкой"
     },
     "list": {
       "label": "Раунды",
       "empty": "Нет раундов этой команды за эту сторону."
     },
+    "pill": "Раунд {round, number}, {side}, {result}, {plant}",
+    "detail": {
+      "label": "Раунд {round, number}"
+    },
     "row": {
-      "label": "Раунд {round, number}, {side}, {buy}, {result}, {steps, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}, {level}",
       "won": "Победа",
       "lost": "Поражение",
       "site": "Закладка {site}",
       "planted": "Закладка",
-      "noPlant": "Без закладки",
-      "steps": "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}"
+      "noPlant": "Без закладки"
     },
     "coordination": {
       "coordinated": "Слаженно",

@@ -885,7 +885,6 @@
     },
     "preview": {
       "label": "Просмотр тактики",
-      "steps": "Шаги",
       "startsAt": "Начало на {time}",
       "throws": "{count, plural, =0 {Без гранат} one {# бросок} few {# броска} many {# бросков} other {# броска}}"
     }

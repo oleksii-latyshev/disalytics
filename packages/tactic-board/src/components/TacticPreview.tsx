@@ -3,21 +3,17 @@ import { useT } from '@disa/i18n';
 import { getMapOverview, mapFloors } from '@disa/map-data';
 import { UnknownMap } from '@disa/plate';
 import { cn } from '@disa/ui';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { enemyMarksByStep } from '../helpers/tactic-enemies';
-import {
-  formatElapsed,
-  previewPlanId,
-  previewSteps,
-  readOnlyActions,
-} from '../helpers/tactic-preview';
-import { buildSchedule } from '../helpers/tactic-schedule';
+import { planGraph } from '../helpers/tactic-plan-graph';
+import { previewPlanId, previewSteps, readOnlyActions } from '../helpers/tactic-preview';
+import { buildSchedule, formatRoundClock } from '../helpers/tactic-schedule';
 import { useTacticNavGrid } from '../hooks/use-tactic-nav-grid';
 import { useClockReadout, useTacticPlayback } from '../hooks/use-tactic-playback';
+import { TacticPlanStrip } from './TacticPlanStrip';
 import { TacticPlate } from './TacticPlate';
 import { TacticRoster } from './TacticRoster';
 import { TacticStepReadout } from './TacticStepReadout';
-import { TacticStepTabs } from './TacticStepTabs';
 import { TacticTransport } from './TacticTransport';
 
 export interface TacticPreviewProps {
@@ -25,10 +21,12 @@ export interface TacticPreviewProps {
   readonly tactic: Tactic;
   /** The row across the top. */
   readonly header: ReactNode;
-  /** The left column, where the editor has its roster. */
-  readonly sidebar: ReactNode;
+  /** Under the step readout in the right column, where the editor has the step's fields. */
+  readonly detail?: ReactNode;
   /** Under the transport and the step row, across the bottom. */
   readonly footer?: ReactNode;
+  /** Seconds the tactic's own zero lies after the round's freeze end, for a window that starts later. */
+  readonly roundOffsetSeconds?: number | undefined;
   readonly className?: string | undefined;
 }
 
@@ -41,8 +39,9 @@ export function TacticPreview(props: TacticPreviewProps) {
 function PreviewBoard({
   tactic,
   header,
-  sidebar,
+  detail,
   footer,
+  roundOffsetSeconds = 0,
   className,
   overview,
 }: TacticPreviewProps & { readonly overview: NonNullable<ReturnType<typeof getMapOverview>> }) {
@@ -53,6 +52,12 @@ function PreviewBoard({
   const schedule = useMemo(
     () => buildSchedule({ overview, grid, tactic, planId }),
     [overview, grid, tactic, planId],
+  );
+  const graph = useMemo(() => planGraph(tactic, planId), [tactic, planId]);
+  const schedules = useMemo(() => new Map([[planId, schedule]]), [planId, schedule]);
+  const formatSeconds = useCallback(
+    (seconds: number) => formatRoundClock(seconds + roundOffsetSeconds),
+    [roundOffsetSeconds],
   );
   const loadout = useMemo(() => tacticLoadout(tactic), [tactic]);
   const enemyMarks = useMemo(() => enemyMarksByStep(steps), [steps]);
@@ -95,14 +100,26 @@ function PreviewBoard({
   return (
     <section
       className={cn(
-        'flex h-full w-full flex-col overflow-y-auto bg-surface-0 font-sans text-ink selection:bg-white/20 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)_20rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:overflow-hidden xl:grid-cols-[19rem_minmax(0,1fr)_20rem]',
+        'flex h-full w-full flex-col overflow-y-auto bg-surface-0 font-sans text-ink selection:bg-white/20 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)_19rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:overflow-hidden xl:grid-cols-[17rem_minmax(0,1fr)_20rem]',
         className,
       )}
       aria-label={t('library.tactics.preview.label')}
     >
       <div className="lg:col-span-3">{header}</div>
 
-      <div className="flex min-h-0 flex-col overflow-y-auto">{sidebar}</div>
+      <TacticRoster
+        side={tactic.side}
+        loadout={loadout}
+        weapons={tactic.weapons}
+        step={step}
+        stepIndex={stepIndex}
+        stepSchedule={stepSchedule}
+        selectedSlot={selectedSlot}
+        onSelect={(slot) => {
+          stop();
+          setSelectedSlot(slot);
+        }}
+      />
 
       <div className="@container relative aspect-square w-full shrink-0 lg:aspect-auto lg:h-full lg:min-h-0 lg:min-w-0">
         <TacticPlate
@@ -131,25 +148,14 @@ function PreviewBoard({
       </div>
 
       <aside className="flex min-h-0 flex-col overflow-y-auto">
-        <TacticRoster
-          side={tactic.side}
-          loadout={loadout}
-          weapons={tactic.weapons}
-          step={step}
-          stepIndex={stepIndex}
-          stepSchedule={stepSchedule}
-          selectedSlot={selectedSlot}
-          onSelect={(slot) => {
-            stop();
-            setSelectedSlot(slot);
-          }}
-        />
         <TacticStepReadout
           step={step}
           stepIndex={stepIndex}
           stepCount={steps.length}
           stepSchedule={stepSchedule}
+          formatSeconds={formatSeconds}
         />
+        {detail}
       </aside>
 
       <footer className="flex flex-col [border-block-start:1px_solid_var(--color-line)] lg:col-span-3">
@@ -163,16 +169,17 @@ function PreviewBoard({
           onNext={() => jump(1)}
           onToggle={playback.toggle}
           onSpeed={playback.setSpeed}
-          formatSeconds={formatElapsed}
+          formatSeconds={formatSeconds}
           hint={null}
         />
-        <TacticStepTabs
-          steps={steps}
-          schedule={schedule}
-          stepIndex={stepIndex}
-          onSelect={(index) => {
+        <TacticPlanStrip
+          graph={graph}
+          schedules={schedules}
+          formatSeconds={formatSeconds}
+          selected={{ planId, index: stepIndex }}
+          onOpen={(key) => {
             stop();
-            setRequestedStep(index);
+            setRequestedStep(key.index);
           }}
         />
         {footer}

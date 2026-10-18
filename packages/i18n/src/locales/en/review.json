@@ -506,27 +506,28 @@
     "team": {
       "label": "Team"
     },
-    "side": {
-      "label": "Side",
-      "all": "All"
-    },
-    "sort": {
-      "label": "Sort rounds",
-      "round": "By round",
-      "coordination": "By coordination"
+    "filter": {
+      "label": "Filter rounds",
+      "t": "Rounds held as T",
+      "ct": "Rounds held as CT",
+      "won": "Won rounds",
+      "lost": "Lost rounds",
+      "planted": "Only rounds with a plant"
     },
     "list": {
       "label": "Rounds",
       "empty": "No rounds for this team on this side."
     },
+    "pill": "Round {round, number}, {side}, {result}, {plant}",
+    "detail": {
+      "label": "Round {round, number}"
+    },
     "row": {
-      "label": "Round {round, number}, {side}, {buy}, {result}, {steps, plural, one {# step} other {# steps}}, {level}",
       "won": "Won",
       "lost": "Lost",
       "site": "Plant {site}",
       "planted": "Planted",
-      "noPlant": "No plant",
-      "steps": "{count, plural, one {# step} other {# steps}}"
+      "noPlant": "No plant"
     },
     "coordination": {
       "coordinated": "Coordinated",
