@@ -52,6 +52,8 @@ export interface TacticLayerOptions {
   readonly hoveredLineupId?: string | null | undefined;
   readonly spawnSpots?: SpawnSpots | undefined;
   readonly hoveredHandle?: number | null | undefined;
+  /** A plate nobody edits draws no waypoint handles. */
+  readonly isReadOnly?: boolean | undefined;
   /** The expected enemies of every step, by step index. */
   readonly enemyMarks: readonly EnemyMarks[];
   readonly selectedEnemyId: string | null;
@@ -227,6 +229,7 @@ function drawHandles(
   nowMs: number,
 ): void {
   const { step, selectedSlot, overview, colors } = options;
+  if (options.isReadOnly === true) return;
   const player = step?.players.find((entry) => entry.slot === selectedSlot);
   if (player === undefined || player.route.mode !== 'points') return;
   const ring = { ring: slotInk(options, player.slot), ground: colors.hollow };

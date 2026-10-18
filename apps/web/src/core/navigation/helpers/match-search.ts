@@ -1,4 +1,4 @@
-export type MatchView = 'stage' | 'stats' | 'duels' | 'heatmap' | 'utility';
+export type MatchView = 'stage' | 'stats' | 'duels' | 'heatmap' | 'utility' | 'tactics';
 export type StatsTab = 'players' | 'rounds' | 'utility';
 
 export const STATS_TABS: readonly StatsTab[] = ['players', 'rounds', 'utility'];
@@ -70,7 +70,8 @@ function isMatchView(value: unknown): value is MatchView {
     value === 'stats' ||
     value === 'duels' ||
     value === 'heatmap' ||
-    value === 'utility'
+    value === 'utility' ||
+    value === 'tactics'
   );
 }
 
@@ -108,4 +109,12 @@ export function validateMatchSearch(search: Record<string, unknown>): MatchSearc
 export function clampMatchRound(round: number, roundCount: number): number {
   if (roundCount < 1) return 1;
   return Math.min(Math.max(Math.trunc(round), 1), roundCount);
+}
+
+/** `open` names a stored tactic the tactics screen opens in the editor and then clears. */
+export type TacticsSearch = { open?: string };
+
+export function validateTacticsSearch(search: Record<string, unknown>): TacticsSearch {
+  const { open } = search;
+  return typeof open === 'string' && open !== '' ? { open } : {};
 }

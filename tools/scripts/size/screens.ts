@@ -34,6 +34,7 @@ export const SCREENS: readonly Screen[] = [
   { name: 'match: duels', lazy: [`${PAGES}/MatchPage.tsx`, `${REVIEW}/MatchDuels.tsx`] },
   { name: 'match: heat map', lazy: [`${PAGES}/MatchPage.tsx`, `${REVIEW}/MatchHeatmap.tsx`] },
   { name: 'match: utility', lazy: [`${PAGES}/MatchPage.tsx`, `${REVIEW}/MatchUtility.tsx`] },
+  { name: 'match: tactics', lazy: [`${PAGES}/MatchPage.tsx`, `${REVIEW}/MatchTactics.tsx`] },
 ];
 
 /** Files a chunk pulls in through static imports, itself included. */

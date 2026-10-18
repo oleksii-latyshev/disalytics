@@ -5,6 +5,7 @@ export type {
   MatchView,
   RoundSyncState,
   StatsTab,
+  TacticsSearch,
 } from './helpers/match-search';
 export {
   clampMatchRound,
@@ -13,4 +14,5 @@ export {
   receiveUrlRound,
   STATS_TABS,
   validateMatchSearch,
+  validateTacticsSearch,
 } from './helpers/match-search';

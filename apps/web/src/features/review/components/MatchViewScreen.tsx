@@ -16,6 +16,7 @@ const MatchStats = lazy(async () => ({ default: (await import('./MatchStats')).M
 const MatchDuels = lazy(async () => ({ default: (await import('./MatchDuels')).MatchDuels }));
 const MatchHeatmap = lazy(async () => ({ default: (await import('./MatchHeatmap')).MatchHeatmap }));
 const MatchUtility = lazy(async () => ({ default: (await import('./MatchUtility')).MatchUtility }));
+const MatchTactics = lazy(async () => ({ default: (await import('./MatchTactics')).MatchTactics }));
 
 interface Props {
   demo: ParsedDemo;
@@ -93,6 +94,9 @@ export function MatchViewScreen({
         )}
         {view === 'heatmap' && <MatchHeatmap demo={demo} demoKey={demoKey} />}
         {view === 'utility' && <MatchUtility demo={demo} onOpenOnStage={onOpenOnStage} />}
+        {view === 'tactics' && (
+          <MatchTactics demo={demo} demoKey={demoKey} initialRound={roundIndex ?? 0} />
+        )}
       </Suspense>
 
       <ReviewSheets

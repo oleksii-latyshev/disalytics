@@ -18,6 +18,7 @@ export const MATCH_VIEWS: readonly MatchViewSection[] = [
   { view: 'duels', labelPath: 'review.views.duels' },
   { view: 'heatmap', labelPath: 'review.views.heatmap' },
   { view: 'utility', labelPath: 'review.views.utility' },
+  { view: 'tactics', labelPath: 'review.views.tactics' },
 ];
 
 export type AnalysisView = Exclude<MatchView, 'stage'>;

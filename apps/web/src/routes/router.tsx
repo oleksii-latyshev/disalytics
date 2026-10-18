@@ -9,7 +9,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { validateMatchSearch } from '@/core/navigation';
+import { validateMatchSearch, validateTacticsSearch } from '@/core/navigation';
 import type { RouterContext } from './context';
 import { ShellLayout } from './ShellLayout';
 
@@ -74,6 +74,7 @@ const shellLayoutTree = shellLayoutRoute.addChildren([
   createRoute({
     getParentRoute: () => shellLayoutRoute,
     path: '/tactics',
+    validateSearch: validateTacticsSearch,
     component: lazyRouteComponent(() => import('./pages/TacticsPage'), 'TacticsPage'),
   }),
   createRoute({

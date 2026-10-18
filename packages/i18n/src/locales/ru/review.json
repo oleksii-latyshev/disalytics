@@ -59,7 +59,8 @@
     "duels": "Дуэли",
     "heatmap": "Тепловая карта",
     "utility": "Лайнапы",
-    "loading": "Открываем раздел"
+    "loading": "Открываем раздел",
+    "tactics": "Тактики"
   },
   "metrics": {
     "empty": "В этом матче не записана экономика раундов.",
@@ -500,5 +501,71 @@
     "damage": "{count, number} урона",
     "kills": "{count, plural, one {# убийство} few {# убийства} many {# убийств} other {# убийства}}",
     "throws": "{count, plural, one {# бросок} few {# броска} many {# бросков} other {# броска}}"
+  },
+  "tactics": {
+    "team": {
+      "label": "Команда"
+    },
+    "side": {
+      "label": "Сторона",
+      "all": "Все"
+    },
+    "sort": {
+      "label": "Сортировка раундов",
+      "round": "По раундам",
+      "coordination": "По слаженности"
+    },
+    "list": {
+      "label": "Раунды",
+      "empty": "Нет раундов этой команды за эту сторону."
+    },
+    "row": {
+      "label": "Раунд {round, number}, {side}, {buy}, {result}, {steps, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}, {level}",
+      "won": "Победа",
+      "lost": "Поражение",
+      "site": "Закладка {site}",
+      "planted": "Закладка",
+      "noPlant": "Без закладки",
+      "steps": "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}"
+    },
+    "coordination": {
+      "coordinated": "Слаженно",
+      "partial": "Частично",
+      "loose": "Вразнобой",
+      "hint": "Приблизительно: считается по признакам — {signals}.",
+      "none": "в раунде не было ничего заметного",
+      "signal": {
+        "utilityBurst": "гранаты брошены пачками",
+        "grouped": "игроки идут вместе",
+        "plant": "закладка бомбы",
+        "trade": "размен смертью"
+      }
+    },
+    "title": "{map} {side}, раунд {round, number}",
+    "step": {
+      "opening": "Начало",
+      "utility": "Гранаты",
+      "contact": "Контакт",
+      "defence": "Оборона",
+      "retake": "Ретейк",
+      "numbered": "{name} {index, number}"
+    },
+    "save": {
+      "action": "Сохранить как тактику",
+      "hint": "Окно, шаги, маршруты и броски заполнятся сами",
+      "saved": "Сохранено",
+      "open": "Открыть",
+      "undo": "Отменить",
+      "failed": "Не удалось сохранить тактику на этом устройстве."
+    },
+    "window": {
+      "label": "Окно раунда",
+      "hint": "Тяните края или двигайте стрелками, Shift — по пять секунд.",
+      "start": "Начало окна",
+      "end": "Конец окна",
+      "plant": "Бомба заложена на {time}",
+      "cut": "Разрез шага на {time}",
+      "range": "{from} — {to}"
+    }
   }
 }

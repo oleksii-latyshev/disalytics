@@ -15,6 +15,10 @@ export interface TacticTransportProps {
   readonly onNext: () => void;
   readonly onToggle: () => void;
   readonly onSpeed: (speed: number) => void;
+  /** How the clock reads; the round's own countdown unless the host says otherwise. */
+  readonly formatSeconds?: ((seconds: number) => string) | undefined;
+  /** Replaces the line beside the clock; `null` leaves it out. */
+  readonly hint?: string | null | undefined;
 }
 
 const ROUND_BUTTON =
@@ -30,6 +34,8 @@ export function TacticTransport({
   onNext,
   onToggle,
   onSpeed,
+  formatSeconds = formatRoundClock,
+  hint,
 }: TacticTransportProps) {
   const t = useT();
 
@@ -74,9 +80,13 @@ export function TacticTransport({
         title={t('library.tactics.board.transport.clock')}
       >
         <Clock aria-hidden="true" className="size-3.5 text-ink-dim" />
-        <span>{formatRoundClock(seconds)}</span>
+        <span>{formatSeconds(seconds)}</span>
       </span>
-      <span className="text-12 text-ink-dim">{t('library.tactics.board.transport.hint')}</span>
+      {hint !== null && (
+        <span className="text-12 text-ink-dim">
+          {hint ?? t('library.tactics.board.transport.hint')}
+        </span>
+      )}
 
       <fieldset
         aria-label={t('library.tactics.board.transport.speed')}
