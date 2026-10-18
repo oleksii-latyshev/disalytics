@@ -3,16 +3,11 @@ import { useT } from '@disa/i18n';
 import { getMapOverview, mapFloors } from '@disa/map-data';
 import { UnknownMap } from '@disa/plate';
 import { cn } from '@disa/ui';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { enemyMarksByStep } from '../helpers/tactic-enemies';
 import { planGraph } from '../helpers/tactic-plan-graph';
-import {
-  formatElapsed,
-  previewPlanId,
-  previewSteps,
-  readOnlyActions,
-} from '../helpers/tactic-preview';
-import { buildSchedule } from '../helpers/tactic-schedule';
+import { previewPlanId, previewSteps, readOnlyActions } from '../helpers/tactic-preview';
+import { buildSchedule, formatRoundClock } from '../helpers/tactic-schedule';
 import { useTacticNavGrid } from '../hooks/use-tactic-nav-grid';
 import { useClockReadout, useTacticPlayback } from '../hooks/use-tactic-playback';
 import { TacticPlanStrip } from './TacticPlanStrip';
@@ -30,6 +25,8 @@ export interface TacticPreviewProps {
   readonly detail?: ReactNode;
   /** Under the transport and the step row, across the bottom. */
   readonly footer?: ReactNode;
+  /** Seconds the tactic's own zero lies after the round's freeze end, for a window that starts later. */
+  readonly roundOffsetSeconds?: number | undefined;
   readonly className?: string | undefined;
 }
 
@@ -44,6 +41,7 @@ function PreviewBoard({
   header,
   detail,
   footer,
+  roundOffsetSeconds = 0,
   className,
   overview,
 }: TacticPreviewProps & { readonly overview: NonNullable<ReturnType<typeof getMapOverview>> }) {
@@ -57,6 +55,10 @@ function PreviewBoard({
   );
   const graph = useMemo(() => planGraph(tactic, planId), [tactic, planId]);
   const schedules = useMemo(() => new Map([[planId, schedule]]), [planId, schedule]);
+  const formatSeconds = useCallback(
+    (seconds: number) => formatRoundClock(seconds + roundOffsetSeconds),
+    [roundOffsetSeconds],
+  );
   const loadout = useMemo(() => tacticLoadout(tactic), [tactic]);
   const enemyMarks = useMemo(() => enemyMarksByStep(steps), [steps]);
 
@@ -151,6 +153,7 @@ function PreviewBoard({
           stepIndex={stepIndex}
           stepCount={steps.length}
           stepSchedule={stepSchedule}
+          formatSeconds={formatSeconds}
         />
         {detail}
       </aside>
@@ -166,12 +169,13 @@ function PreviewBoard({
           onNext={() => jump(1)}
           onToggle={playback.toggle}
           onSpeed={playback.setSpeed}
-          formatSeconds={formatElapsed}
+          formatSeconds={formatSeconds}
           hint={null}
         />
         <TacticPlanStrip
           graph={graph}
           schedules={schedules}
+          formatSeconds={formatSeconds}
           selected={{ planId, index: stepIndex }}
           onOpen={(key) => {
             stop();

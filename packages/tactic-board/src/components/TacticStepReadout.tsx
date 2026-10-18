@@ -1,7 +1,6 @@
 import { GRENADE_KINDS, type GrenadeKind, type TacticStep } from '@disa/demo-core';
 import { Text } from '@disa/i18n';
-import { formatElapsed } from '../helpers/tactic-preview';
-import type { StepSchedule } from '../helpers/tactic-schedule';
+import { formatRoundClock, type StepSchedule } from '../helpers/tactic-schedule';
 import { GrenadeTally } from './GrenadeTally';
 
 export interface TacticStepReadoutProps {
@@ -9,6 +8,7 @@ export interface TacticStepReadoutProps {
   readonly stepIndex: number;
   readonly stepCount: number;
   readonly stepSchedule: StepSchedule | undefined;
+  readonly formatSeconds?: ((seconds: number) => string) | undefined;
 }
 
 /** What the step in view says, read-only: its name, when it starts and the utility it throws. */
@@ -17,6 +17,7 @@ export function TacticStepReadout({
   stepIndex,
   stepCount,
   stepSchedule,
+  formatSeconds = formatRoundClock,
 }: TacticStepReadoutProps) {
   if (step === undefined) return null;
   const counts: Record<GrenadeKind, number> = { he: 0, flash: 0, smoke: 0, fire: 0, decoy: 0 };
@@ -38,7 +39,7 @@ export function TacticStepReadout({
           <span>
             <Text
               path="library.tactics.preview.startsAt"
-              values={{ time: formatElapsed(stepSchedule?.startSeconds ?? 0) }}
+              values={{ time: formatSeconds(stepSchedule?.startSeconds ?? 0) }}
             />
           </span>
           <span className="flex items-center gap-1.5">

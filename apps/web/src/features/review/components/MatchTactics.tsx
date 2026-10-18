@@ -105,6 +105,12 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
     );
   }
 
+  const round = demo.events.rounds[roundIndex];
+  const roundOffsetSeconds =
+    round === undefined
+      ? 0
+      : Math.max(0, (window.startTick - round.freezeTimeEndTick) / demo.header.tickRate);
+
   const handleMove = (edge: WindowEdge, tick: number) => {
     const moved = moveWindowEdge(demo, roundIndex, window, edge, tick);
     if (moved !== undefined) setEdited({ roundIndex, team, window: moved });
@@ -114,6 +120,7 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
     <div className="surface-card min-h-0 overflow-hidden rounded-float">
       <TacticPreview
         tactic={tactic}
+        roundOffsetSeconds={roundOffsetSeconds}
         header={
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 p-3 lg:px-4">

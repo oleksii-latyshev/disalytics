@@ -52,6 +52,8 @@ export interface PlanGraphViewProps {
   /** The card that is open (strip) or picked (tree). */
   readonly selected: GraphNodeKey | null;
   readonly zoom?: number | undefined;
+  /** How a card writes its start; the round clock unless the host's clock starts elsewhere. */
+  readonly formatSeconds?: ((seconds: number) => string) | undefined;
   readonly onSelect: (key: GraphNodeKey) => void;
   /** Left out, the lane label is a plain label and not a button: a read-only graph has no lane to open. */
   readonly onLane?: ((planId: string) => void) | undefined;
@@ -233,6 +235,7 @@ interface CardProps {
   readonly isSelected: boolean;
   readonly isTabStop: boolean;
   readonly seconds: number;
+  readonly formatSeconds: (seconds: number) => string;
   readonly planName: string;
   readonly register: (key: string, element: HTMLButtonElement | null) => void;
   readonly onSelect: (key: GraphNodeKey) => void;
@@ -253,6 +256,7 @@ function GraphCard({
   isSelected,
   isTabStop,
   seconds,
+  formatSeconds,
   planName,
   register,
   onSelect,
@@ -317,7 +321,7 @@ function GraphCard({
             node.step.startsAt === null ? 'text-ink-dim' : 'font-semibold text-ink',
           )}
         >
-          {formatRoundClock(seconds)}
+          {formatSeconds(seconds)}
         </span>
       </span>
       <span
@@ -340,6 +344,7 @@ export function PlanGraphView({
   schedules,
   selected,
   zoom = 1,
+  formatSeconds = formatRoundClock,
   onSelect,
   onLane,
   onMenu,
@@ -408,6 +413,7 @@ export function PlanGraphView({
                 isSelected={node.key === selectedKey}
                 isTabStop={node === tabStop}
                 seconds={schedules.get(node.planId)?.steps[node.index]?.startSeconds ?? 0}
+                formatSeconds={formatSeconds}
                 planName={plan === undefined ? '' : planTitle(plan, titles)}
                 register={register}
                 onSelect={onSelect}

@@ -13,6 +13,8 @@ export interface TacticPlanStripProps {
   /** The card of the step in view. */
   readonly selected: GraphNodeKey | null;
   readonly onOpen: (key: GraphNodeKey) => void;
+  /** How a card writes its start; the round clock when left out. */
+  readonly formatSeconds?: ((seconds: number) => string) | undefined;
   /**
    * The editing half. A strip given none of it is read-only: no tree button, no step to add, no
    * branch to start and no menu on a card.
@@ -37,6 +39,7 @@ export function TacticPlanStrip({
   schedules,
   selected,
   onOpen,
+  formatSeconds,
   onLane,
   onBranch,
   onAddStep,
@@ -95,6 +98,7 @@ export function TacticPlanStrip({
           variant="strip"
           schedules={schedules}
           selected={selected}
+          formatSeconds={formatSeconds}
           onSelect={onOpen}
           onLane={onLane}
           onMenu={canMenu ? handleMenu : undefined}
