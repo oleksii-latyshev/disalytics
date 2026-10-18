@@ -59,6 +59,8 @@ export interface TacticStepPlayer {
   readonly task?: string | undefined;
   /** Seconds the player waits at the start of the step before leaving. */
   readonly delaySeconds?: number | undefined;
+  /** Seconds the walk along the route takes; absent, the player runs at rifle speed. */
+  readonly runSeconds?: number | undefined;
   readonly yaw?: number | undefined;
   readonly label?: string | undefined;
 }
@@ -160,6 +162,7 @@ function isStepPlayer(value: unknown): value is TacticStepPlayer {
   if (!isFiniteNumber(value.slot) || !isRoute(value.route)) return false;
   if (value.task !== undefined && typeof value.task !== 'string') return false;
   if (value.delaySeconds !== undefined && !isFiniteNumber(value.delaySeconds)) return false;
+  if (value.runSeconds !== undefined && !isFiniteNumber(value.runSeconds)) return false;
   if (value.yaw !== undefined && !isFiniteNumber(value.yaw)) return false;
   return value.label === undefined || typeof value.label === 'string';
 }
