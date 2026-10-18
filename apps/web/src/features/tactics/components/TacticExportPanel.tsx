@@ -6,6 +6,7 @@ import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { saveDownload } from '../helpers/save-download';
 import { libraryDownload, tacticDownload } from '../helpers/tactic-transfer';
+import { TacticPdfButton } from './TacticPdfButton';
 
 type Scope = 'one' | 'library';
 
@@ -96,16 +97,19 @@ export function TacticExportPanel({ tactic, library }: TacticExportPanelProps) {
         })}
       </fieldset>
 
-      <Button size="lg" onClick={download} disabled={isEmpty}>
-        <Download aria-hidden="true" />
-        <Text
-          path={
-            scope === 'one'
-              ? 'library.tactics.transfer.downloadOne'
-              : 'library.tactics.transfer.downloadLibrary'
-          }
-        />
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button size="lg" onClick={download} disabled={isEmpty} className="flex-1 basis-40">
+          <Download aria-hidden="true" />
+          <Text
+            path={
+              scope === 'one'
+                ? 'library.tactics.transfer.downloadOne'
+                : 'library.tactics.transfer.downloadLibrary'
+            }
+          />
+        </Button>
+        {scope === 'one' && tactic !== null && <TacticPdfButton tactic={tactic} />}
+      </div>
       <p className="text-11 text-ink-faint leading-prose">
         <Text path="library.tactics.transfer.exportNote" />
       </p>

@@ -7,6 +7,7 @@ import {
   readTacticsFile,
   replacementFor,
   tacticDownload,
+  tacticPdfFilename,
   tacticsToWrite,
 } from '../helpers/tactic-transfer';
 
@@ -95,6 +96,15 @@ describe('downloads', () => {
       'disalytics-tactics-2026-10-06.json',
     );
     expect(JSON.parse(tacticDownload(a).content).version).toBe(2);
+  });
+
+  it('names the PDF of a tactic like its file, with another extension', () => {
+    expect(tacticPdfFilename({ ...a, title: 'Mid Rush!' })).toBe(
+      'disalytics-tactic-de_mirage-mid-rush.pdf',
+    );
+    expect(tacticPdfFilename({ ...a, title: 'Мид' })).toBe(
+      'disalytics-tactic-de_mirage-tactic.pdf',
+    );
   });
 });
 

@@ -104,9 +104,18 @@ export interface TacticDownload {
   readonly content: string;
 }
 
+function tacticFilename(tactic: Tactic, extension: 'json' | 'pdf'): string {
+  return `disalytics-tactic-${tactic.map}-${slug(tactic.title)}.${extension}`;
+}
+
+/** What a tactic's PDF is saved as, beside the JSON of the same tactic. */
+export function tacticPdfFilename(tactic: Tactic): string {
+  return tacticFilename(tactic, 'pdf');
+}
+
 export function tacticDownload(tactic: Tactic): TacticDownload {
   return {
-    filename: `disalytics-tactic-${tactic.map}-${slug(tactic.title)}.json`,
+    filename: tacticFilename(tactic, 'json'),
     content: serializeTacticFile(tactic),
   };
 }
