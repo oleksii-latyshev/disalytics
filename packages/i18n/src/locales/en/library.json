@@ -704,6 +704,7 @@
       "roster": {
         "title": "Players · step {index}",
         "stands": "stands",
+        "moves": "moves",
         "player": "Player {slot}",
         "dead": "out",
         "buy": "Buy"
@@ -873,6 +874,12 @@
         "pick": "Enemy {number}",
         "empty": "No enemies marked in this step."
       }
+    },
+    "preview": {
+      "label": "Tactic preview",
+      "steps": "Steps",
+      "startsAt": "Starts at {time}",
+      "throws": "{count, plural, =0 {No utility} one {# throw} other {# throws}}"
     }
   },
   "grid": {

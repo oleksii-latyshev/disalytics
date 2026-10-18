@@ -4,7 +4,7 @@ import { MAP_IDS } from '@disa/map-data';
 import { createNewTactic, nameOrFallback } from '@disa/tactic-board';
 import { Button } from '@disa/ui';
 import { Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { saveDownload } from '../helpers/save-download';
 import { copiedTactic } from '../helpers/tactic-copy';
 import { tacticDownload } from '../helpers/tactic-transfer';
@@ -21,11 +21,20 @@ const DEFAULT_NEW_TACTIC_MAP = 'de_mirage';
 export interface TacticsViewProps {
   readonly initialTactic?: Tactic | null | undefined;
   readonly onClearInitialTactic?: (() => void) | undefined;
+  /** A stored tactic to open in the editor as soon as the library has loaded. */
+  readonly openId?: string | undefined;
+  readonly onClearOpenId?: (() => void) | undefined;
 }
 
-export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsViewProps) {
+export function TacticsView({
+  initialTactic,
+  onClearInitialTactic,
+  openId,
+  onClearOpenId,
+}: TacticsViewProps) {
   const t = useT();
-  const { tactics, builtIns, saveTactic, deleteTactic, duplicateTactic, reload } = useTactics();
+  const { tactics, builtIns, isLoading, saveTactic, deleteTactic, duplicateTactic, reload } =
+    useTactics();
 
   const [editingTactic, setEditingTactic] = useState<Tactic | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
@@ -38,6 +47,14 @@ export function TacticsView({ initialTactic, onClearInitialTactic }: TacticsView
   const [notice, setNotice] = useState<{ message: string; isError: boolean } | null>(null);
 
   const shownTactics = useMemo(() => [...tactics, ...builtIns], [tactics, builtIns]);
+
+  useEffect(() => {
+    if (openId === undefined || isLoading) return;
+    const found = shownTactics.find((tactic) => tactic.id === openId);
+    if (found !== undefined) setEditingTactic(found);
+    onClearOpenId?.();
+  }, [openId, isLoading, shownTactics, onClearOpenId]);
+
   const builtInIds = useMemo(() => new Set(builtIns.map(({ id }) => id)), [builtIns]);
 
   const filteredTactics = useMemo(() => {

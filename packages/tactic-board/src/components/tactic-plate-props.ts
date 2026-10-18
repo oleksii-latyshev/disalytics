@@ -31,4 +31,6 @@ export interface TacticPlateProps {
   /** Set by the plate to its own repaint, so the playback loop can paint without React. */
   readonly repaintRef: RefObject<() => void>;
   readonly onPreviewReach: (isReachable: boolean | null) => void;
+  /** Draws no waypoint handles; the host also gives the plate no-op actions. */
+  readonly isReadOnly?: boolean | undefined;
 }

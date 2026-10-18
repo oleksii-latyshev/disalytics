@@ -289,9 +289,39 @@ export {
   DEFAULT_BOMB_TIMER_SECONDS,
   roundClockAtFrame,
 } from './helpers/round-clock';
+export type {
+  Coordination,
+  CoordinationLevel,
+  CoordinationSignal,
+} from './helpers/round-coordination';
 export { oppositeSide, sideAtRound } from './helpers/round-sides';
 export type { PlayerRoundStats, SideEquipment, SideSurvivors } from './helpers/round-stats';
 export { playerRoundStats, roundEquipment, roundSurvivors } from './helpers/round-stats';
+export type { RoundTactic, RoundTacticOptions, RoundTeam } from './helpers/round-tactic';
+export {
+  ROUTE_TOLERANCE_UNITS,
+  roundTeam,
+  tacticOfRound,
+  tacticRoundOfBuy,
+} from './helpers/round-tactic';
+export type { RoundStepKind } from './helpers/round-tactic-cuts';
+export {
+  MAX_ROUND_STEPS,
+  MIN_ROUND_STEP_SECONDS,
+  UTILITY_BURST_MIN_THROWS,
+  UTILITY_BURST_SECONDS,
+} from './helpers/round-tactic-cuts';
+export type { RoundWindow, WindowEdge } from './helpers/round-tactic-window';
+export {
+  clampRoundWindow,
+  defaultRoundWindow,
+  MIN_WINDOW_SECONDS,
+  moveWindowEdge,
+  POST_PLANT_WINDOW_SECONDS,
+  roundPlant,
+  roundWindowBounds,
+} from './helpers/round-tactic-window';
+export { simplifyRoute } from './helpers/route-simplify';
 export type { MatchScore, OpeningSide, SideScore } from './helpers/score';
 export { matchScore, openingSideBySlot, roundWinners, sideScoreAtFrame } from './helpers/score';
 export type { PlayerTotals, TeamScoreboard } from './helpers/scoreboard';

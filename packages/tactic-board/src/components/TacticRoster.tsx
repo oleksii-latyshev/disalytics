@@ -6,10 +6,10 @@ import {
   type TacticStep,
   UTILITY_NAMES,
 } from '@disa/demo-core';
-import { useT } from '@disa/i18n';
+import { type Translate, useT } from '@disa/i18n';
 import { cn } from '@disa/ui';
 import { slotVar } from '../helpers/tactic-colors';
-import type { StepSchedule } from '../helpers/tactic-schedule';
+import type { PlayerLeg, StepSchedule } from '../helpers/tactic-schedule';
 import { stepGrenadeCounts } from '../helpers/tactic-step-counts';
 import { GrenadeTally } from './GrenadeTally';
 
@@ -61,6 +61,15 @@ function RowLoadout({
       )}
       {hasGrenades && <GrenadeTally counts={counts} />}
     </>
+  );
+}
+
+/** What the row says under the name: out, the written task, or whether the player walks. */
+function legStatus(t: Translate, leg: PlayerLeg, task: string | undefined): string {
+  if (leg.isDead) return t('library.tactics.board.roster.dead');
+  if (task !== undefined && task !== '') return task;
+  return t(
+    leg.lengthPx > 0 ? 'library.tactics.board.roster.moves' : 'library.tactics.board.roster.stands',
   );
 }
 
@@ -131,9 +140,7 @@ export function TacticRoster({
                       : t('library.tactics.board.roster.player', { slot: leg.slot + 1 })}
                   </span>
                   <span className="line-clamp-2 text-12 text-ink-dim leading-dense">
-                    {leg.isDead
-                      ? t('library.tactics.board.roster.dead')
-                      : task || t('library.tactics.board.roster.stands')}
+                    {legStatus(t, leg, task)}
                   </span>
                 </span>
                 <RowLoadout

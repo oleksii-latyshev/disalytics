@@ -59,7 +59,8 @@
     "duels": "Duels",
     "heatmap": "Heat map",
     "utility": "Lineups",
-    "loading": "Opening the view"
+    "loading": "Opening the view",
+    "tactics": "Tactics"
   },
   "metrics": {
     "empty": "No round economy was recorded for this match.",
@@ -500,5 +501,71 @@
     "damage": "{count, number} damage",
     "kills": "{count, plural, one {# kill} other {# kills}}",
     "throws": "{count, plural, one {# throw} other {# throws}}"
+  },
+  "tactics": {
+    "team": {
+      "label": "Team"
+    },
+    "side": {
+      "label": "Side",
+      "all": "All"
+    },
+    "sort": {
+      "label": "Sort rounds",
+      "round": "By round",
+      "coordination": "By coordination"
+    },
+    "list": {
+      "label": "Rounds",
+      "empty": "No rounds for this team on this side."
+    },
+    "row": {
+      "label": "Round {round, number}, {side}, {buy}, {result}, {steps, plural, one {# step} other {# steps}}, {level}",
+      "won": "Won",
+      "lost": "Lost",
+      "site": "Plant {site}",
+      "planted": "Planted",
+      "noPlant": "No plant",
+      "steps": "{count, plural, one {# step} other {# steps}}"
+    },
+    "coordination": {
+      "coordinated": "Coordinated",
+      "partial": "Partial",
+      "loose": "Loose",
+      "hint": "Approximate: computed from {signals}.",
+      "none": "nothing in the round that stood out",
+      "signal": {
+        "utilityBurst": "utility released in bursts",
+        "grouped": "players moving together",
+        "plant": "a plant",
+        "trade": "a traded death"
+      }
+    },
+    "title": "{map} {side}, round {round, number}",
+    "step": {
+      "opening": "Opening",
+      "utility": "Utility",
+      "contact": "Contact",
+      "defence": "Defence",
+      "retake": "Retake",
+      "numbered": "{name} {index, number}"
+    },
+    "save": {
+      "action": "Save as tactic",
+      "hint": "Window, steps, routes and throws are filled in",
+      "saved": "Saved",
+      "open": "Open",
+      "undo": "Undo",
+      "failed": "Could not save the tactic on this device."
+    },
+    "window": {
+      "label": "Window of the round",
+      "hint": "Drag the edges or use the arrow keys, Shift for five seconds.",
+      "start": "Window start",
+      "end": "Window end",
+      "plant": "Bomb planted at {time}",
+      "cut": "Step cut at {time}",
+      "range": "{from} to {to}"
+    }
   }
 }
