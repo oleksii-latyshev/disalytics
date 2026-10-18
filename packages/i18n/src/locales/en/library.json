@@ -360,13 +360,16 @@
         "imageProcessingFailed": "This image could not be converted to WebP",
         "imageLinkPending": "Add the typed photo link before saving",
         "saveFailed": "This lineup could not be saved on this device",
-        "authorNameRequired": "Add an author name or clear the profile link",
-        "authorUrlInvalid": "Use an https link"
+        "authorNameRequired": "Add an author name or clear the author links",
+        "authorUrlInvalid": "Use an https link",
+        "authorTelegramInvalid": "Use @name or a t.me link"
       },
       "tags": "Tags",
       "authorName": "Author name",
       "authorNamePlaceholder": "e.g. Ann",
-      "authorUrl": "Profile link (Steam)"
+      "authorUrl": "Profile link (Steam)",
+      "authorTelegram": "Telegram channel",
+      "authorTelegramPlaceholder": "@channel or https://t.me/channel"
     },
     "tagFilter": "Tag",
     "allTags": "All",
@@ -437,7 +440,9 @@
     "chip": {
       "side": "for {side}",
       "bothSides": "both sides",
-      "author": "author: {name}"
+      "author": "author: {name}",
+      "telegram": "Telegram",
+      "telegramLabel": "Telegram channel of {name}"
     },
     "copy": "Copy",
     "editShort": "Edit",

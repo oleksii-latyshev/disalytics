@@ -55,6 +55,7 @@ export const AuthHandlers = HttpApiBuilder.group(AdminApi, 'auth', (handlers) =>
           token: payload.token,
           name: payload.name,
           steamUrl: payload.steamUrl,
+          telegramUrl: payload.telegramUrl,
           label: deviceLabel(request.headers['user-agent']),
           now: config.now(),
         });
@@ -80,8 +81,14 @@ export const AuthHandlers = HttpApiBuilder.group(AdminApi, 'auth', (handlers) =>
     ),
 );
 
-function whoAmI({ id, name, role, steamUrl }: ActorShape): WhoAmI {
-  return steamUrl === null ? { id, name, role } : { id, name, role, steamUrl };
+function whoAmI({ id, name, role, steamUrl, telegramUrl }: ActorShape): WhoAmI {
+  return {
+    id,
+    name,
+    role,
+    ...(steamUrl === null ? {} : { steamUrl }),
+    ...(telegramUrl === null ? {} : { telegramUrl }),
+  };
 }
 
 export const MeHandlers = HttpApiBuilder.group(AdminApi, 'me', (handlers) =>
@@ -96,8 +103,12 @@ export const MeHandlers = HttpApiBuilder.group(AdminApi, 'me', (handlers) =>
         const actor = yield* Actor;
         const auth = yield* AdminAuth;
         // The local dev identity has no row to write to.
-        if (actor.sessionId !== null) yield* auth.setSteamUrl(actor.id, payload.steamUrl);
-        return whoAmI({ ...actor, steamUrl: payload.steamUrl });
+        if (actor.sessionId !== null) yield* auth.setLinks(actor.id, payload);
+        return whoAmI({
+          ...actor,
+          steamUrl: payload.steamUrl === undefined ? actor.steamUrl : payload.steamUrl,
+          telegramUrl: payload.telegramUrl === undefined ? actor.telegramUrl : payload.telegramUrl,
+        });
       }).pipe(Effect.catchTag('StorageError', Effect.die)),
     ),
 );

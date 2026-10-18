@@ -49,6 +49,19 @@ export function ContributorsSection({
                       {person.name}
                     </a>
                   )}
+                  {person.telegramUrl === undefined ? null : (
+                    <>
+                      {' · '}
+                      <a
+                        href={person.telegramUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-ink-dim underline-offset-4 hover:underline"
+                      >
+                        <Text path="admin.telegram.link" />
+                      </a>
+                    </>
+                  )}
                 </span>
                 <span className="numeric text-13 text-ink">
                   <Text path="admin.contributors.total" values={{ count: person.total }} />

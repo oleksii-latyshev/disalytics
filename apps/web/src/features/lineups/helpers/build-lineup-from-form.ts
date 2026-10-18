@@ -1,4 +1,4 @@
-import type { Lineup, LineupAuthor } from '@disa/demo-core';
+import { type Lineup, type LineupAuthor, parseTelegramLink } from '@disa/demo-core';
 import type { LineupFormValues } from './lineup-form-model';
 
 interface ParsedCoordinates {
@@ -62,7 +62,10 @@ function authorOf(values: LineupFormValues): { readonly author?: LineupAuthor } 
   const name = values.authorName.trim();
   if (!name) return {};
   const url = values.authorUrl.trim();
-  return { author: url ? { name, url } : { name } };
+  const telegram = parseTelegramLink(values.authorTelegram);
+  return {
+    author: { name, ...(url ? { url } : {}), ...(telegram === null ? {} : { telegram }) },
+  };
 }
 
 function optionalLineupFields(

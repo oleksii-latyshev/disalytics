@@ -414,6 +414,17 @@ describe('lineup tags and author', () => {
     expect(
       isLineup(tagged({ author: { name: 'Ann', url: 'https://steamcommunity.com/id/ann' } })),
     ).toBe(true);
+    expect(
+      isLineup(
+        tagged({
+          author: {
+            name: 'Ann',
+            url: 'https://steamcommunity.com/id/ann',
+            telegram: 'https://t.me/ann_cs',
+          },
+        }),
+      ),
+    ).toBe(true);
   });
 
   it('rejects unknown, duplicate and exclusive tags', () => {
@@ -430,6 +441,15 @@ describe('lineup tags and author', () => {
     expect(isLineup(tagged({ author: { name: 'Ann', url: 'javascript:alert(1)' } }))).toBe(false);
     expect(isLineup(tagged({ author: { name: 'Ann', url: 'https://' } }))).toBe(false);
     expect(isLineup(tagged({ author: { name: 'Ann', url: 42 } }))).toBe(false);
+    for (const telegram of [
+      'https://t.me/ab',
+      'http://t.me/ann_cs',
+      '@ann_cs',
+      'https://x.me/ann_cs',
+      42,
+    ]) {
+      expect(isLineup(tagged({ author: { name: 'Ann', telegram } }))).toBe(false);
+    }
   });
 
   it('round-trips through a file and still reads files without them', () => {

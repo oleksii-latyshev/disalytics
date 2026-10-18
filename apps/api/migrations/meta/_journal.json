@@ -50,6 +50,13 @@
       "when": 1791609629628,
       "tag": "0007_tactics",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792300312706,
+      "tag": "0008_admin_telegram",
+      "breakpoints": true
     }
   ]
 }

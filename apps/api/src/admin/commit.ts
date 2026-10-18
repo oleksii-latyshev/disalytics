@@ -20,8 +20,12 @@ import {
 } from './helpers/settle-photos';
 import { PhotoLinks } from './photo-links';
 
-function authorOf({ name, steamUrl }: ActorShape): LineupAuthor {
-  return steamUrl === null ? { name } : { name, url: steamUrl };
+function authorOf({ name, steamUrl, telegramUrl }: ActorShape): LineupAuthor {
+  return {
+    name,
+    ...(steamUrl === null ? {} : { url: steamUrl }),
+    ...(telegramUrl === null ? {} : { telegram: telegramUrl }),
+  };
 }
 
 /** A lineup the file already credits keeps that credit; one without gets the committing person. */

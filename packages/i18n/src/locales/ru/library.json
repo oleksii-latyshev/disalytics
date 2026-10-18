@@ -360,13 +360,16 @@
         "imageProcessingFailed": "Не удалось преобразовать изображение в WebP",
         "imageLinkPending": "Добавьте введённую ссылку на фото перед сохранением",
         "saveFailed": "Не удалось сохранить лайнап на этом устройстве",
-        "authorNameRequired": "Укажите имя автора или очистите ссылку на профиль",
-        "authorUrlInvalid": "Нужна ссылка https"
+        "authorNameRequired": "Укажите имя автора или очистите ссылки автора",
+        "authorUrlInvalid": "Нужна ссылка https",
+        "authorTelegramInvalid": "Нужен @name или ссылка t.me"
       },
       "tags": "Теги",
       "authorName": "Имя автора",
       "authorNamePlaceholder": "например, Аня",
-      "authorUrl": "Ссылка на профиль (Steam)"
+      "authorUrl": "Ссылка на профиль (Steam)",
+      "authorTelegram": "Telegram-канал",
+      "authorTelegramPlaceholder": "@channel или https://t.me/channel"
     },
     "tagFilter": "Тег",
     "allTags": "Все",
@@ -437,7 +440,9 @@
     "chip": {
       "side": "за {side}",
       "bothSides": "за обе стороны",
-      "author": "автор: {name}"
+      "author": "автор: {name}",
+      "telegram": "Telegram",
+      "telegramLabel": "Telegram-канал: {name}"
     },
     "copy": "Копировать",
     "editShort": "Изменить",

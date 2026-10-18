@@ -34,9 +34,17 @@ function withText(lineup: Lineup, key: 'targetCallout' | 'notes', text: string):
 }
 
 function withAuthor(lineup: Lineup, name: string, url: string): Lineup {
-  const { author: _previous, ...rest } = lineup;
+  const { author: previous, ...rest } = lineup;
   if (name.trim() === '') return rest;
-  return { ...rest, author: isHttpsUrl(url) ? { name, url } : { name } };
+  const telegram = previous?.telegram;
+  return {
+    ...rest,
+    author: {
+      name,
+      ...(isHttpsUrl(url) ? { url } : {}),
+      ...(telegram === undefined ? {} : { telegram }),
+    },
+  };
 }
 
 function withTags(lineup: Lineup, tags: readonly LineupTag[]): Lineup {

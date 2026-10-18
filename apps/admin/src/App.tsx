@@ -27,13 +27,6 @@ import type { Section } from './helpers/route';
 import { mapResource, useResource } from './hooks/use-resource';
 import { useRoute } from './hooks/use-route';
 
-/** The person with the Steam link they last saved, when they saved one since signing in. */
-function withSteam(me: WhoAmI, steam: string | null | undefined): WhoAmI {
-  if (steam === undefined) return me;
-  const { steamUrl: _previous, ...rest } = me;
-  return steam === null ? rest : { ...rest, steamUrl: steam };
-}
-
 /**
  * Who is here decides the screen: an invite link being opened, a device with no session, or a
  * signed-in person and the admin itself.
@@ -44,11 +37,11 @@ export function App() {
     call((client) => client.me.whoami()),
   );
 
-  const [steam, setSteam] = useState<string | null | undefined>(undefined);
+  const [saved, setSaved] = useState<WhoAmI | undefined>(undefined);
   const [isAccountOpen, setAccountOpen] = useState(false);
-  // The Steam link is edited in the account menu without reloading who is signed in, so the page
+  // The links are edited in the account menu without reloading who is signed in, so the page
   // keeps the newest answer beside `me`.
-  const signedIn = me.status === 'ready' ? withSteam(me.data, steam) : null;
+  const signedIn = me.status !== 'ready' ? null : saved?.id === me.data.id ? saved : me.data;
 
   const signOut = () => {
     // Whatever the answer, the next whoami tells the truth about this device.
@@ -74,7 +67,7 @@ export function App() {
         onSignOut={signOut}
         isAccountOpen={isAccountOpen}
         onAccountOpenChange={setAccountOpen}
-        onSteamSaved={setSteam}
+        onProfileSaved={setSaved}
       />
       {me.status === 'error' ? (
         me.failure.key === 'admin.error.unauthorized' ? (

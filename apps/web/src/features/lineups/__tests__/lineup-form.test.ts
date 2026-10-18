@@ -93,6 +93,7 @@ describe('lineup form helpers', () => {
       tags: [],
       authorName: '',
       authorUrl: '',
+      authorTelegram: '',
     };
 
     const lineup = buildLineupFromForm(values, 'custom-123', 1000);
@@ -157,6 +158,7 @@ describe('lineup form helpers', () => {
       tags: [],
       authorName: '',
       authorUrl: '',
+      authorTelegram: '',
     };
 
     const lineup = buildLineupFromForm(values);
@@ -210,6 +212,7 @@ describe('lineup form helpers', () => {
       tags: [],
       authorName: '',
       authorUrl: '',
+      authorTelegram: '',
     };
 
     const lineup = buildLineupFromForm(values);
@@ -284,6 +287,23 @@ describe('lineup form helpers', () => {
     expect(lineup?.author).toEqual({ name: 'Ann', url: 'https://steamcommunity.com/id/ann' });
   });
 
+  it('keeps a Telegram channel through the form, normalised', () => {
+    const values = initFormValues({
+      map: 'de_mirage',
+      title: 'Window',
+      origin: { x: 1, y: 2, z: 0 },
+      landing: { x: 3, y: 4, z: 0 },
+      author: { name: 'Ann', telegram: 'https://t.me/ann_cs' },
+    });
+    expect(values.authorTelegram).toBe('https://t.me/ann_cs');
+    expect(buildLineupFromForm(values, 'x')?.author).toEqual({
+      name: 'Ann',
+      telegram: 'https://t.me/ann_cs',
+    });
+    const typed = { ...values, authorTelegram: ' @Ann_CS ' };
+    expect(buildLineupFromForm(typed, 'x')?.author?.telegram).toBe('https://t.me/Ann_CS');
+  });
+
   it('leaves tags and author off when empty, and trims a name-only author', () => {
     const values = { ...initFormValues(null), title: 'T', authorName: ' Ann ' };
     const lineup = buildLineupFromForm(values, 'x');
@@ -305,6 +325,13 @@ describe('lineup form helpers', () => {
     );
     expect(basicValidationKey({ ...ok, authorName: 'Ann', authorUrl: 'http://a.example' })).toBe(
       'library.lineups.form.validation.authorUrlInvalid',
+    );
+    expect(basicValidationKey({ ...ok, authorName: 'Ann', authorTelegram: '@ann_cs' })).toBeNull();
+    expect(basicValidationKey({ ...ok, authorTelegram: '@ann_cs' })).toBe(
+      'library.lineups.form.validation.authorNameRequired',
+    );
+    expect(basicValidationKey({ ...ok, authorName: 'Ann', authorTelegram: '@ann' })).toBe(
+      'library.lineups.form.validation.authorTelegramInvalid',
     );
   });
 });

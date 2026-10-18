@@ -8,21 +8,31 @@ import { Card, Pill } from './flow/Parts';
 import { Notice } from './Notice';
 import { Muted } from './Section';
 import { isSteamInputValid, SteamField } from './SteamField';
+import { isTelegramInputValid, TelegramField, telegramLinkOf } from './TelegramField';
 
 function failureOf(error: unknown): Failure {
   return isFailure(error) ? error : { key: 'admin.error.network', detail: undefined };
 }
 
-/** A device invite sends the token alone; a new person's carries the name and the Steam link, if any. */
-function redeemPayload(token: string, name: string, steam: string) {
+/** A device invite sends the token alone; a new person's carries the name and the Steam and Telegram links, if any. */
+function redeemPayload(token: string, name: string, steam: string, telegram: string) {
   const trimmed = name.trim();
   const steamUrl = steam.trim();
+  const telegramUrl = telegramLinkOf(telegram);
   if (trimmed === '') return { token };
-  return steamUrl === '' ? { token, name: trimmed } : { token, name: trimmed, steamUrl };
+  return {
+    token,
+    name: trimmed,
+    ...(steamUrl === '' ? {} : { steamUrl }),
+    ...(telegramUrl === null ? {} : { telegramUrl }),
+  };
 }
 
-function canSubmit(info: InviteInfo, name: string, steam: string): boolean {
-  return info.name !== undefined || (name.trim() !== '' && isSteamInputValid(steam));
+function canSubmit(info: InviteInfo, name: string, steam: string, telegram: string): boolean {
+  return (
+    info.name !== undefined ||
+    (name.trim() !== '' && isSteamInputValid(steam) && isTelegramInputValid(telegram))
+  );
 }
 
 const EXAMPLES = ['admin.invite.exampleA', 'admin.invite.exampleB'] as const;
@@ -67,6 +77,7 @@ export function InviteScreen({
   );
   const [name, setName] = useState('');
   const [steam, setSteam] = useState('');
+  const [telegram, setTelegram] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
 
@@ -76,7 +87,7 @@ export function InviteScreen({
     setFailure(null);
     try {
       const me = await call((client) =>
-        client.auth.redeem({ payload: redeemPayload(token, name, steam) }),
+        client.auth.redeem({ payload: redeemPayload(token, name, steam, telegram) }),
       );
       onSignedIn(me);
     } catch (error) {
@@ -169,6 +180,7 @@ export function InviteScreen({
                       </fieldset>
                     </div>
                     <SteamField value={steam} onChange={setSteam} />
+                    <TelegramField value={telegram} onChange={setTelegram} />
                   </>
                 ) : (
                   <div className="flex flex-col items-start gap-2.5">
@@ -184,7 +196,7 @@ export function InviteScreen({
                 <Button
                   type="submit"
                   size="lg"
-                  disabled={busy || !canSubmit(info.data, name, steam)}
+                  disabled={busy || !canSubmit(info.data, name, steam, telegram)}
                 >
                   <Text path={busy ? 'admin.invite.signingIn' : 'admin.invite.submit'} />
                 </Button>

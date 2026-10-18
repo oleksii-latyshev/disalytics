@@ -258,12 +258,23 @@ describe.skipIf(!hasSqlite)('the write guard and a body-less POST', () => {
 });
 
 const STEAM = 'https://steamcommunity.com/id/alex-cs';
+const TELEGRAM = 'https://t.me/alex_cs';
 
 describe.skipIf(!hasSqlite)('steam links and contributions', () => {
-  async function redeem(target: ReturnType<typeof env>, name: string, steamUrl?: string) {
+  async function redeem(
+    target: ReturnType<typeof env>,
+    name: string,
+    steamUrl?: string,
+    telegramUrl?: string,
+  ) {
     const response = await api(target, '/api/auth/redeem', {
       host: HOST,
-      body: { token: await invite(target, 'editor'), name, ...(steamUrl ? { steamUrl } : {}) },
+      body: {
+        token: await invite(target, 'editor'),
+        name,
+        ...(steamUrl ? { steamUrl } : {}),
+        ...(telegramUrl ? { telegramUrl } : {}),
+      },
     });
     return { response, cookie: sessionOf(response) };
   }
@@ -300,6 +311,62 @@ describe.skipIf(!hasSqlite)('steam links and contributions', () => {
     );
     expect((await patch('https://steamcommunity.com/id/x')).status).toBe(400);
     expect((await patch('http://steamcommunity.com/id/xyz')).status).toBe(400);
+  });
+
+  it('keeps a Telegram channel from the invite form and rejects other spellings', async () => {
+    const target = env();
+    for (const telegramUrl of ['@alex_cs', 'http://t.me/alex_cs', 'https://t.me/ab']) {
+      const bad = await api(target, '/api/auth/redeem', {
+        host: HOST,
+        body: { token: await invite(target), name: 'Eve', telegramUrl },
+      });
+      expect(bad.status).toBe(400);
+    }
+    const { response, cookie } = await redeem(target, 'Alex', STEAM, TELEGRAM);
+    expect(await response.json()).toMatchObject({ steamUrl: STEAM, telegramUrl: TELEGRAM });
+    const me = await api(target, '/api/whoami', asDevice(cookie));
+    expect(await me.json()).toMatchObject({ steamUrl: STEAM, telegramUrl: TELEGRAM });
+  });
+
+  it('sets and clears the Telegram channel without touching the Steam link', async () => {
+    const target = env();
+    const { cookie } = await redeem(target, 'Sam', STEAM);
+    const patch = (body: Record<string, string | null>) =>
+      api(target, '/api/me', { method: 'PATCH', body, ...asDevice(cookie) });
+
+    expect(await (await patch({ telegramUrl: TELEGRAM })).json()).toMatchObject({
+      steamUrl: STEAM,
+      telegramUrl: TELEGRAM,
+    });
+    expect(await (await api(target, '/api/whoami', asDevice(cookie))).json()).toMatchObject({
+      steamUrl: STEAM,
+      telegramUrl: TELEGRAM,
+    });
+    expect(await (await patch({ steamUrl: null })).json()).toMatchObject({
+      telegramUrl: TELEGRAM,
+    });
+    expect(await (await patch({ telegramUrl: null })).json()).not.toHaveProperty('telegramUrl');
+    expect(await (await api(target, '/api/whoami', asDevice(cookie))).json()).not.toHaveProperty(
+      'telegramUrl',
+    );
+    expect((await patch({ telegramUrl: 't.me/alex_cs' })).status).toBe(400);
+    expect((await patch({})).status).toBe(200);
+  });
+
+  it('credits the committing person with name, Steam and Telegram links', async () => {
+    const target = env();
+    const { cookie } = await redeem(target, 'Alex', STEAM, TELEGRAM);
+    const commit = await api(target, '/api/commit', {
+      body: { map: 'de_mirage', decisions: [{ action: 'add', lineup: lineup() }], images: {} },
+      ...asDevice(cookie),
+    });
+    expect(commit.status).toBe(200);
+    const stored = (await (
+      await api(target, '/api/lineups/de_mirage', asDevice(cookie))
+    ).json()) as {
+      lineups: { author?: unknown }[];
+    };
+    expect(stored.lineups[0]?.author).toEqual({ name: 'Alex', url: STEAM, telegram: TELEGRAM });
   });
 
   it('credits the committing person with name and link', async () => {
