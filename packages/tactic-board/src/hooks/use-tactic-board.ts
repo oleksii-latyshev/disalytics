@@ -5,7 +5,7 @@ import {
   type TacticPoint,
   tacticLoadout,
 } from '@disa/demo-core';
-import { type MapOverview, mapSpawns } from '@disa/map-data';
+import { getMapOverview, type MapOverview, mapSpawns } from '@disa/map-data';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { selectableLineups, throwFromLineup } from '../helpers/lineup-throw';
 import type { TacticTool } from '../helpers/tactic-editor-state';
@@ -23,6 +23,7 @@ import { useClockReadout, useTacticPlayback } from './use-tactic-playback';
 
 export interface UseTacticBoardOptions {
   readonly initialTactic: Tactic;
+  /** The opening map's overview, kept only while the edited map has none of its own. */
   readonly overview: MapOverview;
   readonly onSave?: ((tactic: Tactic) => void | Promise<void>) | undefined;
   /** The lineups of a map that a throw can be taken from; a hook, so it follows the map being edited. */
@@ -32,13 +33,16 @@ export interface UseTacticBoardOptions {
 /** The editor, the schedule it implies and the playback over it, wired to what the board draws. */
 export function useTacticBoard({
   initialTactic,
-  overview,
+  overview: openingOverview,
   onSave,
   useLineups,
 }: UseTacticBoardOptions) {
   const editor = useTacticEditor({ initialTactic, onSave });
   const { tactic, planId, stepIndex, steps, step, selectedSlot, selectedEnemyId, tool, throwKind } =
     editor;
+
+  // A map change keeps the board mounted, so the overview follows the tactic, not the opening props.
+  const overview = getMapOverview(tactic.map) ?? openingOverview;
 
   const grid = useTacticNavGrid(tactic.map);
   const schedule = useMemo(
@@ -187,6 +191,7 @@ export function useTacticBoard({
 
   return {
     editor,
+    overview,
     steps,
     step,
     grid,
