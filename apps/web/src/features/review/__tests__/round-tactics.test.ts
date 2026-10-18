@@ -1,42 +1,76 @@
 import { asTick } from '@disa/demo-core';
 import { describe, expect, it } from 'vitest';
-import { type RoundEntry, roundTacticId, visibleEntries } from '../helpers/round-tactics';
+import {
+  ALL_ROUNDS,
+  edgeRound,
+  isFiltering,
+  matchesFilter,
+  type RoundEntry,
+  type RoundFilter,
+  roundTacticId,
+  stepRound,
+} from '../helpers/round-tactics';
 import { formatClock, windowFraction } from '../helpers/window-strip';
 
-function entry(
-  number: number,
-  side: 'CT' | 'T',
-  level: 'coordinated' | 'partial' | 'loose',
-): RoundEntry {
+function entry(number: number, side: 'CT' | 'T', didWin: boolean, isPlanted: boolean): RoundEntry {
   return {
     roundIndex: number - 1,
     number,
     side,
     buy: 'full',
-    didWin: true,
-    isPlanted: false,
+    didWin,
+    winner: didWin ? side : side === 'T' ? 'CT' : 'T',
+    startsSegment: false,
+    isPlanted,
     site: null,
     stepCount: 2,
-    coordination: { level, signals: [] },
+    coordination: { level: 'loose', signals: [] },
   };
 }
 
 const entries = [
-  entry(1, 'T', 'loose'),
-  entry(2, 'CT', 'coordinated'),
-  entry(3, 'T', 'coordinated'),
+  entry(1, 'T', true, true),
+  entry(2, 'CT', true, false),
+  entry(3, 'T', false, false),
+  entry(4, 'CT', false, true),
 ];
 
-describe('visibleEntries', () => {
-  it('filters by the side held that round', () => {
-    expect(visibleEntries(entries, 'T', 'round').map((each) => each.number)).toEqual([1, 3]);
-    expect(visibleEntries(entries, 'all', 'round')).toHaveLength(3);
+const numbers = (list: readonly (RoundEntry | undefined)[]) => list.map((each) => each?.number);
+
+describe('matchesFilter', () => {
+  it('matches everything by default', () => {
+    expect(entries.every((each) => matchesFilter(each, ALL_ROUNDS))).toBe(true);
+    expect(isFiltering(ALL_ROUNDS)).toBe(false);
   });
 
-  it('sorts by coordination, round order within a level', () => {
-    expect(visibleEntries(entries, 'all', 'coordination').map((each) => each.number)).toEqual([
-      2, 3, 1,
-    ]);
+  it('narrows by the side held, the result and the plant', () => {
+    const only = (filter: Partial<RoundFilter>) =>
+      numbers(entries.filter((each) => matchesFilter(each, { ...ALL_ROUNDS, ...filter })));
+    expect(only({ ct: false })).toEqual([1, 3]);
+    expect(only({ lost: false })).toEqual([1, 2]);
+    expect(only({ isPlantedOnly: true })).toEqual([1, 4]);
+    expect(only({ t: false, isPlantedOnly: true })).toEqual([4]);
+    expect(isFiltering({ ...ALL_ROUNDS, won: false })).toBe(true);
+  });
+});
+
+describe('stepRound', () => {
+  const planted = { ...ALL_ROUNDS, isPlantedOnly: true };
+
+  it('walks past rounds that do not match', () => {
+    expect(stepRound(entries, planted, 0, 1)?.number).toBe(4);
+    expect(stepRound(entries, planted, 3, -1)?.number).toBe(1);
+  });
+
+  it('stops at the end of the strip', () => {
+    expect(stepRound(entries, planted, 3, 1)).toBeUndefined();
+    expect(stepRound(entries, planted, 0, -1)).toBeUndefined();
+  });
+
+  it('finds the first and last matching round', () => {
+    expect(edgeRound(entries, { ...ALL_ROUNDS, t: false }, 'first')?.number).toBe(2);
+    expect(edgeRound(entries, { ...ALL_ROUNDS, t: false }, 'last')?.number).toBe(4);
+    expect(edgeRound(entries, { ...ALL_ROUNDS, t: false, ct: false }, 'first')).toBeUndefined();
   });
 });
 

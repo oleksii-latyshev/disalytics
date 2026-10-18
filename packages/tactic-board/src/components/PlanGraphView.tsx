@@ -53,8 +53,10 @@ export interface PlanGraphViewProps {
   readonly selected: GraphNodeKey | null;
   readonly zoom?: number | undefined;
   readonly onSelect: (key: GraphNodeKey) => void;
-  readonly onLane: (planId: string) => void;
-  readonly onMenu: (key: GraphNodeKey, event: MouseEvent<HTMLElement>) => void;
+  /** Left out, the lane label is a plain label and not a button: a read-only graph has no lane to open. */
+  readonly onLane?: ((planId: string) => void) | undefined;
+  /** Left out, a card has no context menu. */
+  readonly onMenu?: ((key: GraphNodeKey, event: MouseEvent<HTMLElement>) => void) | undefined;
   /** Strip only: a branch after a step, and a step at the end of a plan. */
   readonly onBranch?: ((key: GraphNodeKey) => void) | undefined;
   readonly onAddStep?: ((planId: string) => void) | undefined;
@@ -119,7 +121,7 @@ function LaneRow({
   readonly lane: GraphLane;
   readonly metrics: GraphMetrics;
   readonly titles: Titles;
-  readonly onLane: (planId: string) => void;
+  readonly onLane: ((planId: string) => void) | undefined;
   readonly onAddStep: ((planId: string) => void) | undefined;
 }) {
   const t = useT();
@@ -127,38 +129,50 @@ function LaneRow({
   const out = deadSlotNumbers(lane.plan);
   const name = planTitle(lane.plan, titles);
   const meta = laneMeta(t, lane, out);
+  const laneClass = cn(
+    'absolute flex items-center gap-2 rounded-card border px-2.5 text-left transition-colors',
+    lane.isCurrent ? 'border-line-strong bg-surface-2' : 'border-transparent',
+    onLane !== undefined && !lane.isCurrent && 'hover:bg-hover',
+    !lane.isOnPath && 'opacity-70',
+  );
+  const laneStyle = {
+    left: metrics.padding,
+    top: origin.y,
+    width: metrics.labelWidth - 12,
+    height: metrics.nodeHeight,
+  };
+  const laneBody = (
+    <>
+      {lane.isRoot ? (
+        <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-ink" />
+      ) : (
+        <GitBranch aria-hidden="true" className="size-3.5 shrink-0 text-ink-dim" />
+      )}
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="line-clamp-2 break-words font-semibold text-12 leading-dense">{name}</span>
+        <span className="truncate font-mono text-11 text-ink-faint">{meta}</span>
+      </span>
+    </>
+  );
   return (
     <>
-      <button
-        type="button"
-        aria-pressed={lane.isCurrent}
-        aria-label={t('library.tactics.board.strip.lane', { plan: name })}
-        title={name}
-        onClick={() => onLane(lane.planId)}
-        style={{
-          left: metrics.padding,
-          top: origin.y,
-          width: metrics.labelWidth - 12,
-          height: metrics.nodeHeight,
-        }}
-        className={cn(
-          'absolute flex items-center gap-2 rounded-card border px-2.5 text-left transition-colors',
-          lane.isCurrent ? 'border-line-strong bg-surface-2' : 'border-transparent hover:bg-hover',
-          !lane.isOnPath && 'opacity-70',
-        )}
-      >
-        {lane.isRoot ? (
-          <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-ink" />
-        ) : (
-          <GitBranch aria-hidden="true" className="size-3.5 shrink-0 text-ink-dim" />
-        )}
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="line-clamp-2 break-words font-semibold text-12 leading-dense">
-            {name}
-          </span>
-          <span className="truncate font-mono text-11 text-ink-faint">{meta}</span>
-        </span>
-      </button>
+      {onLane === undefined ? (
+        <div title={name} style={laneStyle} className={laneClass}>
+          {laneBody}
+        </div>
+      ) : (
+        <button
+          type="button"
+          aria-pressed={lane.isCurrent}
+          aria-label={t('library.tactics.board.strip.lane', { plan: name })}
+          title={name}
+          onClick={() => onLane(lane.planId)}
+          style={laneStyle}
+          className={laneClass}
+        >
+          {laneBody}
+        </button>
+      )}
       {onAddStep !== undefined && (
         <button
           type="button"
@@ -223,7 +237,7 @@ interface CardProps {
   readonly register: (key: string, element: HTMLButtonElement | null) => void;
   readonly onSelect: (key: GraphNodeKey) => void;
   readonly onKeyDown: (event: KeyboardEvent<HTMLButtonElement>, node: GraphNode) => void;
-  readonly onMenu: (key: GraphNodeKey, event: MouseEvent<HTMLElement>) => void;
+  readonly onMenu: ((key: GraphNodeKey, event: MouseEvent<HTMLElement>) => void) | undefined;
 }
 
 function cardTone(isSelected: boolean, isOnPath: boolean): string {
@@ -260,13 +274,17 @@ function GraphCard({
       aria-pressed={isSelected}
       aria-label={label}
       tabIndex={isTabStop ? 0 : -1}
-      title={isTree ? undefined : t('library.tactics.board.strip.menuHint')}
+      title={isTree || onMenu === undefined ? undefined : t('library.tactics.board.strip.menuHint')}
       onClick={() => onSelect(node)}
       onKeyDown={(event) => onKeyDown(event, node)}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        onMenu(node, event);
-      }}
+      onContextMenu={
+        onMenu === undefined
+          ? undefined
+          : (event) => {
+              event.preventDefault();
+              onMenu(node, event);
+            }
+      }
       style={{
         left: origin.x,
         top: origin.y,

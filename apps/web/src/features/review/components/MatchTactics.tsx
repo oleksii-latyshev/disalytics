@@ -13,16 +13,17 @@ import { TacticPreview } from '@disa/tactic-board';
 import { useMemo, useState } from 'react';
 import { namedRoundTactic } from '../helpers/round-tactic-names';
 import {
-  type RoundSideFilter,
-  type RoundSort,
+  ALL_ROUNDS,
+  type RoundFilter,
   roundEntries,
   roundTacticId,
-  visibleEntries,
 } from '../helpers/round-tactics';
 import { useRoundTacticSave } from '../hooks/use-round-tactic-save';
 import { RoundWindowStrip } from './RoundWindowStrip';
-import { TacticRoundPicker } from './TacticRoundPicker';
+import { TacticRoundDetail } from './TacticRoundDetail';
+import { TacticRoundStrip } from './TacticRoundStrip';
 import { TacticSave } from './TacticSave';
+import { TacticTeamSwitch } from './TacticTeamSwitch';
 
 interface Props {
   demo: ParsedDemo;
@@ -46,14 +47,12 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
   const t = useT();
   const locale = useLocale();
   const [team, setTeam] = useState<OpeningSide>('t');
-  const [side, setSide] = useState<RoundSideFilter>('all');
-  const [sort, setSort] = useState<RoundSort>('round');
+  const [filter, setFilter] = useState<RoundFilter>(ALL_ROUNDS);
   const [chosen, setChosen] = useState<number>(initialRound);
   const [edited, setEdited] = useState<Edited | null>(null);
 
   const entries = useMemo(() => roundEntries(demo, team), [demo, team]);
-  const visible = useMemo(() => visibleEntries(entries, side, sort), [entries, side, sort]);
-  const active = visible.find((entry) => entry.roundIndex === chosen) ?? visible[0];
+  const active = entries.find((entry) => entry.roundIndex === chosen) ?? entries[0];
   const roundIndex = active?.roundIndex;
 
   const window = useMemo((): RoundWindow | undefined => {
@@ -93,16 +92,13 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
     tactic === undefined
   ) {
     return (
-      <div className="surface-card grid min-h-0 grid-rows-[minmax(0,1fr)] rounded-float">
-        <TacticRoundPicker
-          team={team}
-          onTeam={setTeam}
-          side={side}
-          onSide={setSide}
-          sort={sort}
-          onSort={setSort}
-          entries={visible}
+      <div className="surface-card flex min-h-0 flex-col gap-2 rounded-float p-3">
+        <TacticTeamSwitch team={team} onTeam={setTeam} />
+        <TacticRoundStrip
+          entries={entries}
           roundIndex={undefined}
+          filter={filter}
+          onFilter={setFilter}
           onRound={setChosen}
         />
       </div>
@@ -119,31 +115,31 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
       <TacticPreview
         tactic={tactic}
         header={
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 lg:px-4">
-            <h2 className="m-0 min-w-0 truncate font-semibold text-16">{tactic.title}</h2>
-            <TacticSave
-              id={id}
-              savedTitle={save.saved?.title}
-              isSaving={save.isSaving}
-              hasFailed={save.hasFailed}
-              onSave={() => save.save(tactic)}
-              onUndo={save.undo}
+          <div className="flex flex-col">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 p-3 lg:px-4">
+              <h2 className="m-0 min-w-0 truncate font-semibold text-16">{tactic.title}</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <TacticTeamSwitch team={team} onTeam={setTeam} />
+                <TacticSave
+                  id={id}
+                  savedTitle={save.saved?.title}
+                  isSaving={save.isSaving}
+                  hasFailed={save.hasFailed}
+                  onSave={() => save.save(tactic)}
+                  onUndo={save.undo}
+                />
+              </div>
+            </div>
+            <TacticRoundStrip
+              entries={entries}
+              roundIndex={roundIndex}
+              filter={filter}
+              onFilter={setFilter}
+              onRound={setChosen}
             />
           </div>
         }
-        sidebar={
-          <TacticRoundPicker
-            team={team}
-            onTeam={setTeam}
-            side={side}
-            onSide={setSide}
-            sort={sort}
-            onSort={setSort}
-            entries={visible}
-            roundIndex={roundIndex}
-            onRound={setChosen}
-          />
-        }
+        detail={active === undefined ? null : <TacticRoundDetail entry={active} />}
         footer={
           <RoundWindowStrip
             demo={demo}

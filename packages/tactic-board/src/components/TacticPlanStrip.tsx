@@ -13,12 +13,16 @@ export interface TacticPlanStripProps {
   /** The card of the step in view. */
   readonly selected: GraphNodeKey | null;
   readonly onOpen: (key: GraphNodeKey) => void;
-  readonly onLane: (planId: string) => void;
-  readonly onBranch: (key: GraphNodeKey) => void;
-  readonly onAddStep: (planId: string) => void;
-  readonly onDelete: (key: GraphNodeKey) => void;
-  readonly deleteBlockOf: (key: GraphNodeKey) => string | null;
-  readonly onOpenTree: () => void;
+  /**
+   * The editing half. A strip given none of it is read-only: no tree button, no step to add, no
+   * branch to start and no menu on a card.
+   */
+  readonly onLane?: ((planId: string) => void) | undefined;
+  readonly onBranch?: ((key: GraphNodeKey) => void) | undefined;
+  readonly onAddStep?: ((planId: string) => void) | undefined;
+  readonly onDelete?: ((key: GraphNodeKey) => void) | undefined;
+  readonly deleteBlockOf?: ((key: GraphNodeKey) => string | null) | undefined;
+  readonly onOpenTree?: (() => void) | undefined;
 }
 
 interface OpenMenu {
@@ -58,8 +62,9 @@ export function TacticPlanStrip({
     setMenu({ key, x: event.clientX - box.left, y: event.clientY - box.top });
   };
 
+  const canMenu = onBranch !== undefined && onDelete !== undefined && deleteBlockOf !== undefined;
   const menuNode =
-    menu === null
+    menu === null || !canMenu
       ? undefined
       : graph.nodes.find((n) => n.planId === menu.key.planId && n.index === menu.key.index);
   const box = root.current?.getBoundingClientRect();
@@ -68,14 +73,16 @@ export function TacticPlanStrip({
     <div ref={root} className="relative flex min-w-0 flex-col gap-1.5 px-3 pt-1 pb-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-12 text-ink-dim">{t('library.tactics.board.strip.label')}</span>
-        <Button
-          variant="outline"
-          onClick={onOpenTree}
-          title={t('library.tactics.board.tree.openTip')}
-        >
-          <GitFork aria-hidden="true" />
-          {t('library.tactics.board.tree.open', { count: graph.rowCount })}
-        </Button>
+        {onOpenTree !== undefined && (
+          <Button
+            variant="outline"
+            onClick={onOpenTree}
+            title={t('library.tactics.board.tree.openTip')}
+          >
+            <GitFork aria-hidden="true" />
+            {t('library.tactics.board.tree.open', { count: graph.rowCount })}
+          </Button>
+        )}
       </div>
       <fieldset
         ref={scroller}
@@ -90,12 +97,12 @@ export function TacticPlanStrip({
           selected={selected}
           onSelect={onOpen}
           onLane={onLane}
-          onMenu={handleMenu}
+          onMenu={canMenu ? handleMenu : undefined}
           onBranch={onBranch}
           onAddStep={onAddStep}
         />
       </fieldset>
-      {menu !== null && menuNode !== undefined && box !== undefined && (
+      {menu !== null && canMenu && menuNode !== undefined && box !== undefined && (
         <TacticStepMenu
           point={menu}
           box={{ width: box.width, height: box.height }}
