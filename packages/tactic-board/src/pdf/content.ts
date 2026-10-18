@@ -17,7 +17,9 @@ import {
   UTILITY_NAMES,
 } from '@disa/demo-core';
 import type { Translate } from '@disa/i18n';
+import { getMapOverview, mapFloors } from '@disa/map-data';
 import { enemiesOf } from '../helpers/tactic-enemies';
+import { floorName } from '../helpers/tactic-floor-name';
 import { calledOnRounds, nameOrFallback } from '../helpers/tactic-names';
 import { deadSlotNumbers, planTitle } from '../helpers/tactic-plan-labels';
 import {
@@ -56,6 +58,12 @@ export interface PdfEnemyEntry {
   readonly deadNote: string | null;
 }
 
+/** A floor other than the first that a step's routes or grenades use, and what to call it. */
+export interface PdfStepFloor {
+  readonly floor: number;
+  readonly label: string;
+}
+
 export interface PdfBranchBanner {
   readonly eyebrow: string;
   readonly title: string;
@@ -75,6 +83,8 @@ export interface PdfStepSection {
   readonly startsAt: string | null;
   readonly idea: string | null;
   readonly players: readonly PdfPlayerEntry[];
+  /** Floors after the first that the step uses, each of which gets a picture of its own. */
+  readonly floors: readonly PdfStepFloor[];
   readonly throwsTitle: string;
   readonly throws: readonly PdfThrowEntry[];
   readonly enemies: readonly PdfEnemyEntry[];
@@ -401,6 +411,24 @@ function bannerOf(input: PdfContentInput, plan: TacticPlan): PdfBranchBanner {
   };
 }
 
+/** The floors after the first that a step's walked routes and grenades touch, lowest first. */
+function stepFloors(input: PdfContentInput, stepSchedule: StepSchedule | undefined) {
+  const overview = getMapOverview(input.tactic.map);
+  if (overview === undefined || stepSchedule === undefined) return [];
+  const used = new Set<number>();
+  for (const leg of stepSchedule.legs) for (const floor of leg.floors) used.add(floor);
+  for (const thrown of stepSchedule.throws) {
+    used.add(thrown.floor);
+    used.add(thrown.fromFloor);
+  }
+
+  const floors = mapFloors(overview);
+  return [...used]
+    .filter((floor) => floor > 0 && floors[floor] !== undefined)
+    .sort((a, b) => a - b)
+    .map((floor) => ({ floor, label: floorName(input.t, floors[floor]?.id ?? 'main') }));
+}
+
 function sectionOf(context: SectionContext, index: number): PdfStepSection | null {
   const { input, plan, steps, schedule } = context;
   const { t } = input;
@@ -425,6 +453,7 @@ function sectionOf(context: SectionContext, index: number): PdfStepSection | nul
         : t('library.tactics.pdf.startsAt', { clock: formatRoundClock(stepSchedule.startSeconds) }),
     idea: filled(step.idea),
     players: playersOf(context, step, index),
+    floors: stepFloors(input, stepSchedule),
     throwsTitle: t('library.tactics.board.throws.title', { count: throws.length }),
     throws,
     enemies: enemiesOf(step).flatMap((enemy, at) => enemyEntry(t, enemy, at) ?? []),

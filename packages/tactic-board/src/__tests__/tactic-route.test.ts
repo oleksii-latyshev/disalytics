@@ -1,4 +1,11 @@
-import { getMapOverview, loadMapNavGrid, mapSpawns, radarX, radarY } from '@disa/map-data';
+import {
+  floorRefZ,
+  getMapOverview,
+  loadMapNavGrid,
+  mapSpawns,
+  radarX,
+  radarY,
+} from '@disa/map-data';
 import { describe, expect, it } from 'vitest';
 import { snapPoint, toRadar, toWorld, walkBetween, walkRoute } from '../helpers/tactic-route';
 
@@ -6,12 +13,12 @@ const overview = getMapOverview('de_mirage');
 if (overview === undefined) throw new Error('no overview');
 const grid = await loadMapNavGrid('de_mirage');
 const spawn = mapSpawns('de_mirage', 'T')[0] ?? { x: 0, y: 0 };
-const start = toRadar(overview, spawn);
+const start = { ...toRadar(overview, spawn), floor: 0 };
 
 describe('coordinates', () => {
   it('round-trips a world point through the radar, rounded to whole units', () => {
     const world = toWorld(overview, toRadar(overview, { x: -1200, y: 500 }));
-    expect(world).toEqual({ x: -1200, y: 500 });
+    expect(world).toEqual({ x: -1200, y: 500, z: floorRefZ(overview, 0) });
     expect(toRadar(overview, spawn).x).toBeCloseTo(radarX(overview, spawn.x));
     expect(toRadar(overview, spawn).y).toBeCloseTo(radarY(overview, spawn.y));
   });
@@ -45,15 +52,16 @@ describe('walkRoute', () => {
     });
     expect(walked.points[0]).toBe(start);
     expect(walked.points.length).toBeGreaterThanOrEqual(2);
-    const sealed = walkBetween(grid, start, { x: 5, y: 5 });
+    const sealed = walkBetween(grid, start, { x: 5, y: 5, floor: 0 });
     expect(sealed.reachable).toBe(false);
     expect(sealed.points).toHaveLength(2);
   });
 
   it('snaps a click off the floor onto it, and leaves it alone with no grid', () => {
-    const wall = { x: 5, y: 5 };
+    const wall = { x: 5, y: 5, floor: 0 };
     expect(snapPoint(undefined, wall)).toBe(wall);
     const snapped = snapPoint(grid, wall);
+    expect(snapped.floor).toBe(0);
     expect(Math.hypot(snapped.x - wall.x, snapped.y - wall.y)).toBeGreaterThanOrEqual(0);
   });
 });

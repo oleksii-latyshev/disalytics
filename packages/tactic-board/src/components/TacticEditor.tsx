@@ -177,6 +177,8 @@ function TacticBoard({
           tool={tool}
           clock={playback.clock}
           isShown={playback.isShown}
+          floor={board.floor}
+          onFloor={board.setFloor}
           lineups={board.pickableLineups}
           spawns={tactic.spawns}
           spawnSpots={spotsAreOffered ? board.spawnSpots : undefined}

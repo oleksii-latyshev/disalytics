@@ -1,12 +1,15 @@
 import type { TacticPoint, TacticSide } from '@disa/demo-core';
 import { type MapOverview, radarX, radarY } from '@disa/map-data';
 import type { PlateGeometry, RadarColors } from '@disa/plate';
+import { floorAlpha } from './tactic-route-drawing';
 
 /** The spots to mark, with what the draw needs already worked out so it allocates nothing. */
 export interface SpawnSpots {
   readonly points: readonly TacticPoint[];
   readonly occupied: readonly boolean[];
   readonly labels: readonly string[];
+  /** The floor of each point. */
+  readonly floors: readonly number[];
 }
 
 const HALF_SIDE = 6;
@@ -23,6 +26,7 @@ export function drawSpawnMarkers(
   overview: MapOverview,
   geometry: PlateGeometry,
   colors: RadarColors,
+  activeFloor: number,
 ): void {
   context.save();
   context.strokeStyle = side === 'CT' ? colors.team.CT : colors.team.T;
@@ -38,15 +42,16 @@ export function drawSpawnMarkers(
     const x = radarX(overview, point.x) * geometry.scale + geometry.offsetX;
     const y = radarY(overview, point.y) * geometry.scale + geometry.offsetY;
     const isTaken = spots.occupied[i] === true;
+    const fade = floorAlpha(spots.floors[i] ?? 0, activeFloor);
 
-    context.globalAlpha = isTaken ? 0.4 : 0.85;
+    context.globalAlpha = (isTaken ? 0.4 : 0.85) * fade;
     context.strokeRect(x - HALF_SIDE, y - HALF_SIDE, HALF_SIDE * 2, HALF_SIDE * 2);
     if (isTaken) {
       context.beginPath();
       context.arc(x, y, OCCUPIED_DOT, 0, Math.PI * 2);
       context.stroke();
     }
-    context.globalAlpha = isTaken ? 0.35 : 0.8;
+    context.globalAlpha = (isTaken ? 0.35 : 0.8) * fade;
     context.fillText(spots.labels[i] ?? '', x, y + HALF_SIDE + 2);
   }
 

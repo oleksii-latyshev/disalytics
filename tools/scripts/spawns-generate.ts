@@ -1,6 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { gunzipSync } from 'node:zlib';
+import { writeFileSync } from 'node:fs';
 import {
   mergeSpawns,
   roundStartPositions,
@@ -11,6 +9,7 @@ import {
 import { decodeDemo } from '@disa/demo-store/codec';
 import { SAMPLE_MATCHES } from '../../apps/web/src/core/samples/helpers/catalogue';
 import { MAP_SPAWNS } from '../../packages/map-data/src/generated/spawns';
+import { containersIn, readContainer } from './floors/containers';
 
 /**
  * Writes where each side stands when a round opens, per map, from parsed containers.
@@ -27,20 +26,8 @@ const SAMPLE_DIR = 'apps/web/assets/samples';
 const EXTRA_ENV = 'DISALYTICS_SPAWN_DIR';
 
 function containerPaths(): string[] {
-  const paths = SAMPLE_MATCHES.map((sample) => `${SAMPLE_DIR}/${sample.id}.disa.gz`);
-  const extra = process.env[EXTRA_ENV];
-  if (extra !== undefined && extra !== '') {
-    const names = readdirSync(extra)
-      .filter((name) => name.endsWith('.disa') || name.endsWith('.disa.gz'))
-      .sort();
-    paths.push(...names.map((name) => join(extra, name)));
-  }
-  return paths;
-}
-
-function readContainer(path: string): Uint8Array<ArrayBuffer> {
-  const bytes = readFileSync(path);
-  return new Uint8Array(path.endsWith('.gz') ? gunzipSync(bytes) : bytes);
+  const samples = SAMPLE_MATCHES.map((sample) => `${SAMPLE_DIR}/${sample.id}.disa.gz`);
+  return [...samples, ...containersIn(process.env[EXTRA_ENV])];
 }
 
 const pooled = new Map<string, Record<'CT' | 'T', WorldPoint[]>>();

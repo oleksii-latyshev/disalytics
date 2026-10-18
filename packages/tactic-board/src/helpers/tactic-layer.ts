@@ -1,5 +1,12 @@
 import type { Lineup, TacticDrawingStroke, TacticSide, TacticStep } from '@disa/demo-core';
-import { type MapOverview, type RadarPoint, radarX, radarY } from '@disa/map-data';
+import {
+  type FloorPoint,
+  type MapOverview,
+  mapFloors,
+  type RadarPoint,
+  radarX,
+  radarY,
+} from '@disa/map-data';
 import type { CanvasSize, Layer } from '@disa/plate';
 import {
   drawGrenadeMark,
@@ -25,13 +32,26 @@ import { grenadeColorOfKind } from './tactic-grenade-colors';
 import { drawUtilityHaloArea, renderSingleDrawingStroke } from './tactic-layer-drawing';
 import { drawLineupMarkers } from './tactic-lineup-markers';
 import { glideProgress, popScale, type TacticMotion } from './tactic-motion';
-import { drawEndGhost, drawHandle, strokeLeg, strokePoints } from './tactic-route-drawing';
+import { floorOfPoint } from './tactic-route';
+import {
+  drawEndGhost,
+  drawHandle,
+  drawLegLinks,
+  floorAlpha,
+  strokeLeg,
+  strokePoints,
+} from './tactic-route-drawing';
 import { sampleScene, type TacticScene } from './tactic-scene';
-import { type ScheduledThrow, type TacticSchedule, UTILITY_LIFE_SECONDS } from './tactic-schedule';
+import {
+  type PlayerLeg,
+  type ScheduledThrow,
+  type TacticSchedule,
+  UTILITY_LIFE_SECONDS,
+} from './tactic-schedule';
 import { drawSpawnMarkers, type SpawnSpots } from './tactic-spawn-markers';
 
 export interface TacticPreview {
-  readonly points: readonly RadarPoint[];
+  readonly points: readonly FloorPoint[];
   readonly reachable: boolean;
 }
 
@@ -60,9 +80,27 @@ export interface TacticLayerOptions {
   readonly enemyRoleLabels: EnemyRoleLabels;
   readonly preview: { readonly current: TacticPreview | null };
   readonly liveStroke: { readonly current: readonly RadarPoint[] | null };
+  /** The floor in view, as a position in `mapFloors`; what is on another one is drawn faded. Floor 0 when absent. */
+  readonly floor?: number | undefined;
 }
 
 const NO_DASH: number[] = [];
+
+function activeFloor(options: TacticLayerOptions): number {
+  return options.floor ?? 0;
+}
+
+const FLOOR_REFS = new WeakMap<MapOverview, readonly number[]>();
+
+/** The altitude of each floor, made once per map: `drawLegLinks` reads it every frame. */
+function floorRefsOf(overview: MapOverview): readonly number[] {
+  let refs = FLOOR_REFS.get(overview);
+  if (refs === undefined) {
+    refs = mapFloors(overview).map((floor) => floor.refZ);
+    FLOOR_REFS.set(overview, refs);
+  }
+  return refs;
+}
 
 function slotInk(options: TacticLayerOptions, slot: number): string {
   return options.slotColors[slot] ?? options.colors.team[options.side];
@@ -128,6 +166,7 @@ function drawThrowIcon(
   const y = thrown.toY * g.scale + g.offsetY;
   const scale = popScale(options.motion, `throw:${thrown.id}`, nowMs);
   context.save();
+  context.globalAlpha = floorAlpha(thrown.floor, activeFloor(options));
   context.translate(x, y);
   context.scale(scale, scale);
   context.fillStyle = options.colors.hollow;
@@ -158,7 +197,7 @@ function drawEarlierAreas(
       options.overview,
       g,
       options.colors,
-      0.6,
+      0.6 * floorAlpha(thrown.floor, activeFloor(options)),
     );
   }
 }
@@ -169,6 +208,7 @@ function drawGhostRoutes(
   options: TacticLayerOptions,
 ): void {
   const { schedule, stepIndex, colors } = options;
+  const active = activeFloor(options);
   for (const leg of schedule.steps[stepIndex - 1]?.legs ?? []) {
     if (leg.isDead || leg.lengthPx < 1) continue;
     strokeLeg(context, leg, g, {
@@ -177,8 +217,49 @@ function drawGhostRoutes(
       width: 2,
       alpha: 0.3,
       dash: [3, 7],
+      activeFloor: active,
     });
   }
+}
+
+function drawEditLeg(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  options: TacticLayerOptions,
+  leg: PlayerLeg,
+  nowMs: number,
+): void {
+  const { selectedSlot, colors } = options;
+  const active = activeFloor(options);
+  const isSelected = leg.slot === selectedSlot;
+  const isDimmed = selectedSlot !== null && !isSelected;
+  const color = slotInk(options, leg.slot);
+  strokeLeg(context, leg, g, {
+    color,
+    under: colors.hollow,
+    width: isSelected ? 4 : 2.5,
+    alpha: isDimmed ? 0.45 : 1,
+    dashOffset: marchOffset(options.motion, nowMs),
+    activeFloor: active,
+  });
+  drawLegLinks(context, leg, g, floorRefsOf(options.overview), {
+    color,
+    ground: colors.hollow,
+    active,
+    alpha: isDimmed ? 0.5 : 1,
+  });
+  const endX = (leg.xs[leg.xs.length - 1] ?? 0) * g.scale + g.offsetX;
+  const endY = (leg.ys[leg.ys.length - 1] ?? 0) * g.scale + g.offsetY;
+  const ring = { ring: color, ground: colors.hollow };
+  drawEndGhost(
+    context,
+    endX,
+    endY,
+    g.tokenRadius,
+    String(leg.slot + 1),
+    ring,
+    (isDimmed ? 0.5 : 1) * floorAlpha(leg.floors[leg.floors.length - 1] ?? 0, active),
+  );
 }
 
 function drawEditRoutes(
@@ -187,7 +268,7 @@ function drawEditRoutes(
   options: TacticLayerOptions,
   nowMs: number,
 ): void {
-  const { schedule, stepIndex, selectedSlot, colors } = options;
+  const { schedule, stepIndex, selectedSlot } = options;
   const current = schedule.steps[stepIndex];
   if (current === undefined) return;
   drawGhostRoutes(context, g, options);
@@ -197,28 +278,7 @@ function drawEditRoutes(
   );
   for (const leg of ordered) {
     if (leg.isDead || leg.lengthPx < 1) continue;
-    const isSelected = leg.slot === selectedSlot;
-    const isDimmed = selectedSlot !== null && !isSelected;
-    const color = slotInk(options, leg.slot);
-    strokeLeg(context, leg, g, {
-      color,
-      under: colors.hollow,
-      width: isSelected ? 4 : 2.5,
-      alpha: isDimmed ? 0.45 : 1,
-      dashOffset: marchOffset(options.motion, nowMs),
-    });
-    const endX = (leg.xs[leg.xs.length - 1] ?? 0) * g.scale + g.offsetX;
-    const endY = (leg.ys[leg.ys.length - 1] ?? 0) * g.scale + g.offsetY;
-    const ring = { ring: color, ground: colors.hollow };
-    drawEndGhost(
-      context,
-      endX,
-      endY,
-      g.tokenRadius,
-      String(leg.slot + 1),
-      ring,
-      isDimmed ? 0.5 : 1,
-    );
+    drawEditLeg(context, g, options, leg, nowMs);
   }
 }
 
@@ -238,7 +298,10 @@ function drawHandles(
     const x = radarX(overview, point.x) * g.scale + g.offsetX;
     const y = radarY(overview, point.y) * g.scale + g.offsetY;
     const pop = popScale(options.motion, `handle:${selectedSlot}:${index}`, nowMs);
+    context.save();
+    context.globalAlpha = floorAlpha(floorOfPoint(overview, point), activeFloor(options));
     drawHandle(context, x, y, pop, ring, options.hoveredHandle === index);
+    context.restore();
   });
 }
 
@@ -256,6 +319,7 @@ function drawPreview(
     alpha: 1,
     dash: [9, 7],
     dashOffset: marchOffset(options.motion, nowMs),
+    activeFloor: activeFloor(options),
   };
   const preview = options.preview.current;
   if (preview !== null) {
@@ -266,7 +330,7 @@ function drawPreview(
       preview.reachable ? stroke : { ...stroke, dash: [3, 7] },
     );
     const end = preview.points[preview.points.length - 1];
-    if (end !== undefined) {
+    if (end !== undefined && end.floor === activeFloor(options)) {
       context.save();
       context.strokeStyle = color;
       context.lineWidth = 3;
@@ -306,6 +370,11 @@ function drawTokenMark(
   context.fillText(mark.isDead ? '✕' : String(mark.slot + 1), mark.x, mark.y + 0.5);
 }
 
+/** The floor a token stands on: where the playing plan has it, or where the step begins. */
+function tokenFloor(options: TacticLayerOptions, slot: number, leg: PlayerLeg | undefined): number {
+  return options.clock.isShown ? (options.scene.playerFloor[slot] ?? 0) : (leg?.floors[0] ?? 0);
+}
+
 function drawTokens(
   context: CanvasRenderingContext2D,
   g: PlateGeometry,
@@ -328,6 +397,8 @@ function drawTokens(
 
     const screenX = rx * g.scale + g.offsetX;
     const screenY = ry * g.scale + g.offsetY;
+    context.save();
+    context.globalAlpha = floorAlpha(tokenFloor(options, slot, leg), activeFloor(options));
     drawTokenMark(context, g, options, { x: screenX, y: screenY, slot, isDead });
     if (!clock.isShown && slot === selectedSlot) {
       drawSelectionRing(
@@ -339,6 +410,7 @@ function drawTokens(
         colors.selectionEdge,
       );
     }
+    context.restore();
   }
 }
 
@@ -362,9 +434,16 @@ function drawEditScene(
       options.overview,
       g,
       options.colors,
-      isDimmed ? 0.6 : 1,
+      (isDimmed ? 0.6 : 1) * floorAlpha(thrown.floor, activeFloor(options)),
     );
-    drawArc(context, thrown, g, options, isDimmed ? 0.5 : 1, nowMs);
+    drawArc(
+      context,
+      thrown,
+      g,
+      options,
+      (isDimmed ? 0.5 : 1) * floorAlpha(thrown.floor, activeFloor(options)),
+      nowMs,
+    );
     drawThrowIcon(context, thrown, g, options, nowMs);
   }
   drawHandles(context, g, options, nowMs);
@@ -390,7 +469,7 @@ function drawSceneAreas(
       options.overview,
       g,
       colors,
-      Math.max(0, fade),
+      Math.max(0, fade) * floorAlpha(scene.areaFloor[i] ?? 0, activeFloor(options)),
     );
   }
 }
@@ -402,6 +481,8 @@ function drawSceneFlights(
 ): void {
   const { scene, colors } = options;
   for (let i = 0; i < scene.flightCount; i++) {
+    context.save();
+    context.globalAlpha = floorAlpha(scene.flightFloor[i] ?? 0, activeFloor(options));
     context.fillStyle = grenadeColorOfKind(scene.flightKind[i] ?? 'smoke', colors);
     context.strokeStyle = colors.hollow;
     context.lineWidth = 2.5;
@@ -415,6 +496,7 @@ function drawSceneFlights(
     );
     context.fill();
     context.stroke();
+    context.restore();
   }
 }
 
@@ -428,6 +510,7 @@ function drawPlayback(
   const step = schedule.steps[scene.stepIndex];
   const local = clock.time - (step?.startSeconds ?? 0);
 
+  const active = activeFloor(options);
   drawSceneAreas(context, g, options);
   for (const leg of step?.legs ?? []) {
     if (leg.isDead || leg.lengthPx < 1) continue;
@@ -438,6 +521,13 @@ function drawPlayback(
       width: 2,
       alpha: 0.45,
       dash: [3, 7],
+      activeFloor: active,
+    });
+    drawLegLinks(context, leg, g, floorRefsOf(options.overview), {
+      color,
+      ground: colors.hollow,
+      active,
+      alpha: 0.6,
     });
     const travelled = Math.max(0, (local - leg.delaySeconds) * schedule.speedPxPerSecond);
     let upTo = 0;
@@ -446,7 +536,7 @@ function drawPlayback(
       context,
       leg,
       g,
-      { color, under: colors.hollow, width: 3.5, alpha: 1 },
+      { color, under: colors.hollow, width: 3.5, alpha: 1, activeFloor: active },
       {
         upTo,
         endX: scene.playerX[leg.slot] ?? 0,
@@ -474,6 +564,7 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
     marks: undefined,
     legs: undefined,
     dashOffset: 0,
+    floor: activeFloor(options),
   };
 
   return (context: CanvasRenderingContext2D, size: CanvasSize) => {
@@ -495,6 +586,7 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
           options.overview,
           geometry,
           options.colors,
+          activeFloor(options),
         );
       }
       drawLineupMarkers(
@@ -504,6 +596,7 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
         options.overview,
         geometry,
         options.colors,
+        activeFloor(options),
       );
       drawEditScene(context, geometry, options, nowMs);
       enemyDrawing.marks = options.enemyMarks[options.stepIndex];

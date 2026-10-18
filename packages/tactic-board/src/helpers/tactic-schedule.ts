@@ -8,8 +8,8 @@ import {
   type UtilityKind,
   weaponMaxSpeed,
 } from '@disa/demo-core';
-import type { MapOverview, NavGrid, RadarPoint } from '@disa/map-data';
-import { toRadar, walkRoute } from './tactic-route';
+import { CONNECTOR_COST_PX, type FloorPoint, type MapOverview, type NavGrid } from '@disa/map-data';
+import { floorOfPoint, toFloorPoint, toRadar, walkRoute } from './tactic-route';
 
 /** A rifle in hand: what a player carrying the round's utility runs at, in world units a second. */
 export const TACTIC_RUN_SPEED_UNITS = weaponMaxSpeed('AK-47');
@@ -39,7 +39,9 @@ export interface PlayerLeg {
   /** Radar pixels along the walked route; the first is where the step starts. */
   readonly xs: Float64Array;
   readonly ys: Float64Array;
-  /** Distance from the start to each point, in radar pixels. */
+  /** The floor each point is on; two neighbours on different floors are joined by a connector. */
+  readonly floors: Uint8Array;
+  /** Distance from the start to each point, in radar pixels, a connector counting `CONNECTOR_COST_PX` more than its span. */
   readonly cum: Float64Array;
   readonly lengthPx: number;
   /** Segment indices drawn straight because the grid could not join them. */
@@ -60,6 +62,9 @@ export interface ScheduledThrow {
   readonly fromY: number;
   readonly toX: number;
   readonly toY: number;
+  /** The floor the grenade leaves from, and the floor it lands on. */
+  readonly fromFloor: number;
+  readonly floor: number;
   /** Seconds on the plan's clock. */
   readonly releaseAt: number;
   readonly landAt: number;
@@ -92,14 +97,16 @@ export interface ScheduleInput {
   readonly planId: string;
 }
 
-function distance(a: RadarPoint, b: RadarPoint): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+/** The walk from one point to the next: its length, and a connector's cost when it changes floor. */
+function distance(a: FloorPoint, b: FloorPoint): number {
+  const span = Math.hypot(a.x - b.x, a.y - b.y);
+  return a.floor === b.floor ? span : span + CONNECTOR_COST_PX;
 }
 
 function buildLeg(
   input: ScheduleInput,
   slot: number,
-  start: RadarPoint,
+  start: FloorPoint,
   entry: TacticStepPlayer | undefined,
   isDead: boolean,
   speedPxPerSecond: number,
@@ -113,10 +120,12 @@ function buildLeg(
   const count = walked.points.length;
   const xs = new Float64Array(count);
   const ys = new Float64Array(count);
+  const floors = new Uint8Array(count);
   const cum = new Float64Array(count);
   walked.points.forEach((point, i) => {
     xs[i] = point.x;
     ys[i] = point.y;
+    floors[i] = point.floor;
     const previous = walked.points[i - 1];
     cum[i] = previous === undefined ? 0 : (cum[i - 1] ?? 0) + distance(previous, point);
   });
@@ -128,6 +137,7 @@ function buildLeg(
     isDead,
     xs,
     ys,
+    floors,
     cum,
     lengthPx,
     breaks: walked.breaks,
@@ -137,13 +147,15 @@ function buildLeg(
   };
 }
 
-function writePoint(leg: PlayerLeg, index: number, out: Float64Array, offset: number): void {
+function writePoint(leg: PlayerLeg, index: number, out: Float64Array, offset: number): number {
   out[offset] = leg.xs[index] ?? 0;
   out[offset + 1] = leg.ys[index] ?? 0;
+  return leg.floors[index] ?? 0;
 }
 
 /**
- * Where the leg is `seconds` after the step starts, written into `out` at `offset`.
+ * Where the leg is `seconds` after the step starts, written into `out` at `offset`; the floor it is
+ * on is returned. On a connector the player changes floor half way through.
  *
  * perf: read every animation frame while the plan plays — writes into the caller's buffer.
  */
@@ -153,17 +165,11 @@ export function readLegPosition(
   speedPxPerSecond: number,
   out: Float64Array,
   offset: number,
-): void {
+): number {
   const last = leg.xs.length - 1;
   const travelled = (seconds - leg.delaySeconds) * speedPxPerSecond;
-  if (travelled <= 0 || last === 0) {
-    writePoint(leg, 0, out, offset);
-    return;
-  }
-  if (travelled >= leg.lengthPx) {
-    writePoint(leg, last, out, offset);
-    return;
-  }
+  if (travelled <= 0 || last === 0) return writePoint(leg, 0, out, offset);
+  if (travelled >= leg.lengthPx) return writePoint(leg, last, out, offset);
 
   let i = 1;
   while (i < last && (leg.cum[i] ?? 0) < travelled) i++;
@@ -174,13 +180,19 @@ export function readLegPosition(
   const ay = leg.ys[i - 1] ?? 0;
   out[offset] = ax + ((leg.xs[i] ?? 0) - ax) * fraction;
   out[offset + 1] = ay + ((leg.ys[i] ?? 0) - ay) * fraction;
+  return (fraction < 0.5 ? leg.floors[i - 1] : leg.floors[i]) ?? 0;
 }
 
-/** Index of the route point a throw happens at: the vertex nearest to where it is thrown from. */
-function nearestVertex(leg: PlayerLeg, x: number, y: number): number {
+/**
+ * Index of the route point a throw happens at: the vertex nearest to where it is thrown from,
+ * on the floor it is thrown from while the route has a vertex there.
+ */
+function nearestVertex(leg: PlayerLeg, x: number, y: number, floor: number): number {
+  const hasFloor = leg.floors.includes(floor);
   let best = 0;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (let i = 0; i < leg.xs.length; i++) {
+    if (hasFloor && leg.floors[i] !== floor) continue;
     const d = Math.hypot((leg.xs[i] ?? 0) - x, (leg.ys[i] ?? 0) - y);
     if (d < bestDistance) {
       bestDistance = d;
@@ -196,7 +208,7 @@ interface ThrowTimes {
 }
 
 interface ThrowSpot {
-  readonly from: RadarPoint;
+  readonly from: FloorPoint;
   /** The route point the thrower stands on when the grenade leaves. */
   readonly vertex: number;
 }
@@ -206,10 +218,13 @@ interface ThrowSpot {
  * point of the walked route nearest to where it was placed, and the player walks on after it.
  */
 function throwSpot(thrown: TacticThrow, leg: PlayerLeg, overview: MapOverview): ThrowSpot {
-  const placed = toRadar(overview, thrown.from);
-  const vertex = nearestVertex(leg, placed.x, placed.y);
+  const placed = toFloorPoint(overview, thrown.from);
+  const vertex = nearestVertex(leg, placed.x, placed.y, placed.floor);
   if (thrown.lineupId !== undefined) return { from: placed, vertex };
-  return { from: { x: leg.xs[vertex] ?? 0, y: leg.ys[vertex] ?? 0 }, vertex };
+  return {
+    from: { x: leg.xs[vertex] ?? 0, y: leg.ys[vertex] ?? 0, floor: leg.floors[vertex] ?? 0 },
+    vertex,
+  };
 }
 
 function throwTimes(
@@ -249,6 +264,8 @@ function stepThrows(
         fromY: from.y,
         toX: to.x,
         toY: to.y,
+        fromFloor: from.floor,
+        floor: floorOfPoint(input.overview, thrown.to),
         releaseAt: times.releaseLocal,
         landAt: times.landLocal,
       },
@@ -280,7 +297,7 @@ export function buildSchedule(input: ScheduleInput): TacticSchedule {
   const steps = effectiveSteps(tactic, planId);
   const dead = deadAt(tactic, planId);
 
-  let standing: RadarPoint[] = tactic.spawns.map((spawn) => toRadar(overview, spawn));
+  let standing: FloorPoint[] = tactic.spawns.map((spawn) => toFloorPoint(overview, spawn));
   let previousEnd = 0;
   const stepSchedules: StepSchedule[] = [];
   const allThrows: ScheduledThrow[] = [];
@@ -324,6 +341,7 @@ export function buildSchedule(input: ScheduleInput): TacticSchedule {
     standing = legs.map((leg) => ({
       x: leg.xs[leg.xs.length - 1] ?? 0,
       y: leg.ys[leg.ys.length - 1] ?? 0,
+      floor: leg.floors[leg.floors.length - 1] ?? 0,
     }));
   });
 

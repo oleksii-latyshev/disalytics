@@ -3,6 +3,8 @@ import { type MapOverview, radarX, radarY } from '@disa/map-data';
 import type { PlateGeometry, RadarColors } from '@disa/plate';
 import type { SlotColors } from './tactic-colors';
 import type { EnemyMarks } from './tactic-enemies';
+import { floorOfPoint } from './tactic-route';
+import { floorAlpha } from './tactic-route-drawing';
 import type { PlayerLeg } from './tactic-schedule';
 
 export type EnemyRoleLabels = Readonly<Record<TacticEnemyRole, string>>;
@@ -30,6 +32,8 @@ export interface EnemyDrawing {
   /** Set before each paint: where each of ours stands at the end of the step; undefined while a plan plays. */
   legs: readonly PlayerLeg[] | undefined;
   dashOffset: number;
+  /** The floor in view; marks on another one are faded. */
+  floor: number;
 }
 
 const NOTE_FONT = '500 11px Onest, sans-serif';
@@ -54,7 +58,7 @@ function drawGhost(
   const y = radarY(drawing.overview, enemy.at.y) * g.scale + g.offsetY;
   const half = g.tokenRadius * 1.0;
   context.save();
-  context.globalAlpha = 0.85;
+  context.globalAlpha = 0.85 * floorAlpha(floorOfPoint(drawing.overview, enemy.at), drawing.floor);
   context.fillStyle = drawing.colors.dead;
   context.strokeStyle = drawing.colors.team[drawing.enemySide];
   context.lineWidth = 2;
@@ -82,17 +86,18 @@ function drawTakerLine(
   const fromY = (leg.ys[last] ?? 0) * g.scale + g.offsetY;
   const toX = radarX(drawing.overview, enemy.at.x) * g.scale + g.offsetX;
   const toY = radarY(drawing.overview, enemy.at.y) * g.scale + g.offsetY;
+  const fade = floorAlpha(floorOfPoint(drawing.overview, enemy.at), drawing.floor);
   context.save();
   context.lineCap = 'round';
   context.setLineDash(NO_DASH);
-  context.globalAlpha = 0.7;
+  context.globalAlpha = 0.7 * fade;
   context.strokeStyle = drawing.colors.hollow;
   context.lineWidth = 5;
   context.beginPath();
   context.moveTo(fromX, fromY);
   context.lineTo(toX, toY);
   context.stroke();
-  context.globalAlpha = 1;
+  context.globalAlpha = fade;
   context.strokeStyle = drawing.slotColors[enemy.killedBy ?? 0] ?? drawing.colors.killLine;
   context.lineWidth = 2.5;
   context.setLineDash(KILL_DASH);
@@ -116,6 +121,7 @@ function drawNote(
   note: string,
   x: number,
   y: number,
+  fade: number,
 ): void {
   context.font = NOTE_FONT;
   let width = drawing.text.widths.get(note);
@@ -125,13 +131,13 @@ function drawNote(
   }
   const boxWidth = width + NOTE_PADDING * 2;
   context.fillStyle = drawing.colors.hollow;
-  context.globalAlpha = 0.88;
+  context.globalAlpha = 0.88 * fade;
   context.strokeStyle = drawing.colors.team[drawing.enemySide];
   context.lineWidth = 1;
   context.beginPath();
   context.roundRect(x, y - NOTE_HEIGHT / 2, boxWidth, NOTE_HEIGHT, 5);
   context.fill();
-  context.globalAlpha = 1;
+  context.globalAlpha = fade;
   context.stroke();
   context.fillStyle = drawing.colors.selectionRing;
   context.textAlign = 'left';
@@ -151,7 +157,9 @@ function drawEnemy(
   const half = g.tokenRadius * 1.1;
   const isDead = enemy.isDead === true;
 
+  const fade = floorAlpha(floorOfPoint(drawing.overview, enemy.at), drawing.floor);
   context.save();
+  context.globalAlpha = fade;
   if (drawing.selectedId === enemy.id) {
     context.strokeStyle = colors.selectionRing;
     context.lineWidth = 3;
@@ -171,7 +179,7 @@ function drawEnemy(
   context.fillText(isDead ? '✕' : drawing.enemySide, x, y + 0.5);
 
   const note = noteOf(drawing, enemy);
-  if (note !== '') drawNote(context, drawing, note, x + half + 5, y);
+  if (note !== '') drawNote(context, drawing, note, x + half + 5, y, fade);
   context.restore();
 }
 

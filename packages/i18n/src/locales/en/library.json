@@ -688,6 +688,14 @@
           "he": "HE"
         }
       },
+      "floors": {
+        "label": "Floor",
+        "tip": "Show one floor at a time; what is on the other floor is faded",
+        "upper": "Upper",
+        "lower": "Lower",
+        "main": "Main",
+        "underpass": "Underpass"
+      },
       "hint": {
         "pickPlayer": "Pick a player on the left or click a token.",
         "dead": "This player is out from this step; there is nothing to route.",

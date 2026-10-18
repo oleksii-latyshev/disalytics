@@ -93,7 +93,9 @@ const LINE: Rgb = [212, 212, 216];
 const WHITE: Rgb = [255, 255, 255];
 const FALLBACK_SLOT: Rgb = [90, 90, 90];
 
-export const plateImageId = (key: string) => `plate:${key}`;
+/** The picture of a step on its first floor, or on the floor after it that `floor` names. */
+export const plateImageId = (key: string, floor = 0) =>
+  floor === 0 ? `plate:${key}` : `plate:${key}:floor${floor}`;
 export const cropImageId = (key: string, throwId: string) => `crop:${key}:${throwId}`;
 
 function lineHeight(size: number): number {
@@ -402,7 +404,18 @@ function stepHeader(flow: Flow, section: PdfStepSection): void {
 }
 
 function plateBlock(flow: Flow, section: PdfStepSection): void {
-  const id = plateImageId(section.key);
+  plateImage(flow, plateImageId(section.key));
+  for (const { floor, label } of section.floors) {
+    const id = plateImageId(section.key, floor);
+    if (!flow.options.hasImage(id)) continue;
+    flow.ensure(PLATE_MM + lineHeight(8.5) + 1);
+    flow.text(label, MARGIN_X, flow.y, { size: 8.5, color: DIM });
+    flow.y += lineHeight(8.5) + 1;
+    plateImage(flow, id);
+  }
+}
+
+function plateImage(flow: Flow, id: string): void {
   if (!flow.options.hasImage(id)) return;
   flow.ensure(PLATE_MM);
   const x = MARGIN_X + (CONTENT_WIDTH - PLATE_MM) / 2;

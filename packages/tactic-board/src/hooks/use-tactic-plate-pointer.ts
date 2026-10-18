@@ -1,5 +1,5 @@
 import type { Lineup, TacticPoint, TacticStep } from '@disa/demo-core';
-import type { MapOverview, NavGrid, RadarPoint } from '@disa/map-data';
+import type { FloorPoint, MapOverview, NavGrid, RadarPoint } from '@disa/map-data';
 import { type PlateView, radarPointAt, SQUARE_PLATE, zoomAbout } from '@disa/plate';
 import {
   type PointerEvent as ReactPointerEvent,
@@ -12,7 +12,7 @@ import { enemiesOf } from '../helpers/tactic-enemies';
 import { enemyAt } from '../helpers/tactic-enemy-hit';
 import { handleAt, lineupAt, tokenAt } from '../helpers/tactic-hit';
 import type { TacticPreview } from '../helpers/tactic-layer';
-import { snapPoint, toRadar, toWorld, walkBetween } from '../helpers/tactic-route';
+import { floorOfPoint, snapPoint, toRadar, toWorld, walkBetween } from '../helpers/tactic-route';
 import type { StepSchedule } from '../helpers/tactic-schedule';
 
 /** A free-hand stroke keeps a point every this many radar pixels. */
@@ -39,6 +39,8 @@ interface Options {
   readonly repaint: () => void;
   readonly overview: MapOverview;
   readonly grid: NavGrid | undefined;
+  /** The floor in view: what a press creates lands on it, and only what is on it can be picked. */
+  readonly floor: number;
   readonly viewRef: RefObject<PlateView>;
   readonly previewRef: { current: TacticPreview | null };
   readonly liveStrokeRef: { current: readonly RadarPoint[] | null };
@@ -62,14 +64,19 @@ type Drag =
   | { readonly type: 'enemy'; readonly id: string }
   | { readonly type: 'pan'; readonly x: number; readonly y: number };
 
-function endOf(stepSchedule: StepSchedule | undefined, slot: number | null): RadarPoint | null {
+function endOf(stepSchedule: StepSchedule | undefined, slot: number | null): FloorPoint | null {
   const leg = slot === null ? undefined : stepSchedule?.legs[slot];
   if (leg === undefined) return null;
-  return { x: leg.xs[leg.xs.length - 1] ?? 0, y: leg.ys[leg.ys.length - 1] ?? 0 };
+  return {
+    x: leg.xs[leg.xs.length - 1] ?? 0,
+    y: leg.ys[leg.ys.length - 1] ?? 0,
+    floor: leg.floors[leg.floors.length - 1] ?? 0,
+  };
 }
 
 export function useTacticPlatePointer(options: Options) {
-  const { canvasRef, repaint, overview, viewRef, previewRef, liveStrokeRef, actions } = options;
+  const { canvasRef, repaint, overview, viewRef, previewRef, liveStrokeRef, actions, floor } =
+    options;
   const dragRef = useRef<Drag | null>(null);
   const penRef = useRef<RadarPoint[]>([]);
   const previewKeyRef = useRef('');
@@ -113,8 +120,8 @@ export function useTacticPlatePointer(options: Options) {
       clearPreview();
       return;
     }
-    const target = snapPoint(options.grid, point);
-    const key = `${Math.round(target.x / 4)},${Math.round(target.y / 4)}`;
+    const target = snapPoint(options.grid, { ...point, floor });
+    const key = `${floor}:${Math.round(target.x / 4)},${Math.round(target.y / 4)}`;
     if (key === previewKeyRef.current) return;
     previewKeyRef.current = key;
     const path = walkBetween(options.grid, from, target);
@@ -124,7 +131,7 @@ export function useTacticPlatePointer(options: Options) {
   };
 
   const updateHover = (point: RadarPoint, scale: number) => {
-    const handle = handleAt(options.step, options.selectedSlot, point, overview, scale);
+    const handle = handleAt(options.step, options.selectedSlot, point, overview, scale, floor);
     const lineup =
       options.tool === 'grenade' && options.lineups !== undefined
         ? lineupAt(
@@ -133,6 +140,7 @@ export function useTacticPlatePointer(options: Options) {
             endOf(options.stepSchedule, options.selectedSlot) ?? point,
             overview,
             scale,
+            floor,
           )
         : null;
     const lineupId = lineup?.id ?? null;
@@ -152,7 +160,7 @@ export function useTacticPlatePointer(options: Options) {
     if (event.button === 1 || (options.tool === 'select' && viewRef.current.zoom > 1)) {
       drag = { type: 'pan', x: event.clientX, y: event.clientY };
     } else if (options.tool !== 'grenade' && options.tool !== 'enemy' && slot !== null) {
-      const index = handleAt(options.step, slot, point, overview, scale);
+      const index = handleAt(options.step, slot, point, overview, scale, floor);
       if (index !== null) drag = { type: 'handle', slot, index };
     }
     if (drag === null) return false;
@@ -167,9 +175,9 @@ export function useTacticPlatePointer(options: Options) {
     point: RadarPoint,
     scale: number,
   ) => {
-    const id = enemyAt(enemiesOf(options.step), point, overview, scale);
+    const id = enemyAt(enemiesOf(options.step), point, overview, scale, floor);
     if (id === null) {
-      actions.onPlaceEnemy(toWorld(overview, point));
+      actions.onPlaceEnemy(toWorld(overview, point, floor));
       return;
     }
     actions.onSelectEnemy(id);
@@ -180,7 +188,7 @@ export function useTacticPlatePointer(options: Options) {
   /** With the select tool, a press on an enemy mark picks it. */
   const pickEnemyAt = (point: RadarPoint, scale: number): boolean => {
     if (options.tool !== 'select') return false;
-    const id = enemyAt(enemiesOf(options.step), point, overview, scale);
+    const id = enemyAt(enemiesOf(options.step), point, overview, scale, floor);
     if (id === null) return false;
     actions.onSelectEnemy(id);
     return true;
@@ -188,14 +196,15 @@ export function useTacticPlatePointer(options: Options) {
 
   /** A press on a token or a spawn spot, which picks rather than draws. */
   const pickAt = (point: RadarPoint, scale: number): boolean => {
-    const token = options.tool === 'pen' ? null : tokenAt(options.stepSchedule, point, scale);
+    const token =
+      options.tool === 'pen' ? null : tokenAt(options.stepSchedule, point, scale, floor);
     if (token !== null && options.tool !== 'grenade') {
       actions.onSelect(token);
       return true;
     }
     if (pickEnemyAt(point, scale)) return true;
     if (options.spawnSpots !== undefined && options.selectedSlot !== null) {
-      const spot = nearestSpot(options.spawnSpots, point, overview, scale);
+      const spot = nearestSpot(options.spawnSpots, point, overview, scale, floor);
       if (spot !== null) {
         actions.onPickSpawn(spot);
         return true;
@@ -215,10 +224,11 @@ export function useTacticPlatePointer(options: Options) {
           endOf(options.stepSchedule, slot) ?? point,
           overview,
           scale,
+          floor,
         )
       : null;
     if (lineup !== null) actions.onLineup(lineup);
-    else actions.onHandThrow(toWorld(overview, point));
+    else actions.onHandThrow(toWorld(overview, point, floor));
   };
 
   const drawWith = (
@@ -228,7 +238,10 @@ export function useTacticPlatePointer(options: Options) {
     scale: number,
   ) => {
     if (options.tool === 'route') {
-      actions.onAddWaypoint(slot, toWorld(overview, snapPoint(options.grid, point)));
+      actions.onAddWaypoint(
+        slot,
+        toWorld(overview, snapPoint(options.grid, { ...point, floor }), floor),
+      );
     } else if (options.tool === 'pen') {
       penRef.current = [endOf(options.stepSchedule, slot) ?? point, point];
       liveStrokeRef.current = penRef.current;
@@ -273,12 +286,12 @@ export function useTacticPlatePointer(options: Options) {
       actions.onMoveWaypoint(
         drag.slot,
         drag.index,
-        toWorld(overview, snapPoint(options.grid, info.point)),
+        toWorld(overview, snapPoint(options.grid, { ...info.point, floor }), floor),
       );
       return;
     }
     if (drag?.type === 'enemy') {
-      actions.onMoveEnemy(drag.id, toWorld(overview, info.point));
+      actions.onMoveEnemy(drag.id, toWorld(overview, info.point, floor));
       return;
     }
     if (drag?.type === 'pen') {
@@ -306,7 +319,7 @@ export function useTacticPlatePointer(options: Options) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     if (drag.type === 'pen') {
-      const stroke = penRef.current.slice(1).map((point) => toWorld(overview, point));
+      const stroke = penRef.current.slice(1).map((point) => toWorld(overview, point, floor));
       penRef.current = [];
       liveStrokeRef.current = null;
       if (stroke.length > 1) actions.onPenStroke(drag.slot, stroke);
@@ -349,10 +362,12 @@ function nearestSpot(
   point: RadarPoint,
   overview: MapOverview,
   scale: number,
+  floor: number,
 ): number | null {
   let best: number | null = null;
   let bestDistance = SPOT_HIT_PX / scale;
   spots.forEach((spot, index) => {
+    if (floorOfPoint(overview, spot) !== floor) return;
     const at = toRadar(overview, spot);
     const d = Math.hypot(at.x - point.x, at.y - point.y);
     if (d <= bestDistance) {

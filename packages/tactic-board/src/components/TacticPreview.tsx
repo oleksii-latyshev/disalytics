@@ -1,6 +1,6 @@
 import { type Tactic, tacticLoadout } from '@disa/demo-core';
 import { useT } from '@disa/i18n';
-import { getMapOverview } from '@disa/map-data';
+import { getMapOverview, mapFloors } from '@disa/map-data';
 import { UnknownMap } from '@disa/plate';
 import { cn } from '@disa/ui';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
@@ -59,6 +59,10 @@ function PreviewBoard({
 
   const [requestedStep, setRequestedStep] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [requestedFloor, setFloor] = useState(0);
+  const floor = Math.min(requestedFloor, mapFloors(overview).length - 1);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new map starts on its first floor
+  useEffect(() => setFloor(0), [tactic.map]);
   const stepIndex = Math.min(requestedStep, Math.max(0, steps.length - 1));
   const step = steps[stepIndex];
   const stepSchedule = schedule.steps[stepIndex];
@@ -114,6 +118,8 @@ function PreviewBoard({
           tool="select"
           clock={playback.clock}
           isShown={playback.isShown}
+          floor={floor}
+          onFloor={setFloor}
           lineups={[]}
           spawns={tactic.spawns}
           spawnSpots={undefined}

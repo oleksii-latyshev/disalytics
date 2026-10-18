@@ -1,7 +1,8 @@
 import type { Lineup } from '@disa/demo-core';
-import type { MapOverview } from '@disa/map-data';
+import { floorAt, type MapOverview } from '@disa/map-data';
 import type { PlateGeometry, RadarColors } from '@disa/plate';
 import { drawTrajectoryArc, projectWorldToScreen } from './tactic-layer-drawing';
+import { floorAlpha } from './tactic-route-drawing';
 
 const MARKER_RADIUS = 5;
 const HOVER_MARKER_RADIUS = 8;
@@ -34,16 +35,32 @@ export function drawLineupMarkers(
   overview: MapOverview,
   geometry: PlateGeometry,
   colors: RadarColors,
+  activeFloor: number,
 ): void {
   for (const lineup of lineups) {
+    const fade = floorAlpha(
+      floorAt(overview, lineup.landing.x, lineup.landing.y, lineup.landing.z),
+      activeFloor,
+    );
     const landing = projectWorldToScreen(overview, lineup.landing.x, lineup.landing.y, geometry);
     const ink = colorOfKind(lineup, colors);
     const isHovered = lineup.id === hoveredId;
 
     if (isHovered) {
       const origin = projectWorldToScreen(overview, lineup.origin.x, lineup.origin.y, geometry);
-      drawTrajectoryArc(context, origin.x, origin.y, landing.x, landing.y, ink, 2, true, 0.9);
+      drawTrajectoryArc(
+        context,
+        origin.x,
+        origin.y,
+        landing.x,
+        landing.y,
+        ink,
+        2,
+        true,
+        0.9 * fade,
+      );
       context.save();
+      context.globalAlpha = fade;
       context.fillStyle = ink;
       context.beginPath();
       context.arc(origin.x, origin.y, 4, 0, Math.PI * 2);
@@ -52,7 +69,7 @@ export function drawLineupMarkers(
     }
 
     context.save();
-    context.globalAlpha = isHovered ? 1 : 0.7;
+    context.globalAlpha = (isHovered ? 1 : 0.7) * fade;
     context.fillStyle = ink;
     context.strokeStyle = colors.selectionRing;
     context.lineWidth = isHovered ? 2 : 1;

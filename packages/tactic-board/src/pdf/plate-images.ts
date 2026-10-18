@@ -2,6 +2,8 @@ import { effectiveSteps, planById, type Tactic } from '@disa/demo-core';
 import type { Translate } from '@disa/i18n';
 import {
   type MapOverview,
+  mapFloors,
+  type NavGrid,
   RADAR_IMAGE_SIZE,
   type RadarTheme,
   radarAssetPath,
@@ -18,6 +20,7 @@ import {
 import { createTacticClock } from '../helpers/tactic-clock';
 import { slotColors } from '../helpers/tactic-colors';
 import { enemyMarksByStep } from '../helpers/tactic-enemies';
+import { floorScrim, liftedFloorImage } from '../helpers/tactic-floor-backdrop';
 import { tacticLayer } from '../helpers/tactic-layer';
 import { createMotion } from '../helpers/tactic-motion';
 import { createScene } from '../helpers/tactic-scene';
@@ -36,6 +39,8 @@ const FALLBACK_GROUND = '#0b0b0c';
 export interface PlateImagesRequest {
   readonly tactic: Tactic;
   readonly overview: MapOverview;
+  /** The walkable grids, which give an underpass-like floor its shape on the shared picture. */
+  readonly grid?: NavGrid | undefined;
   readonly schedules: ReadonlyMap<string, TacticSchedule>;
   readonly sections: readonly PdfStepSection[];
   readonly palette: Palette;
@@ -73,10 +78,18 @@ function newCanvas(size: number): { canvas: HTMLCanvasElement; context: CanvasRe
   return { canvas, context };
 }
 
+/** The picture a floor is drawn on, and the part of it a shared floor lifts out of the dimming. */
+interface FloorBackdrop {
+  readonly image: HTMLImageElement | null;
+  readonly lifted: HTMLCanvasElement | null;
+}
+
 function layersOf(
   request: PlateImagesRequest,
   section: PdfStepSection,
-  backdrop: HTMLImageElement | null,
+  floor: number,
+  backdrop: FloorBackdrop,
+  ground: string,
 ): readonly Layer[] | null {
   const { tactic, overview, schedules, palette, t } = request;
   const plan = planById(tactic, section.planId);
@@ -109,8 +122,13 @@ function layersOf(
     },
     preview: { current: null },
     liveStroke: { current: null },
+    floor,
   });
-  return backdrop === null ? [layer] : [squareBackdrop(backdrop, view), layer];
+  if (backdrop.image === null) return [layer];
+  const picture = squareBackdrop(backdrop.image, view);
+  return backdrop.lifted === null
+    ? [picture, layer]
+    : [picture, floorScrim(backdrop.lifted, ground, view), layer];
 }
 
 function paint(context: CanvasRenderingContext2D, layers: readonly Layer[], ground: string): void {
@@ -146,24 +164,53 @@ function crop(plate: HTMLCanvasElement, region: { x: number; y: number; size: nu
   return { dataUrl: canvas.toDataURL('image/jpeg', JPEG_QUALITY), format: 'JPEG' };
 }
 
+async function backdropOf(
+  request: PlateImagesRequest,
+  floor: number,
+  loaded: Map<number, HTMLImageElement | null>,
+): Promise<FloorBackdrop> {
+  const info = mapFloors(request.overview)[floor];
+  const level = info?.level ?? 0;
+  if (!loaded.has(level)) {
+    const source = `${request.imageBase}${radarAssetPath(levelAt(request.overview, level), request.radarTheme)}`;
+    loaded.set(level, await loadImage(source, request.imageCrossOrigin));
+  }
+  const image = loaded.get(level) ?? null;
+  const grid = request.grid?.levels[floor];
+  const lifted =
+    info?.isExtra === true && image !== null && grid !== undefined
+      ? liftedFloorImage(image, grid)
+      : null;
+  return { image, lifted };
+}
+
 /**
  * One picture per step, drawn with the board's own layer: the routes and grenades of the step, the
  * expected enemies and the players where the step begins, on the radar in the reader's theme and
- * palette. Throws get a close-up cut from the same picture. A radar image that does not load leaves
- * the plate without a backdrop; a step the board cannot draw has no picture.
+ * palette, with the first floor in view. A step that also uses another floor gets a picture of that
+ * floor too. Throws get a close-up cut from the first picture. A radar image that does not load
+ * leaves the plate without a backdrop; a step the board cannot draw has no picture.
  */
 export async function renderPlateImages(
   request: PlateImagesRequest,
 ): Promise<ReadonlyMap<string, PdfImage>> {
   const images = new Map<string, PdfImage>();
   await document.fonts?.ready;
-  const source = `${request.imageBase}${radarAssetPath(levelAt(request.overview, 0), request.radarTheme)}`;
-  const backdrop = await loadImage(source, request.imageCrossOrigin);
+  const loaded = new Map<number, HTMLImageElement | null>();
+  const backdrops = new Map<number, FloorBackdrop>();
   const ground = readCssToken('--color-surface-0') || FALLBACK_GROUND;
   const { canvas, context } = newCanvas(PLATE_PIXELS);
 
+  const backdropFor = async (floor: number): Promise<FloorBackdrop> => {
+    const known = backdrops.get(floor);
+    if (known !== undefined) return known;
+    const made = await backdropOf(request, floor, loaded);
+    backdrops.set(floor, made);
+    return made;
+  };
+
   for (const section of request.sections) {
-    const layers = layersOf(request, section, backdrop);
+    const layers = layersOf(request, section, 0, await backdropFor(0), ground);
     if (layers === null) continue;
     paint(context, layers, ground);
     images.set(plateImageId(section.key), {
@@ -173,6 +220,16 @@ export async function renderPlateImages(
     for (const entry of section.throws) {
       if (entry.region !== null)
         images.set(cropImageId(section.key, entry.id), crop(canvas, entry.region));
+    }
+
+    for (const { floor } of section.floors) {
+      const more = layersOf(request, section, floor, await backdropFor(floor), ground);
+      if (more === null) continue;
+      paint(context, more, ground);
+      images.set(plateImageId(section.key, floor), {
+        dataUrl: canvas.toDataURL('image/jpeg', JPEG_QUALITY),
+        format: 'JPEG',
+      });
     }
     await nextTask();
   }
