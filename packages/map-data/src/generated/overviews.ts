@@ -9,6 +9,7 @@ export const RADAR_IMAGE_SIZE = 1024;
 export const MAP_IDS = [
   'de_ancient',
   'de_anubis',
+  'de_cache',
   'de_dust2',
   'de_inferno',
   'de_mirage',
@@ -44,6 +45,21 @@ export const MAP_OVERVIEWS: Readonly<Record<MapId, MapOverview>> = {
     levels: [
       {
         image: 'de_anubis',
+        altitudeMax: 10000,
+        altitudeMin: -10000,
+      },
+    ],
+  },
+  de_cache: {
+    id: 'de_cache',
+    posX: -2000,
+    posY: 3250,
+    scale: 5.5,
+    rotate: 0,
+    zoom: 0,
+    levels: [
+      {
+        image: 'de_cache',
         altitudeMax: 10000,
         altitudeMin: -10000,
       },
