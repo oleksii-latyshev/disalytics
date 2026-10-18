@@ -16,6 +16,7 @@ pub const FLAG_DEFUSING: u8 = 1 << 3;
 pub const FLAG_PLANTING: u8 = 1 << 4;
 pub const FLAG_WALKING: u8 = 1 << 5;
 pub const FLAG_HELMET: u8 = 1 << 6;
+pub const FLAG_HAS_BOMB: u8 = 1 << 7;
 
 // grenades bitfield — must stay in sync with packages/demo-core/src/schema.ts. Molotov and
 // incendiary share one bit: they are the same thing to a reader deciding whether a corner is

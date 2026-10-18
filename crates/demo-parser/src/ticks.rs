@@ -1,11 +1,12 @@
 use crate::columns::{Columns, IntegerColumn, bool_at, float_at, id_at, list_at, text_at};
 use crate::error::ParseError;
 use crate::schema::{
-    ANGLE_SCALE, DEFAULT_SAMPLE_HZ, FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HELMET,
-    FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING, PlayerSlot, Team, Tick, TickTrack, WEAPON_NONE,
+    ANGLE_SCALE, DEFAULT_SAMPLE_HZ, FLAG_ALIVE, FLAG_DEFUSING, FLAG_DUCKING, FLAG_HAS_BOMB,
+    FLAG_HELMET, FLAG_PLANTING, FLAG_SCOPED, FLAG_WALKING, PlayerSlot, Team, Tick, TickTrack,
+    WEAPON_NONE,
 };
 use crate::upstream::{TICK_PROPS, prop};
-use crate::weapons::{WeaponTable, grenades_of};
+use crate::weapons::{WeaponTable, grenades_of, has_bomb};
 use parser::parse_demo::DemoOutput;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -305,6 +306,9 @@ impl<'a> Ticks<'a> {
                 .iter()
                 .filter(|(_, column)| bool_at(column, row))
                 .fold(0, |flags, (flag, _)| flags | flag);
+            if has_bomb(list_at(inventories, row)) {
+                track.flags[cell] |= FLAG_HAS_BOMB;
+            }
         }
 
         // Planting has no per-player prop of its own — it is the window between a player starting a

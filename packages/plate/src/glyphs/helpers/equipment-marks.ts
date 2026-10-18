@@ -148,9 +148,9 @@ const FLIGHT_MARKS = markSet({ width: FLIGHT_MARK_PX, height: FLIGHT_MARK_PX });
  * where neither — `weaponClass` answers `unknown` for a weapon nobody here has drawn, and an
  * unknown weapon is still a weapon.
  *
- * **The bomb draws nothing** — §6.4. The prop reports `C4 Explosive` only while the bomb is *held*
- * and says nothing while it is stowed, so a mark here would be right for a moment and quietly wrong
- * for the rest of the round.
+ * **The bomb draws nothing** — §6.4. The weapon prop reports `C4 Explosive` only while the bomb is
+ * *held*, so a mark here would be right for a moment and quietly wrong for the rest of the round.
+ * `FLAG_HAS_BOMB` knows the carrier while it is stowed; only the tactic views read it (#672).
  */
 function labelMark(weapon: WeaponClass, icon: WeaponIconId | undefined): Mark | null {
   if (icon !== undefined) return LABEL_MARKS.model(icon);

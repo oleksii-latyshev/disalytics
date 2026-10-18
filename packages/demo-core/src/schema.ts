@@ -4,7 +4,7 @@
  * parser is a miss rather than something to migrate, and a demo already on the device is corrected
  * rather than left holding what it was stored with.
  */
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 declare const unit: unique symbol;
 
@@ -155,6 +155,7 @@ export const FLAG_DEFUSING = 1 << 3;
 export const FLAG_PLANTING = 1 << 4;
 export const FLAG_WALKING = 1 << 5;
 export const FLAG_HELMET = 1 << 6;
+export const FLAG_HAS_BOMB = 1 << 7;
 
 // grenades bitfield — must stay in sync with the writer in crates/demo-parser. Molotov and
 // incendiary share one bit: they are the same thing to a reader deciding whether a corner is

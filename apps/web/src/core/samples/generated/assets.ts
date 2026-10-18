@@ -22,6 +22,6 @@ export interface SampleAsset {
  * is a compile error rather than a card that answers a press with a failure.
  */
 export const SAMPLE_ASSETS: Record<SampleId, SampleAsset> = {
-  'falcons-navi-inferno': { url: url0, byteLength: 3927811 },
-  'falcons-navi-anubis': { url: url1, byteLength: 6129488 },
+  'falcons-navi-inferno': { url: url0, byteLength: 3927849 },
+  'falcons-navi-anubis': { url: url1, byteLength: 6130565 },
 };
