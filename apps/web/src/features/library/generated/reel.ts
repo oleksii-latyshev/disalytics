@@ -30,7 +30,7 @@ export const WAY_IN_REEL: ReelSource = {
     { name: 'makazze', side: 'CT' },
   ],
   teams: { T: 'Falcons', CT: 'Natus Vincere' },
-  event: 'EVENT_TBD',
+  event: 'ESL Pro League Season 24',
   quantOrigin: -8192,
   quantUnits: 1,
   positions: [

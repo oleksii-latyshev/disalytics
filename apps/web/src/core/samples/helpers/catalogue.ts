@@ -41,13 +41,13 @@ export const SAMPLE_MATCHES: readonly SampleMatch[] = [
     sourceFile: 'falcons-vs-natus-vincere-m1-inferno.dem',
     map: 'de_inferno',
     teams: ['Natus Vincere', 'Falcons'],
-    event: 'EVENT_TBD',
+    event: 'ESL Pro League Season 24',
   },
   {
     id: 'falcons-navi-anubis',
     sourceFile: 'falcons-vs-natus-vincere-m2-anubis.dem',
     map: 'de_anubis',
     teams: ['Natus Vincere', 'Falcons'],
-    event: 'EVENT_TBD',
+    event: 'ESL Pro League Season 24',
   },
 ];

@@ -3,8 +3,8 @@
 Two maps of one professional match, as **parsed containers** rather than as demos, so somebody with
 no `.dem` to hand can still open the product and see what it does — `ROADMAP.md` M7's first row.
 
-**Source:** an ESL series between Falcons and Natus Vincere (EVENT_TBD), maps one and two, published
-by [HLTV](https://www.hltv.org/) as it is for every match it covers. It replaced the IEM Atlanta 2026
+**Source:** [Falcons vs Natus Vincere at ESL Pro League Season 24](https://www.hltv.org/matches/2398745/falcons-vs-natus-vincere-esl-pro-league-season-24),
+maps one and two, published by [HLTV](https://www.hltv.org/) as it is for every match it covers. It replaced the IEM Atlanta 2026
 NaVi–Vitality pair on 18 October 2026, whose source demos were lost. The players are professionals
 whose names, teams and statistics are broadcast, recorded and republished as a matter of course,
 which is what makes shipping this parse different from shipping anybody's own recording — and it is
