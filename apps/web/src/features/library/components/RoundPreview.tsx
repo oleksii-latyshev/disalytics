@@ -11,7 +11,7 @@ import { prefersLessMotion } from '../helpers/less-motion';
 import { previewDraw } from '../helpers/preview-draw';
 import { decodeReel } from '../helpers/reel';
 
-const RATE = 0.75;
+const RATE = 1.25;
 function timestamp(seconds: number): string {
   return `${Math.floor(seconds / 60)
     .toString()
