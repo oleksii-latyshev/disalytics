@@ -70,6 +70,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // jsPDF's optional peers, which only its `.html()` and SVG paths load (plugins/unused-module.ts).
+      html2canvas: fileURLToPath(new URL('./plugins/unused-module.ts', import.meta.url)),
+      dompurify: fileURLToPath(new URL('./plugins/unused-module.ts', import.meta.url)),
+      canvg: fileURLToPath(new URL('./plugins/unused-module.ts', import.meta.url)),
       // The parse worker imports the generated glue by the name wasm-pack writes into
       // pkg/package.json. pkg/ is a build output rather than a dependency and is gitignored, so
       // `bun run wasm:build` has to have run before this resolves.

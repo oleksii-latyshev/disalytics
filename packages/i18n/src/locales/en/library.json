@@ -635,6 +635,28 @@
       "failed": "This is not a tactic file, or it was made by a newer version.",
       "footer": "Tactics live in this browser. A file is a copy — yours stays with you."
     },
+    "pdf": {
+      "download": "Download tactic PDF",
+      "busy": "Preparing the PDF…",
+      "failed": "The PDF could not be made. Check your connection and try again.",
+      "kind": "Tactic",
+      "author": "Author",
+      "loadout": "Loadout",
+      "plans": "Plans and steps",
+      "tasks": "Tasks",
+      "startsAt": "Starts at {clock}",
+      "noTask": "No task written",
+      "out": "Out",
+      "branchOut": "{count, plural, one {Out in this branch: player {slots}} other {Out in this branch: players {slots}}}",
+      "leaves": "Leaves after {seconds, number, ::.#} s",
+      "buysFor": "Buys {kind} for player {slot}",
+      "droppedBy": "Dropped by player {slot}",
+      "teamCost": "Team total",
+      "enemyTakenBy": "Taken by player {slot}",
+      "enemyDead": "Killed in this step",
+      "continued": "{title} (continued)",
+      "page": "Page {page} of {total}"
+    },
     "untitled": "Untitled tactic",
     "loadout": {
       "cost": "${amount, number}",

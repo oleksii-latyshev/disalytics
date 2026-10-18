@@ -5,7 +5,8 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./pdf": "./src/pdf/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -17,6 +18,7 @@
     "@disa/map-data": "*",
     "@disa/plate": "*",
     "@disa/ui": "*",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.38.0",
     "react": "^19.2.0"
   },
