@@ -101,10 +101,11 @@ const GENERATED_DOC = `/**
  */`;
 
 async function writeGenerated(sizes: ReadonlyMap<string, number>): Promise<void> {
+  // Sorted by path, the order Biome's import sorting keeps, so a fresh run passes `check` as written.
   const imports = SAMPLE_MATCHES.map(
     (sample, index) =>
       `import url${index} from '../../../../assets/samples/${sample.id}.disa.gz?url';`,
-  );
+  ).sort((a, b) => (a.slice(a.indexOf("'")) < b.slice(b.indexOf("'")) ? -1 : 1));
   const rows = SAMPLE_MATCHES.map(
     (sample, index) =>
       `  '${sample.id}': { url: url${index}, byteLength: ${sizes.get(sample.id) ?? 0} },`,

@@ -9,6 +9,7 @@ import {
   sidesBySlotAtRound,
 } from '@disa/demo-core';
 import { decodeDemo } from '@disa/demo-store/codec';
+import { SAMPLE_MATCHES } from '../../../apps/web/src/core/samples/helpers/catalogue';
 import {
   PLAYER_AGENTS,
   UTILITY_AGENTS,
@@ -18,10 +19,10 @@ import { emitReel, type ReelCut, type ReelGrenadeRow } from './emit';
 /**
  * The container the reel is cut from. It is the sample the library already ships, which is what
  * makes this script need no `.dem` at all: the chain is `.dem` → container → reel, and only the
- * first link is on the owner's machine. Dust2 because that is the plate the way in draws, and the
- * generated module carries the map so the two cannot drift apart.
+ * first link is on the owner's machine. The way in draws whichever map the generated module carries,
+ * so the plate and the reel cannot drift apart.
  */
-export const SOURCE_CONTAINER = 'apps/web/assets/samples/navi-vitality-dust2.disa.gz';
+export const SOURCE_CONTAINER = 'apps/web/assets/samples/falcons-navi-inferno.disa.gz';
 
 /**
  * Samples per second of match. Four is what makes a round of ten players affordable inside the
@@ -177,6 +178,25 @@ function chooseStillFrame(
   return best;
 }
 
+/**
+ * The catalogue's teams by the side they held in `roundIndex`. The catalogue lists the team that
+ * opened on T first, so a round whose sides are swapped from the first round's swaps the names.
+ */
+function teamsAtRound(
+  demo: ParsedDemo,
+  roundIndex: number,
+): { T: string; CT: string; event: string } {
+  const sample = SAMPLE_MATCHES.find((match) => SOURCE_CONTAINER.endsWith(`/${match.id}.disa.gz`));
+  if (sample === undefined) throw new Error(`${SOURCE_CONTAINER} is not in SAMPLE_MATCHES`);
+  const [openedT, openedCt] = sample.teams;
+  const opening = sidesBySlotAtRound(demo, 0);
+  const now = sidesBySlotAtRound(demo, roundIndex);
+  const swapped = opening[0] !== undefined && now[0] !== undefined && opening[0] !== now[0];
+  return swapped
+    ? { T: openedCt, CT: openedT, event: sample.event }
+    : { T: openedT, CT: openedCt, event: sample.event };
+}
+
 export function buildReel(): { source: string; facts: ReelFacts } {
   const bytes = new Uint8Array(gunzipSync(readFileSync(SOURCE_CONTAINER)));
   const demo = decodeDemo(bytes);
@@ -225,7 +245,10 @@ export function buildReel(): { source: string; facts: ReelFacts } {
   }
 
   const stillFrame = chooseStillFrame(rows, alive, slotCount, frameCount);
+  const { event, ...teams } = teamsAtRound(demo, roundIndex);
   const cut: ReelCut = {
+    teams,
+    event,
     map: header.map,
     round: round.number,
     hz: REEL_HZ,

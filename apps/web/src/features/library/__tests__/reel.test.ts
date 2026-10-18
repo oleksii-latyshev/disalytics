@@ -52,6 +52,8 @@ function stubReel(overrides: Partial<ReelSource> = {}): ReelSource {
       { name: 'alpha', side: 'CT' },
       { name: 'bravo', side: 'T' },
     ],
+    teams: { T: 'Team T', CT: 'Team CT' },
+    event: 'Event',
     quantOrigin: QUANT_ORIGIN,
     quantUnits: QUANT_UNITS,
     positions: packPositions([

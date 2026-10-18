@@ -22,6 +22,8 @@ export interface ReelCut {
   stillFrame: number;
   slotCount: number;
   players: readonly { readonly name: string; readonly side: Team }[];
+  teams: { readonly T: string; readonly CT: string };
+  event: string;
   quantOrigin: number;
   quantUnits: number;
   detail: ReelDetail;
@@ -58,7 +60,7 @@ function packPositions(values: Uint16Array, seriesCount: number, frameCount: num
 }
 
 const GENERATED_DOC = `/**
- * One round of IEM Atlanta 2026, cut from the sample container this build already ships and small
+ * One round of a shipped sample match, cut from the sample container this build already ships and small
  * enough to sit inside the bundle. Written by \`bun run reel:generate\`, held to the container it came
  * from by \`bun run reel:check\`.
  *
@@ -110,6 +112,8 @@ export function emitReel(cut: ReelCut): string {
       `  stillFrame: ${cut.stillFrame},`,
       `  slotCount: ${cut.slotCount},`,
       `  players: ${JSON.stringify(cut.players)},`,
+      `  teams: ${JSON.stringify(cut.teams)},`,
+      `  event: ${JSON.stringify(cut.event)},`,
       `  quantOrigin: ${cut.quantOrigin},`,
       `  quantUnits: ${cut.quantUnits},`,
       `  positions: [${packPositions(cut.positions, cut.slotCount * 2, cut.frameCount).join(', ')}],`,

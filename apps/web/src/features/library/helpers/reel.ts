@@ -62,6 +62,10 @@ export interface ReelSource {
   slotCount: number;
   /** Indexed by slot, so the preview can use the review plate's token vocabulary. */
   players: readonly ReelPlayer[];
+  /** Who held each side in this round — proper nouns, never translated. */
+  teams: { readonly T: string; readonly CT: string };
+  /** The event the match was played at, as the catalogue names it. */
+  event: string;
   detail?: ReelDetail;
   /** World units at quantised zero, and steps per world unit. */
   quantOrigin: number;
