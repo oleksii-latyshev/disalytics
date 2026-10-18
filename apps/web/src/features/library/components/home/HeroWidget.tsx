@@ -16,6 +16,7 @@ import { Play } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { SAMPLE_MATCHES } from '@/core/samples';
 import { PlateStill } from '@/features/radar';
+import { WAY_IN_REEL } from '../../generated/reel';
 import { mapTitle } from '../../helpers/map-title';
 import { useLessMotion } from '../../hooks/use-less-motion';
 import { RoundPreview } from '../RoundPreview';
@@ -334,7 +335,7 @@ function ContinueHero({ size, data, actions, last }: WidgetProps & { last: Saved
 }
 
 function FirstRunHero({ actions }: Pick<WidgetProps, 'actions'>) {
-  const sample = SAMPLE_MATCHES.find((match) => match.map === 'de_dust2') ?? SAMPLE_MATCHES[0];
+  const sample = SAMPLE_MATCHES.find((match) => match.map === WAY_IN_REEL.map) ?? SAMPLE_MATCHES[0];
 
   return (
     <div className={SHELL}>

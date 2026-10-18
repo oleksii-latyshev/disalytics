@@ -189,11 +189,11 @@ export function RoundPreview({ suspended, compact = false }: PreviewProps) {
         <div className="mt-2 pt-3 [border-block-start:1px_solid_var(--color-line)]">
           <div className="flex flex-wrap items-center justify-between gap-2 text-11">
             <span className="text-t">
-              ● NAVI · T <span ref={tRef} className="font-mono text-ink" />
+              ● {WAY_IN_REEL.teams.T} · T <span ref={tRef} className="font-mono text-ink" />
             </span>
-            <span className="text-10 text-ink-dim">IEM ATLANTA 2026</span>
+            <span className="text-10 text-ink-dim uppercase">{WAY_IN_REEL.event}</span>
             <span className="text-ct">
-              ● Vitality · CT <span ref={ctRef} className="font-mono text-ink" />
+              ● {WAY_IN_REEL.teams.CT} · CT <span ref={ctRef} className="font-mono text-ink" />
             </span>
           </div>
           <div className="mt-3 flex items-center gap-3">

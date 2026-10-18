@@ -16,7 +16,7 @@
  * The ids, as their own list, so `SAMPLE_ASSETS` can be a `Record` over them: a sample nobody
  * shipped bytes for is then a compile error rather than a card that answers a press with a failure.
  */
-export const SAMPLE_IDS = ['navi-vitality-inferno', 'navi-vitality-dust2'] as const;
+export const SAMPLE_IDS = ['falcons-navi-inferno', 'falcons-navi-anubis'] as const;
 
 export type SampleId = (typeof SAMPLE_IDS)[number];
 
@@ -27,24 +27,27 @@ export interface SampleMatch {
   sourceFile: string;
   /** Game vocabulary — the map as the demo writes it, never translated. */
   map: string;
-  /** Proper nouns, and game vocabulary for the same reason a map name is. */
+  /**
+   * Proper nouns, and game vocabulary for the same reason a map name is. The team that opened on T
+   * first, then the one that opened on CT — the reel reads the order to name the sides of its round.
+   */
   teams: readonly [string, string];
   event: string;
 }
 
 export const SAMPLE_MATCHES: readonly SampleMatch[] = [
   {
-    id: 'navi-vitality-inferno',
-    sourceFile: 'natus-vincere-vs-vitality-m3-inferno.dem',
+    id: 'falcons-navi-inferno',
+    sourceFile: 'falcons-vs-natus-vincere-m1-inferno.dem',
     map: 'de_inferno',
-    teams: ['Natus Vincere', 'Vitality'],
-    event: 'IEM Atlanta 2026',
+    teams: ['Natus Vincere', 'Falcons'],
+    event: 'ESL Pro League Season 24',
   },
   {
-    id: 'navi-vitality-dust2',
-    sourceFile: 'natus-vincere-vs-vitality-m1-dust2.dem',
-    map: 'de_dust2',
-    teams: ['Natus Vincere', 'Vitality'],
-    event: 'IEM Atlanta 2026',
+    id: 'falcons-navi-anubis',
+    sourceFile: 'falcons-vs-natus-vincere-m2-anubis.dem',
+    map: 'de_anubis',
+    teams: ['Natus Vincere', 'Falcons'],
+    event: 'ESL Pro League Season 24',
   },
 ];
