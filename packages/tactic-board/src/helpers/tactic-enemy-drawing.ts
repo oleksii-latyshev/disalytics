@@ -48,6 +48,42 @@ function markPath(context: CanvasRenderingContext2D, x: number, y: number, half:
   context.roundRect(x - half, y - half, half * 2, half * 2, half * 0.35);
 }
 
+const MARK_FONTS = new Map<number, string>();
+
+function markFont(size: number): string {
+  let font = MARK_FONTS.get(size);
+  if (font === undefined) {
+    font = `700 ${size}px IBM Plex Mono, monospace`;
+    MARK_FONTS.set(size, font);
+  }
+  return font;
+}
+
+/** The rounded square that stands for the other side: filled, outlined, with a glyph inside. */
+export function drawEnemyMark(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  half: number,
+  fill: string,
+  outline: string,
+  ink: string,
+  text: string,
+  textScale: number,
+): void {
+  context.fillStyle = fill;
+  context.strokeStyle = outline;
+  context.lineWidth = 2;
+  markPath(context, x, y, half);
+  context.fill();
+  context.stroke();
+  context.fillStyle = ink;
+  context.font = markFont(Math.round(half * textScale));
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, x, y + 0.5);
+}
+
 function drawGhost(
   context: CanvasRenderingContext2D,
   g: PlateGeometry,
@@ -56,20 +92,19 @@ function drawGhost(
 ): void {
   const x = radarX(drawing.overview, enemy.at.x) * g.scale + g.offsetX;
   const y = radarY(drawing.overview, enemy.at.y) * g.scale + g.offsetY;
-  const half = g.tokenRadius * 1.0;
   context.save();
   context.globalAlpha = 0.85 * floorAlpha(floorOfPoint(drawing.overview, enemy.at), drawing.floor);
-  context.fillStyle = drawing.colors.dead;
-  context.strokeStyle = drawing.colors.team[drawing.enemySide];
-  context.lineWidth = 2;
-  markPath(context, x, y, half);
-  context.fill();
-  context.stroke();
-  context.fillStyle = drawing.colors.hollow;
-  context.font = `700 ${Math.round(half * 1.3)}px IBM Plex Mono, monospace`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText('✕', x, y + 0.5);
+  drawEnemyMark(
+    context,
+    x,
+    y,
+    g.tokenRadius * 1.0,
+    drawing.colors.dead,
+    drawing.colors.team[drawing.enemySide],
+    drawing.colors.hollow,
+    '✕',
+    1.3,
+  );
   context.restore();
 }
 
@@ -166,17 +201,17 @@ function drawEnemy(
     markPath(context, x, y, half + 4);
     context.stroke();
   }
-  context.fillStyle = isDead ? colors.dead : colors.team[drawing.enemySide];
-  context.strokeStyle = colors.hollow;
-  context.lineWidth = 2;
-  markPath(context, x, y, half);
-  context.fill();
-  context.stroke();
-  context.fillStyle = colors.hollow;
-  context.font = `700 ${Math.round(half * (isDead ? 1.3 : 0.95))}px IBM Plex Mono, monospace`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(isDead ? '✕' : drawing.enemySide, x, y + 0.5);
+  drawEnemyMark(
+    context,
+    x,
+    y,
+    half,
+    isDead ? colors.dead : colors.team[drawing.enemySide],
+    colors.hollow,
+    colors.hollow,
+    isDead ? '✕' : drawing.enemySide,
+    isDead ? 1.3 : 0.95,
+  );
 
   const note = noteOf(drawing, enemy);
   if (note !== '') drawNote(context, drawing, note, x + half + 5, y, fade);

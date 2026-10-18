@@ -36,4 +36,6 @@ export interface TacticPlateProps {
   readonly onPreviewReach: (isReachable: boolean | null) => void;
   /** Draws no waypoint handles; the host also gives the plate no-op actions. */
   readonly isReadOnly?: boolean | undefined;
+  /** The other team's schedule, drawn moving on the same clock. */
+  readonly opponents?: TacticSchedule | undefined;
 }
