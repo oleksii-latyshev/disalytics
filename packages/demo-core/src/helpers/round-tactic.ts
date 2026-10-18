@@ -174,20 +174,31 @@ function deathTick(demo: ParsedDemo, demoSlot: number, window: RoundWindow): num
   return kill?.tick;
 }
 
+interface WalkedRoute {
+  readonly points: readonly TacticPoint[];
+  /** Real seconds before the player left `STANDING_UNITS` of where the step began. */
+  readonly delaySeconds?: number;
+  /** Real seconds from leaving until the end of the route. */
+  readonly runSeconds?: number;
+}
+
+const roundMillis = (seconds: number): number => Math.round(seconds * 1000) / 1000;
+
 function routeOf(
   context: Context,
   slot: number,
   span: StepSpan,
   throws: readonly TacticThrow[],
   diedAt: number | undefined,
-): readonly TacticPoint[] {
+): WalkedRoute {
   const { demo, demoSlots } = context;
   const demoSlot = demoSlots[slot] ?? 0;
+  const none: WalkedRoute = { points: [] };
   const firstFrame = frameForTick(demo.track, asTick(span.startTick));
   const lastTick = diedAt !== undefined && isInSpan(diedAt, span) ? diedAt : span.endTick;
   const lastFrame = frameForTick(demo.track, asTick(lastTick));
-  if (diedAt !== undefined && diedAt < span.startTick) return [];
-  if (!isAliveAt(demo, firstFrame, demoSlot) && diedAt === undefined) return [];
+  if (diedAt !== undefined && diedAt < span.startTick) return none;
+  if (!isAliveAt(demo, firstFrame, demoSlot) && diedAt === undefined) return none;
 
   const path: TacticPoint[] = [];
   for (let frame = firstFrame; frame <= lastFrame; frame++)
@@ -201,11 +212,22 @@ function routeOf(
   const kept = simplifyRoute(path, ROUTE_TOLERANCE_UNITS, anchors);
   const points = kept.slice(1).flatMap((index) => path[index] ?? []);
   const start = path[0];
-  if (start === undefined) return [];
+  if (start === undefined) return none;
   const isStanding = points.every(
     (point) => Math.hypot(point.x - start.x, point.y - start.y) <= STANDING_UNITS,
   );
-  return isStanding && diedAt === undefined ? [] : points;
+  if (isStanding && diedAt === undefined) return none;
+
+  const left = path.findIndex(
+    (point) => Math.hypot(point.x - start.x, point.y - start.y) > STANDING_UNITS,
+  );
+  if (left === -1) return { points };
+  const hz = demo.track.sampleHz;
+  return {
+    points,
+    delaySeconds: roundMillis(left / hz),
+    runSeconds: roundMillis((path.length - 1 - left) / hz),
+  };
 }
 
 function buildStep(
@@ -220,9 +242,16 @@ function buildStep(
     Math.round(((span.startTick - windowStartTick) / demo.header.tickRate) * 10) / 10;
   const players: TacticStepPlayer[] = demoSlots.map((demoSlot, slot) => {
     const diedAt = deathTick(demo, demoSlot, context.input.window);
+    const walked = routeOf(context, slot, span, throws, diedAt);
     return {
       slot,
-      route: { mode: 'points', points: routeOf(context, slot, span, throws, diedAt) },
+      route: { mode: 'points', points: walked.points },
+      ...(walked.delaySeconds !== undefined && walked.delaySeconds > 0
+        ? { delaySeconds: walked.delaySeconds }
+        : {}),
+      ...(walked.runSeconds !== undefined && walked.runSeconds > 0
+        ? { runSeconds: walked.runSeconds }
+        : {}),
       label: demo.header.players.find((player) => player.slot === demoSlot)?.name,
     };
   });

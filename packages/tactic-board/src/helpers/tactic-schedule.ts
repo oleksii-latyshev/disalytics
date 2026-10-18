@@ -48,6 +48,10 @@ export interface PlayerLeg {
   readonly breaks: readonly number[];
   readonly delaySeconds: number;
   readonly runSeconds: number;
+  /** Radar pixels a second along the route: the rifle's pace, or the pace the step was played at. */
+  readonly speedPxPerSecond: number;
+  /** The walk is timed by the step's own `runSeconds`, so the step ends when it does, not after `MIN_STEP_SECONDS`. */
+  readonly isPaced: boolean;
   /** Seconds after the step starts at which the player stands at the end. */
   readonly arriveSeconds: number;
 }
@@ -131,7 +135,10 @@ function buildLeg(
   });
 
   const lengthPx = cum[count - 1] ?? 0;
-  const runSeconds = lengthPx / speedPxPerSecond;
+  const timed = entry?.runSeconds;
+  const isPaced = !isDead && timed !== undefined && timed > 0 && lengthPx > 0;
+  const runSeconds = isPaced ? timed : lengthPx / speedPxPerSecond;
+  const pace = isPaced ? lengthPx / runSeconds : speedPxPerSecond;
   return {
     slot,
     isDead,
@@ -143,6 +150,8 @@ function buildLeg(
     breaks: walked.breaks,
     delaySeconds,
     runSeconds,
+    speedPxPerSecond: pace,
+    isPaced,
     arriveSeconds: delaySeconds + runSeconds,
   };
 }
@@ -162,12 +171,11 @@ function writePoint(leg: PlayerLeg, index: number, out: Float64Array, offset: nu
 export function readLegPosition(
   leg: PlayerLeg,
   seconds: number,
-  speedPxPerSecond: number,
   out: Float64Array,
   offset: number,
 ): number {
   const last = leg.xs.length - 1;
-  const travelled = (seconds - leg.delaySeconds) * speedPxPerSecond;
+  const travelled = (seconds - leg.delaySeconds) * leg.speedPxPerSecond;
   if (travelled <= 0 || last === 0) return writePoint(leg, 0, out, offset);
   if (travelled >= leg.lengthPx) return writePoint(leg, last, out, offset);
 
@@ -227,13 +235,8 @@ function throwSpot(thrown: TacticThrow, leg: PlayerLeg, overview: MapOverview): 
   };
 }
 
-function throwTimes(
-  thrown: TacticThrow,
-  leg: PlayerLeg,
-  vertex: number,
-  speedPxPerSecond: number,
-): ThrowTimes {
-  const standsAt = leg.delaySeconds + (leg.cum[vertex] ?? 0) / speedPxPerSecond;
+function throwTimes(thrown: TacticThrow, leg: PlayerLeg, vertex: number): ThrowTimes {
+  const standsAt = leg.delaySeconds + (leg.cum[vertex] ?? 0) / leg.speedPxPerSecond;
   const releaseLocal = standsAt + THROW_WINDUP_SECONDS + Math.max(0, thrown.releaseTime);
   return { releaseLocal, landLocal: releaseLocal + GRENADE_FLIGHT_SECONDS };
 }
@@ -243,7 +246,6 @@ function stepThrows(
   step: TacticStep,
   stepIndex: number,
   legs: readonly PlayerLeg[],
-  speedPxPerSecond: number,
 ): readonly { readonly throwData: ScheduledThrow; readonly landLocal: number }[] {
   const scheduled: { readonly throwData: ScheduledThrow; readonly landLocal: number }[] = [];
   for (const thrown of step.throws) {
@@ -251,7 +253,7 @@ function stepThrows(
     if (leg === undefined || leg.isDead) continue;
     const { from, vertex } = throwSpot(thrown, leg, input.overview);
     const to = toRadar(input.overview, thrown.to);
-    const times = throwTimes(thrown, leg, vertex, speedPxPerSecond);
+    const times = throwTimes(thrown, leg, vertex);
     scheduled.push({
       landLocal: times.landLocal,
       throwData: {
@@ -314,9 +316,10 @@ export function buildSchedule(input: ScheduleInput): TacticSchedule {
       ),
     );
 
-    const scheduled = stepThrows(input, step, index, legs, speedPxPerSecond);
+    const scheduled = stepThrows(input, step, index, legs);
+    const floorSeconds = legs.some((leg) => leg.isPaced) ? 0 : MIN_STEP_SECONDS;
     const durationSeconds = Math.max(
-      MIN_STEP_SECONDS,
+      floorSeconds,
       ...legs.map((leg) => leg.arriveSeconds),
       ...scheduled.map((entry) => entry.landLocal),
     );

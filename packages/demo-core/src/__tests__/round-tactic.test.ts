@@ -324,6 +324,25 @@ describe('tacticOfRound', () => {
     expect(route?.points).toHaveLength(1);
   });
 
+  it('records when a walker left the start and how long the walk took, meeting the next step', () => {
+    const demo = demoWith((events) =>
+      withDamage(events, { tick: second(25), attacker: asPlayerSlot(6), victim: asPlayerSlot(1) }),
+    );
+    const steps = tacticOfRound(demo, 0, 't', { id: 't' })?.tactic.plans[0]?.steps ?? [];
+    const first = steps[0]?.players[0];
+    expect(first?.delaySeconds).toBeCloseTo(13 / 16, 2);
+    expect((first?.delaySeconds ?? 0) + (first?.runSeconds ?? 0)).toBeCloseTo(25, 2);
+    const later = steps[1]?.players[0];
+    expect((later?.delaySeconds ?? 0) + (later?.runSeconds ?? 0)).toBeCloseTo(35, 1);
+  });
+
+  it('gives a standing player neither delay nor run', () => {
+    const demo = demoWith((events) => events);
+    const player = tacticOfRound(demo, 0, 'ct', { id: 't' })?.tactic.plans[0]?.steps[0]?.players[0];
+    expect(player?.delaySeconds).toBeUndefined();
+    expect(player?.runSeconds).toBeUndefined();
+  });
+
   it('shows a player who stays put as standing', () => {
     const demo = demoWith((events) => events);
     const route = tacticOfRound(demo, 0, 'ct', { id: 't' })?.tactic.plans[0]?.steps[0]?.players[0]

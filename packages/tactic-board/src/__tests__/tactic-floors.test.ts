@@ -176,8 +176,8 @@ describe('scheduling across floors', () => {
   it('reads the floor a player is on while the plan plays', () => {
     if (leg === undefined) throw new Error('no leg');
     const out = new Float64Array(2);
-    expect(readLegPosition(leg, 0, schedule.speedPxPerSecond, out, 0)).toBe(0);
-    expect(readLegPosition(leg, 999, schedule.speedPxPerSecond, out, 0)).toBe(1);
+    expect(readLegPosition(leg, 0, out, 0)).toBe(0);
+    expect(readLegPosition(leg, 999, out, 0)).toBe(1);
 
     const scene = createScene(schedule);
     sampleScene(schedule, 0, scene);

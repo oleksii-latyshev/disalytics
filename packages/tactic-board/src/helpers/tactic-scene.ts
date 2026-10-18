@@ -66,7 +66,7 @@ function sampleLegs(
   for (let slot = 0; slot < schedule.slotCount; slot++) {
     const leg = step.legs[slot];
     if (leg === undefined) continue;
-    scene.playerFloor[slot] = readLegPosition(leg, local, schedule.speedPxPerSecond, POSITION, 0);
+    scene.playerFloor[slot] = readLegPosition(leg, local, POSITION, 0);
     scene.playerX[slot] = POSITION[0] ?? 0;
     scene.playerY[slot] = POSITION[1] ?? 0;
     scene.isDead[slot] = leg.isDead ? 1 : 0;

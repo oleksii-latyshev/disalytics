@@ -529,7 +529,7 @@ function drawPlayback(
       active,
       alpha: 0.6,
     });
-    const travelled = Math.max(0, (local - leg.delaySeconds) * schedule.speedPxPerSecond);
+    const travelled = Math.max(0, (local - leg.delaySeconds) * leg.speedPxPerSecond);
     let upTo = 0;
     while (upTo < leg.xs.length - 1 && (leg.cum[upTo + 1] ?? 0) <= travelled) upTo++;
     strokeLeg(

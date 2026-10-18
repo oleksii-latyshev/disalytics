@@ -67,6 +67,36 @@ describe('buildSchedule', () => {
     expect(delayed.steps[0]?.legs[0]?.arriveSeconds).toBeCloseTo((leg?.arriveSeconds ?? 0) + 3);
   });
 
+  it('times a walk by runSeconds when the step carries it, and reads positions at that pace', () => {
+    const route = { mode: 'points' as const, points: [ahead] };
+    const plain = run([step('a', { players: [{ slot: 0, route }] })]);
+    const slow = run([
+      step('a', { players: [{ slot: 0, route, delaySeconds: 1, runSeconds: 10 }] }),
+    ]);
+    const fast = plain.steps[0]?.legs[0];
+    const leg = slow.steps[0]?.legs[0];
+    expect(leg?.runSeconds).toBe(10);
+    expect(leg?.arriveSeconds).toBe(11);
+    expect(leg?.speedPxPerSecond).toBeCloseTo((leg?.lengthPx ?? 0) / 10);
+    expect(fast?.speedPxPerSecond).toBeCloseTo(plain.speedPxPerSecond);
+    expect(slow.steps[0]?.durationSeconds).toBe(11);
+    if (leg === undefined) throw new Error('no leg');
+    const out = new Float64Array(2);
+    readLegPosition(leg, 6, out, 0);
+    expect(out[0]).toBeCloseTo((leg.xs[0] ?? 0) + ((leg.xs[1] ?? 0) - (leg.xs[0] ?? 0)) / 2);
+  });
+
+  it('does not floor a paced step at the minimum, so it meets the next pinned start', () => {
+    const route = { mode: 'points' as const, points: [ahead] };
+    const schedule = run([
+      step('a', { players: [{ slot: 0, route, runSeconds: 0.5 }] }),
+      step('b', { startsAt: 0.5 }),
+    ]);
+    expect(schedule.steps[0]?.durationSeconds).toBeCloseTo(0.5);
+    expect(schedule.steps[1]?.startSeconds).toBeCloseTo(0.5);
+    expect(schedule.steps[1]?.isLate).toBe(false);
+  });
+
   it('pins a step later than the previous one ends, and flags one pinned too early', () => {
     const route = { mode: 'points' as const, points: [ahead] };
     const first = step('a', { players: [{ slot: 0, route }] });
@@ -146,12 +176,12 @@ describe('positions in time', () => {
     const leg = schedule.steps[0]?.legs[0];
     if (leg === undefined) throw new Error('no leg');
     const out = new Float64Array(2);
-    readLegPosition(leg, 0.5, schedule.speedPxPerSecond, out, 0);
+    readLegPosition(leg, 0.5, out, 0);
     expect(out[0]).toBeCloseTo(leg.xs[0] ?? NaN);
-    readLegPosition(leg, 1 + leg.runSeconds / 2, schedule.speedPxPerSecond, out, 0);
+    readLegPosition(leg, 1 + leg.runSeconds / 2, out, 0);
     const mid = (leg.xs[0] ?? 0) + ((leg.xs[1] ?? 0) - (leg.xs[0] ?? 0)) / 2;
     expect(out[0]).toBeCloseTo(mid, 3);
-    readLegPosition(leg, 99, schedule.speedPxPerSecond, out, 0);
+    readLegPosition(leg, 99, out, 0);
     expect(out[0]).toBeCloseTo(leg.xs[1] ?? NaN);
   });
 
