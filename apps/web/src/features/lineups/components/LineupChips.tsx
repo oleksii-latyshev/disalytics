@@ -1,5 +1,5 @@
 import type { Lineup } from '@disa/demo-core';
-import { Text } from '@disa/i18n';
+import { Text, useT } from '@disa/i18n';
 import type { TargetSource } from '../helpers/lineup-targets';
 
 const CHIP = 'rounded-chip border border-line px-2 py-0.5 text-12 text-ink';
@@ -11,6 +11,7 @@ interface Props {
 
 /** Whose it is and what it is for: side, where it came from, who made it, how it is tagged. */
 export function LineupChips({ lineup, source }: Props) {
+  const t = useT();
   const { author } = lineup;
 
   return (
@@ -47,6 +48,17 @@ export function LineupChips({ lineup, source }: Props) {
             />
           )}
         </span>
+      )}
+      {author?.telegram !== undefined && (
+        <a
+          href={author.telegram}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t('library.lineups.chip.telegramLabel', { name: author.name })}
+          className={`${CHIP} underline underline-offset-2 hover:text-ink-dim`}
+        >
+          <Text path="library.lineups.chip.telegram" />
+        </a>
       )}
       {lineup.tags?.map((tag) => (
         <span key={tag} className={CHIP}>

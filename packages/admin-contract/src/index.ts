@@ -78,8 +78,15 @@ export {
   OVERVIEW_ACTIONS,
   OVERVIEW_KINDS,
   SteamUrl,
+  TelegramUrl,
 } from './schemas';
 export { isSteamUrl, MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
+export {
+  isTelegramUrl,
+  MAX_TELEGRAM_URL_LENGTH,
+  parseTelegramLink,
+  TELEGRAM_URL_PATTERN,
+} from './telegram-url';
 export type {
   CollectionProblemCode,
   Problem,

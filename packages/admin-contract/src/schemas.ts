@@ -1,6 +1,7 @@
 import { LINEUP_TAGS } from '@disa/demo-core';
 import { Schema } from 'effect';
 import { MAX_STEAM_URL_LENGTH, STEAM_URL_PATTERN } from './steam-url';
+import { MAX_TELEGRAM_URL_LENGTH, TELEGRAM_URL_PATTERN } from './telegram-url';
 import { COLLECTION_PROBLEM_CODES, PROBLEM_CODES, TACTIC_PROBLEM_CODES } from './validation';
 
 /** World units within which two lineups of one map, kind and side count as the same throw. */
@@ -290,11 +291,17 @@ export const SteamUrl = Schema.String.check(
   Schema.isPattern(STEAM_URL_PATTERN),
 );
 
+export const TelegramUrl = Schema.String.check(
+  Schema.isMaxLength(MAX_TELEGRAM_URL_LENGTH),
+  Schema.isPattern(TELEGRAM_URL_PATTERN),
+);
+
 export const WhoAmI = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   role: AdminRole,
   steamUrl: Schema.optional(SteamUrl),
+  telegramUrl: Schema.optional(TelegramUrl),
 });
 export type WhoAmI = typeof WhoAmI.Type;
 
@@ -311,17 +318,23 @@ export const InviteInfo = Schema.Struct({
 export type InviteInfo = typeof InviteInfo.Type;
 
 /**
- * Spends an invite. A new person's invite needs `name` and may carry `steamUrl`; a device invite
+ * Spends an invite. A new person's invite needs `name` and may carry `steamUrl` and `telegramUrl`; a device invite
  * ignores both.
  */
 export const RedeemRequest = Schema.Struct({
   token: Token,
   name: Schema.optional(PersonName),
   steamUrl: Schema.optional(SteamUrl),
+  telegramUrl: Schema.optional(TelegramUrl),
 });
 
-/** A person's own profile edit; `null` clears the Steam link. */
-export const ProfileUpdate = Schema.Struct({ steamUrl: Schema.NullOr(SteamUrl) });
+/**
+ * A person's own profile edit; `null` clears a link and an absent field leaves it as it is.
+ */
+export const ProfileUpdate = Schema.Struct({
+  steamUrl: Schema.optional(Schema.NullOr(SteamUrl)),
+  telegramUrl: Schema.optional(Schema.NullOr(TelegramUrl)),
+});
 
 /** An owner asks for a link: for a new person of `role`, or for one more device of `personId`. */
 export const InviteRequest = Schema.Struct({
@@ -362,6 +375,7 @@ export const Removed = Schema.Struct({ id: Schema.String });
 export const Contributor = Schema.Struct({
   name: Schema.String,
   steamUrl: Schema.optional(SteamUrl),
+  telegramUrl: Schema.optional(TelegramUrl),
   total: Schema.Int,
   byMap: Schema.Record(Schema.String, Schema.Int),
 });

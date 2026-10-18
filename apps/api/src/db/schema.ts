@@ -102,6 +102,8 @@ export const admins = sqliteTable('admins', {
   role: text('role', { enum: ['owner', 'editor'] }).notNull(),
   /** A `steamcommunity.com` profile link, shown as the person's name on lineups they commit. */
   steamUrl: text('steam_url'),
+  /** A `t.me` channel link, credited beside the Steam link on lineups they commit. */
+  telegramUrl: text('telegram_url'),
   createdAt: integer('created_at').notNull(),
   disabledAt: integer('disabled_at'),
 });

@@ -42,13 +42,20 @@ export class AdminAuth extends Context.Service<
       readonly token: string;
       readonly name: string | undefined;
       readonly steamUrl: string | undefined;
+      readonly telegramUrl: string | undefined;
       readonly label: string;
       readonly now: number;
     }) => Effect.Effect<Redeemed, StorageError>;
-    /** Sets or clears (`null`) a person's own Steam link; `false` when they are gone. */
-    readonly setSteamUrl: (
+    /**
+     * Sets or clears (`null`) a person's own links; a link left out stays as it is. `false` when
+     * they are gone.
+     */
+    readonly setLinks: (
       id: string,
-      steamUrl: string | null,
+      links: {
+        readonly steamUrl?: string | null | undefined;
+        readonly telegramUrl?: string | null | undefined;
+      },
     ) => Effect.Effect<boolean, StorageError>;
     readonly resolve: (token: string, now: number) => Effect.Effect<Resolved | null, StorageError>;
     readonly signOut: (token: string, now: number) => Effect.Effect<void, StorageError>;
@@ -97,6 +104,7 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
     tokenHash: string,
     name: string | undefined,
     steamUrl: string | undefined,
+    telegramUrl: string | undefined,
     now: number,
   ): Promise<Checked> => {
     const [invite] = await db.select().from(adminInvites).where(liveInvite(tokenHash, now));
@@ -117,6 +125,7 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
         name: trimmed,
         role: invite.role,
         steamUrl: steamUrl ?? null,
+        telegramUrl: telegramUrl ?? null,
         createdAt: now,
         disabledAt: null,
       },
@@ -153,6 +162,7 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
         name: person.name,
         role: person.role,
         steamUrl: person.steamUrl,
+        telegramUrl: person.telegramUrl,
         sessionId: session.id,
       },
     };
@@ -176,10 +186,10 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
           : { role: person.role, name: person.name, ...invitedBy, expiresAt: invite.expiresAt };
       }),
 
-    redeem: ({ token, name, steamUrl, label, now }) =>
+    redeem: ({ token, name, steamUrl, telegramUrl, label, now }) =>
       attempt(async (): Promise<Redeemed> => {
         const tokenHash = await hashToken(token);
-        const checked = await checkInvite(tokenHash, name, steamUrl, now);
+        const checked = await checkInvite(tokenHash, name, steamUrl, telegramUrl, now);
         if (!checked.ok) return checked;
 
         // Spent here, atomically: of two tabs opening one link, only one gets a row back.
@@ -203,6 +213,7 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
             name: admins.name,
             role: admins.role,
             steamUrl: admins.steamUrl,
+            telegramUrl: admins.telegramUrl,
           })
           .from(adminSessions)
           .innerJoin(admins, eq(admins.id, adminSessions.adminId))
@@ -229,17 +240,29 @@ export function makeAdminAuth(binding: D1Binding): Context.Service.Shape<typeof 
             name: row.name,
             role: row.role,
             steamUrl: row.steamUrl,
+            telegramUrl: row.telegramUrl,
             sessionId: row.sessionId,
           },
           touched,
         };
       }),
 
-    setSteamUrl: (id, steamUrl) =>
+    setLinks: (id, links) =>
       attempt(async () => {
+        const changes = {
+          ...(links.steamUrl === undefined ? {} : { steamUrl: links.steamUrl }),
+          ...(links.telegramUrl === undefined ? {} : { telegramUrl: links.telegramUrl }),
+        };
+        if (Object.keys(changes).length === 0) {
+          const [found] = await db
+            .select({ id: admins.id })
+            .from(admins)
+            .where(and(eq(admins.id, id), isNull(admins.disabledAt)));
+          return found !== undefined;
+        }
         const updated = await db
           .update(admins)
-          .set({ steamUrl })
+          .set(changes)
           .where(and(eq(admins.id, id), isNull(admins.disabledAt)))
           .returning({ id: admins.id });
         return updated.length > 0;

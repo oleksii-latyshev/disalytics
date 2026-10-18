@@ -12,8 +12,8 @@ export function SteamLink({
   onSaved,
 }: {
   me: WhoAmI;
-  /** Told the new link (or `null` when cleared), so the rest of the page can follow. */
-  onSaved?: (steamUrl: string | null) => void;
+  /** Told who they are now, so the rest of the page can follow. */
+  onSaved?: (me: WhoAmI) => void;
 }) {
   const [saved, setSaved] = useState(me.steamUrl ?? null);
   const [draft, setDraft] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function SteamLink({
     try {
       const updated = await call((client) => client.me.update({ payload: { steamUrl: next } }));
       setSaved(updated.steamUrl ?? null);
-      onSaved?.(updated.steamUrl ?? null);
+      onSaved?.(updated);
       setDraft(null);
     } catch (error) {
       setFailure(isFailure(error) ? error : { key: 'admin.error.network', detail: undefined });

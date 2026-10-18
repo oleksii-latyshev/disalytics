@@ -535,6 +535,21 @@
     "summary": "{map} · {side} · {count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}} · автор: {author} · обновлена {updated}",
     "title": "Файл тактик"
   },
+  "telegram": {
+    "add": "Добавить",
+    "cancel": "Отмена",
+    "edit": "Изменить",
+    "hint": "Указывается рядом со ссылкой на Steam у лайнапов, которые вы добавите. Напишите @канал или ссылку t.me.",
+    "invalid": "Это не Telegram-канал. Используйте @name или https://t.me/name (от 5 до 32 латинских букв, цифр или подчёркиваний).",
+    "label": "Telegram-канал",
+    "link": "Telegram",
+    "none": "не указан",
+    "optional": "необязательно",
+    "placeholder": "@yourchannel",
+    "remove": "Убрать",
+    "save": "Сохранить",
+    "yours": "Telegram-канал"
+  },
   "throw": {
     "crouch": "Сидя",
     "jump": "В прыжке",

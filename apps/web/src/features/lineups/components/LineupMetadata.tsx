@@ -93,6 +93,21 @@ export function LineupMetadata({
               className="h-8 rounded-card border border-line bg-surface-1 px-3 text-12 text-ink placeholder:text-ink-dim focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus"
             />
           </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="lineup-author-telegram" className="label-dense text-ink-dim">
+              <Text path="library.lineups.form.authorTelegram" />
+              <LineupOptionalMark />
+            </label>
+            <Input
+              id="lineup-author-telegram"
+              type="text"
+              value={values.authorTelegram}
+              onChange={(e) => updateValue('authorTelegram', e.target.value)}
+              placeholder={t('library.lineups.form.authorTelegramPlaceholder')}
+              autoCapitalize="none"
+              spellCheck={false}
+            />
+          </div>
         </div>
 
         {/* Coordinates: Origin, Landing, Angles */}

@@ -6,6 +6,7 @@ import {
   type LineupSide,
   type LineupTag,
   type MovementKey,
+  parseTelegramLink,
   type ThrowType,
   type UtilityKind,
 } from '@disa/demo-core';
@@ -85,6 +86,7 @@ export interface LineupFormValues {
   readonly tags: readonly LineupTag[];
   readonly authorName: string;
   readonly authorUrl: string;
+  readonly authorTelegram: string;
 }
 
 function formatCoord(val?: number): string {
@@ -114,15 +116,20 @@ export function basicValidationKey(
   | 'library.lineups.form.validation.mediaUrlInvalid'
   | 'library.lineups.form.validation.authorNameRequired'
   | 'library.lineups.form.validation.authorUrlInvalid'
+  | 'library.lineups.form.validation.authorTelegramInvalid'
   | null {
   if (!values.title.trim()) return 'library.lineups.form.validation.titleRequired';
   if (hasInvalidMediaUrl(values)) return 'library.lineups.form.validation.mediaUrlInvalid';
   const authorUrl = values.authorUrl.trim();
-  if (authorUrl.length > 0 && !values.authorName.trim()) {
+  const authorTelegram = values.authorTelegram.trim();
+  if ((authorUrl.length > 0 || authorTelegram.length > 0) && !values.authorName.trim()) {
     return 'library.lineups.form.validation.authorNameRequired';
   }
   if (authorUrl.length > 0 && !isHttpsUrl(authorUrl)) {
     return 'library.lineups.form.validation.authorUrlInvalid';
+  }
+  if (authorTelegram.length > 0 && parseTelegramLink(authorTelegram) === null) {
+    return 'library.lineups.form.validation.authorTelegramInvalid';
   }
   return null;
 }
@@ -157,6 +164,7 @@ function defaultFormValues(defaultMap: string): LineupFormValues {
     tags: [],
     authorName: '',
     authorUrl: '',
+    authorTelegram: '',
   };
 }
 
@@ -209,6 +217,7 @@ function tagsAndAuthorOf(data: LineupFormData) {
     tags: data.tags ?? [],
     authorName: data.author?.name ?? '',
     authorUrl: data.author?.url ?? '',
+    authorTelegram: data.author?.telegram ?? '',
   };
 }
 

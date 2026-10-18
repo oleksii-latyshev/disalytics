@@ -535,6 +535,21 @@
     "summary": "{map} · {side} · {steps, plural, one {# step} other {# steps}} · by {author} · updated {updated}",
     "title": "Tactics file"
   },
+  "telegram": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "edit": "Change",
+    "hint": "Credited beside your Steam link on the lineups you add. Write @yourchannel or a t.me link.",
+    "invalid": "That is not a Telegram channel. Use @name or https://t.me/name (5 to 32 letters, digits or underscores).",
+    "label": "Telegram channel",
+    "link": "Telegram",
+    "none": "not set",
+    "optional": "optional",
+    "placeholder": "@yourchannel",
+    "remove": "Remove",
+    "save": "Save",
+    "yours": "Telegram channel"
+  },
   "throw": {
     "crouch": "Crouching",
     "jump": "Jump throw",

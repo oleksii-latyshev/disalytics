@@ -48,6 +48,8 @@ export interface ActorShape {
   readonly role: AdminRole;
   /** Their `steamcommunity.com` profile link, when they gave one. */
   readonly steamUrl: string | null;
+  /** Their `t.me` channel link, when they gave one. */
+  readonly telegramUrl: string | null;
   /** The session this request came on; `null` for the local dev identity. */
   readonly sessionId: string | null;
 }

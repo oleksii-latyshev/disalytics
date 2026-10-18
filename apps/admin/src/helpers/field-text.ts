@@ -58,7 +58,9 @@ export function fieldText(id: FieldId, lineup: Lineup, t: Translate): string {
     case 'author':
       return lineup.author === undefined
         ? ''
-        : [lineup.author.name, lineup.author.url].filter(Boolean).join(' · ');
+        : [lineup.author.name, lineup.author.url, lineup.author.telegram]
+            .filter(Boolean)
+            .join(' · ');
     case 'origin':
       return point(lineup.origin);
     case 'landing':

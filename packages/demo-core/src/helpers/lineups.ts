@@ -1,5 +1,6 @@
 import type { Team, WorldPoint } from '../schema';
 import { isLineupCollection, type LineupCollection } from './lineup-collections';
+import { isTelegramUrl } from './telegram';
 import type { MovementKey, ThrowType } from './throw-detail';
 import { isThrownUtilityKind, type UtilityKind } from './utility';
 
@@ -27,6 +28,8 @@ export interface LineupAuthor {
   readonly name: string;
   /** An `https://` link, shown as the author's name when present. */
   readonly url?: string | undefined;
+  /** An `https://t.me/<handle>` link to their Telegram channel, shown beside the name. */
+  readonly telegram?: string | undefined;
 }
 
 export function isLineupTag(value: unknown): value is LineupTag {
@@ -278,6 +281,10 @@ function isLineupAuthor(value: unknown): boolean {
     isOptional(
       value.url,
       (url) => typeof url === 'string' && /^https:\/\/\S+$/.test(url) && isHttpsUrl(url),
+    ) &&
+    isOptional(
+      value.telegram,
+      (telegram) => typeof telegram === 'string' && isTelegramUrl(telegram),
     )
   );
 }

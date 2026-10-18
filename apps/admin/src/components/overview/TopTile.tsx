@@ -37,6 +37,16 @@ export function TopTile({ data }: { data: OverviewResponse }) {
                   </a>
                 )}
               </span>
+              {person.telegramUrl === undefined ? null : (
+                <a
+                  href={person.telegramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="relative z-3 shrink-0 rounded-chip text-12 text-ink-dim underline-offset-4 hover:underline"
+                >
+                  <Text path="admin.telegram.link" />
+                </a>
+              )}
               <span className="numeric whitespace-nowrap text-12 text-ink-dim">
                 <Text path="admin.contributors.total" values={{ count: person.total }} />
               </span>

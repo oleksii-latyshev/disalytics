@@ -24,14 +24,18 @@ export function makeContributors(binding: D1Binding): Context.Service.Shape<type
           .where(isNull(lineups.deletedAt))
           .groupBy(lineups.createdBy, lineups.map),
         db
-          .select({ name: admins.name, steamUrl: admins.steamUrl })
+          .select({ name: admins.name, steamUrl: admins.steamUrl, telegramUrl: admins.telegramUrl })
           .from(admins)
           .orderBy(admins.createdAt),
       ]);
 
-      const steamByName = new Map<string, string>();
-      for (const { name, steamUrl } of people) {
-        if (steamUrl !== null && !steamByName.has(name)) steamByName.set(name, steamUrl);
+      const linksByName = new Map<string, { steamUrl?: string; telegramUrl?: string }>();
+      for (const { name, steamUrl, telegramUrl } of people) {
+        if (linksByName.has(name)) continue;
+        linksByName.set(name, {
+          ...(steamUrl === null ? {} : { steamUrl }),
+          ...(telegramUrl === null ? {} : { telegramUrl }),
+        });
       }
 
       const byName = new Map<string, { total: number; byMap: Record<string, number> }>();
@@ -44,8 +48,7 @@ export function makeContributors(binding: D1Binding): Context.Service.Shape<type
 
       return [...byName]
         .map(([name, { total, byMap }]): Contributor => {
-          const steamUrl = steamByName.get(name);
-          return steamUrl === undefined ? { name, total, byMap } : { name, steamUrl, total, byMap };
+          return { name, ...linksByName.get(name), total, byMap };
         })
         .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
     }),

@@ -4,19 +4,20 @@ import { Button } from '@disa/ui';
 import { ChevronDown, User, Waypoints } from 'lucide-react';
 import { useEffect, useId, useRef } from 'react';
 import { SteamLink } from './SteamLink';
+import { TelegramLink } from './TelegramLink';
 
-/** The person's own corner: who they are, their Steam link, sign out. Closes on Escape or a press outside. */
+/** The person's own corner: who they are, their Steam and Telegram links, sign out. Closes on Escape or a press outside. */
 function AccountMenu({
   me,
   isOpen,
   onOpenChange,
-  onSteamSaved,
+  onProfileSaved,
   onSignOut,
 }: {
   me: WhoAmI;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSteamSaved: (steamUrl: string | null) => void;
+  onProfileSaved: (me: WhoAmI) => void;
   onSignOut: () => void;
 }) {
   const t = useT();
@@ -67,7 +68,8 @@ function AccountMenu({
               <Text path={me.role === 'owner' ? 'admin.role.owner' : 'admin.role.editor'} />
             </span>
           </p>
-          <SteamLink key={me.id} me={me} onSaved={onSteamSaved} />
+          <SteamLink key={me.id} me={me} onSaved={onProfileSaved} />
+          <TelegramLink key={`${me.id}-telegram`} me={me} onSaved={onProfileSaved} />
           <div>
             <Button variant="outline" onClick={onSignOut}>
               <Text path="admin.signOut" />
@@ -84,13 +86,13 @@ export function Header({
   onSignOut,
   isAccountOpen,
   onAccountOpenChange,
-  onSteamSaved,
+  onProfileSaved,
 }: {
   me: WhoAmI | null;
   onSignOut: () => void;
   isAccountOpen: boolean;
   onAccountOpenChange: (open: boolean) => void;
-  onSteamSaved: (steamUrl: string | null) => void;
+  onProfileSaved: (me: WhoAmI) => void;
 }) {
   const t = useT();
   return (
@@ -118,7 +120,7 @@ export function Header({
           me={me}
           isOpen={isAccountOpen}
           onOpenChange={onAccountOpenChange}
-          onSteamSaved={onSteamSaved}
+          onProfileSaved={onProfileSaved}
           onSignOut={onSignOut}
         />
       )}
