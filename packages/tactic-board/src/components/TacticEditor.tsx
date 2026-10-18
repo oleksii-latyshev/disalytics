@@ -62,14 +62,14 @@ function TacticBoard({
   onBack,
   onDirtyChange,
   className,
-  overview,
+  overview: openingOverview,
   useLineups,
   isStored = null,
   renderTransfer,
 }: TacticEditorProps & { readonly overview: NonNullable<ReturnType<typeof getMapOverview>> }) {
   const t = useT();
-  const board = useTacticBoard({ initialTactic, overview, onSave, useLineups });
-  const { editor, playback, schedule, stepSchedule, step } = board;
+  const board = useTacticBoard({ initialTactic, overview: openingOverview, onSave, useLineups });
+  const { overview, editor, playback, schedule, stepSchedule, step } = board;
   const { tactic, stepIndex, selectedSlot, selectedEnemyId, tool, throwKind } = editor;
   const enemySide = oppositeSide(tactic.side);
 
