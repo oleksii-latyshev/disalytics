@@ -1,6 +1,4 @@
-import { plateLayout, plateLevelIndex, plateToRadar } from './layout';
-import { radarToWorld, radarX, radarY } from './transform';
-import type { MapOverview, NavGrid, NavLevel, NavPath, RadarPoint, WorldPlanePoint } from './types';
+import type { NavLevel, NavPath, RadarPoint } from './types';
 
 /** How far, in cells, a point off the floor is pulled to the nearest walkable cell before giving up. */
 const MAX_SNAP_CELLS = 32;
@@ -359,66 +357,4 @@ export function findNavPath(level: NavLevel, from: RadarPoint, to: RadarPoint): 
   }
   scratch.cache.set(key, result);
   return result;
-}
-
-/**
- * `findNavPath` over a map's plate: points in and out are plate pixels, so a Nuke route stays on
- * its own floor's slot. Two points on different floors have no walkable link in this grid and
- * give a straight, unreachable segment.
- */
-export function findPlatePath(
-  overview: MapOverview,
-  grid: NavGrid,
-  from: RadarPoint,
-  to: RadarPoint,
-): NavPath {
-  const a = plateToRadar(overview, from.x, from.y);
-  const b = plateToRadar(overview, to.x, to.y);
-  const level = grid.levels[a.levelIndex];
-  if (level === undefined || a.levelIndex !== b.levelIndex) return straight(from, to);
-
-  const slot = plateLayout(overview).slots[a.levelIndex];
-  if (slot === undefined) return straight(from, to);
-
-  const path = findNavPath(level, { x: a.x, y: a.y }, { x: b.x, y: b.y });
-  if (!path.reachable) return straight(from, to);
-
-  return {
-    reachable: true,
-    points: path.points.map((point) => ({
-      x: point.x - slot.cropX + slot.x,
-      y: point.y - slot.cropY + slot.y,
-    })),
-  };
-}
-
-export interface NavWorldPath {
-  readonly points: readonly WorldPlanePoint[];
-  readonly reachable: boolean;
-}
-
-/**
- * `findNavPath` in world units. `fromZ` and `toZ` pick each end's floor (`plateLevelIndex`'s
- * rule); different floors give a straight, unreachable segment.
- */
-export function findWorldPath(
-  overview: MapOverview,
-  grid: NavGrid,
-  from: WorldPlanePoint,
-  fromZ: number,
-  to: WorldPlanePoint,
-  toZ: number,
-): NavWorldPath {
-  const a = { x: radarX(overview, from.x), y: radarY(overview, from.y) };
-  const b = { x: radarX(overview, to.x), y: radarY(overview, to.y) };
-  const fromLevel = plateLevelIndex(overview, fromZ);
-  const level = grid.levels[fromLevel];
-
-  if (level === undefined || fromLevel !== plateLevelIndex(overview, toZ)) {
-    return { points: [from, to], reachable: false };
-  }
-
-  const path = findNavPath(level, a, b);
-  if (!path.reachable) return { points: [from, to], reachable: false };
-  return { points: path.points.map((point) => radarToWorld(overview, point)), reachable: true };
 }

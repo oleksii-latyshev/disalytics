@@ -14,14 +14,18 @@ export interface TacticScene {
   stepIndex: number;
   readonly playerX: Float64Array;
   readonly playerY: Float64Array;
+  /** The floor each player is on. */
+  readonly playerFloor: Uint8Array;
   readonly isDead: Uint8Array;
   flightCount: number;
   readonly flightX: Float64Array;
   readonly flightY: Float64Array;
+  readonly flightFloor: Uint8Array;
   readonly flightKind: UtilityKind[];
   areaCount: number;
   readonly areaX: Float64Array;
   readonly areaY: Float64Array;
+  readonly areaFloor: Uint8Array;
   /** Seconds since the grenade landed. */
   readonly areaAge: Float64Array;
   readonly areaKind: UtilityKind[];
@@ -33,14 +37,17 @@ export function createScene(schedule: TacticSchedule): TacticScene {
     stepIndex: 0,
     playerX: new Float64Array(schedule.slotCount),
     playerY: new Float64Array(schedule.slotCount),
+    playerFloor: new Uint8Array(schedule.slotCount),
     isDead: new Uint8Array(schedule.slotCount),
     flightCount: 0,
     flightX: new Float64Array(capacity),
     flightY: new Float64Array(capacity),
+    flightFloor: new Uint8Array(capacity),
     flightKind: new Array<UtilityKind>(capacity).fill('smoke'),
     areaCount: 0,
     areaX: new Float64Array(capacity),
     areaY: new Float64Array(capacity),
+    areaFloor: new Uint8Array(capacity),
     areaAge: new Float64Array(capacity),
     areaKind: new Array<UtilityKind>(capacity).fill('smoke'),
   };
@@ -59,7 +66,7 @@ function sampleLegs(
   for (let slot = 0; slot < schedule.slotCount; slot++) {
     const leg = step.legs[slot];
     if (leg === undefined) continue;
-    readLegPosition(leg, local, schedule.speedPxPerSecond, POSITION, 0);
+    scene.playerFloor[slot] = readLegPosition(leg, local, schedule.speedPxPerSecond, POSITION, 0);
     scene.playerX[slot] = POSITION[0] ?? 0;
     scene.playerY[slot] = POSITION[1] ?? 0;
     scene.isDead[slot] = leg.isDead ? 1 : 0;
@@ -78,6 +85,7 @@ function writeFlight(thrown: ScheduledThrow, fraction: number, scene: TacticScen
     u * u * thrown.fromX + 2 * u * fraction * controlX + fraction * fraction * thrown.toX;
   scene.flightY[i] =
     u * u * thrown.fromY + 2 * u * fraction * controlY + fraction * fraction * thrown.toY;
+  scene.flightFloor[i] = thrown.floor;
   scene.flightKind[i] = thrown.kind;
 }
 
@@ -98,6 +106,7 @@ function sampleThrows(schedule: TacticSchedule, seconds: number, scene: TacticSc
     if (age >= UTILITY_LIFE_SECONDS[thrown.kind]) continue;
     scene.areaX[areas] = thrown.toX;
     scene.areaY[areas] = thrown.toY;
+    scene.areaFloor[areas] = thrown.floor;
     scene.areaAge[areas] = age;
     scene.areaKind[areas] = thrown.kind;
     areas++;

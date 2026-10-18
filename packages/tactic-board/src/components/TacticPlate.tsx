@@ -1,5 +1,5 @@
 import { useLocale, useT } from '@disa/i18n';
-import { getMapOverview, type MapOverview, radarAssetPath } from '@disa/map-data';
+import { getMapOverview, type MapOverview, mapFloors, radarAssetPath } from '@disa/map-data';
 import {
   levelAt,
   MAX_ZOOM,
@@ -18,11 +18,14 @@ import {
 import { useReducedMotionConfig } from '@disa/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { slotColors } from '../helpers/tactic-colors';
+import { floorScrim, liftedFloorImage } from '../helpers/tactic-floor-backdrop';
 import { type TacticPreview, tacticLayer } from '../helpers/tactic-layer';
 import { createMotion, isAnimating, startGlide } from '../helpers/tactic-motion';
+import { floorOfPoint } from '../helpers/tactic-route';
 import { createScene } from '../helpers/tactic-scene';
 import type { SpawnSpots } from '../helpers/tactic-spawn-markers';
 import { useTacticPlatePointer } from '../hooks/use-tactic-plate-pointer';
+import { TacticFloorSwitch } from './TacticFloorSwitch';
 import { TacticZoomControls } from './TacticZoomControls';
 import type { TacticPlateProps } from './tactic-plate-props';
 
@@ -38,7 +41,10 @@ function TacticCanvas({
   const { palette, radarTheme: theme } = usePlateSettings();
   const isReduced = useReducedMotionConfig() === true;
 
-  const image = useRadarImage(radarAssetPath(levelAt(overview, 0), theme));
+  const floors = mapFloors(overview);
+  const floor = Math.min(props.floor, floors.length - 1);
+  const floorInfo = floors[floor];
+  const image = useRadarImage(radarAssetPath(levelAt(overview, floorInfo?.level ?? 0), theme));
   const locale = useLocale();
   // biome-ignore lint/correctness/useExhaustiveDependencies: `t` is new every render and the labels change only with the locale
   const roleLabels = useMemo(
@@ -65,7 +71,7 @@ function TacticCanvas({
   useEffect(() => {
     previewRef.current = null;
     props.onPreviewReach(null);
-  }, [selectedSlot, tool, stepIndex, isShown, props.onPreviewReach]);
+  }, [selectedSlot, tool, stepIndex, isShown, floor, props.onPreviewReach]);
 
   const scene = useMemo(() => createScene(schedule), [schedule]);
   const motion = useMemo(() => createMotion(schedule.slotCount), [schedule.slotCount]);
@@ -87,8 +93,16 @@ function TacticCanvas({
         props.spawns.some((spawn) => spawn.x === spot.x && spawn.y === spot.y),
       ),
       labels: points.map((_, index) => String(index + 1)),
+      floors: points.map((spot) => floorOfPoint(overview, spot)),
     };
-  }, [props.spawnSpots, props.spawns, isShown]);
+  }, [props.spawnSpots, props.spawns, isShown, overview]);
+
+  const { grid } = props;
+  const lifted = useMemo(() => {
+    const level = grid?.levels[floor];
+    if (floorInfo?.isExtra !== true || level === undefined || image.status !== 'ready') return null;
+    return liftedFloorImage(image.image, level);
+  }, [floorInfo, grid, floor, image]);
 
   const layers = useMemo(() => {
     const layer = tacticLayer({
@@ -114,8 +128,13 @@ function TacticCanvas({
       spawnSpots,
       preview: previewRef,
       liveStroke: liveStrokeRef,
+      floor,
     });
-    return image.status === 'ready' ? [squareBackdrop(image.image, viewRef), layer] : [layer];
+    if (image.status !== 'ready') return [layer];
+    const backdrop = squareBackdrop(image.image, viewRef);
+    return lifted === null
+      ? [backdrop, layer]
+      : [backdrop, floorScrim(lifted, colors.hollow, viewRef), layer];
   }, [
     overview,
     colors,
@@ -137,6 +156,8 @@ function TacticCanvas({
     enemyMarks,
     selectedEnemyId,
     roleLabels,
+    floor,
+    lifted,
   ]);
 
   const { canvasRef, repaint } = useCanvasLayers(layers);
@@ -179,6 +200,7 @@ function TacticCanvas({
     repaint,
     overview,
     grid: props.grid,
+    floor,
     viewRef,
     previewRef,
     liveStrokeRef,
@@ -212,6 +234,7 @@ function TacticCanvas({
           onWheel={pointer.handleWheel}
           className={`size-full ${cursor} touch-none select-none rounded-card bg-surface-0`}
         />
+        <TacticFloorSwitch overview={overview} floor={floor} onFloor={props.onFloor} />
         <TacticZoomControls
           zoom={zoom}
           canZoomIn={zoom < MAX_ZOOM}

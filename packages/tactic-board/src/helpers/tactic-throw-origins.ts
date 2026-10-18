@@ -16,7 +16,7 @@ export function throwOrigins(
   overview: MapOverview,
 ): readonly ThrowOrigin[] {
   if (leg === undefined) return [];
-  const start = toWorld(overview, { x: leg.xs[0] ?? 0, y: leg.ys[0] ?? 0 });
+  const start = toWorld(overview, { x: leg.xs[0] ?? 0, y: leg.ys[0] ?? 0 }, leg.floors[0] ?? 0);
   const route = step?.players.find((player) => player.slot === leg.slot)?.route;
   const points = route?.points ?? [];
   const startOrigin: ThrowOrigin = { kind: 'start', at: start };
@@ -36,7 +36,7 @@ export function originIndexOf(
   thrown: ScheduledThrow,
   overview: MapOverview,
 ): number {
-  const from = toWorld(overview, { x: thrown.fromX, y: thrown.fromY });
+  const from = toWorld(overview, { x: thrown.fromX, y: thrown.fromY }, thrown.fromFloor);
   let best = 0;
   let bestDistance = Number.POSITIVE_INFINITY;
   origins.forEach((origin, i) => {

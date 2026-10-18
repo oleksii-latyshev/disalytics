@@ -21,6 +21,9 @@ export interface TacticPlateProps {
   readonly tool: TacticTool;
   readonly clock: TacticClock;
   readonly isShown: boolean;
+  /** The floor in view, as a position in `mapFloors`; the plate shows one floor at a time. */
+  readonly floor: number;
+  readonly onFloor: (floor: number) => void;
   /** Lineups of the kind being placed, shown only with the grenade tool. */
   readonly lineups: readonly Lineup[];
   /** Spawn spots a click can take, set only on the opening step with the select tool. */

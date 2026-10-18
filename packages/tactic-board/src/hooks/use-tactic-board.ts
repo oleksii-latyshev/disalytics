@@ -5,7 +5,7 @@ import {
   type TacticPoint,
   tacticLoadout,
 } from '@disa/demo-core';
-import { getMapOverview, type MapOverview, mapSpawns } from '@disa/map-data';
+import { getMapOverview, type MapOverview, mapFloors, mapSpawns } from '@disa/map-data';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { selectableLineups, throwFromLineup } from '../helpers/lineup-throw';
 import type { TacticTool } from '../helpers/tactic-editor-state';
@@ -44,6 +44,11 @@ export function useTacticBoard({
   // A map change keeps the board mounted, so the overview follows the tactic, not the opening props.
   const overview = getMapOverview(tactic.map) ?? openingOverview;
 
+  const [requestedFloor, setFloor] = useState(0);
+  const floor = Math.min(requestedFloor, mapFloors(overview).length - 1);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new map starts on its first floor
+  useEffect(() => setFloor(0), [tactic.map]);
+
   const grid = useTacticNavGrid(tactic.map);
   const schedule = useMemo(
     () => buildSchedule({ overview, grid, tactic, planId }),
@@ -75,7 +80,7 @@ export function useTacticBoard({
   );
   const spawnSpots = useMemo(() => {
     const spots = mapSpawns(tactic.map, tactic.side);
-    return spots.map((spot): TacticPoint => ({ x: spot.x, y: spot.y }));
+    return spots.map((spot): TacticPoint => ({ x: spot.x, y: spot.y, z: spot.z }));
   }, [tactic.map, tactic.side]);
   const loadout = useMemo(() => tacticLoadout(tactic), [tactic]);
   const enemyMarks = useMemo(() => enemyMarksByStep(steps), [steps]);
@@ -117,7 +122,11 @@ export function useTacticBoard({
     const endOfSelected = (): TacticPoint => {
       const leg = selectedSlot === null ? undefined : stepSchedule?.legs[selectedSlot];
       const last = (leg?.xs.length ?? 1) - 1;
-      return toWorld(overview, { x: leg?.xs[last] ?? 0, y: leg?.ys[last] ?? 0 });
+      return toWorld(
+        overview,
+        { x: leg?.xs[last] ?? 0, y: leg?.ys[last] ?? 0 },
+        leg?.floors[last] ?? 0,
+      );
     };
     return {
       onSelect: editor.select,
@@ -192,6 +201,8 @@ export function useTacticBoard({
   return {
     editor,
     overview,
+    floor,
+    setFloor,
     steps,
     step,
     grid,

@@ -289,7 +289,22 @@ describe('tacticOfRound', () => {
     const demo = demoWith((events) => events);
     const result = tacticOfRound(demo, 0, 't', { id: 't' });
     const startFrame = FREEZE_END / 4;
-    expect(result?.tactic.spawns[1]).toEqual({ x: 3000 + startFrame * 5, y: 0 });
+    expect(result?.tactic.spawns[1]).toEqual({ x: 3000 + startFrame * 5, y: 0, z: 0 });
+  });
+
+  it('keeps the altitude of spawns, route points and landings, which is how the board finds the floor', () => {
+    const demo = demoWith((events) =>
+      withThrows(events, [throwAt(20, 0, { detonationPosition: { x: 400, y: 80, z: -700 } })]),
+    );
+    for (let frame = 0; frame < FRAME_COUNT; frame++) {
+      demo.track.posZ[frame * 10] = frame < FREEZE_END / 4 + 10 ? -400 : -700;
+    }
+    const result = tacticOfRound(demo, 0, 't', { id: 't' });
+    const steps = result?.tactic.plans[0]?.steps ?? [];
+    expect(result?.tactic.spawns[0]?.z).toBe(-400);
+    const points = steps.flatMap((step) => step.players[0]?.route.points ?? []);
+    expect(points.some((point) => point.z === -700)).toBe(true);
+    expect(steps.flatMap((step) => step.throws)[0]?.to.z).toBe(-700);
   });
 
   it('pins each step to its cut time in seconds from the window start', () => {
@@ -334,6 +349,7 @@ describe('tacticOfRound', () => {
     expect(steps[1]?.players[1]?.route.points.at(-1)).toEqual({
       x: 3000 + deathFrame * 5,
       y: 0,
+      z: 0,
     });
   });
 

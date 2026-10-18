@@ -103,6 +103,7 @@ function pointAt(demo: ParsedDemo, frame: number, slot: number): TacticPoint {
   return {
     x: Math.round(demo.track.posX[index] ?? 0),
     y: Math.round(demo.track.posY[index] ?? 0),
+    z: Math.round(demo.track.posZ[index] ?? 0),
   };
 }
 
@@ -125,12 +126,17 @@ function landing(grenade: Grenade): TacticPoint | undefined {
     return {
       x: Math.round(grenade.detonationPosition.x),
       y: Math.round(grenade.detonationPosition.y),
+      z: Math.round(grenade.detonationPosition.z),
     };
   }
   const { trajectory } = grenade;
   const last = trajectory.sampleCount - 1;
   if (last < 0) return undefined;
-  return { x: Math.round(trajectory.x[last] ?? 0), y: Math.round(trajectory.y[last] ?? 0) };
+  return {
+    x: Math.round(trajectory.x[last] ?? 0),
+    y: Math.round(trajectory.y[last] ?? 0),
+    z: Math.round(trajectory.z[last] ?? 0),
+  };
 }
 
 interface Context {
@@ -297,8 +303,9 @@ function deathsOf(context: Context, cuts: readonly StepCut[]): Readonly<Record<n
  * player's route in the step it happened in. Times are seconds from the window start.
  *
  * Throws carry `releaseTime: 0`: the board times a throw from when its thrower reaches the route
- * point nearest `from`, which is an approximation of when it really left. Routes are drawn on the
- * first level of a map; a player on another floor is placed by x and y alone.
+ * point nearest `from`, which is an approximation of when it really left. Every point keeps its
+ * altitude `z`, which is how the board knows the floor a player or a grenade is on (Nuke's upper
+ * and lower floor, Mirage's underpass); demo-core itself knows no floors.
  */
 export function tacticOfRound(
   demo: ParsedDemo,

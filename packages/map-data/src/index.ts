@@ -5,6 +5,15 @@ export {
   findNearestCallout,
   getMapCallouts,
 } from './callouts';
+export type { FloorPath, NavWorldPath } from './floor-path';
+export {
+  CONNECTOR_COST_PX,
+  findFloorPath,
+  findPlatePath,
+  findWorldPath,
+} from './floor-path';
+export type { FloorId, MapFloor } from './floors';
+export { EXTRA_FLOORS, floorAt, floorAtRadar, floorRefZ, mapFloors } from './floors';
 export type { MapId } from './generated/overviews';
 export { MAP_IDS, MAP_OVERVIEWS, RADAR_IMAGE_SIZE } from './generated/overviews';
 export {
@@ -18,8 +27,7 @@ export {
 export { loadMapLineups } from './lineups';
 export { loadMapNavGrid, unpackNavGrid, unpackNavLevel } from './navgrid';
 export type { NavRect } from './navgrid-overrides';
-export type { NavWorldPath } from './pathfinding';
-export { findNavPath, findPlatePath, findWorldPath, snapToWalkable } from './pathfinding';
+export { findNavPath, snapToWalkable } from './pathfinding';
 export { mapSpawns } from './spawns';
 export type { RadarTheme } from './themes';
 export { DEFAULT_RADAR_THEME, isRadarTheme, RADAR_THEMES, radarAssetPath } from './themes';
@@ -33,7 +41,9 @@ export {
   worldToRadar,
 } from './transform';
 export type {
+  FloorPoint,
   MapOverview,
+  NavConnector,
   NavGrid,
   NavGridData,
   NavLevel,

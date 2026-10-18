@@ -1,6 +1,6 @@
 import type { Lineup, Tactic } from '@disa/demo-core';
 import type { Translate } from '@disa/i18n';
-import { getMapOverview, loadMapNavGrid, type RadarTheme } from '@disa/map-data';
+import { getMapOverview, loadMapNavGrid, type NavGrid, type RadarTheme } from '@disa/map-data';
 import type { Palette } from '@disa/plate';
 import { buildSchedule, type TacticSchedule } from '../helpers/tactic-schedule';
 import { buildPdfContent } from './content';
@@ -22,15 +22,20 @@ export interface TacticPdfRequest {
   readonly imageCrossOrigin?: 'anonymous' | 'use-credentials' | undefined;
 }
 
-async function schedulesOf(tactic: Tactic): Promise<ReadonlyMap<string, TacticSchedule>> {
+interface Schedules {
+  readonly grid: NavGrid | undefined;
+  readonly byPlan: ReadonlyMap<string, TacticSchedule>;
+}
+
+async function schedulesOf(tactic: Tactic): Promise<Schedules> {
   const overview = getMapOverview(tactic.map);
-  const schedules = new Map<string, TacticSchedule>();
-  if (overview === undefined) return schedules;
+  const byPlan = new Map<string, TacticSchedule>();
+  if (overview === undefined) return { grid: undefined, byPlan };
   const grid = await loadMapNavGrid(tactic.map);
   for (const plan of tactic.plans) {
-    schedules.set(plan.id, buildSchedule({ overview, grid, tactic, planId: plan.id }));
+    byPlan.set(plan.id, buildSchedule({ overview, grid, tactic, planId: plan.id }));
   }
-  return schedules;
+  return { grid, byPlan };
 }
 
 /**
@@ -40,7 +45,10 @@ async function schedulesOf(tactic: Tactic): Promise<ReadonlyMap<string, TacticSc
  */
 export async function exportTacticPdf(request: TacticPdfRequest): Promise<Blob> {
   const { tactic, t, palette } = request;
-  const [schedules, fonts] = await Promise.all([schedulesOf(tactic), loadPdfFonts()]);
+  const [{ grid, byPlan: schedules }, fonts] = await Promise.all([
+    schedulesOf(tactic),
+    loadPdfFonts(),
+  ]);
   const content = buildPdfContent({ tactic, t, lineups: request.lineups, schedules });
 
   const overview = getMapOverview(tactic.map);
@@ -50,6 +58,7 @@ export async function exportTacticPdf(request: TacticPdfRequest): Promise<Blob> 
       : await renderPlateImages({
           tactic,
           overview,
+          grid,
           schedules,
           sections: content.sections,
           palette,

@@ -1,6 +1,6 @@
 import type { Lineup, TacticStep } from '@disa/demo-core';
-import type { MapOverview, RadarPoint } from '@disa/map-data';
-import { toRadar } from './tactic-route';
+import { floorAt, type MapOverview, type RadarPoint } from '@disa/map-data';
+import { floorOfPoint, toRadar } from './tactic-route';
 import type { StepSchedule } from './tactic-schedule';
 
 /** Screen pixels within which a pointer counts as being on a mark. */
@@ -12,13 +12,14 @@ function distance(a: RadarPoint, b: RadarPoint): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-/** The waypoint of a points route under the pointer, as its index; null when none is. */
+/** The waypoint of a points route under the pointer, as its index, among those on `floor`; null when none is. */
 export function handleAt(
   step: TacticStep | undefined,
   slot: number | null,
   pointer: RadarPoint,
   overview: MapOverview,
   scale: number,
+  floor = 0,
 ): number | null {
   const player = step?.players.find((entry) => entry.slot === slot);
   if (player === undefined || player.route.mode !== 'points') return null;
@@ -26,6 +27,7 @@ export function handleAt(
   let best: number | null = null;
   let bestDistance = HANDLE_HIT_PX / scale;
   player.route.points.forEach((point, index) => {
+    if (floorOfPoint(overview, point) !== floor) return;
     const d = distance(toRadar(overview, point), pointer);
     if (d <= bestDistance) {
       bestDistance = d;
@@ -35,15 +37,17 @@ export function handleAt(
   return best;
 }
 
-/** The player whose token stands under the pointer at the start of the step. */
+/** The player whose token stands under the pointer at the start of the step, on `floor`. */
 export function tokenAt(
   step: StepSchedule | undefined,
   pointer: RadarPoint,
   scale: number,
+  floor = 0,
 ): number | null {
   let best: number | null = null;
   let bestDistance = TOKEN_HIT_PX / scale;
   for (const leg of step?.legs ?? []) {
+    if (leg.floors[0] !== floor) continue;
     const d = distance({ x: leg.xs[0] ?? 0, y: leg.ys[0] ?? 0 }, pointer);
     if (d <= bestDistance) {
       bestDistance = d;
@@ -63,10 +67,12 @@ export function lineupAt(
   playerAt: RadarPoint,
   overview: MapOverview,
   scale: number,
+  floor = 0,
 ): Lineup | null {
   let best: Lineup | null = null;
   let bestOrigin = Number.POSITIVE_INFINITY;
   for (const lineup of lineups) {
+    if (floorAt(overview, lineup.landing.x, lineup.landing.y, lineup.landing.z) !== floor) continue;
     if (distance(toRadar(overview, lineup.landing), pointer) > LINEUP_HIT_PX / scale) continue;
     const origin = distance(toRadar(overview, lineup.origin), playerAt);
     if (origin < bestOrigin) {

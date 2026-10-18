@@ -87,7 +87,7 @@ bun run tokens:check                # every class and var(--…) exists in built
 bun run samples:check | reel:check  # committed samples match SCHEMA_VERSION · reel regenerates
 bun run size [--wasm]               # budgets (§16) — on a --force clean build
 bun run wasm:build | wasm:smoke     # wasm-pack → pkg/ · call into the binary (+DISALYTICS_FIXTURE_DEMO)
-bun run mapdata:generate | navgrid:generate | icons:generate   # map data + radar themes · walkable grids · outlines
+bun run mapdata:generate | navgrid:generate | floors:generate | icons:generate   # map data + radar themes · walkable grids · floor connectors · outlines
 bun run samples:generate | reel:generate | spawns:generate   # samples from DISALYTICS_SAMPLE_DIR · way-in reel · map spawns
 bun run smoke <url>                 # deploy contract (§13)
 bun run repo:labels | repo:milestones   # sync GitHub labels and milestones

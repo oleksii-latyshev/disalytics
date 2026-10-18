@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { findPlatePath, findWorldPath } from '../floor-path';
+import { mapFloors } from '../floors';
 import { MAP_OVERVIEWS } from '../generated/overviews';
 import { loadMapNavGrid } from '../navgrid';
-import { findNavPath, findPlatePath, findWorldPath, snapToWalkable } from '../pathfinding';
+import { findNavPath, snapToWalkable } from '../pathfinding';
 import { mapSpawns } from '../spawns';
 import { radarX, radarY } from '../transform';
 import type { NavGrid, NavLevel, RadarPoint } from '../types';
@@ -169,14 +171,18 @@ describe('Mirage', () => {
 });
 
 describe('Nuke', () => {
-  it('treats two floors as unconnected', async () => {
+  it('joins its two floors through the connectors read off real tracks', async () => {
     const grid = await loadMapNavGrid('de_nuke');
     expect(grid?.levels).toHaveLength(2);
+    expect(grid?.connectors.length).toBeGreaterThanOrEqual(3);
     if (grid === undefined) return;
 
     const overview = MAP_OVERVIEWS.de_nuke;
-    const path = findWorldPath(overview, grid, { x: 0, y: -900 }, 0, { x: 0, y: -900 }, -700);
-    expect(path.reachable).toBe(false);
+    const from = { x: 0, y: -900 };
+    const path = findWorldPath(overview, grid, from, -400, { x: 700, y: -1000 }, -700);
+    expect(path.reachable).toBe(true);
+    expect(path.points[0]?.floor).toBe(0);
+    expect(path.points[path.points.length - 1]?.floor).toBe(1);
   });
 });
 
@@ -185,11 +191,11 @@ describe('loadMapNavGrid', () => {
     expect(await loadMapNavGrid('workshop_custom_map')).toBeUndefined();
   });
 
-  it('holds one grid per level of every map, with floor in each', async () => {
+  it('holds one grid per floor of every map, with floor in each', async () => {
     for (const overview of Object.values(MAP_OVERVIEWS)) {
       const id = overview.id;
       const grid = await loadMapNavGrid(id);
-      expect(grid?.levels).toHaveLength(overview.levels.length);
+      expect(grid?.levels).toHaveLength(mapFloors(overview).length);
       for (const level of grid?.levels ?? []) {
         expect(level.walkable.reduce((a, b) => a + b, 0)).toBeGreaterThan(1000);
       }

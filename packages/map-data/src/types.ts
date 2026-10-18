@@ -71,6 +71,36 @@ export interface NavGridData {
   readonly cell: number;
   readonly size: number;
   readonly levels: readonly string[];
+  /** Where floors join; absent on a map with one floor. */
+  readonly connectors?: readonly NavConnector[] | undefined;
+}
+
+/**
+ * What `floors:generate` commits for one map. `masks` holds, for each authored extra floor, the
+ * cells its tracks cover (`own`) and the cells the floor it shares pixels with covers in the same
+ * region (`shared`), packed like `NavGridData.levels`.
+ */
+export interface MapFloorData {
+  readonly connectors: readonly NavConnector[];
+  readonly masks?:
+    | Readonly<Record<string, { readonly own: string; readonly shared: string }>>
+    | undefined;
+}
+
+/** A spot on one floor, in radar pixels. */
+export interface FloorPoint extends RadarPoint {
+  /** Position in `mapFloors`. */
+  readonly floor: number;
+}
+
+/**
+ * A place real players changed floor, read from their tracks: stand on `a`, arrive on `b`. A
+ * connector seen in one direction only (a drop) is `isOneWay` and used from `a` to `b` alone.
+ */
+export interface NavConnector {
+  readonly a: FloorPoint;
+  readonly b: FloorPoint;
+  readonly isOneWay?: boolean | undefined;
 }
 
 /** One level's walkable cells, unpacked to a byte each so the path-finder reads them directly. */
@@ -81,10 +111,11 @@ export interface NavLevel {
   readonly walkable: Uint8Array;
 }
 
-/** A map's walkable grids, one per `MapOverview.levels` entry. */
+/** A map's walkable grids, one per floor (`mapFloors` order, the overview levels first). */
 export interface NavGrid {
   readonly map: string;
   readonly levels: readonly NavLevel[];
+  readonly connectors: readonly NavConnector[];
 }
 
 /**
