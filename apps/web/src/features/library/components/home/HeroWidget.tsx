@@ -18,13 +18,13 @@ import { SAMPLE_MATCHES } from '@/core/samples';
 import { PlateStill } from '@/features/radar';
 import { WAY_IN_REEL } from '../../generated/reel';
 import { mapTitle } from '../../helpers/map-title';
+import { PREVIEW_RATE } from '../../helpers/preview-rate';
 import { useLessMotion } from '../../hooks/use-less-motion';
 import { RoundPreview } from '../RoundPreview';
 import { PickDemoButton } from './PickDemoButton';
 import { RoundStrip } from './RoundStrip';
 import type { WidgetProps } from './types';
 
-const REPLAY_RATE = 3;
 const REPLAY_HOLD_SECONDS = 2;
 const FEED_LENGTH = 3;
 const STILL_SECONDS_BEFORE_END = 4;
@@ -153,7 +153,7 @@ function Replay({
         : {
             from: span.from,
             to: span.to,
-            rate: REPLAY_RATE,
+            rate: PREVIEW_RATE,
             holdSeconds: REPLAY_HOLD_SECONDS,
             isPlaying: !isLess,
             onSample: sample,

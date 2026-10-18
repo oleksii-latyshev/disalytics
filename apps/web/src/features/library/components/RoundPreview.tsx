@@ -9,9 +9,9 @@ import { radarColors } from '@/features/radar';
 import { WAY_IN_REEL } from '../generated/reel';
 import { prefersLessMotion } from '../helpers/less-motion';
 import { previewDraw } from '../helpers/preview-draw';
+import { PREVIEW_RATE } from '../helpers/preview-rate';
 import { decodeReel } from '../helpers/reel';
 
-const RATE = 0.75;
 function timestamp(seconds: number): string {
   return `${Math.floor(seconds / 60)
     .toString()
@@ -133,7 +133,7 @@ export function RoundPreview({ suspended, compact = false }: PreviewProps) {
     const tick = (now: number) => {
       if (previous !== 0)
         position.current =
-          (position.current + Math.min((now - previous) / 1000, 0.05) * RATE) % duration;
+          (position.current + Math.min((now - previous) / 1000, 0.05) * PREVIEW_RATE) % duration;
       previous = now;
       draw();
       frame = requestAnimationFrame(tick);
