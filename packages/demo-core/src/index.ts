@@ -303,6 +303,7 @@ export {
   roundTeam,
   tacticOfRound,
   tacticRoundOfBuy,
+  withStepEnemies,
 } from './helpers/round-tactic';
 export type { RoundStepKind } from './helpers/round-tactic-cuts';
 export {

@@ -221,3 +221,21 @@ describe('formatRoundClock', () => {
     expect(formatRoundClock(500)).toBe('0:00');
   });
 });
+
+describe('two schedules on one clock', () => {
+  it('samples each into its own scene, so opponents move apart from the team', () => {
+    const walker = (id: string, to: { x: number; y: number }) =>
+      step(id, {
+        startsAt: 0,
+        players: [{ slot: 0, route: { mode: 'points', points: [to] }, runSeconds: 4 }],
+      });
+    const team = run([walker('a', ahead)]);
+    const rival = run([walker('b', { x: spawn.x + 400, y: spawn.y })]);
+    const teamScene = createScene(team);
+    const rivalScene = createScene(rival);
+    sampleScene(team, 2, teamScene);
+    sampleScene(rival, 2, rivalScene);
+    expect(teamScene.playerX[0]).not.toBe(rivalScene.playerX[0]);
+    expect(teamScene.stepIndex).toBe(rivalScene.stepIndex);
+  });
+});

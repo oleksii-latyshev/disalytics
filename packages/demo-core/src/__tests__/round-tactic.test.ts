@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { windowCoordination } from '../helpers/round-coordination';
-import { roundTeam, tacticOfRound } from '../helpers/round-tactic';
+import { roundTeam, tacticOfRound, withStepEnemies } from '../helpers/round-tactic';
 import { stepCuts } from '../helpers/round-tactic-cuts';
 import {
   clampRoundWindow,
@@ -497,5 +497,97 @@ describe('windowCoordination', () => {
     if (roster === undefined || window === undefined) throw new Error('fixture');
     const ct = { demo, roundIndex: 0, slots: new Set(roster.slots), side: roster.side, window };
     expect(windowCoordination(ct).signals).not.toContain('plant');
+  });
+});
+
+describe('round opponents', () => {
+  const contact = (events: ReturnType<typeof newEvents>) =>
+    withDamage(events, { tick: second(25), attacker: asPlayerSlot(1), victim: asPlayerSlot(6) });
+
+  it('cuts the other team at the same steps over the same window', () => {
+    const demo = demoWith(contact);
+    const result = tacticOfRound(demo, 0, 't', { id: 'x' });
+    const own = result?.tactic.plans[0]?.steps ?? [];
+    const rival = result?.opponents?.plans[0]?.steps ?? [];
+    expect(result?.opponents?.side).toBe('CT');
+    expect(rival.map((step) => step.startsAt)).toEqual(own.map((step) => step.startsAt));
+    expect(rival[0]?.players.map((player) => player.label)).toEqual(['p5', 'p6', 'p7', 'p8', 'p9']);
+    expect(result?.opponents?.rounds).toBeUndefined();
+  });
+
+  it('gives an opponent who walks a route and a pace, and a standing one neither', () => {
+    const demo = demoWith(contact);
+    for (let frame = 0; frame < FRAME_COUNT; frame++) {
+      demo.track.posY[frame * 10 + 5] = frame * 8;
+    }
+    const first = tacticOfRound(demo, 0, 't', { id: 'x' })?.opponents?.plans[0]?.steps[0];
+    expect(first?.players[0]?.route.points.length).toBeGreaterThan(0);
+    expect(first?.players[0]?.runSeconds).toBeGreaterThan(0);
+    expect(first?.players[1]?.route.points).toEqual([]);
+  });
+
+  it('marks an opponent killed by the team dead in its step, with the killer tactic slot', () => {
+    const demo = demoWith((events) =>
+      withKill(contact(events), {
+        tick: second(35),
+        attacker: asPlayerSlot(2),
+        victim: asPlayerSlot(6),
+      }),
+    );
+    const result = tacticOfRound(demo, 0, 't', { id: 'x' });
+    expect(result?.enemies).toHaveLength(2);
+    expect(result?.enemies[0]?.map((enemy) => enemy.id)).toHaveLength(5);
+    expect(result?.enemies[0]?.some((enemy) => enemy.isDead === true)).toBe(false);
+    const dead = result?.enemies[1]?.find((enemy) => enemy.id === 'enemy-1');
+    expect(dead?.isDead).toBe(true);
+    expect(dead?.killedBy).toBe(2);
+    expect(dead?.at.x).toBe(3000 * 6 + 0);
+    expect(result?.opponents?.plans[0]?.deaths).toEqual({ 1: 2 });
+  });
+
+  it('drops an opponent from the steps after its death', () => {
+    const demo = demoWith((events) =>
+      withKill(
+        withDamage(events, {
+          tick: second(10),
+          attacker: asPlayerSlot(1),
+          victim: asPlayerSlot(6),
+        }),
+        { tick: second(12), attacker: asPlayerSlot(2), victim: asPlayerSlot(6) },
+      ),
+    );
+    const track = demo.track;
+    for (let frame = second(12) / 4; frame < FRAME_COUNT; frame++) {
+      atFrame(track, asFrame(frame), asPlayerSlot(6), { flags: 0 });
+    }
+    const late = clampRoundWindow(demo, 0, { startTick: second(10), endTick: second(50) });
+    const result = tacticOfRound(demo, 0, 't', { id: 'x', window: late });
+    const lists = result?.enemies ?? [];
+    expect(lists[0]?.find((enemy) => enemy.id === 'enemy-1')?.isDead).toBe(true);
+    if (lists.length > 1) {
+      expect(lists[1]?.some((enemy) => enemy.id === 'enemy-1')).toBe(false);
+    }
+  });
+
+  it('leaves killedBy out when the killer is not on the team', () => {
+    const demo = demoWith((events) =>
+      withKill(events, { tick: second(5), attacker: asPlayerSlot(7), victim: asPlayerSlot(6) }),
+    );
+    const dead = tacticOfRound(demo, 0, 't', { id: 'x' })?.enemies[0]?.find(
+      (enemy) => enemy.id === 'enemy-1',
+    );
+    expect(dead?.isDead).toBe(true);
+    expect(dead?.killedBy).toBeUndefined();
+  });
+
+  it('sets the enemies of each root step and omits the key when a step has none', () => {
+    const demo = demoWith(contact);
+    const result = tacticOfRound(demo, 0, 't', { id: 'x' });
+    if (result === undefined) throw new Error('no tactic');
+    const saved = withStepEnemies(result.tactic, [result.enemies[0] ?? [], []]);
+    const steps = saved.plans[0]?.steps ?? [];
+    expect(steps[0]?.enemies).toHaveLength(5);
+    expect(steps[1]).not.toHaveProperty('enemies');
+    expect(result.tactic.plans[0]?.steps[0]?.enemies).toBeUndefined();
   });
 });

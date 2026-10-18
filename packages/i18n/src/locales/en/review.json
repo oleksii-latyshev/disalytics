@@ -506,6 +506,9 @@
     "team": {
       "label": "Team"
     },
+    "opponents": {
+      "label": "Opponents"
+    },
     "filter": {
       "label": "Filter rounds",
       "t": "Rounds held as T",

@@ -1882,6 +1882,7 @@ export const TRANSLATION_KEYS = [
   'review.tactics.filter.won',
   'review.tactics.list.empty',
   'review.tactics.list.label',
+  'review.tactics.opponents.label',
   'review.tactics.pill',
   'review.tactics.row.lost',
   'review.tactics.row.noPlant',

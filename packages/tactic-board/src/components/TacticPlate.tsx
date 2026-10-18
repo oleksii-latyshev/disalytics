@@ -74,6 +74,14 @@ function TacticCanvas({
   }, [selectedSlot, tool, stepIndex, isShown, floor, props.onPreviewReach]);
 
   const scene = useMemo(() => createScene(schedule), [schedule]);
+  const { opponents: opponentSchedule } = props;
+  const opponents = useMemo(
+    () =>
+      opponentSchedule === undefined
+        ? undefined
+        : { schedule: opponentSchedule, scene: createScene(opponentSchedule) },
+    [opponentSchedule],
+  );
   const motion = useMemo(() => createMotion(schedule.slotCount), [schedule.slotCount]);
   motion.isReduced = isReduced;
 
@@ -122,6 +130,7 @@ function TacticCanvas({
       hoveredLineupId: hover.lineupId,
       hoveredHandle: hover.handle,
       isReadOnly: props.isReadOnly,
+      opponents,
       enemyMarks,
       selectedEnemyId,
       enemyRoleLabels: roleLabels,
@@ -151,6 +160,7 @@ function TacticCanvas({
     props.lineups,
     hover,
     props.isReadOnly,
+    opponents,
     spawnSpots,
     image,
     enemyMarks,

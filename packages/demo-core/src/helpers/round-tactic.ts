@@ -14,6 +14,7 @@ import {
 } from './tactic-loadout';
 import type {
   Tactic,
+  TacticEnemy,
   TacticPoint,
   TacticRound,
   TacticStep,
@@ -45,6 +46,13 @@ export interface RoundTactic {
   readonly window: RoundWindow;
   readonly side: Team;
   readonly coordination: Coordination;
+  /** The other team over the same window, cut at the same steps; undefined when the round has none. */
+  readonly opponents: Tactic | undefined;
+  /**
+   * For saving, one list per step: every opponent alive when it begins, where each stood, the one
+   * killed in it marked dead at the spot of the kill with the tactic slot of its killer.
+   */
+  readonly enemies: readonly (readonly TacticEnemy[])[];
 }
 
 export interface RoundTeam {
@@ -325,11 +333,145 @@ function deathsOf(context: Context, cuts: readonly StepCut[]): Readonly<Record<n
   return deaths;
 }
 
+function buildSteps(
+  context: Context,
+  cuts: readonly StepCut[],
+): readonly { readonly step: TacticStep; readonly startSeconds: number }[] {
+  const { input } = context;
+  return cuts.map((cut, index) =>
+    buildStep(
+      context,
+      {
+        startTick: cut.tick,
+        endTick: cuts[index + 1]?.tick ?? input.window.endTick,
+        isLast: index === cuts.length - 1,
+      },
+      index,
+      input.window.startTick,
+    ),
+  );
+}
+
+function killOf(context: Context, demoSlot: number) {
+  const { demo, input } = context;
+  return demo.events.kills.find(
+    (entry) =>
+      entry.victim === demoSlot &&
+      entry.tick >= input.window.startTick &&
+      entry.tick <= input.window.endTick,
+  );
+}
+
+/** Each step's opponents for saving, from the opponents' deaths (step number of the death, 1-based). */
+function enemiesOf(
+  context: Context,
+  team: Context,
+  cuts: readonly StepCut[],
+  deaths: Readonly<Record<number, number>>,
+): readonly (readonly TacticEnemy[])[] {
+  const { demo, demoSlots } = context;
+  return cuts.map((cut, stepIndex) => {
+    const startFrame = frameForTick(demo.track, asTick(cut.tick));
+    const enemies: TacticEnemy[] = [];
+    demoSlots.forEach((demoSlot, slot) => {
+      const died = deaths[slot];
+      if (died !== undefined && died < stepIndex + 1) return;
+      const id = `enemy-${slot}`;
+      if (died !== stepIndex + 1) {
+        enemies.push({ id, at: pointAt(demo, startFrame, demoSlot) });
+        return;
+      }
+      const kill = killOf(context, demoSlot);
+      const killer =
+        kill === undefined || kill.attacker === null ? -1 : team.demoSlots.indexOf(kill.attacker);
+      enemies.push({
+        id,
+        at: pointAt(demo, frameForTick(demo.track, asTick(kill?.tick ?? cut.tick)), demoSlot),
+        isDead: true,
+        ...(killer === -1 ? {} : { killedBy: killer }),
+      });
+    });
+    return enemies;
+  });
+}
+
+/** The tactic with each root-plan step's `enemies` set; a step with none carries no key. */
+export function withStepEnemies(
+  tactic: Tactic,
+  enemies: readonly (readonly TacticEnemy[])[],
+): Tactic {
+  return {
+    ...tactic,
+    plans: tactic.plans.map((plan) =>
+      plan.parentId !== null
+        ? plan
+        : {
+            ...plan,
+            steps: plan.steps.map((step, index) => {
+              const { enemies: _previous, ...rest } = step;
+              const list = enemies[index] ?? [];
+              return list.length === 0 ? rest : { ...rest, enemies: list };
+            }),
+          },
+    ),
+  };
+}
+
+/** A roster's steps at the given cuts as a tactic; only the asking team buys and trades its grenades. */
+function tacticOfRoster(
+  context: Context,
+  roster: RoundTeam,
+  cuts: readonly StepCut[],
+  id: string,
+  isOwn: boolean,
+): { readonly tactic: Tactic; readonly startSeconds: readonly number[] } {
+  const { demo, input } = context;
+  const { roundIndex, window } = input;
+  const built = buildSteps(context, cuts);
+  const startFrame = frameForTick(demo.track, window.startTick);
+  const weapons: Record<number, string> = {};
+  roster.slots.forEach((demoSlot, slot) => {
+    const weapon = firedWeapon(demo, demoSlot, roundIndex);
+    if (weapon !== undefined) weapons[slot] = weapon;
+  });
+
+  const round = demo.events.rounds[roundIndex];
+  const buyRound =
+    round === undefined || !isOwn ? undefined : tacticRoundOfBuy(teamBuyClass(round, roster.side));
+  const steps = built.map((entry) => entry.step);
+
+  const tactic: Tactic = {
+    id,
+    title: '',
+    map: demo.header.map,
+    side: roster.side,
+    ...(buyRound === undefined ? {} : { rounds: [buyRound] }),
+    spawns: roster.slots.map((demoSlot) => pointAt(demo, startFrame, demoSlot)),
+    plans: [
+      {
+        id: 'plan-root',
+        condition: '',
+        parentId: null,
+        forkAfter: 0,
+        deaths: deathsOf(context, cuts),
+        steps: isOwn ? assignCarriers(steps, roster.slots.length) : steps,
+      },
+    ],
+    ...(Object.keys(weapons).length > 0 ? { weapons } : {}),
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  return { tactic, startSeconds: built.map((entry) => entry.startSeconds) };
+}
+
 /**
  * One team's round as a tactic: the five players' tracks over a window cut into steps at the
  * team's utility bursts, first contact and the plant, each track simplified into a points route,
  * each grenade a throw from where its thrower stood to where it landed, and a death ending a
  * player's route in the step it happened in. Times are seconds from the window start.
+ *
+ * The other team is cut the same way at the same steps (`opponents`), so step `k` of both starts
+ * at one moment; `enemies` is the same team as marks for saving.
  *
  * Throws carry `releaseTime: 0`: the board times a throw from when its thrower reaches the route
  * point nearest `from`, which is an approximation of when it really left. Every point keeps its
@@ -357,62 +499,34 @@ export function tacticOfRound(
   };
   const context: Context = { demo, demoSlots: roster.slots, input };
   const cuts = stepCuts(input);
-  const built = cuts.map((cut, index) =>
-    buildStep(
-      context,
-      {
-        startTick: cut.tick,
-        endTick: cuts[index + 1]?.tick ?? window.endTick,
-        isLast: index === cuts.length - 1,
-      },
-      index,
-      window.startTick,
-    ),
-  );
+  const own = tacticOfRoster(context, roster, cuts, options.id, true);
 
-  const startFrame = frameForTick(demo.track, window.startTick);
-  const weapons: Record<number, string> = {};
-  roster.slots.forEach((demoSlot, slot) => {
-    const weapon = firedWeapon(demo, demoSlot, roundIndex);
-    if (weapon !== undefined) weapons[slot] = weapon;
-  });
-
-  const round = demo.events.rounds[roundIndex];
-  const buyRound =
-    round === undefined ? undefined : tacticRoundOfBuy(teamBuyClass(round, roster.side));
-
-  const tactic: Tactic = {
-    id: options.id,
-    title: '',
-    map: demo.header.map,
-    side: roster.side,
-    ...(buyRound === undefined ? {} : { rounds: [buyRound] }),
-    spawns: roster.slots.map((demoSlot) => pointAt(demo, startFrame, demoSlot)),
-    plans: [
-      {
-        id: 'plan-root',
-        condition: '',
-        parentId: null,
-        forkAfter: 0,
-        deaths: deathsOf(context, cuts),
-        steps: assignCarriers(
-          built.map((entry) => entry.step),
-          roster.slots.length,
-        ),
-      },
-    ],
-    ...(Object.keys(weapons).length > 0 ? { weapons } : {}),
-    createdAt: 0,
-    updatedAt: 0,
-  };
+  const rival = roundTeam(demo, roundIndex, team === 't' ? 'ct' : 't');
+  const rivalContext: Context | undefined =
+    rival === undefined
+      ? undefined
+      : {
+          demo,
+          demoSlots: rival.slots,
+          input: { ...input, slots: new Set(rival.slots), side: rival.side },
+        };
+  const opponents =
+    rival === undefined || rivalContext === undefined
+      ? undefined
+      : tacticOfRoster(rivalContext, rival, cuts, `${options.id}-opponents`, false).tactic;
 
   return {
-    tactic,
+    tactic: own.tactic,
     stepKinds: cuts.map((cut) => cut.kind),
-    stepStartSeconds: built.map((entry) => entry.startSeconds),
+    stepStartSeconds: own.startSeconds,
     demoSlots: roster.slots,
     window,
     side: roster.side,
     coordination: windowCoordination(input),
+    opponents,
+    enemies:
+      rivalContext === undefined
+        ? cuts.map(() => [])
+        : enemiesOf(rivalContext, context, cuts, deathsOf(rivalContext, cuts)),
   };
 }

@@ -25,6 +25,7 @@ import { type EnemyMarks, oppositeSide } from './tactic-enemies';
 import {
   createEnemyTextCache,
   drawEnemies,
+  drawEnemyMark,
   type EnemyDrawing,
   type EnemyRoleLabels,
 } from './tactic-enemy-drawing';
@@ -38,6 +39,7 @@ import {
   drawHandle,
   drawLegLinks,
   floorAlpha,
+  type RouteStroke,
   strokeLeg,
   strokePoints,
 } from './tactic-route-drawing';
@@ -82,9 +84,21 @@ export interface TacticLayerOptions {
   readonly liveStroke: { readonly current: readonly RadarPoint[] | null };
   /** The floor in view, as a position in `mapFloors`; what is on another one is drawn faded. Floor 0 when absent. */
   readonly floor?: number | undefined;
+  /** The other team's tactic, played on the same clock; omitted when none is shown. */
+  readonly opponents?: TacticOpponents | undefined;
+}
+
+/** The opponents of a match round: their schedule and the buffers it is sampled into. */
+export interface TacticOpponents {
+  readonly schedule: TacticSchedule;
+  readonly scene: TacticScene;
 }
 
 const NO_DASH: number[] = [];
+const ARC_DASH = [2, 7];
+const OPPONENT_DASH = [3, 7];
+const OPPONENT_ALPHA = 0.35;
+const NO_LEGS: readonly PlayerLeg[] = [];
 
 function activeFloor(options: TacticLayerOptions): number {
   return options.floor ?? 0;
@@ -110,14 +124,21 @@ function marchOffset(motion: TacticMotion, nowMs: number): number {
   return motion.isReduced ? 0 : -((nowMs / 40) % 30);
 }
 
-function arcControl(thrown: ScheduledThrow): RadarPoint {
-  const dx = thrown.toX - thrown.fromX;
-  const dy = thrown.toY - thrown.fromY;
-  const length = Math.hypot(dx, dy) || 1;
-  return {
-    x: (thrown.fromX + thrown.toX) / 2 - (dy / length) * 0.16 * length,
-    y: (thrown.fromY + thrown.toY) / 2 + (dx / length) * 0.16 * length,
-  };
+function traceArc(
+  context: CanvasRenderingContext2D,
+  thrown: ScheduledThrow,
+  g: PlateGeometry,
+  controlX: number,
+  controlY: number,
+): void {
+  context.beginPath();
+  context.moveTo(thrown.fromX * g.scale + g.offsetX, thrown.fromY * g.scale + g.offsetY);
+  context.quadraticCurveTo(
+    controlX * g.scale + g.offsetX,
+    controlY * g.scale + g.offsetY,
+    thrown.toX * g.scale + g.offsetX,
+    thrown.toY * g.scale + g.offsetY,
+  );
 }
 
 function drawArc(
@@ -125,32 +146,27 @@ function drawArc(
   thrown: ScheduledThrow,
   g: PlateGeometry,
   options: TacticLayerOptions,
+  ink: string,
   alpha: number,
   nowMs: number,
 ): void {
-  const control = arcControl(thrown);
-  const trace = () => {
-    context.beginPath();
-    context.moveTo(thrown.fromX * g.scale + g.offsetX, thrown.fromY * g.scale + g.offsetY);
-    context.quadraticCurveTo(
-      control.x * g.scale + g.offsetX,
-      control.y * g.scale + g.offsetY,
-      thrown.toX * g.scale + g.offsetX,
-      thrown.toY * g.scale + g.offsetY,
-    );
-  };
+  const dx = thrown.toX - thrown.fromX;
+  const dy = thrown.toY - thrown.fromY;
+  const length = Math.hypot(dx, dy) || 1;
+  const controlX = (thrown.fromX + thrown.toX) / 2 - (dy / length) * 0.16 * length;
+  const controlY = (thrown.fromY + thrown.toY) / 2 + (dx / length) * 0.16 * length;
   context.save();
   context.globalAlpha = alpha;
   context.lineCap = 'round';
   context.strokeStyle = options.colors.hollow;
   context.lineWidth = 5;
-  trace();
+  traceArc(context, thrown, g, controlX, controlY);
   context.stroke();
-  context.strokeStyle = slotInk(options, thrown.slot);
+  context.strokeStyle = ink;
   context.lineWidth = 2.5;
-  context.setLineDash([2, 7]);
+  context.setLineDash(ARC_DASH);
   context.lineDashOffset = marchOffset(options.motion, nowMs);
-  trace();
+  traceArc(context, thrown, g, controlX, controlY);
   context.stroke();
   context.restore();
 }
@@ -160,17 +176,17 @@ function drawThrowIcon(
   thrown: ScheduledThrow,
   g: PlateGeometry,
   options: TacticLayerOptions,
-  nowMs: number,
+  ink: string,
+  scale: number,
 ): void {
   const x = thrown.toX * g.scale + g.offsetX;
   const y = thrown.toY * g.scale + g.offsetY;
-  const scale = popScale(options.motion, `throw:${thrown.id}`, nowMs);
   context.save();
   context.globalAlpha = floorAlpha(thrown.floor, activeFloor(options));
   context.translate(x, y);
   context.scale(scale, scale);
   context.fillStyle = options.colors.hollow;
-  context.strokeStyle = slotInk(options, thrown.slot);
+  context.strokeStyle = ink;
   context.lineWidth = 2;
   context.beginPath();
   context.arc(0, 0, g.tokenRadius * 0.75, 0, Math.PI * 2);
@@ -184,9 +200,10 @@ function drawEarlierAreas(
   context: CanvasRenderingContext2D,
   g: PlateGeometry,
   options: TacticLayerOptions,
+  schedule: TacticSchedule,
 ): void {
-  const startsAt = options.schedule.steps[options.stepIndex]?.startSeconds ?? 0;
-  for (const thrown of options.schedule.throws) {
+  const startsAt = schedule.steps[options.stepIndex]?.startSeconds ?? 0;
+  for (const thrown of schedule.throws) {
     if (thrown.stepIndex >= options.stepIndex || thrown.landAt > startsAt) continue;
     if (startsAt - thrown.landAt >= UTILITY_LIFE_SECONDS[thrown.kind]) continue;
     drawUtilityHaloArea(
@@ -421,7 +438,7 @@ function drawEditScene(
   nowMs: number,
 ): void {
   const { schedule, stepIndex, selectedSlot } = options;
-  drawEarlierAreas(context, g, options);
+  drawEarlierAreas(context, g, options, schedule);
   drawEditRoutes(context, g, options, nowMs);
 
   for (const thrown of schedule.steps[stepIndex]?.throws ?? []) {
@@ -441,10 +458,18 @@ function drawEditScene(
       thrown,
       g,
       options,
+      slotInk(options, thrown.slot),
       (isDimmed ? 0.5 : 1) * floorAlpha(thrown.floor, activeFloor(options)),
       nowMs,
     );
-    drawThrowIcon(context, thrown, g, options, nowMs);
+    drawThrowIcon(
+      context,
+      thrown,
+      g,
+      options,
+      slotInk(options, thrown.slot),
+      popScale(options.motion, `throw:${thrown.id}`, nowMs),
+    );
   }
   drawHandles(context, g, options, nowMs);
   drawPreview(context, g, options, nowMs);
@@ -454,8 +479,9 @@ function drawSceneAreas(
   context: CanvasRenderingContext2D,
   g: PlateGeometry,
   options: TacticLayerOptions,
+  scene: TacticScene,
 ): void {
-  const { scene, colors } = options;
+  const { colors } = options;
   for (let i = 0; i < scene.areaCount; i++) {
     const kind = scene.areaKind[i] ?? 'smoke';
     const life = UTILITY_LIFE_SECONDS[kind];
@@ -478,8 +504,9 @@ function drawSceneFlights(
   context: CanvasRenderingContext2D,
   g: PlateGeometry,
   options: TacticLayerOptions,
+  scene: TacticScene,
 ): void {
-  const { scene, colors } = options;
+  const { colors } = options;
   for (let i = 0; i < scene.flightCount; i++) {
     context.save();
     context.globalAlpha = floorAlpha(scene.flightFloor[i] ?? 0, activeFloor(options));
@@ -511,7 +538,7 @@ function drawPlayback(
   const local = clock.time - (step?.startSeconds ?? 0);
 
   const active = activeFloor(options);
-  drawSceneAreas(context, g, options);
+  drawSceneAreas(context, g, options, scene);
   for (const leg of step?.legs ?? []) {
     if (leg.isDead || leg.lengthPx < 1) continue;
     const color = slotInk(options, leg.slot);
@@ -544,12 +571,150 @@ function drawPlayback(
       },
     );
   }
-  drawSceneFlights(context, g, options);
+  drawSceneFlights(context, g, options, scene);
+}
+
+function faintRoutes(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  legs: readonly PlayerLeg[],
+  stroke: RouteStroke,
+): void {
+  for (let i = 0; i < legs.length; i++) {
+    const leg = legs[i];
+    if (leg === undefined || leg.isDead || leg.lengthPx < 1) continue;
+    strokeLeg(context, leg, g, stroke);
+  }
+}
+
+function drawOpponentMark(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  options: TacticLayerOptions,
+  x: number,
+  y: number,
+  floor: number,
+  isDead: boolean,
+): void {
+  const { colors } = options;
+  const side = oppositeSide(options.side);
+  context.save();
+  context.globalAlpha = floorAlpha(floor, activeFloor(options));
+  drawEnemyMark(
+    context,
+    x * g.scale + g.offsetX,
+    y * g.scale + g.offsetY,
+    g.tokenRadius * 1.05,
+    isDead ? colors.dead : colors.team[side],
+    colors.hollow,
+    colors.hollow,
+    isDead ? '✕' : side,
+    isDead ? 1.3 : 0.9,
+  );
+  context.restore();
+}
+
+/** The opponents' step while it is edited-for-view: faint routes, earlier areas, then this step's throws. */
+function drawOpponentStep(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  options: TacticLayerOptions,
+  opponents: TacticOpponents,
+  stroke: RouteStroke,
+  nowMs: number,
+): void {
+  const ink = options.colors.team[oppositeSide(options.side)];
+  const step = opponents.schedule.steps[options.stepIndex];
+  drawEarlierAreas(context, g, options, opponents.schedule);
+  if (step === undefined) return;
+  faintRoutes(context, g, step.legs, stroke);
+  for (let i = 0; i < step.throws.length; i++) {
+    const thrown = step.throws[i];
+    if (thrown === undefined) continue;
+    const fade = floorAlpha(thrown.floor, activeFloor(options));
+    drawUtilityHaloArea(
+      context,
+      thrown.toX * g.scale + g.offsetX,
+      thrown.toY * g.scale + g.offsetY,
+      thrown.kind,
+      options.overview,
+      g,
+      options.colors,
+      fade,
+    );
+    drawArc(context, thrown, g, options, ink, fade, nowMs);
+    drawThrowIcon(context, thrown, g, options, ink, 1);
+  }
+}
+
+function drawOpponentPlayback(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  options: TacticLayerOptions,
+  opponents: TacticOpponents,
+  stroke: RouteStroke,
+): void {
+  const { schedule, scene } = opponents;
+  sampleScene(schedule, options.clock.time, scene);
+  drawSceneAreas(context, g, options, scene);
+  faintRoutes(context, g, schedule.steps[scene.stepIndex]?.legs ?? NO_LEGS, stroke);
+  drawSceneFlights(context, g, options, scene);
+}
+
+/** Under the team's own routes: the opponents' routes, areas and throws, for the step or the clock. */
+function drawOpponentsUnder(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  options: TacticLayerOptions,
+  stroke: RouteStroke,
+  nowMs: number,
+): void {
+  const { opponents } = options;
+  if (opponents === undefined) return;
+  if (options.clock.isShown) drawOpponentPlayback(context, g, options, opponents, stroke);
+  else drawOpponentStep(context, g, options, opponents, stroke, nowMs);
+}
+
+function drawOpponentTokens(
+  context: CanvasRenderingContext2D,
+  g: PlateGeometry,
+  options: TacticLayerOptions,
+): void {
+  if (options.opponents === undefined) return;
+  const { schedule, scene } = options.opponents;
+  const isPlayback = options.clock.isShown;
+  const legs = schedule.steps[options.stepIndex]?.legs;
+  for (let slot = 0; slot < schedule.slotCount; slot++) {
+    if (isPlayback) {
+      drawOpponentMark(
+        context,
+        g,
+        options,
+        scene.playerX[slot] ?? 0,
+        scene.playerY[slot] ?? 0,
+        scene.playerFloor[slot] ?? 0,
+        scene.isDead[slot] === 1,
+      );
+      continue;
+    }
+    const leg = legs?.[slot];
+    if (leg === undefined) continue;
+    drawOpponentMark(
+      context,
+      g,
+      options,
+      leg.xs[0] ?? 0,
+      leg.ys[0] ?? 0,
+      leg.floors[0] ?? 0,
+      leg.isDead,
+    );
+  }
 }
 
 /**
  * The tactic board's layer, for the step edited or the plan playing. Bottom to top: drawings, spawn
- * spots, lineup marks, routes, grenades and handles, expected enemies, then the players' tokens.
+ * spots, lineup marks, the opponents' routes and grenades, routes, grenades and handles, expected
+ * enemies, the opponents' tokens, then the players' tokens.
  */
 export function tacticLayer(options: TacticLayerOptions): Layer {
   const geometry: PlateGeometry = plateGeometry();
@@ -565,6 +730,14 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
     legs: undefined,
     dashOffset: 0,
     floor: activeFloor(options),
+  };
+  const opponentStroke: RouteStroke = {
+    color: options.colors.team[oppositeSide(options.side)],
+    under: options.colors.hollow,
+    width: 2,
+    alpha: OPPONENT_ALPHA,
+    dash: OPPONENT_DASH,
+    activeFloor: activeFloor(options),
   };
 
   return (context: CanvasRenderingContext2D, size: CanvasSize) => {
@@ -598,18 +771,21 @@ export function tacticLayer(options: TacticLayerOptions): Layer {
         options.colors,
         activeFloor(options),
       );
+      drawOpponentsUnder(context, geometry, options, opponentStroke, nowMs);
       drawEditScene(context, geometry, options, nowMs);
       enemyDrawing.marks = options.enemyMarks[options.stepIndex];
       enemyDrawing.legs = options.schedule.steps[options.stepIndex]?.legs;
       enemyDrawing.selectedId = options.selectedEnemyId;
       enemyDrawing.dashOffset = marchOffset(options.motion, nowMs);
     } else {
+      drawOpponentsUnder(context, geometry, options, opponentStroke, nowMs);
       drawPlayback(context, geometry, options);
       enemyDrawing.marks = options.enemyMarks[options.scene.stepIndex];
       enemyDrawing.legs = undefined;
       enemyDrawing.selectedId = null;
     }
     drawEnemies(context, geometry, enemyDrawing);
+    drawOpponentTokens(context, geometry, options);
     drawTokens(context, geometry, options, nowMs);
     options.motion.isPriming = false;
   };

@@ -27,6 +27,8 @@ export interface TacticPreviewProps {
   readonly footer?: ReactNode;
   /** Seconds the tactic's own zero lies after the round's freeze end, for a window that starts later. */
   readonly roundOffsetSeconds?: number | undefined;
+  /** The other team over the same steps, played beside the tactic; drawn as squares, never edited. */
+  readonly opponents?: Tactic | undefined;
   readonly className?: string | undefined;
 }
 
@@ -42,6 +44,7 @@ function PreviewBoard({
   detail,
   footer,
   roundOffsetSeconds = 0,
+  opponents,
   className,
   overview,
 }: TacticPreviewProps & { readonly overview: NonNullable<ReturnType<typeof getMapOverview>> }) {
@@ -52,6 +55,13 @@ function PreviewBoard({
   const schedule = useMemo(
     () => buildSchedule({ overview, grid, tactic, planId }),
     [overview, grid, tactic, planId],
+  );
+  const opponentSchedule = useMemo(
+    () =>
+      opponents === undefined
+        ? undefined
+        : buildSchedule({ overview, grid, tactic: opponents, planId: previewPlanId(opponents) }),
+    [overview, grid, opponents],
   );
   const graph = useMemo(() => planGraph(tactic, planId), [tactic, planId]);
   const schedules = useMemo(() => new Map([[planId, schedule]]), [planId, schedule]);
@@ -143,6 +153,7 @@ function PreviewBoard({
           actions={actions}
           repaintRef={repaintRef}
           onPreviewReach={() => undefined}
+          opponents={opponentSchedule}
           isReadOnly
         />
       </div>

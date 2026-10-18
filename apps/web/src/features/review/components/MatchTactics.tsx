@@ -7,6 +7,7 @@ import {
   roundPlant,
   tacticOfRound,
   type WindowEdge,
+  withStepEnemies,
 } from '@disa/demo-core';
 import { useLocale, useT } from '@disa/i18n';
 import { TacticPreview } from '@disa/tactic-board';
@@ -20,6 +21,7 @@ import {
 } from '../helpers/round-tactics';
 import { useRoundTacticSave } from '../hooks/use-round-tactic-save';
 import { RoundWindowStrip } from './RoundWindowStrip';
+import { TacticOpponentsToggle } from './TacticOpponentsToggle';
 import { TacticRoundDetail } from './TacticRoundDetail';
 import { TacticRoundStrip } from './TacticRoundStrip';
 import { TacticSave } from './TacticSave';
@@ -50,6 +52,7 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
   const [filter, setFilter] = useState<RoundFilter>(ALL_ROUNDS);
   const [chosen, setChosen] = useState<number>(initialRound);
   const [edited, setEdited] = useState<Edited | null>(null);
+  const [showOpponents, setShowOpponents] = useState(true);
 
   const entries = useMemo(() => roundEntries(demo, team), [demo, team]);
   const active = entries.find((entry) => entry.roundIndex === chosen) ?? entries[0];
@@ -120,6 +123,7 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
     <div className="surface-card min-h-0 overflow-hidden rounded-float">
       <TacticPreview
         tactic={tactic}
+        opponents={showOpponents ? result.opponents : undefined}
         roundOffsetSeconds={roundOffsetSeconds}
         header={
           <div className="flex flex-col">
@@ -127,12 +131,13 @@ export function MatchTactics({ demo, demoKey, initialRound }: Props) {
               <h2 className="m-0 min-w-0 truncate font-semibold text-16">{tactic.title}</h2>
               <div className="flex flex-wrap items-center gap-2">
                 <TacticTeamSwitch team={team} onTeam={setTeam} />
+                <TacticOpponentsToggle isShown={showOpponents} onToggle={setShowOpponents} />
                 <TacticSave
                   id={id}
                   savedTitle={save.saved?.title}
                   isSaving={save.isSaving}
                   hasFailed={save.hasFailed}
-                  onSave={() => save.save(tactic)}
+                  onSave={() => save.save(withStepEnemies(tactic, result.enemies))}
                   onUndo={save.undo}
                 />
               </div>
